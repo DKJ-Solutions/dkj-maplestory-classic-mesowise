@@ -153,3 +153,59 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* Waar zet je je skillpunt? (issue #26) */
 .level-cost .choices { margin: 0 0 0.875rem; padding-left: 1.25rem; font-size: 0.875rem; color: var(--muted); }
+
+/* Level up: drie schermen naast elkaar die naar links schuiven */
+.flow {
+  margin: 0 -0.25rem; /* ruimte voor de focusrand aan de zijkant */
+  padding: 0 0.25rem;
+  overflow-x: hidden;
+  overflow-x: clip; /* clip maakt geen scrollcontainer, dus de sticky knop blijft werken */
+}
+.track { display: flex; transition: transform 250ms ease-out; }
+.panel { flex: 0 0 100%; min-width: 0; }
+/* Een scherm dat buiten beeld is en klaar is met schuiven, telt niet meer mee voor de hoogte van de pagina. */
+.panel.collapsed { height: 0; overflow: hidden; }
+.panel > h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+.panel > h1:focus, .panel > h2:focus { outline: none; }
+.panel > .btn { margin-bottom: 0.75rem; }
+
+/* De Level up-knop blijft bovenaan in beeld terwijl je scrolt */
+.levelup-bar { position: sticky; top: 0; z-index: 1; margin: 0 -0.25rem 0.75rem; padding: 0.375rem 0.25rem; background: var(--bg); }
+.btn.levelup { display: flex; flex-direction: column; align-items: center; min-height: 64px; font-size: 1.25rem; }
+.btn.levelup small { font-size: 0.875rem; font-weight: 400; opacity: 0.9; }
+.summary { margin: 0 0 1rem; color: var(--muted); }
+.summary strong { color: var(--text); }
+
+/* Stap 1: je stats controleren */
+.stats { padding: 0.25rem 1rem; }
+.stat-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+.stat-label { flex: 1; min-width: 0; font-size: 0.9375rem; }
+.was { margin-left: 0.5rem; padding: 0.0625rem 0.5rem; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.75rem; font-style: normal; font-weight: 700; white-space: nowrap; }
+.stat-row input {
+  width: 6.5rem;
+  font-size: 1rem; /* 16px: iOS zoomt dan niet in bij focus */
+  padding: 0.5rem 0.625rem;
+  text-align: right;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+}
+.stat-row input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stats .error { padding: 0.75rem 0 0.5rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Stap 2: wat nu? */
+.advice-cost { color: var(--text); font-size: 1.125rem; }
+.advice-cost strong { color: var(--accent); }
+.question h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.chip-row { margin: 0 0 0.5rem; }
+.chip { display: inline-block; padding: 0.125rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.875rem; font-weight: 700; }
+.chip.yes { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.no { background: var(--bg); }
+.chip.todo, .chip.unknown { color: var(--muted); border-style: dashed; }
+.verdict { margin: 0 0 0.375rem; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .track { transition: none; }
+}
