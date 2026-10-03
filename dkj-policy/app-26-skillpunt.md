@@ -77,6 +77,7 @@ buiten de EXP-tabel.
 - [x] In de browser: voorbeeld-Thief lv 10 op de Rain-Forest: Lucky Seven → 2 bespaart ± 169 meso,
   Nimble Body bespaart niets (je raakt al 100%, en de monsters raken jou ook altijd)
 - [x] Review door Victor, tekst door Edith
+- [x] Dave heeft gekeken: gezien en akkoord (3 oktober 2026)
 
 ### DEPLOY: app/26-skillpunt
 
