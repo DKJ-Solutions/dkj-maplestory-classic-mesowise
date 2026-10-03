@@ -192,6 +192,10 @@ function SkillPointCard(props: { advice: SkillPointAdvice }) {
   )
 }
 
+/** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
+const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
+const clawUncomputable = 'Niet uit te rekenen: bij de beste plek kan de app de claws niet doorrekenen.'
+
 const clawMissing = (u: UnwearableClaw) =>
   [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
 
@@ -248,7 +252,9 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
         <p class="hint">
           {a.choices.length === 0
             ? 'Geen claw die je kunt dragen en die beter is dan de jouwe.'
-            : 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.'}
+            : noClawComputable(a)
+              ? clawUncomputable
+              : 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.'}
         </p>
       )}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -513,7 +519,7 @@ function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadi
   )
 }
 
-/** Attack en defense: de app weegt uitrusting nog niet af. De kaart kan later een oordeel (chip en uitleg) krijgen. */
+/** Defense: de app weegt uitrusting nog niet af. De kaart kan later een oordeel (chip en uitleg) krijgen. */
 function EquipmentQuestion(props: { title: string }) {
   return (
     <Question title={props.title} chip="todo">
@@ -529,23 +535,28 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost }) {
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown">
-        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van je level kan de app geen claw afwegen.</p>
+        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen claw afwegen.</p>
       </Question>
     )
   }
   const win = a.choices.find((c) => c.claw === a.winner)
+  const unknown = !win && noClawComputable(a)
   return (
-    <Question title={title} chip={win ? 'yes' : 'no'}>
+    <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
       {win ? (
         <>
           <p class="verdict">Koop {win.claw.name}.</p>
           <ClawWinnerLine win={win} />
         </>
-      ) : a.choices.length > 0 ? (
-        <p class="verdict">Geen claw verdient zich terug vóór je volgende upgrade.</p>
       ) : (
         <>
-          <p class="verdict">Geen betere claw die je kunt dragen.</p>
+          <p class="verdict">
+            {a.choices.length === 0
+              ? 'Geen betere claw die je kunt dragen.'
+              : unknown
+                ? clawUncomputable
+                : 'Geen claw verdient zich terug vóór je volgende upgrade.'}
+          </p>
           {a.notWearable.map((u) => (
             <p class="hint" key={u.claw.name}>
               {u.claw.name}: je hebt nog {clawMissing(u)} nodig om deze claw te dragen.
@@ -603,7 +614,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; place
             <p class="hint">
               {mpFrom === 0
                 ? `Elke worp kost je dan ${luckySevenMp(winner.to)} MP (nu 0).`
-                : `Elke worp kost dan ${mpFrom} → ${luckySevenMp(winner.to)} MP.`}{' '}
+                : `Elke worp kost je dan ${mpFrom} → ${luckySevenMp(winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
@@ -764,6 +775,7 @@ export function App() {
 
   const levelUp = () => {
     if (!canLevelUp) return
+    setPlaced(null)
     setUndo({ draft: profileDraft, best: bestSpotOf(verdict) })
     profileDirty.current = true
     setProfileDraft(applyLevelUp(profileDraft))
@@ -829,8 +841,8 @@ export function App() {
               <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
                 <span>Level up</span>
                 <small>
-                {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
-              </small>
+                  {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
+                </small>
               </button>
             </div>
             {cost.kind === 'cost' && (
