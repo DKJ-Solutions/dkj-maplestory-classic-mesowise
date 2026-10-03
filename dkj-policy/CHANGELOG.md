@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**0 / 3 patch entries** <!-- pending-tally -->
+**1 / 4 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/8-app-opzetten · 20261003-094911Z
+
+Er staat een eerste app: één scherm waarin je de EXP per uur en de kosten per uur (potions, ammo,
+reizen) invult en de EXP per meso terugkrijgt. De rekenkern is los getest, en op `main` zet GitHub
+Actions de app op GitHub Pages.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Dit is het eerste wat Dave en zijn vrienden kunnen openen: de app staat online, al kent hij nog geen
+trainingsplekken.
+
+**Score:** 3
+
+#### Pull Request
+
+De app opzetten: Vite + TypeScript + Preact, met Vitest en de Pages-deploy
+
+[PR #9](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/9)
+
+---
 
 ### DEPLOY: docs/stackkeuze · 20261003-094126Z
 
