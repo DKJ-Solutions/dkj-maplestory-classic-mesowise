@@ -4,11 +4,11 @@
 // hele horizon, alleen de EXP per level verschilt; de verkoopwaarde van je oude claw telt niet mee
 // (de app weet niet welke je hebt, dus "Kopen" belooft nooit te veel); het huidige level telt vol mee.
 import { ASSUMPTION_VARIANTS } from './best'
-import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { Claw } from './data/types'
+import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
@@ -62,20 +62,6 @@ function horizon(profile: Profile, claw: Claw): { from: number; to: number; trun
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
 }
 
-/** De mesokosten van alle levels van `from` tot en met `to`, bij deze EXP per meso; null als een level onhaalbaar is. */
-function horizonCost(from: number, to: number, epm: number): number | null {
-  let sum = 0
-  for (let level = from; level <= to; level++) {
-    const cost = mesoCostOfLevel(expToNextLevel(level)!, epm)
-    if (cost === null) return null
-    sum += cost
-  }
-  return sum
-}
-
-/** Van meeste naar minste netto besparing; "niet uit te rekenen" (null) staat expliciet achteraan. */
-const byNet = (a: ClawChoice, b: ClawChoice) => (a.net === null ? 1 : 0) - (b.net === null ? 1 : 0) || (b.net ?? 0) - (a.net ?? 0)
-
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Claw[], a: Assumptions) {
   const baseEpm = bestExpPerMeso(drafts, profile, a)
   if (baseEpm === undefined) return null
@@ -85,7 +71,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
       const epm = bestExpPerMeso(drafts, withClaw(profile, claw), a)
       const without = horizonCost(h.from, h.to, baseEpm)
       const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
-      // Is een level zonder claw onhaalbaar (basiskosten null), dan is elke claw bewust "niet uit te rekenen" (spec).
+      // Is een level zonder claw onhaalbaar (basiskosten null), dan is elke claw bewust "niet uit te rekenen" (zie issue #25).
       const saving = without === null || withIt === null ? null : without - withIt
       return { claw, ...h, saving, net: saving === null ? null : saving - claw.price }
     })

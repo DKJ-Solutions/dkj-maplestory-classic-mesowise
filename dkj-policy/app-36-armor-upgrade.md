@@ -59,24 +59,40 @@ het geslacht van je karakter niet.
 
 ### CREATE
 
-- [ ] De armor-gegevens, met bron per rij (Rebecca → Vera)
-- [ ] `armorUpgrade.ts`: besparing tot je volgende upgrade per slot, min de prijs (Cody)
-- [ ] De tests (Tycho)
-- [ ] De defense-kaart in de level-up-flow (Cody, Gwen)
+- [x] De armor-gegevens, met bron per rij (Rebecca → Vera): 16 Thief-stukken uit de NPC-winkel, lv 10–30,
+  elke pagina twee keer nagelezen; wat is weggelaten en waarom staat bovenaan `src/data/armor.ts`
+- [x] `armorUpgrade.ts`: besparing tot je volgende upgrade per slot, min de prijs (Cody); `horizonCost` en
+  `byNet` zijn uit `clawUpgrade.ts` naar `src/horizonCost.ts` verhuisd, de claw rekent ongewijzigd
+- [x] De tests (Tycho): `armor.test.ts`, `horizonCost.test.ts`, `armorUpgrade.test.ts`, met handsommen en een
+  brute-force-controle dat een **Nee** klopt over alle stukken
+- [x] De defense-kaart in de level-up-flow (Cody)
+- [~] Gwen: niet ingezet, de kaart gebruikt alleen de bestaande stijl van de claw-kaart; Dave kijkt naar het scherm
 
 ### TEST
 
-- [ ] Review: Victor (code), Edith (tekst in de app)
+- [x] Review: Victor (code), Edith (tekst in de app). Victors blokkerende bevinding (per slot het stuk met de
+  meeste WDEF in plaats van de grootste netto besparing) is opgelost en vastgezet; Ediths teksten staan erin
+- [x] `npx vitest run`: 311 tests groen; `npm run lint` schoon
+- [~] De tie-break van `bestOf` (gelijke WDEF, goedkoopste wint) is niet getest: geen twee stukken in één slot
+  hebben dezelfde WDEF, dus zonder mock is hij onbereikbaar
 
 ### DEPLOY: app/36-armor-upgrade
 
-**Score:**
+In de level-up-flow beantwoordt de defense-kaart nu "Moet ik mijn defense nu upgraden?": "Koop" met het
+stuk (hoed, bovenstuk, broek of schoenen) dat zich het meest terugverdient vóór je volgende upgrade, en
+anders "Nee". De app weet niet wat je nu draagt, dus hij rekent alsof dat slot leeg is en zegt dat erbij:
+een "Nee" is zeker, een "Koop" geldt onder die voorwaarde. De kaart noemt de stukken waarvoor je LUK of
+DEX nog tekortschiet, en rekent alleen met Thief-armor die je bij een NPC koopt.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Bij een level-up zie je nu ook voor je armor of hij zichzelf terugverdient, en niet alleen voor je claw.
+
+**Score:** 3
 
 #### Pull Request
 
-Bij een level-up: loont betere armor (WDEF) nu?
+Bij een level-up: loont betere armor (WDEF) nu? (#36)
 
