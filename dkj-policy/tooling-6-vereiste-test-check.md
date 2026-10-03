@@ -39,19 +39,29 @@
 
 ### PLAN
 
+Dave besloot op 3 oktober 2026 (#6): `test` wordt vereist op `main`. De ruleset is aangemaakt
+(id 24413456), en deze branch legt hem vast zodat de geplande check drift ziet.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `Get-ExpectedRepoSettings`: de vereiste check `test`, strict uit, en repository-admins als bypass
 
 ### TEST
 
+- [x] `check-repo-settings.ps1`: 3 van de 3 records kloppen met GitHub
+
 ### DEPLOY: tooling/6-vereiste-test-check
 
-**Score:**
+`main` vereist nu de check `test`, dus de staleness-guard van ship-pr staat aan. De ruleset is
+vastgelegd in `Get-ExpectedRepoSettings`, zodat `repo-settings.yml` elke dag meldt als hij verschuift.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
 
 #### Pull Request
 

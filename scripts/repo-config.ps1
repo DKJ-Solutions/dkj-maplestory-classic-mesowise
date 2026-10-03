@@ -533,10 +533,22 @@ function Get-TestCommands { return @('npm test') }
 # only once 'main' REQUIRES it; until that ruleset exists open-pr simply runs the local gate.
 function Get-CiTestCheckName { return 'test' }
 
-# Nothing watched yet: 'main' carries no ruleset (measured October 3, 2026), so there is no GitHub-side
-# state for the scheduled check to compare. Once the required 'test' check exists, its record
-# (Field 'ruleset.required_checks', Expected @('test')) goes here.
-function Get-ExpectedRepoSettings { return @() }
+# The ruleset 'require test on main' (Dave, October 3, 2026, issue #6): 'test' is required, strict is
+# off because ship-pr's detect-and-rebase keeps a branch current, and repository admins bypass it so the
+# fold can still land on the trunk.
+function Get-ExpectedRepoSettings {
+    return @(
+        @{ Field = 'ruleset.required_checks'; Expected = @('test'); Recorded = '2026-10-03'
+           Where = '.claude/rules/this-repo.md'
+           Why = 'the certificate ship-pr dates a PR from; without it the staleness guard is off' }
+        @{ Field = 'ruleset.strict_required_status_checks_policy'; Expected = $false; Recorded = '2026-10-03'
+           Where = 'scripts/repo-config.ps1'
+           Why = 'ship-pr brings a branch current itself; strict on would refuse merges it already handles' }
+        @{ Field = 'ruleset.bypass_actor_types'; Expected = @('RepositoryRole'); Recorded = '2026-10-03'
+           Where = 'scripts/repo-config.ps1'
+           Why = 'the fold is a direct push to main, which only a bypassing admin token can make' }
+    )
+}
 
 # Who the releases are for: tier 2, the users -- Dave and his friends use the app.
 function Get-ReleaseAudienceTier { return 2 }
