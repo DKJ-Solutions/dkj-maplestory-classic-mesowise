@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**6 / 14 minor entries** <!-- pending-tally -->
+**7 / 15 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/24-mesokosten-scherm · 20261003-132628Z
+
+Onder je karakter staat nu wat je huidige level kost: de EXP tot het volgende level, omgerekend naar
+mesos op de plek met het label "Beste". Kost die plek niets, dan staat er "Gratis". Hangt de winnaar af
+van de aannames, dan zegt de kaart dat erbij. Voorlopig werkt dit voor lv 10 tot en met 20.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Dit is de centrale vraag van de app: hoeveel mesos kost mijn nieuwe level? Je ziet het antwoord direct
+na een level-up.
+
+**Score:** 4
+
+#### Pull Request
+
+De mesokosten van je volgende level op het scherm (#24)
+
+[PR #29](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/29)
+
+---
 
 ### DEPLOY: data/24-exp-tabel · 20261003-131244Z
 
