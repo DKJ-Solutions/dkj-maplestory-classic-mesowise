@@ -55,16 +55,15 @@ ruleset, en dus Daves beslissing; die blijft open op #6.
 
 De lokale gate draait nu ook de tests van de app (`npm test`). De CI-floor staat: een merge die
 via de knop van GitHub binnenkomt, krijgt zijn fold en zijn resolves-controle alsnog, en een
-gearmde PR wordt gemerged zodra `test` groen is. De vrienden die de app gebruiken merken hier niets van.
+gearmde PR wordt gemerged zodra `test` groen is.
 
-**Score:** N/A
+**Score:** 2
 
 #### What makes this deploy extra special
 
-Het voorkomt een changelog-entry die ongefold op `main` blijft staan na een merge via de knop van
-GitHub, en een PR die gemerged wordt terwijl de tests van de app nooit lokaal gedraaid hebben.
+De vrienden die de app gebruiken merken hier niets van.
 
-**Score:** 1
+**Score:** N/A
 
 #### Pull Request
 
