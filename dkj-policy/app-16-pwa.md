@@ -65,6 +65,7 @@ Dit kan alleen op een echte telefoon, met een build (`npm run build && npm run p
 - [x] Tycho: `src/pwa/sw.test.ts` laadt het echte `public/sw.js` en test `kiesStrategie` en `assetUrls`. In totaal 78 tests groen.
 - [x] `npm run lint` schoon. Bundel: JS 8,27 kB gzip (+0,12 kB), `sw.js` 3,2 kB gzip buiten de bundel.
 - [~] Install, activate en het cachegedrag zijn niet automatisch getest, want daar is een browser voor nodig. Dave controleert ze op de telefoon (zie PLAN).
+- [x] Dave heeft de app bekeken en goedgekeurd (3 oktober 2026)
 
 ### DEPLOY: app/16-pwa
 
