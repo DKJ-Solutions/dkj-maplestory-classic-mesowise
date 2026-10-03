@@ -44,13 +44,13 @@
 De gegevens en `mesoCostOfLevel` staan op main (#28). Deze branch zet het antwoord op het scherm. Het
 is een zichtbaar resultaat, dus de branch wacht op Daves blik voordat er een PR komt.
 
-- Een kaart "Je volgende level" onder het karakter. Hij toont de EXP van je huidige level naar het
+- Een kaart "Wat kost dit level?" onder het karakter. Hij toont de EXP van je huidige level naar het
   volgende, en wat dat kost op de plek met het label "Beste".
 - De kaart volgt "Beste" (`bestVerdict`), niet de bovenste plek in de lijst. Dezelfde regels gelden
   dus: een gevaarlijke plek of een plek met te weinig EXP per uur telt niet mee.
 - Randgevallen krijgen een zin in plaats van een getal: geen profiel, een level buiten de tabel (lv
   10–20), nog geen "Beste", een plek die niets kost (gratis), een plek zonder EXP (onhaalbaar), en een
-  winnaar die van de aannames afhangt.
+  winnaar die van de aannames afhangt. Het bedrag wordt naar boven afgerond.
 
 ### CREATE
 
@@ -66,7 +66,7 @@ is een zichtbaar resultaat, dus de branch wacht op Daves blik voordat er een PR 
 
 ### DEPLOY: app/24-mesokosten-scherm
 
-Onder je karakter staat nu wat je volgende level kost: de EXP tot het volgende level, omgerekend naar
+Onder je karakter staat nu wat je huidige level kost: de EXP tot het volgende level, omgerekend naar
 mesos op de plek met het label "Beste". Kost die plek niets, dan staat er "Gratis". Hangt de winnaar af
 van de aannames, dan zegt de kaart dat erbij. Voorlopig werkt dit voor lv 10 tot en met 20.
 

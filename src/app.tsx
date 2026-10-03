@@ -5,8 +5,10 @@ import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
 import { bestVerdict, resolveAll } from './best'
 import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spots'
 import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, type SpotDraft } from './spotDraft'
+import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { KnownSpot } from './data/types'
+import { levelCost, type LevelCost } from './levelCost'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
@@ -81,6 +83,48 @@ function ProfileCard(props: {
           <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>
         </div>
       )}
+    </section>
+  )
+}
+
+/** De centrale vraag: wat kost je huidige level in mesos op de beste plek (issue #24). */
+function LevelCostCard(props: { cost: LevelCost }) {
+  const c = props.cost
+  const first = EXP_TABLE_LEVELS[0]
+  const last = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
+  const step = c.kind === 'cost' || c.kind === 'noBest' ? `Van lv ${c.level} naar ${c.level + 1}: ${nfInt.format(c.expToNext)} EXP.` : null
+  return (
+    <section class="card level-cost" aria-live="polite">
+      <h2>Wat kost dit level?</h2>
+      {c.kind === 'noProfile' && <p class="hint">Vul je karakter in, dan rekent de app uit wat je level kost.</p>}
+      {c.kind === 'noTable' && (
+        <p class="hint">
+          Voor lv {c.level} kent de app de EXP nog niet: de tabel loopt van lv {first} tot en met lv {last}.
+        </p>
+      )}
+      {c.kind === 'noBest' && (
+        <p class="hint">{step} Zodra een plek het label "Beste" heeft, staat hier wat dat level in mesos kost.</p>
+      )}
+      {c.kind === 'cost' && (
+        <>
+          <p class="level-cost-value">
+            {c.meso === null ? <strong>Niet haalbaar</strong> : c.meso === 0 ? <strong>Gratis</strong> : <strong>± {nfInt.format(Math.ceil(c.meso))} meso</strong>}
+          </p>
+          <p class="hint">
+            {step} Beste plek: {c.spotName.trim() || 'Naamloze plek'}.
+            {c.meso === null && ' Die plek levert geen EXP op.'}
+            {c.meso === 0 && ' Die plek kost niets.'}
+          </p>
+          {!c.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere plek misschien goedkoper.</p>}
+        </>
+      )}
+      <p class="source">
+        EXP-tabel:{' '}
+        <a href={EXP_TABLE_SOURCE.url} target="_blank" rel="noopener noreferrer">
+          NiaMeowDB
+        </a>
+        , opgehaald op {formatDate(EXP_TABLE_SOURCE.retrieved)}.
+      </p>
     </section>
   )
 }
@@ -312,6 +356,7 @@ export function App() {
   }, [profileDraft])
 
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
+  const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -349,6 +394,8 @@ export function App() {
       <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
 
       <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
+
+      <LevelCostCard cost={cost} />
 
       {drafts.length === 0 && <p class="empty">Nog geen trainingsplekken. Voeg er een toe om te vergelijken.</p>}
 
