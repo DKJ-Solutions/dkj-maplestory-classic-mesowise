@@ -39,21 +39,69 @@
 
 ### PLAN
 
+#### Wat er gerekend wordt
+
+Per claw die je nu kunt dragen en die meer weapon attack heeft dan de jouwe: de mesokosten van elk level
+in de horizon, met en zonder die claw, elk op de beste plek. De besparing min de prijs is wat de claw
+oplevert. De grootste opbrengst boven 0 wint. Dezelfde vier randwaarden van de aannames als bij "Beste"
+(#21) toetsen of de winnaar overeind blijft.
+
+**De horizon loopt tot je volgende upgrade** (Dave, #25): van je level tot het levelvereiste van de
+eerstvolgende NPC-claw met meer weapon attack. Is er geen volgende, dan loopt hij tot lv 30, het einde
+van de EXP-tabel, en zegt de kaart dat.
+
+#### De uitwerkkeuzes (het label `awaiting-decision` is van #25 gehaald: de bouwer kiest)
+
+- **Je stats van nu blijven staan** over de hele horizon. Het profiel kent alleen je huidige stats, dus
+  laten meegroeien zou een tweede gok op de eerste stapelen.
+- **De verkoopwaarde van je oude claw telt niet mee.** De app weet niet welke claw je hebt. Zo
+  onderschat de kaart de opbrengst eerder dan dat hij hem overschat: "Kopen" zegt hij alleen als het ook
+  zonder die verkoop loont.
+- **Je huidige level telt volledig mee**, want de app weet niet hoe ver je erin bent.
+- **Alleen claws met een NPC-prijs.** Gemaakte claws (Mithril/Gold Titans, Bronze/Adamantium Igor,
+  Mithril Guards) hebben op MeowDB geen vaste prijs. De kaart noemt dat in plaats van een prijs te gokken.
+
+#### De gegevens
+
+Zes NPC-claws (Garnier, Steel Titans, Steel Igor, Meba, Steel Guards, Adamantium Guards), elk met
+levelvereiste, weapon attack, snelheid, LUK/DEX-vereiste en NPC-prijs, en per rij de MeowDB-pagina en de
+datum. De EXP-tabel loopt nu tot lv 30, omdat de horizon die levels nodig heeft. Uitgezocht door Rebecca.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/claws.ts` en het type `Claw` in `src/data/types.ts`, met bron en datum per rij
+- [x] De EXP-tabel in `src/data/expTable.ts` uitgebreid met lv 21–30
+- [x] `src/mesoCostAt.ts` uit `skillPoint.ts` gehaald, zonder gedragswijziging
+- [x] `src/clawUpgrade.ts` met de tests van Tycho in `src/clawUpgrade.test.ts` en `src/data/claws.test.ts`
+- [x] `ClawUpgradeCard` in `src/app.tsx`, met de bestaande stijl van de kaarten
 
 ### TEST
 
+- [x] Alle tests (229) en de typecheck zijn groen, `npm run build` slaagt
+- [x] De besparing in de tests is nagerekend met een eigen som over de EXP-tabel, niet met de module
+- [x] Review door Victor (niets blokkerends; de sorteerfunctie is aangescherpt), tekst door Edith (de
+  winnende zin toonde de bruto besparing als netto; nu de opbrengst na de prijs)
+- [x] Bevinding: de aanvalssnelheid van een claw verandert de EXP per meso nooit, dus Meba's snelheid
+  is in deze kaart geen voordeel. Apart gemeld in #34.
+
 ### DEPLOY: app/25-equipment-upgrade
 
-**Score:**
+Onder "Waar zet je je skillpunt?" staat nu of een nieuwe claw loont: "Kopen" als een claw die je nu kunt
+dragen zichzelf terugverdient vóór je volgende upgrade, met wat hij na zijn prijs oplevert, en anders
+"Nog niet". De kaart noemt de claws waarvoor je LUK of DEX nog tekortschiet, en zegt waarmee hij rekent.
+Hij rekent met je stats van nu, zonder de verkoop van je oude claw, en alleen met claws die je bij een
+NPC koopt. De app kent de EXP nu tot lv 30.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Bij elke level-up zie je of een nieuwe claw zichzelf terugverdient, in plaats van te gokken of hij
+zijn prijs waard is.
+
+**Score:** 4
 
 #### Pull Request
 
-Bij een level-up: loont een equipment-upgrade nu?
+Loont een nieuwe claw bij een level-up? (#25)
 

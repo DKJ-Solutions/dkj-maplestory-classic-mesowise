@@ -9,6 +9,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { clawUpgradeAdvice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillPointAdvice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
@@ -184,6 +185,69 @@ function SkillPointCard(props: { advice: SkillPointAdvice }) {
           NiaMeowDB
         </a>
         , opgehaald op {formatDate(NIMBLE_BODY.source.retrieved)}.
+      </p>
+    </section>
+  )
+}
+
+/** Loont een nieuwe claw uit de winkel nu? (issue #25) */
+function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
+  const a = props.advice
+  if (a.kind === 'none' || (a.choices.length === 0 && a.notWearable.length === 0)) return null
+  const win = a.choices.find((c) => c.claw === a.winner)
+  const first = a.choices[0]?.claw ?? a.notWearable[0].claw
+  const missing = (u: UnwearableClaw) =>
+    [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+  return (
+    <section class="card level-cost" aria-live="polite">
+      <h2>Loont een nieuwe claw?</h2>
+      {win ? (
+        <>
+          <p class="level-cost-value">
+            <strong>Kopen: {win.claw.name}</strong>
+          </p>
+          <p class="hint">
+            Levert {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.claw.price)} meso.
+            {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
+          </p>
+        </>
+      ) : (
+        <p class="hint">
+          {a.choices.length === 0
+            ? 'Geen claw die je kunt dragen en die beter is dan de jouwe.'
+            : 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.'}
+        </p>
+      )}
+      {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
+      {a.choices.length > 0 && (
+        <ul class="choices">
+          {a.choices.map((c) => (
+            <li key={c.claw.name}>
+              {c.claw.name} ({nfInt.format(c.claw.price)} meso):{' '}
+              {c.net === null ? 'niet uit te rekenen' : c.net > 0 ? `levert ${formatMeso(c.net)} op` : 'verdient zich niet terug'}
+            </li>
+          ))}
+        </ul>
+      )}
+      {a.notWearable.length > 0 && (
+        <ul class="choices">
+          {a.notWearable.map((u) => (
+            <li key={u.claw.name}>
+              {u.claw.name}: je hebt nog {missing(u)} nodig om deze claw te dragen.
+            </li>
+          ))}
+        </ul>
+      )}
+      <p class="hint">
+        Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude claw telt niet mee.
+        Claws die je alleen kunt laten maken, hebben geen vaste prijs, dus die telt de app niet.
+      </p>
+      <p class="source">
+        Claw-prijzen:{' '}
+        <a href={first.source.url} target="_blank" rel="noopener noreferrer">
+          NiaMeowDB
+        </a>
+        , opgehaald op {formatDate(first.source.retrieved)}.
       </p>
     </section>
   )
@@ -418,6 +482,7 @@ export function App() {
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
+  const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -458,6 +523,7 @@ export function App() {
 
       <LevelCostCard cost={cost} />
       <SkillPointCard advice={skillAdvice} />
+      <ClawUpgradeCard advice={clawAdvice} />
 
       {drafts.length === 0 && <p class="empty">Nog geen trainingsplekken. Voeg er een toe om te vergelijken.</p>}
 
