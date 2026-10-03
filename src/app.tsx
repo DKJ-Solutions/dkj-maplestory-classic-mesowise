@@ -10,6 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
@@ -187,6 +188,90 @@ function SkillPointCard(props: { advice: SkillPointAdvice }) {
         </a>
         , opgehaald op {formatDate(NIMBLE_BODY.source.retrieved)}.
       </p>
+    </section>
+  )
+}
+
+const clawMissing = (u: UnwearableClaw) =>
+  [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+
+/** Wat de winnende claw oplevert, in een zin; gedeeld door de kaart en het advies na een level-up. */
+function ClawWinnerLine(props: { win: ClawChoice }) {
+  const { win } = props
+  return (
+    <p class="hint">
+      Levert {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.claw.price)} meso.
+      {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
+    </p>
+  )
+}
+
+/** Waarmee de claw-uitkomst gerekend is, en waar de prijzen vandaan komen. */
+function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' }> }) {
+  const a = props.advice
+  const first = a.choices[0]?.claw ?? a.notWearable[0]?.claw
+  return (
+    <>
+      <p class="hint">
+        Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude claw telt niet mee.
+        Claws die je alleen kunt laten maken, hebben geen vaste prijs, dus die telt de app niet.
+      </p>
+      {first && (
+        <p class="source">
+          Claw-prijzen:{' '}
+          <a href={first.source.url} target="_blank" rel="noopener noreferrer">
+            NiaMeowDB
+          </a>
+          , opgehaald op {formatDate(first.source.retrieved)}.
+        </p>
+      )}
+    </>
+  )
+}
+
+/** Loont een nieuwe claw uit de winkel nu? (issue #25) */
+function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
+  const a = props.advice
+  if (a.kind === 'none' || (a.choices.length === 0 && a.notWearable.length === 0)) return null
+  const win = a.choices.find((c) => c.claw === a.winner)
+  return (
+    <section class="card level-cost" aria-live="polite">
+      <h2>Loont een nieuwe claw?</h2>
+      {win ? (
+        <>
+          <p class="level-cost-value">
+            <strong>Kopen: {win.claw.name}</strong>
+          </p>
+          <ClawWinnerLine win={win} />
+        </>
+      ) : (
+        <p class="hint">
+          {a.choices.length === 0
+            ? 'Geen claw die je kunt dragen en die beter is dan de jouwe.'
+            : 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.'}
+        </p>
+      )}
+      {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
+      {a.choices.length > 0 && (
+        <ul class="choices">
+          {a.choices.map((c) => (
+            <li key={c.claw.name}>
+              {c.claw.name} ({nfInt.format(c.claw.price)} meso):{' '}
+              {c.net === null ? 'niet uit te rekenen' : c.net > 0 ? `levert ${formatMeso(c.net)} op` : 'verdient zich niet terug'}
+            </li>
+          ))}
+        </ul>
+      )}
+      {a.notWearable.length > 0 && (
+        <ul class="choices">
+          {a.notWearable.map((u) => (
+            <li key={u.claw.name}>
+              {u.claw.name}: je hebt nog {clawMissing(u)} nodig om deze claw te dragen.
+            </li>
+          ))}
+        </ul>
+      )}
+      <ClawNotes advice={a} />
     </section>
   )
 }
@@ -437,6 +522,43 @@ function EquipmentQuestion(props: { title: string }) {
   )
 }
 
+/** Attack: loont een nieuwe claw uit de winkel? De kaart op het beginscherm en dit advies delen de zinnen. */
+function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost }) {
+  const a = props.advice
+  const title = 'Moet ik mijn attack nu upgraden?'
+  if (a.kind === 'none') {
+    return (
+      <Question title={title} chip="unknown">
+        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van je level kan de app geen claw afwegen.</p>
+      </Question>
+    )
+  }
+  const win = a.choices.find((c) => c.claw === a.winner)
+  return (
+    <Question title={title} chip={win ? 'yes' : 'no'}>
+      {win ? (
+        <>
+          <p class="verdict">Koop {win.claw.name}.</p>
+          <ClawWinnerLine win={win} />
+        </>
+      ) : a.choices.length > 0 ? (
+        <p class="verdict">Geen claw verdient zich terug vóór je volgende upgrade.</p>
+      ) : (
+        <>
+          <p class="verdict">Geen betere claw die je kunt dragen.</p>
+          {a.notWearable.map((u) => (
+            <p class="hint" key={u.claw.name}>
+              {u.claw.name}: je hebt nog {clawMissing(u)} nodig om deze claw te dragen.
+            </p>
+          ))}
+        </>
+      )}
+      {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
+      <ClawNotes advice={a} />
+    </Question>
+  )
+}
+
 /** Waarom de kosten van het level ontbreken, in gewoon Nederlands; null als ze er wel zijn. */
 function noCostReason(c: LevelCost): string | null {
   if (c.kind === 'noProfile') return 'Je karakter is niet volledig ingevuld.'
@@ -598,6 +720,7 @@ export function App() {
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
+  const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -720,6 +843,7 @@ export function App() {
 
             <LevelCostCard cost={cost} />
             <SkillPointCard advice={skillAdvice} />
+            <ClawUpgradeCard advice={clawAdvice} />
 
             {drafts.length === 0 && <p class="empty">Nog geen plekken. Voeg er een toe om te vergelijken.</p>}
 
@@ -800,7 +924,7 @@ export function App() {
               Wat nu?
             </h2>
             <AdviceHeader cost={cost} />
-            <EquipmentQuestion title="Moet ik mijn attack nu upgraden?" />
+            <ClawQuestion advice={clawAdvice} cost={cost} />
             <EquipmentQuestion title="Moet ik mijn defense nu upgraden?" />
             <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />

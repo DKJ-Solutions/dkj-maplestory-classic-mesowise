@@ -56,3 +56,17 @@ export interface KnownSpot {
   source: Source
   monsters: readonly Monster[]
 }
+
+/** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
+export interface Claw {
+  name: string
+  /** Het level dat je nodig hebt om hem te dragen. */
+  level: number
+  watk: number
+  /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
+  speed: { label: string; attackMs: number }
+  luk: number
+  dex: number
+  price: number
+  source: Source
+}

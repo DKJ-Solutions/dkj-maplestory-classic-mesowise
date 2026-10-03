@@ -1,12 +1,11 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-import { ASSUMPTION_VARIANTS, pickUnder } from './best'
-import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
+import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
-import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { mesoCostAt } from './mesoCostAt'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 
@@ -51,11 +50,7 @@ export const NOT_MODELLED: readonly string[] = ['Keen Eyes', 'Disorder', 'Dark S
 /** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {
   const expToNext = expToNextLevel(profile.level)
-  if (expToNext === undefined) return undefined
-  const { ranked, bestId } = pickUnder(drafts, profile, a)
-  const best = ranked.find((r) => r.spot.id === bestId)
-  if (!best || isInvalid(best)) return undefined
-  return mesoCostOfLevel(expToNext, best.expPerMeso)
+  return expToNext === undefined ? undefined : mesoCostAt(drafts, profile, a, expToNext)
 }
 
 export interface SkillChoice {

@@ -1,6 +1,7 @@
-// De EXP die je nodig hebt van level N naar N+1: alleen de levels van het levelplan (lv 10–20), niet
-// de hele tabel (zie .claude/rules/this-repo.md). Opgehaald bij NiaMeowDB (meowdb.com); de pagina
-// noemt lv 1–49 bevestigd in het huidige spel.
+// De EXP die je nodig hebt van level N naar N+1: alleen de levels die de app nodig heeft (lv 10–30: het
+// levelplan en de horizon van de claw-upgrade, issue #25), niet de hele tabel (zie
+// .claude/rules/this-repo.md). Opgehaald bij NiaMeowDB (meowdb.com); de pagina noemt lv 1–49 bevestigd in
+// het huidige spel.
 import type { Source } from './types'
 
 export const EXP_TABLE_SOURCE: Source = {
@@ -11,8 +12,11 @@ export const EXP_TABLE_SOURCE: Source = {
 /** Het eerste level in de tabel; de waarden hieronder lopen per level op vanaf hier. */
 export const FIRST_LEVEL = 10
 
-/** EXP van level N naar N+1, voor N = 10 tot en met 20. */
-const EXP_TO_NEXT: readonly number[] = [1_716, 2_360, 3_216, 4_200, 5_460, 7_050, 8_840, 11_040, 13_716, 16_680, 20_216]
+/** EXP van level N naar N+1, voor N = 10 tot en met 30. */
+const EXP_TO_NEXT: readonly number[] = [
+  1_716, 2_360, 3_216, 4_200, 5_460, 7_050, 8_840, 11_040, 13_716, 16_680, 20_216,
+  24_402, 28_980, 34_320, 40_512, 47_216, 54_900, 63_666, 73_080, 83_720, 95_700,
+]
 
 /** De levels waarvoor de tabel een waarde heeft, laag naar hoog. */
 export const EXP_TABLE_LEVELS: readonly number[] = EXP_TO_NEXT.map((_, i) => FIRST_LEVEL + i)
