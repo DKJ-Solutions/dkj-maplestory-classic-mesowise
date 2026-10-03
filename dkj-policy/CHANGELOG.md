@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**2 / 8 minor entries** <!-- pending-tally -->
+**3 / 9 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/16-pwa · 20261003-114105Z
+
+Je kunt Mesowise nu op je telefoon aan het beginscherm toevoegen. Hij opent dan als een eigen app,
+zonder adresbalk en met een eigen icoon. Na de eerste keer laden werkt de app ook offline, en een
+nieuwe versie komt vanzelf binnen.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Tijdens het spelen tik je de app gewoon open vanaf je beginscherm, ook als je even geen bereik hebt.
+
+**Score:** 3
+
+#### Pull Request
+
+De app installeerbaar maken als PWA
+
+[PR #18](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/18)
+
+---
 
 ### DEPLOY: app/13-vergelijker · 20261003-113101Z
 
