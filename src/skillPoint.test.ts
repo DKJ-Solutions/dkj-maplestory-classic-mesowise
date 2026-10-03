@@ -1,0 +1,103 @@
+import { describe, expect, it } from 'vitest'
+import { pickUnder } from './best'
+import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
+import { isInvalid } from './calc/rankSpots'
+import { expToNextLevel } from './data/expTable'
+import { knownSpotPatch } from './data/spots'
+import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
+import { NOT_MODELLED, SKILLS, skillPointAdvice } from './skillPoint'
+import { newDraft, type SpotDraft } from './spotDraft'
+
+const parsed = parseProfile(DEFAULT_PROFILE)
+if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
+const profile: Profile = parsed.profile
+
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
+  ...newDraft(id),
+  name: id,
+  expPerHour: String(expPerHour),
+  potions: String(potions),
+})
+const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...knownSpotPatch(spotId) })
+
+// Een bekende plek wint van een eigen plek met weinig EXP per uur, dus het profiel doet ertoe.
+const drafts = [known('a', 'henesys-rain-forest-east'), own('b', 1_000, 10_000)]
+
+/** De mesokosten van je level op de beste plek, rechtstreeks uitgerekend. */
+const costOf = (p: Profile) => {
+  const { ranked, bestId } = pickUnder(drafts, p)
+  const best = ranked.find((r) => r.spot.id === bestId)!
+  if (isInvalid(best)) throw new Error('beste plek ongeldig')
+  return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+}
+
+describe('SKILLS', () => {
+  it('zet bij Lucky Seven één level erbij en laat de rest staan', () => {
+    const lucky = SKILLS.find((s) => s.id === 'luckySeven')!
+    expect(lucky.plusOne(profile)).toEqual({ ...profile, luckySeven: profile.luckySeven + 1 })
+    expect(lucky.max).toBe(LUCKY_SEVEN_LEVELS.length)
+  })
+
+  it('telt bij Nimble Body de accuracy en avoid van één level op bij je stats', () => {
+    const nimble = SKILLS.find((s) => s.id === 'nimbleBody')!
+    expect(nimble.plusOne(profile)).toEqual({
+      ...profile,
+      nimbleBody: profile.nimbleBody + 1,
+      accuracy: profile.accuracy + 1,
+      avoid: profile.avoid + 1,
+    })
+    expect(nimble.max).toBe(NIMBLE_BODY.maxLevel)
+  })
+
+  it('noemt een doorgerekende skill niet ook onder "niet doorgerekend"', () => {
+    for (const s of SKILLS) expect(NOT_MODELLED).not.toContain(s.name)
+  })
+})
+
+describe('skillPointAdvice', () => {
+  it('rekent per skill de mesokosten met één punt erbij, en de besparing tegen de kosten zonder', () => {
+    const advice = skillPointAdvice(drafts, profile)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    expect(advice.base).toBeCloseTo(costOf(profile), 6)
+    expect(advice.choices).toHaveLength(2)
+    for (const c of advice.choices) {
+      const skill = SKILLS.find((s) => s.id === c.id)!
+      expect(c.to).toBe(skill.level(profile) + 1)
+      expect(c.meso).toBeCloseTo(costOf(skill.plusOne(profile)), 6)
+      expect(c.saving).toBeCloseTo(advice.base - c.meso!, 6)
+    }
+  })
+
+  it('zet de grootste besparing eerst en kiest die als winnaar zolang hij boven 0 ligt', () => {
+    const advice = skillPointAdvice(drafts, profile)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    const [first, second] = advice.choices
+    expect(first.saving!).toBeGreaterThanOrEqual(second.saving!)
+    expect(advice.winner).toBe(first.saving! > 0 ? first.id : null)
+  })
+
+  it('heeft geen winnaar als het profiel de kosten niet raakt (alleen eigen plekken)', () => {
+    const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], profile)
+    expect(advice).toMatchObject({ kind: 'advice', base: 429, winner: null, robust: true })
+    if (advice.kind === 'advice') for (const c of advice.choices) expect(c.saving).toBe(0)
+  })
+
+  it('slaat een skill op het maximum over en noemt hem', () => {
+    const maxed = { ...profile, luckySeven: LUCKY_SEVEN_LEVELS.length }
+    const advice = skillPointAdvice(drafts, maxed)
+    expect(advice).toMatchObject({ kind: 'advice', maxed: ['Lucky Seven'] })
+    if (advice.kind === 'advice') expect(advice.choices.map((c) => c.id)).toEqual(['nimbleBody'])
+  })
+
+  it('heeft niets te kiezen als alles op het maximum staat', () => {
+    const all = { ...profile, luckySeven: LUCKY_SEVEN_LEVELS.length, nimbleBody: NIMBLE_BODY.maxLevel }
+    expect(skillPointAdvice(drafts, all)).toMatchObject({ kind: 'advice', choices: [], winner: null, maxed: ['Lucky Seven', 'Nimble Body'] })
+  })
+
+  it('geeft geen advies zonder profiel, buiten de EXP-tabel of zonder "Beste"', () => {
+    expect(skillPointAdvice(drafts, null)).toEqual({ kind: 'none' })
+    expect(skillPointAdvice(drafts, { ...profile, level: 21 })).toEqual({ kind: 'none' })
+    expect(skillPointAdvice([own('a', 40_000, 10_000)], profile)).toEqual({ kind: 'none' })
+  })
+})

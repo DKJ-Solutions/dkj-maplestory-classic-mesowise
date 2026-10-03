@@ -9,6 +9,8 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { NOT_MODELLED, skillPointAdvice, type SkillPointAdvice } from './skillPoint'
+import { NIMBLE_BODY } from './data/thief'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
@@ -124,6 +126,64 @@ function LevelCostCard(props: { cost: LevelCost }) {
           NiaMeowDB
         </a>
         , opgehaald op {formatDate(EXP_TABLE_SOURCE.retrieved)}.
+      </p>
+    </section>
+  )
+}
+
+/**
+ * Een besparing in meso, gewoon afgerond; onder de 1 meso heet hij zo in plaats van "0". De kosten van
+ * een level ronden naar boven af (je bent minstens dat kwijt), een besparing niet.
+ */
+const formatMeso = (n: number) => (n > 0 && n < 1 ? 'minder dan 1 meso' : `± ${nfInt.format(Math.round(n))} meso`)
+
+const listFormat = new Intl.ListFormat('nl-NL', { type: 'conjunction' })
+
+/** Waar je skillpunt de meeste mesos bespaart (issue #26). */
+function SkillPointCard(props: { advice: SkillPointAdvice }) {
+  const a = props.advice
+  if (a.kind === 'none') return null
+  const winner = a.choices.find((c) => c.id === a.winner)
+  return (
+    <section class="card level-cost" aria-live="polite">
+      <h2>Waar zet je je skillpunt?</h2>
+      {winner ? (
+        <>
+          <p class="level-cost-value">
+            <strong>
+              {winner.name} → {winner.to}
+            </strong>
+          </p>
+          <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
+        </>
+      ) : (
+        <p class="hint">
+          {a.choices.length === 0
+            ? 'Alle skills die de app kan doorrekenen, staan al op het maximum.'
+            : a.base === 0
+              ? 'Dit level is al gratis, dus een skillpunt bespaart hier niets.'
+              : 'Geen van deze skills maakt dit level goedkoper.'}
+        </p>
+      )}
+      {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
+      {a.choices.length > 0 && (
+        <ul class="choices">
+          {a.choices.map((c) => (
+            <li key={c.id}>
+              {c.name} → {c.to}:{' '}
+              {c.saving === null ? 'niet uit te rekenen' : c.saving > 0 ? `bespaart ${formatMeso(c.saving)}` : 'bespaart niets'}
+            </li>
+          ))}
+        </ul>
+      )}
+      {a.maxed.length > 0 && <p class="hint">Al op het maximum: {listFormat.format(a.maxed)}.</p>}
+      <p class="hint">Niet doorgerekend: {listFormat.format(NOT_MODELLED)}.</p>
+      <p class="source">
+        Nimble Body:{' '}
+        <a href={NIMBLE_BODY.source.url} target="_blank" rel="noopener noreferrer">
+          NiaMeowDB
+        </a>
+        , opgehaald op {formatDate(NIMBLE_BODY.source.retrieved)}.
       </p>
     </section>
   )
@@ -357,6 +417,7 @@ export function App() {
 
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
+  const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -396,6 +457,7 @@ export function App() {
       <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
 
       <LevelCostCard cost={cost} />
+      <SkillPointCard advice={skillAdvice} />
 
       {drafts.length === 0 && <p class="empty">Nog geen trainingsplekken. Voeg er een toe om te vergelijken.</p>}
 

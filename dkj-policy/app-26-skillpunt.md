@@ -39,19 +39,59 @@
 
 ### PLAN
 
+#### Gestapeld op `app/24-mesokosten-scherm`
+
+Deze branch bouwt op `levelCost` en de kaart "Wat kost dit level?" van de #24-branch. Die branch
+wacht nog op Daves blik. Volgorde van mergen: eerst #24, dan deze. Het is een zichtbaar resultaat,
+dus ook deze branch wacht op Dave voordat er een PR komt.
+
+#### Wat het model kan doorrekenen
+
+Op lv 10–20 (de EXP-tabel) heeft een Thief alleen skills van de 1e job. Twee daarvan raken het
+mob-model: **Lucky Seven** (schade en MP) en **Nimble Body** (+1 accuracy en +1 avoid per level, max 15,
+MeowDB, COT2). Keen Eyes (bereik), Disorder, Dark Sight en Double Stab (een dolkaanval) raken het model
+niet. De app noemt ze "niet doorgerekend". Claw Mastery en Critical Throw horen bij de 2e job (lv 30),
+buiten de EXP-tabel.
+
+- **Profiel:** een veld voor het Nimble Body-level (standaard 0). Accuracy en avoid in het profiel zijn
+  de totalen uit je statvenster, dus een punt in Nimble Body telt er +1 bij op.
+- **Een bestaand profiel** krijgt Nimble Body 0, want het veld is nieuw. Wie de skill al heeft, vult
+  hem één keer in; tot dan noemt de kaart het verkeerde doellevel (de +1 accuracy en avoid klopt wel).
+- **Rekenen:** per skill het profiel met één punt erbij door "Beste" halen en de mesokosten van je level
+  vergelijken. De grootste besparing boven 0 wint. De beste plek mag daarbij wisselen.
+- **Robuustheid:** dezelfde vier randwaarden van de aannames als bij "Beste" (#21). Wisselt de winnende
+  skill bij één ervan, dan zegt de kaart "Hangt af van de aannames". Daarvoor is de binnenste functie van `bestVerdict`
+  als `pickUnder` geëxporteerd.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `NIMBLE_BODY` in `src/data/thief.ts`, met bron en datum
+- [x] Het profielveld `nimbleBody` in `src/profile.ts`
+- [x] `pickUnder` uit `bestVerdict` gehaald in `src/best.ts`, zonder gedragswijziging
+- [x] `src/skillPoint.ts` met de tests van Tycho in `src/skillPoint.test.ts`
+- [x] `SkillPointCard` in `src/app.tsx` en de stijl in `src/style.css`
 
 ### TEST
 
+- [x] Alle tests (191) en de typecheck zijn groen, `npm run build` slaagt
+- [x] In de browser: voorbeeld-Thief lv 10 op de Rain-Forest: Lucky Seven → 2 bespaart ± 169 meso,
+  Nimble Body bespaart niets (je raakt al 100%, en de monsters raken jou ook altijd)
+- [x] Review door Victor, tekst door Edith
+
 ### DEPLOY: app/26-skillpunt
 
-**Score:**
+Onder "Wat kost dit level?" staat nu waar je je skillpunt het beste kunt zetten: in Lucky Seven of in
+Nimble Body, met hoeveel meso dat op dit level bespaart. Wisselt het antwoord als de aannames anders
+uitvallen, dan zegt de kaart dat erbij. De skills die de app niet doorrekent, staan erbij. In je karakter
+vul je nu ook je Nimble Body-level in.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Na elke level-up zie je direct waar je punt de meeste mesos bespaart, in plaats van te gokken.
+
+**Score:** 4
 
 #### Pull Request
 

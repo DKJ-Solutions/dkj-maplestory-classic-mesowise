@@ -20,6 +20,7 @@ export const PROFILE_FIELDS = [
   { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
   { key: 'wdef', label: 'WDEF', min: 0, max: 9_999, integer: true },
   { key: 'luckySeven', label: 'Lucky Seven-level (0 = nog niet geleerd)', min: 0, max: 20, integer: true },
+  { key: 'nimbleBody', label: 'Nimble Body-level (0 = nog niet geleerd)', min: 0, max: 15, integer: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
@@ -41,6 +42,7 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   avoid: '23',
   wdef: '72',
   luckySeven: '1',
+  nimbleBody: '0',
   attackMs: String(ATTACK_MS.fast5),
 }
 

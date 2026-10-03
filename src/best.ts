@@ -38,13 +38,15 @@ export interface BestVerdict {
   excluded: Map<string, NotBestReason>
 }
 
+/** "Beste" onder één set aannames: de rangschikking en het label, zonder de robuustheidstoets. */
+export function pickUnder(drafts: readonly SpotDraft[], profile: Profile | null, a: Assumptions = ASSUMPTIONS) {
+  const dangerous = new Set(drafts.filter((d) => isDangerousSpot(d, profile, a)).map((d) => d.id))
+  const ranked = rankSpots(resolveAll(drafts, profile, a))
+  return { ranked, ...pickBest(ranked, (id) => dangerous.has(id)) }
+}
+
 export function bestVerdict(drafts: readonly SpotDraft[], profile: Profile | null): BestVerdict {
-  const pickUnder = (a: Assumptions) => {
-    const dangerous = new Set(drafts.filter((d) => isDangerousSpot(d, profile, a)).map((d) => d.id))
-    const ranked = rankSpots(resolveAll(drafts, profile, a))
-    return { ranked, ...pickBest(ranked, (id) => dangerous.has(id)) }
-  }
-  const { ranked, bestId, excluded } = pickUnder(ASSUMPTIONS)
-  const robust = bestId === null || ASSUMPTION_VARIANTS.every((a) => pickUnder(a).bestId === bestId)
+  const { ranked, bestId, excluded } = pickUnder(drafts, profile)
+  const robust = bestId === null || ASSUMPTION_VARIANTS.every((a) => pickUnder(drafts, profile, a).bestId === bestId)
   return { ranked, bestId, robust, excluded }
 }
