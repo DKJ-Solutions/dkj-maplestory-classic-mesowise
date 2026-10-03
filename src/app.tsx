@@ -8,8 +8,9 @@ import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spo
 import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, type SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
-import type { KnownSpot } from './data/types'
+import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
@@ -204,7 +205,7 @@ function ClawWinnerLine(props: { win: ClawChoice }) {
   const { win } = props
   return (
     <p class="hint">
-      Levert {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.claw.price)} meso.
+      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.claw.price)} meso.
       {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
     </p>
   )
@@ -519,11 +520,86 @@ function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadi
   )
 }
 
-/** Defense: de app weegt uitrusting nog niet af. De kaart kan later een oordeel (chip en uitleg) krijgen. */
-function EquipmentQuestion(props: { title: string }) {
+const SLOT_NL: Record<ArmorSlot, string> = { hat: 'hoed', top: 'bovenstuk', bottom: 'broek', shoes: 'schoenen' }
+
+type ArmorAdvice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
+const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
+
+const armorMissing = (u: UnwearableArmor) =>
+  [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+
+/** Wat het winnende stuk armor oplevert, in een zin. */
+function ArmorWinnerLine(props: { win: ArmorChoice }) {
+  const { win } = props
   return (
-    <Question title={props.title} chip="todo">
-      <p class="hint">De app kan nog niet doorrekenen wat nieuwe uitrusting je aan mesos bespaart.</p>
+    <p class="hint">
+      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.armor.price)} meso.
+      {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
+    </p>
+  )
+}
+
+/** Waarmee de armor-uitkomst gerekend is, en waar de prijzen vandaan komen. */
+function ArmorNotes(props: { advice: ArmorAdvice }) {
+  const a = props.advice
+  const first = a.choices[0]?.armor ?? a.notWearable[0]?.armor
+  return (
+    <>
+      <p class="hint">
+        Gerekend alsof je in het slot van het stuk nu niets draagt: dat is de grootste besparing die het stuk kan geven. Draag je er al
+        iets, dan is de winst kleiner. Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
+      </p>
+      {first && (
+        <p class="source">
+          Armor-prijzen:{' '}
+          <a href={first.source.url} target="_blank" rel="noopener noreferrer">
+            NiaMeowDB
+          </a>
+          , opgehaald op {formatDate(first.source.retrieved)}.
+        </p>
+      )}
+    </>
+  )
+}
+
+/** Defense: loont een nieuw stuk armor uit de winkel? Per slot het stuk dat het meeste netto oplevert. */
+function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost }) {
+  const a = props.advice
+  const title = 'Moet ik mijn defense nu upgraden?'
+  if (a.kind === 'none') {
+    return (
+      <Question title={title} chip="unknown">
+        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen armor afwegen.</p>
+      </Question>
+    )
+  }
+  const win = a.choices.find((c) => c.armor === a.winner)
+  const unknown = !win && noArmorComputable(a)
+  return (
+    <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
+      {win ? (
+        <>
+          <p class="verdict">
+            Koop {win.armor.name} ({SLOT_NL[win.armor.slot]}), als je in dat slot nu niets draagt.
+          </p>
+          <ArmorWinnerLine win={win} />
+        </>
+      ) : (
+        <p class="verdict">
+          {a.choices.length === 0
+            ? 'Geen stuk dat je kunt dragen.'
+            : unknown
+              ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
+              : 'Geen stuk verdient zich terug vóór je volgende upgrade, ook niet als je in dat slot nu niets draagt.'}
+        </p>
+      )}
+      {a.notWearable.map((u) => (
+        <p class="hint" key={u.armor.name}>
+          {u.armor.name} ({SLOT_NL[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
+        </p>
+      ))}
+      {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
+      <ArmorNotes advice={a} />
     </Question>
   )
 }
@@ -732,6 +808,7 @@ export function App() {
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
   const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
+  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile), [drafts, profile])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -937,7 +1014,7 @@ export function App() {
             </h2>
             <AdviceHeader cost={cost} />
             <ClawQuestion advice={clawAdvice} cost={cost} />
-            <EquipmentQuestion title="Moet ik mijn defense nu upgraden?" />
+            <ArmorQuestion advice={armorAdvice} cost={cost} />
             <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
             <button

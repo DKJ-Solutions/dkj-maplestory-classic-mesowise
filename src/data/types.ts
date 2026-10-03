@@ -57,6 +57,22 @@ export interface KnownSpot {
   monsters: readonly Monster[]
 }
 
+/** Het deel van je lichaam waar een stuk armor hoort. Handschoenen, overalls en schilden zitten er niet in. */
+export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'shoes'
+
+/** Een stuk armor uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
+export interface Armor {
+  name: string
+  slot: ArmorSlot
+  /** Het level dat je nodig hebt om hem te dragen. */
+  level: number
+  wdef: number
+  luk: number
+  dex: number
+  price: number
+  source: Source
+}
+
 /** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
 export interface Claw {
   name: string
