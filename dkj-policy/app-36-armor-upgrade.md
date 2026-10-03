@@ -51,6 +51,12 @@ daarmee zeker, een **Ja** zegt de app met die voorwaarde erbij. Dezelfde standaa
 blijven gelijk over de horizon, de verkoopwaarde van je oude stuk telt niet mee. Dave kan dit bij het kijken
 omgooien (bijvoorbeeld een veld per slot in het profiel).
 
+Per slot telt het stuk met de grootste netto besparing, niet het stuk met de meeste WDEF (Victors review:
+anders klopt een **Nee** niet). Gevolg om bij het kijken op te letten: met een lege slot als aanname wint op
+lv 25 een goedkoop lv-10-stuk (Red Cloth Vest, ongeveer +1.900 meso). Dat klopt binnen het model, maar wie al
+iets draagt, heeft er weinig aan. De Qi Pao Skirt staat er niet in: hij is alleen voor vrouwen en de app kent
+het geslacht van je karakter niet.
+
 ### CREATE
 
 - [ ] De armor-gegevens, met bron per rij (Rebecca → Vera)
