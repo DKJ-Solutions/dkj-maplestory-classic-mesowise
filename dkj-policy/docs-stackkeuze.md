@@ -39,19 +39,27 @@
 
 ### PLAN
 
+Rebecca zette de opties op een rij, Marlowe las de aanbeveling kritisch en Dave koos op 3 oktober 2026: Vite + TypeScript + Preact op GitHub Pages, en de spelgegevens alleen selectief.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] .claude/rules/this-repo.md: de stackkeuze en de regel voor de spelgegevens (Tessa)
+- [x] De lens van Chris: de stack is niet meer open (Tessa)
+- [x] Gelezen door Edith
 
 ### TEST
 
 ### DEPLOY: docs/stackkeuze
 
-**Score:**
+De stack staat vast: Vite + TypeScript + Preact, op GitHub Pages en gedeployd via Actions, met de berekening als pure, met Vitest geteste module. De spelgegevens komen er alleen selectief in, met een bron per rij en de vermelding van MeowDB, en nooit als hele tabel.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Nog geen gebruiker merkt hier iets van; de app bestaat nog niet.
+
+**Score:** N/A
 
 #### Pull Request
 
