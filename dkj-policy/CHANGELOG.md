@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**1 / 6 minor entries** <!-- pending-tally -->
+**1 / 7 minor entries** <!-- pending-tally -->
+
+### DEPLOY: claude/3-powershell-denies · 20261003-100905Z
+
+De deny-regels (force-push, `--force-with-lease`, `reset --hard`, `rebase`, `rm -rf`) gelden nu
+ook voor het PowerShell-tool, dat ze eerder om kon lopen.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
+
+#### Pull Request
+
+De deny-regels gelden nu ook voor het PowerShell-tool
+
+[PR #12](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/12)
+
+---
 
 ### DEPLOY: tooling/6-vereiste-test-check · 20261003-100419Z
 
