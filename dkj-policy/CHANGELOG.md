@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**8 / 18 minor entries** <!-- pending-tally -->
+**9 / 19 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/25-equipment-upgrade · 20261003-140757Z
+
+Onder "Waar zet je je skillpunt?" staat nu of een nieuwe claw loont: "Kopen" als een claw die je nu kunt
+dragen zichzelf terugverdient vóór je volgende upgrade, met wat hij na zijn prijs oplevert, en anders
+"Nog niet". De kaart noemt de claws waarvoor je LUK of DEX nog tekortschiet, en zegt waarmee hij rekent.
+Hij rekent met je stats van nu, zonder de verkoop van je oude claw, en alleen met claws die je bij een
+NPC koopt. De app kent de EXP nu tot lv 30.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Bij elke level-up zie je of een nieuwe claw zichzelf terugverdient, in plaats van te gokken of hij
+zijn prijs waard is.
+
+**Score:** 4
+
+#### Pull Request
+
+Loont een nieuwe claw bij een level-up? (#25)
+
+[PR #35](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/35)
+
+---
 
 ### DEPLOY: tooling/feature-label · 20261003-134147Z
 
