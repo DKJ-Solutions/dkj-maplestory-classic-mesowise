@@ -11,9 +11,9 @@ group: 01
 
 ## Specific to this repo
 
-- **Course-defining choices are Dave's.** The app stack and the hosting are not chosen yet
-  (October 3, 2026): Rebecca lays out the options, Marlowe reads the recommendation, Dave picks.
-  Nobody scaffolds a framework before that choice is made.
+- **Course-defining choices are Dave's.** Rebecca lays out the options, Marlowe reads the
+  recommendation, Dave picks. That is how the stack was chosen on October 3, 2026 (see
+  `.claude/rules/this-repo.md`). A switch away from it is a new choice of this kind.
 - **Mobile-first is the bar, not a later pass.** Every visible change is judged at phone width
   first; Dave looks at it before the merge.
 - **The number is the product.** A change to the calculation or the game data does not go to
