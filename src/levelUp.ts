@@ -5,6 +5,7 @@ import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
+import { expPerMesoOf } from './mesoCostAt'
 import { parseProfile, PROFILE_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { SKILLS, type SkillId } from './skillPoint'
 import { luckySevenAt } from './suggest'
@@ -83,8 +84,8 @@ export function huntingGroundAdvice(before: BestSpot | null, verdict: BestVerdic
   if (before && before.id === now.id) return { kind: 'stay', name: now.name }
   const expToNext = profile ? expToNextLevel(profile.level) : undefined
   const costAt = (id: string | undefined) => {
-    const r = verdict.ranked.find((x) => x.spot.id === id)
-    return expToNext === undefined || !r || isInvalid(r) ? undefined : mesoCostOfLevel(expToNext, r.expPerMeso)
+    const epm = expPerMesoOf(verdict.ranked, id)
+    return expToNext === undefined || epm === undefined ? undefined : mesoCostOfLevel(expToNext, epm)
   }
   // De oude plek kan intussen verwijderd zijn; dan noemen we hem niet.
   const old = verdict.ranked.find((r) => r.spot.id === before?.id)
