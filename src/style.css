@@ -123,6 +123,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .known ul { margin: 0 0 0.375rem; padding-left: 1.25rem; }
 .known p { margin: 0; }
 .known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
+.profile { padding: 0; overflow: hidden; }
+.profile.invalid { border-color: #dc2626; }
+.hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
+.note { margin-top: 1.25rem; }
+.spot-notes { padding: 0 1rem; }
+.spot-notes .hint, .spot-notes .warn { margin-bottom: 0.75rem; }
+.warn { margin: 0 0 0.875rem; font-size: 0.875rem; color: #b45309; font-weight: 600; }
 .credit { margin-top: 1.5rem; font-size: 0.875rem; color: var(--muted); text-align: center; }
 
 .spot-head:focus-visible, .btn:focus-visible, .field input:focus-visible, .field select:focus-visible {
@@ -132,6 +139,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
-  .spot.invalid { border-color: #f87171; }
+  .spot.invalid, .profile.invalid { border-color: #f87171; }
+  .warn { color: #fbbf24; }
 }
 .error:empty { display: none; }

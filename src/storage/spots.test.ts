@@ -160,6 +160,14 @@ describe('de verwijzing naar een bekende plek (known)', () => {
     expect(storage.data.get(STORAGE_KEY)).not.toContain('known')
   })
 
+  it('neemt ook het monster en de kills per uur mee, en laat ze weg als ze leeg of geen tekst zijn', () => {
+    const storage = fakeStorage()
+    const drafts = [spot('a', { known: 'k', monster: 'Bubbling', kills: '400' })]
+    saveSpots(storage, drafts)
+    expect(loadSpots(storage)).toEqual(drafts)
+    expect(loadSpots(stored([{ ...spot('b'), monster: 3, kills: '' }]))).toEqual([spot('b')])
+  })
+
   it('wordt begrensd in lengte', () => {
     const rows = loadSpots(stored([spot('a', { known: 'k'.repeat(MAX_KNOWN_LENGTH + 20) })]))
     expect(rows?.[0].known).toHaveLength(MAX_KNOWN_LENGTH)

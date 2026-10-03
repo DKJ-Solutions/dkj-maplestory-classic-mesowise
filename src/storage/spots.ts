@@ -24,9 +24,12 @@ export function isDraftRow(v: unknown): v is SpotDraft {
   )
 }
 
+/** De optionele velden van een bekende plek: alleen een niet-lege tekst blijft staan. */
+const OPTIONAL = ['known', 'monster', 'kills'] as const
+
 /**
- * Alleen de bekende velden overnemen, met een begrensde naam. `known` is optioneel: alleen een
- * niet-lege tekst blijft staan, al het andere valt stil weg (de plek wordt dan een eigen plek).
+ * Alleen de bekende velden overnemen, met een begrensde naam. Een optioneel veld dat geen niet-lege
+ * tekst is, valt stil weg (zonder `known` wordt de plek dan een eigen plek).
  */
 function clean(d: SpotDraft): SpotDraft {
   const row: SpotDraft = {
@@ -37,7 +40,10 @@ function clean(d: SpotDraft): SpotDraft {
     ammo: d.ammo,
     travel: d.travel,
   }
-  if (typeof d.known === 'string' && d.known !== '') row.known = d.known.slice(0, MAX_KNOWN_LENGTH)
+  for (const key of OPTIONAL) {
+    const v: unknown = d[key]
+    if (typeof v === 'string' && v !== '') row[key] = v.slice(0, MAX_KNOWN_LENGTH)
+  }
   return row
 }
 

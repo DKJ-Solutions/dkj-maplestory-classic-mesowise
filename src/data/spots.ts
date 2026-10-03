@@ -9,28 +9,44 @@ import type { KnownSpot, Monster, Potion } from './types'
 const R = '2026-10-03'
 
 /** Elk monster één keer, met zijn eigen pagina; de plekken hieronder verwijzen ernaar. */
-const m = (name: string, level: number, hp: number, expPerKill: number, id: number): Monster => ({
+// Volgorde: naam, level, HP, EXP, WDEF (P.DEF), avoid, accuracy, touch laag, touch hoog, MeowDB-id.
+const m = (
+  name: string,
+  level: number,
+  hp: number,
+  expPerKill: number,
+  wdef: number,
+  avoid: number,
+  accuracy: number,
+  touchMin: number,
+  touchMax: number,
+  id: number,
+): Monster => ({
   name,
   level,
   hp,
   expPerKill,
+  wdef,
+  avoid,
+  accuracy,
+  touch: { min: touchMin, max: touchMax },
   source: { url: `https://meowdb.com/msclassic/monsters/${id}`, retrieved: R },
 })
 
 const MONSTERS = {
-  snail: m('Snail', 1, 45, 2, 2),
-  blueSnail: m('Blue Snail', 2, 51, 4, 3),
-  redSnail: m('Red Snail', 4, 68, 8, 5),
-  stump: m('Stump', 5, 133, 10, 6),
-  slime: m('Slime', 6, 115, 12, 7),
-  pig: m('Pig', 7, 128, 13, 8),
-  orangeMushroom: m('Orange Mushroom', 8, 142, 15, 9),
-  ribbonPig: m('Ribbon Pig', 10, 172, 19, 10),
-  darkStump: m('Dark Stump', 11, 236, 21, 11),
-  greenMushroom: m('Green Mushroom', 14, 233, 26, 13),
-  bubbling: m('Bubbling', 15, 259, 28, 14),
-  axeStump: m('Axe Stump', 17, 371, 32, 15),
-  darkAxeStump: m('Dark Axe Stump', 23, 547, 43, 20),
+  snail: m('Snail', 1, 45, 2, 0, 0, 33, 3, 4, 2),
+  blueSnail: m('Blue Snail', 2, 51, 4, 0, 0, 39, 5, 7, 3),
+  redSnail: m('Red Snail', 4, 68, 8, 0, 0, 45, 9, 13, 5),
+  stump: m('Stump', 5, 133, 10, 30, 0, 45, 12, 16, 6),
+  slime: m('Slime', 6, 115, 12, 10, 0, 53, 14, 19, 7),
+  pig: m('Pig', 7, 128, 13, 0, 0, 54, 16, 22, 8),
+  orangeMushroom: m('Orange Mushroom', 8, 142, 15, 0, 0, 62, 18, 25, 9),
+  ribbonPig: m('Ribbon Pig', 10, 172, 19, 0, 6, 64, 29, 40, 10),
+  darkStump: m('Dark Stump', 11, 236, 21, 30, 5, 61, 37, 51, 11),
+  greenMushroom: m('Green Mushroom', 14, 233, 26, 0, 8, 79, 59, 81, 13),
+  bubbling: m('Bubbling', 15, 259, 28, 20, 9, 81, 67, 91, 14),
+  axeStump: m('Axe Stump', 17, 371, 32, 30, 8, 72, 82, 112, 15),
+  darkAxeStump: m('Dark Axe Stump', 23, 547, 43, 30, 11, 87, 128, 175, 20),
 }
 
 export const KNOWN_SPOTS: readonly KnownSpot[] = [
@@ -66,10 +82,11 @@ export const KNOWN_SPOTS: readonly KnownSpot[] = [
   },
 ]
 
-/** De goedkope potions uit het levelplan, met de NPC-prijs. Nog niet op het scherm: #15 rekent ermee. */
+/** De goedkope potions uit het levelplan (HP) en de Blue Potion (MP), met de NPC-prijs in Kerning. */
 export const POTIONS: readonly Potion[] = [
-  { name: 'Orange Potion', price: 150, source: { url: 'https://meowdb.com/msclassic/item-db/271', retrieved: R } },
-  { name: 'White Potion', price: 350, source: { url: 'https://meowdb.com/msclassic/item-db/272', retrieved: R } },
+  { name: 'Orange Potion', hp: 250, mp: 0, price: 150, source: { url: 'https://meowdb.com/msclassic/item-db/271', retrieved: R } },
+  { name: 'White Potion', hp: 500, mp: 0, price: 350, source: { url: 'https://meowdb.com/msclassic/item-db/272', retrieved: R } },
+  { name: 'Blue Potion', hp: 0, mp: 200, price: 220, source: { url: 'https://meowdb.com/msclassic/item-db/273', retrieved: R } },
 ]
 
 const byId = new Map(KNOWN_SPOTS.map((k) => [k.id, k]))
@@ -86,10 +103,12 @@ export function findKnownSpot(id: string | undefined): KnownSpot | undefined {
 }
 
 /**
- * Wat er in een plek verandert als je een bekende plek kiest: de naam en de verwijzing.
- * Een lege of onbekende id maakt er weer een eigen plek van; de naam blijft dan staan.
+ * Wat er in een plek verandert als je een bekende plek kiest: de naam en de verwijzing, en de velden
+ * die de app dan zelf voorstelt worden leeg (leeg = het voorstel). Een lege of onbekende id maakt er
+ * weer een eigen plek van; de naam en de ingevulde getallen blijven dan staan.
  */
 export function knownSpotPatch(id: string): Partial<SpotDraft> {
   const spot = findKnownSpot(id)
-  return spot ? { known: spot.id, name: spot.name } : { known: undefined }
+  if (!spot) return { known: undefined, monster: undefined, kills: undefined }
+  return { known: spot.id, name: spot.name, monster: undefined, kills: '', expPerHour: '', potions: '', ammo: '' }
 }

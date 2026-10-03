@@ -39,19 +39,45 @@
 
 ### PLAN
 
+Issue #15, stap 3 van 3. Daves besluit van 3 oktober 2026 was optie c: de app stelt kills per uur voor met
+het mob-advies-model uit life-hub, en de speler kan dat getal overschrijven. Eerst alleen voor de Thief,
+met een karakterprofiel. De aannames zonder bron staan met een naam in de code, en de app zegt dat het
+voorstel een schatting is. Dit is een zichtbare wijziging, dus de branch wordt geparkeerd tot Dave kijkt.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Vera: per monster WDEF, avoid, accuracy en touch uit de ruwe MeowDB-pagina's; de potions met HP/MP-herstel en de Blue Potion (220); Subi (W.ATK 15, herladen 0,3 meso per ster); Lucky Seven per level, multiplier 3,0, mastery 50% en de aanvalstijd (750 ms bij Fast (5)) van de skillpagina
+- [x] Cody: `src/calc/mobModel.ts` (het model, puur), `src/calc/expPerHour.ts` (`expPerHour`, `potionCostPerHour`), `src/profile.ts` (het profiel, met opslag), `src/suggest.ts` (voorstel, verbruik per uur, een leeg veld = het voorstel)
+- [x] Cody: op het scherm de kaart "Je karakter (Thief)", per bekende plek het monster, kills per uur met het voorstel, de voorstellen als placeholder, en waarschuwingen
+- [x] Victor, Sebastian, Marlowe en Edith: verwerkt; wat een ontwerpkeuze of een meting vraagt staat in #20 en #21
+
+#### Wat anders is dan het model in life-hub
+
+- Lucky Seven komt nu uit de tabel op de skillpagina van MeowDB in plaats van een interpolatie: lv 3 kost 8 MP (was 9), lv 20 doet 140%.
+- De aanvalstijd, de Subi-stars en de potionprijzen hebben nu een bron; alleen `timeEfficiency` (0,6) en `contactsPerKill` (0,3) blijven aannames zonder bron, net als de Spadow-raakkans en de demping per level.
+- Het verbruik wordt per kill gerekend, zodat het meeschaalt als de speler zelf kills per uur invult.
 
 ### TEST
 
+- [x] `npm test`: 145 tests groen; de handmatige gevallen uit de regressietests van het model (schade, raakkans, WDEF, waarschuwingen) zitten erin, plus een test van begin tot eind van bekende plek naar rangschikking
+- [x] `npm run build`: groen, JS 12,6 kB gzip (was 9,5 kB)
+- [ ] Dave bekijkt het op zijn telefoon
+
 ### DEPLOY: app/15-exp-per-uur
 
-**Score:**
+Bij een bekende plek stelt Mesowise nu zelf voor hoeveel kills per uur je haalt. Dat voorstel volgt uit je
+karakter (level, stats, Lucky Seven) en het monster waarop je traint. Daarmee rekent de app EXP per uur,
+potions en het herladen van stars uit. Klopt het voorstel niet, dan vul je zelf je kills per uur in. De
+app zegt erbij dat het een schatting is, en waarschuwt als een monster gevaarlijk is of als je vaak mist.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Je hoeft niets meer te raden. Kies een plek, vul één keer je karakter in, en de app laat zien waar je de
+meeste EXP per meso haalt.
+
+**Score:** 4
 
 #### Pull Request
 
