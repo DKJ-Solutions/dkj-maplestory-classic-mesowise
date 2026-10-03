@@ -32,11 +32,24 @@
 
 ### PLAN
 
+De vier openstaande stappen na `specialists-init`: roster en lens van Chris, de prefix-tabel,
+`adopt-dkj-policy`, en de Shopify-sjablonen opruimen.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Sylvester: de prefix-tabel in `scripts/lib/branch-info.ps1` (app, data, tooling, fix, docs, claude)
+- [x] Sylvester: `adopt-dkj-policy` Part 1 en 2 -- `.github/` (twee CI-gates, PR-template), `dkj-policy/CHANGELOG.md`, 13 config-functies, de constitutie-import in `CLAUDE.md`
+- [x] Sylvester: `dkj-policy/releases/history.md` met een `0.x`-sectie, zoals in de zusterrepo
+- [x] Cody: `scripts/lint/lint.ps1` als lint-poort (parse + ASCII van de .ps1-scripts), want open-pr weigert op VUL-IN
+- [x] Sylvester: de drie Shopify-lenzen weg, `dkj-subagents-shopify` en `dkj-policy-bwj` uit in `.claude/settings.json`
+- [x] Tessa: de roster in `SPECIALISTS.md`, de lens van Chris, de repofeiten in `.claude/rules/this-repo.md`
+- [~] Part 3 (CI-floor), 4 (reach-label) en 5 (statusLine) van `adopt-dkj-policy`: niet in deze branch -- de 20 open `decide`-seams en deze drie delen staan in #1 en #2
 
 ### TEST
+
+- [x] `scripts/lint/lint.ps1` is groen
+- [x] `check-script-contract.ps1`: 0 errors
+- [x] `check-roster-sync.ps1`: 0 errors, geen wezen
 
 ### DEPLOY: claude/specialisten-inrichten-v1
 
@@ -44,7 +57,10 @@
 
 ##### Tier 0
 
-**Score:**
+De repo heeft nu een werkende werkwijze: een roster van 19 specialisten met hun routes, een
+branch-taxonomie, de CI-gates en een lint-poort. Zonder deze branch weigerde open-pr te draaien.
+
+**Score:** 4
 
 <!--
      Is this change also relevant to management and the employer/commissioner? Then continue to Tier 1.
@@ -53,7 +69,9 @@
 
 ##### Tier 1
 
-**Score:**
+Alleen de werkwijze verandert; de app zelf bestaat nog niet.
+
+**Score:** N/A
 
 <!--
      Is this change also relevant to a subscriber of the service? Then continue to Tier 2.
@@ -62,7 +80,9 @@
 
 ##### Tier 2
 
-**Score:**
+Geen abonnee merkt hier iets van.
+
+**Score:** N/A
 
 #### Pull Request
 

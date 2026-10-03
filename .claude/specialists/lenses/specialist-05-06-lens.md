@@ -1,0 +1,18 @@
+---
+id: 06
+group: 05
+---
+
+# Rendall 🎬 — the Release Manager (*Release Manager Rendall*)
+
+> Repo-lens (lens-only persona) -- portable body lives in the plugin source:
+> `~/.claude/plugins/marketplaces/dkj-claude-plugins/plugins/dkj-subagents/dkj-subagents-alpha/personas/specialist-05-06-persona.md`.
+> The body is read on-demand from this path when Chris brings in this persona (no static `@` import).
+
+## Specific to this repo (VUL-IN)
+
+<!-- TODO (fill in after bootstrap): replace this placeholder with the repo lens of this
+     specialist -- who he or she directs or serves in THIS repo and along which agreements:
+     team and routing, pipelines and gatekeepers (safety rules, branch discipline,
+     and PR rule; the rules themselves are in the dkj-policy constitution the repo CLAUDE.md imports). The portable expertise remains in the
+     plugin persona; only repo-specific matters belong here. -->
