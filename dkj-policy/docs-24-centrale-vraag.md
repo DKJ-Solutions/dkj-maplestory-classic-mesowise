@@ -51,8 +51,8 @@ branch zet alleen de vraag in `.claude/rules/this-repo.md`. Hij sluit geen van d
 
 ### TEST
 
-- [ ] Edith leest de tekst na
-- [ ] Lint-gate groen
+- [x] Edith leest de tekst na: geen blokkerende bevindingen
+- [x] Lint-gate groen
 
 ### DEPLOY: docs/24-centrale-vraag
 
