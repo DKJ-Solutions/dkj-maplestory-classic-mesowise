@@ -39,19 +39,29 @@
 
 ### PLAN
 
+Sebastian vond dat de deny-regels alleen voor `Bash(...)` golden (#3). Dave heeft de spiegels zelf
+in `.claude/settings.json` geplakt (3 oktober 2026); deze branch brengt ze binnen.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `PowerShell(...)`-spiegels van elke deny, plus `git push --force-with-lease` voor beide tools
 
 ### TEST
 
+- [x] `settings.json` parseert en bevat alle zeven nieuwe regels
+
 ### DEPLOY: claude/3-powershell-denies
 
-**Score:**
+De deny-regels (force-push, `--force-with-lease`, `reset --hard`, `rebase`, `rm -rf`) gelden nu
+ook voor het PowerShell-tool, dat ze eerder om kon lopen.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
 
 #### Pull Request
 
