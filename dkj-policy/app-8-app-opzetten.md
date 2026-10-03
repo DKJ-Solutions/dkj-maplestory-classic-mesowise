@@ -62,7 +62,7 @@ test-seams en de CI-floor).
 - [x] `npm test`: 7 van 7 groen
 - [x] `npm run build`: typecheck schoon, bundel 6,4 kB gzip
 - [x] `scripts/lint/lint.ps1`: schoon
-- [ ] Dave bekijkt de app op telefoonbreedte (`npm run dev -- --host`)
+- [x] Dave bekeek de app op telefoonbreedte: "ziet er prima uit voor nu" (3 oktober 2026)
 
 ### DEPLOY: app/8-app-opzetten
 
