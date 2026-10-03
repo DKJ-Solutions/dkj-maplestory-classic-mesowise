@@ -75,6 +75,7 @@ het issue vraagt om de prijzen, en #15 rekent ermee. Alle getallen zijn COT2-waa
 - [x] `npm test`: 94 tests groen, waaronder een test die elke rij langsloopt (bron op meowdb.com, geldige datum, eindige getallen ≥ 0) en de keuze van een plek
 - [x] `npm run build`: groen
 - [~] Blik op telefoonbreedte in de browser: de Chrome-sessie viel weg; Dave kijkt vóór de merge zelf
+- [x] Dave heeft de app bekeken en goedgekeurd (3 oktober 2026)
 
 ### DEPLOY: data/14-trainingsplekken
 
