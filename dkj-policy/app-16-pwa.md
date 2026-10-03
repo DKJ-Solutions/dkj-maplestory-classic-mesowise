@@ -39,19 +39,46 @@
 
 ### PLAN
 
+De app wordt een installeerbare PWA (#16): hij komt op het beginscherm, werkt offline en krijgt
+een nieuwe deploy binnen zonder dat je de cache hoeft te wissen. Er komt geen dependency bij,
+ook niet `vite-plugin-pwa`: Nolan woog het af, en voor één pagina met twee assets is een eigen
+service worker goedkoper. Het resultaat is zichtbaar, dus de branch stopt vóór de pull request.
+
+#### Voor de merge (Dave)
+
+Dit kan alleen op een echte telefoon, met een build (`npm run build && npm run preview`, of na de merge op Pages):
+
+- Op Android en iOS "aan beginscherm toevoegen". Opent de app zonder adresbalk? Hoe ziet het icoon eruit onder het masker van Android?
+- Offline: open de app één keer, zet daarna vliegtuigmodus aan en open hem opnieuw.
+- Een nieuwe deploy komt aan bij de volgende keer openen, zonder dat je de cache hoeft te wissen. Dat kan pas na de merge worden nagegaan.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `public/manifest.webmanifest` en de iOS/Android-metatags in `index.html`. Theme-color volgt licht/donker.
+- [x] Cody: een eigen icoon (amber munt met een pijl omhoog, niets van Nexon). De PNG's en de favicon komen uit `scripts/icons/make-icons.mjs`, zonder dependencies.
+- [x] Cody: `public/sw.js`. Navigatie gaat network-first, met 3 s timeout alleen als er een cache is. `assets/` gaat cache-first, de rest stale-while-revalidate. Bij install parset de worker de shell zodat de app offline werkt, en hij bewaart twee generaties assets.
+- [x] Cody: de registratie in `src/main.tsx`, alleen in productie en onder `BASE_URL`.
+- [x] Gwen (icoon), Victor (code), Sebastian (service worker), Nolan (kosten): review. Alle bevindingen zijn verwerkt.
 
 ### TEST
 
+- [x] Tycho: `src/pwa/sw.test.ts` laadt het echte `public/sw.js` en test `kiesStrategie` en `assetUrls`. In totaal 78 tests groen.
+- [x] `npm run lint` schoon. Bundel: JS 8,27 kB gzip (+0,12 kB), `sw.js` 3,2 kB gzip buiten de bundel.
+- [~] Install, activate en het cachegedrag zijn niet automatisch getest, want daar is een browser voor nodig. Dave controleert ze op de telefoon (zie PLAN).
+
 ### DEPLOY: app/16-pwa
 
-**Score:**
+Je kunt Mesowise nu op je telefoon aan het beginscherm toevoegen. Hij opent dan als een eigen app,
+zonder adresbalk en met een eigen icoon. Na de eerste keer laden werkt de app ook offline, en een
+nieuwe versie komt vanzelf binnen.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Tijdens het spelen tik je de app gewoon open vanaf je beginscherm, ook als je even geen bereik hebt.
+
+**Score:** 3
 
 #### Pull Request
 
