@@ -2,7 +2,7 @@
 // wordt elke rij gecontroleerd en wat ongeldig is valt weg. De Storage komt als parameter
 // binnen (test-seam); null betekent "geen opslag beschikbaar".
 import type { Spot } from '../calc/rankSpots'
-import { MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
+import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
 
 export const STORAGE_KEY = 'mesowise.spots.v1'
 const VERSION = 1
@@ -24,9 +24,12 @@ export function isDraftRow(v: unknown): v is SpotDraft {
   )
 }
 
-/** Alleen de bekende velden overnemen, met een begrensde naam. */
+/**
+ * Alleen de bekende velden overnemen, met een begrensde naam. `known` is optioneel: alleen een
+ * niet-lege tekst blijft staan, al het andere valt stil weg (de plek wordt dan een eigen plek).
+ */
 function clean(d: SpotDraft): SpotDraft {
-  return {
+  const row: SpotDraft = {
     id: d.id,
     name: d.name.slice(0, MAX_NAME_LENGTH),
     expPerHour: d.expPerHour,
@@ -34,6 +37,8 @@ function clean(d: SpotDraft): SpotDraft {
     ammo: d.ammo,
     travel: d.travel,
   }
+  if (typeof d.known === 'string' && d.known !== '') row.known = d.known.slice(0, MAX_KNOWN_LENGTH)
+  return row
 }
 
 /** De voorbeeldplek voor wie de app voor het eerst opent. */

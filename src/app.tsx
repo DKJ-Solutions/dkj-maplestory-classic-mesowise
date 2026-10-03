@@ -2,9 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
 import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spots'
 import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, toSpot, type SpotDraft } from './spotDraft'
+import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
+import type { KnownSpot } from './data/types'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
+
+const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+/** JJJJ-MM-DD als Nederlandse datum, bijvoorbeeld "3 oktober 2026". */
+const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z`))
 
 const storage = browserStorage()
 
@@ -33,6 +39,47 @@ function Field(props: {
   )
 }
 
+function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
+  const onChange = (e: Event) => props.onChange(knownSpotPatch((e.currentTarget as HTMLSelectElement).value))
+  return (
+    <label class="field">
+      <span>Bekende plek</span>
+      <select value={props.value} onChange={onChange}>
+        <option value="">Eigen plek</option>
+        {KNOWN_SPOTS.map((k) => (
+          <option key={k.id} value={k.id}>
+            {k.name} (monsters lv {monsterLevels(k).min}–{monsterLevels(k).max})
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function KnownSpotInfo(props: { spot: KnownSpot }) {
+  const { spot } = props
+  return (
+    <div class="known">
+      <ul>
+        {spot.monsters.map((m) => (
+          <li key={m.name}>
+            <a href={m.source.url} target="_blank" rel="noopener noreferrer">
+              {m.name}
+            </a>
+            : lv {m.level}, {nfInt.format(m.hp)} HP, {nfInt.format(m.expPerKill)} EXP per monster
+          </li>
+        ))}
+      </ul>
+      <p>
+        <a href={spot.source.url} target="_blank" rel="noopener noreferrer">
+          {spot.name}
+        </a>{' '}
+        op NiaMeowDB, opgehaald op {formatDate(spot.source.retrieved)}.
+      </p>
+    </div>
+  )
+}
+
 function SpotCard(props: {
   result: RankResult
   draft: SpotDraft
@@ -45,6 +92,7 @@ function SpotCard(props: {
   const { result, draft, best, open } = props
   const invalid = isInvalid(result)
   const title = draft.name.trim() || 'Naamloze plek'
+  const known = findKnownSpot(draft.known)
   const value = invalid
     ? '–'
     : Number.isFinite(result.expPerMeso)
@@ -72,6 +120,8 @@ function SpotCard(props: {
       </p>
       {open && (
         <div class="spot-body">
+          <KnownSpotPicker value={known?.id ?? ''} onChange={props.onChange} />
+          {known && <KnownSpotInfo spot={known} />}
           <Field text label="Naam van de plek" value={draft.name} onInput={(name) => props.onChange({ name })} />
           <Field label="EXP per uur" value={draft.expPerHour} onInput={(expPerHour) => props.onChange({ expPerHour })} />
           <Field label="Potionkosten (meso per uur)" value={draft.potions} onInput={(potions) => props.onChange({ potions })} />
@@ -161,6 +211,13 @@ export function App() {
       <button type="button" class="btn primary" onClick={add} disabled={drafts.length >= MAX_SPOTS}>
         Plek toevoegen
       </button>
+
+      <footer class="credit">
+        Spelgegevens:{' '}
+        <a href="https://meowdb.com" target="_blank" rel="noopener noreferrer">
+          NiaMeowDB (meowdb.com)
+        </a>
+      </footer>
     </main>
   )
 }
