@@ -1,0 +1,26 @@
+{
+  "enabledPlugins": {
+    "dkj-policy@dkj-claude-plugins": true,
+    "dkj-subagents-alpha@dkj-claude-plugins": true,
+    "dkj-subagents-shopify@dkj-claude-plugins": false,
+    "dkj-policy-bwj@dkj-claude-plugins": false
+  },
+  "permissions": {
+    "allow": [
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*new-branch.ps1*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*open-pr.ps1*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*ship-pr.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*new-branch.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*open-pr.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*ship-pr.ps1*)",
+      "Bash(gh repo edit --delete-branch-on-merge*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}
