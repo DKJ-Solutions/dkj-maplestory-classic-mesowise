@@ -16,6 +16,10 @@ export interface SpotDraft {
   travel: string
   /** De id van een bekende plek uit src/data/, als de plek daaruit gekozen is. */
   known?: string
+  /** Bij een bekende plek: het monster waarop je traint (leeg = het voorstel). */
+  monster?: string
+  /** Bij een bekende plek: kills per uur (leeg = het voorstel). */
+  kills?: string
 }
 
 /** Tekst naar getal; een leeg veld is NaN (Number('') zou stilletjes 0 geven). */

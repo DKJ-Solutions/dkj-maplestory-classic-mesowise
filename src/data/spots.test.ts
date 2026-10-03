@@ -50,9 +50,12 @@ describe('de bekende plekken', () => {
       for (const m of k.monsters) {
         const where = `${k.id}: ${m.name}`
         expect(m.name.trim(), where).not.toBe('')
-        expectAmount(m.level, `${where} level`)
-        expectAmount(m.hp, `${where} hp`)
-        expectAmount(m.expPerKill, `${where} exp`)
+        for (const [veld, v] of Object.entries({ level: m.level, hp: m.hp, exp: m.expPerKill, wdef: m.wdef, avoid: m.avoid, accuracy: m.accuracy })) {
+          expectAmount(v, `${where} ${veld}`)
+        }
+        expectAmount(m.touch.min, `${where} touch min`)
+        expect(m.touch.max, `${where} touch max`).toBeGreaterThanOrEqual(m.touch.min)
+        expect(m.hp, `${where} hp > 0`).toBeGreaterThan(0)
         expectValidSource(m.source, where)
       }
     }
@@ -72,6 +75,9 @@ describe('de potions', () => {
     for (const p of POTIONS) {
       expect(p.name.trim()).not.toBe('')
       expectAmount(p.price, `${p.name} prijs`)
+      expectAmount(p.hp, `${p.name} hp`)
+      expectAmount(p.mp, `${p.name} mp`)
+      expect(p.hp + p.mp, `${p.name} herstelt iets`).toBeGreaterThan(0)
       expectValidSource(p.source, p.name)
     }
   })
@@ -98,15 +104,24 @@ describe('findKnownSpot', () => {
 })
 
 describe('knownSpotPatch', () => {
-  it('vult bij een bekende plek de naam en de verwijzing in', () => {
+  it('vult bij een bekende plek de naam en de verwijzing in, en maakt de voorstelvelden leeg', () => {
     const k = KNOWN_SPOTS[0]
-    expect(knownSpotPatch(k.id)).toEqual({ known: k.id, name: k.name })
+    expect(knownSpotPatch(k.id)).toEqual({
+      known: k.id,
+      name: k.name,
+      monster: undefined,
+      kills: '',
+      expPerHour: '',
+      potions: '',
+      ammo: '',
+    })
   })
 
-  it('maakt van een lege of onbekende keuze een eigen plek en laat de naam staan', () => {
-    expect(knownSpotPatch('')).toEqual({ known: undefined })
-    expect(knownSpotPatch('bestaat-niet')).toEqual({ known: undefined })
-    expect('name' in knownSpotPatch('')).toBe(false)
+  it('maakt van een lege of onbekende keuze een eigen plek en laat naam en getallen staan', () => {
+    const own = { known: undefined, monster: undefined, kills: undefined }
+    expect(knownSpotPatch('')).toEqual(own)
+    expect(knownSpotPatch('bestaat-niet')).toEqual(own)
+    for (const f of ['name', 'expPerHour', 'potions', 'ammo', 'travel']) expect(f in knownSpotPatch('')).toBe(false)
   })
 
   it('heft een eerdere keuze op als je hem over een plek heen legt, zoals de app doet', () => {
