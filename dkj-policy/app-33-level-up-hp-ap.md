@@ -74,6 +74,7 @@ resultaat (de tekst op het controlescherm), dus geparkeerd zonder PR tot Dave he
 - [x] De tests (Tycho): `src/data/thief.test.ts` en `src/levelUp.test.ts`, met de grens lv 9 → 10, accuracy +1 en +2, en velden die geen heel getal zijn
 - [x] Review: Victor (code), Edith (tekst in de app). Victors blokkerende bevinding (`baseAccuracy` rondde door floating point soms 1 te laag af, bijvoorbeeld 49 in plaats van 50 bij DEX 1, lv 1, LUK 228) is opgelost met gehele getallen en vastgezet; Ediths teksten staan erin
 - [x] `npx vitest run` groen; `npm run lint` schoon
+- [x] Dave heeft het controlescherm bekeken en akkoord gegeven (3 oktober 2026)
 
 ### DEPLOY: app/33-level-up-hp-ap
 
