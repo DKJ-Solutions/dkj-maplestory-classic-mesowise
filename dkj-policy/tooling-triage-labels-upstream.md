@@ -41,17 +41,25 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Labels op GitHub bijgewerkt naar het upstream-ontwerp (blueprint `Get-TriageLabels`): `needs-decision` hernoemd naar `awaiting-decision` (paars), en `prio-1` t/m `prio-4`, `awaiting-more-recurrences`, `awaiting-pull` en `awaiting-first-recurrence` aangemaakt
+- [x] `Get-TriageLabels` in `scripts/repo-config.ps1` vervangen door de blueprint-tekst
 
 ### TEST
 
+- [x] `adopt-triage-labels.ps1`: alle 8 canonieke labels bestaan
+- [x] `scripts/lint/lint.ps1`: schoon
+
 ### DEPLOY: tooling/triage-labels-upstream
 
-**Score:**
+De triage-labels van deze repo volgen nu het upstream-ontwerp van dkj-policy: vier prioriteitsniveaus (`prio-1` t/m `prio-4`) en de paarse awaiting-familie (`awaiting-decision`, voorheen `needs-decision`, plus `awaiting-pull`, `awaiting-first-recurrence` en `awaiting-more-recurrences`). Ze staan op de tracker en in de seam `Get-TriageLabels`, zodat claim- en sweep-routes geparkeerde issues herkennen.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: alleen de issue-tracker van deze repo, niets in de app.
+
+**Score:** N/A
 
 #### Pull Request
 
