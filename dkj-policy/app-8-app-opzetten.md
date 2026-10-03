@@ -39,21 +39,46 @@
 
 ### PLAN
 
+De eerste, lege app volgens de stackkeuze van 3 oktober 2026 (#8). Zichtbaar resultaat: de branch
+stopt vóór de pull request, zodat Dave hem op telefoonbreedte bekijkt. Daarna volgt #6 (de
+test-seams en de CI-floor).
+
+#### Voor de merge (Dave)
+
+- GitHub Pages aanzetten met als bron *GitHub Actions* (Settings → Pages), anders faalt de
+  deploy-job op `main`.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: Vite + TypeScript + Preact, Node 22 (`.nvmrc`), gecommitte `package-lock.json`
+- [x] Cody: de rekenkern `src/calc/expPerMeso.ts`, pure TypeScript zonder UI-import
+- [x] Cody: een eerste scherm, mobile-first: EXP per uur en de kosten per uur in, EXP per meso uit
+- [x] Tycho: Vitest, `npm test` = `vitest run`, zeven tests op de rekenkern
+- [x] Cody: `.github/workflows/test.yml` (job `test` op pull requests) en `deploy.yml` (Pages op `main`)
+- [x] Cody: `scripts/lint/lint.ps1` roept `npm run lint` (de TypeScript-typecheck) aan
 
 ### TEST
 
+- [x] `npm test`: 7 van 7 groen
+- [x] `npm run build`: typecheck schoon, bundel 6,4 kB gzip
+- [x] `scripts/lint/lint.ps1`: schoon
+- [ ] Dave bekijkt de app op telefoonbreedte (`npm run dev -- --host`)
+
 ### DEPLOY: app/8-app-opzetten
 
-**Score:**
+Er staat een eerste app: één scherm waarin je de EXP per uur en de kosten per uur (potions, ammo,
+reizen) invult en de EXP per meso terugkrijgt. De rekenkern is los getest, en op `main` zet GitHub
+Actions de app op GitHub Pages.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Dit is het eerste wat Dave en zijn vrienden kunnen openen: de app staat online, al kent hij nog geen
+trainingsplekken.
+
+**Score:** 3
 
 #### Pull Request
 
 De app opzetten: Vite + TypeScript + Preact, met Vitest en de Pages-deploy
-
