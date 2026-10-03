@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**8 / 16 minor entries** <!-- pending-tally -->
+**8 / 17 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/triage-labels-upstream · 20261003-133341Z
+
+De triage-labels van deze repo volgen nu het upstream-ontwerp van dkj-policy: vier prioriteitsniveaus (`prio-1` t/m `prio-4`) en de paarse awaiting-familie (`awaiting-decision`, voorheen `needs-decision`, plus `awaiting-pull`, `awaiting-first-recurrence` en `awaiting-more-recurrences`). Ze staan op de tracker en in de seam `Get-TriageLabels`, zodat claim- en sweep-routes geparkeerde issues herkennen.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A: alleen de issue-tracker van deze repo, niets in de app.
+
+**Score:** N/A
+
+#### Pull Request
+
+Triage-labels gelijk aan het upstream-ontwerp
+
+[PR #31](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/31)
+
+---
 
 ### DEPLOY: app/26-skillpunt · 20261003-132745Z
 
