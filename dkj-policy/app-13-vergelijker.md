@@ -61,6 +61,7 @@ request tot Dave hem op telefoonbreedte heeft bekeken.
 - [x] Tycho: 57 tests groen (`rankSpots`, `spotError`, opslag, `spotDraft`)
 - [x] `npm run lint` schoon, `npm run build` 8,1 kB JS gzip, geen nieuwe runtime-dependencies
 - [~] De UI zelf is niet automatisch getest: er is geen componenttest-opzet. Dave beoordeelt het scherm vóór de merge.
+- [x] Dave heeft de app bekeken en goedgekeurd (3 oktober 2026)
 
 ### DEPLOY: app/13-vergelijker
 
