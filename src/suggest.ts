@@ -1,7 +1,7 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { characterAttack, estimateMob, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, characterAttack, estimateMob, type Assumptions, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS, SUBI } from './data/thief'
@@ -32,12 +32,12 @@ export interface MonsterSuggestion {
 }
 
 /** Elk monster van de plek doorgerekend, van meeste naar minste EXP per uur. */
-export function suggestMonsters(profile: Profile, spot: KnownSpot): MonsterSuggestion[] {
+export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attack = characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
   return spot.monsters
     .map((monster) => {
-      const estimate = estimateMob(character, attack, monster)
+      const estimate = estimateMob(character, attack, monster, assumptions)
       return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour) }
     })
     .sort((a, b) => b.expPerHour - a.expPerHour)
@@ -82,10 +82,15 @@ const orSuggestion = (text: string | undefined, suggestion: number) =>
  * Een plek als getallen. Bij een bekende plek met een geldig profiel vullen de lege velden zich
  * met het voorstel; bij een eigen plek (of zonder profiel) is dit gewoon toSpot.
  */
-export function resolveSpot(d: SpotDraft, known: KnownSpot | undefined, profile: Profile | null): Spot {
+export function resolveSpot(
+  d: SpotDraft,
+  known: KnownSpot | undefined,
+  profile: Profile | null,
+  assumptions: Assumptions = ASSUMPTIONS,
+): Spot {
   const spot = toSpot(d)
   if (!known || !profile) return spot
-  const s = pickMonster(suggestMonsters(profile, known), d.monster)
+  const s = pickMonster(suggestMonsters(profile, known, assumptions), d.monster)
   if (!s) return spot
   const kills = orSuggestion(d.kills, s.estimate.killsPerHour)
   // Onzinnige kills per uur: er is geen voorstel, dus alleen wat de speler zelf invulde telt.

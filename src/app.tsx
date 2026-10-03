@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
+import type { NotBestReason } from './calc/pickBest'
 import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
+import { bestVerdict, resolveAll } from './best'
 import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spots'
 import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, type SpotDraft } from './spotDraft'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
@@ -145,7 +147,7 @@ function Warnings(props: { s: MonsterSuggestion | undefined }) {
   if (!e || !(e.dangerous || e.missesOften)) return null
   return (
     <p class="warn">
-      {e.dangerous && 'Gevaarlijk: één tik kost 40% of meer van je HP. '}
+      {e.dangerous && 'Gevaarlijk: één tik kost 25% of meer van je HP. '}
       {e.missesOften && 'Je mist vaak: je raakt minder dan 80% van je aanvallen.'}
     </p>
   )
@@ -180,12 +182,15 @@ function SpotCard(props: {
   draft: SpotDraft
   profile: Profile | null
   best: boolean
+  /** False als de winnaar wisselt zodra een aanname anders uitvalt. */
+  robust: boolean
+  notBest: NotBestReason | undefined
   open: boolean
   onToggle: () => void
   onChange: (patch: Partial<SpotDraft>) => void
   onRemove: () => void
 }) {
-  const { result, draft, profile, best, open } = props
+  const { result, draft, profile, best, robust, notBest, open } = props
   const invalid = isInvalid(result)
   const title = draft.name.trim() || 'Naamloze plek'
   const known = findKnownSpot(draft.known)
@@ -197,6 +202,9 @@ function SpotCard(props: {
     [draft, known, profile],
   )
   const estimated = isEstimated(draft, known, profile)
+  const travelMissing = Boolean(known) && result.spot.cost.travel === 0
+  const warn = Boolean(picked && (picked.estimate.dangerous || picked.estimate.missesOften))
+  const badge = !robust ? 'Hangt af van de aannames' : estimated ? 'Beste (schatting)' : 'Beste'
   const hint = (v: number | undefined) => (v !== undefined && Number.isFinite(v) ? nfInt.format(v) : undefined)
   const leeg = known && profile ? ' (leeg = het voorstel)' : ''
   const value = invalid
@@ -208,7 +216,7 @@ function SpotCard(props: {
     <li class={`card spot${best ? ' best' : ''}${invalid ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" aria-expanded={open} onClick={props.onToggle}>
         <span class="spot-name">
-          {best && <em class="badge">{estimated ? 'Beste (schatting)' : 'Beste'}</em>}
+          {best && <em class="badge">{badge}</em>}
           {title}
         </span>
         <span class="spot-value">
@@ -221,10 +229,24 @@ function SpotCard(props: {
             : 'Nog niet ingevuld'}
         </span>
       </button>
-      {estimated && (
+      {(estimated || warn || notBest || travelMissing) && (
         <div class="spot-notes">
           <Warnings s={picked} />
-          <p class="hint">Schatting voor één monster ({picked?.monster.name}), zonder reistijd en spawnsnelheid.</p>
+          {notBest === 'dangerous' && <p class="hint">Geen "Beste": een gevaarlijke plek telt daarvoor niet mee.</p>}
+          {notBest === 'lowExp' && <p class="hint">Geen "Beste": deze plek levert minder dan de helft van de EXP per uur van de veilige plek die het meeste oplevert.</p>}
+          {best && !robust && (
+            <p class="hint">
+              Valt een aanname anders uit (hoeveel van de tijd je echt aanvalt, hoe vaak je geraakt wordt), dan wint
+              een andere plek of geen.
+            </p>
+          )}
+          {estimated && (
+            <p class="hint">
+              Schatting voor één monster ({picked?.monster.name}, gekozen op de meeste EXP per uur), zonder reistijd en
+              spawnsnelheid.
+            </p>
+          )}
+          {travelMissing && <p class="hint">Reiskosten zijn niet meegerekend. Vul ze zelf in als je ze kent.</p>}
         </div>
       )}
       <p class="error" aria-live="polite">
@@ -265,10 +287,6 @@ function SpotCard(props: {
   )
 }
 
-/** De plekken als getallen: bij een bekende plek vullen lege velden zich met het voorstel. */
-const resolveAll = (drafts: SpotDraft[], profile: Profile | null) =>
-  drafts.map((d) => resolveSpot(d, findKnownSpot(d.known), profile))
-
 /** De ids van de plekken, van beste naar slechtste. */
 const rankedIds = (drafts: SpotDraft[], profile: Profile | null) =>
   rankSpots(resolveAll(drafts, profile)).map((r) => r.spot.id)
@@ -293,10 +311,9 @@ export function App() {
     if (profileDirty.current) saveProfile(storage, profileDraft)
   }, [profileDraft])
 
-  const ranked = useMemo(() => rankSpots(resolveAll(drafts, profile)), [drafts, profile])
-  const resultById = useMemo(() => new Map(ranked.map((r) => [r.spot.id, r])), [ranked])
+  const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
+  const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
-  const bestId = ranked.length > 1 && !isInvalid(ranked[0]) ? ranked[0].spot.id : null
 
   const update = (id: string, patch: Partial<SpotDraft>) => {
     dirty.current = true
@@ -346,7 +363,9 @@ export function App() {
               result={result}
               draft={draft}
               profile={profile}
-              best={id === bestId}
+              best={id === verdict.bestId}
+              robust={verdict.robust}
+              notBest={verdict.excluded.get(id)}
               open={openId === id}
               onToggle={() => toggle(id)}
               onChange={(patch) => update(id, patch)}
