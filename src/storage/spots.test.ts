@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
+import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
 import { exampleSpot, isDraftRow, loadSpots, saveSpots, STORAGE_KEY } from './spots'
 
 /** Een kleine in-memory Storage; geen jsdom nodig. */
@@ -140,6 +140,29 @@ describe('saveSpots en loadSpots', () => {
     const storage = fakeStorage()
     saveSpots(storage, [spot('a')])
     expect(JSON.parse(storage.data.get(STORAGE_KEY)!).version).toBe(1)
+  })
+})
+
+describe('de verwijzing naar een bekende plek (known)', () => {
+  it('gaat heen en terug mee', () => {
+    const storage = fakeStorage()
+    const drafts = [spot('a', { known: 'henesys-pigs' }), spot('b')]
+    saveSpots(storage, drafts)
+    expect(loadSpots(storage)).toEqual(drafts)
+  })
+
+  it('valt weg als hij leeg, undefined of geen tekst is, zonder de rij te verliezen', () => {
+    for (const known of ['', undefined, 5, null, { id: 'x' }]) {
+      expect(loadSpots(stored([{ ...spot('a'), known }]))).toEqual([spot('a')])
+    }
+    const storage = fakeStorage()
+    saveSpots(storage, [spot('a', { known: undefined })])
+    expect(storage.data.get(STORAGE_KEY)).not.toContain('known')
+  })
+
+  it('wordt begrensd in lengte', () => {
+    const rows = loadSpots(stored([spot('a', { known: 'k'.repeat(MAX_KNOWN_LENGTH + 20) })]))
+    expect(rows?.[0].known).toHaveLength(MAX_KNOWN_LENGTH)
   })
 })
 

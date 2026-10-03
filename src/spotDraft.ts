@@ -5,6 +5,7 @@ import type { Spot } from './calc/rankSpots'
 /** Grenzen tegen onbegrensde groei (invoer en opslag). */
 export const MAX_SPOTS = 200
 export const MAX_NAME_LENGTH = 100
+export const MAX_KNOWN_LENGTH = 64
 
 export interface SpotDraft {
   id: string
@@ -13,6 +14,8 @@ export interface SpotDraft {
   potions: string
   ammo: string
   travel: string
+  /** De id van een bekende plek uit src/data/, als de plek daaruit gekozen is. */
+  known?: string
 }
 
 /** Tekst naar getal; een leeg veld is NaN (Number('') zou stilletjes 0 geven). */

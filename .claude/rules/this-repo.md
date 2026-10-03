@@ -28,4 +28,6 @@ from there. What the choice still leaves open (the test seams and the CI floor) 
 ([reuse policy](https://meowdb.com/reuse)) allows individual facts with attribution, but republishing a
 whole table or data file needs written permission, and none has been asked for. So data goes in per
 training spot that is actually used, every row carries its source (page URL and date), and the app
-credits "NiaMeowDB (meowdb.com)". Nexon's names, sprites and icons stay out of the repo.
+credits "NiaMeowDB (meowdb.com)". Map and monster names may appear as plain text, because a training spot
+cannot be recognised without them; Nexon's sprites, icons and brand stay out of the repo (Dave, October 3,
+2026, issue #14).
