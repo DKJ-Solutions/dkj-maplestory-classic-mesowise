@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**8 / 17 minor entries** <!-- pending-tally -->
+**8 / 18 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/feature-label · 20261003-134147Z
+
+Het PR-label voor `app/`- en `data/`-branches heet nu `feature`, zoals upstream in dkj-policy; het oude GitHub-label `enhancement` is daarnaar hernoemd. `bug` heeft de upstream-kleur.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A: alleen de issue-tracker van deze repo, niets in de app.
+
+**Score:** N/A
+
+#### Pull Request
+
+PR-label feature in plaats van enhancement
+
+[PR #32](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/32)
+
+---
 
 ### DEPLOY: tooling/triage-labels-upstream · 20261003-133341Z
 
