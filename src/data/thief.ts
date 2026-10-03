@@ -1,4 +1,5 @@
-// De Thief-gegevens waar het mob-model mee rekent: Lucky Seven, de Subi-stars en de aanvalstijd.
+// De Thief-gegevens waar het mob-model mee rekent: Lucky Seven, Nimble Body, de Subi-stars en de
+// aanvalstijd.
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder, COT2-waarden.
 import type { SkillLevel, Source, ThrowingStar } from './types'
 
@@ -21,6 +22,17 @@ export const LUCKY_SEVEN = { stars: 2, weaponMult: 3.0, mastery: 0.5 } as const
  * Welke snelheid jouw claw heeft, staat in het spel; het profiel begint bij "Fast (5)".
  */
 export const ATTACK_MS = { faster3: 660, fast4: 720, fast5: 750 } as const
+
+/**
+ * Nimble Body (passief): +1 accuracy en +1 avoid per skill-level, tot en met level 15. De skillpagina
+ * noemt de waarden voor COT2, ongewijzigd overgenomen uit de eerste gesloten testfase.
+ */
+export const NIMBLE_BODY = {
+  maxLevel: 15,
+  accuracyPerLevel: 1,
+  avoidPerLevel: 1,
+  source: { url: 'https://meowdb.com/msclassic/skills/thief/nimble-body', retrieved: R } satisfies Source,
+} as const
 
 /** De goedkoopste stars, die je laat herladen in plaats van nieuwe te kopen (het levelplan). */
 export const SUBI: ThrowingStar = {
