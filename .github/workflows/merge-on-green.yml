@@ -1,0 +1,210 @@
+# Finishes a ship whose session is gone: merges a pull request ship-pr armed with merge-when-green
+# once its required check turns green (issue #2329, derived from the source repo's own
+# .github/workflows/merge-on-green.yml, issue #2319).
+#
+# WHAT THIS CLOSES. ship-pr.ps1 refuses to merge on a red or pending required check. When that check
+# later turns green -- a re-run, a flaky leg retried -- nothing merged the pull request: the merge was
+# owed to a session that had already exited. ship-pr now ARMS such a pull request with the
+# merge-when-green label at that refusal, and this job is the sweep that reads the label.
+#
+# IT ADDS NO GATE OF ITS OWN. The plugin's pick-merge-on-green.ps1 only asks the tracker which armed
+# pull request is owed a merge; the ship is the plugin's own ship-pr.ps1, so the staleness guard, the
+# step-list gate and the DEPLOY lock are the same implementation a live session runs, and it folds and
+# verifies the resolves exactly as that session would. Both are reached through a checkout of the
+# plugin's tree rather than copied here.
+#
+# THREE SIBLING CHECKOUTS, NONE NESTED IN ANOTHER, NONE SWITCHED IN PLACE (issue #2449). The pinned
+# plugin tree (.workflow-scripts) is where the CODE comes from. trusted-main, this repo's trunk, is
+# where its two repo-owned seams (scripts/repo-config.ps1, scripts/lib/branch-info.ps1) are read from
+# and where the fold is committed. pr-branch, the picked pull request's head, is the tree the ship
+# acts on. An earlier shape of this file checked the trunk out ONCE with FOLD_PUSH_TOKEN persisted,
+# nested the plugin tree inside it and then ran git checkout of the branch in that same workspace --
+# so the branch's own seams ran beside the token, and a branch committing a file under the plugin
+# path overwrote the trusted copy (#2553). A runner of that shape is reported when adopt-ci-floor is
+# re-run; re-scaffold it by deleting this file and running adopt-ci-floor again.
+#
+# NO CHECKOUT PERSISTS A CREDENTIAL. The Ship it step builds ONE ephemeral git credential from
+# FOLD_PUSH_TOKEN, in its own process environment only, and it reaches both trees because both need
+# to push: pr-branch for open-pr's branch push, trusted-main for the fold. It is never written to
+# either tree's .git/config, and it dies with the step. Nothing the step does with it runs code out of
+# pr-branch's working tree -- the deepen commands only move refs and history -- so the branch reaches
+# the credential as DATA (its branch document, its PR body), never as code (the same trade the source
+# repo's own runner took on #2437).
+#
+# THREE TRIGGERS FOR ONE SWEEP, AND THE SWEEP IGNORES WHICH OF THEM WOKE IT. workflow_run gives
+# immediacy; the schedule is what makes it durable (whether a partial re-run re-emits workflow_run is
+# not a contract worth resting this on); workflow_dispatch is the hand valve. workflow_run RUNS THE
+# VERSION OF THIS FILE ON THE DEFAULT BRANCH, so a change here is inert until it is merged.
+#
+# workflow_run RUNS WITH SECRETS EVEN FOR A PULL REQUEST FROM A FORK, which is why this job reads
+# NOTHING out of the event. Everything it acts on comes from the tracker: an open pull request
+# carrying a label only ship-pr writes, whose head is a branch of THIS repository -- the picker
+# refuses a cross-repository one outright. Neither guard is load-bearing alone.
+#
+# THE SHIP NEEDS FOLD_PUSH_TOKEN, AND THAT TOKEN NEEDS ONE MORE SCOPE THAN THE FOLD RUNNER'S:
+# Pull requests: Read and write, beside Contents: Read and write. A merge made with the job-scoped
+# GITHUB_TOKEN starts no workflow runs, so it would land the pull request and silence this repo's
+# CI on the trunk, fold-on-merge.yml and verify-resolved.yml all at once -- the unobserved-merge state
+# those runners exist to close. Without the scope the merge fails with a 403, loudly; it can never
+# merge without folding.
+#
+# ONE SWEEP AT A TIME, REPO-WIDE, AND NOT CANCELLED: this job merges and folds, and two concurrent
+# sweeps would race to ship the SAME pull request. A sweep re-reads the tracker when it starts, so a
+# dropped duplicate pending run costs nothing.
+#
+# LINUX, UNDER PWSH 7 (issue #2616): ubuntu-latest and 'shell: pwsh', with one shim step pointing the
+# literal child name 'powershell' at pwsh -- see the fold runner's header. It was the last runner to
+# move because it drives ship-pr's whole merge path and a workflow_run runner cannot be proved on its
+# own pull request; the source repo's CI runs that merge path's suites under pwsh on Linux instead.
+name: Merge on green
+
+# The job token only reads; the write half arrives as FOLD_PUSH_TOKEN on the one step that needs it.
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  workflow_run:
+    workflows: ["Always-on budget", "Branch entry", "test"]
+    types: [completed]
+  schedule:
+    # Every 3 hours: a backstop for what workflow_run misses, not the ordinary path -- sparser than
+    # the source repo's own half-hourly sweep (issue #2487). workflow_run wakes this the moment CI
+    # finishes, which is the ordinary path here too; the schedule only has to catch what that
+    # trigger misses. The source repo is public, so a job costs it nothing on a
+    # standard runner and 30 minutes buys latency for free; a private repo is billed per scheduled
+    # job START, rounded up to a whole minute, whether or not anything is owed a merge. Half-hourly
+    # there is 48 jobs/day, roughly 1,440 billed minutes/month; every 3 hours is 8/day, roughly
+    # 240/month.
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: merge-on-green
+  cancel-in-progress: false
+
+jobs:
+  merge-on-green:
+    runs-on: ubuntu-latest
+    # 45 minutes, longer than the other runners because this one waits on CI on purpose: ship-pr may
+    # bring a stale branch forward and re-certify it, and each lap is a full CI cycle. Re-size it to
+    # this repo's own CI duration; the cap is a wedge detector, against GitHub's six-hour default.
+    timeout-minutes: 45
+    steps:
+      # THE TRUSTED TRUNK, AND THE TREE THE FOLD IS COMMITTED IN: this repo's own trunk, with no token:
+      # input and nothing persisted (see this file's header). The picker reads this repo's identity from
+      # it, and ship-pr reads its two repo-owned seams from it (-TrustedRoot), so a pull request editing
+      # either seam never has its own copy executed here. The job token's contents: read is enough to
+      # clone it, private repository or not. Shallow; the fold's own fetch extends it as far as it needs.
+      - name: Checkout the trusted trunk
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: main
+          path: trusted-main
+          persist-credentials: false
+
+      # THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT ref: main (issue #2333). This job holds a write
+      # credential, and code fetched at the tip of another repository would run beside it with no
+      # release in between. Move the pin when you update the dkj-policy plugin: re-running
+      # adopt-ci-floor.ps1 reports a runner pinned behind the version it came from.
+      - name: Fetch the shared workflow scripts
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: DKJ-Solutions/dkj-claude-plugins
+          ref: d70be6a58ebe061efee328c825ee257640fdf269 # v5.13.0
+          path: .workflow-scripts
+          persist-credentials: false
+
+      # THE SHIM (issue #2488): ship-pr launches its children by the literal name 'powershell', and
+      # ubuntu-latest has only 'pwsh'. It runs before the first pwsh step and before FOLD_PUSH_TOKEN.
+      - name: Make 'powershell' resolve to pwsh
+        shell: bash
+        run: sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell
+
+      # The picker reads with the job-scoped token, not the PAT: it only lists pull requests and
+      # their checks, and the standing credential stays out of every step that does not need it.
+      # CLAUDE_PROJECT_DIR NAMES trusted-main AND NOTHING ELSE WILL DO: the workspace root holds no
+      # checkout at all, and the plugin tree carries the SOURCE repo's scripts/repo-config.ps1, so
+      # pointed there the sweep would answer with another repository's configuration.
+      - name: Is any armed pull request owed a merge?
+        id: pick
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}/trusted-main
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/ci/pick-merge-on-green.ps1
+          exit $LASTEXITCODE
+
+      # THE PICKED HEAD, IN ITS OWN TREE, with no token and nothing persisted. ref: is the picker's
+      # output, passed to the action as an input rather than spliced into a shell line, and the picker
+      # has already refused any branch name outside a plain charset.
+      - name: Checkout the picked pull request's branch
+        if: ${{ steps.pick.outputs.picked == 'true' }}
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ steps.pick.outputs.branch }}
+          path: pr-branch
+          persist-credentials: false
+
+      # THE BRANCH ARRIVES THROUGH env:, NOT THROUGH ${{ }} INSIDE run:. A head ref is chosen by
+      # whoever opened the pull request; the picker has already refused any name outside a plain
+      # charset, and this is the second half of that same guard.
+      #
+      # CLAUDE_PROJECT_DIR IS pr-branch, SO THE MERGE, THE STEP-LIST GATE AND THE DEPLOY LOCK ACT ON THE
+      # BRANCH'S OWN COMMIT exactly as a live session would; -TrustedRoot is what keeps its seams and
+      # its fold on trusted-main.
+      - name: Ship it
+        if: ${{ steps.pick.outputs.picked == 'true' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.FOLD_PUSH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}/pr-branch
+          SHIP_BRANCH: ${{ steps.pick.outputs.branch }}
+          SHIP_PR: ${{ steps.pick.outputs.pr }}
+          SHIP_SHA: ${{ steps.pick.outputs.sha }}
+        run: |
+          # Commit metadata only, in BOTH trees: trusted-main commits the fold, and open-pr commits a
+          # dirty branch document in pr-branch. The two checkouts share no .git/config, and a hosted
+          # runner has no global identity.
+          foreach ($tree in @('trusted-main', 'pr-branch')) {
+            git -C $tree config user.name "github-actions[bot]"
+            git -C $tree config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          }
+
+          # THE EPHEMERAL PUSH CREDENTIAL. git's GIT_CONFIG_COUNT/KEY_n/VALUE_n overlay reaches every git
+          # process this step starts, ship-pr's own children included, without writing a .git/config in
+          # either tree. This file's header says why one credential serves both.
+          $basicAuth = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GH_TOKEN"))
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader'
+          $env:GIT_CONFIG_VALUE_0 = "AUTHORIZATION: basic $basicAuth"
+
+          # Widen the refspec before deepening: a checkout with ref: narrows remote.origin.fetch to
+          # the branch, so an --unshallow alone would not know the trunk ship-pr's staleness walk reads.
+          # The full history is what that walk needs to be sound.
+          git -C pr-branch remote set-branches origin '*'
+          git -C pr-branch fetch --unshallow --quiet origin
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "could not deepen the branch checkout -- ship-pr's staleness walk would be unsound, so nothing was merged."
+            exit 1
+          }
+
+          # The commit this run acts on has to be the one the picker judged (#2338): the checkout above
+          # resolved the branch NAME a moment after the pick. A push in between stops the job; the next
+          # sweep judges the new head.
+          $head = (git -C pr-branch rev-parse HEAD).Trim()
+          if ($head -ne $env:SHIP_SHA) {
+            Write-Error "PR #$($env:SHIP_PR)'s head moved after the pick ($($env:SHIP_SHA) -> $head) -- nothing was run or merged."
+            exit 1
+          }
+
+          # -TrustedRoot trusted-main: the seams and the fold come from the trunk (issue #2449). It forces
+          # -SkipLint -SkipTests on its own, and they are passed anyway: the sweep picked this pull request
+          # BECAUSE its required check is green on this exact head, and that certificate is what the
+          # merge is allowed on. Re-running the local gates here would prove nothing it does not carry.
+          Write-Host "merge-on-green: running ship-pr.ps1 (trusted-tree mode) on '$env:SHIP_BRANCH' for PR #$env:SHIP_PR"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/release/ship-pr.ps1 -TrustedRoot (Join-Path $env:GITHUB_WORKSPACE 'trusted-main') -SkipLint -SkipTests
+          exit $LASTEXITCODE

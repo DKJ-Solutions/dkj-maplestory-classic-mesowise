@@ -1,0 +1,107 @@
+# Checks whether GitHub-side repo settings still match what this tree declares -- scheduled, not
+# merge-triggered, because its subject is a repo setting drifting on its own rather than a PR (issue
+# #1843, derived from the source repo's own .github/workflows/repo-settings.yml, issue #1726).
+#
+# WHAT THIS CLOSES. A ruleset and a repo's merge switches are GitHub-side state: nothing in this
+# tree changes when they change -- no commit, no gate, no session. Yet scripts/repo-config.ps1's
+# Get-ExpectedRepoSettings is load-bearing for whatever this repo's own constitution rests on it --
+# a direct-on-trunk exception, a fold, a staleness guard -- so the record and the live state could
+# disagree indefinitely with nothing saying so. The source repo measured three such drifts in eight
+# days before building this: bypass_actors emptied by an org transfer, a merge_queue rule added and
+# removed with no trace, and allow_auto_merge left on against its own tree's record.
+#
+# A SCHEDULE, NOT A SessionStart HOOK: a hook only reaches whoever happens to open a session, and if
+# nobody does, nothing is written down. A scheduled run leaves a DATED record -- every future answer
+# is bounded to how long ago this last ran, whether or not anyone was looking.
+#
+# NOT A REQUIRED CHECK, deliberately. Its subject IS the ruleset, so requiring it would be
+# self-referential, and it would stop merges on a switch only the repo owner can flip. A red run plus
+# GitHub's failure e-mail is the signal -- the same non-membership this floor's other two runners and
+# the plugin's branch-entry gate all keep, each for their own reason.
+#
+# workflow_dispatch IS NOT DECORATION -- it is how the answer is obtained the day a setting changes on
+# purpose, without waiting for the next cron.
+#
+# THE CHECK NEVER WRITES TO GITHUB. Repo settings are the owner's surface; this script reads and
+# reports, exactly as adopt-ci-floor.ps1's own required-check ruleset instruction composes a call
+# and stops rather than applying it (#1972). The queue instruction stays a UI pointer instead: that
+# switch carries policy nobody here has chosen.
+#
+# ONE FIELD (bypass_actors) IS ADMIN-ONLY AND READS AS UNREADABLE, NOT AS GREEN -- the check's own
+# third verdict. -RequireRead is the floor under that: without it, a token that cannot reach the two
+# non-admin endpoints would report every field as not-read and still exit 0 -- a detector reporting
+# success while checking nothing.
+#
+# LEAST PRIVILEGE, AND READ-ONLY: contents: read is the whole permission. The checkout is UNPINNED --
+# this job never holds a credential worth pinning against. Contrast the source repo's OWN tree:
+# fold-on-merge.yml and verify-resolved.yml (write-capable) are pinned; repo-settings.yml itself,
+# branch-entry.yml and unfolded-entry.yml (read-only, like this job) are not. persist-credentials:
+# false because this job never pushes.
+#
+# The write runners adopt-ci-floor.ps1 places beside this one (fold, resolves, merge-on-green) pin
+# both the action (#1904) and the shared scripts they fetch (#2333); this one pins neither, and
+# tracks the scripts at main on the #1805 argument, because it holds nothing worth pinning against.
+#
+# THE SECOND CHECKOUT reaches the check through the plugin's own tree rather than a copy kept here,
+# so this repo shares one definition of "what GitHub-side drift looks like" with the workflow's
+# source instead of holding a second copy free to drift from it -- same reasoning, same shape, as the
+# other two runners this command places.
+#
+# THE TRUNK IS BAKED IN AT SCAFFOLD TIME, from the same Get-TrunkBranchName seam this whole command
+# already reads for the other two runners' triggers. The check ALSO resolves that seam itself at run
+# time (given CLAUDE_PROJECT_DIR), so passing it here is not a requirement -- an explicit -Trunk
+# always wins over the seam, and the two cannot disagree because they read the same function.
+#
+# CLAUDE_PROJECT_DIR IS NOT OPTIONAL, on the other two runners' own reasoning: a mirrored script
+# resolves the tree it judges from that variable first, and without it a workspace holding two
+# checkouts (this one, and the plugin's under the path above) leaves which root it reads to chance
+# rather than to the consumer's repo by construction.
+#
+# LINUX, UNDER PWSH 7 (issue #2488): ubuntu-latest and 'shell: pwsh', with one shim step pointing the
+# literal child name 'powershell' at pwsh -- see the fold runner's header.
+name: Repo settings
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: repo-settings
+  cancel-in-progress: true
+
+jobs:
+  repo-settings:
+    runs-on: ubuntu-latest
+    # 10 minutes (issue #2296). This one runs on a SCHEDULE, so a wedge has nobody waiting on it at
+    # all -- it simply spends the six-hour default and is found, if ever, in the Actions list.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Fetch the shared workflow scripts
+        uses: actions/checkout@v5
+        with:
+          repository: DKJ-Solutions/dkj-claude-plugins
+          ref: main
+          path: .workflow-scripts
+
+      # THE SHIM (issue #2488): the shared script launches children by the literal name 'powershell',
+      # and ubuntu-latest has only 'pwsh'; one symlink resolves them all. See the fold runner.
+      - name: Make 'powershell' resolve to pwsh
+        shell: bash
+        run: sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell
+
+      - name: GitHub-side settings still match what the tree declares
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/lint/check-repo-settings.ps1 -RequireRead -Trunk main
+          exit $LASTEXITCODE
