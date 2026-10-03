@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**6 / 12 minor entries** <!-- pending-tally -->
+**6 / 13 minor entries** <!-- pending-tally -->
+
+### DEPLOY: docs/24-centrale-vraag · 20261003-130314Z
+
+De vaste repo-feiten noemen nu de centrale vraag van de app: hoe bespaar ik bij een level-up in het
+nieuwe level de meeste mesos, met de subvragen over equipment (#25) en skillpunten (#26). Elke sessie
+leest dat vanaf nu als het doel van de app. De verouderde zin dat er nog geen app-code is, is weg.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Alleen de repo-documentatie verandert. In de app zelf merkt niemand er nog iets van.
+
+**Score:** N/A
+
+#### Pull Request
+
+De centrale vraag van de app vastgelegd: hoe bespaar ik in het nieuwe level de meeste mesos
+
+[PR #27](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/27)
+
+---
 
 ### DEPLOY: app/21-beste-robuuster · 20261003-125333Z
 
