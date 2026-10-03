@@ -39,19 +39,39 @@
 
 ### PLAN
 
+Dave (3 oktober 2026): een speler die in het spel een level omhoog gaat, moet in de app meteen een knop **Level up** zien. Het scherm schuift naar links, de stats zijn al aangepast en de speler loopt na wat niet klopt. Daarna toont de app het advies op vier vragen: attack, defense, skillpunt (dat extra mana kost) en hunting ground.
+
+#### Keuzes
+
+- **Alleen het level gaat automatisch +1.** De repo heeft geen bron voor HP- en AP-groei per level, dus de app verzint die niet. Dat staat in #33.
+- **Attack** rekent met de claw-upgrade uit #25 (PR #35, tijdens deze branch op `main` gekomen en ingemerged). **Defense** heeft nog geen berekening en toont "Nog niet uitgerekend". Dat staat in #36.
+- **De knop staat sticky bovenaan**, direct onder de titel, niet onderaan. `position: fixed` breekt in de verschoven baan, en bovenaan ontloopt hij de iOS-balk. Daar staat tegenover dat hij niet in de duimzone zit. Dave beoordeelt dat.
+- **De hunting-ground-vraag** vergelijkt de beste plek van vóór de level-up met de beste plek na het nalopen van je stats.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/levelUp.ts`: pure functies voor de flow (level +1, skillpunt zetten, MP van Lucky Seven, het hunting-ground-advies) (Cody)
+- [x] `src/app.tsx` en `src/style.css`: drie panelen die naar links schuiven (Home, "Klopt dit met je spel?", "Wat nu?"), met `inert` en focus op de kop, en geen animatie bij `prefers-reduced-motion` (Cody, met Gwens mobile-first eisen)
+- [x] Review-ronde verwerkt: lv 200 of een ongeldig level opent de flow niet meer, het advies verspringt niet tijdens het schuiven, "Punt zetten" geeft een bevestiging, en Ediths tekstpunten zijn doorgevoerd (Victor, Edith → Cody)
+- [x] `origin/main` (#35) ingemerged; de attack-vraag gebruikt `clawUpgradeAdvice`, en de kosten op een plek lopen via `mesoCostAt.ts` (`expPerMesoOf`) in plaats van een eigen kopie (Cody)
 
 ### TEST
 
+- [x] `src/levelUp.test.ts`: 22 tests op de contracten van `levelUp.ts`; de mesokosten worden onafhankelijk nagerekend (Tycho)
+- [x] `npm run lint`, `npm test` (251 groen) en `npm run build` zijn groen
+- [~] Het schuiven, de focus en `inert` zijn niet als unit-test te dekken: de repo heeft geen DOM-testopzet. Dave bekijkt het op telefoonbreedte vóór de merge.
+
 ### DEPLOY: app/level-up-flow
 
-**Score:**
+Een level-up in de app is nu één knop. Je loopt je stats na en krijgt antwoord op vier vragen: loont een nieuwe claw, loont betere defense (nog niet uitgerekend), waar zet je je skillpunt, en moet je naar een andere plek.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+De speler hoeft na een level-up niet meer zelf door de kaarten te zoeken. Eén knop leidt naar het advies voor het nieuwe level, en dat merk je bij de eerstvolgende level-up.
+
+**Score:** 4
 
 #### Pull Request
 
