@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**0 / 2 patch entries** <!-- pending-tally -->
+**0 / 3 patch entries** <!-- pending-tally -->
+
+### DEPLOY: docs/stackkeuze · 20261003-094126Z
+
+De stack staat vast: Vite + TypeScript + Preact, op GitHub Pages en gedeployd via Actions, met de berekening als pure, met Vitest geteste module. De spelgegevens komen er alleen selectief in, met een bron per rij en de vermelding van MeowDB, en nooit als hele tabel.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Nog geen gebruiker merkt hier iets van; de app bestaat nog niet.
+
+**Score:** N/A
+
+#### Pull Request
+
+De stackkeuze vastgelegd: Vite, TypeScript en Preact op GitHub Pages
+
+[PR #7](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/7)
+
+---
 
 ### DEPLOY: chore/1-decide-seams · 20261003-093155Z
 
