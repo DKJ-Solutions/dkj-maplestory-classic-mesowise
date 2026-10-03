@@ -75,6 +75,7 @@ het geslacht van je karakter niet.
 - [x] `npx vitest run`: 311 tests groen; `npm run lint` schoon
 - [~] De tie-break van `bestOf` (gelijke WDEF, goedkoopste wint) is niet getest: geen twee stukken in één slot
   hebben dezelfde WDEF, dus zonder mock is hij onbereikbaar
+- [x] Dave heeft de kaart bekeken en akkoord gegeven (3 oktober 2026)
 
 ### DEPLOY: app/36-armor-upgrade
 
