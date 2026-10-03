@@ -33,8 +33,8 @@ $script:BranchTypeOrder = @(
 # tooling en claude dragen het label 'documentation': de standaardlabels van GitHub hebben geen beter
 # passend label, en het label alleen sorteert de PR -- het type in de changelog is wat telt.
 $script:BranchPrefixTable = @{
-    app     = @{ Label = 'enhancement';   Type = 'App' }
-    data    = @{ Label = 'enhancement';   Type = 'Data' }
+    app     = @{ Label = 'feature';       Type = 'App' }
+    data    = @{ Label = 'feature';       Type = 'Data' }
     tooling = @{ Label = 'documentation'; Type = 'Tooling' }
     fix     = @{ Label = 'bug';           Type = 'Fix' }
     docs    = @{ Label = 'documentation'; Type = 'Docs' }
