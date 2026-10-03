@@ -39,9 +39,18 @@
 
 ### PLAN
 
+Issue #14, stap 2 van 3. Daves besluiten van 3 oktober 2026: de plekken komen uit het levelplan voor
+lv 10–20 (Pigs rond Henesys, Kerning City Subway, Kerning Middle Forest, de Dark Stumps bij Perion), met
+White en Orange Potions. Map- en monsternamen mogen erin als gewone tekst (optie a). Dit is een
+zichtbare wijziging, dus de branch wordt geparkeerd: geen PR tot Dave gekeken heeft.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Tessa: de naamregel in `.claude/rules/this-repo.md` aangescherpt (namen mogen, sprites, iconen en merk niet)
+- [x] Cody: `src/data/types.ts` en `src/data/spots.ts` (bron per rij), het optionele veld `known` op een plek, met opslag
+- [x] Cody: de keuzelijst "Bekende plek", de monsters met hun bronlink en de bronvermelding "NiaMeowDB (meowdb.com)"
+- [ ] Rebecca: per plek de map, de monsters en de potionprijzen bij MeowDB, met URL en datum
+- [ ] Vera: elk getal tegen de bron gecontroleerd en in `src/data/spots.ts` gezet
 
 ### TEST
 
