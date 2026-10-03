@@ -63,7 +63,7 @@ gevaarlijke plek met veel EXP per uur alle veilige plekken uitsluiten, zodat er 
 
 - [x] `npm test`: 163 tests groen, met de grenzen (precies 50%, precies 25% HP), de Snail-val, een gevaarlijke uitschieter, en een niet-robuuste winnaar door `contactsPerKill` en door `timeEfficiency`
 - [x] `npm run build`: groen, JS 13,3 kB gzip (was 12,6 kB)
-- [ ] Dave bekijkt het op zijn telefoon
+- [x] Dave bekijkt het op zijn telefoon: gezien en akkoord (3 oktober 2026)
 
 ### DEPLOY: app/21-beste-robuuster
 
