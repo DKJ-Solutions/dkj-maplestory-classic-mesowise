@@ -518,3 +518,50 @@ function Get-InternalNoteWording {
     <# Overrides for the internal note's headings, audience line and fill-in hints. Empty = English. #>
     return $script:InternalNoteWording
 }
+
+# --- The decide seams, answered by Dave on October 3, 2026 (issue #1) ------------------------------
+#
+# adopt-config proposes these and never places them, because each states what THIS repo is. Dave
+# answered them in one session; the table on issue #1 is the record. Three are left open on purpose
+# until the app's stack is chosen: Get-TestCommands, Get-CiTestCheckName and Get-ExpectedRepoSettings.
+
+# Who the releases are for: tier 2, the users -- Dave and his friends use the app.
+function Get-ReleaseAudienceTier { return 2 }
+
+# A hand-written release note for every minor and major, so the friends read what is new.
+function Get-ReleaseConsumerBumps { return @('minor', 'major') }
+
+# A PR lands as a merge commit, as #4 did.
+function Get-PrMergeMethod { return 'merge' }
+
+# No minimum number of minors before a major: a major comes when the developer says so. The bump gate
+# refuses only while the minors so far are BELOW this, which 0 never is.
+function Get-ReleaseMajorMinMinors { return 0 }
+
+# No Stop hook capping the close-out: 0 is the documented "off".
+function Get-CloseOutGateBand { return 0 }
+
+# This repo publishes no plugins; the computed fallback says the same, stated so it is answered.
+function Get-ReleasePluginTier { return $false }
+
+# The release page carries the product's name rather than the repository's.
+function Get-ReleasePageTitle { return 'MesoWise' }
+
+# Hosted nowhere for now: the app's own hosting is not chosen yet.
+function Get-ReleasePageWorkerName { return '' }
+function Get-IssueDashboardWorkerName { return '' }
+
+# The fallbacks, answered explicitly: no palette or wordmark of our own, no external task tracker, no
+# mirrored tickets, no closing step every branch owes, notes foldered per major (no tree exists yet),
+# and the shared list of root docs exempt from the stray-entry check.
+function Get-ReleasePageTheme { return @{} }
+function Get-ReleasePageMasthead { return @() }
+function Get-ReleaseNoteTaskLink { return $null }
+function Get-ResolvesExemptMatchers { return @() }
+function Get-BranchClosingSteps { return @() }
+function Get-ReleaseNotesGrouping { return 'major' }
+function Get-ReservedRootMd { return @('CHANGELOG.md', 'CLAUDE.md', 'README.md', 'LICENSE.md', 'CONTRIBUTING.md', 'SECURITY.md') }
+
+# Declined parts of the adoption floor: the statusLine (#2) -- the gates here are short, so a progress
+# bar buys little. The CI floor is NOT declined; it waits for the app's CI.
+function Get-DeclinedAdoptions { return @('adopt-statusline') }

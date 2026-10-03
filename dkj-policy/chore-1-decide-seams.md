@@ -32,11 +32,16 @@
 
 ### PLAN
 
+Dave beantwoordde op 3 oktober 2026 de decide-seams van #1 in een vragenronde. Drie wachten op de stackkeuze: Get-TestCommands, Get-CiTestCheckName en Get-ExpectedRepoSettings.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] De zeventien antwoorden als functies in scripts/repo-config.ps1 gezet (Sylvester)
 
 ### TEST
+
+- [x] check-script-contract: 0 errors; nog 3 UNANSWERED, alle drie bewust open tot de stackkeuze
+- [x] Get-ReleaseMajorMinMinors 0 gecontroleerd tegen release-lib: de poort weigert alleen bij minors < drempel
 
 ### DEPLOY: chore/1-decide-seams
 
@@ -44,7 +49,9 @@
 
 ##### Tier 0
 
-**Score:**
+De shared scripts draaien hier nu op antwoorden die Dave koos in plaats van op fallbacks: releases zijn voor de gebruikers (tier 2), minor en major krijgen een release note, een major komt wanneer de developer het zegt, en de statusLine is afgeslagen. Drie seams wachten op de stackkeuze.
+
+**Score:** 2
 
 <!--
      Is this change also relevant to management and the employer/commissioner? Then continue to Tier 1.
@@ -53,7 +60,9 @@
 
 ##### Tier 1
 
-**Score:**
+Alleen de werkwijze verandert; de app zelf bestaat nog niet.
+
+**Score:** N/A
 
 <!--
      Is this change also relevant to a subscriber of the service? Then continue to Tier 2.
@@ -62,7 +71,9 @@
 
 ##### Tier 2
 
-**Score:**
+Geen gebruiker merkt hier iets van.
+
+**Score:** N/A
 
 #### Pull Request
 
