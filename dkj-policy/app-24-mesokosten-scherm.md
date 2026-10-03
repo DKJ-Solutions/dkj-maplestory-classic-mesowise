@@ -39,19 +39,45 @@
 
 ### PLAN
 
+#### Tweede stap van #24: het scherm
+
+De gegevens en `mesoCostOfLevel` staan op main (#28). Deze branch zet het antwoord op het scherm. Het
+is een zichtbaar resultaat, dus de branch wacht op Daves blik voordat er een PR komt.
+
+- Een kaart "Je volgende level" onder het karakter. Hij toont de EXP van je huidige level naar het
+  volgende, en wat dat kost op de plek met het label "Beste".
+- De kaart volgt "Beste" (`bestVerdict`), niet de bovenste plek in de lijst. Dezelfde regels gelden
+  dus: een gevaarlijke plek of een plek met te weinig EXP per uur telt niet mee.
+- Randgevallen krijgen een zin in plaats van een getal: geen profiel, een level buiten de tabel (lv
+  10–20), nog geen "Beste", een plek die niets kost (gratis), een plek zonder EXP (onhaalbaar), en een
+  winnaar die van de aannames afhangt.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/levelCost.ts`: de pure stap van profiel en "Beste" naar de mesokosten, met de randgevallen als soorten
+- [x] `src/levelCost.test.ts`: de tests van Tycho
+- [x] `LevelCostCard` in `src/app.tsx` en de stijl in `src/style.css`, op telefoonbreedte bekeken
 
 ### TEST
 
+- [x] Alle tests (182) en de typecheck zijn groen, `npm run build` slaagt
+- [x] In de browser bekeken: voorbeeldplek als "Beste" (4 EXP per meso) geeft ± 429 meso voor lv 10 → 11
+- [x] Review door Victor, tekst door Edith
+
 ### DEPLOY: app/24-mesokosten-scherm
 
-**Score:**
+Onder je karakter staat nu wat je volgende level kost: de EXP tot het volgende level, omgerekend naar
+mesos op de plek met het label "Beste". Kost die plek niets, dan staat er "Gratis". Hangt de winnaar af
+van de aannames, dan zegt de kaart dat erbij. Voorlopig werkt dit voor lv 10 tot en met 20.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Dit is de centrale vraag van de app: hoeveel mesos kost mijn nieuwe level? Je ziet het antwoord direct
+na een level-up.
+
+**Score:** 4
 
 #### Pull Request
 
