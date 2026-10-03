@@ -12,7 +12,7 @@ The orchestrator (Chris) is always loaded -- portable body from plugin install a
 
 ## The roster
 
-Who picks up which signal in this repo. The lenses under `lenses/` stay empty until a specialist
+Who picks up which signal in this repo. The lenses under `lenses/` stay empty (except Chris's) until a specialist
 has work here; the role lives in the plugin's agent-def.
 
 | id | who | picks up |

@@ -5,7 +5,7 @@
     Placed by specialists-init as a VUL-IN scaffold. Provides Get-BranchTypes, Get-BranchPrefix,
     Get-BranchInfo and Test-BranchName -- every function check-script-contract marks required for this
     lib. Prefix table determines GitHub label for PR and changelog entry type, and is
-    DIFFERENT PER REPO -- de tabel hieronder is deze repo's eigen taxonomie.
+    DIFFERENT PER REPO -- the table below is this repo's own taxonomy.
 
     No Set-StrictMode here: dot-sourcing would modify calling script's strict mode.
     Pure ASCII (repo convention for .ps1).
@@ -29,6 +29,9 @@ $script:BranchTypeOrder = @(
 #   fix      een fout in het bovenstaande
 #   docs     README en de andere prozalagen van deze repo
 #   claude   de Claude-laag zelf: .claude/, de skills, de specialisten-lenzen, de plugin-config
+#
+# tooling en claude dragen het label 'documentation': de standaardlabels van GitHub hebben geen beter
+# passend label, en het label alleen sorteert de PR -- het type in de changelog is wat telt.
 $script:BranchPrefixTable = @{
     app     = @{ Label = 'enhancement';   Type = 'App' }
     data    = @{ Label = 'enhancement';   Type = 'Data' }
