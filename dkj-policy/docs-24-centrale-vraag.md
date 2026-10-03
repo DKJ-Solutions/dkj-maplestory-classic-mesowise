@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Dave legt de centrale vraag van de app vast (3 oktober 2026). De uitwerking staat in #24, #25 en #26. Deze
+branch zet alleen de vraag in `.claude/rules/this-repo.md`. Hij sluit geen van die issues.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] De centrale vraag en de twee subvragen in "What this repo is for" (Tessa)
+- [x] Daves keuze voor de horizon van een equipment-upgrade erbij: tot je volgende upgrade
+- [x] De regel "selectief, met bron" ook laten gelden voor de EXP-tabel, equipment en skills
+- [x] De verouderde zin "There is no app code yet" en het verwijzen naar het gesloten #6 weggehaald
 
 ### TEST
 
+- [ ] Edith leest de tekst na
+- [ ] Lint-gate groen
+
 ### DEPLOY: docs/24-centrale-vraag
 
-**Score:**
+De vaste repo-feiten noemen nu de centrale vraag van de app: hoe bespaar ik bij een level-up in het
+nieuwe level de meeste mesos, met de subvragen over equipment (#25) en skillpunten (#26). Elke sessie
+leest dat vanaf nu als het doel van de app. De verouderde zin dat er nog geen app-code is, is weg.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Alleen de repo-documentatie verandert. In de app zelf merkt niemand er nog iets van.
+
+**Score:** N/A
 
 #### Pull Request
 
