@@ -59,6 +59,12 @@ export const ASSUMPTIONS = {
 
 export type Assumptions = { timeEfficiency: number; contactsPerKill: number }
 
+/**
+ * Een monster is "gevaarlijk" als één tik dit deel van je max HP of meer kost. Zo'n plek krijgt het
+ * label "Beste" niet (Dave, 3 oktober 2026, issue #21).
+ */
+export const DANGER_SHARE = 0.25
+
 /** De gewone claw-aanval zonder Lucky Seven: 1 ster, multiplier 2.5, mastery (0/10 + 0.1) × 0.8. */
 const PLAIN_CLAW = { stars: 1, weaponMult: 2.5, mastery: 0.08 } as const
 
@@ -120,7 +126,7 @@ export interface MobEstimate {
   hpLossPerKill: number
   mpPerKill: number
   starsPerKill: number
-  /** Eén tik (de hoogste touch) kost 40% of meer van je max HP. */
+  /** Eén tik (de hoogste touch) kost DANGER_SHARE (25%) of meer van je max HP. */
   dangerous: boolean
   /** Je raakt minder dan 80% van je aanvallen. */
   missesOften: boolean
@@ -163,7 +169,7 @@ export function estimateMob(
     hpLossPerKill,
     mpPerKill: attacksToKill * attack.mpPerAttack,
     starsPerKill: attacksToKill * attack.stars,
-    dangerous: worstTouch >= 0.4 * c.hp,
+    dangerous: worstTouch >= DANGER_SHARE * c.hp,
     missesOften: hit < 0.8,
   }
 }

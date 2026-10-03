@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, characterAttack, dampedTouch, estimateMob, hitChance, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -134,11 +134,20 @@ describe('estimateMob', () => {
     expect(high.killsPerHour).toBeGreaterThanOrEqual(low.killsPerHour)
   })
 
-  it('waarschuwt "gevaarlijk" als één tik 40% of meer van je HP kost', () => {
-    // lv 30 tegen lv 10: touch_max 150 · 0.8 = 120 ≥ 0.4 · 200
+  it('waarschuwt "gevaarlijk" als één tik 25% of meer van je HP kost', () => {
+    // lv 30 tegen lv 10: touch_max 150 · 0.8 = 120 ≥ 0.25 · 200
     const e = estimateMob(char({ level: 30, hp: 200 }), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ touch: { min: 100, max: 150 } }))
     expect(e.dangerous).toBe(true)
     expect(e.missesOften).toBe(false)
+  })
+
+  it('legt de grens voor "gevaarlijk" op precies 25% van je HP', () => {
+    // Zelfde level en geen WDEF: één tik is touch_max = 50, en 25% van 200 HP is 50.
+    const attack = { min: 50, max: 100, stars: 1, mpPerAttack: 0 }
+    const m = mob({ touch: { min: 1, max: 50 } })
+    expect(DANGER_SHARE).toBe(0.25)
+    expect(estimateMob(char({ hp: 200 }), attack, m).dangerous).toBe(true)
+    expect(estimateMob(char({ hp: 201 }), attack, m).dangerous).toBe(false)
   })
 
   it('waarschuwt "mist vaak" onder 80% raakkans, los van "gevaarlijk"', () => {

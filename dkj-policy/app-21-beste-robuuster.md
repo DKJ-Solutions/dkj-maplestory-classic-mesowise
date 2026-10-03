@@ -39,21 +39,48 @@
 
 ### PLAN
 
+Issue #21. Daves keuzes van 3 oktober 2026 (akkoord met alle vijf de voorstellen, zie het issue): een
+ondergrens van 50% van de hoogste EXP per uur, geen "Beste" voor een plek waar één tik 25% of meer van je
+HP kost, "Hangt af van de aannames" als de winnaar wisselt bij `contactsPerKill` 0,15 of 0,6 of
+`timeEfficiency` 0,4 of 0,8, en op de kaart dat het monster op EXP per uur gekozen is en dat reiskosten
+niet zijn meegerekend. Zichtbare wijziging: de branch wordt geparkeerd tot Dave kijkt.
+
+#### Eén interpretatie voor Dave
+
+De ondergrens van 50% wordt gemeten aan de hoogste EXP per uur onder de **veilige** plekken. Anders zou één
+gevaarlijke plek met veel EXP per uur alle veilige plekken uitsluiten, zodat er geen "Beste" meer is
+(Victor). Het label "Beste" ging een gevaarlijke plek toch al niet krijgen.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `DANGER_SHARE = 0.25` in `src/calc/mobModel.ts` (was 40%), voor de waarschuwing en het label tegelijk
+- [x] Cody: `src/calc/pickBest.ts` (puur): de eerste plek in de rangschikking die veilig is en minstens de helft van de hoogste veilige EXP per uur haalt, met per uitgesloten plek de reden
+- [x] Cody: `src/best.ts`: dezelfde keuze onder de vier varianten van de aannames; wisselt de winnaar, dan is hij niet robuust. `suggestMonsters` en `resolveSpot` nemen de aannames nu als parameter
+- [x] Cody: op de kaart het label "Hangt af van de aannames", waarom een plek geen "Beste" is, dat het monster op de meeste EXP per uur gekozen is, en dat reiskosten niet zijn meegerekend
+- [x] Victor en Edith: verwerkt (gevaar per variant, de ondergrens onder veilige plekken, de waarschuwing altijd bij een gevaarlijk monster, een test voor `timeEfficiency`, twee hints herschreven)
 
 ### TEST
 
+- [x] `npm test`: 163 tests groen, met de grenzen (precies 50%, precies 25% HP), de Snail-val, een gevaarlijke uitschieter, en een niet-robuuste winnaar door `contactsPerKill` en door `timeEfficiency`
+- [x] `npm run build`: groen, JS 13,3 kB gzip (was 12,6 kB)
+- [ ] Dave bekijkt het op zijn telefoon
+
 ### DEPLOY: app/21-beste-robuuster
 
-**Score:**
+Het label "Beste" is voorzichtiger geworden. Een plek die minder dan de helft van de EXP per uur van de
+beste veilige plek oplevert, krijgt het niet meer, net als een plek waar één tik 25% of meer van je HP kost.
+De kaart zegt waarom. Wisselt de winnaar als de aannames van het model anders uitvallen, dan staat er
+"Hangt af van de aannames". En bij een bekende plek staat erbij dat het monster op EXP per uur gekozen is
+en dat reiskosten niet zijn meegerekend.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Een Snail wint niet meer omdat hij niets kost, en de app zegt eerlijk wanneer een winnaar alleen een gok is.
+
+**Score:** 3
 
 #### Pull Request
 
 Beste robuuster maken: gevaar, aannames en lage EXP per uur
-
