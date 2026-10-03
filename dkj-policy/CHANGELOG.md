@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**9 / 19 minor entries** <!-- pending-tally -->
+**10 / 20 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-up-flow · 20261003-153600Z
+
+Een level-up in de app is nu één knop. Je loopt je stats na en krijgt antwoord op vier vragen: loont een nieuwe claw, loont betere defense (nog niet uitgerekend), waar zet je je skillpunt, en moet je naar een andere plek.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+De speler hoeft na een level-up niet meer zelf door de kaarten te zoeken. Eén knop leidt naar het advies voor het nieuwe level, en dat merk je bij de eerstvolgende level-up.
+
+**Score:** 4
+
+#### Pull Request
+
+Level-up-flow: één knop, je stats nalopen, dan het advies
+
+[PR #37](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/37)
+
+---
 
 ### DEPLOY: app/25-equipment-upgrade · 20261003-140757Z
 
