@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Wat er van #6 over was: de drie decide-seams en de CI-floor. De vereiste check op `main` is een
+ruleset, en dus Daves beslissing; die blijft open op #6.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `Get-TestCommands` = `@('npm test')`, `Get-CiTestCheckName` = `'test'`, `Get-ExpectedRepoSettings` = leeg (nog geen ruleset om te bewaken)
+- [x] `adopt-ci-floor.ps1 -Apply`: fold-on-merge, verify-resolved, repo-settings en merge-on-green
 
 ### TEST
 
+- [x] De gate van ship-pr draait `npm test` nu mee
+
 ### DEPLOY: tooling/6-test-seams-ci-floor
 
-**Score:**
+De lokale gate draait nu ook de tests van de app (`npm test`). De CI-floor staat: een merge die
+via de knop van GitHub binnenkomt, krijgt zijn fold en zijn resolves-controle alsnog, en een
+gearmde PR wordt gemerged zodra `test` groen is. De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
 
 #### What makes this deploy extra special
 
-**Score:**
+Het voorkomt een changelog-entry die ongefold op `main` blijft staan na een merge via de knop van
+GitHub, en een PR die gemerged wordt terwijl de tests van de app nooit lokaal gedraaid hebben.
+
+**Score:** 1
 
 #### Pull Request
 

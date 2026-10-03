@@ -522,8 +522,21 @@ function Get-InternalNoteWording {
 # --- The decide seams, answered by Dave on October 3, 2026 (issue #1) ------------------------------
 #
 # adopt-config proposes these and never places them, because each states what THIS repo is. Dave
-# answered them in one session; the table on issue #1 is the record. Three are left open on purpose
-# until the app's stack is chosen: Get-TestCommands, Get-CiTestCheckName and Get-ExpectedRepoSettings.
+# answered them in one session; the table on issue #1 is the record. The last three -- the test seams
+# below -- waited for the app's stack and were answered on issue #6.
+
+# The app's tests run in the local gate beside the PowerShell suites. 'npm test', not 'npm ci': locally
+# that would empty node_modules on every run; CI installs clean on its own (test.yml).
+function Get-TestCommands { return @('npm test') }
+
+# The job in .github/workflows/test.yml, which appears under exactly this name on PR #9. It certifies
+# only once 'main' REQUIRES it; until that ruleset exists open-pr simply runs the local gate.
+function Get-CiTestCheckName { return 'test' }
+
+# Nothing watched yet: 'main' carries no ruleset (measured October 3, 2026), so there is no GitHub-side
+# state for the scheduled check to compare. Once the required 'test' check exists, its record
+# (Field 'ruleset.required_checks', Expected @('test')) goes here.
+function Get-ExpectedRepoSettings { return @() }
 
 # Who the releases are for: tier 2, the users -- Dave and his friends use the app.
 function Get-ReleaseAudienceTier { return 2 }
@@ -563,5 +576,5 @@ function Get-ReleaseNotesGrouping { return 'major' }
 function Get-ReservedRootMd { return @('CHANGELOG.md', 'CLAUDE.md', 'README.md', 'LICENSE.md', 'CONTRIBUTING.md', 'SECURITY.md') }
 
 # Declined parts of the adoption floor: the statusLine (#2) -- the gates here are short, so a progress
-# bar buys little. The CI floor is NOT declined; it waits for the app's CI.
+# bar buys little. The CI floor is NOT declined; it was placed on issue #6.
 function Get-DeclinedAdoptions { return @('adopt-statusline') }

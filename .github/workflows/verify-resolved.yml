@@ -1,0 +1,118 @@
+# Verifies the issues a merged PR declared it closes -- from the merge, since the shipping session
+# no longer sees one.
+#
+# WHAT THIS CLOSES. verify-resolved-issues.ps1 is ship-pr.ps1's step 6: it reads a merged PR's body
+# back out and checks that every issue declared there with a closing keyword is actually CLOSED,
+# closing the ones that are not. It ran from exactly one place -- the shipping session, right after
+# its own merge call returned. A merge queue takes that call away: ship-pr enqueues and exits, and
+# the merge lands minutes later in a process that session never observes.
+#
+# THE CLOSING ITSELF IS NOT AT RISK. GitHub honours a body's keywords on a queue merge exactly as on
+# any other. What is lost is the VERIFICATION that it happened, and the REPAIR when a keyword missed
+# -- which is the case the script was built for: a body carrying a plain mention instead of a keyword
+# closes nothing, and nobody finds out.
+#
+# ITS OWN WORKFLOW, NOT A STEP IN fold-on-merge.yml, AND THAT IS THE SECURITY ARGUMENT. That job
+# checks out with a standing personal access token that actions/checkout writes into the workspace,
+# so every step of it holds that credential. Adding issues: write there would put a standing
+# credential and issue-write in one job. Here they never meet: this job checks out with the default
+# job-scoped GITHUB_TOKEN, which expires in about an hour and is unusable outside this run.
+#
+# THE SECOND REASON FOR ITS OWN FILE IS COVERAGE. The fold runner acts only when a leftover entry is
+# on the trunk, because an entry is what a fold needs. This check has to run for EVERY merge --
+# including one carrying no changelog entry at all -- so it resolves its PRs from the push itself.
+#
+# NO CONCURRENCY CANCELLATION, AND A CONSTANT GROUP (inbound #1544): this job ACTS, so letting a
+# later push supersede an in-flight run would drop the verification of whatever the earlier push
+# carried -- cancel-in-progress: false. The group is keyed on github.ref, not github.sha, so it is
+# constant per trunk; two overlapping runs are harmless here (the second finds every issue already
+# closed) but a constant group keeps them ordered anyway.
+#
+# LINUX, UNDER PWSH 7 (issue #2488): ubuntu-latest and 'shell: pwsh', with one shim step pointing the
+# literal child name 'powershell' at pwsh -- see the fold runner's header.
+name: Verify resolved issues
+
+permissions:
+  contents: read
+  pull-requests: read
+  # THE ONE WIDENING, and the whole of it: without this scope the repair is a 403 and this job is a
+  # reporter. Granted on the job-scoped GITHUB_TOKEN only.
+  issues: write
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: verify-resolved-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-resolved:
+    runs-on: ubuntu-latest
+    # SKIP A FOLD-ONLY PUSH AT THE JOB LEVEL -- A JOB SKIPPED BY if: IS NOT BILLED AT ALL (issue
+    # #2487). This file's own header already names the cost this closes: a PAT push (from the fold
+    # runner's own commit) triggers this workflow same as any other, so every shipped branch already
+    # starts this job twice. See fold-on-merge.yml's matching comment for why exactly one commit,
+    # not merely a `fold:` subject on the head, and why this is a second reader of an existing rule
+    # rather than a new coupling.
+    #
+    # SAFE HERE BECAUSE A DIRECTLY-PUSHED FOLD COMMIT RESOLVES NO PULL REQUEST. This job reads the
+    # pushed RANGE and resolves each commit's own PR to verify its closing keywords; a fold commit
+    # is authored straight onto the trunk by this repo's own tooling and carries no PR of its own --
+    # this job's own run on the MERGE that triggered that fold already verified whatever that PR
+    # closed. A lone fold-commit push has nothing here to resolve.
+    #
+    # NOT SYMMETRIC WITH fold-on-merge.yml, AND WORTH SAYING SO. That job's skip self-heals: fold-all
+    # mode re-reads the trunk TIP on the next push, so anything a skipped run would have folded is
+    # still there to find. This job reads only the pushed before..sha RANGE, so a skipped push's
+    # resolves check is gone for good, not merely deferred. BOUNDED rather than open-ended: ship-pr
+    # always writes its merge commit as `merge: <branch> (#N)`, and this repo's own fold commits are
+    # always pushed alone -- so the only way to hit this is a directly-pushed, single-commit push
+    # from OUTSIDE ship-pr whose subject happens to start with `fold:` (a hand-titled squash merge,
+    # say), which would then permanently lose whatever pull request it closed.
+    if: ${{ !(startsWith(github.event.head_commit.message, 'fold:') && github.event.commits[0].id == github.event.head_commit.id) }}
+    # 10 minutes, same reasoning as the fold runner (issue #2296) -- and this one holds issues:
+    # write, so the six-hour default would be six hours of an unattended job carrying a write scope.
+    timeout-minutes: 10
+    steps:
+      # persist-credentials: false -- this job reads and calls the API, and never pushes. Nothing
+      # here needs a git credential left in the workspace.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT ref: main (issue #2333). This job holds a write
+      # credential, and code fetched at the tip of another repository would run beside it with no
+      # release in between. Move the pin when you update the dkj-policy plugin: re-running
+      # adopt-ci-floor.ps1 reports a runner pinned behind the version it came from.
+      - name: Fetch the shared workflow scripts
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: DKJ-Solutions/dkj-claude-plugins
+          ref: d70be6a58ebe061efee328c825ee257640fdf269 # v5.13.0
+          path: .workflow-scripts
+
+      # THE SHIM (issue #2488): the shared scripts launch children by the literal name 'powershell',
+      # and ubuntu-latest has only 'pwsh'; one symlink resolves them all. See the fold runner.
+      - name: Make 'powershell' resolve to pwsh
+        shell: bash
+        run: sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell
+
+      # THE EVENT'S VALUES ARRIVE THROUGH env:, NOT THROUGH ${{ }} INSIDE run:. Interpolating an
+      # expression into a shell body substitutes it as TEXT before the shell parses the line, which
+      # is the standard Actions script-injection shape. These are SHAs and a repository name GitHub
+      # computes itself, so there is nothing to inject today -- the point is that this file should
+      # not have to be re-argued if a later edit reaches for a branch name or a PR title.
+      - name: Verify the issues this push's pull requests declared they close
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/release/verify-pushed-merges.ps1 `
+            -Before $env:PUSH_BEFORE -Sha $env:PUSH_SHA -Trunk main -Repo $env:GH_REPO
+          exit $LASTEXITCODE

@@ -1,0 +1,227 @@
+# Folds a queue-merged PR's changelog entry, since the session that ships it never sees the merge.
+#
+# WHAT THIS CLOSES. fold-changelog-entry.ps1 runs from exactly one place -- ship-pr.ps1, as the
+# shipping session's own next step after its own merge call returns. A merge queue merges the PR
+# itself, minutes later, in a process that session never observes, so that step never runs: the
+# branch's development document sits on the trunk unfolded, the changelog never receives the entry,
+# and a release cut in that window misses the change. This workflow is the fold running from the one
+# place that always sees a queue merge: a push to the trunk. It also catches a PR merged from the
+# GitHub UI, which skips the fold for the same reason.
+#
+# IT ADDS NO RULE OF ITS OWN, AND NO SECOND DETECTOR. It runs the plugin's check-unfolded-entry.ps1
+# unchanged, and only when THAT finds a leftover does it call the plugin's fold-changelog-entry.ps1.
+# Both are reached through a checkout of the plugin's own tree rather than copied here, so there is
+# one definition of "a written entry stranded on the trunk" in the system instead of two.
+#
+# THE PUSH NEEDS A CREDENTIAL YOU HAVE TO CREATE -- FOLD_PUSH_TOKEN, AND THIS FILE DOES NOT WORK
+# WITHOUT IT. A merge_queue rule blocks every direct push to the trunk unless the pushing actor is a
+# listed bypass actor, and the default GITHUB_TOKEN pushes as the GitHub Actions app, which cannot be
+# added to that list (an Integration bypass actor has to be an app installed on the org, and that one
+# is not administered by yours). So this job checks out with a fine-grained personal access token
+# belonging to somebody who already bypasses the ruleset -- scoped to this repository only, and to
+# Contents: Read and write only. It is a STANDING credential, valid from anywhere until it expires,
+# and actions/checkout writes it into the workspace git config, so every step of this job holds it.
+# That is why nothing else is ever added to this job. Rotate it before it expires or this job starts
+# failing its push with no code-level cause.
+#
+# READ THE FOLD STEP'S OWN LAST LINES BEFORE CONCLUDING ANYTHING FROM A RED RUN. THREE different
+# things turn this job red, and only the log tells them apart (inbound #1539):
+#   1. the CHECKOUT failing -- an absent or under-scoped FOLD_PUSH_TOKEN fails actions/checkout, and
+#      every later step then shows `skipped`. Rule this one out FIRST: it is the only cause that
+#      leaves the fold step with no last lines to read at all. A fine-grained PAT lists repositories
+#      one by one, so a repo created rather than transferred (an org move with no GitHub transfer
+#      does exactly that) silently falls outside an existing token's selection.
+#   2. the fold REFUSING -- it ran and declined; its own last lines say why. TWO refusals are not
+#      in this list and no longer turn the job red at all: the trunk-gap guard (exit 2, #1586) and
+#      the redundant-fold verdict (exit 3, #1796), which the fold step translates into a stood-down
+#      green.
+#   3. the fold SUCCEEDING and its push being rejected BY THE RULESET -- a clean fold above a GH013.
+#      Read the rejection: a push refused as a NON-FAST-FORWARD looks like this and is not it -- that
+#      is the race below, and where the fold can prove the entry is already upstream it never reaches
+#      this list (exit 3). GH013 names a rule and a ruleset; a non-fast-forward names a ref and tells
+#      you to fetch first. One the fold canNOT prove redundant is still exit 1 and still this cause.
+#
+# THE FIRST CHECKOUT TAKES THE TRUNK TIP, NOT THE EVENT SHA (inbound #1543). On a push event
+# actions/checkout defaults to github.sha; ship-pr then folds locally and pushes on top within
+# seconds, so by the time this slower runner reads the tree the trunk has already moved and the
+# checkout is one commit behind origin -- which the fold's trunk-gap guard (#1405) then refuses on,
+# turning every ship-pr merge into a false red. Checking out the trunk tip makes this job answer the
+# question it exists for -- "does the trunk carry a leftover NOW" -- so a fold ship-pr already did is
+# simply not found.
+#
+# IT DOES NOT PUT THAT GUARD OUT OF REACH, WHICH THIS TEMPLATE CLAIMED UNTIL #1586. The ref is read
+# once, at the checkout; the guard measures the same trunk again seconds later, from inside the fold.
+# So a SECOND merge landing in that gap still trips it: the leftover is genuinely on the trunk and
+# correctly found, and by the time the fold runs somebody else has already folded it.
+#
+# SO THIS JOB STANDS DOWN ON THAT REFUSAL rather than going red -- exit code 2 from the fold,
+# which nothing else returns. The argument is #1543's own, one step on: this job answers "does the
+# trunk carry a leftover NOW", and a trunk that moved under it has changed what "now" means. The push
+# that moved it is a push to the trunk too, so it has its own run of this workflow queued behind this
+# one, whose checkout includes it -- and nothing is lost, because that guard fires in a pre-pass
+# before a single entry is folded.
+#
+# THE RACE HAS A NARROW HALF TOO, AND IT NEEDS ITS OWN CODE (inbound #1796). Everything above is the
+# case where the other fold landed BEFORE this job's pre-pass read the trunk. It can also land in the
+# window between that read and this job's own push -- and then the pre-pass passes, entries are
+# folded, a commit is made, and the push is refused as a non-fast-forward. No check at the top of a
+# run can close a window that opens after it, so this is not a better-pre-pass problem.
+#
+# THE GROUND FOR STANDING DOWN THERE IS DIFFERENT, AND STRONGER. #1586's is "nothing was written and
+# a successor run is queued"; neither holds here -- a commit WAS made, and no successor is owed,
+# because the trunk is ALREADY correct. What earns exit 3 is a measurement: every entry this run
+# folded is upstream already, present with an identical body. The redundant commit is real and it is
+# in an EPHEMERAL workspace, so it dies with the run -- which is why this job may stand down where a
+# session folding onto a real trunk may not. Every OTHER non-zero code still fails the job.
+#
+# NO CONCURRENCY CANCELLATION, AND A CONSTANT GROUP (inbound #1544). This job WRITES and pushes to
+# the trunk: cancel-in-progress: false so no push is dropped, AND a group name that is constant per
+# trunk (github.ref, not github.sha) so two trunk pushes close together QUEUE instead of racing for
+# the trunk -- a per-SHA group is its own group every time and serialises nothing.
+#
+# LINUX, UNDER PWSH 7 (issue #2488): this runs on ubuntu-latest under 'shell: pwsh', because a Linux
+# minute is billed below a Windows one on a private repo. The shared scripts start child processes by
+# the literal name 'powershell', which ubuntu-latest does not have, so one shim step points it at pwsh.
+# merge-on-green.yml followed in #2616, so every runner this floor places is on Linux.
+name: Fold on merge
+
+# contents: read, deliberately -- the actual push authenticates as FOLD_PUSH_TOKEN, wired into the
+# checkout step below, and never touches this block. pull-requests: read is not optional: the fold's
+# own PR lookup needs it, and declaring any permissions block at all sets every unlisted scope to none.
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: fold-on-merge-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fold-on-merge:
+    runs-on: ubuntu-latest
+    # SKIP A FOLD-ONLY PUSH AT THE JOB LEVEL, NOT WITH A STEP-LEVEL if: -- A JOB SKIPPED BY if: IS
+    # NOT BILLED AT ALL, WHERE A SKIPPED STEP STILL PAYS FOR THE RUNNER STARTING (issue #2487,
+    # metered Actions minutes in a private consumer). About half of all trunk pushes here are
+    # `fold:` commits -- this job's OWN OUTPUT, carrying nothing left to fold. The source repo's
+    # own ci.yml already couples to this exact format for the same reason, so this is a second
+    # reader of an existing rule rather than a new coupling.
+    #
+    # EXACTLY ONE COMMIT, NOT MERELY A `fold:` SUBJECT ON THE HEAD. A `git push` can carry several
+    # commits at once, and github.event.head_commit is only the LAST of them -- a batch push whose
+    # head happens to be a fold commit can still carry real, unfolded work earlier in the same push,
+    # which this job must not skip. github.event.commits[0].id == github.event.head_commit.id is
+    # true only when the push carries exactly that one commit; commits[0] always exists once a push
+    # carries any commit at all, and an empty array reads it as null, which never equals a real SHA
+    # -- so a push this expression cannot classify RUNS, fail-open like every other guard here.
+    #
+    # SAFE HERE BECAUSE A FOLD COMMIT IS THIS JOB'S OWN OUTPUT: skipping fold-all mode on it costs
+    # nothing. Whatever it would have folded is still unfolded on the trunk, and the next trunk
+    # push -- whatever it is -- runs this job again and folds it then.
+    if: ${{ !(startsWith(github.event.head_commit.message, 'fold:') && github.event.commits[0].id == github.event.head_commit.id) }}
+    # 10 minutes against a job that measures well under one (issue #2296). Without it a wedge here
+    # runs to GitHub's six-hour default while holding a PAT that bypasses the trunk ruleset -- and
+    # nobody is watching this runner, because its whole reason for existing is that the shipping
+    # session has already gone.
+    timeout-minutes: 10
+    steps:
+      # ref: the trunk tip, not the pushed SHA -- see the header comment (inbound #1543). This job
+      # asks whether the trunk carries a leftover NOW, and a fold ship-pr already pushed on top of
+      # the merge commit must not read as still-unfolded here.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: main
+          token: ${{ secrets.FOLD_PUSH_TOKEN }}
+
+      # THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT ref: main (issue #2333). This job holds a write
+      # credential, and code fetched at the tip of another repository would run beside it with no
+      # release in between. Move the pin when you update the dkj-policy plugin: re-running
+      # adopt-ci-floor.ps1 reports a runner pinned behind the version it came from.
+      - name: Fetch the shared workflow scripts
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: DKJ-Solutions/dkj-claude-plugins
+          ref: d70be6a58ebe061efee328c825ee257640fdf269 # v5.13.0
+          path: .workflow-scripts
+
+      # THE SHIM (issue #2488): the shared scripts launch children by the literal name 'powershell' in
+      # many places, and ubuntu-latest has only 'pwsh'. One symlink resolves all of them, where a
+      # per-site rename would touch far more than this runner. It runs before the first pwsh step.
+      - name: Make 'powershell' resolve to pwsh
+        shell: bash
+        run: sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell
+
+      # continue-on-error is deliberate: the check exits non-zero on a genuine FIND, which is the
+      # case this job exists to act on, not a step failure. The fold step below tells that apart
+      # from a real crash in the detector rather than folding blind on an outcome it cannot explain.
+      - name: Is there an unfolded changelog entry on the trunk?
+        id: check
+        shell: pwsh
+        continue-on-error: true
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/lint/check-unfolded-entry.ps1 -Branch main *>&1 | Tee-Object -FilePath check-output.txt
+          exit $LASTEXITCODE
+
+      - name: Fold it (every leftover this push may carry)
+        if: ${{ steps.check.outcome == 'failure' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: |
+          # The check's own known-good signature is what tells "a leftover was found" apart from
+          # "the script crashed for some other reason" -- both exit non-zero, and only one of them
+          # is safe to act on.
+          $checkOutput = Get-Content check-output.txt -Raw
+          if ($checkOutput -notmatch '\[ERROR\] the trunk carries') {
+            Write-Error "check-unfolded-entry.ps1 exited non-zero for a reason other than a reported leftover -- refusing to fold blind. Its output:`n$checkOutput"
+            exit 1
+          }
+
+          # Commit-metadata identity only -- who authored the commit. It is independent of the
+          # push's credential (FOLD_PUSH_TOKEN, wired in by the checkout step above): a ruleset
+          # bypass is checked against the pushing token's identity, not the commit author.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/release/fold-changelog-entry.ps1 -Commit -Push *>&1 | Tee-Object -FilePath fold-output.txt
+          $foldExitCode = $LASTEXITCODE
+
+          # EXIT 2 IS "THE TRUNK MOVED UNDER ME", AND THIS JOB STANDS DOWN ON IT (#1586). It is the
+          # fold's trunk-freshness pre-pass, which runs before a single entry is folded -- so this
+          # run wrote nothing, and the push that made the checkout stale has its own run of this
+          # workflow queued behind it. Keyed on the code and only on the code: every other non-zero
+          # code still fails below, so this is not a blanket "ignore the fold".
+          if ($foldExitCode -eq 2) {
+            Write-Host "Stood down: the trunk moved between this job's checkout and the fold, so nothing was folded and nothing was written."
+            Write-Host "  The push that moved it has its own run of this workflow, whose checkout includes it. See this file's header (#1586)."
+            exit 0
+          }
+
+          # EXIT 3 IS "SOMEBODY ELSE FOLDED THIS WHILE I WAS FOLDING IT" (#1796) -- the narrow half
+          # of the same race: the other fold landed in the window between the pre-pass and this
+          # push, so entries WERE folded and committed and the push came back a non-fast-forward.
+          # The fold earns this code by measuring that every entry it carried is already upstream
+          # with an identical body, so the trunk holds what this job exists to put there; a push
+          # refused for any other reason -- a ruleset GH013, a credential -- is still exit 1.
+          # The redundant commit is local to this runner's workspace and dies with it, which is why
+          # this job may stand down where a session on a real trunk may not.
+          if ($foldExitCode -eq 3) {
+            Write-Host "Stood down: the fold's push lost the race, and every entry it carried is already on the trunk with an identical body."
+            Write-Host "  The redundant commit is local to this runner's workspace and dies with it. See this file's header (#1796)."
+            exit 0
+          }
+
+          # The two scripts read the same trunk a moment apart and must agree: the check found a
+          # leftover, so the fold reporting nothing to fold is a real disagreement between them.
+          $foldOutput = Get-Content fold-output.txt -Raw
+          if ($foldOutput -match 'No entry files found to fold') {
+            Write-Error "check-unfolded-entry.ps1 reported a leftover but fold-changelog-entry.ps1 found nothing to fold -- the two disagree, which should not happen. Its output:`n$foldOutput"
+            exit 1
+          }
+          exit $foldExitCode
