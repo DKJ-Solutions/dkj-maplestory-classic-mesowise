@@ -47,3 +47,34 @@ export const DAMAGE_FORMULA_SOURCE: Source = {
   url: 'https://meowdb.com/msclassic/guides/explaining-the-damage-formula',
   retrieved: R,
 }
+
+/** Max HP per level-up is vast ("zero variance" in de steekproef): de Beginner +16, de Thief +22. */
+export const HP_PER_LEVEL = {
+  beginner: 16,
+  thief: 22,
+  /** De Thief-job begint op level 10: een level-up vanaf een lager level geeft de Beginner-waarde. */
+  thiefFromLevel: 10,
+  source: { url: 'https://meowdb.com/msclassic/guides/hp-mp-gain-explained', retrieved: R } satisfies Source,
+} as const
+
+/** De Max HP die een level-up geeft, vanaf dit level. (De eenmalige +250 HP van de job-advancement zit er niet in.) */
+export const hpPerLevelFrom = (level: number): number =>
+  level >= HP_PER_LEVEL.thiefFromLevel ? HP_PER_LEVEL.thief : HP_PER_LEVEL.beginner
+
+/** AP per level voor STR, DEX, INT en LUK. */
+export const AP_PER_LEVEL = {
+  amount: 5,
+  source: { url: 'https://meowdb.com/msclassic/guides/beginners-guide-first-steps-in-maple-world', retrieved: R } satisfies Source,
+} as const
+
+/** De Thief-gids: de accuracy-formule en het advies om de rest van de AP in LUK te zetten. */
+export const ACCURACY_SOURCE: Source = { url: 'https://meowdb.com/msclassic/guides/thief-class-guide', retrieved: R }
+
+/**
+ * Het stat-deel van de accuracy: floor((1.2 x DEX + 2 x level + 0.6 x LUK) x 0.25 + 15), met de totale
+ * DEX en LUK. Accuracy uit skills en items komt er los bij (+1 per punt, buiten de floor).
+ * Geschreven in gehele getallen (alles x 40): in drijvende komma kan 1,2 x dex + 0,6 x luk net onder een
+ * heel getal uitkomen, en dan geeft de floor een te laag getal.
+ */
+export const baseAccuracy = (dex: number, level: number, luk: number): number =>
+  Math.floor((12 * dex + 20 * level + 6 * luk + 600) / 40)

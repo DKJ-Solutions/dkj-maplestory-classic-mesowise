@@ -39,21 +39,58 @@
 
 ### PLAN
 
+Issue #33: bij **Level up** past de app naast het level ook Max HP, de AP en de accuracy die daaruit volgt
+aan. Keten: Rebecca (bron) → Vera (nagelezen op de pagina zelf) → Cody → Tycho → Victor + Edith. Zichtbaar
+resultaat (de tekst op het controlescherm), dus geparkeerd zonder PR tot Dave heeft gekeken.
+
+#### De bronnen (NiaMeowDB, 3 oktober 2026)
+
+- Max HP per level is vast, geen bereik ("Sampled level-ups showed zero variance"): Beginner +16, Thief +22
+  ([hp-mp-gain-explained](https://meowdb.com/msclassic/guides/hp-mp-gain-explained)). Omdat het een vast
+  getal is, past de app het direct aan in plaats van een voorstel te tonen.
+- 5 AP per level ([beginners-guide](https://meowdb.com/msclassic/guides/beginners-guide-first-steps-in-maple-world)).
+- Accuracy = floor((1.2 × DEX + 2 × level + 0.6 × LUK) × 0.25 + 15), en "Raise DEX only when the next claw
+  needs it, then put the rest into LUK" ([thief-class-guide](https://meowdb.com/msclassic/guides/thief-class-guide)).
+
+#### Gekozen standaarden
+
+- De 5 AP gaan standaard in LUK (de Thief-gids); wie DEX nodig heeft voor een claw, verschuift ze op het
+  controlescherm.
+- Een level-up vanaf lv < 10 geeft de Beginner-waarde, vanaf lv 10 de Thief-waarde. De eenmalige +250 HP
+  van de job-advancement zit er niet in.
+- Avoid past de app niet aan: de Thief-gids geeft er geen formule voor.
+- Accuracy krijgt alleen het verschil van het stat-deel erbij, want het profiel bevat het totaal uit het
+  statvenster (met Nimble Body en items).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Bronnen gezocht (Rebecca) en op de pagina zelf nagelezen (Vera): drie feiten, elk met bron in `src/data/thief.ts`
+- [x] `applyLevelUp` in `src/levelUp.ts`: level, Max HP, LUK en accuracy; een veld dat geen heel getal is, blijft zoals getypt (Cody)
+- [x] De tekst op het controlescherm noemt alleen wat de level-up zelf aanpaste (`levelUpChanges`, `levelUpSummary`), niet wat de speler daarna verschuift (Cody)
+- [~] Gwen: niet ingezet, alleen de tekst van een bestaande hint verandert; Dave kijkt naar het scherm
 
 ### TEST
 
+- [x] De tests (Tycho): `src/data/thief.test.ts` en `src/levelUp.test.ts`, met de grens lv 9 → 10, accuracy +1 en +2, en velden die geen heel getal zijn
+- [x] Review: Victor (code), Edith (tekst in de app). Victors blokkerende bevinding (`baseAccuracy` rondde door floating point soms 1 te laag af, bijvoorbeeld 49 in plaats van 50 bij DEX 1, lv 1, LUK 228) is opgelost met gehele getallen en vastgezet; Ediths teksten staan erin
+- [x] `npx vitest run` groen; `npm run lint` schoon
+
 ### DEPLOY: app/33-level-up-hp-ap
 
-**Score:**
+Bij **Level up** zet de app nu meer dan alleen je level goed. Je Max HP gaat omhoog met de vaste waarde
+voor je klasse (+22 als Thief, +16 als Beginner onder level 10). De 5 nieuwe AP gaan in LUK, en je accuracy
+gaat mee omhoog. Het controlescherm noemt wat er is aangepast. Je controleert daar zelf nog je avoid, en
+zet AP in DEX als je claw dat nodig heeft. Alle waarden komen van NiaMeowDB.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Na een level-up hoef je HP, LUK en accuracy niet meer zelf over te typen uit je statvenster.
+
+**Score:** 3
 
 #### Pull Request
 
-Bij een level-up ook HP en AP automatisch aanpassen (met bron)
+Bij een level-up ook HP en AP automatisch aanpassen (met bron) (#33)
 

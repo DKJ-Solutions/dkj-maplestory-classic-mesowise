@@ -14,7 +14,7 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
-import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
@@ -874,6 +874,8 @@ export function App() {
   const levelUpped = applyLevelUp(profileDraft)
   // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.
   const canLevelUp = levelUpped !== profileDraft
+  // Wat de level-up zelf aanpaste (niet wat de speler daarna verschuift); zonder undo staan er geen cijfers.
+  const changes = undo ? levelUpChanges(undo.draft, applyLevelUp(undo.draft)) : null
   const huntingAdvice = useMemo(() => huntingGroundAdvice(undo?.best ?? null, verdict, profile), [undo, verdict, profile])
 
   const update = (id: string, patch: Partial<SpotDraft>) => {
@@ -983,7 +985,7 @@ export function App() {
               Klopt dit met je spel?
             </h2>
             <p class="hint">
-              Je level is met 1 gestegen. Kijk in je statvenster in het spel of je HP en stats nog kloppen en pas aan wat anders is.
+              {changes ? `${levelUpSummary(changes)} ` : ''}Controleer je avoid in het spel; heeft je claw meer DEX nodig, zet dan AP in DEX.
             </p>
             <div class="card stats">
               {CHECK_FIELDS.map((f) => (
