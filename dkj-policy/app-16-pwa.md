@@ -58,7 +58,7 @@ Dit kan alleen op een echte telefoon, met een build (`npm run build && npm run p
 - [x] Cody: een eigen icoon (amber munt met een pijl omhoog, niets van Nexon). De PNG's en de favicon komen uit `scripts/icons/make-icons.mjs`, zonder dependencies.
 - [x] Cody: `public/sw.js`. Navigatie gaat network-first, met 3 s timeout alleen als er een cache is. `assets/` gaat cache-first, de rest stale-while-revalidate. Bij install parset de worker de shell zodat de app offline werkt, en hij bewaart twee generaties assets.
 - [x] Cody: de registratie in `src/main.tsx`, alleen in productie en onder `BASE_URL`.
-- [x] Gwen (icoon), Victor (code), Sebastian (service worker), Nolan (kosten): review. Alle bevindingen zijn verwerkt.
+- [x] Gwen (icoon), Victor (code), Sebastian (service worker), Nolan (kosten): review. Alle bevindingen zijn verwerkt, en Victor heeft de service worker daarna een tweede keer gelezen.
 
 ### TEST
 
