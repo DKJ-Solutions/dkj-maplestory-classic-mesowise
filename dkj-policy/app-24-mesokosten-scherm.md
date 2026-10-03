@@ -63,6 +63,7 @@ is een zichtbaar resultaat, dus de branch wacht op Daves blik voordat er een PR 
 - [x] Alle tests (182) en de typecheck zijn groen, `npm run build` slaagt
 - [x] In de browser bekeken: voorbeeldplek als "Beste" (4 EXP per meso) geeft ± 429 meso voor lv 10 → 11
 - [x] Review door Victor, tekst door Edith
+- [x] Dave heeft gekeken: gezien en akkoord (3 oktober 2026)
 
 ### DEPLOY: app/24-mesokosten-scherm
 
