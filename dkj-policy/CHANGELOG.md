@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**10 / 20 minor entries** <!-- pending-tally -->
+**11 / 21 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/36-armor-upgrade · 20261003-160720Z
+
+In de level-up-flow beantwoordt de defense-kaart nu "Moet ik mijn defense nu upgraden?": "Koop" met het
+stuk (hoed, bovenstuk, broek of schoenen) dat zich het meest terugverdient vóór je volgende upgrade, en
+anders "Nee". De app weet niet wat je nu draagt, dus hij rekent alsof dat slot leeg is en zegt dat erbij:
+een "Nee" is zeker, een "Koop" geldt onder die voorwaarde. De kaart noemt de stukken waarvoor je LUK of
+DEX nog tekortschiet, en rekent alleen met Thief-armor die je bij een NPC koopt.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Bij een level-up zie je nu ook voor je armor of hij zichzelf terugverdient, en niet alleen voor je claw.
+
+**Score:** 3
+
+#### Pull Request
+
+Bij een level-up: loont betere armor (WDEF) nu? (#36)
+
+[PR #38](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/38)
+
+---
 
 ### DEPLOY: app/level-up-flow · 20261003-153600Z
 
