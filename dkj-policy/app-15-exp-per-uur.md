@@ -61,7 +61,7 @@ voorstel een schatting is. Dit is een zichtbare wijziging, dus de branch wordt g
 
 - [x] `npm test`: 145 tests groen; de handmatige gevallen uit de regressietests van het model (schade, raakkans, WDEF, waarschuwingen) zitten erin, plus een test van begin tot eind van bekende plek naar rangschikking
 - [x] `npm run build`: groen, JS 12,6 kB gzip (was 9,5 kB)
-- [ ] Dave bekijkt het op zijn telefoon
+- [x] Dave heeft de app bekeken en goedgekeurd (3 oktober 2026)
 
 ### DEPLOY: app/15-exp-per-uur
 
