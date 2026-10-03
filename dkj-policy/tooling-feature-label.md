@@ -41,17 +41,24 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] GitHub: `enhancement` hernoemd naar `feature` (bestaande issues en PR's houden het label), `bug` krijgt de upstream-kleur #FF00FF
+- [x] `scripts/lib/branch-info.ps1`: prefixen `app` en `data` krijgen het PR-label `feature`
 
 ### TEST
 
+- [x] `scripts/lint/lint.ps1` schoon; open-pr zet het label
+
 ### DEPLOY: tooling/feature-label
 
-**Score:**
+Het PR-label voor `app/`- en `data/`-branches heet nu `feature`, zoals upstream in dkj-policy; het oude GitHub-label `enhancement` is daarnaar hernoemd. `bug` heeft de upstream-kleur.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: alleen de issue-tracker van deze repo, niets in de app.
+
+**Score:** N/A
 
 #### Pull Request
 
