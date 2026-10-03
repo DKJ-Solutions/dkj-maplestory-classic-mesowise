@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**11 / 21 minor entries** <!-- pending-tally -->
+**12 / 22 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/33-level-up-hp-ap · 20261003-162708Z
+
+Bij **Level up** zet de app nu meer dan alleen je level goed. Je Max HP gaat omhoog met de vaste waarde
+voor je klasse (+22 als Thief, +16 als Beginner onder level 10). De 5 nieuwe AP gaan in LUK, en je accuracy
+gaat mee omhoog. Het controlescherm noemt wat er is aangepast. Je controleert daar zelf nog je avoid, en
+zet AP in DEX als je claw dat nodig heeft. Alle waarden komen van NiaMeowDB.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Na een level-up hoef je HP, LUK en accuracy niet meer zelf over te typen uit je statvenster.
+
+**Score:** 3
+
+#### Pull Request
+
+Bij een level-up ook HP en AP automatisch aanpassen (met bron) (#33)
+
+[PR #39](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/39)
+
+---
 
 ### DEPLOY: app/36-armor-upgrade · 20261003-160720Z
 
