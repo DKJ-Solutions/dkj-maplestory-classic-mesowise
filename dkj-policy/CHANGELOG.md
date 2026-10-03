@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**3 / 9 minor entries** <!-- pending-tally -->
+**4 / 10 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/14-trainingsplekken · 20261003-121633Z
+
+Bij een plek in de vergelijker kun je nu een bekende trainingsplek kiezen, voor lv 1 tot 23: de
+Rain-Forest bij Henesys, Line 1 in de Kerning-subway, Middle Forest III en de twee Domains bij Perion.
+De naam wordt ingevuld en je ziet de monsters met hun level, HP en EXP, elk met een link naar de bron op
+NiaMeowDB. Onderaan staat de bronvermelding.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Voor het eerst staan er echte spelgegevens in de app, met hun bron, naast wat je zelf invult.
+
+**Score:** 3
+
+#### Pull Request
+
+Eerste spelgegevens: de trainingsplekken die we echt gebruiken, met bron
+
+[PR #19](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/19)
+
+---
 
 ### DEPLOY: app/16-pwa · 20261003-114105Z
 
