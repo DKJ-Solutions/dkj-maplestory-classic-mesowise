@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**6 / 13 minor entries** <!-- pending-tally -->
+**6 / 14 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/24-exp-tabel · 20261003-131244Z
+
+De app kent nu de EXP die je nodig hebt van lv 10 tot en met lv 21, met MeowDB als bron. Daarmee kan
+ze uitrekenen wat een level je in mesos kost op de plek waar je traint. Op het scherm zie je dat nog
+niet: dit is de rekenkern onder de centrale vraag (#24).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Nog niets zichtbaar voor de speler. Het scherm met de mesokosten van je volgende level volgt apart.
+
+**Score:** N/A
+
+#### Pull Request
+
+De EXP-tabel en de mesokosten van een level (#24)
+
+[PR #28](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/28)
+
+---
 
 ### DEPLOY: docs/24-centrale-vraag · 20261003-130314Z
 
