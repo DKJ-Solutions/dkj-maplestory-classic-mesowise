@@ -39,19 +39,43 @@
 
 ### PLAN
 
+Stap 1 van het plan #13 → #14 → #15: de app wordt een vergelijker van trainingsplekken met
+cijfers die je zelf invult. Dit is een zichtbaar resultaat, dus de branch stopt vóór de pull
+request tot Dave hem op telefoonbreedte heeft bekeken.
+
+#### Voor de merge (Dave)
+
+- Op 360 px bekijken: de kaarten, open- en dichtklappen, toevoegen en verwijderen, de
+  foutmelding op één kaart en de dark mode. Ook proberen of een komma in een getalveld werkt
+  op een NL-toetsenbord (Victor).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `src/calc/rankSpots.ts`: `Spot`, `rankSpots`, `spotError`. Ongeldige plekken komen onderaan met een Nederlandse melding per veld.
+- [x] Cody: `src/storage/spots.ts`: invoer per plek als tekst in `localStorage` (`mesowise.spots.v1`), mild laden, ontdubbelen op id, max. 200 plekken en namen van max. 100 tekens. Een geblokkeerde opslag breekt niets.
+- [x] Cody: `src/spotDraft.ts` en `src/app.tsx`: kaarten met naam, EXP per meso en EXP per uur, het label "Beste", bewerken, toevoegen en verwijderen. De volgorde staat vast terwijl een kaart open is.
+- [x] Victor, Sebastian, Edith: review. Alle bevindingen zijn verwerkt (dataverlies bij een half ingevulde kaart, verspringen tijdens typen, foutteksten zonder "NaN", labels, `aria-live`, ontdubbelen).
 
 ### TEST
 
+- [x] Tycho: 57 tests groen (`rankSpots`, `spotError`, opslag, `spotDraft`)
+- [x] `npm run lint` schoon, `npm run build` 8,1 kB JS gzip, geen nieuwe runtime-dependencies
+- [~] De UI zelf is niet automatisch getest: er is geen componenttest-opzet. Dave beoordeelt het scherm vóór de merge.
+
 ### DEPLOY: app/13-vergelijker
 
-**Score:**
+Mesowise vergelijkt nu trainingsplekken: je zet er meerdere naast elkaar, met per plek de EXP per
+uur en de kosten. De app zet ze op volgorde van EXP per meso en laat zien welke plek de beste is.
+De plekken blijven bewaard op je telefoon.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Dit is de eerste versie waarmee je echt kunt kiezen waar je gaat trainen, in plaats van één plek
+door te rekenen.
+
+**Score:** 4
 
 #### Pull Request
 
