@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**1 / 7 minor entries** <!-- pending-tally -->
+**2 / 8 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/13-vergelijker · 20261003-113101Z
+
+Mesowise vergelijkt nu trainingsplekken: je zet er meerdere naast elkaar, met per plek de EXP per
+uur en de kosten. De app zet ze op volgorde van EXP per meso en laat zien welke plek de beste is.
+De plekken blijven bewaard op je telefoon.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Dit is de eerste versie waarmee je echt kunt kiezen waar je gaat trainen, in plaats van één plek
+door te rekenen.
+
+**Score:** 4
+
+#### Pull Request
+
+Van rekenmachine naar vergelijker: meerdere trainingsplekken naast elkaar
+
+[PR #17](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/17)
+
+---
 
 ### DEPLOY: claude/3-powershell-denies · 20261003-100905Z
 
