@@ -39,11 +39,28 @@
 
 ### PLAN
 
+Issue #36: de defense-kaart in de level-up-flow krijgt een oordeel, net als de claw-kaart (#25, `clawUpgrade.ts`).
+Keten: Rebecca (bron) → Vera (`src/data/armor.ts`) → Tycho (tests) → Cody (+ Gwen) (`armorUpgrade.ts` en de
+kaart) → Victor → Edith. Zichtbaar resultaat, dus geparkeerd zonder PR tot Dave heeft gekeken.
+
+#### Gekozen standaard: welk stuk je nu draagt, weet de app niet
+
+Het profiel kent alleen je totale WDEF, niet wat je per slot draagt. De app rekent daarom met **je WDEF + de
+WDEF van het nieuwe stuk** (alsof dat slot nu leeg is). Dat is de grootst mogelijke besparing: een **Nee** is
+daarmee zeker, een **Ja** zegt de app met die voorwaarde erbij. Dezelfde standaarden als bij de claw: je stats
+blijven gelijk over de horizon, de verkoopwaarde van je oude stuk telt niet mee. Dave kan dit bij het kijken
+omgooien (bijvoorbeeld een veld per slot in het profiel).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [ ] De armor-gegevens, met bron per rij (Rebecca → Vera)
+- [ ] `armorUpgrade.ts`: besparing tot je volgende upgrade per slot, min de prijs (Cody)
+- [ ] De tests (Tycho)
+- [ ] De defense-kaart in de level-up-flow (Cody, Gwen)
 
 ### TEST
+
+- [ ] Review: Victor (code), Edith (tekst in de app)
 
 ### DEPLOY: app/36-armor-upgrade
 
