@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**7 / 15 minor entries** <!-- pending-tally -->
+**8 / 16 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/26-skillpunt · 20261003-132745Z
+
+Onder "Wat kost dit level?" staat nu waar je je skillpunt het beste kunt zetten: in Lucky Seven of in
+Nimble Body, met hoeveel meso dat op dit level bespaart. Wisselt het antwoord als de aannames anders
+uitvallen, dan zegt de kaart dat erbij. De skills die de app niet doorrekent, staan erbij. In je karakter
+vul je nu ook je Nimble Body-level in.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Na elke level-up zie je direct waar je punt de meeste mesos bespaart, in plaats van te gokken.
+
+**Score:** 4
+
+#### Pull Request
+
+Waar je skillpunt de meeste mesos bespaart (#26)
+
+[PR #30](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/30)
+
+---
 
 ### DEPLOY: app/24-mesokosten-scherm · 20261003-132628Z
 
