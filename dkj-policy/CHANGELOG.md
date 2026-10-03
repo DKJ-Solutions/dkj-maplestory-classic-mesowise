@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**1 / 4 minor entries** <!-- pending-tally -->
+**1 / 5 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/6-test-seams-ci-floor · 20261003-095547Z
+
+De lokale gate draait nu ook de tests van de app (`npm test`). De CI-floor staat: een merge die
+via de knop van GitHub binnenkomt, krijgt zijn fold en zijn resolves-controle alsnog, en een
+gearmde PR wordt gemerged zodra `test` groen is.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
+
+#### Pull Request
+
+De test-seams en de CI-floor
+
+[PR #10](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/10)
+
+---
 
 ### DEPLOY: app/8-app-opzetten · 20261003-094911Z
 
