@@ -83,6 +83,7 @@ datum. De EXP-tabel loopt nu tot lv 30, omdat de horizon die levels nodig heeft.
   winnende zin toonde de bruto besparing als netto; nu de opbrengst na de prijs)
 - [x] Bevinding: de aanvalssnelheid van een claw verandert de EXP per meso nooit, dus Meba's snelheid
   is in deze kaart geen voordeel. Apart gemeld in #34.
+- [x] Dave heeft de kaart bekeken en akkoord gegeven (3 oktober 2026)
 
 ### DEPLOY: app/25-equipment-upgrade
 
