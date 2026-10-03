@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**4 / 10 minor entries** <!-- pending-tally -->
+**5 / 11 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/15-exp-per-uur · 20261003-123815Z
+
+Bij een bekende plek stelt Mesowise nu zelf voor hoeveel kills per uur je haalt. Dat voorstel volgt uit je
+karakter (level, stats, Lucky Seven) en het monster waarop je traint. Daarmee rekent de app EXP per uur,
+potions en het herladen van stars uit. Klopt het voorstel niet, dan vul je zelf je kills per uur in. De
+app zegt erbij dat het een schatting is, en waarschuwt als een monster gevaarlijk is of als je vaak mist.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Je hoeft niets meer te raden. Kies een plek, vul één keer je karakter in, en de app laat zien waar je de
+meeste EXP per meso haalt.
+
+**Score:** 4
+
+#### Pull Request
+
+EXP per uur uitrekenen uit kills per uur, met de spelgegevens
+
+[PR #22](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/22)
+
+---
 
 ### DEPLOY: data/14-trainingsplekken · 20261003-121633Z
 
