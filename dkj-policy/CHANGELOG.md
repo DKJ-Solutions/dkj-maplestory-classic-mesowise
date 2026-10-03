@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**5 / 11 minor entries** <!-- pending-tally -->
+**6 / 12 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/21-beste-robuuster · 20261003-125333Z
+
+Het label "Beste" is voorzichtiger geworden. Een plek die minder dan de helft van de EXP per uur van de
+beste veilige plek oplevert, krijgt het niet meer, net als een plek waar één tik 25% of meer van je HP kost.
+De kaart zegt waarom. Wisselt de winnaar als de aannames van het model anders uitvallen, dan staat er
+"Hangt af van de aannames". En bij een bekende plek staat erbij dat het monster op EXP per uur gekozen is
+en dat reiskosten niet zijn meegerekend.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Een Snail wint niet meer omdat hij niets kost, en de app zegt eerlijk wanneer een winnaar alleen een gok is.
+
+**Score:** 3
+
+#### Pull Request
+
+Beste robuuster maken: gevaar, aannames en lage EXP per uur
+
+[PR #23](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/23)
+
+---
 
 ### DEPLOY: app/15-exp-per-uur · 20261003-123815Z
 
