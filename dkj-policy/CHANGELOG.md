@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**1 / 5 minor entries** <!-- pending-tally -->
+**1 / 6 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/6-vereiste-test-check · 20261003-100419Z
+
+`main` vereist nu de check `test`, dus de staleness-guard van ship-pr staat aan. De ruleset is
+vastgelegd in `Get-ExpectedRepoSettings`, zodat `repo-settings.yml` elke dag meldt als hij verschuift.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+De vrienden die de app gebruiken merken hier niets van.
+
+**Score:** N/A
+
+#### Pull Request
+
+De vereiste test-check op main vastgelegd
+
+[PR #11](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/11)
+
+---
 
 ### DEPLOY: tooling/6-test-seams-ci-floor · 20261003-095547Z
 
