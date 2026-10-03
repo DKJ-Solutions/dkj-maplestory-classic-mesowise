@@ -39,19 +39,44 @@
 
 ### PLAN
 
+#### Eerste stap van #24: de teller
+
+Deze branch levert de gegevens en de rekenkern van #24, niet het scherm. Het scherm is een zichtbaar
+resultaat en komt op een eigen branch, die Dave eerst bekijkt. Het issue blijft dus open (`-NoResolves`).
+
+- **Gegevens (Rebecca → Vera):** de EXP van level N naar N+1, alleen voor lv 10–20 (het levelplan waar de
+  bekende plekken op rusten). Bron: de MeowDB-guide "EXP Table Lv 1-100", die lv 1–49 bevestigd noemt in
+  het huidige spel. Cloudflare blokkeert de ruwe pagina voor curl, dus de waarden komen uit de opgehaalde
+  pagina. Ze zijn op twee manieren nagekeken: elke stap telt op tot de cumulatieve kolom van dezelfde
+  pagina, en ze zijn gelijk aan de historische GMS-tabel.
+- **Rekenen (Cody, Tycho):** `mesoCostOfLevel(expToNext, expPerMeso)`. De functie krijgt de EXP tot het
+  volgende level mee en niet het level zelf, omdat `src/calc/` geen gegevens importeert (zo werkt
+  `mobModel` ook). Een plek die niets kost, geeft 0. Een plek zonder EXP geeft `null` (onhaalbaar).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/expTable.ts`: de EXP tot het volgende level voor lv 10–20, met bron en datum
+- [x] `src/calc/mesoCostOfLevel.ts`: de mesokosten van een level, met 0 en onhaalbaar als randgevallen
+- [x] Tests voor beide, waaronder de som tegen de cumulatieve kolom van de bron
 
 ### TEST
 
+- [x] De nieuwe tests (12) en de typecheck zijn groen; de volledige gate draait in `ship-pr`
+- [x] Review door Victor
+
 ### DEPLOY: data/24-exp-tabel
 
-**Score:**
+De app kent nu de EXP die je nodig hebt van lv 10 tot en met lv 21, met MeowDB als bron. Daarmee kan
+ze uitrekenen wat een level je in mesos kost op de plek waar je traint. Op het scherm zie je dat nog
+niet: dit is de rekenkern onder de centrale vraag (#24).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Nog niets zichtbaar voor de speler. Het scherm met de mesokosten van je volgende level volgt apart.
+
+**Score:** N/A
 
 #### Pull Request
 
