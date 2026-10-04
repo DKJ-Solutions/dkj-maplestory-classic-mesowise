@@ -52,7 +52,7 @@ Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment car
 ### TEST
 
 - [x] Tests for the slots per job, the empty catalog, the WDEF shift, Magic Def and storage; `npm run lint` and Vitest green (1160)
-- [ ] Dave looks at the preview before the merge (visible result)
+- [x] Dave looked at the preview and said "ship it" (visible result)
 
 ### DEPLOY: app/117-shield-cape-earrings
 
