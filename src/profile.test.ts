@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -282,5 +282,20 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
     expect(mainStatOf(w.profile)).toBe(132)
     expect(mainStatOf(t.profile)).toBe(4)
+  })
+
+  it('noemt met shortfall per stat wat je tekortkomt, de hoofdstat eerst, en laat een stat die je haalt weg (issue #69)', () => {
+    const w = parseW()
+    const t = parseProfile(warriorDraft, 'thief')
+    if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
+    // Warrior: STR 132, DEX 30. Dezelfde eis geeft STR eerst; DEX haalt hij.
+    expect(shortfall({ dex: 140, str: 140 }, w.profile)).toEqual([{ stat: 'str', amount: 8 }, { stat: 'dex', amount: 110 }])
+    expect(shortfall({ str: 132, dex: 30 }, w.profile)).toEqual([])
+    // Thief: LUK 4 eerst, dan de rest in vaste volgorde.
+    expect(shortfall({ str: 140, luk: 10, dex: 31 }, t.profile)).toEqual([{ stat: 'luk', amount: 6 }, { stat: 'str', amount: 8 }, { stat: 'dex', amount: 1 }])
+    // Een stat die het item niet noemt, vraagt niets; een INT-eis leest je INT (standaard 4, #82).
+    expect(shortfall({}, t.profile)).toEqual([])
+    expect(shortfall({ int: 20 }, t.profile)).toEqual([{ stat: 'int', amount: 16 }])
+    expect(shortfall({ int: 20 }, { ...t.profile, int: 20 })).toEqual([])
   })
 })

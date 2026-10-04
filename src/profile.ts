@@ -4,6 +4,7 @@
 import type { Character } from './calc/mobModel'
 import { isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
+import type { Requires, Stat } from './data/types'
 import { STAT_NAME } from './equipment'
 import type { Job } from './job'
 
@@ -251,4 +252,29 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
 }
 
 /** De hoofdstat voor schade en wapen-eisen: STR voor een Warrior, LUK voor een Thief. */
-export const mainStatOf = (p: Profile): number => (p.job === 'warrior' ? p.str : p.luk)
+const mainStatKey = (job: Job): Stat => (job === 'warrior' ? 'str' : 'luk')
+
+/** Een stat van het profiel; INT is het veld onder Ability points (#82). */
+const statOf = (p: Profile, s: Stat): number => p[s]
+
+/** De waarde van de hoofdstat van dit profiel (zie mainStatKey). */
+export const mainStatOf = (p: Profile): number => statOf(p, mainStatKey(p.job))
+
+/** Hoeveel je in één stat tekortkomt voor een item. */
+export interface StatNeed {
+  stat: Stat
+  amount: number
+}
+
+const REQUIREMENT_STATS: readonly Stat[] = ['str', 'dex', 'int', 'luk']
+
+/**
+ * Wat je tekortkomt voor de eisen van een item (issue #69): per stat waar je onder de eis zit, de hoofdstat van je
+ * job eerst. Leeg betekent dat je het kunt dragen; een stat die het item niet noemt, vraagt niets.
+ */
+export function shortfall(reqs: Partial<Requires<Stat>>, p: Profile): StatNeed[] {
+  const main = mainStatKey(p.job)
+  return [main, ...REQUIREMENT_STATS.filter((s) => s !== main)]
+    .map((stat) => ({ stat, amount: Math.max(0, (reqs[stat] ?? 0) - statOf(p, stat)) }))
+    .filter((n) => n.amount > 0)
+}

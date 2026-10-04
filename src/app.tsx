@@ -543,11 +543,8 @@ const WEAPON_TEXT = {
 } as const
 const weaponText = (job: Job) => WEAPON_TEXT[job === 'warrior' ? 'warrior' : 'thief']
 
-/** De hoofdstat waar een wapen of stuk armor een eis in stelt: LUK voor een Thief, STR voor een Warrior. */
-const mainStat = (job: Job) => (job === 'warrior' ? 'STR' : 'LUK')
-
-const missingStats = (u: UnwearableClaw | UnwearableArmor, job: Job) =>
-  [u.needLuk > 0 && `${u.needLuk} ${mainStat(job)}`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+/** Wat je tekortkomt om een wapen of stuk armor te dragen, als tekst: "5 STR en 10 DEX" (de hoofdstat eerst). */
+const missingStats = (u: UnwearableClaw | UnwearableArmor) => u.needs.map((n) => `${n.amount} ${n.stat.toUpperCase()}`).join(' en ')
 
 /** Wat de winnende claw oplevert, in een zin; gedeeld door de kaart en het advies na een level-up. */
 function ClawWinnerLine(props: { win: ClawChoice }) {
@@ -619,7 +616,7 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
         <ul class="choices">
           {a.notWearable.map((u) => (
             <li key={u.claw.name}>
-              {u.claw.name}: je hebt nog {missingStats(u, props.job)} nodig om {t.toWear} te dragen.
+              {u.claw.name}: je hebt nog {missingStats(u)} nodig om {t.toWear} te dragen.
             </li>
           ))}
         </ul>
@@ -1326,7 +1323,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       )}
       {a.notWearable.map((u) => (
         <p class="hint" key={u.armor.name}>
-          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {missingStats(u, props.job)} nodig om dit stuk te dragen.
+          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {missingStats(u)} nodig om dit stuk te dragen.
         </p>
       ))}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -1363,7 +1360,7 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; job: 
           </p>
           {a.notWearable.map((u) => (
             <p class="hint" key={u.claw.name}>
-              {u.claw.name}: je hebt nog {missingStats(u, props.job)} nodig om {t.toWear} te dragen.
+              {u.claw.name}: je hebt nog {missingStats(u)} nodig om {t.toWear} te dragen.
             </p>
           ))}
         </>

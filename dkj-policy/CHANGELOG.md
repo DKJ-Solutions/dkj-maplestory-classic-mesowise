@@ -2,7 +2,51 @@
 
 ## [Unreleased]
 
-**21 / 43 minor entries** <!-- pending-tally -->
+**21 / 45 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/76-magician-robes · 20261004-120114Z
+
+The Magician data gains its first robe: the Doros Robe (for women, the Doroness Robe) from Serabi in Ellinia,
+level 25, 40 DEF and 49 magic DEF for 13,500 mesos, read from the raw MeowDB pages. The app does not
+calculate with the Magician's gear yet, so nothing changes on screen until #43 wires it in.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician robes from Serabi's shop (Doros and Doroness)
+
+[PR #88](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/88)
+
+---
+
+### DEPLOY: fix/69-stat-requirements · 20261004-115543Z
+
+Nothing changes on screen: the advice still says, for example, "je hebt nog 5 STR en 10 DEX nodig". Behind
+it, a Warrior weapon's STR requirement is now stored as STR instead of being filed under LUK, so the Magician
+and Bowman can use the same advice without another rename.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Upgrade advice reads each stat requirement in its own stat
+
+[PR #85](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/85)
+
+---
 
 ### DEPLOY: app/50-overall-slot · 20261004-114221Z
 

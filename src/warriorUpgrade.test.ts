@@ -8,11 +8,12 @@ import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgra
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { knownSpotPatch } from './data/spots'
-import type { Armor, Claw } from './data/types'
+import type { ArmorPiece, Claw } from './data/types'
 import { bestExpPerMeso } from './mesoCostAt'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
+import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 
 const parseW = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
   const r = parseProfile({ ...DEFAULT_PROFILE, str: '100', dex: '100', luk: '4', clawWatk: '30', weaponMult: '1.8', attackMs: '750', hp: '1000', accuracy: '100', avoid: '20', wdef: '50', ...over }, 'warrior')
@@ -96,32 +97,32 @@ describe('Warrior-wapens: de winkel', () => {
     expect(names(advice(p))).not.toContain('Gladius')
   })
 
-  it('zet een wapen zonder genoeg STR of DEX bij de niet-draagbare, met het tekort in STR (het veld needLuk is de hoofdstat)', () => {
+  it('zet een wapen zonder genoeg STR of DEX bij de niet-draagbare, met het tekort in STR (de hoofdstat eerst)', () => {
     // Gladius vraagt STR 65 en DEX 30 (lv 30). Met STR 60 en DEX 20 ontbreken 5 STR en 10 DEX.
     const p = strong({ level: 30, str: 60, dex: 20, clawWatk: 10, weaponMult: 1 })
     const a = advice(p)
     const gladius = a.notWearable.find((u) => u.claw.name === 'Gladius')
-    expect(gladius).toEqual({ claw: weapon('Gladius'), needLuk: 5, needDex: 10 })
+    expect(gladius).toEqual({ claw: weapon('Gladius'), needs: [{ stat: 'str', amount: 5 }, { stat: 'dex', amount: 10 }] })
     expect(names(a)).not.toContain('Gladius')
   })
 
   it('kijkt bij een Warrior niet naar LUK: een hoge LUK maakt een STR-tekort niet goed', () => {
     const a = advice(strong({ level: 30, str: 60, dex: 20, luk: 500, clawWatk: 10, weaponMult: 1 }))
     const gladius = a.notWearable.find((u) => u.claw.name === 'Gladius')
-    expect(gladius).toMatchObject({ needLuk: 5, needDex: 10 })
+    expect(gladius).toMatchObject({ needs: [{ stat: 'str', amount: 5 }, { stat: 'dex', amount: 10 }] })
   })
 
   it('draagt een wapen bij precies genoeg STR en DEX (Eloon 50/20), en niet bij één STR of DEX te weinig', () => {
     const eloon = weapon('Eloon')
-    expect([eloon.luk, eloon.dex]).toEqual([50, 20])
+    expect([eloon.str, eloon.dex]).toEqual([50, 20])
     const exact = strong({ level: 30, str: 50, dex: 20, clawWatk: 10, weaponMult: 1 })
     expect(epm(withClaw(exact, eloon))).toBeGreaterThan(epm(exact)) // voorwaarde: Eloon is een beter wapen
     const a = advice(exact)
     expect(a.notWearable.find((u) => u.claw.name === 'Eloon')).toBeUndefined()
     expect(names(a)).toContain('Eloon')
-    for (const [str, dex, needStr, needDex] of [[49, 20, 1, 0], [50, 19, 0, 1]] as const) {
+    for (const [str, dex, needs] of [[49, 20, [{ stat: 'str', amount: 1 }]], [50, 19, [{ stat: 'dex', amount: 1 }]]] as const) {
       const short = advice({ ...exact, str, dex })
-      expect(short.notWearable.find((u) => u.claw.name === 'Eloon'), `${str}/${dex}`).toEqual({ claw: eloon, needLuk: needStr, needDex })
+      expect(short.notWearable.find((u) => u.claw.name === 'Eloon'), `${str}/${dex}`).toEqual({ claw: eloon, needs })
       expect(names(short)).not.toContain('Eloon')
     }
   })
@@ -225,7 +226,7 @@ describe('Warrior-armor: de winkel', () => {
   it('geeft op lv 10 alleen de hat van lv 10 (Bronze Koif) en nog geen shoes (die beginnen op lv 15)', () => {
     // De White Bandana (#55, geen jobregel, geen eis) is op lv 10 ook draagbaar, maar de Koif geeft voor dezelfde
     // 1.200 meso 22 WDEF tegen 15, dus de Koif wint de hat.
-    expect(WARRIOR_ARMOR.find((a) => a.name === 'White Bandana')).toMatchObject({ level: 10, wdef: 15, luk: 0, dex: 0, price: 1_200 })
+    expect(WARRIOR_ARMOR.find((a) => a.name === 'White Bandana')).toMatchObject({ level: 10, wdef: 15, str: 0, dex: 0, price: 1_200 })
     expect(names(advice(strong({ level: 10 })))).toEqual(['Bronze Koif'])
   })
 
@@ -244,23 +245,23 @@ describe('Warrior-armor: de winkel', () => {
     // Bronze Football Helmet (lv 20) vraagt STR 30 en DEX 10; met STR 25 en DEX 4 ontbreken 5 STR en 6 DEX.
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 25, dex: 4 })
     const helm = a.notWearable.find((u) => u.armor.slot === 'hat')
-    expect(helm).toMatchObject({ needLuk: 5, needDex: 6 })
+    expect(helm).toMatchObject({ needs: [{ stat: 'str', amount: 5 }, { stat: 'dex', amount: 6 }] })
     expect(WARRIOR_ARMOR).toContain(helm!.armor)
-    expect(helm!.armor.luk).toBe(30)
+    expect(helm!.armor.str).toBe(30)
     expect(helm!.armor.dex).toBe(10)
   })
 
   it('kijkt niet naar LUK: een hoge LUK maakt een STR-tekort niet goed', () => {
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 25, dex: 100, luk: 500 })
     const helm = a.notWearable.find((u) => u.armor.slot === 'hat')
-    expect(helm).toMatchObject({ needLuk: 5, needDex: 0 })
+    expect(helm).toMatchObject({ needs: [{ stat: 'str', amount: 5 }] })
   })
 
   it('draagt een stuk bij precies genoeg STR en DEX en toont het dan niet als niet-draagbaar', () => {
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 30, dex: 10 })
     expect(a.notWearable.filter((u) => u.armor.slot === 'hat')).toEqual([])
     const hat = a.choices.find((c) => c.armor.slot === 'hat')!
-    expect(hat.armor.luk).toBeLessThanOrEqual(30)
+    expect(hat.armor.str).toBeLessThanOrEqual(30)
     expect(hat.armor.dex).toBeLessThanOrEqual(10)
   })
 
@@ -299,10 +300,20 @@ describe('Warrior-armor: de winkel', () => {
     for (const c of a.choices) expect(NPC_ARMOR).toContain(c.armor)
     // STR telt voor een Thief niet mee voor de eis: de Tiberian-groep (LUK 40) kan met LUK 35 niet.
     expect(names(a)).not.toContain('Red Tiberian')
-    expect(a.notWearable.some((u: { armor: Armor }) => u.armor.name === 'Red Tiberian' || u.armor.slot === 'top')).toBe(true)
+    expect(a.notWearable.some((u: { armor: ArmorPiece }) => u.armor.name === 'Red Tiberian' || u.armor.slot === 'top')).toBe(true)
   })
 
   it('kent de Warrior-stukken die de winkel noemt (Bronze Full Helm: lv 15, STR 20, WDEF 26)', () => {
-    expect(armor('Bronze Full Helm')).toMatchObject({ level: 15, luk: 20, dex: 0, wdef: 26, slot: 'hat' })
+    expect(armor('Bronze Full Helm')).toMatchObject({ level: 15, str: 20, dex: 0, wdef: 26, slot: 'hat' })
+  })
+})
+
+describe('Warrior-gear in de gedeelde vorm (issue #69)', () => {
+  it('houdt de STR-eis in `str` en zet niets in `luk`', () => {
+    for (const [shown, data] of [...WARRIOR_WEAPONS.map((w, i) => [w, NPC_WARRIOR_WEAPONS[i]] as const), ...WARRIOR_ARMOR.map((a, i) => [a, NPC_WARRIOR_ARMOR[i]] as const)]) {
+      expect(shown.name).toBe(data.name)
+      expect(shown, shown.name).toMatchObject({ str: data.str, dex: data.dex })
+      expect(shown, shown.name).not.toHaveProperty('luk')
+    }
   })
 })
