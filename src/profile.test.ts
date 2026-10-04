@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, loadProfile, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, toCharacter, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -46,13 +46,6 @@ describe('parseProfile', () => {
   it('wil hele getallen waar het spel hele getallen heeft', () => {
     expect(parse({ level: '10.5' })).toEqual({ error: '"Level" moet een heel getal zijn.', key: 'level' })
     expect(parse({ attackMs: '712.5' })).toHaveProperty('profile')
-  })
-})
-
-describe('isDefaultProfile', () => {
-  it('herkent het voorbeeld, en een eigen waarde maakt het je eigen profiel', () => {
-    expect(isDefaultProfile(DEFAULT_PROFILE)).toBe(true)
-    expect(isDefaultProfile({ ...DEFAULT_PROFILE, luk: '41' })).toBe(false)
   })
 })
 

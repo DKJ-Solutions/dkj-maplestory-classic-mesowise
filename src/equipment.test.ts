@@ -12,7 +12,6 @@ import {
   shopItems,
   wornName,
   wornStat,
-  wornSummary,
   wornWdef,
   type EquipEntry,
   type Equipment,
@@ -48,7 +47,6 @@ describe('defaultEquipment en shopItems', () => {
     expect(Object.keys(eq).sort()).toEqual(['bottom', 'claw', 'hat', 'shoes', 'top'])
     for (const { slot } of EQUIP_SLOTS) expect(eq[slot]).toEqual(unknown)
     expect(wornWdef(eq)).toEqual({})
-    expect(wornSummary(eq)).toEqual([])
   })
 
   it('geeft per slot de winkelitems met de juiste stat (WATK voor de claw, WDEF voor armor)', () => {
@@ -94,7 +92,7 @@ describe('wornStat', () => {
   })
 })
 
-describe('wornWdef, wornName en wornSummary', () => {
+describe('wornWdef en wornName', () => {
   const eq: Equipment = {
     claw: shop('Meba'),
     hat: unknown,
@@ -113,10 +111,6 @@ describe('wornWdef, wornName en wornSummary', () => {
     expect(wornName(shop('Red Pao'))).toBe('Red Pao')
     expect(wornName(other('7', '  Mijn laarzen  '))).toBe('Mijn laarzen')
     expect(wornName(other('7', '   '))).toBe('ander item')
-  })
-
-  it('maakt de samenvatting in schermvolgorde zonder onbekend of niets', () => {
-    expect(wornSummary(eq)).toEqual(['Meba', 'Red Pao', 'Mijn laarzen'])
   })
 })
 
