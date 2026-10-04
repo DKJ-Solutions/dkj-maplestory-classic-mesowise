@@ -51,7 +51,7 @@
 
 - [x] Tests for the cap, the error, the advice and the card (Tycho): 41 files, 1251 tests green; `npm run lint` clean
 - [x] Code review (Victor): nothing blocking
-- [x] Dave looks at the Skillpoints card at phone width before the merge
+- [ ] Dave looks at the Skillpoints card at phone width before the merge
 
 ### DEPLOY: app/136-skillpoint-cap
 
