@@ -61,7 +61,7 @@ rekenen met de Warrior-gegevens uit stap 1 (#57). Zichtbaar resultaat: Dave kijk
 
 - [x] Tests (Tycho): damage-gids-voorbeeld 60â€“172 en Power Strike 20 157â€“449, Thief ongewijzigd; `npx vitest run` 659 geslaagd, 1 verwacht gefaald (#52); `tsc --noEmit` schoon
 - [x] Review door Victor (code) en Edith (tekst)
-- [x] Dave kijkt naar het scherm op telefoonbreedte: "gezien en akkoord" (4 oktober 2026)
+- [x] Dave kijkt naar het scherm op telefoonbreedte: "gezien en akkoord" (4 oktober 2026); na de merge met main (nieuwe equipmentkaart) opnieuw bekeken en goedgekeurd: "merge maar"
 
 ### DEPLOY: app/42-warrior-model
 
