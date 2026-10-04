@@ -926,3 +926,40 @@ describe('een Warrior in de app', () => {
     })
   }
 })
+
+describe('de menubalk bovenin (issue #86)', () => {
+  const bar = () => document.querySelector<HTMLElement>('header.topbar')!
+  const openMenu = () => {
+    fireEvent.click(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    return within(bar().querySelector('dialog') as HTMLDialogElement)
+  }
+  const homeJobCard = () => panels()[0].querySelector('section.job')
+
+  it('staat boven de schermen, buiten main, met de naam van de app en een menuknop', () => {
+    expect(bar().closest('main')).toBeNull()
+    expect(bar().querySelector('.topbar-name')?.textContent).toBe('Mesowise')
+    expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('toont de jobkaart op het beginscherm zolang er geen job is gekozen, en daarna alleen in het menu', () => {
+    expect(homeJobCard()).not.toBeNull()
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    expect(homeJobCard()).toBeNull()
+    const menu = openMenu()
+    expect(menu.getByRole('heading', { name: 'Je job: Warrior' })).toBeTruthy()
+  })
+
+  it('wisselt de job via het menu en sluit met "Sluiten"', () => {
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    let menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
+    expect(stored(JOB_KEY)?.job).toBe('thief')
+    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+    fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
+    expect(bar().querySelector('dialog')).toBeNull()
+    expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    menu = openMenu()
+    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+  })
+})
