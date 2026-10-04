@@ -39,11 +39,12 @@
 
 ### PLAN
 
-Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment card.
+Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment card; then gloves, and drop the "(optioneel)" label because every slot is optional.
 
 ### CREATE
 
-- [x] `ArmorSlot` gains `shield`, `cape` and `earrings`; the equipment card shows them as optional slots
+- [x] `ArmorSlot` gains `shield`, `gloves`, `cape` and `earrings`; the equipment card shows them
+- [x] No slot says "(optioneel)" any more and every search box reads "Zoek wat je draagt"; `isOptionalSlot` is gone
 - [x] Shield only for the Warrior and the Magician (claws, bows and crossbows take both hands)
 - [x] No catalog for the new slots (no sourced item data yet): you fill them as a custom item with its DEF
 
@@ -54,7 +55,7 @@ Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment car
 
 ### DEPLOY: app/117-shield-cape-earrings
 
-The equipment card has three new optional slots: Shield (Warrior and Magician only), Cape and Earrings. What you
+The equipment card has four new slots: Shield (Warrior and Magician only), Gloves, Cape and Earrings, and no slot is labelled "(optioneel)" any more, because every slot may stay empty. What you
 wear there counts toward your WDEF like the other armor. The app has no items for them yet, so you type the name and
 fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, because a custom item carries no MDEF.
 
@@ -62,11 +63,11 @@ fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, be
 
 #### What makes this deploy extra special
 
-You can now describe your full gear; a shield, cape or earrings with DEF no longer goes missing from the card.
+You can now describe your full gear; a shield, gloves, cape or earrings with DEF no longer goes missing from the card.
 
 **Score:** 3
 
 #### Pull Request
 
-Shield, Cape and Earrings slots on the equipment card
+Shield, Gloves, Cape and Earrings slots on the equipment card
 

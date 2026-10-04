@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
@@ -813,7 +813,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         spellcheck={false}
         enterKeyHint="done"
         maxLength={MAX_EQUIP_NAME}
-        placeholder={wornName(entry) ?? (isOptionalSlot(slot) ? `Optioneel: zoek je ${slotLabel(slot).toLowerCase()}` : 'Zoek wat je draagt')}
+        placeholder={wornName(entry) ?? 'Zoek wat je draagt'}
         value={text ?? wornName(entry) ?? ''}
         onFocus={() => {
           setText('')
@@ -972,10 +972,7 @@ function EquipmentCard(props: {
             return (
               <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
-                  <span class="slot-name">
-                    {label}
-                    {isOptionalSlot(slot) && <span class="slot-optional"> (optioneel)</span>}
-                  </span>
+                  <span class="slot-name">{label}</span>
                   <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>

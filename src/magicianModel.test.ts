@@ -622,8 +622,8 @@ describe('Magician-armor: de winkel', () => {
 })
 
 describe('Magician: equipment', () => {
-  it('heeft geen ammo-slot, wel Weapon, Shield, Hat, Top, Bottom, Overall, Shoes, Cape en Earrings', () => {
-    expect(slotsFor('magician').map((s) => s.slot)).toEqual(['claw', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'cape', 'earrings'])
+  it('heeft geen ammo-slot, wel Weapon, Shield, Hat, Top, Bottom, Overall, Shoes, Gloves, Cape en Earrings', () => {
+    expect(slotsFor('magician').map((s) => s.slot)).toEqual(['claw', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
     expect(catalogItems('ammo', 'magician')).toEqual([])
   })
 

@@ -1,6 +1,6 @@
 // De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je ammo (stars, of pijlen bij een Bowman,
-// issue #65; optioneel), hoed, top, bottom, overall (top en bottom in één stuk, issue #50), schoenen, en optioneel een
-// shield, cape en earrings (issue #117).
+// issue #65), hoed, top, bottom, overall (top en bottom in één stuk, issue #50), schoenen, en een shield, gloves, cape
+// en earrings (issue #117). Elk slot mag leeg blijven.
 // Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, je stars hun weapon attack en
 // herlaadprijs, armor past je WDEF aan, en
 // het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
@@ -40,6 +40,7 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'bottom', label: 'Bottom' },
   { slot: 'overall', label: 'Overall' },
   { slot: 'shoes', label: 'Shoes' },
+  { slot: 'gloves', label: 'Gloves' },
   { slot: 'cape', label: 'Cape' },
   { slot: 'earrings', label: 'Earrings' },
 ]
@@ -59,12 +60,8 @@ export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[
 /** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
 export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
 
-/**
- * Of een slot optioneel is: je ammo (Dave, 4 oktober 2026; leeg laten mag, de app rekent dan met Subi zolang je nooit
- * een star koos) en je shield, cape en earrings (issue #117), die je niet altijd draagt. De andere slots zijn niet
- * verplicht in te vullen, maar je draagt er altijd iets.
- */
-export const isOptionalSlot = (slot: EquipSlot): boolean => slot === 'ammo' || slot === 'shield' || slot === 'cape' || slot === 'earrings'
+// Elk slot mag leeg blijven (Dave, 4 oktober 2026, #117): het scherm noemt er geen apart "optioneel". Een leeg ammo-slot
+// rekent met Subi zolang je nooit een star koos.
 
 /** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'
@@ -100,6 +97,7 @@ export const defaultEquipment = (): Equipment => ({
   overall: emptyEntry(),
   shoes: emptyEntry(),
   shield: emptyEntry(),
+  gloves: emptyEntry(),
   cape: emptyEntry(),
   earrings: emptyEntry(),
 })
@@ -236,7 +234,7 @@ function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
 
 /**
  * De Magic Def uit je equipment (#91): de MDEF van je hat, je body (een overall, of top en bottom samen) en je shoes.
- * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Shield, cape en earrings (issue #117) tellen ook niet: die
+ * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Shield, gloves, cape en earrings (issue #117) tellen ook niet: die
  * vul je als eigen item, waarvan de app alleen de WDEF vraagt, dus hun MDEF is nooit bekend. Null zolang van één van die slots de MDEF onbekend is:
  * een som met een gat erin zou een te laag getal tonen.
  */

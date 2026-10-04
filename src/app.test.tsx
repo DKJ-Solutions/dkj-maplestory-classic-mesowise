@@ -560,11 +560,11 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
   })
 
-  it('toont het ammo-slot als optioneel: leeg blijft het advies gewoon rekenen', () => {
+  it('toont het ammo-slot zonder "optioneel", net als elk slot (#117): leeg blijft het advies gewoon rekenen', () => {
     openHomeEquipment()
     const row = rowOf(cards()[0], 'Ammo')
-    expect(row.querySelector('.slot-name')?.textContent).toBe('Ammo (optioneel)')
-    expect(searchBox(cards()[0], 'Ammo').placeholder).toBe('Optioneel: zoek je ammo')
+    expect(row.querySelector('.slot-name')?.textContent).toBe('Ammo')
+    expect(searchBox(cards()[0], 'Ammo').placeholder).toBe('Zoek wat je draagt')
     expect(slots()?.ammo?.pick ?? 'unknown').toBe('unknown')
     expect(profileFields()?.starWatk ?? DEFAULT_PROFILE.starWatk).toBe(DEFAULT_PROFILE.starWatk)
   })
