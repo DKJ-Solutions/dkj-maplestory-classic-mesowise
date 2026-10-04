@@ -46,7 +46,7 @@ Issue #111 as Dave edited it: the edit buttons (pencil) get a fill instead of a 
 
 ### CREATE
 
-- [x] Gwen: `.equip-edit` and `.job-edit` filled via new tokens `--edit-bg`/`--edit-fg` (dark: white with the navy #111827 icon; light: #1f2937 with a white icon); the close buttons unchanged
+- [x] Gwen: `.equip-edit` and `.job-edit` filled via new tokens `--edit-bg`/`--edit-fg` (dark: white with the navy #111827 icon; light: #1f2937 with a white icon); the close buttons and the open job card cross stay as they were (Dave)
 
 ### TEST
 
