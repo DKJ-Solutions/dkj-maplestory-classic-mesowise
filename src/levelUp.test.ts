@@ -14,6 +14,7 @@ import {
   levelUpSummary,
   luckySevenMp,
 } from './levelUp'
+import { isSkillKey } from './data/skills'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, type Profile } from './profile'
 
@@ -266,10 +267,10 @@ describe('huntingGroundAdvice', () => {
 })
 
 describe('CHECK_FIELDS', () => {
-  it('bevat elk profielveld precies één keer', () => {
+  it('bevat elke stat precies één keer, en geen skills (die hebben hun eigen kaart)', () => {
     const keys = CHECK_FIELDS.map((f) => f.key)
-    expect(keys).toHaveLength(PROFILE_FIELDS.length)
-    expect([...keys].sort()).toEqual(PROFILE_FIELDS.map((f) => f.key).sort())
+    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k))
+    expect([...keys].sort()).toEqual([...stats].sort())
     expect(new Set(keys).size).toBe(keys.length)
   })
 
@@ -328,12 +329,12 @@ describe('checkFieldsFor', () => {
     expect(checkFieldsFor('thief')).toEqual(CHECK_FIELDS)
   })
 
-  it('laat voor een andere job alleen Lucky Seven en Nimble Body weg, in dezelfde volgorde', () => {
+  it('geeft voor een andere job dezelfde stats: skills staan niet op het controlescherm', () => {
     for (const j of ['warrior', 'magician', 'bowman'] as const) {
       const keys = checkFieldsFor(j).map((f) => f.key)
-      expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key).filter((k) => k !== 'luckySeven' && k !== 'nimbleBody'))
+      expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
-      expect(keys.length, j).toBe(profileFieldsFor(j).length)
+      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key)).length)
     }
   })
 })

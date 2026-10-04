@@ -5,8 +5,9 @@ import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
-import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
-import { NOT_MODELLED, SKILLS, skillPointAdvice } from './skillPoint'
+import { THIEF_SKILLS, type SkillKey } from './data/skills'
+import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
+import { NOT_MODELLED, SKILLS, skillLevels, skillPointAdvice, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
@@ -48,6 +49,10 @@ describe('SKILLS', () => {
       avoid: profile.avoid + 1,
     })
     expect(nimble.max).toBe(NIMBLE_BODY.maxLevel)
+  })
+
+  it('noemt de andere vier skills van de 1e job onder "niet doorgerekend"', () => {
+    expect(NOT_MODELLED).toEqual(['Keen Eyes', 'Double Stab', 'Disorder', 'Dark Sight'])
   })
 
   it('noemt een doorgerekende skill niet ook onder "niet doorgerekend"', () => {
@@ -99,5 +104,62 @@ describe('skillPointAdvice', () => {
     expect(skillPointAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(skillPointAdvice(drafts, { ...profile, level: 31 })).toEqual({ kind: 'none' })
     expect(skillPointAdvice([own('a', 40_000, 10_000)], profile)).toEqual({ kind: 'none' })
+  })
+})
+
+describe('skillLevels', () => {
+  const levelOf = (over: Partial<ProfileDraft>, key: SkillKey) => skillLevels({ ...DEFAULT_PROFILE, ...over }).find((s) => s.key === key)!.level
+
+  it('geeft elke skill van een Thief tot de 2e job, met het gezette level en het maximum', () => {
+    const levels = skillLevels({ ...DEFAULT_PROFILE, luckySeven: '3', keenEyes: '2', recovery: '1' })
+    expect(levels.map((s) => s.key)).toEqual(THIEF_SKILLS.map((s) => s.key))
+    expect(levels.find((s) => s.key === 'luckySeven')).toMatchObject({ name: 'Lucky Seven', job: 'Thief', level: 3, max: 20 })
+    expect(levels.find((s) => s.key === 'keenEyes')).toMatchObject({ level: 2, max: 15 })
+    expect(levels.find((s) => s.key === 'recovery')).toMatchObject({ job: 'Beginner', level: 1, max: 3 })
+  })
+
+  it('leest een veld met spaties eromheen gewoon', () => {
+    expect(levelOf({ darkSight: ' 4 ' }, 'darkSight')).toBe(4)
+  })
+
+  it('accepteert 0 en het maximum', () => {
+    expect(levelOf({ disorder: '0' }, 'disorder')).toBe(0)
+    expect(levelOf({ nimbleFeet: '3' }, 'nimbleFeet')).toBe(3)
+  })
+
+  it.each(['', 'abc', '-1', '1.5', '21'])('geeft null bij een ongeldig veld (%j)', (text) => {
+    expect(levelOf({ luckySeven: text }, 'luckySeven')).toBeNull()
+  })
+
+  it('geeft null boven het maximum van die skill', () => {
+    expect(levelOf({ threeSnails: '4' }, 'threeSnails')).toBeNull()
+  })
+
+  it('kijkt alleen naar de skillvelden: een ongeldig ander veld maakt niets uit', () => {
+    expect(levelOf({ level: '', luckySeven: '5' }, 'luckySeven')).toBe(5)
+  })
+})
+
+describe('stepSkill', () => {
+  it('gaat één level omhoog of omlaag', () => {
+    expect(stepSkill('3', 1, 20)).toBe('4')
+    expect(stepSkill('3', -1, 20)).toBe('2')
+  })
+
+  it('blijft binnen 0 en het maximum', () => {
+    expect(stepSkill('0', -1, 20)).toBe('0')
+    expect(stepSkill('20', 1, 20)).toBe('20')
+    expect(stepSkill('25', -1, 20)).toBe('19')
+    expect(stepSkill('-4', 1, 3)).toBe('1')
+  })
+
+  it('telt een leeg of ongeldig veld als 0', () => {
+    expect(stepSkill('', 1, 15)).toBe('1')
+    expect(stepSkill('abc', 1, 15)).toBe('1')
+    expect(stepSkill('2.5', -1, 15)).toBe('0')
+  })
+
+  it('leest een veld met spaties eromheen', () => {
+    expect(stepSkill(' 7 ', 1, 15)).toBe('8')
   })
 })
