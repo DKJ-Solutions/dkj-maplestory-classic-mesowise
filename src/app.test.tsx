@@ -1208,6 +1208,24 @@ describe('een Bowman in de app', () => {
       expect(costText()).not.toBe(bowmanCost)
     })
 
+    it('biedt de bronze pijlen pas aan met "Ik heb Helpful Stranger" aan, rekent ermee, en valt bij uitzetten terug (#64)', () => {
+      openHomeEquipment()
+      const card = cards()[0]
+      const sw = within(card).getByLabelText(/Ik heb Helpful Stranger/) as HTMLInputElement
+      expect(sw.checked).toBe(false)
+      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual([])
+      fireEvent.click(sw)
+      expect(profileFields().helpfulStranger).toBe('1')
+      expect(found('Ammo', 'Bronze')).toEqual(['Bronze Arrows for Bows', 'Bronze Arrows for Crossbows', 'Gebruik "Bronze" als eigen item'])
+      pick(card, 'Ammo', 'Bronze Arrows for Bows')
+      expect(profileFields().bronzeArrows).toBe('1')
+      expect(card.textContent).toContain('Bronze pijlen')
+      fireEvent.click(within(card).getByLabelText(/Ik heb Helpful Stranger/))
+      expect(profileFields()).toMatchObject({ helpfulStranger: '0', bronzeArrows: '0' })
+      expect(slots().ammo.pick).toBe('Arrows for Bows')
+      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual([])
+    })
+
     it('zoekt bij Weapon in de bogen en kruisbogen, bij Ammo in de pijlen, en niet in claws of Warrior-wapens', () => {
       openHomeEquipment()
       expect(found('Weapon', 'Balanche')).toContain('Balanche')
@@ -1328,6 +1346,11 @@ describe('een Magician in de app', () => {
 
   describe('het beginscherm', () => {
     beforeEach(() => open())
+
+    it('zet de job achter het level en niet achter Ability points', () => {
+      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20 (Magician)')
+      expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
+    })
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]

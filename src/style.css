@@ -282,7 +282,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Een lijn tussen de slots, niet onder het laatste */
 .equipment .equip-row:last-of-type { border-bottom: 0; padding-bottom: 0; }
 .equipment .equip-row .field { margin-bottom: 0; }
-.equipment .equip-row input { min-height: 44px; }
+.equipment .equip-row input:not([type="checkbox"]) { min-height: 44px; }
 .equip-head, .equip-search, .equip-stats { display: contents; }
 /* De slotnaam gecentreerd bovenaan; de stat (ATT of DEF) staat in het waardevak, rechts van het getal */
 .equip-head .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
@@ -448,3 +448,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Opslaan op de jobkaart: verschijnt pas als je met het potlood open iets wijzigt (Dave, 4 oktober 2026). */
 .job-actions { display: flex; margin: 1.25rem 0 0.75rem; }
 .job-actions .equip-save { margin-left: 0; }
+
+/* De schakelaar "Ik heb Helpful Stranger" (#64): een gewoon selectievakje met een tikvlak van 44px, onder het ammo-slot */
+.equip-head .switch { grid-row: 5; grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 0.625rem; min-height: 44px; margin: 0.5rem 0 0; font-size: 0.9375rem; font-weight: 600; color: var(--text); cursor: pointer; }
+.equip-head .switch input { flex: none; width: 1.5rem; height: 1.5rem; min-height: 0; margin: 0.625rem 0 0; accent-color: var(--accent); }
+.equip-head .switch span { padding: 0.5rem 0; }
+.equip-head .switch small { display: block; margin-top: 0.125rem; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+.equip-head .switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -2,7 +2,51 @@
 
 ## [Unreleased]
 
-**25 / 61 minor entries** <!-- pending-tally -->
+**27 / 63 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/job-behind-level · 20261004-131732Z
+
+The job you play now sits behind your level at the top of the start screen ("Level 10 (Magician)") instead of in the title of the Ability points card, which is now just "Ability points".
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player sees their level and job together at a glance, where they look first.
+
+**Score:** 2
+
+#### Pull Request
+
+Show the job behind the level instead of behind Ability points
+
+[PR #120](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/120)
+
+---
+
+### DEPLOY: app/64-helpful-stranger-arrows · 20261004-131127Z
+
+A Bowman who has the Helpful Stranger citizenship rank can turn on "Ik heb Helpful Stranger" under the Ammo
+row of the equipment card. The bronze arrows (+1 W.ATT, 2 mesos per arrow, Raymond's shop) then appear in the
+ammo list, and picking one makes the EXP per meso and the upgrade advice count with it. Switched off, the app
+counts with the plain arrow, as before.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Bowman with the rank can now see whether bronze arrows pay for themselves in mesos, which was the open
+question of #64.
+
+**Score:** 2
+
+#### Pull Request
+
+Bowman: a Helpful Stranger switch that lets bronze arrows count
+
+[PR #119](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/119)
+
+---
 
 ### DEPLOY: app/108-attack-damage-range · 20261004-130241Z
 

@@ -1,7 +1,7 @@
 // Het karakterprofiel (Thief, Warrior, Bowman en Magician): de invulvelden, het omzetten naar getallen en het
 // bewaren in localStorage. Alles uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op de
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
-import { PLAIN_ARROW } from './bowmanGear'
+import { arrowFor } from './bowmanGear'
 import type { Character } from './calc/mobModel'
 import { SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
@@ -62,13 +62,23 @@ const MAGICIAN_WEAPON_FIELD: ProfileField = { key: 'clawWatk', label: `${weaponS
  * Je stars (issue #65): hun weapon attack en wat het herladen per ster kost. Geen kaart toont ze; de star die je bij
  * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi. Een Warrior gooit niets:
  * voor hem tellen ze niet mee (zie toCharacter en suggestMonsters). Een Bowman schiet pijlen: voor hem staan ze in deze
- * velden vast op de gewone pijl (zie parseProfile), de weapon attack van de pijl en zijn prijs per stuk.
+ * velden vast op zijn pijl (zie parseProfile), de weapon attack van de pijl en zijn prijs per stuk.
  */
 const AMMO = [
   // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
   // toont, mag de berekening niet blokkeren.
   { key: 'starWatk', label: `${STAT_NAME.weapon} van je stars`, min: 0, max: 999, integer: true },
   { key: 'starRecharge', label: 'Herladen per star (meso)', min: 0, max: 100, integer: false },
+] as const
+
+/**
+ * De pijlkeuze van een Bowman (issue #64), als 0 of 1 in het concept zodat ze met het profiel worden bewaard: of hij
+ * Helpful Stranger heeft (de schakelaar), en of de bronze pijl in zijn ammo-slot staat (de equipment zet dat, zie
+ * equipment.ts). Een oud bewaard profiel zonder deze velden laadt als uit en gewone pijl. Geen invulvelden.
+ */
+const ARROW_CHOICE = [
+  { key: 'helpfulStranger', label: 'Ik heb Helpful Stranger', min: 0, max: 1, integer: true },
+  { key: 'bronzeArrows', label: 'Bronze pijlen gekozen', min: 0, max: 1, integer: true },
 ] as const
 
 /** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
@@ -80,7 +90,7 @@ const BOWMAN_SKILL_FIELDS = skillFields(BOWMAN_SKILLS)
 const MAGICIAN_SKILL_FIELDS = skillFields(MAGICIAN_SKILLS)
 const BEGINNER_SKILL_FIELDS = skillFields(THIEF_SKILLS.filter((s) => s.job === 'Beginner'))
 
-export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | (typeof ARROW_CHOICE)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
 
 /** De stats van je karakter; je skills hebben hun eigen kaart. */
 export const STAT_FIELDS: readonly ProfileField[] = STATS
@@ -113,7 +123,7 @@ const MAGICIAN_FIELDS: readonly ProfileField[] = [
 ]
 
 /** Elk veld dat een profiel bewaart, van elke job. */
-export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS, ...MAGICIAN_SKILL_FIELDS]
+export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...ARROW_CHOICE, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS, ...MAGICIAN_SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /**
@@ -180,6 +190,8 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   darkSight: '0',
   luckySeven: '1',
   weaponMult: '1.8',
+  helpfulStranger: '0',
+  bronzeArrows: '0',
   improvedHpRecovery: '0',
   maxHpIncrease: '0',
   ironBody: '0',
@@ -229,13 +241,17 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
     else if (f.informative) out[f.key] = 0 // staat niet in de berekening: leeg of fout blokkeert niets, en telt als 0
     else return { error, key: f.key }
   }
-  // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie AMMO).
+  // Een Bowman schiet zijn pijl (de gewone, of de bronze met Helpful Stranger), ook als er in het concept stars van een andere job staan (zie AMMO).
   if (job === 'bowman') {
-    out.starWatk = PLAIN_ARROW.watk
-    out.starRecharge = PLAIN_ARROW.pricePerArrow
+    const arrow = bowmanArrow(d)
+    out.starWatk = arrow.watk
+    out.starRecharge = arrow.pricePerArrow
   }
   return { profile: out }
 }
+
+/** De pijl van een Bowman uit het concept: bronze alleen met de schakelaar aan én de bronze pijl gekozen (zie ARROW_CHOICE). */
+const bowmanArrow = (d: ProfileDraft) => arrowFor(d.helpfulStranger.trim() === '1', d.bronzeArrows.trim() === '1')
 
 /** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een Warrior gooit niets. */
 const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
@@ -249,8 +265,8 @@ export function totalAttack(d: ProfileDraft, job: Job): number | null {
   const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
   const claw = whole(d.clawWatk)
   if (job === 'magician') return null // zijn wapen geeft M.ATT, geen weapon attack
-  // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
-  const stars = job === 'warrior' ? 0 : job === 'bowman' ? PLAIN_ARROW.watk : whole(d.starWatk)
+  // Een Bowman schiet zijn pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
+  const stars = job === 'warrior' ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
   return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
 }
 
