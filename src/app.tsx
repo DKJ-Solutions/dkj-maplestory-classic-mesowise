@@ -301,71 +301,80 @@ function EquipmentCard(props: {
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
   hint: string
+  /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
+  defaultOpen: boolean
   onPick: (slot: EquipSlot, pick: string) => void
   onName: (slot: EquipSlot, name: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het getalveld legt zich vast (blur of Enter). */
   onCommit: (slot: EquipSlot) => void
 }) {
+  const [open, setOpen] = useState(props.defaultOpen)
   const worn = wornSummary(props.equipment)
   return (
-    <section class="card level-cost equipment">
-      <h2>Je equipment</h2>
-      <p class="hint">{props.hint}</p>
-      <p class="hint">Kies je bij de claw "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
-      <p class="hint">{worn.length > 0 ? `Je draagt: ${listFormat.format(worn)}.` : 'Je hebt nog niets ingevuld.'}</p>
-      {EQUIP_SLOTS.map(({ slot, label }) => {
-        const entry = props.equipment[slot]
-        const before = props.was?.[slot]
-        const stat = slot === 'claw' ? 'WATK' : 'WDEF'
-        const onPick = (e: Event) => props.onPick(slot, (e.currentTarget as HTMLSelectElement).value)
-        return (
-          <div class="equip-row" key={slot}>
-            <label class="field">
-              <span>
-                {label}
-                {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
-              </span>
-              <select value={entry.pick} onChange={onPick}>
-                <option value={UNKNOWN}>Weet ik niet</option>
-                <option value={NONE}>Niets</option>
-                {shopItems(slot).map((i) => (
-                  <option key={i.name} value={i.name}>
-                    {i.name} (lv {i.level}, {stat} {i.stat})
-                  </option>
-                ))}
-                <option value={OTHER}>Ander item</option>
-              </select>
-            </label>
-            {entry.pick === OTHER && (
-              <div class="equip-other">
+    <section class="card equipment">
+      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name">Je equipment</span>
+        <span class="spot-exp">{worn.length > 0 ? `Je draagt: ${listFormat.format(worn)}.` : 'Je hebt nog niets ingevuld.'}</span>
+      </button>
+      {open && (
+        <div class="spot-body">
+          <p class="hint">{props.hint}</p>
+          <p class="hint">Kies je bij de claw "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          {EQUIP_SLOTS.map(({ slot, label }) => {
+            const entry = props.equipment[slot]
+            const before = props.was?.[slot]
+            const stat = slot === 'claw' ? 'WATK' : 'WDEF'
+            const onPick = (e: Event) => props.onPick(slot, (e.currentTarget as HTMLSelectElement).value)
+            return (
+              <div class="equip-row" key={slot}>
                 <label class="field">
-                  <span>Naam (mag leeg)</span>
-                  <input type="text" maxLength={MAX_EQUIP_NAME} value={entry.name} onInput={(e) => props.onName(slot, (e.currentTarget as HTMLInputElement).value)} />
+                  <span>
+                    {label}
+                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
+                  </span>
+                  <select value={entry.pick} onChange={onPick}>
+                    <option value={UNKNOWN}>Weet ik niet</option>
+                    <option value={NONE}>Niets</option>
+                    {shopItems(slot).map((i) => (
+                      <option key={i.name} value={i.name}>
+                        {i.name} (lv {i.level}, {stat} {i.stat})
+                      </option>
+                    ))}
+                    <option value={OTHER}>Ander item</option>
+                  </select>
                 </label>
-                <label class="field">
-                  <span>{stat}</span>
-                  <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? entry.stat}
-                    onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                    onChange={() => props.onCommit(slot)}
-                  />
-                </label>
+                {entry.pick === OTHER && (
+                  <div class="equip-other">
+                    <label class="field">
+                      <span>Naam (mag leeg)</span>
+                      <input type="text" maxLength={MAX_EQUIP_NAME} value={entry.name} onInput={(e) => props.onName(slot, (e.currentTarget as HTMLInputElement).value)} />
+                    </label>
+                    <label class="field">
+                      <span>{stat}</span>
+                      <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? entry.stat}
+                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                        onChange={() => props.onCommit(slot)}
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )
-      })}
-      <p class="source">
-        Claws:{' '}
-        <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
-          NiaMeowDB
-        </a>
-        , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Armor:{' '}
-        <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-          NiaMeowDB
-        </a>
-        , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
-      </p>
+            )
+          })}
+          <p class="source">
+            Claws:{' '}
+            <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
+              NiaMeowDB
+            </a>
+            , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Armor:{' '}
+            <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+              NiaMeowDB
+            </a>
+            , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
+          </p>
+        </div>
+      )}
     </section>
   )
 }
@@ -1085,6 +1094,7 @@ export function App() {
 
             <EquipmentCard
               equipment={equipment}
+              defaultOpen={false}
               hint="Wat je hier zet, rekent mee in het advies. Je claw vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
               pending={pending}
               onPick={pickEquipment}
@@ -1168,6 +1178,7 @@ export function App() {
             <EquipmentCard
               equipment={equipment}
               was={undo?.equipment}
+              defaultOpen
               hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
               pending={pending}
               onPick={pickEquipment}

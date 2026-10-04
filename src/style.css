@@ -195,7 +195,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stats .error { padding: 0.75rem 0 0.5rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Je equipment: per slot een keuzelijst, bij "Ander item" een naam en een getal */
+/* Je equipment: inklapbaar zoals je karakter; per slot een keuzelijst, bij "Ander item" een naam en een getal */
+.equipment { padding: 0; overflow: hidden; }
+.equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.equipment .spot-body .source a { color: var(--accent); }
 .equipment .equip-row { padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row select { min-height: 44px; }

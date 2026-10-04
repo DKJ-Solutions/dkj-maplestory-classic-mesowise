@@ -55,6 +55,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
   level-up-flow met een "was"-badge; ongedaan maken zet ook de equipment terug
 - [x] Na review (Victor): het getal bij "Ander item" wordt pas bij vastleggen toegepast, tegen de
   laatst toegepaste stand; bewaard en meegerekend wordt alleen de toegepaste stand
+- [x] Dave (4 oktober 2026): de kaart is inklapbaar, zoals "Je karakter". Op het thuisscherm staat hij
+  dicht met in de kop wat je draagt; in het controlescherm na een level-up staat hij open
 
 ### TEST
 
@@ -66,7 +68,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
 
 ### DEPLOY: app/equipment-section
 
-Onder de **Level up**-knop staat nu een kaart "Je equipment". Per slot (claw, hoed, bovenstuk, broek,
+Onder de **Level up**-knop staat nu een inklapbare kaart "Je equipment"; ingeklapt zie je in de kop wat
+je draagt. Per slot (claw, hoed, bovenstuk, broek,
 schoenen) kies je wat je draagt: een winkelitem, "Niets", "Ander item" met eigen WATK of WDEF, of "Weet
 ik niet". De keuze rekent mee. Een claw vult je weapon attack in (en bij een winkelclaw je
 aanvalssnelheid), armor past je WDEF aan, en het defense-advies rekent met wat je in dat slot al draagt
