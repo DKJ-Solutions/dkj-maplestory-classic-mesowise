@@ -50,7 +50,7 @@ Issue #87. The armor advice treats the body as two alternatives: {overall} and {
 
 #### Visible result
 
-The verdict line can now read "Koop A (Top) en B (Bottom)", with the price "voor beide samen", and
+The verdict line can now read "Koop A (Top) en B (Bottom)", with the price "voor beide", and
 "Je Bottom is dan leeg." when a single half replaces an overall. Dave looks before the merge (CLAUDE.md
 lens: a visible result).
 
@@ -78,14 +78,14 @@ The Defense advice now weighs an overall against a top and bottom bought togethe
 play (the shop has one for your level, or you wear one), a pair of top + bottom is a candidate of its own,
 with both prices added up. "Until your next upgrade" now also sees an overall coming for a top or bottom,
 and a better top + bottom coming for an overall. If a single top or bottom wins over an overall you wear,
-the advice says that the other half is then empty. Thief and Bowman shops have no overall, so their advice
+the advice now says that the other half is left bare. Thief and Bowman shops have no overall, so their advice
 does not change.
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
-A Magician (from level 25) or a Warrior no longer gets an overall advice that only looks at one half. The
+A Magician (from level 25) or a Warrior no longer gets overall advice that only looks at one half. The
 advice can now say "buy this top and these pants together", and a top's payback no longer runs past the
 level where the robe would replace it.
 
