@@ -46,7 +46,8 @@
 ### TEST
 
 - [x] Tycho: a test in the Magician block pins "Level 20 (Magician)" and no job in the Ability points title; full suite and typecheck green
-- [ ] Dave looks at the preview before the merge (visible result)
+- [x] Dave looks at the preview before the merge (visible result) -- approved, "ship it"
+- [ ] Victor reviews the diff
 
 ### DEPLOY: app/job-behind-level
 
