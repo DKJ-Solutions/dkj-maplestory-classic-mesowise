@@ -112,6 +112,12 @@ const openStat = (label: string) => {
   }
 }
 
+/** Opent de Skillpoints-kaart van het beginscherm en geeft de kaart terug (de popup zit erin). */
+const openHomeSkills = () => {
+  const head = within(panels()[0]).getByRole('button', { name: /Skillpoints/ })
+  fireEvent.click(head)
+  return head.closest('section')!
+}
 const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: /Je equipment/ }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 const undoLevelUp = () => fireEvent.click(screen.getByRole('button', { name: 'Level-up ongedaan maken' }))
@@ -182,14 +188,38 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(cards()[0]).getByRole('button', { name: /Je equipment/ }).textContent?.trim()).toBe('Je equipment')
   })
 
-  it('klapt onderaan in met Inklappen, en zet de focus daarna op de kop', async () => {
+  it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
+    const head = within(cards()[0]).getByRole('button', { name: /Je equipment/ })
+    expect(head.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(head.querySelector('svg.card-eye')).not.toBeNull()
+    // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
+    expect(cards()[0].querySelector('dialog')).toBeNull()
+    expect(within(cards()[0]).queryByLabelText('Zoek je Weapon')).toBeNull()
+    openHomeEquipment()
+    const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
+    expect(dialog.open).toBe(true)
+    expect(dialog.getAttribute('aria-label')).toBe('Je equipment')
+    expect(within(dialog).getByLabelText('Zoek je Weapon')).toBeTruthy()
+    expect(within(cards()[0]).queryByRole('button', { name: 'Inklappen' })).toBeNull()
+  })
+
+  it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
     const head = within(cards()[0]).getByRole('button', { name: /Je equipment/ })
     expect(head.getAttribute('aria-expanded')).toBe('true')
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Inklappen' }))
+    fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')
+    expect(cards()[0].querySelector('dialog')).toBeNull()
     await new Promise((done) => requestAnimationFrame(() => done(undefined)))
     expect(document.activeElement).toBe(head)
+  })
+
+  it('houdt een keuze uit de popup vast nadat je hem sluit en weer opent (#106)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
+    openHomeEquipment()
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
   })
 
   it('toont na de keuze de naam als knop en de ATT in het waardevak', () => {
@@ -463,6 +493,23 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(STORAGE_KEY)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Plek toevoegen' }))
     expect(stored(STORAGE_KEY).spots).toHaveLength(2)
+  })
+
+  it('opent een nieuwe plek meteen in zijn popup, en Verwijderen sluit die (#106)', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Plek toevoegen' }))
+    const dialog = document.querySelector('li.spot dialog.card-dialog') as HTMLDialogElement
+    expect(dialog.open).toBe(true)
+    expect(dialog.getAttribute('aria-label')).toBe('Naamloze plek')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Verwijderen' }))
+    expect(document.querySelector('li.spot dialog')).toBeNull()
+    expect(stored(STORAGE_KEY).spots).toHaveLength(1)
+  })
+
+  it('toont de equipment op het controlescherm direct op de kaart, zonder popup (#106)', () => {
+    levelUp()
+    expect(within(cards()[1]).queryByRole('button', { name: /Je equipment/ })).toBeNull()
+    expect(cards()[1].querySelector('dialog')).toBeNull()
+    expect(within(cards()[1]).getByLabelText('Zoek je Weapon')).toBeTruthy()
   })
 
   it('bewaart de gekozen job', () => {
@@ -805,13 +852,16 @@ describe('een Warrior in de app', () => {
       expect(profileFields().wdef).toBe('60')
     })
 
-    it('toont bij je karakter de weapon multiplier en STR, en niet de Subi-zin van de Thief', () => {
+    it('toont bij je karakter de weapon multiplier en STR, zonder uitleg eronder', () => {
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
+      // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026).
+      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Subi|stars|rekent met Power Strike|geen munitie|per soort wapen/)
+      fireEvent.click(within(home.querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
+      fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       expect(statShown('STR')).toBe('90')
-      expect(home.textContent).not.toMatch(/Subi|stars/)
-      expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
     })
 
     it('toont bij Total stats de Attack van het wapen, zonder stars (#82)', () => {
@@ -846,13 +896,13 @@ describe('een Warrior in de app', () => {
     })
 
     it('toont bij Skillpoints de skills van de Warrior en niet die van de Thief', () => {
-      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const skills = openHomeSkills()
       for (const name of ['Power Strike', 'Slash Blast', 'Precise Strikes', 'Iron Body']) expect(skills.textContent, name).toContain(name)
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
 
     it('toont bij elke skill de MP per keer op het gezette level, en bij een passieve skill dat hij niets kost (#83)', () => {
-      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const skills = openHomeSkills()
       const row = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)).closest('.skill-row')!
       const input = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)) as HTMLInputElement
       fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
@@ -924,8 +974,8 @@ describe('een Warrior in de app', () => {
     expect(panels()[2].textContent).not.toMatch(NOT_YET)
     fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(panels()[0].textContent).toMatch(/De app rekent met de stars die je bij je equipment kiest/)
-    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier/)
+    expect(panels()[0].querySelector('dialog .hint')).toBeNull()
+    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
 })
 
@@ -1168,15 +1218,14 @@ describe('een Bowman in de app', () => {
       expect(profileFields().wdef).toBe('60')
     })
 
-    it('toont bij Ability points DEX en STR en bij Total stats de uitleg over Arrow Blow en pijlen, zonder weapon multiplier, Subi of stars', () => {
+    it('toont bij Ability points DEX en STR, en bij Total stats geen uitleg, weapon multiplier, Subi of stars', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('DEX')).toBe('80')
       expect(statShown('STR')).toBe('20')
-      expect(home.textContent).toMatch(/De app rekent met Arrow Blow als je hem hebt geleerd/)
-      expect(home.textContent).toMatch(/1 meso per pijl/)
-      expect(home.textContent).not.toMatch(/Weapon multiplier|Subi|stars/)
+      expect(home.querySelector('dialog.card-dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Arrow Blow als je hem hebt geleerd|1 meso per pijl|Weapon multiplier|Subi|stars/)
     })
 
     it('toont de verwachte Bowman-accuracy en -evasion doorgestreept als je getal afwijkt', () => {
@@ -1187,7 +1236,7 @@ describe('een Bowman in de app', () => {
     })
 
     it('toont bij Skillpoints de skills van de Bowman en niet die van de Warrior of de Thief', () => {
-      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const skills = openHomeSkills()
       for (const name of ['Arrow Blow', 'Double Shot', 'Critical Shot', 'The Eye of Amazon', 'Focus']) expect(skills.textContent, name).toContain(name)
       for (const name of ['Lucky Seven', 'Power Strike', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
@@ -1324,10 +1373,9 @@ describe('een Magician in de app', () => {
       for (const n of ['Tijd per aanval (ms)', 'Weapon multiplier van je wapen']) expect(names, n).not.toContain(n)
       // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
       expect(statShown('Attack')).toBe('?')
-      expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier/)
-      expect(home.textContent).toMatch(/Een cast duurt\s+altijd 810 ms/)
-      expect(home.textContent).toMatch(/Een Magician heeft geen munitie/)
-      expect(home.textContent).toMatch(/verdediging; de app gebruikt die ook tegen spreuken/)
+      // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026, #106).
+      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier|Een cast duurt|Een Magician heeft geen munitie/)
     })
 
     it('toont de verwachte Magician-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
@@ -1338,7 +1386,7 @@ describe('een Magician in de app', () => {
     })
 
     it('toont bij Skillpoints de skills van de Magician en niet die van de Thief of Warrior', () => {
-      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const skills = openHomeSkills()
       for (const name of ['Magic Guard', 'Magic Armor', 'Improved MP Recovery', 'Max MP Increase', 'Energy Bolt', 'Magic Claw']) expect(skills.textContent, name).toContain(name)
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight', 'Power Strike', 'Slash Blast']) expect(skills.textContent, name).not.toContain(name)
     })

@@ -13,7 +13,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
-import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS, SPELL_CAST_MS } from './data/magician'
+import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
@@ -21,13 +21,12 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
-import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { HP_POTION, hourPlan, isEstimated, MAGICIAN_MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -69,18 +68,6 @@ function Field(props: {
         />
       )}
     </label>
-  )
-}
-
-/**
- * De inhoud van een inklapbare kaart: schuift open en dicht in plaats van te verspringen. Dicht blijft de
- * inhoud in de pagina staan (zodat hij kan wegschuiven), maar is dan niet bereikbaar met Tab of een schermlezer.
- */
-function Collapse(props: { open: boolean; children: ComponentChildren }) {
-  return (
-    <div class={`collapse${props.open ? ' open' : ''}`} inert={!props.open} aria-hidden={!props.open}>
-      <div class="collapse-inner">{props.children}</div>
-    </div>
   )
 }
 
@@ -218,7 +205,7 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
   )
 }
 
-/** De iconen van de inklapbare kaarten. Eigen tekeningen, zodat er niets uit het spel in de repo komt. */
+/** De iconen van de kaarten met een popup. Eigen tekeningen, zodat er niets uit het spel in de repo komt. */
 const ICON_PATHS = {
   // Een schild: je job
   shield: ['M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3Z'],
@@ -245,20 +232,37 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
 }
 
 /**
- * Onderaan een open kaart: inklappen zonder terug te scrollen naar het pijltje in de kop. De focus (en
- * daarmee het beeld) gaat daarna naar de kop, anders sta je na het dichtklappen ergens verderop. Pas na de
- * volgende render: een plek kan bij het inklappen in de lijst verschuiven, en een verplaatst element verliest
- * in sommige browsers zijn focus.
+ * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): een tik op de kop toont de inhoud in een popup.
+ * Het oog rechts zegt dat er iets te bekijken is; de kaart zelf klapt niet meer open.
  */
-function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onCollapse: () => void }) {
-  const collapse = () => {
-    props.onCollapse()
+function CardHead(props: { head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; children: ComponentChildren }) {
+  return (
+    <button type="button" class="spot-head" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} onClick={props.onOpen}>
+      {props.children}
+      <svg class="card-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      </svg>
+    </button>
+  )
+}
+
+/**
+ * De inhoud van een kaart, in een popup. Wat je erin wijzigt geldt meteen, dus sluiten is gewoon sluiten. De focus
+ * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
+ * element verliest in sommige browsers zijn focus.
+ */
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; children: ComponentChildren }) {
+  const close = () => {
+    props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
+  // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <button type="button" class="collapse-foot" onClick={collapse}>
-      Inklappen
-    </button>
+    <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+      {props.error && <p class="error">{props.error}</p>}
+      <div class="spot-body">{props.children}</div>
+    </StatDialog>
   )
 }
 
@@ -396,8 +400,8 @@ function StatEditor(props: {
 }
 
 /**
- * Een inklapbare kaart met een rij stat-regels (zelfde patroon als de andere kaarten). `children` zijn de hints
- * onder de regels.
+ * Een kaart met een popup met een rij stat-regels (zelfde patroon als de andere kaarten). Zonder uitleg eronder: die
+ * leest een speler toch niet (Dave, 4 oktober 2026).
  */
 function StatsCard(props: {
   className: string
@@ -412,24 +416,23 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
-  children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
   return (
     <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
+      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
         </span>
-      </button>
+      </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <Collapse open={open}>
-        <div class="spot-body">
+      {open && (
+        <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -439,17 +442,8 @@ function StatsCard(props: {
               <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
             )
           })}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && (
-            <p class="hint">
-              Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic Def ook, zodra je hat, top en bottom (of overall) en shoes
-              uit de lijst hebt gekozen; tot dan, of met een eigen item, vul je hem zelf in. Magic, Crit., Speed en Jump vul je zelf in; de app
-              rekent er (nog) niet mee.
-            </p>
-          )}
-          {props.children}
-          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
-        </div>
-      </Collapse>
+        </CardPopup>
+      )}
     </section>
   )
 }
@@ -471,39 +465,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
   const mdef = wornMdef(props.equipment)
   return (
-    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
-      {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
-      {job === 'bowman' && (
-        <p class="hint">
-          De app rekent met Arrow Blow als je hem hebt geleerd, anders met je gewone schot. Een boog of kruisboog uit je
-          equipment vult je weapon attack en tijd per aanval in. Zet je geen wapen, dan rekent de app met 750 ms per aanval
-          (Fast (5), zoals de meeste wapens), tot je een wapen zet. Je schiet gewone pijlen: 1 meso per pijl, zonder extra ATT,
-          en elke aanval verbruikt er één.
-        </p>
-      )}
-      {job === 'magician' && (
-        <p class="hint">
-          De app rekent per monster met de spreuk die de minste potions per EXP kost: Energy Bolt of Magic Claw, naar wat je hebt geleerd. Een cast duurt
-          altijd {SPELL_CAST_MS.normal} ms. Een wand of staff uit je equipment vult je M.ATT in. Voor je MP rekent de app met de MP-potion {MAGICIAN_MP_POTION.name} (niet de Orange Potion voor HP).
-          Een Magician heeft geen munitie. Een monster heeft in de gegevens maar één verdediging; de app gebruikt die ook tegen spreuken. Magic Claw raakt
-          2 keer per cast, met de schade van de skillpagina per klap.
-        </p>
-      )}
-      {job === 'warrior' && (
-        <>
-          <p class="hint">
-            De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
-            vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
-            steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
-            multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
-          </p>
-          <p class="hint">
-            Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
-            {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
-          </p>
-        </>
-      )}
-    </StatsCard>
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
   )
 }
 
@@ -870,22 +832,30 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
 }
 
 /**
- * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
- * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
+ * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment), en die van een kaart: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
+ * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan (in een kaart-popup geldt een wijziging al meteen, zie CardPopup).
  */
-function StatDialog(props: { title: string; closeLabel?: string; onCancel: () => void; children: ComponentChildren }) {
+function StatDialog(props: {
+  title: string
+  closeLabel?: string
+  /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
+  focusInput?: boolean
+  className?: string
+  onCancel: () => void
+  children: ComponentChildren
+}) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const d = ref.current
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
-    if (window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
+    if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
     return () => d?.close()
   }, [])
   return (
     <dialog
       ref={ref}
-      class="stat-dialog"
+      class={props.className ? `stat-dialog ${props.className}` : 'stat-dialog'}
       aria-label={props.title}
       onCancel={(e) => {
         e.preventDefault()
@@ -918,8 +888,8 @@ function EquipmentCard(props: {
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
   hint?: string
-  /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
-  defaultOpen: boolean
+  /** De inhoud staat meteen op de kaart in plaats van in een popup: op het controlescherm na de level-up, waar je hem nakijkt. */
+  inline?: boolean
   onPick: (slot: EquipSlot, pick: string, name?: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het concept uit het corrigeervak wordt vastgelegd (Opslaan of Enter). */
@@ -929,25 +899,43 @@ function EquipmentCard(props: {
   /** De melding als weapon attack of WDEF in het profiel ongeldig is. */
   error: string | null
 }) {
-  const [open, setOpen] = useState(props.defaultOpen)
+  const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const computed = isComputed(props.job)
   const uid = useId()
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
+  const name = (
+    <span class="spot-name with-icon">
+      <CardIcon name="sword" />
+      Je equipment
+    </span>
+  )
+  // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
+  const shell = (body: ComponentChildren) =>
+    props.inline ? (
+      <div class="spot-body">{body}</div>
+    ) : (
+      open && (
+        <CardPopup title="Je equipment" head={head} error={props.error} onClose={() => setOpen(false)}>
+          {body}
+        </CardPopup>
+      )
+    )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span class="spot-name with-icon">
-          <CardIcon name="sword" />
-          Je equipment
-        </span>
-      </button>
+      {props.inline ? (
+        <div class="spot-head static">{name}</div>
+      ) : (
+        <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
+          {name}
+        </CardHead>
+      )}
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <Collapse open={open}>
-        <div class="spot-body">
+      {shell(
+        <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {computed ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
           {slotsFor(props.job).map(({ slot }) => {
@@ -1075,9 +1063,8 @@ function EquipmentCard(props: {
               (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
             </p>
           )}
-          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
-        </div>
-      </Collapse>
+        </>,
+      )}
     </section>
   )
 }
@@ -1114,17 +1101,17 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   const levels = skillLevels(props.draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
+      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
         </span>
-      </button>
+      </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <Collapse open={open}>
-        <div class="spot-body">
+      {open && (
+        <CardPopup title="Skillpoints" head={head} error={props.error} onClose={() => setOpen(false)}>
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>{title}</h3>
@@ -1170,9 +1157,8 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                 ))}
             </div>
           ))}
-          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
-        </div>
-      </Collapse>
+        </CardPopup>
+      )}
     </section>
   )
 }
@@ -1313,7 +1299,7 @@ function SpotCard(props: {
       : 'onbegrensd (kost niets)'
   return (
     <li class={`card spot${best ? ' best' : ''}${invalid ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={props.onToggle}>
+      <CardHead head={head} open={open} onOpen={props.onToggle}>
         <span class="spot-name with-icon">
           <CardIcon name="pin" />
           <span>
@@ -1325,7 +1311,7 @@ function SpotCard(props: {
           <strong>{value}</strong>
           <small>EXP per meso</small>
         </span>
-      </button>
+      </CardHead>
       {(estimated || warn || notBest || travelMissing) && (
         <div class="spot-notes">
           <Warnings s={picked} />
@@ -1349,8 +1335,8 @@ function SpotCard(props: {
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
-      <Collapse open={open}>
-        <div class="spot-body">
+      {open && (
+        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={props.onToggle}>
           <KnownSpotPicker value={known?.id ?? ''} onChange={props.onChange} />
           {known && <KnownSpotInfo spot={known} />}
           {picked && <MonsterSuggestionBlock suggestions={suggestions} picked={picked} draft={draft} onChange={props.onChange} />}
@@ -1380,9 +1366,8 @@ function SpotCard(props: {
           <button type="button" class="btn danger" onClick={props.onRemove}>
             Verwijderen
           </button>
-          <CollapseFoot head={head} onCollapse={props.onToggle} />
-        </div>
-      </Collapse>
+        </CardPopup>
+      )}
     </li>
   )
 }
@@ -1967,7 +1952,6 @@ export function App() {
               <EquipmentCard
                 job={job}
                 equipment={equipment}
-                defaultOpen={false}
                 pending={pending}
                 onPick={pickEquipment}
                 onStatInput={(slot, text) => setPendingFor(slot, text)}
@@ -2077,7 +2061,7 @@ export function App() {
                 job={job}
                 equipment={equipment}
                 was={undo?.equipment}
-                defaultOpen
+                inline
                 hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
                 pending={pending}
                 onPick={pickEquipment}
