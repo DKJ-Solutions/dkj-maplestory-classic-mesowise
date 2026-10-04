@@ -14,7 +14,6 @@ import { isComputed, type Job } from './job'
 import { expPerMesoOf } from './mesoCostAt'
 import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
-import { arrowBlowAt, luckySevenAt, powerStrikeAt } from './suggest'
 
 const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
 
@@ -147,15 +146,6 @@ export function applySkillPoint(draft: ProfileDraft, id: SkillId, job: Job = 'th
   const touched = DRAFT_FIELDS.filter((f) => after[f.key] !== parsed.profile[f.key])
   return { ...draft, ...Object.fromEntries(touched.map((f) => [f.key, String(after[f.key])])) }
 }
-
-/** De MP per worp van Lucky Seven op dit skill-level (0 als hij nog niet geleerd is). */
-export const luckySevenMp = (level: number): number => luckySevenAt(level)?.mp ?? 0
-
-/** De MP per aanval van Power Strike op dit skill-level (0 als hij nog niet geleerd is). */
-export const powerStrikeMp = (level: number): number => powerStrikeAt(level)?.mp ?? 0
-
-/** De MP per schot van Arrow Blow op dit skill-level (0 als hij nog niet geleerd is). */
-export const arrowBlowMp = (level: number): number => arrowBlowAt(level)?.mp ?? 0
 
 /** De beste plek, zoals de speler hem zag: genoeg om hem later terug te vinden. */
 export interface BestSpot {
