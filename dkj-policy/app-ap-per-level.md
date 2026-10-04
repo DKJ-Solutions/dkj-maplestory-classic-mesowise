@@ -61,6 +61,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Cody: the popup and the card count the base AP left the same way (one label helper, one sum); with too much base AP the popup said "over: 0" while the card said "te veel 3" (Dave: the two screens disagreed)
 - [x] Gwen: the "Base AP over" line left the card; the popup already shows it (Dave: shown twice)
 - [x] Gwen: the popup's Opslaan is always there, disabled and colourless while nothing has changed (Dave)
+- [x] Gwen: 1rem between the Extra field and the pencil on the card instead of 0.375rem (Dave)
 - [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
