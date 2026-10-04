@@ -3,6 +3,7 @@
 // scheeftrekken in plaats van alleen de keuze te beperken).
 import { describe, expect, it } from 'vitest'
 import { NPC_ARMOR } from './armor'
+import { GENDERED_WORN_BOWMAN_ARMOR, NPC_BOWMAN_ARMOR } from './bowman'
 import { NPC_WARRIOR_ARMOR } from './warrior'
 
 const idOf = (url: string) => Number(url.split('/').pop())
@@ -10,6 +11,7 @@ const idOf = (url: string) => Number(url.split('/').pop())
 describe.each([
   ['NPC_ARMOR', NPC_ARMOR],
   ['NPC_WARRIOR_ARMOR', NPC_WARRIOR_ARMOR],
+  ['NPC_BOWMAN_ARMOR', NPC_BOWMAN_ARMOR],
 ] as const)('%s: stukken voor één geslacht', (_name, rows) => {
   const gendered = rows.filter((a) => a.gender !== undefined)
 
@@ -54,5 +56,26 @@ describe('NPC_WARRIOR_ARMOR: man en vrouw even sterk', () => {
       expect([idOf(m.source.url), idOf(f.source.url)]).toEqual([960, 962])
       expect([m.slot, m.level, m.wdef, m.price]).toEqual([f.slot, f.level, f.wdef, f.price])
     }
+  })
+})
+
+describe('GENDERED_WORN_BOWMAN_ARMOR: de andere kleuren van de Able-rok (#107)', () => {
+  const green = NPC_BOWMAN_ARMOR.find((a) => idOf(a.source.url) === 1190)!
+
+  it('heeft Brown (1191) en Grey (1192), met dezelfde slot, level, WDEF en geslacht als de Green Able Armor Skirt (1190)', () => {
+    expect(GENDERED_WORN_BOWMAN_ARMOR.map((a) => idOf(a.source.url))).toEqual([1191, 1192])
+    for (const a of GENDERED_WORN_BOWMAN_ARMOR) {
+      expect([a.slot, a.level, a.wdef, a.gender], a.name).toEqual([green.slot, green.level, green.wdef, green.gender])
+      expect(a.gender, a.name).toBe('female')
+    }
+  })
+
+  it('geeft elke kleur een eigen item-db/<id> als bron, opgehaald op 2026-10-04', () => {
+    const urls = [green, ...GENDERED_WORN_BOWMAN_ARMOR].map((a) => a.source.url)
+    for (const a of GENDERED_WORN_BOWMAN_ARMOR) {
+      expect(a.source.url, a.name).toMatch(/^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/)
+      expect(a.source.retrieved, a.name).toBe('2026-10-04')
+    }
+    expect(new Set(urls).size).toBe(3)
   })
 })
