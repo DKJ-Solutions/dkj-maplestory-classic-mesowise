@@ -415,7 +415,7 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-    expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
+    expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
@@ -542,6 +542,8 @@ describe('bewaren na elke wijziging', () => {
     expect(statShown('Attack')).toBe(rangeOf('thief'))
     expect(statShown('Attack')).not.toBe(String(IGOR.watk + 17))
     expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
+    expect(statShown('W.ATT')).toBe(String(IGOR.watk + 17))
+    expect(statShown('M.ATT')).toBe('0')
   })
 
   it('toont bij Total stats de Magic Def uit je equipment, alleen om te lezen; zolang een slot open is vul je hem zelf in (#91)', () => {
@@ -877,13 +879,15 @@ describe('een Warrior in de app', () => {
     it('toont bij Total stats de Attack als schadebereik van het wapen en je STR, zonder stars (#82, #108)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       expect(statShown('Attack')).toBe(rangeOf('warrior'))
+      expect(statShown('W.ATT')).toBe('40')
+      expect(statShown('M.ATT')).toBe('0')
     })
 
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-      expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
+      expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
@@ -1395,7 +1399,7 @@ describe('een Magician in de app', () => {
       expect(within(dialog).getByLabelText('M.ATT in game')).toBeTruthy()
     })
 
-    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en de Attack onbekend (?)', () => {
+    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en W.ATT 0 naast M.ATT (#100)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
@@ -1409,6 +1413,10 @@ describe('een Magician in de app', () => {
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026, #106).
       expect(home.querySelector('dialog .hint')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier|Een cast duurt|Een Magician heeft geen munitie/)
+      // W.ATT staat op 0 en M.ATT toont MagicTotal = floor(60 / 2) + 31 = 61 (#100).
+      expect(statShown('W.ATT')).toBe('0')
+      expect(statShown('M.ATT')).toBe('61')
+      expect(within(statLine('M.ATT')).queryByRole('button')).toBeNull()
     })
 
     it('toont de verwachte Magician-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
