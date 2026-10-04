@@ -1,17 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { BestVerdict } from './best'
-import type { RankResult } from './calc/rankSpots'
-import { expToNextLevel } from './data/expTable'
 import { baseAccuracy, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { warriorAccuracy } from './data/warrior'
 import {
   applyLevelDown,
   applyLevelUp,
   applySkillPoint,
-  bestSpotOf,
   CHECK_FIELDS,
   checkFieldsFor,
-  huntingGroundAdvice,
   levelUpChanges,
   levelUpSummary,
 } from './levelUp'
@@ -22,17 +17,6 @@ import { AMMO_FIELDS, DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, statFieldsF
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
 const profile: Profile = parsed.profile
-
-const cost = { potions: 0, ammo: 0, travel: 0 }
-const spot = (id: string, name = id) => ({ id, name, expPerHour: 1, cost })
-const ok = (id: string, expPerMeso: number, name?: string): RankResult => ({ spot: spot(id, name), expPerMeso })
-const bad = (id: string, name?: string): RankResult => ({ spot: spot(id, name), error: 'Deze invoer klopt niet.' })
-const verdict = (ranked: RankResult[], bestId: string | null): BestVerdict => ({
-  ranked,
-  bestId,
-  robust: true,
-  excluded: new Map(),
-})
 
 describe('applyLevelUp', () => {
   it('zet het level er één bij, als tekst, en laat de rest staan', () => {
@@ -174,79 +158,6 @@ describe('applySkillPoint', () => {
     expect(applySkillPoint(lucky, 'luckySeven')).toBe(lucky)
     const nimble = { ...DEFAULT_PROFILE, nimbleBody: String(NIMBLE_BODY.maxLevel) }
     expect(applySkillPoint(nimble, 'nimbleBody')).toBe(nimble)
-  })
-})
-
-describe('bestSpotOf', () => {
-  it('geeft id en naam van de beste plek', () => {
-    const v = verdict([ok('a', 5, 'Alpha'), ok('b', 3, 'Beta')], 'b')
-    expect(bestSpotOf(v)).toEqual({ id: 'b', name: 'Beta' })
-  })
-
-  it('geeft null zonder beste, bij een onbekend id en bij een ongeldige plek', () => {
-    expect(bestSpotOf(verdict([ok('a', 5)], null))).toBeNull()
-    expect(bestSpotOf(verdict([ok('a', 5)], 'zz'))).toBeNull()
-    expect(bestSpotOf(verdict([bad('a')], 'a'))).toBeNull()
-  })
-})
-
-describe('huntingGroundAdvice', () => {
-  const lv10Exp = expToNextLevel(10)!
-
-  it('meldt noBest als er nu geen beste plek is', () => {
-    expect(huntingGroundAdvice({ id: 'a', name: 'A' }, verdict([ok('a', 5)], null), profile)).toEqual({ kind: 'noBest' })
-    expect(huntingGroundAdvice(null, verdict([bad('a')], 'a'), profile)).toEqual({ kind: 'noBest' })
-  })
-
-  it('blijft staan bij dezelfde plek, met de huidige naam', () => {
-    const v = verdict([ok('a', 5, 'Nieuwe naam')], 'a')
-    expect(huntingGroundAdvice({ id: 'a', name: 'Oude naam' }, v, profile)).toEqual({ kind: 'stay', name: 'Nieuwe naam' })
-  })
-
-  it('verhuist naar een andere plek, met de mesokosten van beide, apart nagerekend', () => {
-    const v = verdict([ok('b', 8, 'Beta'), ok('a', 2, 'Alpha')], 'b')
-    const advice = huntingGroundAdvice({ id: 'a', name: 'Alpha' }, v, profile)
-    expect(advice).toEqual({ kind: 'move', from: 'Alpha', fromGone: false, to: 'Beta', mesoFrom: lv10Exp / 2, mesoTo: lv10Exp / 8 })
-    if (advice.kind === 'move') expect(advice.mesoTo!).toBeLessThan(advice.mesoFrom!)
-  })
-
-  it('heeft from null als er geen plek van voor de level-up was, of die verdwenen is', () => {
-    const v = verdict([ok('b', 8, 'Beta')], 'b')
-    expect(huntingGroundAdvice(null, v, profile)).toEqual({ kind: 'move', from: null, fromGone: false, to: 'Beta', mesoFrom: undefined, mesoTo: lv10Exp / 8 })
-    expect(huntingGroundAdvice({ id: 'weg', name: 'Weg' }, v, profile)).toEqual({
-      kind: 'move',
-      from: null,
-      fromGone: true,
-      to: 'Beta',
-      mesoFrom: undefined,
-      mesoTo: lv10Exp / 8,
-    })
-  })
-
-  it('laat de kosten undefined zonder profiel of buiten de EXP-tabel', () => {
-    const v = verdict([ok('b', 8, 'Beta'), ok('a', 2, 'Alpha')], 'b')
-    const before = { id: 'a', name: 'Alpha' }
-    const expected = { kind: 'move', from: 'Alpha', fromGone: false, to: 'Beta', mesoFrom: undefined, mesoTo: undefined }
-    expect(huntingGroundAdvice(before, v, null)).toEqual(expected)
-    expect(expToNextLevel(200)).toBeUndefined()
-    expect(huntingGroundAdvice(before, v, { ...profile, level: 200 })).toEqual(expected)
-  })
-
-  it('laat de kosten van een ongeldige oude plek undefined, de nieuwe blijft staan', () => {
-    const v = verdict([ok('b', 8, 'Beta'), bad('a', 'Alpha')], 'b')
-    expect(huntingGroundAdvice({ id: 'a', name: 'Alpha' }, v, profile)).toEqual({
-      kind: 'move',
-      from: 'Alpha',
-      fromGone: false,
-      to: 'Beta',
-      mesoFrom: undefined,
-      mesoTo: lv10Exp / 8,
-    })
-  })
-
-  it('geeft null als een plek geen EXP oplevert en 0 als hij niets kost', () => {
-    const v = verdict([ok('b', Infinity, 'Beta'), ok('a', 0, 'Alpha')], 'b')
-    expect(huntingGroundAdvice({ id: 'a', name: 'Alpha' }, v, profile)).toMatchObject({ mesoFrom: null, mesoTo: 0 })
   })
 })
 
