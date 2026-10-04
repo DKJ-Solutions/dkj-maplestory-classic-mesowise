@@ -8,6 +8,7 @@
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import { NPC_ARMOR } from './data/armor'
+import { BOWMAN_ARMOR, BOWMAN_WEAPONS, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
@@ -119,14 +120,15 @@ export const MAX_RESULTS = 8
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
  * items), de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
- * items zonder jobregel die ook de Thief draagt) en de Magician (zijn wands, staffs en armor uit de winkel, plus de
- * items zonder jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan
- * is het hetzelfde item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
- * (issue #44), want een item van een andere job aanbieden zou onwaar zijn.
+ * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
+ * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
+ * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde
+ * item (dezelfde stat en bron; een test bewaakt dat). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
   thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
+  bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: WORN_BOWMAN_ARMOR },
   magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: WORN_MAGICIAN_ARMOR },
 }
 
@@ -159,9 +161,9 @@ const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(sl
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
 // zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
-// we dus in de lijsten van alle jobs, en voor het ammo-slot ook die van de Bowman.
+// we dus in de lijsten van alle jobs.
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
-  [...(Object.keys(SHOP) as Job[]), 'bowman' as Job].map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
+  (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
 export function searchCatalog(slot: EquipSlot, job: Job, query: string): readonly CatalogItem[] {
@@ -237,8 +239,8 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
 export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before: EquipEntry, after: EquipEntry): ProfileDraft {
   const next = wornStat(slot, after)
   if (slot === 'ammo') {
-    // Pijlen rekent de app nog niet door (de Bowman niet); stars zetten hun weapon attack, en een andere star uit de
-    // lijst ook zijn herlaadprijs. Een eigen item laat de herlaadprijs staan: die weet de app niet.
+    // Pijlen laten het profiel staan: de Bowman rekent altijd met de gewone pijl (zie parseProfile); stars zetten hun weapon
+    // attack, en een andere star uit de lijst ook zijn herlaadprijs. Een eigen item laat de herlaadprijs staan: die weet de app niet.
     if (next === undefined || NPC_ARROWS.some((a) => a.name === after.pick)) return profile
     const star = after.pick === before.pick ? undefined : THROWING_STARS.find((t) => t.name === after.pick)
     return { ...profile, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }

@@ -8,8 +8,8 @@
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:
 // je stats van nu blijven gelden over de hele horizon, de verkoopwaarde van je oude stuk telt niet mee en
 // het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts (alleen hats
-// en shoes) en is de eis in de hoofdstat zijn STR. Voor een Magician (issue #43) is het die van magicianGear.ts (hats, tops, bottoms en
-// shoes), met INT als hoofdstat en LUK als tweede eis.
+// en shoes) en is de eis naast DEX zijn STR; voor een Bowman (issue #44) is het die van bowmanGear.ts, ook met STR. Voor een Magician
+// (issue #43) is het die van magicianGear.ts (hats, tops, bottoms en shoes), met INT en LUK als eisen.
 //
 // De overall (issue #50) beslaat top en bottom. Wat een stuk in slot X vervangt: een overall vervangt wat je draagt
 // op top en bottom samen (of een overall die je al draagt); een top of bottom vervangt een overall die je draagt
@@ -18,6 +18,7 @@
 // van beide iets, dan is het "onbekend" (gerekend alsof het niets geeft). De horizon blijft per slot: tot het
 // volgende stuk met meer WDEF in hetzelfde slot (voor een overall de volgende overall).
 import { ASSUMPTION_VARIANTS } from './best'
+import { BOWMAN_ARMOR } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
@@ -92,7 +93,8 @@ export const withArmor = (p: Profile, a: ArmorPiece, replaced = 0): Profile => (
 const bestOf = (list: readonly ArmorPiece[]): ArmorPiece | undefined => list.reduce<ArmorPiece | undefined>((best, a) => (!best || a.wdef > best.wdef || (a.wdef === best.wdef && a.price < best.price) ? a : best), undefined)
 
 /** De winkelarmor van de job van dit profiel. */
-const shopOf = (profile: Profile): readonly ArmorPiece[] => (profile.job === 'warrior' ? WARRIOR_ARMOR : profile.job === 'magician' ? MAGICIAN_ARMOR : NPC_ARMOR)
+const SHOP_BY_JOB: Partial<Record<Profile['job'], readonly ArmorPiece[]>> = { warrior: WARRIOR_ARMOR, bowman: BOWMAN_ARMOR, magician: MAGICIAN_ARMOR }
+const shopOf = (profile: Profile): readonly ArmorPiece[] => SHOP_BY_JOB[profile.job] ?? NPC_ARMOR
 
 /** De horizon van een stuk: van je level tot net vóór het volgende stuk met meer WDEF in hetzelfde slot, hoogstens de hele tabel. */
 function horizon(profile: Profile, armor: ArmorPiece): { from: number; to: number; truncated: boolean } {

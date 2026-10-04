@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ARROW_BLOW_LEVELS, DOUBLE_SHOT_LEVELS, FOCUS_LEVELS } from './bowman'
 import { ENERGY_BOLT_LEVELS, ENERGY_BOLT_SOURCE, MAGIC_CLAW_LEVELS, MAGIC_CLAW_SOURCE } from './magician'
 import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, SKILL_KEYS, skillInfo, skillMpAt, THIEF_SKILLS } from './skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './thief'
@@ -43,7 +44,7 @@ describe('THIEF_SKILLS', () => {
 
 describe('MP per skill-level (#83)', () => {
   it('heeft bij elke actieve skill een MP per level, en geen bij een passieve', () => {
-    const passive = ['nimbleBody', 'keenEyes', 'improvedHpRecovery', 'maxHpIncrease', 'preciseStrikes', 'improvedMpRecovery', 'maxMpIncrease']
+    const passive = ['nimbleBody', 'keenEyes', 'improvedHpRecovery', 'maxHpIncrease', 'preciseStrikes', 'criticalShot', 'eyeOfAmazon', 'improvedMpRecovery', 'maxMpIncrease']
     for (const s of ALL_SKILLS) {
       if (passive.includes(s.key)) expect(s.mp, s.name).toBeUndefined()
       else expect(s.mp, s.name).toHaveLength(s.max)
@@ -66,6 +67,9 @@ describe('MP per skill-level (#83)', () => {
     expect(skillInfo('powerStrike').mp).toEqual(POWER_STRIKE_LEVELS.map((l) => l.mp))
     expect(skillInfo('slashBlast').mp).toEqual(SLASH_BLAST_LEVELS.map((l) => l.mp))
     expect(skillInfo('ironBody').mp).toEqual(IRON_BODY_LEVELS.map((l) => l.mp))
+    expect(skillInfo('arrowBlow').mp).toEqual(ARROW_BLOW_LEVELS.map((l) => l.mp))
+    expect(skillInfo('doubleShot').mp).toEqual(DOUBLE_SHOT_LEVELS.map((l) => l.mp))
+    expect(skillInfo('focus').mp).toEqual(FOCUS_LEVELS.map((l) => l.mp))
   })
 
   it('skillMpAt geeft de MP op het level, op level 0 die van level 1, en null bij een passieve skill', () => {

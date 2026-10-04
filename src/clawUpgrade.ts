@@ -2,7 +2,8 @@
 // en die meer weapon attack geeft: wat bespaart hij in mesos tot je volgende upgrade, min zijn prijs.
 // Voor een Magician (issue #43) is het een wand of staff uit zijn winkel (magicianGear.ts); zijn wapen geeft M.ATT in plaats van weapon
 // attack, en meer M.ATT is daar beter (de cast duurt altijd 810 ms).
-// Voor een Warrior (issue #42) is het een wapen uit zijn winkel (warriorGear.ts). Meer weapon attack zegt daar
+// Voor een Warrior (issue #42) is het een wapen uit zijn winkel (warriorGear.ts), voor een Bowman (issue #44) een boog of
+// kruisboog uit de zijne (bowmanGear.ts). Meer weapon attack zegt daar
 // niets: een zwaarder wapen kan trager zijn of een lagere multiplier hebben. Een wapen telt dus als beter
 // als het model er meer EXP per meso mee haalt dan met je huidige wapen, en de horizon loopt tot het volgende
 // wapen dat meer schade per milliseconde geeft (weapon attack × multiplier ÷ aanvalstijd).
@@ -11,6 +12,7 @@
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
 // het scherm "Je equipment" vult die in als je een claw kiest.
 import { ASSUMPTION_VARIANTS } from './best'
+import { BOWMAN_WEAPONS } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
@@ -68,14 +70,20 @@ export const withClaw = (p: Profile, c: Weapon): Profile => ({
   ...(c.mult !== undefined ? { weaponMult: c.mult } : {}),
 })
 
-/** De schade per milliseconde zonder stats: genoeg om te zeggen welk wapen "later" beter is (alleen voor de horizon van een Warrior). */
+/** De schade per milliseconde zonder stats: genoeg om te zeggen welk wapen "later" beter is (voor de horizon van een Warrior of Bowman). */
 const power = (c: Weapon): number => (c.watk * (c.mult ?? 1)) / c.speed.attackMs
+
+/** Of het model een wapen boven een ander zet op meer dan weapon attack: bij wapens met een eigen snelheid (Warrior en Bowman), niet bij de claws. */
+const rankedByModel = (job: Profile['job']): boolean => job === 'warrior' || job === 'bowman'
+
+/** De wapenlijst per job met een eigen winkel; de Thief heeft de claws (NPC_CLAWS). Het wapen van een Magician geeft M.ATT in `watk` (zie magicianGear.ts). */
+const WEAPONS_BY_JOB: Partial<Record<Profile['job'], readonly Weapon[]>> = { warrior: WARRIOR_WEAPONS, bowman: BOWMAN_WEAPONS, magician: MAGICIAN_WEAPONS }
 
 /** De winkellijst van de job, en of een wapen daarin "beter" is dan een ander (voor de horizon). */
 const shopOf = (job: Profile['job']) =>
-  job === 'warrior'
-    ? { weapons: WARRIOR_WEAPONS, better: (c: Weapon, than: Weapon) => power(c) > power(than) }
-    : { weapons: job === 'magician' ? MAGICIAN_WEAPONS : NPC_CLAWS, better: (c: Weapon, than: Weapon) => c.watk > than.watk }
+  rankedByModel(job)
+    ? { weapons: WEAPONS_BY_JOB[job] ?? [], better: (c: Weapon, than: Weapon) => power(c) > power(than) }
+    : { weapons: WEAPONS_BY_JOB[job] ?? NPC_CLAWS, better: (c: Weapon, than: Weapon) => c.watk > than.watk }
 
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
 function horizon(profile: Profile, claw: Weapon): { from: number; to: number; truncated: boolean } {
@@ -105,11 +113,11 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 
 /**
  * De winkelclaws die voor jou in aanmerking komen: je level volstaat, en ze zijn beter dan wat je nu hebt. Bij een
- * Thief is dat meer weapon attack (bij een Magician meer M.ATT); bij een Warrior meer EXP per meso volgens het model (zie de kop).
+ * Thief is dat meer weapon attack (bij een Magician meer M.ATT); bij een Warrior of Bowman meer EXP per meso volgens het model (zie de kop).
  */
 function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly Weapon[] {
   const inLevel = shopOf(profile.job).weapons.filter((c) => c.level <= profile.level)
-  if (profile.job !== 'warrior') return inLevel.filter((c) => c.watk > profile.clawWatk)
+  if (!rankedByModel(profile.job)) return inLevel.filter((c) => c.watk > profile.clawWatk)
   const base = bestExpPerMeso(drafts, profile, ASSUMPTIONS)
   if (base === undefined) return inLevel
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)

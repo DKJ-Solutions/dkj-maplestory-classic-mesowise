@@ -1,8 +1,9 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { ASSUMPTIONS, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, bowAttack, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
+import { ARROW_BLOW_LEVELS, BOWMAN_DAMAGE, BOWMAN_MASTERY_BASE } from './data/bowman'
 import { ENERGY_BOLT_LEVELS, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT, MAGICIAN_MP_POTIONS } from './data/magician'
 import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
@@ -33,6 +34,15 @@ export const energyBoltAt = (level: number): SpellLevel | null => spellAt(ENERGY
 /** Magic Claw op dit skill-level, of null als hij nog niet geleerd is (level 0). */
 export const magicClawAt = (level: number): SpellLevel | null => spellAt(MAGIC_CLAW_LEVELS, level)
 
+/** Arrow Blow op dit skill-level, of null als hij nog niet geleerd is (level 0): dan telt het gewone schot. */
+export function arrowBlowAt(level: number): SkillStats | null {
+  if (level < 1) return null
+  return ARROW_BLOW_LEVELS[Math.min(level, ARROW_BLOW_LEVELS.length) - 1] ?? null
+}
+
+/** De weapon multiplier van een schot en de basis-mastery van een Bowman, uit de damage-gids (data/bowman.ts). */
+const BOW = { weaponMult: BOWMAN_DAMAGE.shootMultiplier, mastery: BOWMAN_MASTERY_BASE } as const
+
 /**
  * De spreuken die een Magician kan casten (Energy Bolt, 1 klap; Magic Claw, 2 klappen); een cast duurt bij beide 810 ms.
  * suggestMonsters kiest per monster de spreuk met de meeste EXP per meso aan potions. Een Magician zonder spreuk heeft geen
@@ -49,18 +59,23 @@ function magicianAttacks(profile: Profile, character: Character): Attack[] {
 }
 
 /**
- * De aanvallen van dit profiel. Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
- * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Magician kiest uit zijn spreuken
- * (geen spreuk: geen aanval, dan is er geen voorstel). Slash Blast is bewust niet
- * meegenomen: hij raakt tot 4 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
+ * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
+ * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Bowman schiet Arrow Blow op het
+ * gezette level, of zonder punten het gewone schot; een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er
+ * geen voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
+ * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
  */
 function attacksOf(profile: Profile, character: Character): Attack[] {
-  if (profile.job === 'magician') return magicianAttacks(profile, character)
-  return [
-    profile.job === 'warrior'
-      ? meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))
-      : characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN),
-  ]
+  switch (profile.job) {
+    case 'warrior':
+      return [meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))]
+    case 'bowman':
+      return [bowAttack(character, BOW, arrowBlowAt(profile.arrowBlow))]
+    case 'magician':
+      return magicianAttacks(profile, character)
+    default:
+      return [characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)]
+  }
 }
 
 /** De potion die per punt herstel het minst kost (Orange Potion bij HP, Blue Potion bij MP); bij gelijke prijs de eerste. */
@@ -86,7 +101,7 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één ster kost: die van je gekozen stars; een Warrior of Magician gooit niets, dus 0. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior of Magician gooit niets, dus 0. */
   rechargePerStar: number
   /** De potion waarmee deze job zijn MP aanvult. */
   mpPotion: Potion
@@ -107,7 +122,7 @@ const expPerMeso = (s: MonsterSuggestion): number => {
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attacks = attacksOf(profile, character)
-  const rechargePerStar = profile.job === 'thief' ? profile.starRecharge : 0
+  const rechargePerStar = profile.job === 'warrior' || profile.job === 'magician' ? 0 : profile.starRecharge
   const mpPotion = mpPotionFor(profile.job)
   return spot.monsters
     .flatMap((monster) => {
@@ -135,7 +150,7 @@ export interface HourPlan {
   mpPotionsPerHour: number
   /** Meso per uur aan potions. */
   potions: number
-  /** Meso per uur aan het herladen van stars (0 voor een Warrior of Magician). */
+  /** Meso per uur aan het herladen van stars of het kopen van pijlen (0 voor een Warrior of Magician). */
   ammo: number
 }
 

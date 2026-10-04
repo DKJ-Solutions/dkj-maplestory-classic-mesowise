@@ -2,7 +2,93 @@
 
 ## [Unreleased]
 
-**22 / 47 minor entries** <!-- pending-tally -->
+**22 / 51 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/84-level-up-button · 20261004-123108Z
+
+The home screen now shows your current level at the top ("Level 10") where the Level up button used to be; the Level up button itself has moved to the bottom of the screen, below the training spots and above the credit, and no longer sticks to the top while you scroll (#84).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Level-up button at the bottom; show the current level in its place
+
+[PR #99](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/99)
+
+---
+
+### DEPLOY: fix/89-physical-defense-curve · 20261004-123106Z
+
+The app now lowers your hits on a monster with the defence formula from MeowDB's damage guide (your hit × 100 /
+(the monster's WDEF + 100)) instead of an unsourced subtraction. Against a monster with 50 WDEF a 100-damage
+hit now counts as 67 instead of 70 to 75, so spots with tougher monsters can rank a little lower.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Physical damage uses the sourced defence curve, not a WDEF subtraction
+
+[PR #98](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/98)
+
+---
+
+### DEPLOY: app/44-bowman-model · 20261004-122755Z
+
+A player can now choose Bowman and get real advice: the best training spot, what a level costs in mesos, whether a
+new bow or crossbow or a piece of armor pays off, and where a skill point saves the most (Arrow Blow). The app counts
+the plain arrow as ammo, and lists the Bowman skills it does not compute yet.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bowman in the mob model and on the screen
+
+[PR #92](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/92)
+
+---
+
+### DEPLOY: app/86-top-menu-bar · 20261004-122513Z
+
+A white menu bar now runs across the top of the screen, with the app name and a menu button on the right.
+The menu holds your job: once you have picked one, the job card no longer takes up space on the home
+screen, and you change your job through the menu.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+White top menu bar with the app name and a settings menu
+
+[PR #97](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/97)
+
+---
 
 ### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
 

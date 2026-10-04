@@ -65,10 +65,6 @@ describe('expectedStat', () => {
     expect(expectedStat('weaponMult', DEFAULT_PROFILE, 'warrior')).toBeUndefined()
   })
 
-  it('heeft geen verwachting voor een job zonder formules', () => {
-    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'bowman')).toBeUndefined()
-  })
-
   it('heeft geen verwachting voor een stat zonder formule', () => {
     expect(expectedStat('luk', DEFAULT_PROFILE, 'thief')).toBeUndefined()
   })

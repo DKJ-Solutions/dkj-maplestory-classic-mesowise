@@ -178,7 +178,7 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
   })
 
   it('geeft een job die de app niet doorrekent dezelfde skills als de standaard (de adviezen worden toch niet getoond)', () => {
-    expect(skillsOf('bowman')).toBe(SKILLS)
+    expect(skillsOf('thief')).toBe(SKILLS)
   })
 
   it('heeft de maxima uit de spelgegevens: Power Strike 20, Precise Strikes 15', () => {

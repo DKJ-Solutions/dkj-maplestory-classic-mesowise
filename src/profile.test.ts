@@ -110,6 +110,15 @@ describe('loadProfile en saveProfile', () => {
     expect(totalAttack({ ...d, starWatk: 'x' }, 'warrior')).toBe(30)
   })
 
+  it('rekent de Attack van een Bowman met de gewone pijl, ook als er stars van een Thief in het concept staan', () => {
+    const d = { ...DEFAULT_PROFILE, clawWatk: '39', starWatk: '17' }
+    expect(totalAttack(d, 'bowman')).toBe(39)
+    const r = parseProfile(d, 'bowman')
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    expect(totalAttack(d, 'bowman')).toBe(toCharacter(r.profile).watk)
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'bowman')).toBe(39)
+  })
+
   it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60', attack: '99' } })
     expect('attack' in loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toBe(false)
@@ -157,22 +166,8 @@ describe('loadProfile en saveProfile', () => {
 })
 
 describe('profileFieldsFor', () => {
-  // De zes skills van de 1e job van een Thief; de Beginner-skills heeft elke job.
-  const hidden = ['nimbleBody', 'keenEyes', 'doubleStab', 'disorder', 'darkSight', 'luckySeven']
-
   it('toont voor de Thief elk veld, in dezelfde volgorde', () => {
     expect(profileFieldsFor('thief')).toEqual(PROFILE_FIELDS)
-  })
-
-  it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
-    const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
-    expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['bowman'] as const) {
-      const keys = profileFieldsFor(j).map((f) => f.key)
-      expect(profileFieldsFor(j), j).toEqual(expected)
-      for (const k of hidden) expect(keys, j).not.toContain(k)
-      for (const k of ['threeSnails', 'nimbleFeet', 'recovery']) expect(keys, j).toContain(k)
-    }
   })
 
   it('valideert de Thief-skills alleen voor een Thief; voor een andere job staat de standaardwaarde in het profiel', () => {
@@ -276,12 +271,16 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     expect('profile' in t && toCharacter(t.profile).watk).toBe(47 + 15)
   })
 
-  it('geeft mainStatOf STR voor een Warrior en LUK voor een Thief', () => {
+  it('geeft mainStatOf STR voor een Warrior, DEX voor een Bowman en LUK voor een Thief', () => {
     const w = parseW()
     const t = parseProfile(warriorDraft, 'thief')
-    if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
+    const b = parseProfile(warriorDraft, 'bowman')
+    if (!('profile' in w) || !('profile' in t) || !('profile' in b)) throw new Error('profiel ongeldig')
     expect(mainStatOf(w.profile)).toBe(132)
     expect(mainStatOf(t.profile)).toBe(4)
+    expect(mainStatOf(b.profile)).toBe(b.profile.dex)
+    // Bij een Bowman staat DEX voorop in wat hij tekortkomt, STR erna.
+    expect(shortfall({ str: b.profile.str + 1, dex: b.profile.dex + 2 }, b.profile)).toEqual([{ stat: 'dex', amount: 2 }, { stat: 'str', amount: 1 }])
   })
 
   it('noemt met shortfall per stat wat je tekortkomt, de hoofdstat eerst, en laat een stat die je haalt weg (issue #69)', () => {

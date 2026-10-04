@@ -1,5 +1,5 @@
 // De job van het karakter (Dave, 4 oktober 2026, issue #41): bepaalt welke winkelitems de equipment-lijsten
-// tonen en of de app het advies kan doorrekenen. De berekening kent de Thief, de Warrior en de Magician; voor een andere job
+// tonen en of de app het advies kan doorrekenen. De berekening kent de Thief, de Warrior, de Bowman en de Magician; voor een andere job
 // zegt de app eerlijk "nog niet doorgerekend" in plaats van een getal met de verkeerde formule. Puur, zonder
 // UI-import. Alles uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op de Thief.
 
@@ -23,8 +23,8 @@ const isJob = (v: unknown): v is Job => JOBS.some((j) => j.job === v)
 
 export const jobLabel = (job: Job): string => JOBS.find((j) => j.job === job)!.label
 
-/** Of de app voor deze job kan rekenen: de Thief (LUK-schade, Lucky Seven, Subi), de Warrior (STR-schade, Power Strike) en de Magician (INT-schade, Energy Bolt en Magic Claw). */
-export const isComputed = (job: Job): boolean => job === 'thief' || job === 'warrior' || job === 'magician'
+/** Of de app voor deze job kan rekenen: de Thief (LUK-schade, Lucky Seven, Subi), de Warrior (STR-schade, Power Strike), de Bowman (DEX-schade, Arrow Blow, pijlen) en de Magician (INT-schade, Energy Bolt en Magic Claw). */
+export const isComputed = (job: Job): boolean => job === 'thief' || job === 'warrior' || job === 'bowman' || job === 'magician'
 
 /** De ene zin die bij elk advies staat in plaats van een getal. */
 export const notComputedText = (job: Job): string => `Nog niet doorgerekend voor ${jobLabel(job)}.`
