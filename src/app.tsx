@@ -513,7 +513,7 @@ function EquipmentCard(props: {
                     {isEditing && (
                       // Corrigeren: - en + en typen maken een concept; Opslaan (of Enter) legt het vast. Tik je op het getal, dan is
                       // het geselecteerd en vervangt wat je typt het hele getal.
-                      <StatDialog title={`${label}: ${wornName(entry) ?? ''}`} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
+                      <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
                         {db !== undefined && <p class="stat-dialog-db">Verwacht volgens de database: <strong>{db}</strong></p>}
                         <span class="stat-dialog-label" id={`${uid}-${slot}-game`}>{stat} in game</span>
                         <div class="equip-step">
