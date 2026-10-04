@@ -920,11 +920,11 @@ describe('het geslacht (issue #55)', () => {
 
   it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
     withWarrior()
-    expect(jobTitle()).toBe('Je job: Warrior')
+    expect(jobTitle()).toBe('Warrior')
     fireEvent.click(button('Female'))
-    expect(jobTitle()).toBe('Je job: Warrior (f)')
+    expect(jobTitle()).toBe('Warrior (f)')
     withWarrior('male')
-    expect(jobTitle()).toBe('Je job: Warrior (m)')
+    expect(jobTitle()).toBe('Warrior (m)')
   })
 
   const pencil = () => screen.getByRole('button', { name: /^Job en geslacht (niet )?wijzigen$/ })
@@ -962,7 +962,7 @@ describe('het geslacht (issue #55)', () => {
     expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'thief' })
     expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
     expect(save()).toBeNull()
-    expect(jobTitle()).toBe('Je job: Thief (m)')
+    expect(jobTitle()).toBe('Thief (m)')
   })
 
   it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
@@ -982,7 +982,7 @@ describe('het geslacht (issue #55)', () => {
     fireEvent.click(button('Male'))
     fireEvent.click(pencil())
     expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
-    expect(jobTitle()).toBe('Je job: Warrior (f)')
+    expect(jobTitle()).toBe('Warrior (f)')
     fireEvent.click(pencil())
     expect(pressed('Female')).toBe('true')
     expect(save()).toBeNull()
@@ -992,7 +992,7 @@ describe('het geslacht (issue #55)', () => {
     withWarrior('female')
     expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
     expect(screen.queryByText(JOB_HINT)).toBeNull()
-    expect(jobTitle()).toBe('Je job: Warrior (f)')
+    expect(jobTitle()).toBe('Warrior (f)')
   })
 
   it('behandelt een onbruikbare bewaarde keuze als nog niet gekozen', () => {

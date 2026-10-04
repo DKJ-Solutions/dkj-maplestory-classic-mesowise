@@ -113,7 +113,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   return (
     <section class="card job">
       <div class="job-head">
-        <h2 id="job-title">{chosen && !editing ? `Je job: ${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Job:'}</h2>
+        <h2 id="job-title">{chosen && !editing ? `${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Job:'}</h2>
         {chosen && (
           <button
             type="button"
