@@ -19,7 +19,7 @@ import { NOT_MODELLED, pointsPlaced, SKILLS, skillLevels, skillPointAdvice, type
 import { BEGINNER_CLASS_SOURCE, isSkillKey, THIEF_CLASS_SOURCE } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
-import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
+import { isDefaultProfile, loadProfile, parseProfile, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -31,9 +31,6 @@ const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'lo
 const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z`))
 
 const storage = browserStorage()
-
-/** De stats van je karakter; je skills hebben hun eigen kaart. */
-const STAT_FIELDS = PROFILE_FIELDS.filter((f) => !isSkillKey(f.key))
 
 function initialDrafts(): SpotDraft[] {
   const saved = loadSpots(storage)
@@ -94,7 +91,7 @@ function ProfileCard(props: {
         <span class="spot-exp">
           {isDefaultProfile(draft)
             ? 'Een voorbeeld-Thief op lv 10. Vul je eigen karakter in voor betere voorstellen.'
-            : `lv ${draft.level || '?'}, LUK ${draft.luk || '?'}, Lucky Seven ${draft.luckySeven || '?'} · gebruikt voor de voorstellen`}
+            : `lv ${draft.level || '?'}, LUK ${draft.luk || '?'} · gebruikt voor de voorstellen`}
         </span>
       </button>
       <p class="error" aria-live="polite">
@@ -448,8 +445,8 @@ function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange
             </div>
           ))}
           <p class="hint">
-            In het advies rekenen alleen {listFormat.format(SKILLS.map((s) => s.name))} mee. Zet je daar een punt, dan staat het hier
-            meteen.
+            0 is nog niet geleerd. In het advies rekenen alleen {listFormat.format(SKILLS.map((s) => s.name))} mee. Zet je bij een
+            van die skills een punt via het advies, dan staat het hier meteen.
           </p>
           <p class="source">
             Skills:{' '}
@@ -459,9 +456,10 @@ function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange
                 <a href={source.url} target="_blank" rel="noopener noreferrer">
                   NiaMeowDB ({job})
                 </a>
+                , opgehaald op {formatDate(source.retrieved)}
               </span>
             ))}
-            , opgehaald op {formatDate(THIEF_CLASS_SOURCE.retrieved)}.
+            .
           </p>
         </div>
       </Collapse>
@@ -1267,7 +1265,7 @@ export function App() {
                 />
               ))}
               <p class="error" aria-live="polite">
-                {'error' in parsed ? parsed.error : null}
+                {statError}
               </p>
             </div>
             <EquipmentCard
@@ -1281,6 +1279,7 @@ export function App() {
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
             />
+            <SkillsCard draft={profileDraft} error={skillError} onChange={updateProfile} />
             {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
             <button
               type="button"

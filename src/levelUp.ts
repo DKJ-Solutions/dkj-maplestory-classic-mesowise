@@ -6,10 +6,9 @@ import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
-import { isSkillKey } from './data/skills'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { expPerMesoOf } from './mesoCostAt'
-import { parseProfile, PROFILE_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
+import { parseProfile, PROFILE_FIELDS, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { SKILLS, type SkillId } from './skillPoint'
 import { luckySevenAt } from './suggest'
 
@@ -90,7 +89,7 @@ const AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'luk', 'dex', 'str
 /** De stats in de volgorde voor het controlescherm; je skills staan in hun eigen kaart. */
 export const CHECK_FIELDS = [
   ...AFTER_LEVEL_UP.map((k) => PROFILE_FIELDS.find((f) => f.key === k)!),
-  ...PROFILE_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !isSkillKey(f.key)),
+  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
 ]
 
 /** Een profiel als invulvelden, zoals ProfileDraft ze bewaart. */

@@ -19,7 +19,7 @@ export interface ProfileField {
 }
 
 /** De stats van het profiel, met hun label en grenzen. */
-const STAT_FIELDS = [
+const STATS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
@@ -35,7 +35,10 @@ const STAT_FIELDS = [
 /** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
 const SKILL_FIELDS: readonly ProfileField[] = THIEF_SKILLS.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
 
-export type ProfileKey = (typeof STAT_FIELDS)[number]['key'] | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | SkillKey
+
+/** De stats van je karakter; je skills hebben hun eigen kaart. */
+export const STAT_FIELDS: readonly ProfileField[] = STATS
 
 /** Alle getalvelden: eerst de stats, dan de skills. */
 export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...SKILL_FIELDS]

@@ -4,13 +4,14 @@
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
-import { THIEF_SKILLS, type SkillInfo } from './data/skills'
+import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { mesoCostAt } from './mesoCostAt'
 import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
-export type SkillId = 'luckySeven' | 'nimbleBody'
+/** De skills die het mob-model kan doorrekenen. */
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody'>
 
 interface Skill {
   id: SkillId
@@ -46,7 +47,9 @@ export const SKILLS: readonly Skill[] = [
 ]
 
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
-export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map((s) => s.name)
+export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
+  (s) => s.name,
+)
 
 /** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
 export interface SkillLevel extends SkillInfo {
