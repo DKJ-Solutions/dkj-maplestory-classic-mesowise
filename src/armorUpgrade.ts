@@ -20,17 +20,17 @@ import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
-import type { Armor, ArmorSlot } from './data/types'
+import type { ArmorPiece, ArmorSlot } from './data/types'
 import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
-import { mainStatOf, type Profile } from './profile'
+import { shortfall, type Profile, type StatNeed } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR } from './warriorGear'
 
 const LAST_TABLE_LEVEL = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
 
 export interface ArmorChoice {
-  armor: Armor
+  armor: ArmorPiece
   /** Het eerste en het laatste level van de horizon ("tot je volgende upgrade in dit slot"). */
   from: number
   to: number
@@ -49,10 +49,9 @@ export type WornWdef = Partial<Record<ArmorSlot, number>>
 
 /** Een stuk dat je level wel toestaat, maar waar je stats nog tekortschieten. */
 export interface UnwearableArmor {
-  armor: Armor
-  /** Hoeveel hoofdstat (LUK voor een Thief, STR voor een Warrior) en DEX je tekortkomt (0 = genoeg). */
-  needLuk: number
-  needDex: number
+  armor: ArmorPiece
+  /** Per stat wat je tekortkomt, de hoofdstat van je job eerst; nooit leeg. */
+  needs: StatNeed[]
 }
 
 export type ArmorUpgradeAdvice =
@@ -67,7 +66,7 @@ export type ArmorUpgradeAdvice =
       /** Per slot het beste stuk dat je nog niet kunt dragen (en beter is dan wat je wel kunt). */
       notWearable: UnwearableArmor[]
       /** Het stuk met de grootste netto besparing boven 0, of null als geen stuk zich terugverdient. */
-      winner: Armor | null
+      winner: ArmorPiece | null
       /** False als een ander stuk wint (of geen) zodra één aanname naar de rand gaat. */
       robust: boolean
     }
@@ -85,22 +84,22 @@ export function replacedWdef(slot: ArmorSlot, worn: WornWdef): number | undefine
 }
 
 /** Het profiel met dit stuk erbij: het stuk dat je in dat slot droeg (`replaced`, standaard niets) gaat eraf. */
-export const withArmor = (p: Profile, a: Armor, replaced = 0): Profile => ({ ...p, wdef: Math.max(0, p.wdef - replaced) + a.wdef })
+export const withArmor = (p: Profile, a: ArmorPiece, replaced = 0): Profile => ({ ...p, wdef: Math.max(0, p.wdef - replaced) + a.wdef })
 
 /** Het stuk met de hoogste WDEF, bij gelijkspel het goedkoopste (voor het stuk dat je nog niet kunt dragen). */
-const bestOf = (list: readonly Armor[]): Armor | undefined => list.reduce<Armor | undefined>((best, a) => (!best || a.wdef > best.wdef || (a.wdef === best.wdef && a.price < best.price) ? a : best), undefined)
+const bestOf = (list: readonly ArmorPiece[]): ArmorPiece | undefined => list.reduce<ArmorPiece | undefined>((best, a) => (!best || a.wdef > best.wdef || (a.wdef === best.wdef && a.price < best.price) ? a : best), undefined)
 
 /** De winkelarmor van de job van dit profiel. */
-const shopOf = (profile: Profile): readonly Armor[] => (profile.job === 'warrior' ? WARRIOR_ARMOR : NPC_ARMOR)
+const shopOf = (profile: Profile): readonly ArmorPiece[] => (profile.job === 'warrior' ? WARRIOR_ARMOR : NPC_ARMOR)
 
 /** De horizon van een stuk: van je level tot net vóór het volgende stuk met meer WDEF in hetzelfde slot, hoogstens de hele tabel. */
-function horizon(profile: Profile, armor: Armor): { from: number; to: number; truncated: boolean } {
+function horizon(profile: Profile, armor: ArmorPiece): { from: number; to: number; truncated: boolean } {
   const next = shopOf(profile).find((a) => a.slot === armor.slot && a.level > profile.level && a.wdef > armor.wdef)
   const end = next ? next.level - 1 : Infinity
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
 }
 
-function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Armor[], worn: WornWdef, a: Assumptions) {
+function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly ArmorPiece[], worn: WornWdef, a: Assumptions) {
   const baseEpm = bestExpPerMeso(drafts, profile, a)
   if (baseEpm === undefined) return null
   const all = candidates
@@ -123,11 +122,10 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 
 export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, worn: WornWdef = {}): ArmorUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
-  const mainStat = mainStatOf(profile)
-  const canWear = (a: Armor) => mainStat >= a.luk && profile.dex >= a.dex
+  const canWear = (a: ArmorPiece) => shortfall(a, profile).length === 0
   const available = shopOf(profile).filter((a) => a.level <= profile.level)
   // Een stuk dat niet meer WDEF geeft dan wat je in dat slot draagt, is geen upgrade.
-  const betterThanWorn = (a: Armor) => a.wdef > (replacedWdef(a.slot, worn) ?? -Infinity)
+  const betterThanWorn = (a: ArmorPiece) => a.wdef > (replacedWdef(a.slot, worn) ?? -Infinity)
   const wearable = available.filter((a) => canWear(a) && betterThanWorn(a))
   const notWearable: UnwearableArmor[] = []
   for (const slot of new Set(available.map((a) => a.slot))) {
@@ -135,7 +133,7 @@ export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profil
     const mine = bestOf(inSlot.filter(canWear))
     const blocked = bestOf(inSlot.filter((a) => !canWear(a)))
     if (blocked && blocked.wdef > Math.max(mine?.wdef ?? -Infinity, replacedWdef(slot, worn) ?? -Infinity)) {
-      notWearable.push({ armor: blocked, needLuk: Math.max(0, blocked.luk - mainStat), needDex: Math.max(0, blocked.dex - profile.dex) })
+      notWearable.push({ armor: blocked, needs: shortfall(blocked, profile) })
     }
   }
   const main = adviseUnder(drafts, profile, wearable, worn, ASSUMPTIONS)
