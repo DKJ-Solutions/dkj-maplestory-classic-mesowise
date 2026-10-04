@@ -2,7 +2,40 @@
 
 ## [Unreleased]
 
-**16 / 29 minor entries** <!-- pending-tally -->
+**17 / 30 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equipment-always-worn · 20261004-095327Z
+
+The equipment card no longer offers "Weet ik niet" or "Niets": a player always wears something. Each
+slot is now a search bar: type the name of what you wear and pick it from the list, which covers the
+shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
+items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
+own item. Each slot is one row: the item name, the ATT (weapon) or DEF (armor) that counts, and a pencil,
+with a line between the slots. The value comes from the database until you correct it: the pencil opens a
+popup (a sheet at the bottom of a phone) that shows the expected value ("Verwacht volgens de database")
+and the value in your game ("ATT in game" or "DEF in game") with − and + buttons (tap the number to type
+over it). "Reset" puts the database value back, and an "Opslaan" button appears once the value differs;
+closing without it discards the change. A corrected value is outlined, with the expected value small and
+struck through beside it; the value from your game always overrules the expected one. A slot not filled
+in yet shows a search prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
+"Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player finds what they wear by searching, among far more items than the shop sells, and can correct
+the value when the database is off.
+
+**Score:** 3
+
+#### Pull Request
+
+Equipment: search for what you wear, with a correctable stat and the Thief items up to level 30
+
+[PR #59](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/59)
+
+---
 
 ### DEPLOY: data/56-shared-speed-and-item-types · 20261004-094949Z
 
