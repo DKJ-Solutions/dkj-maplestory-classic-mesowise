@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave (4 oktober 2026): een sectie over skillpunten, met de punten die de speler op dat moment heeft gezet. Alleen-lezen kaart naar het model van de equipment-kaart; invullen blijft bij je karakter, zodat er geen tweede invoer komt die accuracy en avoid anders behandelt.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: skillLevels en pointsPlaced in src/skillPoint.ts, puur en zonder UI-import
+- [x] Cody + Gwen: inklapbare kaart "Je skillpunten" op het beginscherm en boven de skillvraag in "Wat nu?"
+- [x] Tycho: tests voor skillLevels en pointsPlaced (415 groen), typecheck groen
+- [ ] Victor en Edith: review van de diff
+- [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
 
 ### DEPLOY: app/skillpoints-section
 
-**Score:**
+Onder je karakter staat nu een inklapbare kaart "Je skillpunten". In de kop zie je hoeveel punten je hebt
+gezet en in welke skill; uitgeklapt staat per skill (Lucky Seven, Nimble Body) je level tegen het
+maximum. De kaart staat ook in "Wat nu?" boven de skillvraag, zodat een punt dat je met "Punt zetten"
+zet daar meteen te zien is. Je vult de levels nog steeds in bij je karakter.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Je ziet in één oogopslag welke skillpunten je hebt gezet, zonder je karakter open te klappen.
+
+**Score:** 2
 
 #### Pull Request
 
