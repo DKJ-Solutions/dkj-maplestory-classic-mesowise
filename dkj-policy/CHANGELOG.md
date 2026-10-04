@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**40 / 77 minor entries** <!-- pending-tally -->
+**41 / 78 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/ap-per-level · 20261004-192753Z
+
+STR, DEX, INT and LUK are now split into base AP and extra AP from items. The stat field is the base AP; four new profile fields hold the extra, and every calculation (damage, accuracy and evasion formulas, item requirements, M.ATT, the level-up accuracy) counts the total. The base AP a level gives is 25 at level 1 plus 5 per level, sourced from the MeowDB beginners guide.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves (the popup says how many are left), and the extra AP your items give, which is free. The card shows each stat as base AP + extra AP from items (0 when there is none) = total.
+
+**Score:** 3
+
+#### Pull Request
+
+Ability points split into base AP, capped by your level, and extra AP from items
+
+[PR #144](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/144)
+
+---
 
 ### DEPLOY: app/139-skill-stat-effects · 20261004-182624Z
 
