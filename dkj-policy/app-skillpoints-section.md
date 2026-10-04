@@ -60,6 +60,7 @@ niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten ove
 - [x] Dave: de kaart heet Skillpoints, zonder onderschrift (pointsPlaced viel daarmee weg), met een boek-icoon links van de kop
 - [x] Dave: onderaan de open kaart een knop Inklappen, want het pijltje in de kop is na het scrollen uit beeld; de focus gaat daarna terug naar de kop
 - [x] Dave: per skill grote − en + (44×44) rond het getal, voor een duim op de telefoon; Tycho testte stepSkill (425 groen), Victor las mee, focusrand toegevoegd; past op 360px
+- [x] Derek: main (job-keuze, #48) in deze branch gemerged; een andere job dan Thief ziet in Skillpoints alleen de Beginner-skills, en de zes Thief-skills van de 1e job tellen voor die job niet mee (zoals #48 het deed met Lucky Seven en Nimble Body); 464 groen
 - [x] Dave kijkt naar het scherm vóór de merge: akkoord ("ja goed", 4 oktober 2026)
 
 ### TEST
