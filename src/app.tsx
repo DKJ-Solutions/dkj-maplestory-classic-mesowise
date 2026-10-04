@@ -94,16 +94,22 @@ function NotComputed(props: { job: Job }) {
  */
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const { job, chosen, gender } = props
-  const [editing, setEditing] = useState(false)
+  // Met het potlood open is een klik een concept; Opslaan legt job en geslacht samen vast, het potlood dicht gooit het
+  // concept weg (Dave, 4 oktober 2026). De eerste keuze van een job of geslacht geldt meteen, zoals altijd.
+  const [draft, setDraft] = useState<{ job: Job; gender: Gender | null } | null>(null)
+  const editing = draft !== null
   const choices = jobChoices(chosen && !editing)
-  const pick = (j: Job) => {
-    setEditing(false)
-    props.onChange(j)
+  const pickJob = (j: Job) => (editing ? setDraft({ ...draft, job: j }) : props.onChange(j))
+  const pickGender = (g: Gender) => (editing ? setDraft({ ...draft, gender: g }) : props.onGender(g))
+  const dirty = editing && (draft.job !== job || draft.gender !== gender)
+  const save = () => {
+    if (!draft) return
+    if (draft.job !== job) props.onChange(draft.job)
+    if (draft.gender !== null && draft.gender !== gender) props.onGender(draft.gender)
+    setDraft(null)
   }
-  const pickGender = (g: Gender) => {
-    setEditing(false)
-    props.onGender(g)
-  }
+  const shownJob = draft?.job ?? job
+  const shownGender = editing ? draft.gender : gender
   return (
     <section class="card job">
       <div class="job-head">
@@ -114,7 +120,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
             class="job-edit"
             aria-label={editing ? 'Job en geslacht niet wijzigen' : 'Job en geslacht wijzigen'}
             aria-pressed={editing}
-            onClick={() => setEditing(!editing)}
+            onClick={() => setDraft(editing ? null : { job, gender })}
           >
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
               <path d="M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
@@ -129,8 +135,8 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
               key={j}
               type="button"
               class="btn job-choice"
-              aria-pressed={editing ? j === job : undefined}
-              onClick={() => pick(j)}
+              aria-pressed={editing ? j === shownJob : undefined}
+              onClick={() => pickJob(j)}
             >
               {jobLabel(j)}
             </button>
@@ -141,18 +147,27 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
       {/*
         Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Zodra je kiest, staat
         het als (m) of (f) achter je job in de kop en verdwijnt deze rij (Dave, 4 oktober 2026: scheelt hoogte); het
-        potlood toont hem weer.
+        potlood toont hem weer. Kop en knoppen precies zoals die van de job (Dave, 4 oktober 2026).
       */}
       {(gender === null || editing) && (
-        <div class="gender" role="group" aria-labelledby="gender-title">
-          <h2 id="gender-title">Geslacht:</h2>
-          <div class="gender-choices">
+        <>
+          <div class="job-head">
+            <h2 id="gender-title">Gender:</h2>
+          </div>
+          <div class="job-choices" role="group" aria-labelledby="gender-title">
             {GENDERS.map((g) => (
-              <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === gender} onClick={() => pickGender(g.gender)}>
+              <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === shownGender} onClick={() => pickGender(g.gender)}>
                 {g.label}
               </button>
             ))}
           </div>
+        </>
+      )}
+      {dirty && (
+        <div class="job-actions">
+          <button type="button" class="equip-save" onClick={save}>
+            Opslaan
+          </button>
         </div>
       )}
       {gender === null && <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>}

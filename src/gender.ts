@@ -12,8 +12,8 @@ const VERSION = 1
 
 /** De keuzes in de volgorde waarin het scherm ze toont. */
 export const GENDERS: readonly { gender: Gender; label: string }[] = [
-  { gender: 'male', label: 'Man' },
-  { gender: 'female', label: 'Vrouw' },
+  { gender: 'male', label: 'Male' },
+  { gender: 'female', label: 'Female' },
 ]
 
 /** Hoe de kop van de jobkaart het geslacht achter je job zet: (m) of (f) (Dave, 4 oktober 2026). */

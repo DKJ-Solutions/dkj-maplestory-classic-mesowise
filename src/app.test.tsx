@@ -875,14 +875,14 @@ describe('het geslacht (issue #55)', () => {
   const GENDER_KEY = 'mesowise.gender.v1'
   const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
   const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
-  const group = () => screen.getByRole('group', { name: 'Geslacht:' })
-  const button = (name: 'Man' | 'Vrouw') => within(group()).getByRole('button', { name })
-  const pressed = (name: 'Man' | 'Vrouw') => button(name).getAttribute('aria-pressed')
+  const group = () => screen.getByRole('group', { name: 'Gender:' })
+  const button = (name: 'Male' | 'Female') => within(group()).getByRole('button', { name })
+  const pressed = (name: 'Male' | 'Female') => button(name).getAttribute('aria-pressed')
 
-  it('toont de groep Geslacht met de knoppen Man en Vrouw, allebei nog niet gekozen, en een hint', () => {
-    expect(within(group()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Man', 'Vrouw'])
-    expect(pressed('Man')).toBe('false')
-    expect(pressed('Vrouw')).toBe('false')
+  it('toont de groep Gender: met de knoppen Male en Female, allebei nog niet gekozen, en een hint', () => {
+    expect(within(group()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Male', 'Female'])
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 
@@ -899,45 +899,84 @@ describe('het geslacht (issue #55)', () => {
     render(<App />)
   }
 
-  it('bewaart bij een klik op Vrouw de keuze; de rij Geslacht en de hint verdwijnen (Dave: scheelt hoogte)', () => {
-    fireEvent.click(button('Vrouw'))
+  it('bewaart bij een klik op Female meteen de keuze (de eerste keuze); de rij Gender: en de hint verdwijnen (Dave: scheelt hoogte)', () => {
+    fireEvent.click(button('Female'))
     expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
-    expect(screen.queryByRole('group', { name: 'Geslacht:' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
     expect(screen.queryByText(JOB_HINT)).toBeNull()
   })
 
-  it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Geslacht:"', () => {
+  it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Gender:"', () => {
     expect(jobTitle()).toBe('Job:')
     const job = document.getElementById('job-title')!
     const gender = document.getElementById('gender-title')!
     expect(gender.tagName).toBe(job.tagName)
-    expect(gender.textContent).toBe('Geslacht:')
+    expect(gender.textContent).toBe('Gender:')
   })
 
   it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
     withWarrior()
     expect(jobTitle()).toBe('Je job: Warrior')
-    fireEvent.click(button('Vrouw'))
+    fireEvent.click(button('Female'))
     expect(jobTitle()).toBe('Je job: Warrior (f)')
     withWarrior('male')
     expect(jobTitle()).toBe('Je job: Warrior (m)')
   })
 
-  it('toont met het potlood de rij weer, met je keuze ingedrukt; Man kiezen bewaart hem en sluit de rij', () => {
+  const pencil = () => screen.getByRole('button', { name: /^Job en geslacht (niet )?wijzigen$/ })
+  const save = () => screen.queryByRole('button', { name: 'Opslaan' })
+  const jobButton = (name: string) => within(screen.getByRole('group', { name: 'Job:' })).getByRole('button', { name })
+
+  it('toont met het potlood de rij weer, met je keuze ingedrukt, en nog geen Opslaan', () => {
     withWarrior('female')
-    expect(screen.queryByRole('group', { name: 'Geslacht:' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Job en geslacht wijzigen' }))
-    expect(pressed('Vrouw')).toBe('true')
-    expect(pressed('Man')).toBe('false')
-    fireEvent.click(button('Man'))
-    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
-    expect(screen.queryByRole('group', { name: 'Geslacht:' })).toBeNull()
-    expect(jobTitle()).toBe('Je job: Warrior (m)')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(pressed('Male')).toBe('false')
+    expect(save()).toBeNull()
   })
 
-  it('leest een bewaarde keuze bij het starten: geen rij Geslacht en geen hint', () => {
+  it('laat met het potlood open Opslaan verschijnen zodra je iets wijzigt, en weer verdwijnen als je terugkiest', () => {
     withWarrior('female')
-    expect(screen.queryByRole('group', { name: 'Geslacht:' })).toBeNull()
+    fireEvent.click(pencil())
+    fireEvent.click(button('Male'))
+    expect(pressed('Male')).toBe('true')
+    expect(save()).toBeTruthy()
+    // Nog niets vastgelegd: alleen een concept.
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    fireEvent.click(button('Female'))
+    expect(save()).toBeNull()
+  })
+
+  it('legt bij Opslaan job en geslacht samen vast en sluit de rijen', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(save()!)
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
+    expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'thief' })
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(save()).toBeNull()
+    expect(jobTitle()).toBe('Je job: Thief (m)')
+  })
+
+  it('gooit het concept weg als je het potlood weer dichtklikt', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(pencil())
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(jobTitle()).toBe('Je job: Warrior (f)')
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(save()).toBeNull()
+  })
+
+  it('leest een bewaarde keuze bij het starten: geen rij Gender: en geen hint', () => {
+    withWarrior('female')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
     expect(screen.queryByText(JOB_HINT)).toBeNull()
     expect(jobTitle()).toBe('Je job: Warrior (f)')
   })
@@ -946,8 +985,8 @@ describe('het geslacht (issue #55)', () => {
     cleanup()
     localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'other' }))
     render(<App />)
-    expect(pressed('Man')).toBe('false')
-    expect(pressed('Vrouw')).toBe('false')
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 

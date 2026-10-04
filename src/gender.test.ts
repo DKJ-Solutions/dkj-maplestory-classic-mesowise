@@ -37,10 +37,10 @@ describe('fitsGender', () => {
 })
 
 describe('GENDERS', () => {
-  it('toont Man en dan Vrouw', () => {
+  it('toont Male en dan Female', () => {
     expect(GENDERS).toEqual([
-      { gender: 'male', label: 'Man' },
-      { gender: 'female', label: 'Vrouw' },
+      { gender: 'male', label: 'Male' },
+      { gender: 'female', label: 'Female' },
     ])
   })
 })
