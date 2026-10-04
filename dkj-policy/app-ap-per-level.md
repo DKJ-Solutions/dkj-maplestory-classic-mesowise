@@ -58,6 +58,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Gwen: the popup no longer keeps an empty button row under each field, so Extra AP sits right under Base AP (Dave: too much space between them)
 - [~] Gwen: the card showed a stat as "28 (25+3)", the game's stat window form -- replaced by the two columns below
 - [x] Gwen and Cody: the card shows each stat as "Base", a plus and "Extra" (AP from items, always a field, 0 when there is none; an empty field is saved as 0), with the headings above them and no total (Dave: they need not be added up; base first)
+- [x] Cody: the popup and the card count the base AP left the same way (one label helper, one sum); with too much base AP the popup said "over: 0" while the card said "te veel 3" (Dave: the two screens disagreed)
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
 ### DEPLOY: app/ap-per-level

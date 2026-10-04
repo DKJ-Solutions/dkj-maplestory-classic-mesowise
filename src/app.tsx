@@ -260,6 +260,8 @@ const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min
 const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
 /** De base AP die je nog kunt zetten (apAtLevel min wat er al staat): geen opgeslagen veld, alleen om te lezen. */
 const AP_FIELD: ProfileField = { key: 'level', label: 'AP', min: 0, max: 9_999, integer: true }
+/** Hoe de kaart en de popup de base AP noemen die je nog hebt; onder 0 staat er te veel. Eén plek, zodat ze nooit iets anders zeggen. */
+const apLeftLabel = (left: number): string => (left < 0 ? 'Base AP te veel' : 'Base AP over')
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -467,7 +469,7 @@ function ProfileCard(props: StatsCardProps) {
   const left = cap === null ? null : cap - baseApSpent(draft)
   const lead = (
     <>
-      <StatLine key="ap-left" field={{ ...AP_FIELD, label: left !== null && left < 0 ? 'Base AP te veel' : 'Base AP over' }} value={left === null ? '' : nfInt.format(Math.abs(left))} readOnly onSave={() => {}} />
+      <StatLine key="ap-left" field={{ ...AP_FIELD, label: apLeftLabel(left ?? 0) }} value={left === null ? '' : nfInt.format(Math.abs(left))} readOnly onSave={() => {}} />
       {/* Per stat (Dave, 4 oktober 2026): eerst de base AP, dan een plus en de extra AP van items (0 als je die niet hebt); geen totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -510,6 +512,8 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
     setEdit(null)
   }
   const dirty = edit !== null && (edit.base !== draft[stat] || edit.extra !== draft[extraKey])
+  // Dezelfde rekensom als de kaart (apAtLevel min de base AP), met de base die je in de popup typt in plaats van de bewaarde.
+  const leftInEdit = (cap ?? 0) - (baseApSpent(draft) - baseNow) - (Number(edit?.base.trim()) || 0)
   return (
     <div class="stat-line ability-line">
       <span class="stat-line-name">{f.label}</span>
@@ -529,7 +533,7 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       </button>
       {edit !== null && (
         <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
-          {cap !== null && <p class="stat-dialog-db">Base AP over: <strong>{Math.max(0, maxBase - (Number(edit.base.trim()) || 0))}</strong> van {cap}</p>}
+          {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
           <StatEditor stat={`Base ${f.label}`} heading="Base AP" labelId={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} fallback={f.min} integer
             dirty={false} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
           <StatEditor stat={`Extra ${f.label}`} heading="Extra AP van items" labelId={`${uid}-extra`} value={edit.extra} min={0} max={f.max} fallback={0} integer

@@ -537,10 +537,17 @@ describe('bewaren na elke wijziging', () => {
     expect(statShown('Base AP over')).toBe('0')
   })
 
-  it('toont hoeveel base AP te veel staat als je level omlaag gaat', () => {
+  it('toont hoeveel base AP te veel staat als je level omlaag gaat, op de kaart en in de popup hetzelfde', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     expect(statShown('Base AP te veel')).toBe('5')
+    const h = openAbility('LUK')
+    expect(h.d.getByText(/Base AP te veel:/).textContent).toBe('Base AP te veel: 5 van 65')
+    // Wat je in de popup lager zet, telt meteen mee.
+    h.typeBase('32')
+    expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 65')
+    h.save()
+    expect(statShown('Base AP over')).toBe('0')
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
