@@ -68,9 +68,9 @@ describe('defaultEquipment en catalogItems', () => {
 })
 
 describe('statName', () => {
-  it('noemt de stat zoals het spel: ATT voor het wapen, WDEF voor armor', () => {
+  it('noemt de stat zoals het spel: ATT voor het wapen, DEF voor armor', () => {
     expect(statName('claw')).toBe('ATT')
-    for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(statName(s), s).toBe('WDEF')
+    for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(statName(s), s).toBe('DEF')
   })
 })
 

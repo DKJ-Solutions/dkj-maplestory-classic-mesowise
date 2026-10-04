@@ -59,8 +59,8 @@ export const defaultEquipment = (): Equipment => ({
 
 const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw'
 
-/** Hoe het scherm de stat van een slot noemt: ATT voor het wapen (zoals het spel), WDEF voor armor. */
-export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? 'WDEF' : 'ATT')
+/** Hoe het scherm de stat van een slot noemt: ATT voor het wapen en DEF voor armor, zoals het spel. */
+export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? 'DEF' : 'ATT')
 
 /** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw, WDEF voor armor). */
 export interface CatalogItem {
