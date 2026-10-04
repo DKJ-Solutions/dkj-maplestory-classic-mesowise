@@ -22,6 +22,7 @@ import {
   EYE_OF_AMAZON,
   FOCUS_LEVELS,
   FOCUS_SOURCE,
+  GENDERED_WORN_BOWMAN_ARMOR,
   HELPFUL_STRANGER_ARROWS,
   HELPFUL_STRANGER_SOURCES,
   NPC_ARROWS,
@@ -151,7 +152,7 @@ describe('HELPFUL_STRANGER_ARROWS', () => {
 })
 
 describe('NPC_BOWMAN_ARMOR', () => {
-  it('bevat precies de 19 stukken (17 met jobregel, 2 zonder: #55), per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
+  it('bevat precies de 20 stukken (18 met jobregel, 2 zonder: #55, #107), per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
     const rows = NPC_BOWMAN_ARMOR.map((a) => [a.name, a.slot, a.level, a.str, a.dex, a.wdef, a.price])
     expect(rows).toEqual([
       ['Winter Hat', 'hat', 10, 0, 10, 15, 1_200],
@@ -167,6 +168,7 @@ describe('NPC_BOWMAN_ARMOR', () => {
       ['Bennis Chainmail / Yellow Bennis Chainmail', 'top', 25, 15, 40, 36, 7_500],
       ["Hunter's Armor / Huntress Armor", 'top', 30, 20, 50, 40, 12_000],
       ['Archer Pants', 'bottom', 10, 0, 10, 17, 1_600],
+      ['Green Able Armor Skirt', 'bottom', 15, 0, 20, 20, 2_400],
       ['Hard Leather Pants', 'bottom', 20, 10, 30, 23, 4_800],
       ['Bennis Chain Pants', 'bottom', 25, 15, 40, 26, 6_000],
       ["Hunter's Pants / Huntress Pants", 'bottom', 30, 20, 50, 29, 9_600],
@@ -174,7 +176,7 @@ describe('NPC_BOWMAN_ARMOR', () => {
       ['Woodsman Boots', 'shoes', 15, 0, 20, 12, 1_800],
       ['Huntertop', 'shoes', 20, 10, 30, 14, 3_600],
     ])
-    expect(NPC_BOWMAN_ARMOR).toHaveLength(19)
+    expect(NPC_BOWMAN_ARMOR).toHaveLength(20)
   })
 
   it('verwijst naar de pagina van het eerste id (bij de paren de mannenpagina), opgehaald op 2026-10-04', () => {
@@ -182,7 +184,7 @@ describe('NPC_BOWMAN_ARMOR', () => {
       'Winter Hat': 730, 'White Bandana': 719, 'Red Baseball Cap': 781, 'Feather Hat': 751, 'Robin Hat': 771, Hunter: 798, Hawkeye: 818,
       'Archer Top / Avelin': 946, 'Leather Hoodwear / Able Armor': 966, 'Hard Leather Top / Shivermail': 984,
       'Bennis Chainmail / Yellow Bennis Chainmail': 1003, "Hunter's Armor / Huntress Armor": 1023,
-      'Archer Pants': 1180, 'Hard Leather Pants': 1215, 'Bennis Chain Pants': 1232,
+      'Archer Pants': 1180, 'Green Able Armor Skirt': 1190, 'Hard Leather Pants': 1215, 'Bennis Chain Pants': 1232,
       "Hunter's Pants / Huntress Pants": 1238,
       'Hard Leather Boots': 1313, 'Woodsman Boots': 1324, Huntertop: 1340,
     }
@@ -190,8 +192,8 @@ describe('NPC_BOWMAN_ARMOR', () => {
       expect(a.source.url, a.name).toBe(item(ids[a.name]))
       expect(a.source.retrieved, a.name).toMatch(DATE)
     }
-    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.source.url)).size).toBe(19)
-    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.name)).size).toBe(19)
+    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.source.url)).size).toBe(20)
+    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.name)).size).toBe(20)
   })
 
   it('vouwt de vijf top-paren en het level-30 bottom-paar samen tot een regel met de mannenpagina als bron', () => {
@@ -207,14 +209,21 @@ describe('NPC_BOWMAN_ARMOR', () => {
   it('laat de rokken met dezelfde stats als een uniseks-bottom weg: Avelin Skirt en Shivermail Skirt', () => {
     const urls = NPC_BOWMAN_ARMOR.map((a) => a.source.url)
     for (const id of [1175, 1176, 1209, 1210, 1211]) expect(urls).not.toContain(item(id))
-    expect(NPC_BOWMAN_ARMOR.some((a) => /Skirt/.test(a.name) && !a.name.includes(' / '))).toBe(false)
+    // De enige rok in de winkel is de Able-rok van level 15, die er alleen is voor vrouwen (#107).
+    expect(NPC_BOWMAN_ARMOR.filter((a) => /Skirt/.test(a.name) && !a.name.includes(' / ')).map((a) => a.name)).toEqual(['Green Able Armor Skirt'])
   })
 
-  it('heeft geen bottom op level 15: de Able Armor Skirt (1190 tot 1192) is alleen voor vrouwen', () => {
-    expect(NPC_BOWMAN_ARMOR.filter((a) => a.slot === 'bottom' && a.level === 15)).toHaveLength(0)
-    expect(NPC_BOWMAN_ARMOR.filter((a) => a.slot === 'bottom').map((a) => a.level)).toEqual([10, 20, 25, 30])
+  it('heeft op level 15 precies één bottom: de Green Able Armor Skirt (1190), alleen voor vrouwen en het enige stuk met geslacht (#107)', () => {
+    const bottoms15 = NPC_BOWMAN_ARMOR.filter((a) => a.slot === 'bottom' && a.level === 15)
+    expect(bottoms15).toHaveLength(1)
+    expect(bottoms15[0]).toMatchObject({ name: 'Green Able Armor Skirt', gender: 'female', wdef: 20, price: 2_400 })
+    expect(bottoms15[0].source.url).toBe(item(1190))
+    expect(NPC_BOWMAN_ARMOR.filter((a) => a.slot === 'bottom').map((a) => a.level)).toEqual([10, 15, 20, 25, 30])
+    expect(NPC_BOWMAN_ARMOR.filter((a) => a.gender !== undefined).map((a) => a.name)).toEqual(['Green Able Armor Skirt'])
+    // De andere kleuren (1191, 1192) staan niet in de winkel maar bij de items zonder prijs.
     const urls = NPC_BOWMAN_ARMOR.map((a) => a.source.url)
-    for (const id of [1190, 1191, 1192]) expect(urls).not.toContain(item(id))
+    for (const id of [1191, 1192]) expect(urls).not.toContain(item(id))
+    expect(GENDERED_WORN_BOWMAN_ARMOR.map((a) => a.source.url)).toEqual([item(1191), item(1192)])
   })
 
   it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel erin, en laat Brown Skullcap (708, level 5), Old Wisconsin (761) en Whitebottom (1364 tot 1367, fame) weg', () => {

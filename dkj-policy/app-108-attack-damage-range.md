@@ -51,7 +51,7 @@ lowest and highest damage from one ordinary basic physical attack", with its own
 ### CREATE
 
 - [x] Cody: `statWindowRange` in `src/suggest.ts` -- the job's basic attack without a skill, truncated like the guide
-- [x] Cody: the Attack line on Total stats shows `min – max`; a Magician (not yet computed) keeps the weapon attack
+- [x] Cody: the Attack line on Total stats shows `min – max`; a Magician keeps the weapon attack (his basic wand attack is not in the game data)
 
 ### TEST
 

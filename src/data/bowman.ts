@@ -22,9 +22,6 @@
 // Niet opgenomen als armor, en waarom:
 // - Brown Skullcap (708): geen jobregel, maar level 5, onder de grens van 10.
 // - Items met fame-eis: Whitebottom Boots (1364 tot en met 1367, fame 20) en Old Wisconsin (761, fame 10).
-// - Level 15 bottom: alleen de Able Armor Skirt (1190 tot en met 1192), alleen voor vrouwen, zonder uniseks- of
-//   mannenversie met dezelfde stats. Een mannelijke Bowman heeft dus geen level-15 bottom in de winkel; de lijst
-//   hieronder slaat level 15 bij de bottoms over.
 // - Overalls: er zijn er geen in de winkel van Sam. Shoes op level 25 en 30 staan niet in de gelezen lijst.
 // - Handschoenen, schilden en capes: niet gelezen, dus niet in de data.
 //
@@ -37,6 +34,14 @@
 // Waar er een uniseks-bottom is (level 10: Archer Pants 1180, level 20: Hard Leather Pants 1215, level 25: Bennis
 // Chain Pants 1232) staat die, en de rok met dezelfde stats telt niet apart: Avelin Skirt (1175, 1176) en
 // Shivermail Skirt (1209 tot en met 1211).
+//
+// Level 15 bottom (Dave, #107, 2026-10-04): alleen de Able-rokken (1190 tot en met 1192), "Female only", zonder
+// uniseks- of mannenversie (Sam, https://meowdb.com/msclassic/npcs/211, heeft geen andere level-15 bottom). De app
+// vraagt het geslacht sinds #55, dus de Green Able Armor Skirt (1190) staat erin met `gender: 'female'`; een
+// mannelijke Bowman heeft op level 15 geen bottom in de winkel. De andere kleuren (Brown Able Skirt 1191, Grey Able
+// Skirt 1192) hebben dezelfde eisen, WDEF en prijs en staan in GENDERED_WORN_BOWMAN_ARMOR. Gelezen uit de ruwe
+// itempagina's, twee keer. Andere Bowman-stukken die alleen om hun geslacht ontbraken zijn er niet: elke top en
+// bottom van Sam staat hierboven als paar of uniseks-stuk.
 //
 // Bij de hoeden (730 en 731, 751 tot en met 755, 771 tot en met 775, 798 tot en met 802, 818 en 822) en schoenen
 // (1313 en 1314, 1324 tot en met 1326, 1340 tot en met 1343) hebben de varianten dezelfde eisen, WDEF en prijs
@@ -54,8 +59,10 @@ import type {
   BowmanWeapon,
   BowmanWeaponKind,
   FocusLevel,
+  Gender,
   SkillLevel,
   Source,
+  WornArmor,
 } from './types'
 
 const R = '2026-10-04'
@@ -128,9 +135,14 @@ const armor = (
   dex: number,
   wdef: number,
   price: number,
-): BowmanArmor => ({ name, slot, level, str, dex, wdef, price, source: item(id) })
+  gender?: Gender,
+): BowmanArmor => ({ name, slot, level, str, dex, wdef, price, source: item(id), ...(gender ? { gender } : {}) })
 
-/** De NPC-armor voor een Bowman, per slot (hat, top, bottom, shoes) van laag naar hoog level. Zie de kop voor wat ontbreekt. */
+/**
+ * De NPC-armor voor een Bowman, per slot (hat, top, bottom, shoes) van laag naar hoog level. Zie de kop voor wat
+ * ontbreekt. Alleen de level-15 bottom is voor één geslacht (#107); de andere tops en bottoms hebben een even sterk
+ * stuk voor het andere geslacht of zijn uniseks.
+ */
 export const NPC_BOWMAN_ARMOR: readonly BowmanArmor[] = [
   armor(730, 'Winter Hat', 'hat', 10, 0, 10, 15, 1_200),
   armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 1_200),
@@ -145,12 +157,23 @@ export const NPC_BOWMAN_ARMOR: readonly BowmanArmor[] = [
   armor(1003, 'Bennis Chainmail / Yellow Bennis Chainmail', 'top', 25, 15, 40, 36, 7_500),
   armor(1023, "Hunter's Armor / Huntress Armor", 'top', 30, 20, 50, 40, 12_000),
   armor(1180, 'Archer Pants', 'bottom', 10, 0, 10, 17, 1_600),
+  armor(1190, 'Green Able Armor Skirt', 'bottom', 15, 0, 20, 20, 2_400, 'female'),
   armor(1215, 'Hard Leather Pants', 'bottom', 20, 10, 30, 23, 4_800),
   armor(1232, 'Bennis Chain Pants', 'bottom', 25, 15, 40, 26, 6_000),
   armor(1238, "Hunter's Pants / Huntress Pants", 'bottom', 30, 20, 50, 29, 9_600),
   armor(1313, 'Hard Leather Boots', 'shoes', 10, 0, 10, 10, 1_200),
   armor(1324, 'Woodsman Boots', 'shoes', 15, 0, 20, 12, 1_800),
   armor(1340, 'Huntertop', 'shoes', 20, 10, 30, 14, 3_600),
+]
+
+/**
+ * De andere kleuren van de level-15 Able-rok (#107): even sterk en even duur als de Green Able Armor Skirt in
+ * NPC_BOWMAN_ARMOR, alleen een andere bonusstat (die negeert de app). Ze staan in de zoekbalk van "Je equipment",
+ * zonder prijs, zoals de kleuren in wornWarrior.ts.
+ */
+export const GENDERED_WORN_BOWMAN_ARMOR: readonly WornArmor[] = [
+  { name: 'Brown Able Skirt', slot: 'bottom', level: 15, wdef: 20, gender: 'female', source: item(1191) },
+  { name: 'Grey Able Skirt', slot: 'bottom', level: 15, wdef: 20, gender: 'female', source: item(1192) },
 ]
 
 /**

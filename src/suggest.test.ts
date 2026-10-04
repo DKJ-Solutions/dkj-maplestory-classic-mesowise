@@ -314,7 +314,7 @@ describe('statWindowRange: de Attack uit het statvenster (#108)', () => {
     expect(statWindowRange(as('warrior', { str: '132', dex: '30', clawWatk: '47', weaponMult: '1.8' }))).toEqual({ min: 60, max: 172 })
   })
 
-  it('is null voor een job die de app nog niet doorrekent', () => {
+  it('is null voor een Magician: zijn gewone wand-aanval staat niet in de gegevens', () => {
     expect(statWindowRange(as('magician'))).toBeNull()
   })
 })

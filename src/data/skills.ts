@@ -6,6 +6,7 @@
 import { ARROW_BLOW_LEVELS, CRITICAL_SHOT, DOUBLE_SHOT_LEVELS, EYE_OF_AMAZON, FOCUS_LEVELS } from './bowman'
 import { LUCKY_SEVEN_LEVELS } from './thief'
 import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
+import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_GUARD, MAX_MP_INCREASE } from './magician'
 import type { Source } from './types'
 
 const R = '2026-10-04'
@@ -35,11 +36,17 @@ export type SkillKey =
   | 'criticalShot'
   | 'eyeOfAmazon'
   | 'focus'
+  | 'energyBolt'
+  | 'magicClaw'
+  | 'magicGuard'
+  | 'magicArmor'
+  | 'improvedMpRecovery'
+  | 'maxMpIncrease'
 
 export interface SkillInfo {
   key: SkillKey
   name: string
-  job: 'Beginner' | 'Thief' | 'Warrior' | 'Bowman'
+  job: 'Beginner' | 'Thief' | 'Warrior' | 'Bowman' | 'Magician'
   /** Het hoogste skill-level. */
   max: number
   /** De MP die de skill per keer kost, per skill-level (index 0 is level 1); ontbreekt bij een passieve skill. */
@@ -94,6 +101,19 @@ export const WARRIOR_SKILLS: readonly SkillInfo[] = [
 ]
 
 /**
+ * De zes skills van de 1e job van een Magician, in de volgorde van de skillpagina's. De maxima zijn het aantal
+ * levels in de gegevens van het model (data/magician.ts), dezelfde als op de skillpagina's.
+ */
+export const MAGICIAN_SKILLS: readonly SkillInfo[] = [
+  skill('magicGuard', 'Magic Guard', 'Magician', MAGIC_GUARD.mp.length, 'magician/magic-guard', MAGIC_GUARD.mp),
+  skill('magicArmor', 'Magic Armor', 'Magician', MAGIC_ARMOR_LEVELS.length, 'magician/magic-armor', mpOf(MAGIC_ARMOR_LEVELS)),
+  skill('improvedMpRecovery', 'Improved MP Recovery', 'Magician', IMPROVED_MP_RECOVERY.itemRecoveryPct.length, 'magician/improved-mp-recovery'),
+  skill('maxMpIncrease', 'Max MP Increase', 'Magician', MAX_MP_INCREASE.maxMpPct.length, 'magician/max-mp-increase'),
+  skill('energyBolt', 'Energy Bolt', 'Magician', ENERGY_BOLT_LEVELS.length, 'magician/energy-bolt', mpOf(ENERGY_BOLT_LEVELS)),
+  skill('magicClaw', 'Magic Claw', 'Magician', MAGIC_CLAW_LEVELS.length, 'magician/magic-claw', mpOf(MAGIC_CLAW_LEVELS)),
+]
+
+/**
  * De vijf skills van de 1e job van een Bowman (Blessing of Amazon bestaat niet op MeowDB, zie bowman.ts). De maxima
  * zijn het aantal levels in de gegevens van het model (data/bowman.ts), dezelfde als op de skillpagina's.
  */
@@ -106,7 +126,7 @@ export const BOWMAN_SKILLS: readonly SkillInfo[] = [
 ]
 
 /** Alle skills van alle jobs die de app kent. */
-export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS, ...BOWMAN_SKILLS]
+export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS, ...BOWMAN_SKILLS, ...MAGICIAN_SKILLS]
 
 /** De sleutels van de Thief-skills (Beginner en 1e job). */
 export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)

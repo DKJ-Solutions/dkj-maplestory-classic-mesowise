@@ -6,6 +6,7 @@
 // Opgehaald bij NiaMeowDB (meowdb.com) op 2026-10-04: per item de eigen itempagina, gelezen uit de ruwe pagina
 // (het vereistenblok met REQ LEV en JOB, en het statblok met W.DEF of W.ATK), dus zonder samenvatting ertussen.
 // Alleen items die een Thief tot level 30 echt draagt, nooit een hele tabel (zie .claude/rules/this-repo.md).
+// De M.DEF is op 2026-10-04 per pagina nagelezen (#91): alleen de Bronze Pride (809) heeft er een, M.DEF+18.
 //
 // Wat erin staat, en waarom ruimer dan armor.ts: hier zegt de speler zelf wat hij draagt, dus de vraag of hij
 // het kan dragen speelt niet. Daarom staan ook items zonder jobregel (beginnerskleding, Bandana, Gomushin; de White Bandana (719) niet, die staat als NPC-item in armor.ts),
@@ -57,7 +58,7 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Brown Bamboo Hat', slot: 'hat', level: 25, wdef: 24, source: src(789) },
   { name: 'Red Starry Bandana', slot: 'hat', level: 25, wdef: 24, source: src(792) },
   { name: 'Ribboned Pig Headband', slot: 'hat', level: 27, wdef: 26, source: src(808) },
-  { name: 'Bronze Pride', slot: 'hat', level: 30, wdef: 16, source: src(809) },
+  { name: 'Bronze Pride', slot: 'hat', level: 30, wdef: 16, mdef: 18, source: src(809) },
   { name: 'Blue Striped Undershirt', slot: 'top', level: 0, wdef: 1, source: src(932) },
   { name: 'White Undershirt', slot: 'top', level: 0, wdef: 6, source: src(933) },
   { name: 'Grey T-Shirt', slot: 'top', level: 0, wdef: 6, source: src(934) },
