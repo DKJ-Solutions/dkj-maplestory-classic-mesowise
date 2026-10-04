@@ -460,3 +460,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 @media (prefers-reduced-motion: reduce) {
   .track, .spot-head::after, .collapse, .card { transition: none; }
 }
+
+/* De menubalk (issue #86): in de kaartkleur (wit, in het donkere thema donker), over de hele breedte en altijd bovenin. De inhoud lijnt uit met main. */
+:root { --topbar-h: 3.5rem; }
+/* Een veld dat in beeld schuift, blijft onder de menubalk en de Level-up-balk. */
+html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
+.topbar { position: sticky; top: 0; z-index: 2; background: var(--card); box-shadow: 0 1px 0 var(--border); }
+.topbar-inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+.topbar-name { font-size: 1.125rem; font-weight: 700; }
+.topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); cursor: pointer; }
+.topbar-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stat-dialog .card.job { margin: 1rem 0 0; }
+
+/* Alleen voor schermlezers: de kop van het beginscherm (de naam staat al in de menubalk). */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

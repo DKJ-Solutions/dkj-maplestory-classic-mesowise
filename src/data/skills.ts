@@ -1,8 +1,9 @@
-// De skills die een Thief of Warrior kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
+// De skills die een Thief, Warrior of Bowman kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
 // elk met het hoogste skill-level en de MP die hij per keer kost (issue #83). Alleen namen, maxima en MP, voor de
 // sectie "Skillpoints"; wat een skill doet, staat in thief.ts voor de skills die het model doorrekent.
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
 // als op de skillpagina's, de MP per level in de tabel op elke skillpagina (daar als "MP -8").
+import { ARROW_BLOW_LEVELS, CRITICAL_SHOT, DOUBLE_SHOT_LEVELS, EYE_OF_AMAZON, FOCUS_LEVELS } from './bowman'
 import { LUCKY_SEVEN_LEVELS } from './thief'
 import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 import type { Source } from './types'
@@ -29,11 +30,16 @@ export type SkillKey =
   | 'powerStrike'
   | 'slashBlast'
   | 'preciseStrikes'
+  | 'arrowBlow'
+  | 'doubleShot'
+  | 'criticalShot'
+  | 'eyeOfAmazon'
+  | 'focus'
 
 export interface SkillInfo {
   key: SkillKey
   name: string
-  job: 'Beginner' | 'Thief' | 'Warrior'
+  job: 'Beginner' | 'Thief' | 'Warrior' | 'Bowman'
   /** Het hoogste skill-level. */
   max: number
   /** De MP die de skill per keer kost, per skill-level (index 0 is level 1); ontbreekt bij een passieve skill. */
@@ -87,8 +93,20 @@ export const WARRIOR_SKILLS: readonly SkillInfo[] = [
   skill('preciseStrikes', 'Precise Strikes', 'Warrior', PRECISE_STRIKES_LEVELS.length, 'warrior/precise-strikes'),
 ]
 
+/**
+ * De vijf skills van de 1e job van een Bowman (Blessing of Amazon bestaat niet op MeowDB, zie bowman.ts). De maxima
+ * zijn het aantal levels in de gegevens van het model (data/bowman.ts), dezelfde als op de skillpagina's.
+ */
+export const BOWMAN_SKILLS: readonly SkillInfo[] = [
+  skill('arrowBlow', 'Arrow Blow', 'Bowman', ARROW_BLOW_LEVELS.length, 'bowman/arrow-blow', mpOf(ARROW_BLOW_LEVELS)),
+  skill('doubleShot', 'Double Shot', 'Bowman', DOUBLE_SHOT_LEVELS.length, 'bowman/double-shot', mpOf(DOUBLE_SHOT_LEVELS)),
+  skill('criticalShot', 'Critical Shot', 'Bowman', CRITICAL_SHOT.critPct.length, 'bowman/critical-shot'),
+  skill('eyeOfAmazon', 'The Eye of Amazon', 'Bowman', EYE_OF_AMAZON.range.length, 'bowman/the-eye-of-amazon'),
+  skill('focus', 'Focus', 'Bowman', FOCUS_LEVELS.length, 'bowman/focus', mpOf(FOCUS_LEVELS)),
+]
+
 /** Alle skills van alle jobs die de app kent. */
-export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS]
+export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS, ...BOWMAN_SKILLS]
 
 /** De sleutels van de Thief-skills (Beginner en 1e job). */
 export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)

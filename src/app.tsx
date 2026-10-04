@@ -17,10 +17,11 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, skillMpAt } from './data/skills'
+import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
-import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelUp, applySkillPoint, arrowBlowMp, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -94,6 +95,7 @@ function NotComputed(props: { job: Job }) {
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
   const { job, chosen } = props
   const [editing, setEditing] = useState(false)
+  const titleId = useId()
   const choices = jobChoices(chosen && !editing)
   const pick = (j: Job) => {
     setEditing(false)
@@ -102,7 +104,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   return (
     <section class="card job">
       <div class="job-head">
-        <h2 id="job-title">{chosen && !editing ? `Je job: ${jobLabel(job)}` : 'Welke job speel je?'}</h2>
+        <h2 id={titleId}>{chosen && !editing ? `Je job: ${jobLabel(job)}` : 'Welke job speel je?'}</h2>
         {chosen && (
           <button
             type="button"
@@ -118,7 +120,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         )}
       </div>
       {choices.length > 0 && (
-        <div class="job-choices" role="group" aria-labelledby="job-title">
+        <div class="job-choices" role="group" aria-labelledby={titleId}>
           {choices.map((j) => (
             <button
               key={j}
@@ -138,6 +140,36 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
       )}
     </section>
+  )
+}
+
+/**
+ * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
+ * hamburgermenu met de instellingen. Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
+ * je er geen hebt gekozen.
+ */
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
+  const close = () => {
+    setOpen(false)
+    button.current?.focus()
+  }
+  return (
+    <header class="topbar">
+      <div class="topbar-inner">
+        <span class="topbar-name">Mesowise</span>
+        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        </button>
+      </div>
+      {open && (
+        <StatDialog title="Instellingen" closeLabel="Sluiten" onCancel={close}>
+          <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} />
+        </StatDialog>
+      )}
+    </header>
   )
 }
 
@@ -380,6 +412,14 @@ function TotalStatsCard(props: StatsCardProps) {
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
       {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+      {job === 'bowman' && (
+        <p class="hint">
+          De app rekent met Arrow Blow als je hem hebt geleerd, anders met je gewone schot. Een boog of kruisboog uit je
+          equipment vult je weapon attack en tijd per aanval in. Zet je geen wapen, dan rekent de app met 750 ms per aanval
+          (Fast (5), zoals de meeste wapens), tot je een wapen zet. Je schiet gewone pijlen: 1 meso per pijl, zonder extra ATT,
+          en elke aanval verbruikt er één.
+        </p>
+      )}
       {job === 'warrior' && (
         <>
           <p class="hint">
@@ -455,6 +495,7 @@ const SKILL_SOURCES = {
     { name: 'Power Strike', source: POWER_STRIKE_SOURCE },
     { name: 'Precise Strikes', source: PRECISE_STRIKES_SOURCE },
   ],
+  bowman: [{ name: 'Arrow Blow', source: ARROW_BLOW_SOURCE }],
 }
 
 /** Waar je skillpunt de meeste mesos bespaart (issue #26). */
@@ -496,7 +537,7 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
       )}
       {a.maxed.length > 0 && <p class="hint">Al op het maximum: {listFormat.format(a.maxed)}.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
-      {SKILL_SOURCES[props.job === 'warrior' ? 'warrior' : 'thief'].map((s) => (
+      {SKILL_SOURCES[computedJob(props.job)].map((s) => (
         <p class="source" key={s.name}>
           {s.name}:{' '}
           <a href={s.source.url} target="_blank" rel="noopener noreferrer">
@@ -512,7 +553,10 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
 /** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
 const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior een wapen (een ander lidwoord en een andere uitgang). */
+/** De jobs waarvoor de app rekent, als sleutel van de teksten per job; een andere job (Magician) valt terug op de Thief. */
+const computedJob = (job: Job): 'thief' | 'warrior' | 'bowman' => (job === 'warrior' || job === 'bowman' ? job : 'thief')
+
+/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior en de Bowman een wapen (een ander lidwoord en een andere uitgang). */
 const WEAPON_TEXT = {
   thief: {
     title: 'Loont een nieuwe claw?',
@@ -540,8 +584,21 @@ const WEAPON_TEXT = {
     prices: 'Wapenprijzen',
     noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
   },
+  bowman: {
+    title: 'Loont een nieuwe boog of kruisboog?',
+    noBetter: 'Geen boog of kruisboog die je kunt dragen en die beter is dan de jouwe.',
+    noBetterQuestion: 'Geen betere boog of kruisboog die je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de bogen en kruisbogen niet doorrekenen.',
+    notYet: 'Nog niet: geen boog of kruisboog verdient zich terug vóór je volgende upgrade.',
+    noPayback: 'Geen boog of kruisboog verdient zich terug vóór je volgende upgrade.',
+    toWear: 'dit wapen',
+    old: 'je oude wapen',
+    unpriced: 'Wapens zonder vaste winkelprijs, of waarvan de bron geen Bowman als job noemt, telt de app niet. Als beter telt een wapen waarmee je volgens de app meer EXP per meso haalt dan met je huidige; een kruisboog is trager dan een boog, en dat telt mee.',
+    prices: 'Wapenprijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
+  },
 } as const
-const weaponText = (job: Job) => WEAPON_TEXT[job === 'warrior' ? 'warrior' : 'thief']
+const weaponText = (job: Job) => WEAPON_TEXT[computedJob(job)]
 
 /** Wat je tekortkomt om een wapen of stuk armor te dragen, als tekst: "5 STR en 10 DEX" (de hoofdstat eerst). */
 const missingStats = (u: UnwearableClaw | UnwearableArmor) => u.needs.map((n) => `${n.amount} ${n.stat.toUpperCase()}`).join(' en ')
@@ -733,7 +790,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
  * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
  * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
  */
-function StatDialog(props: { title: string; onCancel: () => void; children: ComponentChildren }) {
+function StatDialog(props: { title: string; closeLabel?: string; onCancel: () => void; children: ComponentChildren }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const d = ref.current
@@ -756,7 +813,7 @@ function StatDialog(props: { title: string; onCancel: () => void; children: Comp
       <div class="stat-dialog-body">
       <div class="stat-dialog-head">
         <strong>{props.title}</strong>
-        <button type="button" class="stat-dialog-close" aria-label="Sluiten zonder opslaan" onClick={props.onCancel}>
+        <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
         </button>
       </div>
@@ -888,6 +945,23 @@ function EquipmentCard(props: {
               , opgehaald op {formatDate(NPC_WARRIOR_ARMOR[0].source.retrieved)}.
             </p>
           )}
+          {props.job === 'bowman' && (
+            <p class="source">
+              Wapens:{' '}
+              <a href={NPC_BOWMAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_BOWMAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
+              <a href={NPC_BOWMAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_BOWMAN_ARMOR[0].source.retrieved)}. Pijlen:{' '}
+              <a href={NPC_ARROWS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
+            </p>
+          )}
           {props.job === 'thief' && (
             <p class="source">
               Claws:{' '}
@@ -914,6 +988,7 @@ function EquipmentCard(props: {
 
 const SKILL_GROUPS = [
   { job: 'Warrior', title: 'Warrior (1e job)' },
+  { job: 'Bowman', title: 'Bowman (1e job)' },
   { job: 'Thief', title: 'Thief (1e job)' },
   // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
   { job: 'Beginner', title: 'Beginner' },
@@ -932,7 +1007,7 @@ function skillMpText(s: SkillLevel): string {
 
 /**
  * De skillpunten die je nu hebt gezet: elke skill van je job tot de 2e job, met zijn maximum. Hier vul
- * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent ziet
+ * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent (de Magician) ziet
  * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
  */
 function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
@@ -1216,6 +1291,13 @@ function SpotCard(props: {
 type Step = 0 | 1 | 2
 const SLIDE_MS = 250
 
+/** De zin boven de controle na een level-up, per job: wat hij met zijn AP doet. */
+const LEVEL_UP_HINT = {
+  thief: 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.',
+  warrior: 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.',
+  bowman: 'Verdeel je AP zelf: DEX voor schade, accuracy en wapen-eisen, STR voor de wapens die dat vragen. Controleer je evasion in het spel.',
+} as const
+
 /** Kosten in meso, voor in een zin; de kosten van een level ronden naar boven af. */
 const formatCost = (meso: number) => (meso === 0 ? 'niets' : `± ${nfInt.format(Math.ceil(meso))} meso`)
 const placeName = (name: string) => name.trim() || 'Naamloze plek'
@@ -1394,6 +1476,13 @@ function noCostReason(c: LevelCost): string | null {
   return null
 }
 
+/** De skills die een aanval zijn: de MP per aanval op een skill-level, en hoe de speler één aanval noemt. */
+const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { mp: (level: number) => number; noun: string }>> = {
+  luckySeven: { mp: luckySevenMp, noun: 'worp' },
+  powerStrike: { mp: powerStrikeMp, noun: 'aanval' },
+  arrowBlow: { mp: arrowBlowMp, noun: 'schot' },
+}
+
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
@@ -1416,8 +1505,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       </Question>
     )
   }
-  const mpOf = props.job === 'warrior' ? powerStrikeMp : luckySevenMp
-  const mpFrom = winner ? mpOf(winner.to - 1) : 0
+  const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
+  const mpFrom = winner && attack ? attack.mp(winner.to - 1) : 0
   return (
     <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading}>
       {winner ? (
@@ -1426,11 +1515,11 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
             Zet je skillpunt in {winner.name} (→ {winner.to}).
           </p>
           <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
-          {(winner.id === 'luckySeven' || winner.id === 'powerStrike') && (
+          {attack && (
             <p class="hint">
               {mpFrom === 0
-                ? `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpOf(winner.to)} MP (nu 0).`
-                : `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpFrom} → ${mpOf(winner.to)} MP.`}{' '}
+                ? `Elke ${attack.noun} kost je dan ${attack.mp(winner.to)} MP (nu 0).`
+                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${attack.mp(winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
@@ -1545,7 +1634,7 @@ export function App() {
   const jobDirty = useRef(false)
   const parsed = useMemo(() => parseProfile(profileDraft, job), [profileDraft, job])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
-  // De berekening kent de Thief en de Warrior. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
+  // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   const profile = computed ? parsedProfile : null
   // De melding staat bij de kaart waar het foute veld staat.
@@ -1742,195 +1831,197 @@ export function App() {
   }
 
   return (
-    <main>
-      <div class="flow">
-        <div class="track" style={{ transform: `translateX(-${step * 100}%)` }}>
-          <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
-            <h1 tabIndex={-1} ref={headingRef(0)}>
-              Mesowise
-            </h1>
-            <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
+    <>
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} />
+      <main>
+        <div class="flow">
+          <div class="track" style={{ transform: `translateX(-${step * 100}%)` }}>
+            <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
+              <h1 class="sr-only" tabIndex={-1} ref={headingRef(0)}>
+                Mesowise
+              </h1>
+              <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
 
-            {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
-            <p class="current-level">
-              {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
-            </p>
-            {computed && cost.kind === 'cost' && (
-              <p class="summary">
-                Beste plek: <strong>{placeName(cost.spotName)}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
+              {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
+              <p class="current-level">
+                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
               </p>
-            )}
+              {computed && cost.kind === 'cost' && (
+                <p class="summary">
+                  Beste plek: <strong>{placeName(cost.spotName)}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
+                </p>
+              )}
 
-            <JobCard job={job} chosen={jobChosen} onChange={changeJob} />
+              {/* Gekozen staat je job in het menu bovenin (TopBar). */}
+              {!jobChosen && <JobCard job={job} chosen={jobChosen} onChange={changeJob} />}
 
-            <EquipmentCard
-              job={job}
-              equipment={equipment}
-              defaultOpen={false}
-              pending={pending}
-              onPick={pickEquipment}
-              onStatInput={(slot, text) => setPendingFor(slot, text)}
-              onCommit={commitEquipment}
-              onDiscard={(slot) => setPendingFor(slot, undefined)}
-              error={equipError}
-            />
+              <EquipmentCard
+                job={job}
+                equipment={equipment}
+                defaultOpen={false}
+                pending={pending}
+                onPick={pickEquipment}
+                onStatInput={(slot, text) => setPendingFor(slot, text)}
+                onCommit={commitEquipment}
+                onDiscard={(slot) => setPendingFor(slot, undefined)}
+                error={equipError}
+              />
 
-            <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-            <TotalStatsCard job={job} draft={profileDraft} error={totalError} onChange={updateProfile} />
-            <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
+              <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+              <TotalStatsCard job={job} draft={profileDraft} error={totalError} onChange={updateProfile} />
+              <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
-            {computed ? (
-              <>
-                <LevelCostCard cost={cost} />
-                <SkillPointCard advice={skillAdvice} job={job} />
-                <ClawUpgradeCard advice={clawAdvice} job={job} />
-              </>
-            ) : (
-              <section class="card level-cost">
-                <h2>Wat kost dit level?</h2>
-                <NotComputed job={job} />
-              </section>
-            )}
+              {computed ? (
+                <>
+                  <LevelCostCard cost={cost} />
+                  <SkillPointCard advice={skillAdvice} job={job} />
+                  <ClawUpgradeCard advice={clawAdvice} job={job} />
+                </>
+              ) : (
+                <section class="card level-cost">
+                  <h2>Wat kost dit level?</h2>
+                  <NotComputed job={job} />
+                </section>
+              )}
 
-            {drafts.length === 0 && <p class="empty">Nog geen plekken. Voeg er een toe om te vergelijken.</p>}
+              {drafts.length === 0 && <p class="empty">Nog geen plekken. Voeg er een toe om te vergelijken.</p>}
 
-            <ol class="spots">
-              {order.map((id) => {
-                const draft = byId.get(id)
-                const result = resultById.get(id)
-                if (!draft || !result) return null
-                return (
-                  <SpotCard
-                    key={id}
-                    result={result}
-                    draft={draft}
-                    profile={profile}
-                    computed={computed}
-                    job={job}
-                    best={computed && id === verdict.bestId}
-                    robust={verdict.robust}
-                    notBest={computed ? verdict.excluded.get(id) : undefined}
-                    open={openId === id}
-                    onToggle={() => toggle(id)}
-                    onChange={(patch) => update(id, patch)}
-                    onRemove={() => remove(id)}
-                  />
-                )
-              })}
-            </ol>
+              <ol class="spots">
+                {order.map((id) => {
+                  const draft = byId.get(id)
+                  const result = resultById.get(id)
+                  if (!draft || !result) return null
+                  return (
+                    <SpotCard
+                      key={id}
+                      result={result}
+                      draft={draft}
+                      profile={profile}
+                      computed={computed}
+                      job={job}
+                      best={computed && id === verdict.bestId}
+                      robust={verdict.robust}
+                      notBest={computed ? verdict.excluded.get(id) : undefined}
+                      open={openId === id}
+                      onToggle={() => toggle(id)}
+                      onChange={(patch) => update(id, patch)}
+                      onRemove={() => remove(id)}
+                    />
+                  )
+                })}
+              </ol>
 
-            <button type="button" class="btn primary" onClick={add} disabled={drafts.length >= MAX_SPOTS}>
-              Plek toevoegen
-            </button>
-
-            {computed && (
-              <p class="note">
-                Een voorstel bij een bekende plek is een schatting. Het rekent met formules uit de community voor het
-                oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-                tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-                Weet je het beter, vul dan zelf je kills per uur in.
-              </p>
-            )}
-
-            <div class="levelup-bar">
-              <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
-                <span>Level up</span>
-                <small>
-                  {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
-                </small>
+              <button type="button" class="btn primary" onClick={add} disabled={drafts.length >= MAX_SPOTS}>
+                Plek toevoegen
               </button>
-            </div>
 
-            <footer class="credit">
-              Spelgegevens:{' '}
-              <a href="https://meowdb.com" target="_blank" rel="noopener noreferrer">
-                NiaMeowDB (meowdb.com)
-              </a>
-            </footer>
-          </Panel>
+              {computed && (
+                <p class="note">
+                  Een voorstel bij een bekende plek is een schatting. Het rekent met formules uit de community voor het
+                  oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+                  tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+                  Weet je het beter, vul dan zelf je kills per uur in.
+                </p>
+              )}
 
-          <Panel active={step === 1} collapsed={step !== 1 && settled !== 1}>
-            <h2 tabIndex={-1} ref={headingRef(1)}>
-              Klopt dit met je spel?
-            </h2>
-            <p class="hint">
-              {changes ? `${levelUpSummary(changes)} ` : ''}
-              {job === 'warrior'
-                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.'
-                : 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
-            </p>
-            <div class="card stats">
-              {checkFieldsFor(job).map((f) => (
-                <StatRow
-                  key={f.key}
-                  label={f.label}
-                  value={profileDraft[f.key]}
-                  was={undo && undo.draft[f.key] !== profileDraft[f.key] ? undo.draft[f.key] : undefined}
-                  decimal={!f.integer}
-                  onInput={(v) => updateProfile({ [f.key]: v })}
-                />
-              ))}
-              <p class="error" aria-live="polite">
-                {statError}
+              <div class="levelup-bar">
+                <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
+                  <span>Level up</span>
+                  <small>
+                    {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
+                  </small>
+                </button>
+              </div>
+
+              <footer class="credit">
+                Spelgegevens:{' '}
+                <a href="https://meowdb.com" target="_blank" rel="noopener noreferrer">
+                  NiaMeowDB (meowdb.com)
+                </a>
+              </footer>
+            </Panel>
+
+            <Panel active={step === 1} collapsed={step !== 1 && settled !== 1}>
+              <h2 tabIndex={-1} ref={headingRef(1)}>
+                Klopt dit met je spel?
+              </h2>
+              <p class="hint">
+                {changes ? `${levelUpSummary(changes)} ` : ''}
+                {LEVEL_UP_HINT[computedJob(job)]}
               </p>
-            </div>
-            <EquipmentCard
-              job={job}
-              equipment={equipment}
-              was={undo?.equipment}
-              defaultOpen
-              hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
-              pending={pending}
-              onPick={pickEquipment}
-              onStatInput={(slot, text) => setPendingFor(slot, text)}
-              onCommit={commitEquipment}
-              onDiscard={(slot) => setPendingFor(slot, undefined)}
-              error={equipError}
-            />
-            <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-            {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
-            <button
-              type="button"
-              class="btn primary"
-              onClick={() => {
-                commitAllEquipment()
-                go(2)
-              }}
-              disabled={!parsedProfile}
-            >
-              Alles klopt, toon advies
-            </button>
-            <button type="button" class="btn back" onClick={undoLevelUp}>
-              Level-up ongedaan maken
-            </button>
-          </Panel>
+              <div class="card stats">
+                {checkFieldsFor(job).map((f) => (
+                  <StatRow
+                    key={f.key}
+                    label={f.label}
+                    value={profileDraft[f.key]}
+                    was={undo && undo.draft[f.key] !== profileDraft[f.key] ? undo.draft[f.key] : undefined}
+                    decimal={!f.integer}
+                    onInput={(v) => updateProfile({ [f.key]: v })}
+                  />
+                ))}
+                <p class="error" aria-live="polite">
+                  {statError}
+                </p>
+              </div>
+              <EquipmentCard
+                job={job}
+                equipment={equipment}
+                was={undo?.equipment}
+                defaultOpen
+                hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
+                pending={pending}
+                onPick={pickEquipment}
+                onStatInput={(slot, text) => setPendingFor(slot, text)}
+                onCommit={commitEquipment}
+                onDiscard={(slot) => setPendingFor(slot, undefined)}
+                error={equipError}
+              />
+              <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
+              {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
+              <button
+                type="button"
+                class="btn primary"
+                onClick={() => {
+                  commitAllEquipment()
+                  go(2)
+                }}
+                disabled={!parsedProfile}
+              >
+                Alles klopt, toon advies
+              </button>
+              <button type="button" class="btn back" onClick={undoLevelUp}>
+                Level-up ongedaan maken
+              </button>
+            </Panel>
 
-          <Panel active={step === 2} collapsed={step !== 2 && settled !== 2}>
-            <h2 tabIndex={-1} ref={headingRef(2)}>
-              Wat nu?
-            </h2>
-            {computed ? (
-              <>
-                <AdviceHeader cost={cost} />
-                <ClawQuestion advice={clawAdvice} cost={cost} job={job} />
-                <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} />
-                <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-                <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} />
-                <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
-              </>
-            ) : (
-              <NotComputedAdvice job={job} />
-            )}
-            <button
-              type="button"
-              class="btn primary"
-              onClick={finish}
-            >
-              Klaar
-            </button>
-          </Panel>
+            <Panel active={step === 2} collapsed={step !== 2 && settled !== 2}>
+              <h2 tabIndex={-1} ref={headingRef(2)}>
+                Wat nu?
+              </h2>
+              {computed ? (
+                <>
+                  <AdviceHeader cost={cost} />
+                  <ClawQuestion advice={clawAdvice} cost={cost} job={job} />
+                  <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} />
+                  <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
+                  <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} />
+                  <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
+                </>
+              ) : (
+                <NotComputedAdvice job={job} />
+              )}
+              <button
+                type="button"
+                class="btn primary"
+                onClick={finish}
+              >
+                Klaar
+              </button>
+            </Panel>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   )
 }
