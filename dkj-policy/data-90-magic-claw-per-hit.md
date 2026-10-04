@@ -39,21 +39,38 @@
 
 ### PLAN
 
+#### Scope
+
+Issue #90: `MAGIC_CLAW_LEVELS` read Magic Claw's "Basic Attack 45 to 65" as per hit, with two hits per cast, and
+its comment called that an inference. If it meant per cast, the Magician model would overstate Magic Claw 2x.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Read the raw skill page (meowdb.com/msclassic/skills/magician/magic-claw, October 4, 2026). Section "How
+  output is calculated": "Magic Claw creates 2 magic hits using skill power 45 to 65. Each hit scales with INT,
+  Magic Attack, and spell mastery"; the page data also gives "Hits Per Cast: 2". So per hit, as the code had it
+- [x] `src/data/magician.ts`: the comment now quotes that statement instead of calling it derived; no value
+  changes
+- [x] The hint sentence about this assumption lives on #43's branch, not on main: noted on #43
 
 ### TEST
 
+- [x] No value changed, so the existing `magician.test.ts` pins hold (`MAGIC_CLAW_HITS` 2, 45 to 65, 2 x 65 =
+  Energy Bolt 20); `npm run lint` clean and the suite green
+
 ### DEPLOY: data/90-magic-claw-per-hit
 
-**Score:**
+Nothing changes on screen. Magic Claw's damage was already counted per hit, two hits per cast; MeowDB's skill
+page turns out to say so in so many words, so the data now cites that sentence instead of calling it a guess.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Magic Claw's damage is per hit, as its skill page states
-
