@@ -39,11 +39,38 @@
 
 ### PLAN
 
+Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the card lines this branch extends live there
+(Dave chose stacking, October 4, 2026). #140 has to merge first.
+
+#### Decisions
+
+- **Buffs (Iron Body, Magic Armor, Focus) count as always on, with their upkeep MP counted** (Dave, October 4, 2026):
+  MP per cast x 3600 / duration in seconds, added to the MP potions per hour.
+- **The profile is entered WITHOUT buffs; passives are already in it.** The stat window includes passives (the
+  Nimble Body precedent), so Nimble Body, Precise Strikes and Max HP Increase are not added again; buffs are added
+  in `toCharacter`.
+- **Iron Body is a percent of the stat-window DEF**, rounded down. The skill page says "+5% Weapon Def." and does not
+  say of what; total DEF is the assumption.
+- **Max HP Increase is a percent of base HP** (the data comment); a point scales the stat-window HP by
+  (100 + new%) / (100 + old%). It counts through the "dangerous" check, which steers the best spot.
+- **Card: cost with a −, gain with a +** (the requester, mid-build): "Nu: −15 MP per keer, +10 DEF (5%)".
+- **Out of scope:** crit (Precise Strikes, Critical Shot): there is no crit damage in the damage guide, so it is only
+  shown. Improved HP/MP Recovery's potion bonus is not a total: filed as #141.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/skillEffects.ts`: buff bonus with upkeep MP, effect text per skill, Max HP after a point
+- [x] `toCharacter` adds the buffs; `hourPlan` adds the buffs' upkeep MP
+- [x] Advice weighs Max HP Increase, Iron Body, Magic Armor and Focus, each behind its prerequisite level
+- [x] Prerequisite levels in the data files, checked against the four skill pages (Vera, October 4, 2026)
+- [x] Skillpoints card shows the effect now and at the next level, cost with − and gain with +
 
 ### TEST
+
+- [ ] Tycho: updated and new tests, lint + vitest green
+- [ ] Victor: code review
+- [ ] Edith: the Dutch on the card
+- [ ] Dave looks at the card at phone width (visible result)
 
 ### DEPLOY: app/139-skill-stat-effects
 
