@@ -57,7 +57,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Tycho: the popup shows both fields, base cannot go past what is left, freeing base AP in one stat makes it available in another, Back to level 9 shows 5 too many; existing card tests moved to the new popup
 - [x] Gwen: the popup no longer keeps an empty button row under each field, so Extra AP sits right under Base AP (Dave: too much space between them)
 - [~] Gwen: the card showed a stat as "28 (25+3)", the game's stat window form -- replaced by the two columns below
-- [x] Gwen and Cody: the card shows each stat as "Base", a plus and "Extra" (AP from items, only when there is any), with the headings above them and no total (Dave: they need not be added up; base first)
+- [x] Gwen and Cody: the card shows each stat as "Base", a plus and "Extra" (AP from items, always a field, 0 when there is none; an empty field is saved as 0), with the headings above them and no total (Dave: they need not be added up; base first)
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
 ### DEPLOY: app/ap-per-level
@@ -68,7 +68,7 @@ STR, DEX, INT and LUK are now split into base AP and extra AP from items. The st
 
 #### What makes this deploy extra special
 
-On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves ("Base AP over" at the top of the card says how many), and the extra AP your items give, which is free. The card shows each stat as its base AP, then a plus and the extra AP from items when there is any.
+On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves ("Base AP over" at the top of the card says how many), and the extra AP your items give, which is free. The card shows each stat as its base AP, then a plus and the extra AP from items (0 when there is none).
 
 **Score:** 3
 

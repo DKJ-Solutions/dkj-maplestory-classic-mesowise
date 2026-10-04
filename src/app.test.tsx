@@ -482,11 +482,19 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('LUK').textContent).not.toContain('40')
   })
 
-  it('laat de plus en de extra AP weg bij een stat zonder extra AP van items', () => {
+  it('toont ook bij een stat zonder extra AP van items de plus en een extra-vak met 0', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(statShown('DEX')).toBe('25')
-    expect(statLine('DEX').querySelector('.ap-plus')?.textContent).toBe('')
-    expect(extraShown('DEX')).toBeUndefined()
+    expect(Array.from(statLine('DEX').children).slice(1, 4).map((c) => c.textContent)).toEqual(['25', '+', '0'])
+  })
+
+  it('bewaart een leeg extra-veld als 0, zonder foutmelding', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    h.typeExtra('')
+    h.save()
+    expect(profileFields().lukExtra).toBe('0')
+    expect(extraShown('LUK')).toBe('0')
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
   })
 
   it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {
