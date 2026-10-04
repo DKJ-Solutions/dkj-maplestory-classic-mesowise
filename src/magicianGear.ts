@@ -22,12 +22,13 @@ export const MAGICIAN_WEAPONS: readonly Weapon[] = NPC_MAGICIAN_WEAPONS.map((w) 
   source: w.source,
 }))
 
-/** De NPC-armor van een Magician (hats, tops, bottoms en shoes, zie data/magician.ts) als ArmorPiece. De MDEF telt niet: een aanraking is fysiek. */
+/** De NPC-armor van een Magician (hats, tops, bottoms en shoes, zie data/magician.ts) als ArmorPiece. De MDEF gaat mee voor de Magic Def op de Total stats-kaart (#91); het advies telt hem niet: een aanraking is fysiek. */
 export const MAGICIAN_ARMOR: readonly ArmorPiece[] = NPC_MAGICIAN_ARMOR.map((a) => ({
   name: a.name,
   slot: a.slot,
   level: a.level,
   wdef: a.wdef,
+  mdef: a.mdef,
   int: a.int,
   luk: a.luk,
   price: a.price,

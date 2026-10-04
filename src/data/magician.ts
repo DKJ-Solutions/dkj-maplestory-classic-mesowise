@@ -23,11 +23,11 @@
 // Niet opgenomen als armor, en waarom:
 // - Tops en broeken alleen voor vrouwen, zonder mannenversie in de gelezen pagina's: Arianne (970 tot en met
 //   973, level 15), Fairy Top (1031 en 1032, level 30), Arianne Skirt (1186 tot en met 1189, level 15) en
-//   Fairy Skirt (1246 en 1247, level 30). Onder de regel van armor.ts (de app kent het geslacht niet) vallen
-//   ze er uit; zie ook #55.
+//   Fairy Skirt (1246 en 1247, level 30). Ze staan er nog niet in, omdat de app de
+//   Magician nog niet doorrekent (#43); met `gender` kunnen ze erbij zodra dat model er is (zie #55).
 // - Robes alleen voor mannen, zonder vrouwenversie bij Serabi (#76, ruwe pagina's gelezen op 2026-10-04): Plain
 //   Robe (1091 tot en met 1093: level 15, INT 20, WDEF 29, MDEF 38, 5.400 meso) en Wizard Robe (1107 en 1110:
-//   level 30, INT 50, LUK 20, WDEF 46, MDEF 55, 21.600 meso). Ze wachten op de vraag naar het geslacht (#55).
+//   level 30, INT 50, LUK 20, WDEF 46, MDEF 55, 21.600 meso). Ze kunnen erbij met `gender` (#55) zodra de Magician wordt doorgerekend (#43).
 // - Handschoenen, schilden, capes en de winkels in Orbis en Nuri: niet gelezen, dus niet in de data.
 //
 // Wel opgenomen, volgens armor.ts ("een mannen- en een vrouwenversie met dezelfde stats blijven"): vijf paren
@@ -148,9 +148,10 @@ export const ENERGY_BOLT_TARGETS = 1
 
 /**
  * Magic Claw: MP, schade per hit en spell mastery per skill-level (1 tot 20). Raakt 1 mob, 2 hits per mob.
- * Vraagt Energy Bolt 1. Per hit is AFGELEID, niet gelezen: de pagina zegt "attack an enemy twice" en "2 hits per
- * target" en toont alleen "Basic Attack 45 tot 65", zonder te zeggen of dat per hit of per cast is. Per hit
- * past: 2 x 65 = 130 is de Energy Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
+ * Vraagt Energy Bolt 1. De schade is per hit, en zo staat het op de pagina (sectie "How output is calculated",
+ * gelezen in de ruwe HTML, issue #90): "Magic Claw creates 2 magic hits using skill power 45 to 65. Each hit scales
+ * with INT, Magic Attack, and spell mastery", en "Hits Per Cast: 2". Het klopt ook met 2 x 65 = 130, de Energy
+ * Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
  */
 export const MAGIC_CLAW_SOURCE: Source = skill('magic-claw')
 export const MAGIC_CLAW_LEVELS: readonly SpellLevel[] = [

@@ -6,9 +6,11 @@ import { NPC_ARMOR } from './data/armor'
 import { knownSpotPatch } from './data/spots'
 import type { ArmorPiece } from './data/types'
 import { horizonCost } from './horizonCost'
+import { MAGICIAN_ARMOR } from './magicianGear'
 import { bestExpPerMeso } from './mesoCostAt'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
+import { WARRIOR_ARMOR } from './warriorGear'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -60,19 +62,22 @@ const EXP_25_29 = 322_582
 const EXP_30 = 95_700
 const EXP_20_30 = 566_712
 
+/** De winkel met de hand: een stuk zonder geslacht past iedereen, een stuk met geslacht alleen dat geslacht (en niemand zolang het geslacht niet gekozen is). Los van fitsGender. */
+const shopHand = (gender: 'male' | 'female' | null) => NPC_ARMOR.filter((b) => b.gender === undefined || b.gender === gender)
+
 /** Het laatste level van de horizon van een stuk, met de hand: net vóór het volgende stuk met meer WDEF in dat slot, hoogstens 30. */
-const handTo = (level: number, a: ArmorPiece) => {
-  const next = NPC_ARMOR.find((b) => b.slot === a.slot && b.level > level && b.wdef > a.wdef)
+const handTo = (level: number, a: ArmorPiece, gender: 'male' | 'female' | null = null) => {
+  const next = shopHand(gender).find((b) => b.slot === a.slot && b.level > level && b.wdef > a.wdef)
   return Math.min(next ? next.level - 1 : 30, 30)
 }
 /** De netto besparing van een stuk met de hand: EXP-som over de horizon gedeeld door de EXP per meso zonder en met het stuk, min de prijs. */
 const handNet = (p: Profile, a: ArmorPiece, v: Assumptions = ASSUMPTIONS) => {
-  const exp = expSum(p.level, handTo(p.level, a))
+  const exp = expSum(p.level, handTo(p.level, a, p.gender ?? null))
   return exp / epm(p, v) - exp / epm({ ...p, wdef: p.wdef + a.wdef }, v) - a.price
 }
 /** Elk stuk dat dit profiel kan dragen, met zijn netto: een brute-force blik op heel NPC_ARMOR, zonder keuze per slot. */
 const wearableNets = (p: Profile, v: Assumptions = ASSUMPTIONS) =>
-  NPC_ARMOR.filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex).map((a) => ({ armor: a, net: handNet(p, a, v) }))
+  shopHand(p.gender ?? null).filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex).map((a) => ({ armor: a, net: handNet(p, a, v) }))
 /** De winnaar volgens brute force: het stuk met de hoogste netto, mits boven 0. */
 const bruteWinner = (p: Profile, v: Assumptions = ASSUMPTIONS): ArmorPiece | null => {
   const best = wearableNets(p, v).reduce<{ armor: ArmorPiece; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
@@ -579,9 +584,9 @@ const handNetW = (p: Profile, a: ArmorPiece, w: number, v: Assumptions = ASSUMPT
   const exp = expSum(p.level, handTo(p.level, a))
   return exp / epm(p, v) - exp / epm({ ...p, wdef: handWdef(p, a, w) }, v) - a.price
 }
-/** De kandidaten met worn, brute force over heel NPC_ARMOR: draagbaar, level genoeg en meer WDEF dan wat je draagt. */
+/** De kandidaten met worn, brute force over heel NPC_ARMOR (met de geslachtsregel van shopHand): draagbaar, level genoeg en meer WDEF dan wat je draagt. */
 const wornNets = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS) =>
-  NPC_ARMOR.filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex && a.wdef > (worn[a.slot] ?? -Infinity)).map((a) => ({
+  shopHand(p.gender ?? null).filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex && a.wdef > (worn[a.slot] ?? -Infinity)).map((a) => ({
     armor: a,
     net: handNetW(p, a, worn[a.slot] ?? 0, v),
   }))
@@ -882,13 +887,17 @@ describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de win
     }
   }
   const p = strong({ level: 25 })
+  // De horizon van de overall (WDEF 60) met de hand (#87): op lv 30 geven Dark Silver Stealer (40) en Red Stealer
+  // Pants (29) samen 69, meer dan 60, dus hij loopt tot 29 en niet tot de tabelrand.
+  const OVERALL_TO = 29
 
   it('rekent een overall tegen top plus bottom: replaces = som, en het netto komt overeen met de WDEF wdef - 55 + 60 met de hand', () => {
     const o = fakeOverall()
     withInjected(o, () => {
       const c = choice(adviceW(p, { top: 32, bottom: 23 }), o.name)
       expect(c.replaces).toBe(55)
-      const exp = expSum(p.level, handTo(p.level, o))
+      expect(c).toMatchObject({ from: 25, to: OVERALL_TO })
+      const exp = expSum(p.level, OVERALL_TO)
       expect(c.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: handWdef(p, o, 55) }) - o.price, 6)
     })
   })
@@ -907,7 +916,7 @@ describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de win
       expect(choice(adviceW(p, { bottom: 23 }), o.name).replaces).toBe(23)
       const unk = choice(adviceW(p, { hat: 10 }), o.name)
       expect(unk.replaces).toBeUndefined()
-      const exp = expSum(p.level, handTo(p.level, o))
+      const exp = expSum(p.level, OVERALL_TO)
       expect(unk.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + o.wdef }) - o.price, 6)
     })
   })
@@ -929,5 +938,195 @@ describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de win
   it('haalt de geinjecteerde overall weer uit de winkel', () => {
     withInjected(fakeOverall(), () => undefined)
     expect(NPC_ARMOR.some((a) => a.slot === 'overall')).toBe(false)
+  })
+})
+
+describe('armorUpgradeAdvice en het geslacht (issue #55)', () => {
+  const wp = parseProfile(DEFAULT_PROFILE, 'warrior')
+  if (!('profile' in wp)) throw new Error('Warrior-profiel ongeldig')
+  const warriorBase: Profile = wp.profile
+  const withGender = (p: Profile, gender: 'male' | 'female' | null): Profile => (gender ? { ...p, gender } : p)
+  const warrior = (level: number, gender: 'male' | 'female' | null = null) => withGender({ ...warriorBase, level, str: 100, dex: 100 }, gender)
+  const thief = (level: number, gender: 'male' | 'female' | null = null) => withGender(strong({ level }), gender)
+  const GENDERED_THIEF = ['Blue One-lined T-Shirt', 'Pink Starry Shirt', 'Red Qi Pao Skirt']
+  /** Met de hand: de naam van elk stuk dat voor één geslacht is, zoals de bron het zegt (los van de data in de code). */
+  const FEMALE_ONLY = ['Pink Starry Shirt', 'Red Qi Pao Skirt', 'Orange Lolica Armor', 'Rookie Pants', 'Red Lamelle', 'Blue Shark', 'Red Ramel Skirt', 'Blue Shark Skirt', 'Steel Fitted Mail', 'Dark Engrit']
+  const MALE_ONLY = ['Blue One-lined T-Shirt', 'Brown Lolico Armor', 'Brown Lolico Pants', 'Brown Corporal', 'Blue Sergeant', 'Silver Master Sergeant', 'Red Hwarang Shirt', 'Brown Corporal Pants', 'Steel Sergeant Kilt', 'Silver Master Sergeant Kilt', 'Red Martial Arts Pants', 'Blue Kendo Robe', 'Black Dragon Robe']
+  const shown = (a: Advice) => [...a.choices.map((c) => c.armor.name), ...a.notWearable.map((u) => u.armor.name)]
+
+  it('toont zonder geslacht nooit een stuk voor één geslacht: niet bij de keuzes, niet bij niet-draagbaar (Thief en Warrior, elk level)', () => {
+    for (const level of LEVELS) {
+      for (const p of [thief(level), warrior(level), { ...thief(level), luk: 0, dex: 0 }, { ...warrior(level), str: 0, dex: 0 }]) {
+        const a = advice(drafts, p)
+        for (const n of shown(a)) {
+          expect(GENDERED_THIEF, `${n} lv ${level}`).not.toContain(n)
+          expect(FEMALE_ONLY, `${n} lv ${level}`).not.toContain(n)
+          expect(MALE_ONLY, `${n} lv ${level}`).not.toContain(n)
+        }
+      }
+    }
+  })
+
+  it('laat het geslacht de horizon bepalen: zonder geslacht loopt de Red Cloth Vest (lv 10) tot 19, met een geslacht stopt hij op 11 (het T-shirt van lv 12 is beter)', () => {
+    // Met de hand: Red Cloth Vest WDEF 24, de T-shirts van lv 12 hebben 26.
+    expect(choice(advice(drafts, thief(10)), 'Red Cloth Vest')).toMatchObject({ from: 10, to: 19 })
+    for (const g of ['male', 'female'] as const) expect(choice(advice(drafts, thief(10, g)), 'Red Cloth Vest')).toMatchObject({ from: 10, to: 11 })
+  })
+
+  it('laat een Thief-vrouw de Red Qi Pao Skirt (lv 22, LUK 34, DEX 12) als beste niet-draagbare broek zien bij LUK 33, en een man of onbekend niet; het geslacht verandert de horizon van de Red Cloth Pants', () => {
+    const short = (g: 'male' | 'female' | null) => advice(drafts, { ...thief(22, g), luk: 33, dex: 12 }).notWearable.map((u) => u.armor.name)
+    expect(short('female')).toContain('Red Qi Pao Skirt')
+    expect(short('male')).not.toContain('Red Qi Pao Skirt')
+    expect(short(null)).not.toContain('Red Qi Pao Skirt')
+    expect(wearableNets(thief(22, 'female')).map((x) => x.armor.name)).toContain('Red Qi Pao Skirt')
+    // Zonder de Skirt loopt de bottom-horizon van de Red Cloth Pants (lv 20, WDEF 23) tot 24; met de Skirt (WDEF 24, lv 22) stopt hij op 21.
+    expect(choice(advice(drafts, thief(20)), 'Red Cloth Pants')).toMatchObject({ from: 20, to: 24 })
+    expect(choice(advice(drafts, thief(20, 'female')), 'Red Cloth Pants')).toMatchObject({ from: 20, to: 21 })
+    expect(choice(advice(drafts, thief(20, 'male')), 'Red Cloth Pants')).toMatchObject({ from: 20, to: 24 })
+  })
+
+  it('laat een mannelijke Warrior van lv 20 de Blue Kendo Robe als overall-kandidaat krijgen en nooit een vrouwenstuk', () => {
+    const a = advice(drafts, warrior(20, 'male'))
+    expect(a.choices.find((c) => c.armor.slot === 'overall')?.armor.name).toBe('Blue Kendo Robe')
+    for (const n of shown(a)) expect(FEMALE_ONLY, n).not.toContain(n)
+    expect(shown(a)).not.toContain('Steel Fitted Mail')
+    expect(shown(a)).not.toContain('Dark Engrit')
+  })
+
+  it('toont een mannelijke Warrior op elk level nooit een vrouwenstuk', () => {
+    for (const level of LEVELS) for (const n of shown(advice(drafts, warrior(level, 'male')))) expect(FEMALE_ONLY, `${n} lv ${level}`).not.toContain(n)
+  })
+
+  it('laat een vrouwelijke Warrior de Steel Fitted Mail (lv 15) bereiken en nooit een mannenstuk', () => {
+    const a = advice(drafts, warrior(15, 'female'))
+    expect(a.choices.find((c) => c.armor.slot === 'overall')?.armor.name).toBe('Steel Fitted Mail')
+    for (const level of LEVELS) for (const n of shown(advice(drafts, warrior(level, 'female')))) expect(MALE_ONLY, `${n} lv ${level}`).not.toContain(n)
+    // Op lv 14 kan hij nog niet.
+    expect(shown(advice(drafts, warrior(14, 'female')))).not.toContain('Steel Fitted Mail')
+  })
+
+  it('laat de horizon van de top van een vrouw op lv 10 (Orange Lolica Armor, WDEF 35) lopen tot haar volgende upgrade van het lijf, niet tot een mannentop', () => {
+    // Met de hand: de mannen-top Brown Corporal (lv 15, WDEF 40) telt voor haar niet; de T-shirts (26) zijn niet beter.
+    // Haar overall Steel Fitted Mail (lv 15, WDEF 75) is meer dan de top met haar beste broek tot lv 15 (Rookie Pants, 25):
+    // 75 > 35 + 25, dus de horizon stopt op 14 (#87), vóór de betere top Red Lamelle (lv 20).
+    const top = (g: 'male' | 'female') => advice(drafts, warrior(10, g)).choices.find((c) => c.armor.slot === 'top')!
+    expect(top('female').armor.name).toBe('Orange Lolica Armor')
+    expect(top('female')).toMatchObject({ from: 10, to: 14 })
+    expect(top('male').armor.name).toBe('Brown Lolico Armor')
+    expect(top('male')).toMatchObject({ from: 10, to: 14 })
+  })
+
+  it('geeft zonder geslacht voor een Warrior alleen hoed en schoenen en de unisex-stukken (geen top, bottom of overall met geslacht)', () => {
+    const a = advice(drafts, warrior(20))
+    expect(a.choices.map((c) => c.armor.slot).sort()).toEqual(['hat', 'shoes'])
+    expect(a.notWearable.every((u) => u.armor.slot === 'hat' || u.armor.slot === 'shoes')).toBe(true)
+  })
+})
+
+describe('armorUpgradeAdvice: het lijf, overall tegen top + bottom (issue #87)', () => {
+  const mp = parseProfile(DEFAULT_PROFILE, 'magician')
+  if (!('profile' in mp)) throw new Error('Magician-profiel ongeldig')
+  const mage = (level: number): Profile => ({ ...mp.profile, level, int: 200, luk: 200 })
+  const wp = parseProfile(DEFAULT_PROFILE, 'warrior', 'male')
+  if (!('profile' in wp)) throw new Error('Warrior-profiel ongeldig')
+  const warriorMan = (level: number): Profile => ({ ...wp.profile, level, str: 100, dex: 100 })
+  const piece = (list: readonly ArmorPiece[], name: string) => list.find((x) => x.name.startsWith(name))!
+  const robe = piece(MAGICIAN_ARMOR, 'Doros Robe')
+  const splitTop = piece(MAGICIAN_ARMOR, 'Split Piece')
+  const splitPants = piece(MAGICIAN_ARMOR, 'Split Pants')
+  const pairOf = (a: Advice) => a.choices.find((c) => c.with !== undefined)
+  const adviceW = (p: Profile, worn: Partial<Record<ArmorPiece['slot'], number>>): Advice => {
+    const a = armorUpgradeAdvice(drafts, p, worn)
+    if (a.kind !== 'advice') throw new Error('advies verwacht')
+    return a
+  }
+
+  it('weegt op lv 25 bij de Magician de Doros Robe tegen Split Piece + Split Pants, elk met de hand nagerekend', () => {
+    // Met de hand: geen later lijfstuk in de Magician-winkel, dus beide lopen tot de tabelrand (lv 30, afgekapt).
+    const p = mage(25)
+    const a = advice(drafts, p)
+    const exp = expSum(25, 30)
+    const o = a.choices.find((c) => c.armor === robe)!
+    expect(o).toMatchObject({ from: 25, to: 30, truncated: true, price: 13_500, replaces: undefined })
+    expect(o.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + 40 }) - 13_500, 6)
+    // Elk paar top + bottom met de hand: WDEF en prijs opgeteld, over dezelfde horizon. Het paar in de keuzes is dat met de hoogste netto.
+    const pairNet = (t: ArmorPiece, b: ArmorPiece) => exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + t.wdef + b.wdef }) - t.price - b.price
+    const halves = (slot: 'top' | 'bottom') => MAGICIAN_ARMOR.filter((x) => x.slot === slot && x.level <= 25)
+    const nets = halves('top').flatMap((t) => halves('bottom').map((b) => ({ t, b, net: pairNet(t, b) })))
+    expect(nets).toHaveLength(4)
+    const handBest = nets.reduce((m, x) => (x.net > m.net ? x : m))
+    const pair = pairOf(a)!
+    expect([pair.armor, pair.with]).toEqual([handBest.t, handBest.b])
+    expect(pair).toMatchObject({ from: 25, to: 30, truncated: true, price: handBest.t.price + handBest.b.price, replaces: undefined })
+    expect(pair.net!).toBeCloseTo(handBest.net, 6)
+    // Split Piece + Split Pants (19 + 13 = 32 WDEF, 10.800) is gewogen, en verliest het van het goedkopere paar.
+    expect(nets.find((x) => x.t === splitTop && x.b === splitPants)!.net).toBeLessThan(handBest.net)
+    // Het paar is een eigen keuze naast de losse top en bottom.
+    expect(a.choices.filter((c) => c.armor === pair.armor)).toHaveLength(2)
+  })
+
+  it('rekent een paar tegen wat een overall vervangt: top en bottom samen, of de gedragen overall', () => {
+    const p = mage(25)
+    expect(pairOf(adviceW(p, { top: 13, bottom: 9 }))!.replaces).toBe(22)
+    expect(pairOf(adviceW(p, { overall: 20 }))!.replaces).toBe(20)
+    // Geeft het paar niet meer dan wat je draagt, dan is het geen upgrade: 32 tegen een overall van 32 of 40.
+    expect(pairOf(adviceW(p, { overall: 32 }))).toBeUndefined()
+    expect(pairOf(adviceW(p, { overall: 40 }))).toBeUndefined()
+  })
+
+  it('biedt geen paar aan zonder overall op tafel: de Thief-winkel heeft er geen, en zonder gedragen overall', () => {
+    for (const level of LEVELS) expect(pairOf(advice(drafts, strong({ level }))), `lv ${level}`).toBeUndefined()
+    expect(pairOf(advice(drafts, mage(24)))).toBeUndefined()
+  })
+
+  it('biedt de Thief met een gedragen overall wel een paar, en meldt bij een losse top dat de broek leeg raakt', () => {
+    // Lv 25, overall van 30 aan: een losse top vervangt de overall en de broek is dan leeg (Red Cloth Vest, 24, is
+    // dan geen upgrade, Red Pao, 32, wel); een paar vervangt de overall ook, en daar mag de Red Cloth Vest weer in.
+    const p = strong({ level: 25 })
+    const a = adviceW(p, { overall: 30 })
+    const top = a.choices.find((c) => c.armor.slot === 'top' && !c.with)!
+    expect(top.armor.wdef).toBeGreaterThan(30)
+    expect(top).toMatchObject({ replaces: 30, bare: 'bottom' })
+    const pair = pairOf(a)!
+    expect(pair).toMatchObject({ replaces: 30, price: pair.armor.price + pair.with!.price })
+    expect(pair.armor.wdef + pair.with!.wdef).toBeGreaterThan(30)
+    expect(pair.bare).toBeUndefined()
+    // Zonder gedragen overall is er geen lege helft.
+    for (const c of adviceW(p, { top: 20, bottom: 10 }).choices) expect(c.bare, c.armor.name).toBeUndefined()
+  })
+
+  it('laat de horizon van een top of bottom stoppen vóór een betere overall (Magician lv 20: Doros Robe op lv 25)', () => {
+    // Met de hand: de beste top en bottom tot lv 25 zijn Split Piece (19) en Split Pants (13). Elke top geeft hoogstens
+    // 19 + 13 = 32 en elke bottom hoogstens 13 + 19 = 32, minder dan de 40 van de robe, dus elk stopt op 24 in plaats van 30.
+    const a = advice(drafts, mage(20))
+    const halves = a.choices.filter((c) => c.armor.slot === 'top' || c.armor.slot === 'bottom')
+    expect(halves.map((c) => c.armor.slot).sort()).toEqual(['bottom', 'top'])
+    for (const c of halves) expect(c, c.armor.name).toMatchObject({ from: 20, to: 24, truncated: false })
+    // Een lv 20-profiel ziet de robe nog niet als kandidaat, dus ook nog geen paar.
+    expect(pairOf(a)).toBeUndefined()
+  })
+
+  it('laat de horizon van een overall stoppen vóór een beter paar (Warrior-man lv 20: Blue Kendo Robe)', () => {
+    // Met de hand: Blue Kendo Robe 85; op lv 25 geven Silver Master Sergeant (50) en de Kilt (37) samen 87, dus tot 24.
+    const a = advice(drafts, warriorMan(20))
+    const kendo = a.choices.find((c) => c.armor === piece(WARRIOR_ARMOR, 'Blue Kendo Robe'))!
+    expect(kendo).toMatchObject({ from: 20, to: 24 })
+    // Het paar met de hoogste netto is Brown Lolico Armor + Brown Lolico Pants (35 + 25 = 60, 2.000 + 1.600): het stopt
+    // op 24, want de top van lv 25 (Silver Master Sergeant, 50) is beter dan 35.
+    const pair = pairOf(a)!
+    expect([pair.armor.name, pair.with!.name]).toEqual(['Brown Lolico Armor', 'Brown Lolico Pants'])
+    expect(pair).toMatchObject({ from: 20, to: 24, price: 3_600 })
+  })
+
+  it('heeft een paar als winnaar alleen als het de grootste netto boven 0 heeft, en dan staat het vooraan', () => {
+    for (const p of [mage(25), mage(30), warriorMan(20), warriorMan(25), warriorMan(30)]) {
+      const a = advice(drafts, p)
+      const best = a.choices[0]
+      if (a.winner) {
+        expect(a.winner).toBe(best.armor)
+        expect(best.net!).toBeGreaterThan(0)
+      }
+      for (const c of a.choices) if (c.net !== null && best.net !== null) expect(c.net).toBeLessThanOrEqual(best.net)
+    }
   })
 })

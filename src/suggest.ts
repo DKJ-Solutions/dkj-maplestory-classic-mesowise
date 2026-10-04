@@ -78,6 +78,27 @@ function attacksOf(profile: Profile, character: Character): Attack[] {
   }
 }
 
+/**
+ * De Attack uit het statvenster (issue #108): de laagste en hoogste schade van één gewone aanval, uit je ability points
+ * en je weapon attack, zonder skill en vóór de verdediging van het monster. Bron: de damage-gids van MeowDB
+ * (meowdb.com/msclassic/guides/explaining-the-damage-formula, "Character-window damage range"), die beide afrondt
+ * naar beneden. Null voor een Magician: zijn gewone wand-aanval staat niet in de gegevens. Bij een Warrior is het
+ * een benadering: zijn weapon multiplier is het gemiddelde van zwaaien en steken (data/warrior.ts), waar het spel één
+ * multiplier gebruikt; het bereik kan daardoor een paar punten van het statvenster afwijken.
+ */
+export function statWindowRange(profile: Profile): { min: number; max: number } | null {
+  const c = toCharacter(profile)
+  const a =
+    profile.job === 'warrior'
+      ? meleeAttack(c, profile.weaponMult, null)
+      : profile.job === 'bowman'
+        ? bowAttack(c, BOW, null)
+        : profile.job === 'thief'
+          ? characterAttack(c, null, LUCKY_SEVEN)
+          : null
+  return a && { min: Math.trunc(a.min), max: Math.trunc(a.max) }
+}
+
 /** De potion die per punt herstel het minst kost (Orange Potion bij HP, Blue Potion bij MP); bij gelijke prijs de eerste. */
 function cheapest(kind: 'hp' | 'mp', from: readonly Potion[] = POTIONS): Potion {
   const options = from.filter((p) => p[kind] > 0)

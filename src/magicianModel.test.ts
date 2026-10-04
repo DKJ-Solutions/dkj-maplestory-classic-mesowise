@@ -16,7 +16,7 @@ import {
   NPC_MAGICIAN_WEAPONS,
   SPELL_CAST_MS,
 } from './data/magician'
-import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, THIEF_SKILLS } from './data/skills'
+import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, mpPerUse, THIEF_SKILLS } from './data/skills'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import { NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
@@ -29,12 +29,13 @@ import {
   loadEquipment,
   slotsFor,
   statName,
+  wornMdef,
   wornStat,
   type EquipEntry,
 } from './equipment'
 import { expectedStat } from './expectedStats'
 import { isComputed } from './job'
-import { applyLevelUp, applySkillPoint, checkFieldsFor, energyBoltMp, magicClawMp } from './levelUp'
+import { applyLevelUp, applySkillPoint, checkFieldsFor } from './levelUp'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
 import { bestExpPerMeso } from './mesoCostAt'
 import {
@@ -255,8 +256,8 @@ describe('Magician: applyLevelUp en het controlescherm', () => {
   })
 
   it('geeft de MP per cast van Energy Bolt en Magic Claw (0 op level 0)', () => {
-    expect([0, 1, 5, 20].map(energyBoltMp)).toEqual([0, 8, 9, 16])
-    expect([0, 1, 5, 20].map(magicClawMp)).toEqual([0, 10, 11, 20])
+    expect([0, 1, 5, 20].map((l) => mpPerUse('energyBolt', l))).toEqual([0, 8, 9, 16])
+    expect([0, 1, 5, 20].map((l) => mpPerUse('magicClaw', l))).toEqual([0, 10, 11, 20])
   })
 
   it('zet met applySkillPoint een punt in Energy Bolt en laat de rest staan', () => {
@@ -579,13 +580,14 @@ describe('Magician-armor: de winkel', () => {
   it('rekent met de armor van de Magician (hats, tops, bottoms, shoes) en nooit met Thief-armor', () => {
     const a = advice(strong({ level: 30 }))
     expect(a.choices.length).toBeGreaterThan(0)
-    for (const c of a.choices) expect(MAGICIAN_ARMOR, c.armor.name).toContain(c.armor)
+    for (const c of a.choices) for (const piece of [c.armor, c.with ?? c.armor]) expect(MAGICIAN_ARMOR, piece.name).toContain(piece)
     // Een Magician-stuk dat ook bij de Thief staat (White Bandana, Red Baseball Cap) is hetzelfde item.
     for (const m of MAGICIAN_ARMOR) {
       const t = NPC_ARMOR.find((x) => x.name === m.name)
       if (t) expect([t.slot, t.level, t.wdef, t.price], m.name).toEqual([m.slot, m.level, m.wdef, m.price])
     }
-    expect(new Set(a.choices.map((c) => c.armor.slot)).size).toBe(a.choices.length)
+    // Eén keuze per slot, en het paar top + bottom (#87, er is een overall) als eigen keuze.
+    expect(new Set(a.choices.map((c) => (c.with ? 'pair' : c.armor.slot))).size).toBe(a.choices.length)
   })
 
   it('geeft alleen stukken waar je level voor volstaat en die meer WDEF geven dan wat je draagt', () => {
@@ -640,9 +642,15 @@ describe('Magician: equipment', () => {
       expect(names, slot).toEqual([...NPC_MAGICIAN_ARMOR, ...WORN_MAGICIAN_ARMOR].filter((a) => a.slot === slot).map((a) => a.name))
       expect(names.length, slot).toBeGreaterThan(0)
     }
-    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12 })
+    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
     // Doros Robe / Doroness Robe (#76) is zijn eigen overall; de Sauna Robe heeft geen jobregel en geldt voor elke klas.
     expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
+  })
+
+  it('telt de MDEF van de Magician-armor op voor de Magic Def (#91): Wizardry Hat 14, Doros Robe 49, Wind Shoes 9', () => {
+    const pick = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
+    const eq = { ...equipmentForJob(loadEquipment(undefined, 'magician'), 'magician'), hat: pick('Wizardry Hat'), overall: pick('Doros Robe / Doroness Robe'), shoes: pick('Wind Shoes') }
+    expect(wornMdef(eq)).toBe(14 + 49 + 9)
   })
 
   it('heeft geen dubbele namen in een lijst, geen wapennaam die ook bij de Thief of Warrior staat, en dezelfde stats bij een gedeelde armornaam', () => {

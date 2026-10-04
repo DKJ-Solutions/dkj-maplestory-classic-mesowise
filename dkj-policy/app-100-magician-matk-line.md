@@ -44,7 +44,7 @@ Stacked on app/43-magician-model (PR #96), per Dave's choice on #100: the PR tar
 ### CREATE
 
 - [x] `totalMagicAttack` (src/profile.ts) gives a Magician MagicTotal: floor(INT / 2) + weapon M.ATT, the sum mobModel.ts uses; every other job 0. `totalAttack` gives a Magician 0
-- [x] The Total stats card always shows W.ATT and M.ATT, one of the two at 0 (Dave, follow-up on #100), and its hint says where the numbers come from
+- [x] The Total stats card always shows W.ATT and M.ATT, one of the two at 0 (Dave, follow-up on #100), below #108's Attack range (Dave chose all three when main was merged in; the hint text went with #106's popup)
 
 ### TEST
 
@@ -53,7 +53,7 @@ Stacked on app/43-magician-model (PR #96), per Dave's choice on #100: the PR tar
 
 ### DEPLOY: app/100-magician-matk-line
 
-The Total stats card always shows W.ATT and M.ATT, as the game's stat window does; one of the two is 0. A Magician sees their M.ATT there, next to a W.ATT of 0: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
+Below the Attack range, the Total stats card always shows W.ATT and M.ATT; one of the two is 0. A Magician sees their M.ATT there, next to a W.ATT of 0: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
 
 **Score:** 2
 

@@ -2,7 +2,296 @@
 
 ## [Unreleased]
 
-**22 / 51 minor entries** <!-- pending-tally -->
+**28 / 64 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/87-overall-vs-pair · 20261004-131855Z
+
+The Defense advice now weighs an overall against a top and bottom bought together. When an overall is in
+play (the shop has one for your level, or you wear one), a pair of top + bottom is a candidate of its own,
+with both prices added up. "Until your next upgrade" now also sees an overall coming for a top or bottom,
+and a better top + bottom coming for an overall. If a single top or bottom wins over an overall you wear,
+the advice now says that the other half is left bare. Thief and Bowman shops have no overall, so their advice
+does not change.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Magician (from level 25) or a Warrior no longer gets overall advice that only looks at one half. The
+advice can now say "buy this top and these pants together", and a top's payback no longer runs past the
+level where the robe would replace it.
+
+**Score:** 3
+
+#### Pull Request
+
+Armor advice: weigh an overall against a top+bottom pair
+
+[PR #121](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/121)
+
+---
+
+### DEPLOY: app/job-behind-level · 20261004-131732Z
+
+The job you play now sits behind your level at the top of the start screen ("Level 10 (Magician)") instead of in the title of the Ability points card, which is now just "Ability points".
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player sees their level and job together at a glance, where they look first.
+
+**Score:** 2
+
+#### Pull Request
+
+Show the job behind the level instead of behind Ability points
+
+[PR #120](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/120)
+
+---
+
+### DEPLOY: app/64-helpful-stranger-arrows · 20261004-131127Z
+
+A Bowman who has the Helpful Stranger citizenship rank can turn on "Ik heb Helpful Stranger" under the Ammo
+row of the equipment card. The bronze arrows (+1 W.ATT, 2 mesos per arrow, Raymond's shop) then appear in the
+ammo list, and picking one makes the EXP per meso and the upgrade advice count with it. Switched off, the app
+counts with the plain arrow, as before.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Bowman with the rank can now see whether bronze arrows pay for themselves in mesos, which was the open
+question of #64.
+
+**Score:** 2
+
+#### Pull Request
+
+Bowman: a Helpful Stranger switch that lets bronze arrows count
+
+[PR #119](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/119)
+
+---
+
+### DEPLOY: app/108-attack-damage-range · 20261004-130241Z
+
+On the Total stats card, Attack now shows the damage range of one ordinary attack (min – max), just like the in-game
+stat window: your ability points count, not only the weapon attack from your equipment. Source: the MeowDB damage
+guide, whose own example (60 – 172) is pinned in a test.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends see the same Attack in the app as in their stat window, so they can check their profile at a glance.
+
+**Score:** 3
+
+#### Pull Request
+
+Attack on Total stats shows the stat window's damage range, from your ability points and weapon attack
+
+[PR #116](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/116)
+
+---
+
+### DEPLOY: app/106-card-popup · 20261004-130103Z
+
+The cards no longer fold open. Each card head ends in an eye icon, and tapping it shows the card's content
+in a popup (a bottom sheet on a phone); the cross closes it and puts the focus back on the card. A new spot
+opens straight into its popup. On the level-up check screen the equipment stays directly on the card.
+The explanation texts under Ability points and Total stats are gone.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Dave and his friends see the cards change: the content opens in a popup behind an eye icon instead of
+folding open under the card, and the stats popups no longer end in a block of explanation.
+
+**Score:** 3
+
+#### Pull Request
+
+Cards open their content in a popup behind an eye icon
+
+[PR #115](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/115)
+
+---
+
+### DEPLOY: app/111-close-button-fill · 20261004-125700Z
+
+De bewerkknoppen (het potlood bij je stats, je equipment en je job) zijn nu gevuld in plaats van omrand: op het donkere thema wit met een donkerblauw icoon, op het lichte thema donker met een wit icoon.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Edit buttons with a fill instead of a border
+
+[PR #113](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/113)
+
+---
+
+### DEPLOY: data/107-bowman-able-armor-skirt · 20261004-125657Z
+
+The Bowman's shop data now carries the female-only Green Able Armor Skirt (1190), and its other colours sit in the worn list. The data comes from MeowDB, and no other Bowman top or bottom was left out because of gender.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A female Bowman now gets a level-15 bottom in the armor advice. Before this change, that level had nothing for her. A male Bowman, or one whose gender is not set yet, sees no change.
+
+**Score:** 3
+
+#### Pull Request
+
+Bowman: the female-only Able Armor Skirt in the advice
+
+[PR #112](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/112)
+
+---
+
+### DEPLOY: data/91-mdef-per-item · 20261004-125404Z
+
+The Total stats card now fills in Magic Def itself from your equipment, as it already did for Attack and Weapon Def: the MDEF
+of your hat, top and bottom (or overall) and shoes, read-only once all of those are picked from the list; until then, or with
+a custom item, you still fill it in yourself. Every item
+page was checked: of the items the app knows outside the Magician's, only the Bronze Pride gives MDEF (18).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Source MDEF per item and derive Magic Def from the equipment
+
+[PR #109](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/109)
+
+---
+
+### DEPLOY: app/43-magician-model · 20261004-124937Z
+
+De Magician is nu te kiezen en wordt doorgerekend. De app kiest per monster de spreuk (Energy Bolt of Magic
+Claw) die de minste potions per EXP kost, rekent met 810 ms per cast en met Orange als MP-potion, en trekt de
+DEF van het monster van de spreukschade af volgens de damage-formule van NiaMeowDB. Wands, staffs en armor
+worden geadviseerd op INT en LUK, en de skillpoint-adviezen gaan over Energy Bolt en Magic Claw. De
+potionregel zegt voortaan bij elke job welke potion HP is en welke MP.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician in the mob model and on the screen
+
+[PR #96](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/96)
+
+---
+
+### DEPLOY: app/55-character-gender · 20261004-124443Z
+
+The app now asks whether your character is a man or a woman, and shows it as (m) or (f) behind the job. A Warrior then gets advice on tops, bottoms and
+overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
+you choose, the advice only counts armor both can wear.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ask the character's gender, so gender-locked shop items count
+
+[PR #103](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/103)
+
+---
+
+### DEPLOY: fix/101-one-skill-mp-helper · 20261004-124227Z
+
+Nothing changes on screen. The MP a skill costs per use now comes from one table per skill, the same one the
+Skillpoints card reads, so the advice line and the card can no longer disagree.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Skill MP cost comes from one helper
+
+[PR #105](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/105)
+
+---
+
+### DEPLOY: app/93-subtitle-mesos-per-level · 20261004-124135Z
+
+The subtitle under the app's title now reads "Zo min mogelijk mesos per level in MapleStory Classic World."
+instead of "Zo veel mogelijk EXP per meso"; the web manifest's description and the README say the same (#93).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+rename subtitle of app
+
+[PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
+
+---
+
+### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
+
+Nothing changes on screen. Magic Claw's damage was already counted per hit, two hits per cast; MeowDB's skill
+page turns out to say so in so many words, so the data now cites that sentence instead of calling it a guess.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magic Claw's damage is per hit, as its skill page states
+
+[PR #102](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/102)
+
+---
 
 ### DEPLOY: app/84-level-up-button · 20261004-123108Z
 
