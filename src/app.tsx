@@ -417,7 +417,7 @@ function EquipmentCard(props: {
       <Collapse open={open}>
         <div class="spot-body">
           <p class="hint">{props.hint}</p>
-          <p class="hint">Zoek wat je draagt. Klopt de waarde niet met je spel, typ dan de juiste in: die telt. Kies je bij Weapon een eigen item, dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          <p class="hint">Zoek wat je draagt. Links staat wat de database verwacht; wijkt je game daarvan af, typ dan rechts de juiste waarde in: die telt. Kies je bij Weapon een eigen item, dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
@@ -434,14 +434,21 @@ function EquipmentCard(props: {
                   <EquipSearch slot={slot} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                 </div>
                 {entry.pick !== UNKNOWN && (
-                  <label class="field equip-stat">
-                    <span>{stat}</span>
-                    <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))}
-                      onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                      onChange={() => props.onCommit(slot)}
-                    />
-                    {own !== undefined && <small class="equip-note">aangepast, database: {db}</small>}
-                  </label>
+                  // Links wat de database verwacht, rechts wat je game zegt: dat telt. Bij een eigen item kent de app geen verwachting.
+                  <div class="equip-stats">
+                    <div class="field">
+                      <span>{stat} verwacht</span>
+                      <output class="equip-db" aria-label={`${stat} volgens de database`}>{db ?? '–'}</output>
+                    </div>
+                    <label class="field">
+                      <span>{stat} in je game</span>
+                      <input type="number" inputMode="numeric" min={0} class={own !== undefined ? 'changed' : undefined}
+                        value={props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))}
+                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                        onChange={() => props.onCommit(slot)}
+                      />
+                    </label>
+                  </div>
                 )}
               </div>
             )

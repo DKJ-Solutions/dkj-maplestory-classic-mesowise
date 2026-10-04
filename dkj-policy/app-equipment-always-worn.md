@@ -68,6 +68,7 @@ never enter the upgrade advice.
 - [x] Victor (code): no findings; Edith (UI text): two shorter phrasings adopted
 - [x] Tycho: tests for the catalog, the override and the new data (437 green)
 - [x] Victor (code) and Edith (UI text) on the second round: fixed a claw stat override resetting a hand-set attack speed, stored stats now saved as they count (clamped), Escape-then-arrow highlighting, own-item row offered unless the text is an exact name; "Ander item" renamed "eigen item" throughout (439 green)
+- [x] Dave, October 4, 2026: expected (database) and in-game stat side by side, in-game always overrules
 - [ ] Dave looks at the equipment card at phone width before the merge
 
 ### DEPLOY: app/equipment-always-worn
@@ -76,8 +77,9 @@ The equipment card no longer offers "Weet ik niet" or "Niets": a player always w
 slot is now a search bar: type the name of what you wear and pick it from the list, which covers the
 shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
-own item. If the database value differs from your game, type the right one in the stat field: that
-value counts, and the card notes "aangepast, database: N". A slot not filled in yet shows a search
+own item. Under each item the expected WATK or WDEF from the database sits on the left and the value
+from your game on the right; the game value always overrules the expected one, and the field is marked
+when the two differ. A slot not filled in yet shows a search
 prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
 "Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
 
