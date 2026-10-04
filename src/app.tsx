@@ -434,12 +434,10 @@ function EquipmentCard(props: {
             }
             return (
               <div class="equip-row" key={slot}>
-                <div class="field">
-                  <span>
-                    {label}
-                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
-                  </span>
+                <div class="field equip-head">
+                  <span class="slot-name">{label}</span>
                   <EquipSearch slot={slot} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>
                 {entry.pick !== UNKNOWN && (
                   // Links wat de database verwacht, rechts wat je game zegt: dat telt. Bij een eigen item kent de app geen verwachting.
