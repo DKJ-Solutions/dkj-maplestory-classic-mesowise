@@ -467,7 +467,7 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps) {
   return (
-    <StatsCard {...props} className="profile" icon="person" title={`Ability points (${jobLabel(props.job)})`} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+    <StatsCard {...props} className="profile" icon="person" title="Ability points" fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
   )
 }
 
@@ -1993,9 +1993,9 @@ export function App() {
               </h1>
               <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
-              {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
+              {/* Bovenaan je huidige level met je job erachter; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
               <p class="current-level">
-                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
+                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong>{jobChosen && ` (${jobLabel(job)})`}</>}
               </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
