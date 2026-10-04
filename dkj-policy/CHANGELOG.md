@@ -2,7 +2,70 @@
 
 ## [Unreleased]
 
-**22 / 51 minor entries** <!-- pending-tally -->
+**22 / 54 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/101-one-skill-mp-helper · 20261004-124227Z
+
+Nothing changes on screen. The MP a skill costs per use now comes from one table per skill, the same one the
+Skillpoints card reads, so the advice line and the card can no longer disagree.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Skill MP cost comes from one helper
+
+[PR #105](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/105)
+
+---
+
+### DEPLOY: app/93-subtitle-mesos-per-level · 20261004-124135Z
+
+The subtitle under the app's title now reads "Zo min mogelijk mesos per level in MapleStory Classic World."
+instead of "Zo veel mogelijk EXP per meso"; the web manifest's description and the README say the same (#93).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+rename subtitle of app
+
+[PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
+
+---
+
+### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
+
+Nothing changes on screen. Magic Claw's damage was already counted per hit, two hits per cast; MeowDB's skill
+page turns out to say so in so many words, so the data now cites that sentence instead of calling it a guess.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magic Claw's damage is per hit, as its skill page states
+
+[PR #102](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/102)
+
+---
 
 ### DEPLOY: app/84-level-up-button · 20261004-123108Z
 

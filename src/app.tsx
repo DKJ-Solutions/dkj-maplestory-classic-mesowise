@@ -17,12 +17,12 @@ import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
-import { ALL_SKILLS, isSkillKey, skillMpAt } from './data/skills'
+import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
-import { applyLevelUp, applySkillPoint, arrowBlowMp, bestSpotOf, checkFieldsFor, energyBoltMp, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, magicClawMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -425,8 +425,8 @@ function TotalStatsCard(props: StatsCardProps) {
         <p class="hint">
           De app rekent per monster met de spreuk die de minste potions per EXP kost: Energy Bolt of Magic Claw, naar wat je hebt geleerd. Een cast duurt
           altijd {SPELL_CAST_MS.normal} ms. Een wand of staff uit je equipment vult je M.ATT in. Voor je MP rekent de app met de MP-potion {MAGICIAN_MP_POTION.name} (niet de Orange Potion voor HP).
-          Een Magician heeft geen munitie. Een monster heeft in de gegevens maar één verdediging; de app gebruikt die ook tegen spreuken. De schade van
-          Magic Claw leest de app per klap (2 klappen), want de pagina zegt niet of het per klap of per cast is.
+          Een Magician heeft geen munitie. Een monster heeft in de gegevens maar één verdediging; de app gebruikt die ook tegen spreuken. Magic Claw raakt
+          2 keer per cast, met de schade van de skillpagina per klap.
         </p>
       )}
       {job === 'warrior' && (
@@ -1517,13 +1517,13 @@ function noCostReason(c: LevelCost): string | null {
   return null
 }
 
-/** De skills die een aanval zijn: de MP per aanval op een skill-level, en hoe de speler één aanval noemt. */
-const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { mp: (level: number) => number; noun: string }>> = {
-  luckySeven: { mp: luckySevenMp, noun: 'worp' },
-  powerStrike: { mp: powerStrikeMp, noun: 'aanval' },
-  arrowBlow: { mp: arrowBlowMp, noun: 'schot' },
-  energyBolt: { mp: energyBoltMp, noun: 'cast' },
-  magicClaw: { mp: magicClawMp, noun: 'cast' },
+/** De skills die een aanval zijn, en hoe de speler één aanval noemt. De MP per aanval komt uit mpPerUse. */
+const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
+  luckySeven: { noun: 'worp' },
+  powerStrike: { noun: 'aanval' },
+  arrowBlow: { noun: 'schot' },
+  energyBolt: { noun: 'cast' },
+  magicClaw: { noun: 'cast' },
 }
 
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
@@ -1549,7 +1549,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
     )
   }
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
-  const mpFrom = winner && attack ? attack.mp(winner.to - 1) : 0
+  const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
   return (
     <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading}>
       {winner ? (
@@ -1561,8 +1561,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
           {attack && (
             <p class="hint">
               {mpFrom === 0
-                ? `Elke ${attack.noun} kost je dan ${attack.mp(winner.to)} MP (nu 0).`
-                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${attack.mp(winner.to)} MP.`}{' '}
+                ? `Elke ${attack.noun} kost je dan ${mpPerUse(winner.id, winner.to)} MP (nu 0).`
+                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${mpPerUse(winner.id, winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
@@ -1883,7 +1883,7 @@ export function App() {
               <h1 class="sr-only" tabIndex={-1} ref={headingRef(0)}>
                 Mesowise
               </h1>
-              <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
+              <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
               {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
               <p class="current-level">

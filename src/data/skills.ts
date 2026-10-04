@@ -136,6 +136,15 @@ export const isSkillKey = (key: string): key is SkillKey => ALL_SKILLS.some((s) 
 
 export const skillInfo = (key: SkillKey): SkillInfo => ALL_SKILLS.find((s) => s.key === key)!
 
-/** De MP die een skill per keer kost op dit level; null bij een passieve skill. Op level 0 die van level 1. */
+/**
+ * De MP die een skill per keer kost op dit level; null bij een passieve skill. Op level 0 die van level 1 (wat
+ * je gaat betalen zodra je hem leert), boven het maximum die van het maximum. De sectie "Skillpoints" toont dit.
+ */
 export const skillMpAt = (s: SkillInfo, level: number): number | null =>
   s.mp ? s.mp[Math.min(Math.max(level, 1), s.mp.length) - 1] : null
+
+/**
+ * De MP die je nu per keer betaalt met deze skill: 0 zolang hij niet geleerd is (level 0) of passief is, en anders
+ * skillMpAt. Het advies voor je skillpunt rekent hiermee (issue #101: één bron voor de MP van een skill).
+ */
+export const mpPerUse = (key: SkillKey, level: number): number => (level < 1 ? 0 : (skillMpAt(skillInfo(key), level) ?? 0))

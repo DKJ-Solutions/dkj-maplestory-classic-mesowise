@@ -16,7 +16,7 @@ import {
   NPC_MAGICIAN_WEAPONS,
   SPELL_CAST_MS,
 } from './data/magician'
-import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, THIEF_SKILLS } from './data/skills'
+import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, mpPerUse, THIEF_SKILLS } from './data/skills'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import { NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
@@ -34,7 +34,7 @@ import {
 } from './equipment'
 import { expectedStat } from './expectedStats'
 import { isComputed } from './job'
-import { applyLevelUp, applySkillPoint, checkFieldsFor, energyBoltMp, magicClawMp } from './levelUp'
+import { applyLevelUp, applySkillPoint, checkFieldsFor } from './levelUp'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
 import { bestExpPerMeso } from './mesoCostAt'
 import {
@@ -255,8 +255,8 @@ describe('Magician: applyLevelUp en het controlescherm', () => {
   })
 
   it('geeft de MP per cast van Energy Bolt en Magic Claw (0 op level 0)', () => {
-    expect([0, 1, 5, 20].map(energyBoltMp)).toEqual([0, 8, 9, 16])
-    expect([0, 1, 5, 20].map(magicClawMp)).toEqual([0, 10, 11, 20])
+    expect([0, 1, 5, 20].map((l) => mpPerUse('energyBolt', l))).toEqual([0, 8, 9, 16])
+    expect([0, 1, 5, 20].map((l) => mpPerUse('magicClaw', l))).toEqual([0, 10, 11, 20])
   })
 
   it('zet met applySkillPoint een punt in Energy Bolt en laat de rest staan', () => {
