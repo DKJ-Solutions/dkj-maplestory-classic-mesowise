@@ -44,16 +44,30 @@ equipment dropdown loses "Weet ik niet" and "Niets". The internal not-yet-filled
 as a disabled "Kies wat je draagt"), because filling a slot in for the first time must leave the
 profile WDEF alone: that piece is already in the stat window total.
 
+#### Second round: a search bar instead of the dropdown
+
+Dave, October 4, 2026, before he had looked at the first round: the player searches for the item they
+wear instead of picking from a dropdown, and can adjust the stat when the database differs from the
+in-game value. What is searchable: the list is extended per item (Dave's choice), with items a Thief can
+wear up to level 30, each with its MeowDB page and date, never a whole table. Items without a shop price
+never enter the upgrade advice.
+
 ### CREATE
 
 - [x] `equipment.ts`: drop `NONE`; a stored `none` loads as not filled in
 - [x] `app.tsx`: dropdown without both options, disabled placeholder while a slot is unfilled; armor-advice texts no longer name "Weet ik niet"
 - [x] "was" badge shows a shop item's own name (it fell through to "Ander item")
+- [ ] Rebecca: wearable Thief items lv 0-30 per slot, each with its MeowDB page
+- [ ] Vera: those items into `src/data/wornItems.ts`, each with source and date
+- [ ] Cody: search bar per slot, own item when nothing matches, stat override with the database value beside it
+- [ ] Gwen: the look at phone width
 
 ### TEST
 
 - [x] `equipment.test.ts` updated; 404 tests green, typecheck green
 - [x] Victor (code): no findings; Edith (UI text): two shorter phrasings adopted
+- [ ] Tycho: tests for the catalog, the override and the new data
+- [ ] Victor (code) and Edith (UI text) on the second round
 - [ ] Dave looks at the equipment card at phone width before the merge
 
 ### DEPLOY: app/equipment-always-worn
