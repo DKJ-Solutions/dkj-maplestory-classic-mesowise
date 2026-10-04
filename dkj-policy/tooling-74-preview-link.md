@@ -55,6 +55,12 @@ serves on, and Chris's lens makes running it part of handing over a visible resu
 - [x] Ran it on this machine: a cold start printed `localhost:5174` (5173 was taken by a hand-started
   server, which is the case the script exists for), and the page answered 200 under the base path; a second
   run reused the server; `-Lan` printed the network link too; `-Stop` took it down.
+- [x] Victor's review, all applied but the concurrency race (noted in the header): a PID is only killed when
+  its start time matches the one recorded, the state is written as UTF8, a failed start cleans up after
+  itself, `-Lan` waits a few seconds for a network link rather than the full timeout, the health check
+  bypasses the system proxy, a missing `node` gets its own message. Re-ran: forged state with a reused
+  PID left that process alone; switching `-Lan` restarted cleanly; lint clean.
+- [x] Edith: no findings beyond one comment made exact.
 
 ### DEPLOY: tooling/74-preview-link
 
