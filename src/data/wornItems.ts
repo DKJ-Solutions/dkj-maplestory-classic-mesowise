@@ -8,7 +8,7 @@
 // Alleen items die een Thief tot level 30 echt draagt, nooit een hele tabel (zie .claude/rules/this-repo.md).
 //
 // Wat erin staat, en waarom ruimer dan armor.ts: hier zegt de speler zelf wat hij draagt, dus de vraag of hij
-// het kan dragen speelt niet. Daarom staan ook items zonder jobregel (beginnerskleding, Bandana, Gomushin),
+// het kan dragen speelt niet. Daarom staan ook items zonder jobregel (beginnerskleding, Bandana, Gomushin; de White Bandana (719) niet, die staat als NPC-item in armor.ts),
 // items met een fame-eis en de Qi Pao Skirts erin. Items voor een andere job (Warrior, Mage, Bowman) niet.
 //
 // Niet opgenomen: de GM-hoeden (Dr. Lim Hat, Nemi Hat, Inkwell Hat, Wizet Invincible Hat, elk +200 WDEF),
@@ -37,7 +37,6 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Black Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(716) },
   { name: 'Blue Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(717) },
   { name: 'Red Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(718) },
-  { name: 'White Bandana', slot: 'hat', level: 10, wdef: 15, source: src(719) },
   { name: 'Red Bandana', slot: 'hat', level: 10, wdef: 15, source: src(720) },
   { name: 'Blue Bandana', slot: 'hat', level: 10, wdef: 15, source: src(721) },
   { name: 'Yellow Bandana', slot: 'hat', level: 10, wdef: 15, source: src(722) },
@@ -148,8 +147,8 @@ export const WORN_ARMOR: readonly WornArmor[] = [
 /**
  * De ids (MeowDB-itempagina) van de rijen in WORN_ARMOR waarvan de pagina geen jobregel heeft, zodat elke job ze
  * kan dragen: de beginnerskleding op level 0 (tops 932 tot 940, broeken 1156, 1157 en 1160, schoenen 1305 tot
- * 1308) en de items die armor.ts en deze kop met naam als "zonder jobregel" noemen: Bandana (719 tot 723),
- * Baseball Cap (782), One-lined T-Shirt (960) en Gomushin (1317 tot 1319), en de op 2026-10-04 op de ruwe
+ * 1308) en de items die deze kop met naam als "zonder jobregel" noemt: Bandana (720 tot 723; de White Bandana 719
+ * is sinds #55 een NPC-item in elke klaslijst), Baseball Cap (782), One-lined T-Shirt (960) en Gomushin (1317 tot 1319), en de op 2026-10-04 op de ruwe
  * itempagina gecontroleerde Skullcaps, Headbands en andere items (708 tot 718, 740 tot 742, 961 tot 963, 1163, 1181
  * en 1233). De Warrior leest ze via
  * COMMON_WORN_ARMOR (zie wornWarrior.ts); de rijen staan maar op één plek.
@@ -157,7 +156,7 @@ export const WORN_ARMOR: readonly WornArmor[] = [
  * en 1316, die een Thief-jobregel hebben) zijn niet opnieuw op hun pagina gecontroleerd en blijven Thief-only.
  */
 const COMMON_WORN_IDS: ReadonlySet<number> = new Set([
-  719, 720, 721, 722, 723, 782, 960, 1317, 1318, 1319,
+  720, 721, 722, 723, 782, 960, 1317, 1318, 1319,
   932, 933, 934, 935, 936, 937, 938, 939, 940, 1156, 1157, 1160, 1305, 1306, 1307, 1308,
   708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 740, 741, 742, 961, 962, 963, 1163, 1181, 1233,
 ])

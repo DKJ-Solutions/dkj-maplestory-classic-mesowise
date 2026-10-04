@@ -12,23 +12,20 @@
 // - De tops en broeken voor Warriors die alleen voor mannen zijn (de app kent het geslacht niet, dus ze staan niet
 //   in NPC_WARRIOR_ARMOR): Lolico, Corporal, Sergeant, Master Sergeant en Hwarang/Martial Arts, level 10 tot 30,
 //   elk met een jobregel Warrior en "Male only".
-// - Wapens waarvan de pagina geen jobregel noemt (Long Sword, Double Axe, Steel Pipe, Leather Purse, Red Brick,
-//   Hard Briefcase, Plunger, Sky Blue Umbrella): de pagina noemt voor geen van de acht een andere job, en de
-//   speler zegt zelf dat hij het draagt. Het zijn gewone wapens met eisen en winkelprijs; ze staan hier zonder.
 // - De items zonder jobregel uit de Thief-lijst (COMMON_WORN_ARMOR in wornItems.ts): de rijen staan maar op één
-//   plek en worden hier hergebruikt: 46 rijen, waarvan de pagina op 2026-10-04 geen jobregel heeft. Items met een
-//   Thief-jobregel (732 tot 736, 949, 950, 1169, 1170 en 1316) komen er niet in.
+//   plek en worden hier hergebruikt: 45 rijen, waarvan de pagina op 2026-10-04 geen jobregel heeft. Items met een
+//   Thief-jobregel (732 tot 736, 949, 950, 1169, 1170 en 1316) komen er niet in. De White Bandana (719) en de Red
+//   Baseball Cap (781) zijn sinds #55 NPC-items, ook in NPC_WARRIOR_ARMOR.
+//
+// De acht wapens zonder jobregel (Long Sword tot Sky Blue Umbrella) zijn sinds #55 NPC-wapens in warrior.ts.
 //
 // Niet opgenomen: overalls (de app heeft geen overall-slot: 1094 tot 1097), handschoenen en schilden (niet gelezen).
-import { SPEED } from './attackSpeed'
 import type { Source, WornArmor, WornWarriorWeapon } from './types'
-import { MULT, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './warrior'
+import { NPC_WARRIOR_ARMOR } from './warrior'
 import { COMMON_WORN_ARMOR } from './wornItems'
 
 const R = '2026-10-04'
 const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
-
-const { fast4: FAST4, fast5: FAST5 } = SPEED
 
 const SLOT_RANK = { hat: 0, top: 1, bottom: 2, shoes: 3 } as const
 
@@ -68,30 +65,9 @@ export const WORN_WARRIOR_ARMOR: readonly WornArmor[] = [...COMMON_WORN_ARMOR, .
   .sort((x, y) => SLOT_RANK[x.a.slot] - SLOT_RANK[y.a.slot] || x.a.level - y.a.level || x.i - y.i)
   .map(({ a }) => a)
 
-const npcWeaponNames = new Set(NPC_WARRIOR_WEAPONS.map((w) => w.name))
-
-const worn = (id: number, name: string, kind: keyof typeof MULT, level: number, watk: number, speed: WornWarriorWeapon['speed']): WornWarriorWeapon => ({
-  name,
-  kind,
-  level,
-  watk,
-  speed,
-  mult: MULT[kind],
-  source: src(id),
-})
-
 /**
- * Niet-winkel wapens voor een Warrior, van laag naar hoog level: wapens zonder jobregel op de pagina. Zoals bij
- * NPC_WARRIOR_WEAPONS een `kind`, de snelheid en de multipliers van de itempagina. Een naam uit NPC_WARRIOR_WEAPONS
- * staat er niet in.
+ * Niet-winkel wapens voor een Warrior, met zoals NPC_WARRIOR_WEAPONS een `kind`, de snelheid en de multipliers van
+ * de itempagina. Nu leeg: de acht wapens zonder jobregel die hier stonden (Long Sword tot Sky Blue Umbrella) zijn
+ * sinds #55 NPC-wapens in warrior.ts, met eisen en prijs. De lijst blijft voor een gedragen wapen dat geen NPC verkoopt.
  */
-export const WORN_WARRIOR_WEAPONS: readonly WornWarriorWeapon[] = [
-  worn(543, 'Long Sword', '1h-sword', 10, 27, FAST4),
-  worn(577, 'Double Axe', '1h-axe', 10, 27, FAST4),
-  worn(588, 'Steel Pipe', '1h-blunt', 10, 29, FAST5),
-  worn(589, 'Leather Purse', '1h-blunt', 12, 31, FAST5),
-  worn(591, 'Red Brick', '1h-blunt', 15, 31, FAST4),
-  worn(594, 'Hard Briefcase', '1h-blunt', 20, 39, FAST5),
-  worn(597, 'Plunger', '1h-blunt', 25, 44, FAST5),
-  worn(550, 'Sky Blue Umbrella', '1h-sword', 27, 33, FAST4),
-].filter((w) => !npcWeaponNames.has(w.name))
+export const WORN_WARRIOR_WEAPONS: readonly WornWarriorWeapon[] = []
