@@ -466,6 +466,15 @@ describe('bewaren na elke wijziging', () => {
     expect(profileFields().starRecharge).toBe('0.4')
   })
 
+  it('toont bij Total stats de Attack uit je equipment: claw plus stars, niet 0 (#82)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    expect(statShown('Attack')).toBe(String(IGOR.watk + 17))
+    expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
+  })
+
   it('toont het ammo-slot als optioneel: leeg blijft het advies gewoon rekenen', () => {
     openHomeEquipment()
     const row = rowOf(cards()[0], 'Ammo')
@@ -775,6 +784,11 @@ describe('een Warrior in de app', () => {
       expect(statShown('STR')).toBe('90')
       expect(home.textContent).not.toMatch(/Subi|stars/)
       expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
+    })
+
+    it('toont bij Total stats de Attack van het wapen, zonder stars (#82)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      expect(statShown('Attack')).toBe('40')
     })
 
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {

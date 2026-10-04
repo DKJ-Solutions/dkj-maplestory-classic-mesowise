@@ -23,7 +23,7 @@ import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -188,6 +188,8 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
  * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
+/** De Attack uit het statvenster: geen opgeslagen veld, maar de weapon attack uit je equipment (totalAttack). */
+const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -327,6 +329,8 @@ function StatsCard(props: {
   draft: ProfileDraft
   error: string | null
   onChange: (patch: Partial<ProfileDraft>) => void
+  /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
+  lead?: ComponentChildren
   children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
@@ -345,10 +349,11 @@ function StatsCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
+          {props.lead}
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Weapon Def komt uit je equipment; pas hem daar aan. Attack, Magic, Magic Def, Crit., Speed en Jump gebruikt de app niet; ze staan er voor het overzicht.</p>}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump gebruikt de app niet; ze staan er voor het overzicht.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
@@ -370,8 +375,10 @@ function ProfileCard(props: StatsCardProps) {
 /** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps) {
   const { job } = props
+  const attack = totalAttack(props.draft, job)
+  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
   return (
-    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
       {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
       {job === 'warrior' && (
         <>

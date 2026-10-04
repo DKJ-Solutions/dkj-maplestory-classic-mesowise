@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -99,14 +99,30 @@ describe('loadProfile en saveProfile', () => {
     expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, str: '50', luk: '60', int: '4' })
   })
 
+  it('rekent de Attack uit je equipment: bij een Thief claw plus stars, bij een Warrior alleen het wapen (#82)', () => {
+    const d = { ...DEFAULT_PROFILE, clawWatk: '30', starWatk: '17' }
+    expect(totalAttack(d, 'thief')).toBe(47)
+    expect(totalAttack(d, 'warrior')).toBe(30)
+    const r = parseProfile(d)
+    if ('profile' in r) expect(totalAttack(d, 'thief')).toBe(toCharacter(r.profile).watk)
+    expect(totalAttack({ ...d, clawWatk: '' }, 'thief')).toBeNull()
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'thief')).toBeNull()
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'warrior')).toBe(30)
+  })
+
+  it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60', attack: '99' } })
+    expect('attack' in loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toBe(false)
+  })
+
   it('geeft een bewaard profiel van vóór de info-velden (#82) hun neutrale standaardwaarden', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60' } })
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', attack: '0', magic: '0', magicDef: '0', critRate: '0', critDamage: '0', speed: '100', jump: '100' })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', magic: '0', magicDef: '0', critRate: '0', critDamage: '0', speed: '100', jump: '100' })
   })
 
   it('laat een leeg of fout info-veld de berekening niet blokkeren (#82)', () => {
     const base = parseProfile(DEFAULT_PROFILE)
-    const r = parseProfile({ ...DEFAULT_PROFILE, attack: '', speed: 'x', critRate: '500', jump: '300' })
+    const r = parseProfile({ ...DEFAULT_PROFILE, speed: 'x', critRate: '500', jump: '300' })
     expect('profile' in r).toBe(true)
     if ('profile' in r && 'profile' in base) {
       expect(r.profile).toEqual(base.profile)

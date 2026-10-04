@@ -31,8 +31,7 @@ const STATS = [
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
-  // Total stats, in de volgorde van het statvenster. Alleen ter info: attack, magic, magic def, crit, speed en jump.
-  { key: 'attack', label: 'Attack', min: 0, max: 9_999, integer: true, informative: true },
+  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je equipment (totalAttack).
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
   { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },
@@ -131,7 +130,6 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   avoid: '23',
   wdef: '72',
   // Alleen ter info, neutrale beginwaarden (geen spelgegevens): de berekening gebruikt ze niet.
-  attack: '0',
   magic: '0',
   magicDef: '0',
   critRate: '0',
@@ -190,6 +188,20 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
   return { profile: out }
 }
 
+/** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, een Warrior gooit niets. */
+const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
+
+/**
+ * De Attack uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
+ * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ */
+export function totalAttack(d: ProfileDraft, job: Job): number | null {
+  const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+  const claw = whole(d.clawWatk)
+  const stars = job === 'warrior' ? 0 : whole(d.starWatk)
+  return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
+}
+
 /** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw; een Warrior gooit niets. */
 export function toCharacter(p: Profile): Character {
   return {
@@ -198,7 +210,7 @@ export function toCharacter(p: Profile): Character {
     str: p.str,
     dex: p.dex,
     luk: p.luk,
-    watk: p.job === 'warrior' ? p.clawWatk : p.clawWatk + p.starWatk,
+    watk: weaponAttack(p.job, p.clawWatk, p.starWatk),
     accuracy: p.accuracy,
     avoid: p.avoid,
     wdef: p.wdef,

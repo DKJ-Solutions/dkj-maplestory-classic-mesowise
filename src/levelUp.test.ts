@@ -403,7 +403,7 @@ describe('een Warrior: checkFieldsFor', () => {
   it('heeft alle stats van een Warrior precies één keer, met de weapon multiplier, en geen skills', () => {
     expect(new Set(keys).size).toBe(keys.length)
     expect([...keys].sort()).toEqual(statFieldsFor('warrior').filter((f) => !f.informative).map((f) => f.key).sort())
-    for (const k of ['attack', 'magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(keys).not.toContain(k)
+    for (const k of ['magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(keys).not.toContain(k)
     expect(keys).toContain('weaponMult')
     expect(keys).toContain('luk')
     expect(keys.filter(isSkillKey)).toEqual([])
