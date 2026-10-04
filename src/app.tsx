@@ -107,7 +107,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   return (
     <section class="card job">
       <div class="job-head">
-        <h2 id="job-title">{chosen && !editing ? `Je job: ${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Welke job speel je?'}</h2>
+        <h2 id="job-title">{chosen && !editing ? `Je job: ${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Job:'}</h2>
         {chosen && (
           <button
             type="button"
@@ -145,7 +145,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
       */}
       {(gender === null || editing) && (
         <div class="gender" role="group" aria-labelledby="gender-title">
-          <span id="gender-title" class="gender-title">Geslacht</span>
+          <h2 id="gender-title">Geslacht:</h2>
           <div class="gender-choices">
             {GENDERS.map((g) => (
               <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === gender} onClick={() => pickGender(g.gender)}>

@@ -55,7 +55,8 @@ The job card gets a "Geslacht" row (Man / Vrouw). Dave looks before the merge, s
 - [x] Cody: `gender.ts`, `gender` on shop armor and the profile, the advice filters by gender (candidates and
   horizon), the Geslacht row on the job card. The equipment catalog stays unfiltered: you state what you wear.
 - [x] Cody, after Dave's look (2026-10-04, "scheelt hoogte"): once chosen, the gender stands as (m) or (f) behind
-  the job in the card's heading and the Geslacht row goes away; the pencil shows it again.
+  the job in the card's heading and the Geslacht row goes away; the pencil shows it again. Then: the heading
+  while choosing reads "Job:", and "Geslacht:" is the same `h2` heading, on one row with Man and Vrouw.
 - [x] Data: Thief +3 rows, Warrior +23 rows (one colour per level and gender), the other colours in wornWarrior.ts.
 
 ### TEST
