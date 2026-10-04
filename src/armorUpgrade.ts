@@ -24,7 +24,9 @@
 // alleen van het slot: een top of bottom stopt ook vóór de eerste latere overall die meer WDEF geeft dan het stuk
 // samen met de beste andere helft van dat level, een overall ook vóór de eerste latere top of bottom die met de beste
 // andere helft van dat level meer geeft dan hij, en een paar vóór een betere top, een betere bottom of een overall die
-// meer geeft dan het paar.
+// meer geeft dan het paar. Ook een losse top of bottom die de andere helft leeg laat, rekent tegen een latere overall
+// met de beste andere helft van dat level (issue #118, een keuze): die lege helft koop je los bij, het advies biedt
+// hem dan zelf aan, en pas een overall die meer geeft dan beide samen vervangt het stuk.
 import { ASSUMPTION_VARIANTS } from './best'
 import { BOWMAN_ARMOR } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
@@ -63,8 +65,14 @@ export interface ArmorChoice {
   replaces: number | undefined
 }
 
-/** Wat je per slot aan WDEF draagt; een slot dat ontbreekt is onbekend. */
-export type WornWdef = Partial<Record<ArmorSlot, number>>
+/**
+ * Wat je per slot aan WDEF draagt; een slot dat ontbreekt is onbekend. `overallWorn` zegt dat je een overall draagt
+ * ook als zijn WDEF onbekend is (issue #118): dan ontbreekt `overall`, maar vervangt een top of bottom hem toch.
+ */
+export type WornWdef = Partial<Record<ArmorSlot, number>> & { overallWorn?: boolean }
+
+/** Of je een overall draagt, met bekende of onbekende WDEF. */
+export const wearsOverall = (worn: WornWdef): boolean => worn.overall !== undefined || worn.overallWorn === true
 
 /** Een stuk dat je level wel toestaat, maar waar je stats nog tekortschieten. */
 export interface UnwearableArmor {
@@ -92,14 +100,16 @@ export type ArmorUpgradeAdvice =
 
 /**
  * De WDEF die een nieuw stuk in `slot` vervangt, of undefined als de app dat niet weet (zie de kop voor de overall-regel).
- * Een overall zonder bekende top of bottom is onbekend; met alleen een bekende helft telt die helft.
+ * Een overall zonder bekende top of bottom is onbekend; met alleen een bekende helft telt die helft. Draag je een overall
+ * met onbekende WDEF, dan is wat een top, bottom of overall vervangt onbekend: top en bottom tellen dan niet (issue #118).
  */
 export function replacedWdef(slot: ArmorSlot, worn: WornWdef): number | undefined {
   if (slot === 'overall') {
+    if (wearsOverall(worn)) return worn.overall
     const halves = [worn.top, worn.bottom].filter((w): w is number => w !== undefined)
-    return worn.overall ?? (halves.length === 0 ? undefined : halves.reduce((a, b) => a + b, 0))
+    return halves.length === 0 ? undefined : halves.reduce((a, b) => a + b, 0)
   }
-  return slot === 'top' || slot === 'bottom' ? (worn.overall ?? worn[slot]) : worn[slot]
+  return isHalf(slot) ? (wearsOverall(worn) ? worn.overall : worn[slot]) : worn[slot]
 }
 
 /** Het profiel met dit stuk erbij: het stuk dat je in dat slot droeg (`replaced`, standaard niets) gaat eraf. */
@@ -156,7 +166,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
       // Is een level zonder stuk onhaalbaar (basiskosten null), dan is elk stuk bewust "niet uit te rekenen" (zie issue #25).
       const saving = without === null || withIt === null ? null : without - withIt
       const price = c.armor.price + (c.with?.price ?? 0)
-      const bare = !c.with && isHalf(c.armor.slot) && worn.overall !== undefined ? otherHalf(c.armor.slot) : undefined
+      const bare = !c.with && isHalf(c.armor.slot) && wearsOverall(worn) ? otherHalf(c.armor.slot) : undefined
       return { ...c, price, ...(bare && { bare }), ...h, saving, net: saving === null ? null : saving - price, replaces }
     })
     .sort(byNet)
@@ -177,7 +187,7 @@ export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profil
   const wearable: Candidate[] = available.filter((a) => canWear(a) && betterThanWorn(a)).map((armor) => ({ armor }))
   // Het paar (issue #87), alleen als er een overall op tafel ligt: elke draagbare top met elke draagbare bottom, als
   // ze samen meer geven dan wat een overall zou vervangen.
-  if (available.some((a) => a.slot === 'overall') || worn.overall !== undefined) {
+  if (available.some((a) => a.slot === 'overall') || wearsOverall(worn)) {
     const halves = available.filter(canWear)
     const replaced = replacedWdef('overall', worn) ?? -Infinity
     for (const top of halves.filter((a) => a.slot === 'top')) {

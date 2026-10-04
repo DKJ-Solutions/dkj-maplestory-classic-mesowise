@@ -1482,11 +1482,8 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 
 /** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  // Een losse top of bottom in plaats van een overall laat de andere helft leeg (#87), ook als de WDEF van die overall
-  // onbekend is (dan staat hij niet in WornWdef en zet het advies geen `bare`).
-  const slot = win.armor.slot
-  const half = win.bare ?? (!win.with && (slot === 'top' || slot === 'bottom') && displacedSlots(equipment, slot)[0] === 'overall' ? (slot === 'top' ? 'bottom' : 'top') : undefined)
-  const bare = half ? ` Je ${SLOT_NAME[half]} is dan leeg.` : ''
+  // Een losse top of bottom in plaats van een overall laat de andere helft leeg (#87), ook bij een overall met onbekende WDEF (#118).
+  const bare = win.bare ? ` Je ${SLOT_NAME[win.bare]} is dan leeg.` : ''
   if (win.replaces === undefined) return ` in plaats van je huidige ${win.with ? 'stukken' : 'stuk'} (${STAT_NAME.armor} onbekend).${bare}`
   // Een overall (of een paar top + bottom) vervangt top en bottom samen, en een top of bottom een overall die je draagt.
   const names = displacedSlots(equipment, win.with ? 'overall' : win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)

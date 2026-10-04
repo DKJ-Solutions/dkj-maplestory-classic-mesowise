@@ -39,21 +39,49 @@
 
 ### PLAN
 
+Issue #118, Victor's finding on #87, which merged in PR #121 before this fix could join it. The armor advice
+keyed the top + bottom pair and the bare half on a KNOWN overall WDEF, so an overall worn with an unknown DEF
+(a custom item without a stat) never opened the pair.
+
+- `WornWdef` gets `overallWorn`; `wornWdef` sets it whenever an overall is filled in, and `wearsOverall` is the one gate.
+- `replacedWdef` ignores top and bottom while an overall is worn: what a top, bottom or overall replaces is then
+  the worn overall, unknown if its WDEF is.
+- Point 2 decided: a bare half's horizon against a later overall keeps counting the best other half of that level
+  (you buy the bare half separately, and the advice offers it), pinned by a test.
+
+#### Visible result
+
+The verdict now reads "Koop A (Top) en B (Bottom)" or "Je Bottom is dan leeg." also with an overall of unknown DEF.
+Dave looked at the preview and said "ship it" (October 4, 2026).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/armorUpgrade.ts`: `WornWdef.overallWorn`, `wearsOverall`, `replacedWdef`, the pair and `bare` gates, the point 2 note in the header
+- [x] `src/equipment.ts`: `wornWdef` reports a filled-in overall
+- [x] `src/app.tsx`: `replaceClause` reads `win.bare` only; the fallback for an unknown overall is gone
 
 ### TEST
 
+- [x] `src/armorUpgrade.test.ts`: `replacedWdef` with `overallWorn`; a new describe for #118 (Thief pair and bare halves
+  without a shop overall, equal to an empty worn apart from those, and the point 2 horizon by hand with an injected overall)
+- [x] `src/equipment.test.ts`: `wornWdef` reports `overallWorn`, also with unknown DEF
+- [x] Victor's review: clean, no blocking findings
+- [x] `npx vitest run`: 1183 passed; `npm run lint`: clean
+
 ### DEPLOY: app/118-overall-unknown-wdef-pair
 
-**Score:**
+The Defense advice now also offers a top and bottom bought together when you wear an overall whose DEF the app
+does not know (an item of your own without a number). A single top or bottom then says that the other half is
+left bare, as it already did for an overall with a known DEF.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Armor advice: an overall with unknown DEF opens the top + bottom pair
-
