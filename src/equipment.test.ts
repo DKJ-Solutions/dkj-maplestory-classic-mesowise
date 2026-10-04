@@ -13,6 +13,7 @@ import {
   loadEquipment,
   saveEquipment,
   searchCatalog,
+  statName,
   statOverride,
   wornName,
   wornStat,
@@ -63,6 +64,13 @@ describe('defaultEquipment en catalogItems', () => {
     expect(catalogItems('shoes').find((i) => i.name === 'Bronze Aroa Boots')).toMatchObject({ level: 16, stat: 13 })
     expect(catalogItems('claw').find((i) => i.name === 'Mithril Guards')).toMatchObject({ level: 30, stat: 23, attackMs: 720 })
     expect(catalogItems('hat').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
+  })
+})
+
+describe('statName', () => {
+  it('noemt de stat zoals het spel: ATT voor het wapen, WDEF voor armor', () => {
+    expect(statName('claw')).toBe('ATT')
+    for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(statName(s), s).toBe('WDEF')
   })
 })
 

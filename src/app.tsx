@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statOverride, UNKNOWN, wornName, wornStat, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statName, statOverride, UNKNOWN, wornName, wornStat, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -312,7 +312,7 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
   const open = text !== null
   const typed = (text ?? '').trim()
   const found = searchCatalog(slot, typed)
-  const stat = slot === 'claw' ? 'WATK' : 'WDEF'
+  const stat = statName(slot)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
@@ -471,7 +471,7 @@ function EquipmentCard(props: {
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
-            const stat = slot === 'claw' ? 'WATK' : 'WDEF'
+            const stat = statName(slot)
             const db = databaseStat(slot, entry)
             const own = statOverride(slot, entry)
             const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
