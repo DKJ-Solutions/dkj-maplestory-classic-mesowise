@@ -232,9 +232,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
-.level-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 6.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
+.level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
-.level-row .btn { width: 100%; height: 44px; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+.level-row .btn { position: relative; width: 100%; height: 36px; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+/* Kleiner in beeld, maar het tikvlak blijft 44px hoog. */
+.level-row .btn::after { content: ''; position: absolute; inset: -4px 0; }
 /* BACK: verder de knoppen Male en Female (.btn). */
 .level-row .btn:disabled { opacity: 0.45; }
 /* Het level groot, en ook verticaal precies tussen de knoppen: text-box knipt de ruimte boven en onder de hoofdletters weg,
