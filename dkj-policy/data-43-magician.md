@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Stap 1 van #43, zoals stap 1 van #42 voor de Warrior: de Magician-gegevens met bronnen, nog niet aangesloten
+op het mob-model of de app. Dezelfde regels als `warrior.ts` en `armor.ts`; wat daar onder #55 valt (geen
+jobregel, alleen voor één geslacht) blijft eruit tot Dave beslist.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: wapens, armor, skills, damage-formule, accuracy, HP/MP en MP-potions van NiaMeowDB, met een
+  tweede lezing van Magic Claw, de staf-snelheid en Magic Guard.
+- [x] Vera: `src/data/magician.ts` en de typen `MagicianWeapon`, `MagicianArmor`, `SpellLevel` en
+  `MagicArmorLevel` in `types.ts`, gebouwd op `ShopItem`, `ShopArmor` en `Requires` uit #56.
 
 ### TEST
 
+- [x] Tycho: `src/data/magician.test.ts` (46 tests) pint elk getal tegen het onderzoek, de uitsluitingen, de
+  staf-snelheid zoals gedrukt en `magicianAccuracy` met randgevallen en een rooster tegen de formule.
+- [x] Victor: geen bugs; elk getal klopt met het onderzoek en de inclusieregel volgt `warrior.ts` en `armor.ts`.
+
 ### DEPLOY: data/43-magician
 
-**Score:**
+De Magician heeft nu eigen spelgegevens, elk met zijn bron: de staffen en wands en de armor uit de NPC-winkels
+voor level 10 tot 30, Energy Bolt en Magic Claw per level, Magic Guard, Magic Armor en de MP-passieven, HP en
+MP per level, de accuracy-formule en de Orange en Lemon als goedkoopste MP. In de app verandert nog niets: de
+Magician blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. De drie goedkoopste wands
+(geen jobregel) en de tops, broeken en robes voor één geslacht ontbreken nog (#55, #50).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 

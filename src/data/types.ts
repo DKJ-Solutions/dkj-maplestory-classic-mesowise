@@ -112,6 +112,39 @@ export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
 export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}
 
+/** De soort Magician-wapen. */
+export type MagicianWeaponKind = 'wand' | 'staff'
+
+/**
+ * Een wand of staff uit een NPC-winkel: wat hij vraagt (level, INT, LUK), wat hij geeft (weapon attack en
+ * magic attack) en wat hij kost. Een eis die de pagina niet noemt staat als 0. Spreuken gebruiken `matk`, niet `watk`.
+ */
+export interface MagicianWeapon extends ShopItem, Requires<'int' | 'luk'> {
+  kind: MagicianWeaponKind
+  watk: number
+  matk: number
+  /** De aanvalssnelheid zoals de itempagina hem geeft: het label en de "Attack cycle" in ms. */
+  speed: { label: string; attackMs: number }
+}
+
+/** Een stuk Magician-armor uit een NPC-winkel: wat het vraagt (level, INT, LUK), wat het aan WDEF en MDEF geeft en wat het kost. */
+export interface MagicianArmor extends ShopArmor, Requires<'int' | 'luk'> {
+  mdef: number
+}
+
+/** Een spreuk per skill-level (Energy Bolt, Magic Claw): zoals Lucky Seven, plus de spell mastery in procent-stappen van de pagina. */
+export interface SpellLevel extends SkillLevel {
+  mastery: number
+}
+
+/** Magic Armor per skill-level: de vaste extra WDEF en MDEF (hetzelfde getal), wat de buff aan MP kost en hoe lang hij duurt. */
+export interface MagicArmorLevel {
+  level: number
+  def: number
+  mp: number
+  seconds: number
+}
+
 /** Slash Blast per skill-level: zoals Lucky Seven (MP en schade in procent), plus de HP die elke aanval kost. */
 export interface SlashBlastLevel extends SkillLevel {
   hp: number
