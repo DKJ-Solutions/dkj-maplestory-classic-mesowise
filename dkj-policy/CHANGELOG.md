@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**17 / 31 minor entries** <!-- pending-tally -->
+**18 / 32 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/profile-stats-pencil · 20261004-101708Z
+
+The character card is now read-only at a glance: each stat sits on one row with its value and a pencil, and a
+change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Accuracy and avoid show the value the formulas expect, struck through beside the
+number when your game differs, with Reset in the popup. Level, Max HP,
+weapon attack and WDEF are no longer on this card.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player can no longer change a stat by an accidental tap or scroll, and the card takes far less height on a
+phone; level, max HP, weapon attack and WDEF are set where they belong (Level up and the equipment card).
+
+**Score:** 3
+
+#### Pull Request
+
+Character stats editable only via the pencil, like equipment
+
+[PR #67](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/67)
+
+---
 
 ### DEPLOY: data/43-magician · 20261004-100326Z
 
