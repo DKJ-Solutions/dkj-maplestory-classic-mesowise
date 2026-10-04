@@ -50,8 +50,8 @@ of het scherm. Het aansluiten is een volgende stap; #42 blijft daarvoor open.
 
 ### TEST
 
-- [ ] `src/data/warrior.test.ts` (Tycho)
-- [ ] Review door Victor
+- [x] `src/data/warrior.test.ts` (Tycho): `npx vitest run` 527 geslaagd, 1 verwacht gefaald (#52); `tsc --noEmit` schoon
+- [x] Review door Victor: de 60/40-helpers lezen nu `MELEE_ACTION_SPLIT`, `SLOW7_SPEAR` heet `SLOW7_TWO_CYCLE` (ook de Studded Polearm), een cirkeltest eruit; de duplicatie met de Thief-modules gefiled als #56
 
 ### DEPLOY: data/42-warrior
 
