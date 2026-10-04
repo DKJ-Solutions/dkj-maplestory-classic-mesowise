@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-**22 / 50 minor entries** <!-- pending-tally -->
+**22 / 51 minor entries** <!-- pending-tally -->
 
 ### DEPLOY: app/84-level-up-button · 20261004-123108Z
 
@@ -21,6 +21,28 @@ N/A
 Level-up button at the bottom; show the current level in its place
 
 [PR #99](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/99)
+
+---
+
+### DEPLOY: fix/89-physical-defense-curve · 20261004-123106Z
+
+The app now lowers your hits on a monster with the defence formula from MeowDB's damage guide (your hit × 100 /
+(the monster's WDEF + 100)) instead of an unsourced subtraction. Against a monster with 50 WDEF a 100-damage
+hit now counts as 67 instead of 70 to 75, so spots with tougher monsters can rank a little lower.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Physical damage uses the sourced defence curve, not a WDEF subtraction
+
+[PR #98](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/98)
 
 ---
 
