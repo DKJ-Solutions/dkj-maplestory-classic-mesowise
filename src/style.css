@@ -192,6 +192,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .level-cost h2 { margin: 0 0 0.375rem; font-size: 1rem; }
 .job h2 { margin: 0; font-size: 1rem; }
 .job-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; margin: -0.5rem 0 0.375rem; }
+.job-head:last-child { margin-bottom: -0.5rem; }
 .job-edit {
   display: grid;
   place-items: center;

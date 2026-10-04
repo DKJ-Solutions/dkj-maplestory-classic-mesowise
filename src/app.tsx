@@ -133,11 +133,9 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         </>
       )}
       {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
-      <p class="hint">
-        {isComputed(job)
-          ? 'De app rekent nu alleen de Thief door. De winkelitems in je equipment passen bij je job.'
-          : `${notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.`}
-      </p>
+      {!isComputed(job) && (
+        <p class="hint">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
+      )}
     </section>
   )
 }
