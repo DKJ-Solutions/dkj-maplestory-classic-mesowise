@@ -179,10 +179,10 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
 }
 
 /**
- * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level gaat omhoog met Level up, weapon
- * attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
+ * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
+ * weapon attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'clawWatk', 'wdef'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'wdef'])
 const CHARACTER_STATS = STAT_FIELDS.filter((f) => !HIDDEN_STATS.has(f.key))
 
 /** Het getal in een stat-popup één omhoog of omlaag, binnen min en max; een leeg of onleesbaar vak telt als `fallback`. */
