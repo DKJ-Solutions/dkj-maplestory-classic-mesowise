@@ -616,7 +616,8 @@ function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadi
   )
 }
 
-const SLOT_NL: Record<ArmorSlot, string> = { hat: 'hoed', top: 'bovenstuk', bottom: 'broek', shoes: 'schoenen' }
+/** De naam van een slot zoals het spel hem noemt (Hat, Top, ...), dezelfde als in de equipment-kaart. */
+const SLOT_NAME = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.slot, s.label])) as Record<ArmorSlot, string>
 
 type ArmorAdvice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
 const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
@@ -684,7 +685,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       {win ? (
         <>
           <p class="verdict">
-            Koop {win.armor.name} ({SLOT_NL[win.armor.slot]}){replaceClause(win, props.equipment)}
+            Koop {win.armor.name} ({SLOT_NAME[win.armor.slot]}){replaceClause(win, props.equipment)}
           </p>
           <ArmorWinnerLine win={win} />
         </>
@@ -699,7 +700,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       )}
       {a.notWearable.map((u) => (
         <p class="hint" key={u.armor.name}>
-          {u.armor.name} ({SLOT_NL[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
+          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
         </p>
       ))}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
