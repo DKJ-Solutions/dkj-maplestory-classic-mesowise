@@ -9,9 +9,9 @@
 //
 // Wat erin staat (ruimer dan warrior.ts, zoals wornItems.ts ruimer is dan armor.ts: de speler zegt zelf wat hij
 // draagt):
-// - De tops en broeken voor Warriors die alleen voor mannen zijn (de app kent het geslacht niet, dus ze staan niet
-//   in NPC_WARRIOR_ARMOR): Lolico, Corporal, Sergeant, Master Sergeant en Hwarang/Martial Arts, level 10 tot 30,
-//   elk met een jobregel Warrior en "Male only".
+// - Alle kleuren van de Warrior-tops, -broeken en -overalls die Harry in Perion verkoopt (#55, beslissing 2), elk
+//   met een jobregel Warrior en "Male only" of "Female only" (`gender`). Per level en geslacht staat één kleur ook
+//   in NPC_WARRIOR_ARMOR, en daar wint die regel; de andere kleuren zijn even sterk en staan alleen hier.
 // - De items zonder jobregel uit de Thief-lijst (COMMON_WORN_ARMOR in wornItems.ts): de rijen staan maar op één
 //   plek en worden hier hergebruikt: 45 rijen, waarvan de pagina op 2026-10-04 geen jobregel heeft. Items met een
 //   Thief-jobregel (732 tot 736, 949, 950, 1169, 1170 en 1316) komen er niet in. De White Bandana (719) en de Red
@@ -19,7 +19,7 @@
 //
 // De acht wapens zonder jobregel (Long Sword tot Sky Blue Umbrella) zijn sinds #55 NPC-wapens in warrior.ts.
 //
-// Niet opgenomen: overalls (de app heeft geen overall-slot: 1094 tot 1097), handschoenen en schilden (niet gelezen).
+// Niet opgenomen: handschoenen en schilden (niet gelezen).
 import type { Source, WornArmor, WornWarriorWeapon } from './types'
 import { NPC_WARRIOR_ARMOR } from './warrior'
 import { COMMON_WORN_ARMOR } from './wornItems'
@@ -29,37 +29,66 @@ const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-d
 
 const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4 } as const
 
-const MALE_ONLY_WARRIOR_ARMOR: readonly WornArmor[] = [
-  { name: 'Brown Lolico Armor', slot: 'top', level: 10, wdef: 35, source: src(942) },
-  { name: 'Blue Lolico Armor', slot: 'top', level: 10, wdef: 35, source: src(943) },
-  { name: 'Brown Corporal', slot: 'top', level: 15, wdef: 40, source: src(964) },
-  { name: 'Steel Corporal', slot: 'top', level: 15, wdef: 40, source: src(965) },
-  { name: 'Blue Sergeant', slot: 'top', level: 20, wdef: 45, source: src(979) },
-  { name: 'Red Sergeant', slot: 'top', level: 20, wdef: 45, source: src(980) },
-  { name: 'Silver Master Sergeant', slot: 'top', level: 25, wdef: 50, source: src(1000) },
-  { name: 'Orihalcon Master Sergeant', slot: 'top', level: 25, wdef: 50, source: src(1001) },
-  { name: 'Red Hwarang Shirt', slot: 'top', level: 30, wdef: 55, source: src(1021) },
-  { name: 'Green Hwarang Shirt', slot: 'top', level: 30, wdef: 55, source: src(1022) },
-  { name: 'Brown Lolico Pants', slot: 'bottom', level: 10, wdef: 25, source: src(1164) },
-  { name: 'Blue Lolico Pants', slot: 'bottom', level: 10, wdef: 25, source: src(1165) },
-  { name: 'Brown Corporal Pants', slot: 'bottom', level: 15, wdef: 29, source: src(1182) },
-  { name: 'Steel Corporal Pants', slot: 'bottom', level: 15, wdef: 29, source: src(1183) },
-  { name: 'Steel Sergeant Kilt', slot: 'bottom', level: 20, wdef: 33, source: src(1197) },
-  { name: 'Red Sergeant Kilt', slot: 'bottom', level: 20, wdef: 33, source: src(1198) },
-  { name: 'Silver Master Sergeant Kilt', slot: 'bottom', level: 25, wdef: 37, source: src(1219) },
-  { name: 'Orihalcon Master Sergeant Kilt', slot: 'bottom', level: 25, wdef: 37, source: src(1220) },
-  { name: 'Red Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, source: src(1234) },
-  { name: 'Brown Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, source: src(1235) },
+const GENDERED_WARRIOR_ARMOR: readonly WornArmor[] = [
+  { name: 'Brown Lolico Armor', slot: 'top', level: 10, wdef: 35, gender: 'male', source: src(942) },
+  { name: 'Blue Lolico Armor', slot: 'top', level: 10, wdef: 35, gender: 'male', source: src(943) },
+  { name: 'Orange Lolica Armor', slot: 'top', level: 10, wdef: 35, gender: 'female', source: src(951) },
+  { name: 'Blueberry Lolica Armor', slot: 'top', level: 10, wdef: 35, gender: 'female', source: src(952) },
+  { name: 'Brown Corporal', slot: 'top', level: 15, wdef: 40, gender: 'male', source: src(964) },
+  { name: 'Steel Corporal', slot: 'top', level: 15, wdef: 40, gender: 'male', source: src(965) },
+  { name: 'Blue Sergeant', slot: 'top', level: 20, wdef: 45, gender: 'male', source: src(979) },
+  { name: 'Red Sergeant', slot: 'top', level: 20, wdef: 45, gender: 'male', source: src(980) },
+  { name: 'Red Lamelle', slot: 'top', level: 20, wdef: 45, gender: 'female', source: src(988) },
+  { name: 'Green Lamelle', slot: 'top', level: 20, wdef: 45, gender: 'female', source: src(989) },
+  { name: 'Brown Lamelle', slot: 'top', level: 20, wdef: 45, gender: 'female', source: src(990) },
+  { name: 'Silver Master Sergeant', slot: 'top', level: 25, wdef: 50, gender: 'male', source: src(1000) },
+  { name: 'Orihalcon Master Sergeant', slot: 'top', level: 25, wdef: 50, gender: 'male', source: src(1001) },
+  { name: 'Dark Master Sergeant', slot: 'top', level: 25, wdef: 50, gender: 'male', source: src(1002) },
+  { name: 'Blue Shark', slot: 'top', level: 25, wdef: 50, gender: 'female', source: src(1010) },
+  { name: 'Sky Shark', slot: 'top', level: 25, wdef: 50, gender: 'female', source: src(1011) },
+  { name: 'Red Shark', slot: 'top', level: 25, wdef: 50, gender: 'female', source: src(1012) },
+  { name: 'Red Hwarang Shirt', slot: 'top', level: 30, wdef: 55, gender: 'male', source: src(1021) },
+  { name: 'Green Hwarang Shirt', slot: 'top', level: 30, wdef: 55, gender: 'male', source: src(1022) },
+  { name: 'Brown Lolico Pants', slot: 'bottom', level: 10, wdef: 25, gender: 'male', source: src(1164) },
+  { name: 'Blue Lolico Pants', slot: 'bottom', level: 10, wdef: 25, gender: 'male', source: src(1165) },
+  { name: 'Rookie Pants', slot: 'bottom', level: 10, wdef: 25, gender: 'female', source: src(1171) },
+  { name: 'Sophia Pants', slot: 'bottom', level: 10, wdef: 25, gender: 'female', source: src(1172) },
+  { name: 'Brown Corporal Pants', slot: 'bottom', level: 15, wdef: 29, gender: 'male', source: src(1182) },
+  { name: 'Steel Corporal Pants', slot: 'bottom', level: 15, wdef: 29, gender: 'male', source: src(1183) },
+  { name: 'Steel Sergeant Kilt', slot: 'bottom', level: 20, wdef: 33, gender: 'male', source: src(1197) },
+  { name: 'Red Sergeant Kilt', slot: 'bottom', level: 20, wdef: 33, gender: 'male', source: src(1198) },
+  { name: 'Red Ramel Skirt', slot: 'bottom', level: 20, wdef: 33, gender: 'female', source: src(1204) },
+  { name: 'Green Ramel Skirt', slot: 'bottom', level: 20, wdef: 33, gender: 'female', source: src(1205) },
+  { name: 'Brown Ramel Skirt', slot: 'bottom', level: 20, wdef: 33, gender: 'female', source: src(1206) },
+  { name: 'Silver Master Sergeant Kilt', slot: 'bottom', level: 25, wdef: 37, gender: 'male', source: src(1219) },
+  { name: 'Orihalcon Master Sergeant Kilt', slot: 'bottom', level: 25, wdef: 37, gender: 'male', source: src(1220) },
+  { name: 'Dark Master Sergeant Kilt', slot: 'bottom', level: 25, wdef: 37, gender: 'male', source: src(1221) },
+  { name: 'Blue Shark Skirt', slot: 'bottom', level: 25, wdef: 37, gender: 'female', source: src(1225) },
+  { name: 'Sky Shark Skirt', slot: 'bottom', level: 25, wdef: 37, gender: 'female', source: src(1226) },
+  { name: 'Red Shark Skirt', slot: 'bottom', level: 25, wdef: 37, gender: 'female', source: src(1227) },
+  { name: 'Red Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, gender: 'male', source: src(1234) },
+  { name: 'Brown Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, gender: 'male', source: src(1235) },
+  { name: 'Black Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, gender: 'male', source: src(1236) },
+  { name: 'White Martial Arts Pants', slot: 'bottom', level: 30, wdef: 41, gender: 'male', source: src(1237) },
+  { name: 'Steel Fitted Mail', slot: 'overall', level: 15, wdef: 75, gender: 'female', source: src(1094) },
+  { name: 'Blue Kendo Robe', slot: 'overall', level: 20, wdef: 85, gender: 'male', source: src(1095) },
+  { name: 'Red Kendo Robe', slot: 'overall', level: 20, wdef: 85, gender: 'male', source: src(1096) },
+  { name: 'White Kendo Robe', slot: 'overall', level: 20, wdef: 85, gender: 'male', source: src(1097) },
+  { name: 'Black Dragon Robe', slot: 'overall', level: 30, wdef: 105, gender: 'male', source: src(1106) },
+  { name: 'Dark Engrit', slot: 'overall', level: 30, wdef: 105, gender: 'female', source: src(1112) },
+  { name: 'Red Engrit', slot: 'overall', level: 30, wdef: 105, gender: 'female', source: src(1113) },
+  { name: 'Blue Engrit', slot: 'overall', level: 30, wdef: 105, gender: 'female', source: src(1114) },
+  { name: 'Yellow Engrit', slot: 'overall', level: 30, wdef: 105, gender: 'female', source: src(1115) },
 ]
 
 const npcArmorNames = new Set(NPC_WARRIOR_ARMOR.map((a) => a.name))
 
 /**
- * Niet-winkel armor voor een Warrior, per slot (hat, top, bottom, shoes) van laag naar hoog level: de mannen-only
- * Warrior-tops en -broeken plus de items zonder jobregel die ook de Thief draagt (dezelfde objecten als in
+ * Niet-winkel armor voor een Warrior, per slot (hat, top, bottom, overall, shoes) van laag naar hoog level: de
+ * Warrior-tops, -broeken en -overalls van beide geslachten plus de items zonder jobregel die ook de Thief draagt (dezelfde objecten als in
  * wornItems.ts). Een naam uit NPC_WARRIOR_ARMOR staat er niet in.
  */
-export const WORN_WARRIOR_ARMOR: readonly WornArmor[] = [...COMMON_WORN_ARMOR, ...MALE_ONLY_WARRIOR_ARMOR]
+export const WORN_WARRIOR_ARMOR: readonly WornArmor[] = [...COMMON_WORN_ARMOR, ...GENDERED_WARRIOR_ARMOR]
   .filter((a) => !npcArmorNames.has(a.name))
   .map((a, i) => ({ a, i }))
   .sort((x, y) => SLOT_RANK[x.a.slot] - SLOT_RANK[y.a.slot] || x.a.level - y.a.level || x.i - y.i)

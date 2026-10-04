@@ -13,8 +13,6 @@ import {
   huntingGroundAdvice,
   levelUpChanges,
   levelUpSummary,
-  luckySevenMp,
-  powerStrikeMp,
 } from './levelUp'
 import { isSkillKey } from './data/skills'
 import type { Job } from './job'
@@ -175,23 +173,6 @@ describe('applySkillPoint', () => {
     expect(applySkillPoint(lucky, 'luckySeven')).toBe(lucky)
     const nimble = { ...DEFAULT_PROFILE, nimbleBody: String(NIMBLE_BODY.maxLevel) }
     expect(applySkillPoint(nimble, 'nimbleBody')).toBe(nimble)
-  })
-})
-
-describe('luckySevenMp', () => {
-  it('geeft de MP uit de tabel per level', () => {
-    LUCKY_SEVEN_LEVELS.forEach((l, i) => expect(luckySevenMp(i + 1)).toBe(l.mp))
-    expect(luckySevenMp(1)).toBe(8)
-    expect(luckySevenMp(20)).toBe(16)
-  })
-
-  it('is 0 zolang hij niet geleerd is', () => {
-    expect(luckySevenMp(0)).toBe(0)
-  })
-
-  it('blijft op het hoogste level boven 20', () => {
-    expect(luckySevenMp(21)).toBe(16)
-    expect(luckySevenMp(999)).toBe(16)
   })
 })
 
@@ -459,13 +440,5 @@ describe('een Warrior: applySkillPoint', () => {
     const out2 = applySkillPoint(thiefTyped, 'luckySeven', 'thief')
     expect(out2.weaponMult).toBe('2.6')
     expect(out2.powerStrike).toBe('9')
-  })
-})
-
-describe('powerStrikeMp', () => {
-  it('geeft de MP per aanval van het skill-level, en 0 als hij nog niet geleerd is', () => {
-    expect(powerStrikeMp(0)).toBe(0)
-    expect(powerStrikeMp(1)).toBe(4)
-    expect(powerStrikeMp(20)).toBe(12)
   })
 })

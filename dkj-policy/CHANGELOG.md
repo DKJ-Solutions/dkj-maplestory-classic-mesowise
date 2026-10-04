@@ -2,7 +2,71 @@
 
 ## [Unreleased]
 
-**22 / 52 minor entries** <!-- pending-tally -->
+**22 / 55 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/55-character-gender · 20261004-124443Z
+
+The app now asks whether your character is a man or a woman, and shows it as (m) or (f) behind the job. A Warrior then gets advice on tops, bottoms and
+overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
+you choose, the advice only counts armor both can wear.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ask the character's gender, so gender-locked shop items count
+
+[PR #103](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/103)
+
+---
+
+### DEPLOY: fix/101-one-skill-mp-helper · 20261004-124227Z
+
+Nothing changes on screen. The MP a skill costs per use now comes from one table per skill, the same one the
+Skillpoints card reads, so the advice line and the card can no longer disagree.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Skill MP cost comes from one helper
+
+[PR #105](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/105)
+
+---
+
+### DEPLOY: app/93-subtitle-mesos-per-level · 20261004-124135Z
+
+The subtitle under the app's title now reads "Zo min mogelijk mesos per level in MapleStory Classic World."
+instead of "Zo veel mogelijk EXP per meso"; the web manifest's description and the README say the same (#93).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+rename subtitle of app
+
+[PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
+
+---
 
 ### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
 

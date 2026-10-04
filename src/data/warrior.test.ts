@@ -27,7 +27,7 @@ import {
 const DATE = /^2026-10-04$/
 /** De wapens zonder jobregel (voor elke klas, #55, 2026-10-04) en de armor zonder jobregel. */
 const NO_JOB_LINE_WEAPONS = ['Long Sword', 'Double Axe', 'Steel Pipe', 'Leather Purse', 'Red Brick', 'Hard Briefcase', 'Plunger', 'Sky Blue Umbrella']
-const NO_JOB_LINE_ARMOR = ['White Bandana', 'Red Baseball Cap']
+const NO_JOB_LINE_ARMOR = ['White Bandana', 'Red Baseball Cap', 'Blue One-lined T-Shirt', 'Pink Starry Shirt']
 /** Van de wapens zonder jobregel vragen alleen deze twee geen STR: de pagina noemt geen eis. */
 const NO_STR_REQ = ['Steel Pipe', 'Sky Blue Umbrella']
 const ITEM_URL = /^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/
@@ -155,26 +155,48 @@ describe('NPC_WARRIOR_WEAPONS', () => {
 })
 
 describe('NPC_WARRIOR_ARMOR', () => {
-  const SLOTS = ['hat', 'shoes'] as const
+  const SLOTS = ['hat', 'top', 'bottom', 'overall', 'shoes'] as const
 
-  it('bevat precies de 15 stukken (13 met jobregel, 2 zonder: #55), per slot van laag naar hoog level, zoals de bron ze geeft', () => {
-    const rows = NPC_WARRIOR_ARMOR.map((a) => [a.name, a.slot, a.level, a.str, a.dex, a.wdef, a.price])
+  it('bevat precies de 37 stukken (33 met jobregel, 4 zonder: #55), per slot van laag naar hoog level, zoals de bron ze geeft', () => {
+    const rows = NPC_WARRIOR_ARMOR.map((a) => [a.name, a.slot, a.level, a.str, a.dex, a.wdef, a.price, a.gender])
     expect(rows).toEqual([
-      ['Bronze Koif', 'hat', 10, 10, 0, 22, 1_200],
-      ['White Bandana', 'hat', 10, 0, 0, 15, 1_200],
-      ['Bronze Helmet', 'hat', 12, 15, 0, 24, 1_400],
-      ['Bronze Full Helm', 'hat', 15, 20, 0, 26, 1_800],
-      ['Bronze Football Helmet', 'hat', 20, 30, 10, 30, 3_600],
-      ['Bronze Viking Helm', 'hat', 20, 30, 10, 30, 3_600],
-      ['Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900],
-      ['Steel Sharp Helm', 'hat', 22, 34, 12, 32, 3_900],
-      ['Iron Burgernet Helm', 'hat', 25, 40, 15, 34, 4_500],
-      ['Jousting Helmet', 'hat', 30, 50, 20, 38, 7_200],
-      ['Bronze Grieves', 'shoes', 15, 20, 0, 18, 1_800],
-      ['Steel Grieves', 'shoes', 15, 20, 0, 18, 1_800],
-      ['Brown High Boots', 'shoes', 20, 30, 10, 21, 3_600],
-      ['Orange High Boots', 'shoes', 20, 30, 10, 21, 3_600],
-      ['Blue High Boots', 'shoes', 20, 30, 10, 21, 3_600],
+      ['Bronze Koif', 'hat', 10, 10, 0, 22, 1_200, undefined],
+      ['White Bandana', 'hat', 10, 0, 0, 15, 1_200, undefined],
+      ['Bronze Helmet', 'hat', 12, 15, 0, 24, 1_400, undefined],
+      ['Bronze Full Helm', 'hat', 15, 20, 0, 26, 1_800, undefined],
+      ['Bronze Football Helmet', 'hat', 20, 30, 10, 30, 3_600, undefined],
+      ['Bronze Viking Helm', 'hat', 20, 30, 10, 30, 3_600, undefined],
+      ['Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900, undefined],
+      ['Steel Sharp Helm', 'hat', 22, 34, 12, 32, 3_900, undefined],
+      ['Iron Burgernet Helm', 'hat', 25, 40, 15, 34, 4_500, undefined],
+      ['Jousting Helmet', 'hat', 30, 50, 20, 38, 7_200, undefined],
+      ['Brown Lolico Armor', 'top', 10, 10, 0, 35, 2_000, 'male'],
+      ['Orange Lolica Armor', 'top', 10, 10, 0, 35, 2_000, 'female'],
+      ['Blue One-lined T-Shirt', 'top', 12, 0, 0, 26, 2_400, 'male'],
+      ['Pink Starry Shirt', 'top', 12, 0, 0, 26, 2_400, 'female'],
+      ['Brown Corporal', 'top', 15, 20, 0, 40, 3_000, 'male'],
+      ['Blue Sergeant', 'top', 20, 30, 10, 45, 6_000, 'male'],
+      ['Red Lamelle', 'top', 20, 30, 10, 45, 6_000, 'female'],
+      ['Silver Master Sergeant', 'top', 25, 40, 15, 50, 7_500, 'male'],
+      ['Blue Shark', 'top', 25, 40, 15, 50, 7_500, 'female'],
+      ['Red Hwarang Shirt', 'top', 30, 50, 20, 55, 12_000, 'male'],
+      ['Brown Lolico Pants', 'bottom', 10, 10, 0, 25, 1_600, 'male'],
+      ['Rookie Pants', 'bottom', 10, 10, 0, 25, 1_600, 'female'],
+      ['Brown Corporal Pants', 'bottom', 15, 20, 0, 29, 2_400, 'male'],
+      ['Steel Sergeant Kilt', 'bottom', 20, 30, 10, 33, 4_800, 'male'],
+      ['Red Ramel Skirt', 'bottom', 20, 30, 10, 33, 4_800, 'female'],
+      ['Silver Master Sergeant Kilt', 'bottom', 25, 40, 15, 37, 6_000, 'male'],
+      ['Blue Shark Skirt', 'bottom', 25, 40, 15, 37, 6_000, 'female'],
+      ['Red Martial Arts Pants', 'bottom', 30, 50, 20, 41, 9_600, 'male'],
+      ['Steel Fitted Mail', 'overall', 15, 20, 0, 75, 5_400, 'female'],
+      ['Blue Kendo Robe', 'overall', 20, 30, 10, 85, 10_800, 'male'],
+      ['Black Dragon Robe', 'overall', 30, 50, 20, 105, 21_600, 'male'],
+      ['Dark Engrit', 'overall', 30, 50, 20, 105, 21_600, 'female'],
+      ['Bronze Grieves', 'shoes', 15, 20, 0, 18, 1_800, undefined],
+      ['Steel Grieves', 'shoes', 15, 20, 0, 18, 1_800, undefined],
+      ['Brown High Boots', 'shoes', 20, 30, 10, 21, 3_600, undefined],
+      ['Orange High Boots', 'shoes', 20, 30, 10, 21, 3_600, undefined],
+      ['Blue High Boots', 'shoes', 20, 30, 10, 21, 3_600, undefined],
     ])
   })
 
@@ -187,7 +209,7 @@ describe('NPC_WARRIOR_ARMOR', () => {
     expect(new Set(NPC_WARRIOR_ARMOR.map((a) => a.name)).size).toBe(NPC_WARRIOR_ARMOR.length)
   })
 
-  it('heeft alleen hat en shoes (tops en broeken zijn alleen voor mannen) en levels binnen 10 tot 30', () => {
+  it('heeft alle vijf de slots (hat, top, bottom, overall, shoes) en levels binnen 10 tot 30', () => {
     expect(new Set(NPC_WARRIOR_ARMOR.map((a) => a.slot))).toEqual(new Set(SLOTS))
     for (const a of NPC_WARRIOR_ARMOR) {
       expect(a.level, a.name).toBeGreaterThanOrEqual(10)
@@ -195,7 +217,7 @@ describe('NPC_WARRIOR_ARMOR', () => {
     }
   })
 
-  it('staat gesorteerd op slot (hat, shoes), dan op level', () => {
+  it('staat gesorteerd op slot (hat, top, bottom, overall, shoes), dan op level', () => {
     const rank = (s: string) => SLOTS.indexOf(s as (typeof SLOTS)[number])
     for (let i = 1; i < NPC_WARRIOR_ARMOR.length; i++) {
       const [p, c] = [NPC_WARRIOR_ARMOR[i - 1], NPC_WARRIOR_ARMOR[i]]
@@ -207,7 +229,7 @@ describe('NPC_WARRIOR_ARMOR', () => {
   it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel precies zoals op MeowDB gelezen: geen STR- of DEX-eis', () => {
     expect(NPC_WARRIOR_ARMOR.find((a) => a.name === 'White Bandana')).toMatchObject({ slot: 'hat', level: 10, str: 0, dex: 0, wdef: 15, price: 1_200, source: { url: 'https://meowdb.com/msclassic/item-db/719', retrieved: '2026-10-04' } })
     expect(NPC_WARRIOR_ARMOR.find((a) => a.name === 'Red Baseball Cap')).toMatchObject({ slot: 'hat', level: 22, str: 0, dex: 0, wdef: 22, price: 3_900, source: { url: 'https://meowdb.com/msclassic/item-db/781', retrieved: '2026-10-04' } })
-    expect(NPC_WARRIOR_ARMOR.filter((a) => a.str === 0 && a.dex === 0).map((a) => a.name)).toEqual(NO_JOB_LINE_ARMOR)
+    expect(NPC_WARRIOR_ARMOR.filter((a) => a.str === 0 && a.dex === 0).map((a) => a.name).sort()).toEqual([...NO_JOB_LINE_ARMOR].sort())
   })
 
   it('heeft positieve WDEF en prijs en niet-negatieve STR en DEX, als hele getallen', () => {

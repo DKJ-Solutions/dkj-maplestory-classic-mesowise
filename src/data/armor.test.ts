@@ -4,7 +4,7 @@ import { EXP_TABLE_LEVELS } from './expTable'
 
 const SLOTS = ['hat', 'top', 'bottom', 'shoes'] as const
 /** De stukken zonder jobregel op MeowDB: voor elke klas, dus zonder stat-eis (Dave, #55, 2026-10-04). */
-const NO_JOB_LINE = ['White Bandana', 'Red Baseball Cap']
+const NO_JOB_LINE = ['White Bandana', 'Red Baseball Cap', 'Blue One-lined T-Shirt', 'Pink Starry Shirt']
 const slotRank = (s: string) => SLOTS.indexOf(s as (typeof SLOTS)[number])
 
 describe('NPC_ARMOR', () => {
@@ -53,10 +53,29 @@ describe('NPC_ARMOR', () => {
     }
   })
 
-  it('heeft de Red Qi Pao Skirt (id 1216, alleen voor vrouwen) er niet in, en dus 19 stukken (17 met jobregel plus de twee zonder, #55)', () => {
-    expect(NPC_ARMOR.map((a) => a.name)).not.toContain('Red Qi Pao Skirt')
-    expect(NPC_ARMOR.map((a) => a.source.url)).not.toContain('https://meowdb.com/msclassic/item-db/1216')
-    expect(NPC_ARMOR).toHaveLength(19)
+  it('heeft 22 stukken: 17 met jobregel, de White Bandana en de Red Baseball Cap zonder, en sinds #55 de drie stukken voor één geslacht', () => {
+    expect(NPC_ARMOR).toHaveLength(22)
+    expect(NPC_ARMOR.filter((a) => a.gender).map((a) => [a.name, a.gender])).toEqual([
+      ['Blue One-lined T-Shirt', 'male'],
+      ['Pink Starry Shirt', 'female'],
+      ['Red Qi Pao Skirt', 'female'],
+    ])
+  })
+
+  it('heeft de drie stukken voor één geslacht precies zoals op MeowDB gelezen (960, 962, 1216)', () => {
+    const pick = (n: string) => NPC_ARMOR.find((a) => a.name === n)
+    expect(pick('Blue One-lined T-Shirt')).toEqual({
+      name: 'Blue One-lined T-Shirt', slot: 'top', level: 12, wdef: 26, luk: 0, dex: 0, price: 2_400, gender: 'male',
+      source: { url: 'https://meowdb.com/msclassic/item-db/960', retrieved: '2026-10-04' },
+    })
+    expect(pick('Pink Starry Shirt')).toEqual({
+      name: 'Pink Starry Shirt', slot: 'top', level: 12, wdef: 26, luk: 0, dex: 0, price: 2_400, gender: 'female',
+      source: { url: 'https://meowdb.com/msclassic/item-db/962', retrieved: '2026-10-04' },
+    })
+    expect(pick('Red Qi Pao Skirt')).toEqual({
+      name: 'Red Qi Pao Skirt', slot: 'bottom', level: 22, wdef: 24, luk: 34, dex: 12, price: 5_280, gender: 'female',
+      source: { url: 'https://meowdb.com/msclassic/item-db/1216', retrieved: '2026-10-04' },
+    })
   })
 
   it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel precies zoals op MeowDB gelezen', () => {
