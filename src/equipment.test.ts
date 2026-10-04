@@ -1,20 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyEquipChange,
+  catalogItems,
   choosePick,
+  commitStat,
+  databaseStat,
   defaultEquipment,
   entryChanged,
-  equipmentForJob,
+  entryLabel,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
   saveEquipment,
-  shopItems,
+  searchCatalog,
+  statName,
+  statOverride,
   wornName,
   wornStat,
   wornWdef,
   type EquipEntry,
   type Equipment,
+  equipmentForJob,
 } from './equipment'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
@@ -35,31 +41,73 @@ function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Ma
 }
 
 const unknown: EquipEntry = { pick: 'unknown', name: '', stat: '' }
-const none: EquipEntry = { pick: 'none', name: '', stat: '' }
 const other = (stat: string, name = ''): EquipEntry => ({ pick: 'other', name, stat })
-const shop = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
+/** Een stuk dat niets geeft: zo vul je een slot zonder WDEF of WATK in, want "niets" is geen keuze meer. */
+const zero = other('0')
+const shop = (name: string, stat = ''): EquipEntry => ({ pick: name, name: '', stat })
 const prof = (over: Partial<ProfileDraft>): ProfileDraft => ({ ...DEFAULT_PROFILE, ...over })
 const stored = (slots: unknown, version: unknown = 1) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version, slots }) })
 
-describe('defaultEquipment en shopItems', () => {
-  it('begint met vijf slots die allemaal onbekend zijn', () => {
+describe('defaultEquipment en catalogItems', () => {
+  it('begint met vijf slots die allemaal nog niet zijn ingevuld', () => {
     const eq = defaultEquipment()
     expect(Object.keys(eq).sort()).toEqual(['bottom', 'claw', 'hat', 'shoes', 'top'])
     for (const { slot } of EQUIP_SLOTS) expect(eq[slot]).toEqual(unknown)
     expect(wornWdef(eq)).toEqual({})
   })
 
-  it('geeft per slot de winkelitems met de juiste stat (WATK voor de claw, WDEF voor armor)', () => {
-    expect(shopItems('claw', 'thief').find((i) => i.name === 'Meba')).toMatchObject({ level: 25, stat: 19 })
-    expect(shopItems('shoes', 'thief').map((i) => i.name)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
-    expect(shopItems('hat', 'thief').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
+  it('geeft per slot de catalogusitems met de juiste stat (WATK voor de claw, WDEF voor armor)', () => {
+    expect(catalogItems('claw', 'thief').find((i) => i.name === 'Meba')).toMatchObject({ level: 25, stat: 19, attackMs: 660 })
+    const shoes = catalogItems('shoes', 'thief').map((i) => i.name)
+    expect(shoes.slice(0, 3)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
+    expect(shoes).toContain('Leather Sandals')
+    expect(catalogItems('shoes', 'thief').find((i) => i.name === 'Bronze Aroa Boots')).toMatchObject({ level: 16, stat: 13 })
+    expect(catalogItems('claw', 'thief').find((i) => i.name === 'Mithril Guards')).toMatchObject({ level: 30, stat: 23, attackMs: 720 })
+    expect(catalogItems('hat', 'thief').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
+  })
+})
+
+describe('statName', () => {
+  it('noemt de stat zoals het spel: ATT voor het wapen, DEF voor armor', () => {
+    expect(statName('claw')).toBe('ATT')
+    for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(statName(s), s).toBe('DEF')
+  })
+})
+
+describe('searchCatalog', () => {
+  const names = (slot: Parameters<typeof searchCatalog>[0], q: string) => searchCatalog(slot, 'thief', q).map((i) => i.name)
+
+  it('zoekt op een deel van de naam, zonder hoofdletters en met spaties eromheen', () => {
+    const pao = names('top', 'pao')
+    expect(pao[0]).toBe('Red Pao') // de NPC-regel staat voor de items zonder prijs
+    expect(pao).toEqual(expect.arrayContaining(['Blue Pao', 'Black Pao', 'Red Qi Pao', 'Pink Qi Pao', 'Blue Qi Pao']))
+    for (const n of pao) expect(n.toLowerCase(), n).toContain('pao')
+    expect(names('top', '  RED  ')).toEqual(names('top', 'red'))
+    expect(names('top', 'red').slice(0, 2)).toEqual(['Red Cloth Vest', 'Red Pao'])
+    expect(names('claw', 'gu')).toEqual(['Steel Guards', 'Adamantium Guards', 'Mithril Guards'])
+  })
+
+  it('zoekt alleen in het eigen slot, en een lege tekst geeft het hele slot', () => {
+    expect(searchCatalog('hat', 'thief', 'pao')).toEqual([])
+    expect(searchCatalog('shoes', 'thief', '')).toEqual(catalogItems('shoes', 'thief'))
+    expect(catalogItems('shoes', 'thief').length).toBeGreaterThan(3)
+    expect(names('bottom', 'qi pao skirt')).toEqual(['Red Qi Pao Skirt', 'Blue Qi Pao Skirt'])
+    expect(searchCatalog('top', 'thief', 'bestaat niet')).toEqual([])
+  })
+
+  it('geeft elke naam in een slot één keer, en de NPC-stat wint bij dezelfde naam', () => {
+    for (const { slot } of EQUIP_SLOTS) {
+      const all = catalogItems(slot, 'thief').map((i) => i.name)
+      expect(new Set(all).size, slot).toBe(all.length)
+    }
+    expect(catalogItems('top', 'thief').filter((i) => i.name === 'Red Pao')).toEqual([expect.objectContaining({ stat: 32 })])
   })
 })
 
 describe('wornStat', () => {
-  it('geeft undefined bij onbekend en 0 bij niets', () => {
+  it('geeft undefined bij nog niet ingevuld, en ook bij het vervallen "niets"', () => {
     expect(wornStat('hat', unknown)).toBeUndefined()
-    expect(wornStat('hat', none)).toBe(0)
+    expect(wornStat('hat', { pick: 'none', name: '', stat: '' })).toBeUndefined()
   })
 
   it('geeft de stat van een winkelitem in het eigen slot', () => {
@@ -73,15 +121,15 @@ describe('wornStat', () => {
     expect(wornStat('hat', shop('Bestaat Niet'))).toBeUndefined()
   })
 
-  it('telt een Ander item met lege of ongeldige stat als onbekend', () => {
+  it('telt een eigen item met lege of ongeldige stat als onbekend', () => {
     for (const s of ['', '   ', 'abc', '12abc', 'NaN', 'Infinity', '-Infinity', '1e999']) expect(wornStat('top', other(s)), s).toBeUndefined()
   })
 
-  it('begrenst een negatief getal bij Ander item op 0', () => {
+  it('begrenst een negatief getal bij een eigen item op 0', () => {
     for (const s of ['-5', '-0']) expect(wornStat('top', other(s)), s).toBe(0)
   })
 
-  it('kapt een Ander item af op een geheel getal en begrenst op 0..999', () => {
+  it('kapt een eigen item af op een geheel getal en begrenst op 0..999', () => {
     expect(wornStat('top', other('12'))).toBe(12)
     expect(wornStat('top', other(' 12 '))).toBe(12)
     expect(wornStat('top', other('12.9'))).toBe(12)
@@ -92,44 +140,130 @@ describe('wornStat', () => {
   })
 })
 
+describe('eigen stat bij een catalogusitem', () => {
+  it('telt een geldige eigen waarde in plaats van de database (Red Pao: 32 wordt 35)', () => {
+    expect(wornStat('top', shop('Red Pao', '35'))).toBe(35)
+    expect(wornStat('claw', shop('Meba', ' 21 '))).toBe(21)
+    expect(wornStat('top', shop('Red Pao', '0'))).toBe(0)
+    expect(wornStat('top', shop('Red Pao', '12.9'))).toBe(12)
+    expect(wornStat('top', shop('Red Pao', '5000'))).toBe(999)
+    expect(wornWdef({ ...defaultEquipment(), top: shop('Red Pao', '35') })).toEqual({ top: 35 })
+  })
+
+  it('valt bij een lege of onleesbare eigen waarde terug op de database', () => {
+    for (const s of ['', '  ', 'abc', '12abc', 'Infinity', '1e999']) expect(wornStat('top', shop('Red Pao', s)), s).toBe(32)
+  })
+
+  it('geeft de database- en de eigen waarde apart, en een eigen waarde gelijk aan de database is geen aanpassing', () => {
+    expect(databaseStat('top', shop('Red Pao', '35'))).toBe(32)
+    expect(databaseStat('top', other('5'))).toBeUndefined()
+    expect(databaseStat('top', unknown)).toBeUndefined()
+    expect(statOverride('top', shop('Red Pao', '35'))).toBe(35)
+    expect(statOverride('top', shop('Red Pao', '32'))).toBeUndefined()
+    expect(statOverride('top', shop('Red Pao', 'abc'))).toBeUndefined()
+    expect(statOverride('top', other('5'))).toBeUndefined()
+  })
+
+  it('geeft bij het vastleggen van een eigen waarde het verschil in WDEF (Red Pao 32 naar 35: +3, en terug: -3)', () => {
+    const p = prof({ wdef: '72' })
+    const custom = commitStat('top', shop('Red Pao'), '35')!
+    expect(custom).toEqual(shop('Red Pao', '35'))
+    const p2 = applyEquipChange(p, 'top', shop('Red Pao'), custom)
+    expect(p2.wdef).toBe('75')
+    const reset = commitStat('top', custom, '')!
+    expect(reset).toEqual(shop('Red Pao'))
+    expect(applyEquipChange(p2, 'top', custom, reset).wdef).toBe('72')
+  })
+
+  it('zet bij een claw met eigen WATK de weapon attack en houdt de aanvalssnelheid van de claw', () => {
+    const p = applyEquipChange(prof({ clawWatk: '3', attackMs: '999' }), 'claw', unknown, shop('Meba', '21'))
+    expect(p).toMatchObject({ clawWatk: '21', attackMs: '660' })
+  })
+})
+
+describe('commitStat', () => {
+  it('bewaart bij een catalogusitem een afwijkend getal, en maakt een getal gelijk aan de database leeg', () => {
+    expect(commitStat('top', shop('Red Pao'), '35')).toEqual(shop('Red Pao', '35'))
+    expect(commitStat('top', shop('Red Pao', '35'), '32')).toEqual(shop('Red Pao'))
+    expect(commitStat('top', shop('Red Pao', '35'), '32.7')).toEqual(shop('Red Pao'))
+  })
+
+  it('geeft bij een catalogusitem een leeg veld terug naar de database, maar negeert onleesbare tekst', () => {
+    expect(commitStat('top', shop('Red Pao', '35'), '')).toEqual(shop('Red Pao'))
+    expect(commitStat('top', shop('Red Pao', '35'), '   ')).toEqual(shop('Red Pao'))
+    for (const t of ['abc', '12abc', 'Infinity']) expect(commitStat('top', shop('Red Pao', '35'), t), t).toBeNull()
+  })
+
+  it('legt bij een eigen item alleen een leesbaar getal vast, zoals vroeger', () => {
+    expect(commitStat('top', other('5', 'x'), '9')).toEqual(other('9', 'x'))
+    expect(commitStat('top', other('5', 'x'), '')).toBeNull()
+    expect(commitStat('top', other('5', 'x'), 'abc')).toBeNull()
+  })
+
+  it('doet niets bij een slot dat nog niet is ingevuld of een naam die niet bestaat', () => {
+    expect(commitStat('top', unknown, '9')).toBeNull()
+    expect(commitStat('top', shop('Bestaat Niet'), '9')).toBeNull()
+  })
+
+  it('bewaart het getal zoals het meetelt, zodat veld, opslag en notitie hetzelfde tonen', () => {
+    expect(commitStat('top', shop('Red Pao'), '5000')).toEqual(shop('Red Pao', '999'))
+    expect(commitStat('top', shop('Red Pao'), ' 35.9 ')).toEqual(shop('Red Pao', '35'))
+    expect(commitStat('top', shop('Red Pao'), '-5')).toEqual(shop('Red Pao', '0'))
+    expect(commitStat('top', other('5', 'x'), '1e2')).toEqual(other('100', 'x'))
+  })
+})
+
+describe('entryLabel', () => {
+  it('noemt het item, met de eigen stat erbij als die afwijkt', () => {
+    expect(entryLabel('top', unknown)).toBe('nog niet ingevuld')
+    expect(entryLabel('top', shop('Red Pao'))).toBe('Red Pao')
+    expect(entryLabel('top', shop('Red Pao', '32'))).toBe('Red Pao')
+    expect(entryLabel('top', shop('Red Pao', '35'))).toBe('Red Pao (aangepast: 35)')
+    expect(entryLabel('top', other('5', ' Muts '))).toBe('Muts')
+    expect(entryLabel('top', other('5'))).toBe('Eigen item')
+  })
+})
+
 describe('wornWdef en wornName', () => {
   const eq: Equipment = {
     claw: shop('Meba'),
     hat: unknown,
     top: shop('Red Pao'),
-    bottom: none,
+    bottom: unknown,
     shoes: other('7', '  Mijn laarzen  '),
   }
 
   it('geeft alleen de armorslots waarvan de WDEF bekend is, en nooit de claw', () => {
-    expect(wornWdef(eq)).toEqual({ top: 32, bottom: 0, shoes: 7 })
+    expect(wornWdef(eq)).toEqual({ top: 32, shoes: 7 })
   })
 
-  it('noemt wat je draagt, en niets bij onbekend of niets', () => {
+  it('noemt wat je draagt, en niets bij een slot dat nog niet is ingevuld', () => {
     expect(wornName(unknown)).toBeNull()
-    expect(wornName(none)).toBeNull()
     expect(wornName(shop('Red Pao'))).toBe('Red Pao')
     expect(wornName(other('7', '  Mijn laarzen  '))).toBe('Mijn laarzen')
-    expect(wornName(other('7', '   '))).toBe('ander item')
+    expect(wornName(other('7', '   '))).toBe('eigen item')
   })
+
 })
 
 describe('entryChanged', () => {
   it('ziet een andere keuze als gewijzigd', () => {
-    expect(entryChanged(unknown, none)).toBe(true)
+    expect(entryChanged(unknown, shop('Meba'))).toBe(true)
     expect(entryChanged(shop('Meba'), shop('Garnier'))).toBe(true)
     expect(entryChanged(shop('Meba'), shop('Meba'))).toBe(false)
   })
 
-  it('ziet bij Ander item een andere naam of stat, maar negeert spaties rond de tekst', () => {
+  it('ziet bij een eigen item een andere naam of stat, maar negeert spaties rond de tekst', () => {
     expect(entryChanged(other('5', 'x'), other('5', 'x'))).toBe(false)
     expect(entryChanged(other(' 5 ', ' x '), other('5', 'x'))).toBe(false)
     expect(entryChanged(other('5', 'x'), other('6', 'x'))).toBe(true)
     expect(entryChanged(other('5', 'x'), other('5', 'y'))).toBe(true)
   })
 
-  it('negeert een achtergebleven naam of stat als de keuze geen Ander item is', () => {
-    expect(entryChanged({ pick: 'none', name: 'a', stat: '1' }, none)).toBe(false)
+  it('negeert een achtergebleven naam als de keuze geen eigen item is, maar ziet een eigen stat', () => {
+    expect(entryChanged({ pick: 'Meba', name: 'a', stat: '' }, shop('Meba'))).toBe(false)
+    expect(entryChanged(shop('Meba'), shop('Meba', '21'))).toBe(true)
+    expect(entryChanged(shop('Meba', ' 21 '), shop('Meba', '21'))).toBe(false)
   })
 })
 
@@ -142,22 +276,28 @@ describe('applyEquipChange: claw', () => {
 
   it('doet dat los van wat er eerst stond', () => {
     const a = applyEquipChange(prof({ clawWatk: '3' }), 'claw', shop('Garnier'), shop('Steel Titans'))
-    const b = applyEquipChange(prof({ clawWatk: '3' }), 'claw', none, shop('Steel Titans'))
+    const b = applyEquipChange(prof({ clawWatk: '3' }), 'claw', unknown, shop('Steel Titans'))
     expect(a).toEqual(b)
     expect(a).toMatchObject({ clawWatk: '13', attackMs: '720' })
   })
 
-  it('laat bij Ander item of Niets de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
+  it('laat bij een eigen item de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
     expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), other('21'))).toMatchObject({ clawWatk: '21', attackMs: '800' })
-    expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), none)).toMatchObject({ clawWatk: '0', attackMs: '800' })
+    expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), zero)).toMatchObject({ clawWatk: '0', attackMs: '800' })
     const p = prof({ clawWatk: '7', attackMs: '800' })
     expect(applyEquipChange(p, 'claw', shop('Meba'), other('abc'))).toBe(p)
     expect(applyEquipChange(p, 'claw', shop('Meba'), other(''))).toBe(p)
   })
 
-  it('raakt niets bij "weet ik niet"', () => {
+  it('raakt niets als het slot op "nog niet ingevuld" komt', () => {
     const p = prof({ clawWatk: '7' })
     expect(applyEquipChange(p, 'claw', shop('Meba'), unknown)).toBe(p)
+  })
+
+  it('laat een zelf ingevulde aanvalssnelheid staan als je alleen de WATK van dezelfde claw aanpast', () => {
+    const p = applyEquipChange(prof({ clawWatk: '19', attackMs: '600' }), 'claw', shop('Meba'), shop('Meba', '21'))
+    expect(p).toMatchObject({ clawWatk: '21', attackMs: '600' })
+    expect(applyEquipChange(prof({ attackMs: '600' }), 'claw', shop('Garnier'), shop('Meba')).attackMs).toBe('660')
   })
 
   it('raakt de armor-velden niet aan', () => {
@@ -171,22 +311,22 @@ describe('applyEquipChange: armor', () => {
     expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Cloth Vest'), shop('Red Pao')).wdef).toBe('80')
   })
 
-  it('trekt het verschil af bij een slechter stuk, en bij niets gaat het hele stuk eraf', () => {
+  it('trekt het verschil af bij een slechter stuk, en bij een stuk zonder WDEF gaat het hele stuk eraf', () => {
     expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), shop('Red Cloth Vest')).wdef).toBe('64')
-    expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), none).wdef).toBe('40')
-    expect(applyEquipChange(prof({ wdef: '72' }), 'top', none, shop('Red Pao')).wdef).toBe('104')
+    expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), zero).wdef).toBe('40')
+    expect(applyEquipChange(prof({ wdef: '72' }), 'top', zero, shop('Red Pao')).wdef).toBe('104')
   })
 
   it('komt niet onder 0', () => {
-    expect(applyEquipChange(prof({ wdef: '10' }), 'top', shop('Red Pao'), none).wdef).toBe('0')
-    expect(applyEquipChange(prof({ wdef: '0' }), 'top', shop('Red Pao'), none).wdef).toBe('0')
+    expect(applyEquipChange(prof({ wdef: '10' }), 'top', shop('Red Pao'), zero).wdef).toBe('0')
+    expect(applyEquipChange(prof({ wdef: '0' }), 'top', shop('Red Pao'), zero).wdef).toBe('0')
   })
 
   it('doet niets als het oude of het nieuwe stuk onbekend is, ook niet bij onbekend naar bekend', () => {
     const p = prof({ wdef: '72' })
     expect(applyEquipChange(p, 'top', unknown, shop('Red Pao'))).toBe(p)
     expect(applyEquipChange(p, 'top', shop('Red Pao'), unknown)).toBe(p)
-    expect(applyEquipChange(p, 'top', unknown, none)).toBe(p)
+    expect(applyEquipChange(p, 'top', unknown, zero)).toBe(p)
     expect(applyEquipChange(p, 'top', unknown, unknown)).toBe(p)
   })
 
@@ -207,7 +347,7 @@ describe('applyEquipChange: armor', () => {
   })
 
   it('raakt de claw-velden niet aan', () => {
-    const p = applyEquipChange(prof({ clawWatk: '9', attackMs: '800' }), 'top', none, shop('Red Pao'))
+    const p = applyEquipChange(prof({ clawWatk: '9', attackMs: '800' }), 'top', zero, shop('Red Pao'))
     expect(p).toMatchObject({ clawWatk: '9', attackMs: '800' })
   })
 
@@ -249,9 +389,9 @@ describe('applyEquipChange: armor', () => {
   })
 
   it('verliest het verschil bij de ondergrens 0 (bekende beperking: wisselen en terugwisselen geeft niet dezelfde WDEF)', () => {
-    let p = applyEquipChange(prof({ wdef: '5' }), 'top', other('12'), none)
+    let p = applyEquipChange(prof({ wdef: '5' }), 'top', other('12'), zero)
     expect(p.wdef).toBe('0')
-    p = applyEquipChange(p, 'top', none, other('12'))
+    p = applyEquipChange(p, 'top', zero, other('12'))
     expect(p.wdef).toBe('12')
   })
 })
@@ -273,19 +413,25 @@ describe('choosePick', () => {
     expect(choosePick('top', other('abc'), 'other')).toEqual(other(''))
   })
 
-  it('geeft OTHER de stat 0 als je niets droeg', () => {
-    expect(choosePick('top', none, 'other')).toEqual(other('0'))
+  it('geeft OTHER de stat 0 als je stuk niets gaf', () => {
+    expect(choosePick('top', zero, 'other')).toEqual(other('0'))
   })
 
-  it('vult voor met de afgekapte waarde van een ander item', () => {
+  it('vult voor met de afgekapte waarde van een eigen item', () => {
     expect(choosePick('top', other('12.9'), 'other')).toEqual(other('12'))
     expect(choosePick('top', other('5000'), 'other')).toEqual(other('999'))
   })
 
-  it('geeft bij elke andere keuze een schone entry', () => {
+  it('geeft bij elke andere keuze een schone entry, ook als de oude een eigen stat had', () => {
     expect(choosePick('top', other('12', 'x'), 'Red Pao')).toEqual(shop('Red Pao'))
-    expect(choosePick('top', shop('Red Pao'), 'none')).toEqual(none)
+    expect(choosePick('top', shop('Red Pao', '35'), 'Red Cloth Vest')).toEqual(shop('Red Cloth Vest'))
     expect(choosePick('top', shop('Red Pao'), 'unknown')).toEqual(unknown)
+  })
+
+  it('maakt van de getypte tekst een eigen item met die naam (bijgesneden op 40), met de bekende stat als voorinvulling', () => {
+    expect(choosePick('top', unknown, 'other', '  Mijn trui ')).toEqual(other('', 'Mijn trui'))
+    expect(choosePick('top', shop('Red Pao', '35'), 'other', 'Mijn trui')).toEqual(other('35', 'Mijn trui'))
+    expect(choosePick('top', unknown, 'other', 'n'.repeat(100)).name).toHaveLength(40)
   })
 })
 
@@ -295,7 +441,7 @@ describe('loadEquipment en saveEquipment', () => {
     const eq: Equipment = {
       claw: shop('Meba'),
       hat: other('5', 'Mijn muts'),
-      top: none,
+      top: other('0', 'Startshirt'),
       bottom: unknown,
       shoes: shop('Red Ninja Sandals'),
     }
@@ -318,19 +464,19 @@ describe('loadEquipment en saveEquipment', () => {
   })
 
   it('geeft niets bekend bij een verkeerde of ontbrekende versie, ook als de slots goed zijn', () => {
-    const slots = { top: { pick: 'none' } }
+    const slots = { top: { pick: 'Red Pao' } }
     for (const v of [2, 0, '1', null]) expect(loadEquipment(stored(slots, v), 'thief'), String(v)).toEqual(defaultEquipment())
     expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ slots }) }), 'thief')).toEqual(defaultEquipment())
   })
 
-  it('houdt een goed slot en maakt een rommelig slot "weet ik niet"', () => {
+  it('houdt een goed slot en maakt een rommelig slot "nog niet ingevuld"', () => {
     const eq = loadEquipment(stored({ claw: { pick: 'Meba' }, hat: 'tekst', top: null, bottom: 7, shoes: { pick: 5 }, geheim: { pick: 'none' } }), 'thief')
     expect(eq.claw).toEqual(shop('Meba'))
     for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(eq[s], s).toEqual(unknown)
     expect('geheim' in eq).toBe(false)
   })
 
-  it('maakt een onbekende of verdwenen winkelkeuze "weet ik niet", ook als hij bij een ander slot hoort', () => {
+  it('maakt een onbekende of verdwenen winkelkeuze "nog niet ingevuld", ook als hij bij een ander slot hoort', () => {
     const eq = loadEquipment(stored({ claw: { pick: 'Verdwenen Claw' }, hat: { pick: 'Red Pao' }, top: { pick: 'Red Pao' }, shoes: { pick: '__proto__' }, bottom: { pick: 'constructor' } }), 'thief')
     expect(eq.claw).toEqual(unknown)
     expect(eq.hat).toEqual(unknown)
@@ -339,11 +485,42 @@ describe('loadEquipment en saveEquipment', () => {
     expect(eq.bottom).toEqual(unknown)
   })
 
-  it('wist naam en stat van een slot dat geen Ander item is', () => {
-    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, hat: { pick: 'none', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }), 'thief')
-    expect(eq.claw).toEqual(shop('Meba'))
-    expect(eq.hat).toEqual(none)
+  it('wist de naam van een catalogusitem en een nog niet ingevuld slot, en houdt de eigen stat alleen bij het eerste', () => {
+    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }), 'thief')
+    expect(eq.claw).toEqual(shop('Meba', '9'))
     expect(eq.top).toEqual(unknown)
+  })
+
+  it('geeft een catalogusitem met een eigen stat heen en terug dezelfde equipment', () => {
+    const storage = fakeStorage()
+    const eq: Equipment = { ...defaultEquipment(), claw: shop('Meba', '21'), top: shop('Red Pao', '35') }
+    saveEquipment(storage, eq)
+    const back = loadEquipment(storage, 'thief')
+    expect(back).toEqual(eq)
+    expect(wornStat('top', back.top)).toBe(35)
+    expect(JSON.parse(storage.data.get(EQUIPMENT_KEY)!).version).toBe(1)
+  })
+
+  it('maakt een rommelige eigen stat bij een catalogusitem leeg, zodat de database telt', () => {
+    const eq = loadEquipment(stored({ top: { pick: 'Red Pao', stat: 'abc' }, hat: { pick: 'Red Guise', stat: 7 }, bottom: { pick: 'Red Pao Bottoms', stat: '23' }, shoes: { pick: 'Red Enamel Boots', stat: '  ' } }), 'thief')
+    expect(eq.top).toEqual(shop('Red Pao'))
+    expect(eq.hat).toEqual(shop('Red Guise'))
+    expect(eq.bottom).toEqual(shop('Red Pao Bottoms'))
+    expect(eq.shoes).toEqual(shop('Red Enamel Boots'))
+    expect(wornStat('top', eq.top)).toBe(32)
+  })
+
+  it('trimt en kapt een eigen stat bij een catalogusitem af op 12 tekens', () => {
+    const eq = loadEquipment(stored({ top: { pick: 'Red Pao', stat: ' 35 ' }, hat: { pick: 'Red Guise', stat: '9'.repeat(50) } }), 'thief')
+    expect(eq.top.stat).toBe('35')
+    expect(eq.hat.stat).toHaveLength(12)
+    expect(wornStat('hat', eq.hat)).toBe(999)
+  })
+
+  it('maakt een bewaard "niets" van vroeger "nog niet ingevuld": je draagt altijd iets', () => {
+    const eq = loadEquipment(stored({ hat: { pick: 'none', name: 'x', stat: '9' }, claw: { pick: 'none' } }), 'thief')
+    expect(eq.hat).toEqual(unknown)
+    expect(eq.claw).toEqual(unknown)
   })
 
   it('kapt te lange naam (40) en stat (12) af bij het laden en bij het bewaren', () => {
@@ -390,27 +567,32 @@ describe('loadEquipment en saveEquipment', () => {
 describe('equipment per job', () => {
   const others: Job[] = ['warrior', 'magician', 'bowman']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
-  const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
-  const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
+  const storedFor = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
+  const thiefGear: Equipment = { claw: shop('Meba'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
 
-  it('toont voor de Thief in elk slot winkelitems en voor een andere job niets', () => {
+  it('heeft voor de Thief in elk slot een catalogus en voor een andere job niets, ook niet in de zoekbalk', () => {
     for (const s of slots) {
-      expect(shopItems(s, 'thief').length, s).toBeGreaterThan(0)
-      for (const j of others) expect(shopItems(s, j), `${s} ${j}`).toEqual([])
+      expect(catalogItems(s, 'thief').length, s).toBeGreaterThan(0)
+      for (const j of others) {
+        expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
+        expect(searchCatalog(s, j, ''), `${s} ${j}`).toEqual([])
+      }
     }
   })
 
-  it('laadt een bewaarde Thief-winkelkeuze voor de Thief', () => {
-    expect(loadEquipment(stored({ claw: { pick: 'Meba' }, hat: { pick: 'Red Thief Hood' } }), 'thief').claw).toEqual(shop('Meba'))
+  it('laadt een bewaarde Thief-keuze (ook een item zonder prijs, met eigen stat) voor de Thief', () => {
+    const eq = loadEquipment(storedFor({ claw: { pick: 'Meba' }, hat: { pick: 'Red Ghetto Beanie', stat: '17' } }), 'thief')
+    expect(eq.claw).toEqual(shop('Meba'))
+    expect(eq.hat).toEqual(shop('Red Ghetto Beanie', '17'))
   })
 
-  it('maakt een bewaarde Thief-winkelkeuze "weet ik niet" voor een andere job, en houdt geen/ander', () => {
-    const data = { claw: { pick: 'Meba' }, hat: { pick: 'Red Thief Hood' }, top: { pick: 'none' }, bottom: { pick: 'other', name: 'Mijn broek', stat: '7' }, shoes: { pick: 'unknown' } }
+  it('maakt een bewaarde Thief-keuze "nog niet ingevuld" voor een andere job, en houdt een eigen item', () => {
+    const data = { claw: { pick: 'Meba' }, hat: { pick: 'Red Ghetto Beanie' }, top: { pick: 'none' }, bottom: { pick: 'other', name: 'Mijn broek', stat: '7' }, shoes: { pick: 'unknown' } }
     for (const j of others) {
-      const eq = loadEquipment(stored(data), j)
+      const eq = loadEquipment(storedFor(data), j)
       expect(eq.claw, j).toEqual(unknown)
       expect(eq.hat, j).toEqual(unknown)
-      expect(eq.top, j).toEqual(none)
+      expect(eq.top, j).toEqual(unknown)
       expect(eq.bottom, j).toEqual(other('7', 'Mijn broek'))
       expect(eq.shoes, j).toEqual(unknown)
     }
@@ -420,40 +602,36 @@ describe('equipment per job', () => {
     for (const j of [...others, 'thief' as Job]) expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '{kapot' }), j), j).toEqual(defaultEquipment())
   })
 
-  it('zet bij een wissel naar een andere job elke winkelkeuze op "weet ik niet" en laat de rest staan', () => {
-    const eq: Equipment = { ...thiefShop, top: none, bottom: other('7', 'Mijn broek') }
+  it('zet bij een wissel naar een andere job elk catalogusitem op "nog niet ingevuld" en laat een eigen item staan', () => {
+    const eq: Equipment = { ...thiefGear, bottom: other('7', 'Mijn broek') }
     for (const j of others) {
       const out = equipmentForJob(eq, j)
-      expect(out.claw, j).toEqual(unknown)
-      expect(out.hat, j).toEqual(unknown)
-      expect(out.shoes, j).toEqual(unknown)
-      expect(out.top, j).toEqual(none)
+      for (const s of ['claw', 'hat', 'top', 'shoes'] as const) expect(out[s], `${s} ${j}`).toEqual(unknown)
       expect(out.bottom, j).toEqual(other('7', 'Mijn broek'))
     }
   })
 
   it('laat de equipment bij de Thief gelijk en past de invoer niet aan', () => {
-    const copy = structuredClone(thiefShop)
-    expect(equipmentForJob(thiefShop, 'thief')).toEqual(thiefShop)
-    expect(thiefShop).toEqual(copy)
+    const copy = structuredClone(thiefGear)
+    expect(equipmentForJob(thiefGear, 'thief')).toEqual(thiefGear)
+    expect(thiefGear).toEqual(copy)
     expect(equipmentForJob(defaultEquipment(), 'warrior')).toEqual(defaultEquipment())
   })
 
-  it('zet een winkelkeuze die niet bij het slot hoort ook op "weet ik niet" voor de Thief', () => {
+  it('zet een keuze die niet bij het slot hoort ook op "nog niet ingevuld" voor de Thief', () => {
     expect(equipmentForJob({ ...defaultEquipment(), hat: shop('Red Pao') }, 'thief').hat).toEqual(unknown)
   })
 
-  it('laat WDEF en WATK in het profiel staan als een jobwissel winkelitems op onbekend zet', () => {
-    const profile = prof({ wdef: '60', clawWatk: '19' })
-    const after = equipmentForJob(thiefShop, 'warrior')
-    let p = profile
-    for (const s of slots) p = applyEquipChange(p, s, thiefShop[s], after[s])
+  it('laat WDEF en WATK in het profiel staan als een jobwissel items op onbekend zet', () => {
+    const after = equipmentForJob(thiefGear, 'warrior')
+    let p = prof({ wdef: '60', clawWatk: '19' })
+    for (const s of slots) p = applyEquipChange(p, s, thiefGear[s], after[s])
     expect(p.wdef).toBe('60')
     expect(p.clawWatk).toBe('19')
   })
 
-  it('geeft na een jobwissel geen stat meer voor een winkelitem dat de job niet heeft', () => {
-    const after = equipmentForJob(thiefShop, 'bowman')
+  it('geeft na een jobwissel geen stat meer voor een item dat de job niet heeft', () => {
+    const after = equipmentForJob(thiefGear, 'bowman')
     for (const s of slots) expect(wornStat(s, after[s]), s).toBeUndefined()
     expect(wornWdef(after)).toEqual({})
   })

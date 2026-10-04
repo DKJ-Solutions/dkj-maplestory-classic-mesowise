@@ -81,6 +81,12 @@ export interface ShopArmor extends ShopItem {
 /** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
 export interface Armor extends ShopArmor, Requires<'luk' | 'dex'> {}
 
+/** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
+export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
+
+/** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
+export type WornClaw = Pick<Claw, 'name' | 'level' | 'watk' | 'speed' | 'source'>
+
 /** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
 export type WarriorWeaponKind =
   | '1h-sword'

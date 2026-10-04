@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/pre
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
-import { EQUIPMENT_KEY } from './equipment'
+import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { DEFAULT_PROFILE, PROFILE_KEY } from './profile'
 import { knownSpotPatch } from './data/spots'
@@ -18,6 +18,18 @@ const claw = (name: string) => {
 const IGOR = claw('Steel Igor')
 const MEBA = claw('Meba')
 
+/** Twee items uit de catalogus van een slot met een verschillende stat en een naam die niet in de ander zit. */
+const twoItems = (slot: 'hat' | 'top' | 'shoes') => {
+  const items = searchCatalog(slot, 'thief', '')
+  const a = items[0]
+  const b = items.find((i) => i.stat !== a.stat && !i.name.includes(a.name) && !a.name.includes(i.name))
+  if (!b) throw new Error(`geen tweede ${slot} met een andere WDEF`)
+  return [a, b] as const
+}
+const [HAT_A, HAT_B] = twoItems('hat')
+const [SHOE_A] = twoItems('shoes')
+const [TOP_A] = twoItems('top')
+
 const stored = (key: string) => JSON.parse(localStorage.getItem(key) ?? 'null')
 const profileFields = () => stored(PROFILE_KEY)?.fields
 const slots = () => stored(EQUIPMENT_KEY)?.slots
@@ -27,9 +39,55 @@ const panels = () => Array.from(document.querySelectorAll<HTMLElement>('.panel')
 
 /** De equipment-kaarten: [0] op het beginscherm, [1] op het controlescherm van de level-up. */
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
-const slotSelect = (card: HTMLElement, slot: string) => within(card).getByLabelText(new RegExp(`^${slot}`)) as HTMLSelectElement
-const pick = (card: HTMLElement, slot: string, value: string) => fireEvent.change(slotSelect(card, slot), { target: { value } })
-const badge = (card: HTMLElement, slot: string) => slotSelect(card, slot).closest('label')!.querySelector('em.was')?.textContent ?? null
+
+// Een slot heet in het scherm Weapon, Hat, Top, Bottom of Shoes; de zoekbalk heet "Zoek je <Slot>".
+const searchBox = (card: HTMLElement, slot: string) => within(card).getByLabelText(`Zoek je ${slot}`) as HTMLInputElement
+const rowOf = (card: HTMLElement, slot: string) => searchBox(card, slot).closest<HTMLElement>('.equip-row')!
+const typeIn = (card: HTMLElement, slot: string, text: string) => {
+  const box = searchBox(card, slot)
+  fireEvent.focus(box)
+  fireEvent.input(box, { target: { value: text } })
+  return rowOf(card, slot)
+}
+const options = (row: HTMLElement) => Array.from(row.querySelectorAll<HTMLElement>('li[role="option"]'))
+/** Kies een catalogusitem: typ de naam in de zoekbalk en tik de optie aan. */
+const pick = (card: HTMLElement, slot: string, name: string) => {
+  const option = options(typeIn(card, slot, name)).find((o) => o.querySelector('.equip-name')?.textContent === name)
+  if (!option) throw new Error(`${name} staat niet in de lijst van ${slot}`)
+  fireEvent.click(option)
+}
+/** Kies de rij 'Gebruik "<tekst>" als eigen item'. */
+const pickOwn = (card: HTMLElement, slot: string, text: string) => {
+  const option = options(typeIn(card, slot, text)).find((o) => o.textContent === `Gebruik "${text}" als eigen item`)
+  if (!option) throw new Error(`geen eigen-item-rij voor ${text}`)
+  fireEvent.click(option)
+}
+/** De naam op de knop van een ingevuld slot; null als het slot nog niet is ingevuld. */
+const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent ?? null
+const badge = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('em.was')?.textContent ?? null
+
+/** Opent de popup achter het potlood van een slot en geeft de handvatten ervan. */
+const openDialog = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF') => {
+  const row = rowOf(card, slot)
+  fireEvent.click(within(row).getByRole('button', { name: `${stat} corrigeren` }))
+  const dialog = row.querySelector('dialog') as HTMLDialogElement
+  const d = within(dialog)
+  const input = () => d.getByLabelText(`${stat} in game`) as HTMLInputElement
+  return {
+    dialog,
+    input,
+    type: (v: string) => fireEvent.input(input(), { target: { value: v } }),
+    save: () => fireEvent.click(d.getByRole('button', { name: 'Opslaan' })),
+    close: () => fireEvent.click(d.getByRole('button', { name: 'Sluiten zonder opslaan' })),
+    d,
+  }
+}
+/** Corrigeer de stat van een slot en sla op. */
+const correct = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF', value: string) => {
+  const h = openDialog(card, slot, stat)
+  h.type(value)
+  h.save()
+}
 
 const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: /Je equipment/ }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
@@ -51,6 +109,17 @@ describe('begin zonder opslag', () => {
 
   it('toont op de level up-knop de stap van lv 10 naar lv 11', () => {
     expect(screen.getByRole('button', { name: /Level up/ }).textContent).toContain('lv 10 → 11')
+  })
+
+  it('toont een slot dat nog niet is ingevuld als zoekbalk, zonder opties "Weet ik niet" of "Niets"', () => {
+    openHomeEquipment()
+    const box = searchBox(cards()[0], 'Weapon')
+    expect(box.getAttribute('role')).toBe('combobox')
+    expect(box.placeholder).toBe('Zoek wat je draagt')
+    expect(worn(cards()[0], 'Weapon')).toBeNull()
+    expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-edit')).toBeNull()
+    expect(screen.queryByText('Weet ik niet')).toBeNull()
+    expect(screen.queryByText('Niets')).toBeNull()
   })
 })
 
@@ -89,25 +158,122 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(document.activeElement).toBe(head)
   })
 
-  it('zet bij "Niets" de weapon attack op 0 en laat de aanvalssnelheid staan', () => {
+  it('toont na de keuze de naam als knop en de ATT in het waardevak', () => {
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', 'none')
-    expect(profileFields().clawWatk).toBe('0')
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(within(cards()[0]).getByRole('button', { name: `Weapon: ${IGOR.name}. Tik om te zoeken.` })).toBeTruthy()
+    expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-value')!.getAttribute('aria-label')).toBe(`ATT ${IGOR.watk}`)
+  })
+
+  it('laat een eigen item (via de zoekbalk) het profiel ongemoeid tot de stat is opgeslagen', () => {
+    // Vervangt "Niets": een slot zonder bekend getal zet de weapon attack niet op 0, het laat het profiel staan.
+    openHomeEquipment()
+    pickOwn(cards()[0], 'Weapon', 'Mijn claw')
+    expect(slots().claw).toMatchObject({ pick: 'other', name: 'Mijn claw', stat: '' })
+    expect(profileFields()?.clawWatk ?? DEFAULT_PROFILE.clawWatk).toBe(DEFAULT_PROFILE.clawWatk)
+    correct(cards()[0], 'Weapon', 'ATT', '31')
+    expect(profileFields().clawWatk).toBe('31')
+    // een eigen item zet de aanvalssnelheid niet
     expect(profileFields().attackMs).toBe(DEFAULT_PROFILE.attackMs)
   })
 
   it('past bij een armorstuk alleen het verschil in WDEF toe', () => {
     openHomeEquipment()
-    const hat = slotSelect(cards()[0], 'Hat')
-    const item = Array.from(hat.options).find((o) => /WDEF (\d+)\)$/.test(o.text))!
-    const wdef = Number(/WDEF (\d+)\)$/.exec(item.text)![1])
-    // van onbekend naar bekend verandert de WDEF niet: dat stuk zat er al in
-    const before = profileFields()?.wdef
-    pick(cards()[0], 'Hat', item.value)
-    expect(profileFields()?.wdef).toBe(before)
-    // van dit stuk naar niets haalt de WDEF van dat stuk eraf
-    pick(cards()[0], 'Hat', 'none')
-    expect(profileFields().wdef).toBe(String(Number(DEFAULT_PROFILE.wdef) - wdef))
+    const before = profileFields()?.wdef ?? DEFAULT_PROFILE.wdef
+    // van nog niet ingevuld naar een stuk verandert de WDEF niet: dat stuk zat er al in
+    pick(cards()[0], 'Hat', HAT_A.name)
+    expect(profileFields()?.wdef ?? DEFAULT_PROFILE.wdef).toBe(before)
+    // van dit stuk naar een ander telt alleen het verschil
+    pick(cards()[0], 'Hat', HAT_B.name)
+    expect(profileFields().wdef).toBe(String(Number(DEFAULT_PROFILE.wdef) + HAT_B.stat - HAT_A.stat))
+  })
+})
+
+describe('equipment: de popup achter het potlood', () => {
+  const fillIgor = () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+  }
+
+  it('toont de ATT voor het wapen en de DEF voor armor op de potloodknop', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Hat', HAT_A.name)
+    expect(within(rowOf(cards()[0], 'Weapon')).getByRole('button', { name: 'ATT corrigeren' })).toBeTruthy()
+    expect(within(rowOf(cards()[0], 'Hat')).getByRole('button', { name: 'DEF corrigeren' })).toBeTruthy()
+  })
+
+  it('past niets toe zolang je in de popup typt, ook niet met − en +', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    expect(h.dialog.open).toBe(true)
+    h.type('31')
+    fireEvent.click(h.d.getByRole('button', { name: 'ATT plus 1' }))
+    expect(h.input().value).toBe('32')
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(slots().claw.stat).toBe('')
+  })
+
+  it('past met Opslaan de claw-WATK aan, maar niet de aanvalssnelheid', () => {
+    fillIgor()
+    correct(cards()[0], 'Weapon', 'ATT', '31')
+    expect(profileFields().clawWatk).toBe('31')
+    expect(profileFields().attackMs).toBe(String(IGOR.speed.attackMs))
+    expect(slots().claw).toMatchObject({ pick: IGOR.name, stat: '31' })
+    // een gecorrigeerde stat staat als correctie in het waardevak
+    expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-value')!.getAttribute('aria-label')).toBe(`ATT 31, gecorrigeerd, verwacht ${IGOR.watk}`)
+  })
+
+  it('legt het concept ook vast met Enter in het getal', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    h.type('33')
+    fireEvent.keyDown(h.input(), { key: 'Enter' })
+    expect(profileFields().clawWatk).toBe('33')
+  })
+
+  it('gooit het concept weg met ✕ (Sluiten zonder opslaan)', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    h.type('31')
+    h.close()
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(slots().claw.stat).toBe('')
+    // een nieuwe popup begint weer bij de toegepaste stand
+    expect(openDialog(cards()[0], 'Weapon', 'ATT').input().value).toBe(String(IGOR.watk))
+  })
+
+  it('gooit het concept weg met Escape', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    h.type('31')
+    fireEvent(h.dialog, new Event('cancel', { cancelable: true }))
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
+  })
+
+  it('gooit het concept weg met een tik op de achtergrond van de popup', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    h.type('31')
+    fireEvent.click(h.dialog)
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
+  })
+
+  it('biedt Opslaan alleen aan als het concept afwijkt, en Reset alleen bij een correctie', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    expect(h.d.queryByRole('button', { name: 'Opslaan' })).toBeNull()
+    expect(h.d.queryByRole('button', { name: /^Reset/ })).toBeNull()
+    h.type('31')
+    h.save()
+    const again = openDialog(cards()[0], 'Weapon', 'ATT')
+    expect(again.d.queryByRole('button', { name: 'Opslaan' })).toBeNull()
+    fireEvent.click(again.d.getByRole('button', { name: `Reset naar ${IGOR.watk}` }))
+    again.save()
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(slots().claw.stat).toBe('')
   })
 })
 
@@ -115,9 +281,9 @@ describe('bewaren na elke wijziging', () => {
   it('bewaart de equipment per slot', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    pick(cards()[0], 'Shoes', 'none')
+    pick(cards()[0], 'Shoes', SHOE_A.name)
     expect(slots().claw.pick).toBe(IGOR.name)
-    expect(slots().shoes.pick).toBe('none')
+    expect(slots().shoes.pick).toBe(SHOE_A.name)
     expect(slots().hat.pick).toBe('unknown')
   })
 
@@ -147,25 +313,27 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(JOB_KEY).job).toBe('warrior')
   })
 
-  it('past bij "Ander item" het profiel pas aan als het getal is vastgelegd', () => {
+  it('bewaart een eigen item met naam en, na Opslaan, het getal', () => {
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', 'other')
-    const stat = within(cards()[0]).getByLabelText('WATK') as HTMLInputElement
-    const before = profileFields()?.clawWatk
-    fireEvent.input(stat, { target: { value: '31' } })
-    expect(profileFields()?.clawWatk).toBe(before)
-    fireEvent.change(stat)
-    expect(profileFields().clawWatk).toBe('31')
-    expect(slots().claw).toMatchObject({ pick: 'other', stat: '31' })
+    pickOwn(cards()[0], 'Weapon', 'Mijn claw')
+    expect(worn(cards()[0], 'Weapon')).toBe('Mijn claw')
+    correct(cards()[0], 'Weapon', 'ATT', '31')
+    expect(slots().claw).toMatchObject({ pick: 'other', name: 'Mijn claw', stat: '31' })
   })
 
-  it('neemt een getal dat nog in het veld staat mee bij de level-up', () => {
+  it('kiest met Enter de gemarkeerde rij in de zoeklijst', () => {
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', 'other')
-    fireEvent.input(within(cards()[0]).getByLabelText('WATK'), { target: { value: '44' } })
-    levelUp()
-    expect(profileFields().clawWatk).toBe('44')
-    expect(profileFields().level).toBe('11')
+    typeIn(cards()[0], 'Weapon', MEBA.name)
+    fireEvent.keyDown(searchBox(cards()[0], 'Weapon'), { key: 'Enter' })
+    expect(slots().claw.pick).toBe(MEBA.name)
+  })
+
+  it('biedt geen eigen-item-rij als je precies een naam uit de lijst typt', () => {
+    openHomeEquipment()
+    const row = typeIn(cards()[0], 'Weapon', IGOR.name)
+    expect(options(row).some((o) => o.textContent?.startsWith('Gebruik "'))).toBe(false)
+    const own = typeIn(cards()[0], 'Weapon', 'Iets heel anders')
+    expect(options(own).map((o) => o.textContent)).toEqual(['Gebruik "Iets heel anders" als eigen item'])
   })
 })
 
@@ -187,15 +355,16 @@ describe('level-up en ongedaan maken', () => {
   it('zet equipment en profiel allebei terug, ook na een wissel op het controlescherm', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    pick(cards()[0], 'Hat', 'none')
+    pick(cards()[0], 'Hat', HAT_A.name)
+    pick(cards()[0], 'Hat', HAT_B.name)
     const profileBefore = profileFields()
     const slotsBefore = slots()
 
     levelUp()
     pick(cards()[1], 'Weapon', MEBA.name)
-    pick(cards()[1], 'Shoes', 'none')
+    pick(cards()[1], 'Shoes', SHOE_A.name)
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
-    expect(slots().shoes.pick).toBe('none')
+    expect(slots().shoes.pick).toBe(SHOE_A.name)
 
     undoLevelUp()
     expect(profileFields()).toEqual(profileBefore)
@@ -203,17 +372,32 @@ describe('level-up en ongedaan maken', () => {
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
     expect(profileFields().attackMs).toBe(String(IGOR.speed.attackMs))
     expect(slots()).toEqual(slotsBefore)
-    expect(slotSelect(cards()[0], 'Weapon').value).toBe(IGOR.name)
-    expect(slotSelect(cards()[0], 'Shoes').value).toBe('unknown')
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    expect(worn(cards()[0], 'Hat')).toBe(HAT_B.name)
+    expect(worn(cards()[0], 'Shoes')).toBeNull()
   })
 
-  it('gooit een nog niet vastgelegd getal bij "Ander item" weg', () => {
+  it('gooit een eigen item met een opgeslagen getal van het controlescherm weg', () => {
     levelUp()
-    pick(cards()[1], 'Weapon', 'other')
-    fireEvent.input(within(cards()[1]).getByLabelText('WATK'), { target: { value: '77' } })
+    pickOwn(cards()[1], 'Weapon', 'Mijn claw')
+    correct(cards()[1], 'Weapon', 'ATT', '77')
+    expect(profileFields().clawWatk).toBe('77')
     undoLevelUp()
     expect(profileFields().clawWatk).toBe(DEFAULT_PROFILE.clawWatk)
     expect(slots().claw.pick).toBe('unknown')
+  })
+
+  it('legt een nog open concept in de popup vast als vangnet bij de level-up', () => {
+    // In de echte app zit de level-up-knop achter de modal; levelUp() in app.tsx legt een open concept toch vast
+    // (commitAllEquipment), zodat een getal nooit stil verloren gaat. fireEvent omzeilt de modal.
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    h.type('44')
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    levelUp()
+    expect(profileFields().clawWatk).toBe('44')
+    expect(profileFields().level).toBe('11')
   })
 })
 
@@ -228,16 +412,16 @@ describe('de "was"-badge per slot', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
     levelUp()
     pick(cards()[1], 'Weapon', MEBA.name)
-    pick(cards()[1], 'Hat', 'none')
+    pick(cards()[1], 'Hat', HAT_A.name)
     expect(badge(cards()[1], 'Weapon')).not.toBeNull()
-    expect(badge(cards()[1], 'Hat')).toBe('was Weet ik niet')
+    expect(badge(cards()[1], 'Hat')).toBe('was nog niet ingevuld')
     expect(badge(cards()[1], 'Top')).toBeNull()
     expect(badge(cards()[1], 'Shoes')).toBeNull()
   })
 
-  // Bekende bug #52: entryLabel leest `name`, maar een winkelitem staat in `pick`, dus de badge zegt "was Ander item".
-  // Wordt deze test rood, dan is #52 opgelost: haal dan `.fails` weg.
-  it.fails('noemt een winkelitem bij zijn naam (#52)', () => {
+  // Was bekende bug #52 (entryLabel las `name` in plaats van `pick`, dus "was Ander item"); in de nieuwe entryLabel
+  // is dat verholpen, dus dit is nu een gewone test.
+  it('noemt een winkelitem bij zijn naam (#52)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     levelUp()
@@ -245,14 +429,28 @@ describe('de "was"-badge per slot', () => {
     expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name}`)
   })
 
-  it('noemt "Niets" en "Weet ik niet" bij naam', () => {
+  it('noemt "nog niet ingevuld", een eigen item en een aangepaste stat bij naam', () => {
     openHomeEquipment()
-    pick(cards()[0], 'Top', 'none')
+    pickOwn(cards()[0], 'Top', 'Mijn top')
+    pick(cards()[0], 'Weapon', IGOR.name)
+    correct(cards()[0], 'Weapon', 'ATT', '31')
     levelUp()
-    pick(cards()[1], 'Top', 'other')
-    expect(badge(cards()[1], 'Top')).toBe('was Niets')
-    pick(cards()[1], 'Weapon', 'other')
-    expect(badge(cards()[1], 'Weapon')).toBe('was Weet ik niet')
+    pick(cards()[1], 'Top', TOP_A.name)
+    expect(badge(cards()[1], 'Top')).toBe('was Mijn top')
+    pick(cards()[1], 'Weapon', MEBA.name)
+    expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name} (aangepast: 31)`)
+    pick(cards()[1], 'Shoes', SHOE_A.name)
+    expect(badge(cards()[1], 'Shoes')).toBe('was nog niet ingevuld')
+  })
+
+  it('toont bij een gecorrigeerde stat op hetzelfde item ook de badge, en verdwijnt bij terugzetten', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    correct(cards()[1], 'Weapon', 'ATT', '31')
+    expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name}`)
+    correct(cards()[1], 'Weapon', 'ATT', String(IGOR.watk))
+    expect(badge(cards()[1], 'Weapon')).toBeNull()
   })
 
   it('verdwijnt als je terugkiest wat het was', () => {
