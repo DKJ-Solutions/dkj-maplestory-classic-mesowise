@@ -2,7 +2,49 @@
 
 ## [Unreleased]
 
-**21 / 45 minor entries** <!-- pending-tally -->
+**22 / 47 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
+
+The Skillpoints card now shows under every skill what it costs in MP per use at the level you have set, for
+example "12 MP per keer" under Slash Blast 20; a skill still at 0 shows the cost of level 1, and a passive skill
+says it costs nothing. The MP comes from the skill pages on MeowDB.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Show the mana cost per skill point
+
+[PR #95](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/95)
+
+---
+
+### DEPLOY: app/82-split-ability-total-stats · 20261004-122003Z
+
+The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Attack, Weapon Def, Magic, Magic Def, Accuracy, Evasion, Crit. Rate, Crit. Damage, Speed, Jump, then time per attack and, for a Warrior, the weapon multiplier). INT, Magic, Magic Def, Crit., Speed and Jump are new: you fill them in yourself (they start as "?"), they are stored with your profile but not used in any calculation yet, and leaving one blank never blocks it. Attack and Weapon Def come from your equipment: Attack is your weapon's attack, plus your stars for a Thief. An item's INT requirement is now checked against your INT. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The character cards read like the stat window in the game, so filling in your stats means copying block by block.
+
+**Score:** 2
+
+#### Pull Request
+
+Split the character card into Ability points and Total stats
+
+[PR #94](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/94)
+
+---
 
 ### DEPLOY: data/76-magician-robes · 20261004-120114Z
 

@@ -1,7 +1,7 @@
 // De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
+// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
 // zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
@@ -99,10 +99,10 @@ export function levelUpSummary(changes: LevelUpChanges): string {
 /** De velden die een speler na een level-up het vaakst moet bijwerken, bovenaan; daarna de rest. */
 const AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'luk', 'dex', 'str', 'accuracy', 'avoid']
 
-/** De stats in de volgorde voor het controlescherm; je skills staan in hun eigen kaart. */
+/** De stats in de volgorde voor het controlescherm (de velden die alleen ter info zijn, staan er niet in); je skills staan in hun eigen kaart. */
 export const CHECK_FIELDS = [
   ...AFTER_LEVEL_UP.map((k) => PROFILE_FIELDS.find((f) => f.key === k)!),
-  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
+  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !f.informative),
 ]
 
 /** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest. */
@@ -112,7 +112,7 @@ const WARRIOR_AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'str', 'de
 export const checkFieldsFor = (job: Job) => {
   if (job === 'warrior') {
     const first = WARRIOR_AFTER_LEVEL_UP.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
-    return [...first, ...statFieldsFor(job).filter((f) => !WARRIOR_AFTER_LEVEL_UP.includes(f.key))]
+    return [...first, ...statFieldsFor(job).filter((f) => !WARRIOR_AFTER_LEVEL_UP.includes(f.key) && !f.informative)]
   }
   const shown = profileFieldsFor(job)
   return CHECK_FIELDS.filter((f) => shown.includes(f))
