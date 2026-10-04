@@ -273,10 +273,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-list li.own::before { content: '+'; flex: none; font-weight: 700; color: var(--accent); }
 .equip-list li.more { min-height: 0; padding-top: 0.25rem; padding-bottom: 0.25rem; color: var(--muted); font-size: 0.875rem; cursor: default; }
 /* Twee velden naast elkaar: links de verwachting uit de database (alleen lezen), rechts de waarde uit je game */
-.equip-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.625rem; }
+/* Beide kolommen precies gelijk: label op één regel, veld even hoog, zelfde padding en rand, getal rechts */
+.equip-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; align-items: end; margin-top: 0.625rem; }
 .equip-stats .field { min-width: 0; }
-.equip-stats input, .equip-db { display: block; width: 100%; box-sizing: border-box; min-height: 44px; text-align: right; font-variant-numeric: tabular-nums; }
-.equip-db { padding: 0.5rem 0.75rem; line-height: 1.6; color: var(--muted); background: var(--bg); border: 1px dashed var(--border); border-radius: 0.5rem; }
+.equip-stats .field > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.equip-stats input, .equip-db {
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 100%; height: 44px; min-height: 44px; box-sizing: border-box; margin: 0;
+  padding: 0 0.75rem; font-size: 1rem; line-height: 1; text-align: right; font-variant-numeric: tabular-nums;
+  border-width: 1px; border-radius: 0.5rem; background: var(--bg);
+}
+.equip-db { color: var(--muted); border-style: dashed; border-color: var(--border); }
 .equip-stats input.changed { border-color: #b45309; }
 @media (prefers-color-scheme: dark) {
   .equip-stats input.changed { border-color: #fbbf24; }
