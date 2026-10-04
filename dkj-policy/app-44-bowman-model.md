@@ -69,6 +69,8 @@ after the code and tests were written, and this was picked up from the working c
 - [x] `main` merged in a third time for #83 (MP per skill): Arrow Blow, Double Shot and Focus take their MP from
   `src/data/bowman.ts`, Critical Shot and The Eye of Amazon are passive; `src/data/skills.test.ts` covers both; 973
   tests green
+- [x] `main` merged in a fourth time for #86 (top menu bar): main's panel layout, with the per-job level-up hint;
+  976 tests green
 
 ### DEPLOY: app/44-bowman-model
 
