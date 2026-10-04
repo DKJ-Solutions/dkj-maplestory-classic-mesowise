@@ -238,7 +238,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Kleiner in beeld, maar het tikvlak blijft 44px hoog. */
 .level-row .btn::after { content: ''; position: absolute; inset: -4px 0; }
 /* BACK: een rand zonder witte vulling, zodat hij niet lijkt op de kaartknoppen zoals Equip; tekst en rand in precies dezelfde kleur (Dave, 4 oktober 2026). */
-.btn.level-down { background: transparent; color: var(--muted); border-color: currentColor; font-weight: 500; }
+.btn.level-down { background: transparent; color: color-mix(in srgb, var(--muted) 80%, var(--bg)); border-color: currentColor; font-weight: 500; }
 .level-row .btn:disabled { opacity: 0.45; }
 /* Het level groot, en ook verticaal precies tussen de knoppen: text-box knipt de ruimte boven en onder de hoofdletters weg,
    zodat het midden van het vak het midden van de letters is (Dave, 4 oktober 2026). */
