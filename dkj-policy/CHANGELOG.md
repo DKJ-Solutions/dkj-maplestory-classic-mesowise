@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**15 / 25 minor entries** <!-- pending-tally -->
+**15 / 26 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/40-component-tests · 20261004-090844Z
+
+Wat het scherm met de rekenmodules doet, heeft nu eigen tests: equipment kiezen, opslaan, een level-up
+ongedaan maken, de `was`-badge en het skillpunt zetten. Voor wie de app gebruikt verandert er niets.
+Het voorkomt dat een wijziging aan het scherm stilletjes je equipment of profiel verkeerd doorgeeft aan
+het advies; zo'n fout werd voorheen alleen met het oog gevonden (zo kwam #52 boven).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Component tests for the screen (app.tsx)
+
+[PR #53](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/53)
+
+---
 
 ### DEPLOY: app/skillpoints-section · 20261004-090757Z
 
