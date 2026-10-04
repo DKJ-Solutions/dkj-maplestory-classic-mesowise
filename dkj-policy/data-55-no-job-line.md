@@ -64,6 +64,12 @@ overall-slot van #50, die op andere machines in bewerking zijn; die stap blijft 
   en "geen kandidaten" houden hun bedoeling met een aangepast profiel. 726 tests groen, typecheck schoon.
 - [x] Victor: geen bevindingen die de merge tegenhouden; elke gewijzigde verwachting is een echt gevolg van de
   nieuwe items.
+- [x] CI rood op de merge met main: #42 was intussen geland, met dezelfde acht wapens als gedragen items zonder
+  prijs (`wornWarrior.ts`) en de White Bandana in de gedeelde rijen. Main erin gemerged; de acht dubbele rijen uit
+  `WORN_WARRIOR_WEAPONS` (nu leeg), 719 uit `COMMON_WORN_IDS` (45 gedeelde rijen). Via `warriorGear.ts` zijn de
+  nieuwe wapens en hoeden nu ook kandidaten in het Warrior-advies; Victor nagekeken: de lijsten blijven op level
+  gesorteerd, alleen Steel Pipe en Sky Blue Umbrella (geen STR-eis) kunnen voor een zwakke Warrior opduiken, en
+  de Koif wint op lv 10 de hat van de Bandana (nu expliciet getest). 865 tests groen, typecheck schoon.
 
 ### DEPLOY: data/55-no-job-line
 

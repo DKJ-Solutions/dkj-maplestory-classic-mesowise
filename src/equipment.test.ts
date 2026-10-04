@@ -659,9 +659,11 @@ describe('equipment voor een Warrior', () => {
   const warriorShop: Equipment = { claw: shop('Gladius'), ammo: unknown, hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, shoes: shop('Bronze Grieves') }
 
   describe('catalogItems voor een Warrior', () => {
-    it('geeft bij Weapon de NPC-wapens van de Warrior, dan de wapens zonder prijs, met naam, level en weapon attack', () => {
+    it('geeft bij Weapon de NPC-wapens van de Warrior, met naam, level en weapon attack (wapens zonder prijs zijn er sinds #55 niet)', () => {
       const items = catalogItems('claw', 'warrior')
-      expect(items.map((i) => i.name)).toEqual([...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS].map((w) => w.name))
+      // De acht wapens zonder jobregel zijn sinds #55 NPC-wapens; de lijst zonder prijs is leeg.
+      expect(WORN_WARRIOR_WEAPONS).toEqual([])
+      expect(items.map((i) => i.name)).toEqual(NPC_WARRIOR_WEAPONS.map((w) => w.name))
       expect(items.find((i) => i.name === 'Long Sword')).toMatchObject({ level: 10, stat: 27, mult: expect.any(Number), attackMs: expect.any(Number) })
       expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8 })
       expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5 })
@@ -689,7 +691,8 @@ describe('equipment voor een Warrior', () => {
       expect(skullcap).toBeDefined()
       expect(WORN_WARRIOR_ARMOR.find((a) => a.name === 'Brown Skullcap')).toBe(skullcap)
       // Elk gedeeld id vindt zijn rij: een gewijzigde bron-URL laat een item anders stil uit de Warrior-lijst vallen.
-      expect(COMMON_WORN_ARMOR).toHaveLength(46)
+      // 45: de White Bandana (719) is sinds #55 een NPC-item, ook in NPC_WARRIOR_ARMOR.
+      expect(COMMON_WORN_ARMOR).toHaveLength(45)
       for (const a of COMMON_WORN_ARMOR) expect(WORN_ARMOR).toContain(a)
     })
 

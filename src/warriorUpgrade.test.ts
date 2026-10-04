@@ -223,6 +223,9 @@ describe('Warrior-armor: de winkel', () => {
   })
 
   it('geeft op lv 10 alleen de hat van lv 10 (Bronze Koif) en nog geen shoes (die beginnen op lv 15)', () => {
+    // De White Bandana (#55, geen jobregel, geen eis) is op lv 10 ook draagbaar, maar de Koif geeft voor dezelfde
+    // 1.200 meso 22 WDEF tegen 15, dus de Koif wint de hat.
+    expect(WARRIOR_ARMOR.find((a) => a.name === 'White Bandana')).toMatchObject({ level: 10, wdef: 15, luk: 0, dex: 0, price: 1_200 })
     expect(names(advice(strong({ level: 10 })))).toEqual(['Bronze Koif'])
   })
 
