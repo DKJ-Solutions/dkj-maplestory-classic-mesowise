@@ -112,6 +112,8 @@ export interface CatalogItem {
   attackMs?: number
   /** Alleen een Warrior-wapen: de verwachte weapon multiplier van een basisaanval, zodat die mee verandert. */
   mult?: number
+  /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
+  mdef?: number
 }
 
 /** Hoeveel zoekresultaten het scherm toont. */
@@ -146,7 +148,7 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
   const shop = SHOP[job]
   if (!shop) return []
   const items: CatalogItem[] = isArmorSlot(slot)
-    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
+    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef, mdef: a.mdef ?? 0 }))
     : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
         name: c.name,
         level: c.level,
@@ -207,6 +209,29 @@ export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
     if (w !== undefined) out[slot] = w
   }
   return out
+}
+
+/** De MDEF van wat je in één armorslot draagt; undefined = onbekend: nog niet ingevuld, of een eigen item (daarvan vraagt de app alleen de WDEF). */
+function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
+  if (entry.pick === NONE) return 0
+  if (entry.pick === UNKNOWN || entry.pick === OTHER) return undefined
+  return anyItem(slot, entry.pick)?.mdef
+}
+
+/**
+ * De Magic Def uit je equipment (#91): de MDEF van je hat, je body (een overall, of top en bottom samen) en je shoes.
+ * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Null zolang van één van die slots de MDEF onbekend is:
+ * een som met een gat erin zou een te laag getal tonen.
+ */
+export function wornMdef(eq: Equipment): number | null {
+  const body: readonly ArmorSlot[] = isEmptyEntry(eq.overall) ? ['top', 'bottom'] : ['overall']
+  let sum = 0
+  for (const slot of ['hat', ...body, 'shoes'] as const) {
+    const m = slotMdef(slot, eq[slot])
+    if (m === undefined) return null
+    sum += m
+  }
+  return sum
 }
 
 /** De naam van wat je in dit slot draagt, voor een samenvatting; null als het slot nog niet is ingevuld. */

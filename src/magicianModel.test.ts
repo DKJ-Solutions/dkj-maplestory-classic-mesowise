@@ -29,6 +29,7 @@ import {
   loadEquipment,
   slotsFor,
   statName,
+  wornMdef,
   wornStat,
   type EquipEntry,
 } from './equipment'
@@ -640,9 +641,15 @@ describe('Magician: equipment', () => {
       expect(names, slot).toEqual([...NPC_MAGICIAN_ARMOR, ...WORN_MAGICIAN_ARMOR].filter((a) => a.slot === slot).map((a) => a.name))
       expect(names.length, slot).toBeGreaterThan(0)
     }
-    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12 })
+    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
     // Doros Robe / Doroness Robe (#76) is zijn eigen overall; de Sauna Robe heeft geen jobregel en geldt voor elke klas.
     expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
+  })
+
+  it('telt de MDEF van de Magician-armor op voor de Magic Def (#91): Wizardry Hat 14, Doros Robe 49, Wind Shoes 9', () => {
+    const pick = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
+    const eq = { ...equipmentForJob(loadEquipment(undefined, 'magician'), 'magician'), hat: pick('Wizardry Hat'), overall: pick('Doros Robe / Doroness Robe'), shoes: pick('Wind Shoes') }
+    expect(wornMdef(eq)).toBe(14 + 49 + 9)
   })
 
   it('heeft geen dubbele namen in een lijst, geen wapennaam die ook bij de Thief of Warrior staat, en dezelfde stats bij een gedeelde armornaam', () => {

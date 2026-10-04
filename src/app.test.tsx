@@ -487,6 +487,22 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
   })
 
+  it('toont bij Total stats de Magic Def uit je equipment, alleen om te lezen; zolang een slot open is vul je hem zelf in (#91)', () => {
+    openHomeEquipment()
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    const h = openStat('Magic Def')
+    h.type('5')
+    h.save()
+    expect(statShown('Magic Def')).toBe('5')
+    pick(cards()[0], 'Hat', 'Bronze Pride')
+    pick(cards()[0], 'Top', 'Red Pao')
+    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
+    expect(statShown('Magic Def')).toBe('5')
+    pick(cards()[0], 'Shoes', 'Red Enamel Boots')
+    expect(statShown('Magic Def')).toBe('18')
+    expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
+  })
+
   it('toont het ammo-slot als optioneel: leeg blijft het advies gewoon rekenen', () => {
     openHomeEquipment()
     const row = rowOf(cards()[0], 'Ammo')
