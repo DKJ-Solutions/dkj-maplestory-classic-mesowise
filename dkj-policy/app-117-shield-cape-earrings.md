@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment card.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `ArmorSlot` gains `shield`, `cape` and `earrings`; the equipment card shows them as optional slots
+- [x] Shield only for the Warrior and the Magician (claws, bows and crossbows take both hands)
+- [x] No catalog for the new slots (no sourced item data yet): you fill them as a custom item with its DEF
 
 ### TEST
 
+- [x] Tests for the slots per job, the empty catalog, the WDEF shift, Magic Def and storage; `npm run lint` and Vitest green (1160)
+- [ ] Dave looks at the preview before the merge (visible result)
+
 ### DEPLOY: app/117-shield-cape-earrings
 
-**Score:**
+The equipment card has three new optional slots: Shield (Warrior and Magician only), Cape and Earrings. What you
+wear there counts toward your WDEF like the other armor. The app has no items for them yet, so you type the name and
+fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, because a custom item carries no MDEF.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+You can now describe your full gear; a shield, cape or earrings with DEF no longer goes missing from the card.
+
+**Score:** 3
 
 #### Pull Request
 

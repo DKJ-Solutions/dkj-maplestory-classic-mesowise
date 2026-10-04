@@ -813,7 +813,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         spellcheck={false}
         enterKeyHint="done"
         maxLength={MAX_EQUIP_NAME}
-        placeholder={wornName(entry) ?? (isOptionalSlot(slot) ? 'Optioneel: zoek je ammo' : 'Zoek wat je draagt')}
+        placeholder={wornName(entry) ?? (isOptionalSlot(slot) ? `Optioneel: zoek je ${slotLabel(slot).toLowerCase()}` : 'Zoek wat je draagt')}
         value={text ?? wornName(entry) ?? ''}
         onFocus={() => {
           setText('')

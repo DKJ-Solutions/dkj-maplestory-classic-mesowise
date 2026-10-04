@@ -60,9 +60,10 @@ export interface KnownSpot {
 
 /**
  * Het deel van je lichaam waar een stuk armor hoort. Een overall (issue #50) is één stuk voor top en bottom
- * samen: wie er een draagt, heeft in top en bottom niets. Handschoenen en schilden zitten er niet in.
+ * samen: wie er een draagt, heeft in top en bottom niets. Shield, cape en earrings (issue #117) vul je alleen als eigen
+ * item: de app heeft er nog geen items met een bron voor. Handschoenen zitten er niet in.
  */
-export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'overall' | 'shoes'
+export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'overall' | 'shoes' | 'shield' | 'cape' | 'earrings'
 
 /** Het geslacht van een karakter; sommige armor is alleen voor een van beide. */
 export type Gender = 'male' | 'female'
