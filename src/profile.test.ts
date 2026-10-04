@@ -124,7 +124,7 @@ describe('profileFieldsFor', () => {
   it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
     const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
     expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['magician', 'bowman'] as const) {
+    for (const j of ['bowman'] as const) {
       const keys = profileFieldsFor(j).map((f) => f.key)
       expect(profileFieldsFor(j), j).toEqual(expected)
       for (const k of hidden) expect(keys, j).not.toContain(k)

@@ -8,6 +8,7 @@ import {
   MAGIC_ARMOR_LEVELS,
   MAGIC_ARMOR_SOURCE,
   MAGIC_CLAW_HITS,
+  MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
   MAGIC_CLAW_LEVELS,
   MAGIC_CLAW_SOURCE,
   MAGIC_CLAW_TARGETS,
@@ -482,5 +483,11 @@ describe('de bronnen', () => {
       expect(s.url).toMatch(/^https:\/\/meowdb\.com\/msclassic\//)
       expect(s.retrieved).toBe('2026-10-04')
     }
+  })
+})
+
+describe('Magic Claw vraagt Energy Bolt', () => {
+  it('op level 1', () => {
+    expect(MAGIC_CLAW_REQUIRES_ENERGY_BOLT).toBe(1)
   })
 })

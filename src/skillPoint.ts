@@ -1,11 +1,12 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes.
+// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes; de Magician (issue #43) ook: Energy Bolt en Magic Claw.
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { ENERGY_BOLT_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import type { Job } from './job'
@@ -14,7 +15,7 @@ import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes'>
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'energyBolt' | 'magicClaw'>
 
 interface Skill {
   id: SkillId
@@ -23,6 +24,8 @@ interface Skill {
   level: (p: Profile) => number
   /** Het profiel met één punt erbij in deze skill. */
   plusOne: (p: Profile) => Profile
+  /** Of je de skill nu kunt leren (een skill die een ander skill-level vraagt); zonder dit altijd. */
+  learnable?: (p: Profile) => boolean
 }
 
 /** De skills van de 1e job die het model kan doorrekenen. */
@@ -79,8 +82,30 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
   },
 ]
 
+/**
+ * De skills van de 1e job van een Magician die het model kan doorrekenen: de twee spreuken. Elk punt verandert de schade (en de
+ * spell mastery, de MP per cast) van die spreuk; het model kiest per monster de spreuk met de meeste EXP per meso (zie suggest.ts). Magic Claw vraagt Energy Bolt 1.
+ */
+export const MAGICIAN_MODELLED: readonly Skill[] = [
+  {
+    id: 'energyBolt',
+    name: 'Energy Bolt',
+    max: ENERGY_BOLT_LEVELS.length,
+    level: (p) => p.energyBolt,
+    plusOne: (p) => ({ ...p, energyBolt: p.energyBolt + 1 }),
+  },
+  {
+    id: 'magicClaw',
+    name: 'Magic Claw',
+    max: MAGIC_CLAW_LEVELS.length,
+    level: (p) => p.magicClaw,
+    plusOne: (p) => ({ ...p, magicClaw: p.magicClaw + 1 }),
+    learnable: (p) => p.magicClaw > 0 || p.energyBolt >= MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+  },
+]
+
 /** De skills die het model voor deze job kan doorrekenen. */
-export const skillsOf = (job: Job): readonly Skill[] => (job === 'warrior' ? WARRIOR_MODELLED : SKILLS)
+export const skillsOf = (job: Job): readonly Skill[] => (job === 'warrior' ? WARRIOR_MODELLED : job === 'magician' ? MAGICIAN_MODELLED : SKILLS)
 
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
 export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
@@ -95,8 +120,15 @@ export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job 
  */
 export const WARRIOR_NOT_MODELLED: readonly string[] = ['Improved HP Recovery', 'Max HP Increase', 'Iron Body', 'Slash Blast']
 
+/**
+ * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies en
+ * Magic Armor geeft een buff met WDEF voor een tijd: het profiel kent geen buffs. Improved MP Recovery en Max MP Increase werken op
+ * MP-herstel en Max MP, en het profiel kent geen Max MP (en het herstel per tijd hangt aan hoe lang je blijft).
+ */
+export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Magic Armor', 'Improved MP Recovery', 'Max MP Increase']
+
 /** De skills van deze job die het model niet doorrekent. */
-export const notModelled = (job: Job): readonly string[] => (job === 'warrior' ? WARRIOR_NOT_MODELLED : NOT_MODELLED)
+export const notModelled = (job: Job): readonly string[] => (job === 'warrior' ? WARRIOR_NOT_MODELLED : job === 'magician' ? MAGICIAN_NOT_MODELLED : NOT_MODELLED)
 
 /** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
 export interface SkillLevel extends SkillInfo {
@@ -166,7 +198,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
   const base = mesoCost(drafts, profile, a)
   if (typeof base !== 'number') return null
   const choices = skillsOf(profile.job)
-    .filter((s) => s.level(profile) < s.max)
+    .filter((s) => s.level(profile) < s.max && (s.learnable?.(profile) ?? true))
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
       const known = typeof meso === 'number'

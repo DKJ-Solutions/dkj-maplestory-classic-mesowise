@@ -1,10 +1,11 @@
-// Het karakterprofiel (Thief en Warrior): de invulvelden, het omzetten naar getallen en het
+// Het karakterprofiel (Thief, Warrior en Magician): de invulvelden, het omzetten naar getallen en het
 // bewaren in localStorage. Alles uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op de
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
 import type { Character } from './calc/mobModel'
-import { isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { SPELL_CAST_MS } from './data/magician'
+import { isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
-import { STAT_NAME } from './equipment'
+import { STAT_NAME, weaponStatName } from './equipment'
 import type { Job } from './job'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
@@ -41,6 +42,12 @@ const STATS = [
  */
 const WEAPON_MULT_FIELD = { key: 'weaponMult', label: 'Weapon multiplier van je wapen', min: 1, max: 5, integer: false } as const
 
+/** INT, alleen voor een Magician: zijn hoofdstat voor spreuk-schade (en voor accuracy en wapen-eisen). */
+const INT_FIELD = { key: 'int', label: 'INT', min: 0, max: 999, integer: true } as const
+
+/** De M.ATT van het wapen van een Magician: hetzelfde invulveld als de ATT van een claw (`clawWatk`), met de naam die een Magician in het spel ziet. */
+const MAGICIAN_WEAPON_FIELD: ProfileField = { key: 'clawWatk', label: `${weaponStatName('magician')} van je wapen`, min: 0, max: 999, integer: true }
+
 /**
  * Je stars (issue #65): hun weapon attack en wat het herladen per ster kost. Geen kaart toont ze; de star die je bij
  * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi. Een Warrior gooit niets:
@@ -58,8 +65,9 @@ const skillFields = (skills: readonly SkillInfo[]): readonly ProfileField[] =>
   skills.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
 const SKILL_FIELDS = skillFields(THIEF_SKILLS)
 const WARRIOR_SKILL_FIELDS = skillFields(WARRIOR_SKILLS)
+const MAGICIAN_SKILL_FIELDS = skillFields(MAGICIAN_SKILLS)
 
-export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | typeof WEAPON_MULT_FIELD.key | typeof INT_FIELD.key | SkillKey
 
 /** De stats van je karakter; je skills hebben hun eigen kaart. */
 export const STAT_FIELDS: readonly ProfileField[] = STATS
@@ -78,8 +86,23 @@ const WARRIOR_FIELDS: readonly ProfileField[] = [
   ...WARRIOR_SKILL_FIELDS,
 ]
 
+/**
+ * De getalvelden van een Magician: de stats die voor zijn berekening tellen (INT in plaats van STR; geen tijd per
+ * aanval, want een spreuk duurt vast 810 ms; geen weapon multiplier en geen stars), de Beginner-skills en die van zijn 1e job.
+ */
+const stats = (...keys: (typeof STATS)[number]['key'][]): ProfileField[] => keys.map((k) => STATS.find((f) => f.key === k)!)
+const MAGICIAN_FIELDS: readonly ProfileField[] = [
+  ...stats('level', 'hp'),
+  INT_FIELD,
+  ...stats('dex', 'luk'),
+  MAGICIAN_WEAPON_FIELD,
+  ...stats('accuracy', 'avoid', 'wdef'),
+  ...skillFields(THIEF_SKILLS.filter((s) => s.job === 'Beginner')),
+  ...MAGICIAN_SKILL_FIELDS,
+]
+
 /** Elk veld dat een profiel bewaart, van elke job. */
-export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...WARRIOR_SKILL_FIELDS]
+export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, INT_FIELD, ...WARRIOR_SKILL_FIELDS, ...MAGICIAN_SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /** Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent). */
@@ -87,7 +110,7 @@ export type Profile = Record<ProfileKey, number> & { job: Job }
 
 /**
  * De velden die een job invult: elke job heeft de skills van zijn eigen 1e job, de Beginner-skills heeft elke job.
- * Een Warrior heeft ook de weapon multiplier. De getypte waarden blijven in het concept staan, zodat een
+ * Een Warrior heeft ook de weapon multiplier, een Magician INT en geen STR. De getypte waarden blijven in het concept staan, zodat een
  * terugwissel niets kwijt is; parseProfile valideert een veld dat deze job niet invult niet en vult het met de
  * standaardwaarde. Een job zonder eigen skills (nog niet doorgerekend) ziet alleen de Beginner-skills.
  */
@@ -96,10 +119,12 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
     ? PROFILE_FIELDS
     : job === 'warrior'
       ? WARRIOR_FIELDS
-      : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
+      : job === 'magician'
+        ? MAGICIAN_FIELDS
+        : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
 
 /** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
-export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
+export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.some((a) => a.key === f.key))
 
 /** Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. */
 export const DEFAULT_PROFILE: ProfileDraft = {
@@ -131,6 +156,13 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   powerStrike: '0',
   slashBlast: '0',
   preciseStrikes: '0',
+  int: '4',
+  magicGuard: '0',
+  magicArmor: '0',
+  improvedMpRecovery: '0',
+  maxMpIncrease: '0',
+  energyBolt: '1',
+  magicClaw: '0',
 }
 
 /**
@@ -141,10 +173,12 @@ export const DEFAULT_PROFILE: ProfileDraft = {
 export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Profile } | { error: string; key: ProfileKey } {
   const out = { job } as Profile
   const shown = profileFieldsFor(job)
-  for (const f of DRAFT_FIELDS) {
-    if (!shown.includes(f)) {
+  for (const draftField of DRAFT_FIELDS) {
+    // Het veld zoals deze job het toont: een Magician noemt zijn wapenveld anders (M.ATT).
+    const f = shown.find((s) => s.key === draftField.key)
+    if (!f) {
       // Een veld dat deze job niet invult, telt niet mee: de standaardwaarde, en het concept zelf blijft zoals getypt.
-      out[f.key] = Number(DEFAULT_PROFILE[f.key])
+      out[draftField.key] = Number(DEFAULT_PROFILE[draftField.key])
       continue
     }
     const text = d[f.key].trim()
@@ -158,19 +192,25 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
   return { profile: out }
 }
 
-/** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw; een Warrior gooit niets. */
+/**
+ * Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw; een Warrior
+ * gooit niets. Een Magician heeft in `clawWatk` de M.ATT van zijn wapen (`matk`, geen weapon attack) en een vaste cast van 810 ms.
+ */
 export function toCharacter(p: Profile): Character {
+  const magician = p.job === 'magician'
   return {
     level: p.level,
     hp: p.hp,
     str: p.str,
     dex: p.dex,
+    int: p.int,
     luk: p.luk,
-    watk: p.job === 'warrior' ? p.clawWatk : p.clawWatk + p.starWatk,
+    watk: magician ? 0 : p.job === 'warrior' ? p.clawWatk : p.clawWatk + p.starWatk,
+    matk: magician ? p.clawWatk : 0,
     accuracy: p.accuracy,
     avoid: p.avoid,
     wdef: p.wdef,
-    attackMs: p.attackMs,
+    attackMs: magician ? SPELL_CAST_MS.normal : p.attackMs,
   }
 }
 
@@ -206,5 +246,8 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
   }
 }
 
-/** De hoofdstat voor schade en wapen-eisen: STR voor een Warrior, LUK voor een Thief. */
-export const mainStatOf = (p: Profile): number => (p.job === 'warrior' ? p.str : p.luk)
+/** De hoofdstat voor schade en wapen-eisen: STR voor een Warrior, INT voor een Magician, LUK voor een Thief. */
+export const mainStatOf = (p: Profile): number => (p.job === 'warrior' ? p.str : p.job === 'magician' ? p.int : p.luk)
+
+/** De tweede stat waar wapens en armor een eis in stellen: DEX voor een Thief of Warrior, LUK voor een Magician. */
+export const secondaryStatOf = (p: Profile): number => (p.job === 'magician' ? p.luk : p.dex)

@@ -155,6 +155,8 @@ export const MAGIC_CLAW_LEVELS: readonly SpellLevel[] = [
 ].map(([mp, damagePct], i) => ({ level: i + 1, mp, damagePct, mastery: MASTERY[i] }))
 export const MAGIC_CLAW_TARGETS = 1
 export const MAGIC_CLAW_HITS = 2
+/** Het Energy Bolt-level dat Magic Claw vraagt om te kunnen leren (de skillpagina: "Vraagt Energy Bolt 1"). */
+export const MAGIC_CLAW_REQUIRES_ENERGY_BOLT = 1
 
 /** De cast-animatie van een spreuk in ms, en met Spell Booster (de skillpagina's van de eerste job). */
 export const SPELL_CAST_MS = { normal: 810, withSpellBooster: 720 } as const
@@ -205,7 +207,7 @@ export const MAX_MP_INCREASE = {
  * MagicTotal = floor(totale INT / 2) + M.ATT van de uitrusting + scrolls + buffs.
  * MIN = S x MagicTotal x (1 + INT x m / 100), MAX = S x MagicTotal x (1 + INT / 100),
  * met m = (spell mastery / 10 + 0,1) x 0,8. W.ATT zit niet in de spreuk-formule. Verdediging verlaagt de schade
- * met Raw x 100 / (DEF + 100), voor fysiek en magisch; een monster heeft geen aparte MDEF in de data.
+ * tot Raw x 100 / (DEF + 100) (een factor, geen aftrek), voor fysiek en magisch; een monster heeft geen aparte MDEF in de data.
  * Spreuken kunnen missen: dezelfde hit-check als fysieke aanvallen.
  */
 export const MAGIC_DAMAGE = {

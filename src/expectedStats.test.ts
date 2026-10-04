@@ -66,7 +66,7 @@ describe('expectedStat', () => {
   })
 
   it('heeft geen verwachting voor een job zonder formules', () => {
-    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'magician')).toBeUndefined()
+    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'bowman')).toBeUndefined()
   })
 
   it('heeft geen verwachting voor een stat zonder formule', () => {

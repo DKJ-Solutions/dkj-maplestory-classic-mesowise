@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isSkillKey, SKILL_KEYS, skillInfo, THIEF_SKILLS } from './skills'
+import { ENERGY_BOLT_LEVELS, ENERGY_BOLT_SOURCE, MAGIC_CLAW_LEVELS, MAGIC_CLAW_SOURCE } from './magician'
+import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, SKILL_KEYS, skillInfo, THIEF_SKILLS } from './skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './thief'
 
 describe('THIEF_SKILLS', () => {
@@ -43,5 +44,36 @@ describe('isSkillKey', () => {
   it('herkent een skill en geen stat', () => {
     expect(isSkillKey('darkSight')).toBe(true)
     expect(isSkillKey('luk')).toBe(false)
+  })
+})
+
+describe('MAGICIAN_SKILLS', () => {
+  it('heeft de zes skills van de 1e job van een Magician, met de maxima van de skillpagina\'s', () => {
+    const max = Object.fromEntries(MAGICIAN_SKILLS.map((s) => [s.name, s.max]))
+    expect(max).toEqual({
+      'Magic Guard': 15,
+      'Magic Armor': 20,
+      'Improved MP Recovery': 15,
+      'Max MP Increase': 15,
+      'Energy Bolt': 20,
+      'Magic Claw': 20,
+    })
+    expect(MAGICIAN_SKILLS.every((s) => s.job === 'Magician')).toBe(true)
+  })
+
+  it('heeft bij elke skill een MeowDB-pagina en een ophaaldatum, en geen sleutel die al bij een andere job staat', () => {
+    for (const s of MAGICIAN_SKILLS) {
+      expect(s.source.url).toMatch(/^https:\/\/meowdb\.com\/msclassic\/skills\/magician\/[a-z-]+$/)
+      expect(s.source.retrieved).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+    const keys = ALL_SKILLS.map((s) => s.key)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('zegt over Energy Bolt en Magic Claw hetzelfde als de gegevens waar het model mee rekent', () => {
+    expect(skillInfo('energyBolt').max).toBe(ENERGY_BOLT_LEVELS.length)
+    expect(skillInfo('magicClaw').max).toBe(MAGIC_CLAW_LEVELS.length)
+    expect(skillInfo('energyBolt').source.url).toBe(ENERGY_BOLT_SOURCE.url)
+    expect(skillInfo('magicClaw').source.url).toBe(MAGIC_CLAW_SOURCE.url)
   })
 })

@@ -2,18 +2,20 @@
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
 // Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
-// zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
+// zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf. Een Magician idem:
+// level +1, zijn Max HP (data/magician.ts) en de accuracy die het nieuwe level geeft; zijn AP (INT voor schade en accuracy) verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
+import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
 import { expPerMesoOf } from './mesoCostAt'
 import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
-import { luckySevenAt, powerStrikeAt } from './suggest'
+import { energyBoltAt, luckySevenAt, magicClawAt, powerStrikeAt } from './suggest'
 
 const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
 
@@ -49,7 +51,16 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const hp = wholeOf(draft.hp)
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
+  const int = wholeOf(draft.int)
   const accuracy = wholeOf(draft.accuracy)
+  if (job === 'magician') {
+    // De AP laat de app aan de speler (INT voor schade en accuracy, LUK voor wapen-eisen); alleen het level telt in de accuracy.
+    if (hp !== null) next.hp = String(hp + magicianHpPerLevelFrom(level))
+    if (int !== null && luk !== null && accuracy !== null) {
+      next.accuracy = String(accuracy + magicianAccuracy(int, level + 1, luk) - magicianAccuracy(int, level, luk))
+    }
+    return next
+  }
   if (job === 'warrior') {
     // De AP laat de app aan de speler (STR voor schade, DEX voor accuracy en wapen-eisen); alleen het level telt in de accuracy.
     if (hp !== null) next.hp = String(hp + warriorHpPerLevelFrom(level))
@@ -108,8 +119,15 @@ export const CHECK_FIELDS = [
 /** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest. */
 const WARRIOR_AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid']
 
+/** Bij een Magician staat INT (zijn hoofdstat) vóór LUK; zijn M.ATT en WDEF volgen uit de equipment; de overige velden staan erachter. */
+const MAGICIAN_AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'int', 'luk', 'dex', 'accuracy', 'avoid']
+
 /** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */
 export const checkFieldsFor = (job: Job) => {
+  if (job === 'magician') {
+    const fields = statFieldsFor(job)
+    return [...MAGICIAN_AFTER_LEVEL_UP.map((k) => fields.find((f) => f.key === k)!), ...fields.filter((f) => !MAGICIAN_AFTER_LEVEL_UP.includes(f.key))]
+  }
   if (job === 'warrior') {
     const first = WARRIOR_AFTER_LEVEL_UP.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
     return [...first, ...statFieldsFor(job).filter((f) => !WARRIOR_AFTER_LEVEL_UP.includes(f.key))]
@@ -138,6 +156,12 @@ export const luckySevenMp = (level: number): number => luckySevenAt(level)?.mp ?
 
 /** De MP per aanval van Power Strike op dit skill-level (0 als hij nog niet geleerd is). */
 export const powerStrikeMp = (level: number): number => powerStrikeAt(level)?.mp ?? 0
+
+/** De MP per cast van Energy Bolt op dit skill-level (0 als hij nog niet geleerd is). */
+export const energyBoltMp = (level: number): number => energyBoltAt(level)?.mp ?? 0
+
+/** De MP per cast van Magic Claw op dit skill-level (0 als hij nog niet geleerd is). */
+export const magicClawMp = (level: number): number => magicClawAt(level)?.mp ?? 0
 
 /** De beste plek, zoals de speler hem zag: genoeg om hem later terug te vinden. */
 export interface BestSpot {

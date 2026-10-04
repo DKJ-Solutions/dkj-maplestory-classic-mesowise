@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, meleeAttack, spellAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -12,8 +12,10 @@ const char = (over: Partial<Character> = {}): Character => ({
   hp: 1000,
   str: 4,
   dex: 25,
+  int: 4,
   luk: 30,
   watk: 25,
+  matk: 0,
   accuracy: 100,
   avoid: 0,
   wdef: 0,
@@ -237,5 +239,139 @@ describe('meleeAttack', () => {
     // STR telt bij de Thief mee als secundaire stat, LUK als hoofdstat.
     expect(characterAttack(char({ str: 5 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25, 9)
     expect(characterAttack(char({ luk: 31 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25 * 2.5, 9)
+  })
+})
+
+describe('spellAttack', () => {
+  // Met de hand uit de magic-formule van de damage-gids (https://meowdb.com/msclassic/guides/explaining-the-damage-formula):
+  // MagicTotal = floor(INT / 2) + M.ATT; MAX = S · MagicTotal · (1 + INT / 100); MIN = S · MagicTotal · (1 + INT · m / 100),
+  // m = (mastery / 10 + 0,1) · 0,8. Een Magician met INT 100 en een Mithril Wand (M.ATT 55): MagicTotal = 50 + 55 = 105.
+  const mage = { int: 100, matk: 55 }
+  const boltLv20 = { mp: 16, damagePct: 130, mastery: 10 }
+
+  it('rekent Energy Bolt lv 20 met de hand: max 1,3 · 105 · 2 = 273 en min 1,3 · 105 · (1 + 100 · 0,88 / 100) = 256,62', () => {
+    const a = spellAttack(mage, boltLv20, 1)
+    expect(a.max).toBeCloseTo(273, 9)
+    expect(a.min).toBeCloseTo(256.62, 9)
+  })
+
+  it('geeft bij spell mastery 1 (m = 0,16) een lagere min: 1 · 105 · (1 + 100 · 0,16 / 100) = 121,8', () => {
+    const a = spellAttack(mage, { mp: 8, damagePct: 100, mastery: 1 }, 1)
+    expect(a.min).toBeCloseTo(121.8, 9)
+    expect(a.max).toBeCloseTo(210, 9)
+  })
+
+  it('rondt de halve INT naar beneden af voor MagicTotal', () => {
+    // INT 101: floor(50,5) = 50, dus MagicTotal blijft 105; alleen de (1 + INT/100) verandert.
+    expect(spellAttack({ int: 101, matk: 55 }, { mp: 1, damagePct: 100, mastery: 0 }, 1).max).toBeCloseTo(105 * 2.01, 9)
+  })
+
+  it('zet de hits per cast in `stars`, de MP van de spreuk in mpPerAttack en markeert dat WDEF niet telt', () => {
+    expect(spellAttack(mage, boltLv20, 1)).toMatchObject({ stars: 1, mpPerAttack: 16, magic: true })
+    expect(spellAttack(mage, { mp: 20, damagePct: 65, mastery: 10 }, 2)).toMatchObject({ stars: 2, mpPerAttack: 20 })
+  })
+
+  it('kijkt niet naar W.ATT, STR, DEX of LUK', () => {
+    const base = spellAttack(mage, boltLv20, 1)
+    expect(spellAttack({ ...mage, watk: 999, str: 999, dex: 999, luk: 999 } as Parameters<typeof spellAttack>[0], boltLv20, 1)).toEqual(base)
+  })
+
+  it('schaalt min en max allebei met het schadepercentage', () => {
+    const a = spellAttack(mage, { mp: 1, damagePct: 100, mastery: 10 }, 1)
+    const b = spellAttack(mage, { mp: 1, damagePct: 200, mastery: 10 }, 1)
+    expect(b.max).toBeCloseTo(2 * a.max, 9)
+    expect(b.min).toBeCloseTo(2 * a.min, 9)
+  })
+
+  it('rekent Magic Claw lv 20 en lv 1 met de hand: schade per klap, niet per cast', () => {
+    // Lv 20: S = 0,65, mastery 10 (m = 0,88): max 0,65 · 105 · 2 = 136,5; min 0,65 · 105 · 1,88 = 128,31.
+    const lv20 = spellAttack(mage, { mp: 20, damagePct: 65, mastery: 10 }, 2)
+    expect(lv20.max).toBeCloseTo(136.5, 9)
+    expect(lv20.min).toBeCloseTo(128.31, 9)
+    // Lv 1: S = 0,45, mastery 1 (m = 0,16): max 0,45 · 105 · 2 = 94,5; min 0,45 · 105 · 1,16 = 54,81.
+    const lv1 = spellAttack(mage, { mp: 10, damagePct: 45, mastery: 1 }, 2)
+    expect(lv1.max).toBeCloseTo(94.5, 9)
+    expect(lv1.min).toBeCloseTo(54.81, 9)
+    // Het aantal klappen verandert min en max niet, alleen stars.
+    expect(spellAttack(mage, { mp: 20, damagePct: 65, mastery: 10 }, 1)).toMatchObject({ min: lv20.min, max: lv20.max, stars: 1 })
+  })
+
+  it('rekent met een staff (M.ATT 45) en INT 50: MagicTotal = 25 + 45 = 70, Energy Bolt lv 1 max 0,9 · 70 · 1,5 = 94,5 en min 0,9 · 70 · (1 + 50 · 0,16 / 100) = 68,04', () => {
+    const a = spellAttack({ int: 50, matk: 45 }, { mp: 8, damagePct: 90, mastery: 1 }, 1)
+    expect(a.max).toBeCloseTo(94.5, 9)
+    expect(a.min).toBeCloseTo(68.04, 9)
+  })
+
+  it('rekent mastery 0 met m = 0,08 (de basis-mastery): 1 · 105 · (1 + 100 · 0,08 / 100) = 113,4', () => {
+    expect(spellAttack(mage, { mp: 1, damagePct: 100, mastery: 0 }, 1).min).toBeCloseTo(113.4, 9)
+  })
+
+  it('INT-grenzen: floor(INT / 2) springt pas op even INT (99 en 98 geven 49, 100 geeft 50), en de (1 + INT / 100)-factor loopt wel door', () => {
+    const s = { mp: 1, damagePct: 100, mastery: 10 }
+    expect(spellAttack({ int: 98, matk: 55 }, s, 1).max).toBeCloseTo(104 * 1.98, 9)
+    expect(spellAttack({ int: 99, matk: 55 }, s, 1).max).toBeCloseTo(104 * 1.99, 9)
+    expect(spellAttack({ int: 100, matk: 55 }, s, 1).max).toBeCloseTo(105 * 2, 9)
+  })
+
+  it('INT 0: geen INT-bonus, alleen de M.ATT van het wapen (min gelijk aan max); INT 1 zonder wapen geeft 0 schade', () => {
+    const s = { mp: 8, damagePct: 130, mastery: 10 }
+    const none = spellAttack({ int: 0, matk: 55 }, s, 1)
+    expect(none.max).toBeCloseTo(1.3 * 55, 9)
+    expect(none.min).toBeCloseTo(1.3 * 55, 9)
+    expect(spellAttack({ int: 1, matk: 0 }, s, 1)).toMatchObject({ min: 0, max: 0 })
+  })
+
+  it('geeft min nooit boven max, voor elke mastery (0 tot 10), met en zonder INT', () => {
+    for (const int of [0, 1, 50, 100, 999]) {
+      for (let mastery = 0; mastery <= 10; mastery++) {
+        const a = spellAttack({ int, matk: 55 }, { mp: 1, damagePct: 100, mastery }, 1)
+        expect(a.min, `INT ${int} mastery ${mastery}`).toBeLessThanOrEqual(a.max)
+      }
+    }
+  })
+})
+
+describe('estimateMob met een spreuk', () => {
+  const attack = spellAttack({ int: 100, matk: 55 }, { mp: 16, damagePct: 130, mastery: 10 }, 1)
+
+  it('verlaagt een spreuk met 100 / (DEF + 100): DEF 100 halveert de schade (265 per cast, 1000 HP: 4 casts zonder DEF, 8 met)', () => {
+    // avg zonder DEF = (273 + 256,62) / 2 = 264,81, ceil(1000 / 264,81) = 4; met DEF 100: 132,405, ceil(7,55) = 8.
+    expect(estimateMob(char(), attack, mob({ wdef: 0, hp: 1000 })).attacksToKill).toBe(4)
+    expect(estimateMob(char(), attack, mob({ wdef: 100, hp: 1000 })).attacksToKill).toBe(8)
+  })
+
+  it('laat een fysieke aanval zijn eigen aftrek houden: dezelfde min en max zonder `magic` verliezen WDEF · 0,5 en 0,6', () => {
+    const physical = { ...attack, magic: undefined }
+    const e = estimateMob(char(), physical, mob({ wdef: 100, hp: 1000 }))
+    // avg = ((273 - 50) + (256,62 - 60)) / 2 = 209,81 → ceil(1000 / 209,81) = 5.
+    expect(e.attacksToKill).toBe(5)
+  })
+
+  it('gebruikt dezelfde raakkans als een fysieke aanval, en telt de MP per kill', () => {
+    const m = mob({ hp: 1000, avoid: 20, level: 10 })
+    const c = char({ accuracy: 60 })
+    const e = estimateMob(c, attack, m)
+    expect(e.hitChance).toBe(hitChance(60, 20, 0))
+    expect(e.mpPerKill).toBe(e.attacksToKill * 16)
+    expect(e.starsPerKill).toBe(e.attacksToKill)
+  })
+
+  it('rekent een hoger monster met de hand: level 30 tegen level 35 (-5% schade), raakkans 50 / (2,19 · 40) en 11 casts voor 1000 HP met WDEF 50', () => {
+    // Eerst -5%, dan x 100 / 150: max 273 · 0,95 / 1,5 = 172,9; min 256,62 · 0,95 / 1,5 = 162,526; avg 167,713; raakkans 50 / 87,6 = 0,5708;
+    // verwacht 95,72 per cast; ceil(1000 / 95,72) = 11.
+    const c = char({ level: 30, accuracy: 50, attackMs: 810 })
+    const m = mob({ level: 35, hp: 1000, wdef: 50, avoid: 40 })
+    const e = estimateMob(c, attack, m)
+    expect(e.hitChance).toBeCloseTo(50 / (2.19 * 40), 9)
+    expect(e.attacksToKill).toBe(11)
+    expect(e.mpPerKill).toBe(11 * 16)
+    expect(e.killsPerHour).toBeCloseTo(3600 / ((11 * 810) / 1000 / ASSUMPTIONS.timeEfficiency), 6)
+  })
+
+  it('rekent een cast van 810 ms: kills per uur = 3600 / (casts · 0,81 / efficiëntie)', () => {
+    const m = mob({ hp: 100 })
+    const e = estimateMob(char({ attackMs: 810, accuracy: 999 }), attack, m)
+    expect(e.attacksToKill).toBe(1)
+    expect(e.killsPerHour).toBeCloseTo(3600 / (0.81 / ASSUMPTIONS.timeEfficiency), 6)
   })
 })

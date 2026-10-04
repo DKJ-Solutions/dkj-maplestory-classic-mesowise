@@ -1,5 +1,7 @@
 // Loont een nieuwe claw nu? (Dave, 3 oktober 2026, issue #25) Per claw uit de NPC-winkel die je kunt dragen
 // en die meer weapon attack geeft: wat bespaart hij in mesos tot je volgende upgrade, min zijn prijs.
+// Voor een Magician (issue #43) is het een wand of staff uit zijn winkel (magicianGear.ts); zijn wapen geeft M.ATT in plaats van weapon
+// attack, en meer M.ATT is daar beter (de cast duurt altijd 810 ms).
 // Voor een Warrior (issue #42) is het een wapen uit zijn winkel (warriorGear.ts). Meer weapon attack zegt daar
 // niets: een zwaarder wapen kan trager zijn of een lagere multiplier hebben. Een wapen telt dus als beter
 // als het model er meer EXP per meso mee haalt dan met je huidige wapen, en de horizon loopt tot het volgende
@@ -15,7 +17,8 @@ import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { Claw } from './data/types'
 import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
-import { mainStatOf, type Profile } from './profile'
+import { mainStatOf, secondaryStatOf, type Profile } from './profile'
+import { MAGICIAN_WEAPONS } from './magicianGear'
 import type { SpotDraft } from './spotDraft'
 import { WARRIOR_WEAPONS } from './warriorGear'
 
@@ -37,7 +40,7 @@ export interface ClawChoice {
 /** Een claw die je level wel toestaat, maar waar je stats nog tekortschieten. */
 export interface UnwearableClaw {
   claw: Claw
-  /** Hoeveel hoofdstat (LUK voor een Thief, STR voor een Warrior) en DEX je tekortkomt (0 = genoeg). */
+  /** Hoeveel hoofdstat (LUK voor een Thief, STR voor een Warrior, INT voor een Magician) en tweede stat (DEX; LUK voor een Magician) je tekortkomt (0 = genoeg). */
   needLuk: number
   needDex: number
 }
@@ -73,7 +76,7 @@ const power = (c: Claw): number => (c.watk * (c.mult ?? 1)) / c.speed.attackMs
 const shopOf = (job: Profile['job']) =>
   job === 'warrior'
     ? { weapons: WARRIOR_WEAPONS, better: (c: Claw, than: Claw) => power(c) > power(than) }
-    : { weapons: NPC_CLAWS, better: (c: Claw, than: Claw) => c.watk > than.watk }
+    : { weapons: job === 'magician' ? MAGICIAN_WEAPONS : NPC_CLAWS, better: (c: Claw, than: Claw) => c.watk > than.watk }
 
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
 function horizon(profile: Profile, claw: Claw): { from: number; to: number; truncated: boolean } {
@@ -103,7 +106,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 
 /**
  * De winkelclaws die voor jou in aanmerking komen: je level volstaat, en ze zijn beter dan wat je nu hebt. Bij een
- * Thief is dat meer weapon attack; bij een Warrior meer EXP per meso volgens het model (zie de kop).
+ * Thief is dat meer weapon attack (bij een Magician meer M.ATT); bij een Warrior meer EXP per meso volgens het model (zie de kop).
  */
 function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly Claw[] {
   const inLevel = shopOf(profile.job).weapons.filter((c) => c.level <= profile.level)
@@ -117,7 +120,8 @@ export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const better = betterClaws(drafts, profile)
   const mainStat = mainStatOf(profile)
-  const needs = (c: Claw): UnwearableClaw => ({ claw: c, needLuk: Math.max(0, c.luk - mainStat), needDex: Math.max(0, c.dex - profile.dex) })
+  const secondary = secondaryStatOf(profile)
+  const needs = (c: Claw): UnwearableClaw => ({ claw: c, needLuk: Math.max(0, c.luk - mainStat), needDex: Math.max(0, c.dex - secondary) })
   const notWearable = better.map(needs).filter((u) => u.needLuk > 0 || u.needDex > 0)
   const wearable = better.filter((c) => !notWearable.some((u) => u.claw === c))
   const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS)

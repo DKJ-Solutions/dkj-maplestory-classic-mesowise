@@ -1,8 +1,9 @@
 // De waarde die een stat volgens de formules zou moeten hebben, zoals de equipment-kaart de stat uit de database
 // toont. Puur, zonder UI-import. Wijkt je spel af (een item met accuracy, een buff), dan corrigeer je het getal en
-// toont de kaart de verwachting doorgestreept ernaast. Voor een Thief en een Warrior; van andere jobs kent de app de
+// toont de kaart de verwachting doorgestreept ernaast. Voor een Thief, een Warrior en een Magician; van andere jobs kent de app de
 // formules nog niet. De weapon multiplier van een Warrior heeft geen verwachting: die komt uit het gekozen wapen, en
 // de kaart noemt hem per soort wapen (issue #77).
+import { magicianAccuracy } from './data/magician'
 import { baseAccuracy, baseAvoid, NIMBLE_BODY } from './data/thief'
 import { PRECISE_STRIKES_LEVELS, warriorAccuracy } from './data/warrior'
 import type { Job } from './job'
@@ -21,15 +22,22 @@ const preciseStrikesAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS
 /**
  * De verwachte waarde van een stat uit de rest van het profiel, of undefined als de app er geen formule voor heeft
  * of een benodigd veld geen geheel getal is. Accuracy is het totaal uit je statvenster: het stat-deel uit DEX, level
- * en LUK (Thief: thief.ts, Warrior: warrior.ts) plus de accuracy uit de passief van je job (Nimble Body of Precise
- * Strikes). Avoid: het stat-deel uit DEX en LUK, voor elke job hetzelfde, plus Nimble Body bij een Thief.
+ * en LUK (Thief: thief.ts, Warrior: warrior.ts) of uit INT, level en LUK (Magician: magician.ts) plus de accuracy uit de passief van je job
+ * (Nimble Body of Precise Strikes; de Magician heeft er in de 1e job geen). Avoid: het stat-deel uit DEX en LUK, voor elke job hetzelfde, plus Nimble Body bij een Thief.
  */
 export function expectedStat(key: ProfileKey, draft: ProfileDraft, job: Job): number | undefined {
-  if (job !== 'thief' && job !== 'warrior') return undefined
+  if (job !== 'thief' && job !== 'warrior' && job !== 'magician') return undefined
   const level = wholeOf(draft.level)
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
   if (level === null || dex === null || luk === null) return undefined
+  if (job === 'magician') {
+    const int = wholeOf(draft.int)
+    if (int === null) return undefined
+    if (key === 'accuracy') return magicianAccuracy(int, level, luk)
+    if (key === 'avoid') return baseAvoid(dex, luk)
+    return undefined
+  }
   if (job === 'warrior') {
     if (key === 'accuracy') return warriorAccuracy(dex, level, luk) + preciseStrikesAccuracy(wholeOf(draft.preciseStrikes) ?? 0)
     if (key === 'avoid') return baseAvoid(dex, luk)

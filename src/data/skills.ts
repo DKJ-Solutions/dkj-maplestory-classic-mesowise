@@ -4,6 +4,7 @@
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
 // als op de skillpagina's.
 import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
+import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_GUARD, MAX_MP_INCREASE } from './magician'
 import type { Source } from './types'
 
 const R = '2026-10-04'
@@ -28,11 +29,17 @@ export type SkillKey =
   | 'powerStrike'
   | 'slashBlast'
   | 'preciseStrikes'
+  | 'energyBolt'
+  | 'magicClaw'
+  | 'magicGuard'
+  | 'magicArmor'
+  | 'improvedMpRecovery'
+  | 'maxMpIncrease'
 
 export interface SkillInfo {
   key: SkillKey
   name: string
-  job: 'Beginner' | 'Thief' | 'Warrior'
+  job: 'Beginner' | 'Thief' | 'Warrior' | 'Magician'
   /** Het hoogste skill-level. */
   max: number
   source: Source
@@ -72,8 +79,21 @@ export const WARRIOR_SKILLS: readonly SkillInfo[] = [
   skill('preciseStrikes', 'Precise Strikes', 'Warrior', PRECISE_STRIKES_LEVELS.length, 'warrior/precise-strikes'),
 ]
 
+/**
+ * De zes skills van de 1e job van een Magician, in de volgorde van de skillpagina's. De maxima zijn het aantal
+ * levels in de gegevens van het model (data/magician.ts), dezelfde als op de skillpagina's.
+ */
+export const MAGICIAN_SKILLS: readonly SkillInfo[] = [
+  skill('magicGuard', 'Magic Guard', 'Magician', MAGIC_GUARD.mp.length, 'magician/magic-guard'),
+  skill('magicArmor', 'Magic Armor', 'Magician', MAGIC_ARMOR_LEVELS.length, 'magician/magic-armor'),
+  skill('improvedMpRecovery', 'Improved MP Recovery', 'Magician', IMPROVED_MP_RECOVERY.itemRecoveryPct.length, 'magician/improved-mp-recovery'),
+  skill('maxMpIncrease', 'Max MP Increase', 'Magician', MAX_MP_INCREASE.maxMpPct.length, 'magician/max-mp-increase'),
+  skill('energyBolt', 'Energy Bolt', 'Magician', ENERGY_BOLT_LEVELS.length, 'magician/energy-bolt'),
+  skill('magicClaw', 'Magic Claw', 'Magician', MAGIC_CLAW_LEVELS.length, 'magician/magic-claw'),
+]
+
 /** Alle skills van alle jobs die de app kent. */
-export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS]
+export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS, ...MAGICIAN_SKILLS]
 
 /** De sleutels van de Thief-skills (Beginner en 1e job). */
 export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)

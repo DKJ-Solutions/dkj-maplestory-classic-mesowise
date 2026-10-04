@@ -581,8 +581,8 @@ describe('loadEquipment en saveEquipment', () => {
 })
 
 describe('equipment per job', () => {
-  // De Warrior heeft sinds issue #42 wapens, hats en shoes; deze twee jobs hebben nog niets.
-  const others: Job[] = ['magician', 'bowman']
+  // De Warrior heeft sinds issue #42 wapens, hats en shoes en de Magician sinds #43 zijn wands, staffs en armor; de Bowman heeft nog niets.
+  const others: Job[] = ['bowman']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const storedFor = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
   const thiefGear: Equipment = { claw: shop('Meba'), ammo: shop('Subi Throwing Stars'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, overall: unknown, shoes: shop('Blue Gidder Shoes') }
@@ -706,10 +706,10 @@ describe('equipment voor een Warrior', () => {
       expect(catalogItems('hat', 'thief').map((i) => i.name)).toContain('Red Thief Hood')
     })
 
-    it('geeft Magician en Bowman nog niets, behalve de pijlen van de Bowman (issue #65)', () => {
-      for (const s of slots) for (const j of ['magician', 'bowman'] as const) {
-        if (s === 'ammo' && j === 'bowman') continue
-        expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
+    it('geeft de Bowman nog niets, behalve de pijlen (issue #65)', () => {
+      for (const s of slots) {
+        if (s === 'ammo') continue
+        expect(catalogItems(s, 'bowman'), `${s} bowman`).toEqual([])
       }
     })
 
@@ -929,7 +929,9 @@ describe('overall (issue #50)', () => {
     expect(searchCatalog('overall', 'thief', 'sauna').map((i) => [i.name, i.level, i.stat])).toEqual([['Blue Sauna Robe', 30, 75]])
     expect(catalogItems('top', 'thief').map((i) => i.name)).not.toContain('Blue Sauna Robe')
     expect(catalogItems('overall', 'warrior').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
-    expect(catalogItems('overall', 'magician')).toEqual([])
+    // Een Magician heeft sinds #43 de items zonder jobregel, en dus ook de Sauna Robe (#55).
+    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
+    expect(catalogItems('overall', 'bowman')).toEqual([])
     expect(slotLabel('overall')).toBe('Overall')
     expect(slotsFor('thief').map((s) => s.slot)).toContain('overall')
   })
@@ -1009,7 +1011,9 @@ describe('overall (issue #50)', () => {
   })
 
   it('zet een overall op "nog niet ingevuld" bij een jobwissel naar een job zonder itemdata', () => {
-    expect(equipmentForJob(worn({ overall: robe }), 'magician').overall).toEqual(unknown)
+    expect(equipmentForJob(worn({ overall: robe }), 'bowman').overall).toEqual(unknown)
+    // De Magician kent de Sauna Robe wel (een item zonder jobregel), dus die blijft.
+    expect(equipmentForJob(worn({ overall: robe }), 'magician').overall).toEqual(robe)
   })
 })
 
@@ -1089,11 +1093,12 @@ describe('overall (issue #50): randgevallen van de WDEF-rekensom en het laden', 
     }
   })
 
-  it('laat een eigen overall naast een bottom de overall laten winnen, en laadt een Sauna Robe voor een magician als leeg', () => {
+  it('laat een eigen overall naast een bottom de overall laten winnen, en laadt een Sauna Robe voor een bowman als leeg', () => {
     const eq = loadEquipment(stored({ overall: { pick: 'other', name: 'Mijn Robe', stat: '50' }, bottom: { pick: 'Red Pao Bottoms' } }), 'thief')
     expect(eq.overall).toEqual(other('50', 'Mijn Robe'))
     expect(eq.bottom).toEqual(unknown)
-    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'magician').overall).toEqual(unknown)
+    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'bowman').overall).toEqual(unknown)
+    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'magician').overall).toEqual(robe)
   })
 
   it('wornWdef telt een overall mee als eigen slot', () => {

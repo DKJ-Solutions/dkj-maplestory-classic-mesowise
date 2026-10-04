@@ -283,8 +283,8 @@ describe('CHECK_FIELDS', () => {
 })
 
 describe('applyLevelUp per job', () => {
-  // De Warrior rekent sinds issue #42 en heeft zijn eigen tests; deze twee jobs rekenen nog niet.
-  const others: Job[] = ['magician', 'bowman']
+  // De Warrior (issue #42) en de Magician (issue #43) rekenen en hebben hun eigen tests; de Bowman rekent nog niet.
+  const others: Job[] = ['bowman']
 
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
@@ -334,7 +334,7 @@ describe('checkFieldsFor', () => {
   })
 
   it('geeft voor een andere job dezelfde stats: skills staan niet op het controlescherm', () => {
-    for (const j of ['magician', 'bowman'] as const) {
+    for (const j of ['bowman'] as const) {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
