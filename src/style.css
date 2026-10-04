@@ -14,6 +14,10 @@
   --levelup-hi: #16a34a;
   --levelup-lo: #14532d;
   --on-levelup: #ffffff;
+  /* De menubalk (#130): donker in light, zodat hij los staat van de witte navigatiebalk eronder. */
+  --menubar-bg: #1f2937;
+  --menubar-fg: #ffffff;
+  --menubar-muted: #9ca3af;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -32,6 +36,9 @@
     --levelup-hi: #4ade80;
     --levelup-lo: #16a34a;
       --on-levelup: #052e16;
+    --menubar-bg: #030712;
+    --menubar-fg: #f3f4f6;
+    --menubar-muted: #9ca3af;
   }
 }
 
@@ -232,7 +239,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
-.level-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 6.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
+/* De band over de hele breedte, wit (in dark de kaartkleur), als tweede rij van de navigatiebalk; de rij zelf staat in dezelfde
+   kolom als main, dus het level blijft in het midden. */
+.level-band { background: var(--card); }
+.level-row { max-width: 32rem; margin: 0 auto; padding: 0.75rem 1rem; display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 6.5rem; align-items: center; gap: 0.5rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { width: 100%; height: 44px; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
 /* BACK: verder de knoppen Male en Female (.btn). */
@@ -243,7 +253,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Level up: een groen verloop, verder rustig, en niet groter dan het level ernaast (Dave, 4 oktober 2026). Geen rand, dus een
    transparante van dezelfde dikte als bij BACK: zo blijven beide knoppen tot op de pixel even groot. */
 .btn.levelup { border-color: transparent; border-radius: 0.375rem; background: linear-gradient(180deg, var(--levelup-hi), var(--levelup-lo)) border-box; color: var(--on-levelup); }
-.level-row-hint { margin-top: -0.5rem; text-align: right; }
+.level-row-hint { max-width: 32rem; margin: -0.25rem auto 0; padding: 0 1rem 0.75rem; text-align: right; }
 .summary { margin: 0 0 1rem; color: var(--muted); }
 .summary strong { color: var(--text); }
 
@@ -430,15 +440,16 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 
 /* De menubalk (issue #86): in de kaartkleur (wit, in het donkere thema donker), over de hele breedte en altijd bovenin. De inhoud lijnt uit met main. */
-:root { --topbar-h: 3.5rem; }
+:root { --topbar-h: 3.5rem; --levelbar-h: 4.25rem; }
 /* Een veld dat in beeld schuift, blijft onder de menubalk en de Level-up-balk. */
-html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
+html { scroll-padding-top: calc(var(--topbar-h) + var(--levelbar-h) + 5rem); }
 .topbar { position: sticky; top: 0; z-index: 2; background: var(--card); box-shadow: 0 1px 0 var(--border); }
+.menubar { background: var(--menubar-bg); color: var(--menubar-fg); }
 .topbar-inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
 .topbar-brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 .topbar-name { flex: none; font-size: 1.125rem; font-weight: 700; }
-.topbar-tagline { min-width: 0; font-size: 0.75rem; line-height: 1.25; color: var(--muted); }
-.topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); cursor: pointer; }
+.topbar-tagline { min-width: 0; font-size: 0.75rem; line-height: 1.25; color: var(--menubar-muted); }
+.topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--menubar-fg); cursor: pointer; }
 .topbar-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .stat-dialog .card.job { margin: 1rem 0 0; }
 
