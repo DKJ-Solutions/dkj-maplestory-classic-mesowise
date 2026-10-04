@@ -50,8 +50,8 @@ undoing a fresh level-up stays on the check screen.
       slide flow's focus ref from the sr-only "Mesowise" h1), green Level up; the bottom level-up bar goes
 - [x] Green gradient tokens (`--levelup-hi`, `--levelup-lo`, `--on-levelup`), light and dark, in `src/style.css`
 - [x] Dave's look, round 1: job removed from under the level; the level sits exactly mid-screen (grid with
-      two equal 6.5rem side columns); Level up keeps only a green gradient (a livelier version was tried
-      and dropped as overdone)
+      two equal side columns); Level up keeps only a green gradient (a livelier version was tried
+      and dropped as overdone); Level up no bigger than the level (1rem, 44px tall, 6rem side columns, h1 up to 2.5rem)
 
 ### TEST
 

@@ -232,20 +232,20 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
-.level-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 6.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
+.level-row { display: grid; grid-template-columns: 6rem minmax(0, 1fr) 6rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 .btn.level-down { justify-self: start; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; line-height: 1; }
-.current-level { margin: 0; font-size: clamp(1.5rem, 6.5vw, 2rem); line-height: 1.1; text-align: center; }
-/* Level up: een groen verloop, verder rustig (Dave, 4 oktober 2026). */
+.current-level { margin: 0; font-size: clamp(1.75rem, 8vw, 2.5rem); line-height: 1.1; text-align: center; }
+/* Level up: een groen verloop, verder rustig, en niet groter dan het level ernaast (Dave, 4 oktober 2026). */
 .btn.levelup {
   justify-self: end;
-  width: 100%;
-  min-height: 56px;
-  padding: 0 0.5rem;
+  width: auto;
+  min-height: 44px;
+  padding: 0 0.875rem;
   border: 1px solid var(--levelup-lo);
   border-radius: 0.75rem;
   background: linear-gradient(180deg, var(--levelup-hi), var(--levelup-lo));
   color: var(--on-levelup);
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   white-space: nowrap;
 }
