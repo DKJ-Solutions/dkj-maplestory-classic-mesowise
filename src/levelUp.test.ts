@@ -125,20 +125,24 @@ describe('applyLevelUp', () => {
 })
 
 describe('applySkillPoint', () => {
+  // Level 11: 4 skillpunten van de 1e job, waarvan Lucky Seven er 1 heeft (issue #136).
+  const L11 = { ...DEFAULT_PROFILE, level: '11' }
+
   it('zet bij Lucky Seven één level erbij en laat de rest staan', () => {
-    expect(applySkillPoint(DEFAULT_PROFILE, 'luckySeven')).toEqual({ ...DEFAULT_PROFILE, luckySeven: '2' })
+    expect(applySkillPoint(L11, 'luckySeven')).toEqual({ ...L11, luckySeven: '2' })
   })
 
   it('telt bij Nimble Body ook accuracy en avoid op', () => {
-    const next = applySkillPoint(DEFAULT_PROFILE, 'nimbleBody')
-    expect(next).toEqual({ ...DEFAULT_PROFILE, nimbleBody: '1', accuracy: '34', avoid: '24' })
+    const next = applySkillPoint(L11, 'nimbleBody')
+    expect(next).toEqual({ ...L11, nimbleBody: '1', accuracy: '34', avoid: '24' })
   })
 
   it('geeft een draft die door parseProfile komt, met precies de verwachte getallen', () => {
-    const next = parseProfile(applySkillPoint(DEFAULT_PROFILE, 'nimbleBody'))
+    const next = parseProfile(applySkillPoint(L11, 'nimbleBody'))
     expect(next).toEqual({
       profile: {
         ...profile,
+        level: 11,
         nimbleBody: 1,
         accuracy: profile.accuracy + NIMBLE_BODY.accuracyPerLevel,
         avoid: profile.avoid + NIMBLE_BODY.avoidPerLevel,
@@ -347,5 +351,20 @@ describe('applyLevelDown (#130)', () => {
   it('gaat van het hoogste level naar een lager', () => {
     const max = String(PROFILE_FIELDS.find((f) => f.key === 'level')!.max)
     expect(applyLevelDown({ ...DEFAULT_PROFILE, level: max }).level).toBe(String(Number(max) - 1))
+  })
+})
+
+describe('applySkillPoint: de pot is vol (issue #136)', () => {
+  it('geeft het concept ongewijzigd terug als je geen punt van de 1e job meer hebt', () => {
+    // Level 10: 1 punt, en Lucky Seven heeft hem al.
+    expect(applySkillPoint(DEFAULT_PROFILE, 'luckySeven')).toBe(DEFAULT_PROFILE)
+    expect(applySkillPoint(DEFAULT_PROFILE, 'nimbleBody')).toBe(DEFAULT_PROFILE)
+  })
+
+  it('zet het laatste punt nog wel en daarna niet meer', () => {
+    const L10 = { ...DEFAULT_PROFILE, luckySeven: '0' }
+    const once = applySkillPoint(L10, 'luckySeven')
+    expect(once).toEqual({ ...L10, luckySeven: '1' })
+    expect(applySkillPoint(once, 'luckySeven')).toBe(once)
   })
 })

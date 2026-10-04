@@ -303,9 +303,9 @@ describe('statWindowRange: de Attack uit het statvenster (#108)', () => {
   })
 
   it('rekent zonder skill: een geleerde Lucky Seven, Power Strike of Arrow Blow verandert het bereik niet', () => {
-    expect(statWindowRange(as('thief', { luckySeven: '20' }))).toEqual(statWindowRange(as('thief', { luckySeven: '0' })))
-    expect(statWindowRange(as('warrior', { powerStrike: '20' }))).toEqual(statWindowRange(as('warrior')))
-    expect(statWindowRange(as('bowman', { arrowBlow: '20' }))).toEqual(statWindowRange(as('bowman')))
+    expect(statWindowRange(as('thief', { level: '30', luckySeven: '20' }))).toEqual(statWindowRange(as('thief', { level: '30', luckySeven: '0' })))
+    expect(statWindowRange(as('warrior', { level: '30', powerStrike: '20' }))).toEqual(statWindowRange(as('warrior', { level: '30' })))
+    expect(statWindowRange(as('bowman', { level: '30', arrowBlow: '20' }))).toEqual(statWindowRange(as('bowman', { level: '30' })))
   })
 
   it('rondt min en max naar beneden af, zoals de gids: 60,6 wordt 60 en 172,8 wordt 172, niet 61 en 173', () => {

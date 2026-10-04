@@ -39,19 +39,36 @@
 
 ### PLAN
 
+- [x] Research the SP-per-level rule (Rebecca) and verify both quotes on NiaMeowDB (Vera)
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] SP cap per pool in `src/data/skillPoints.ts`, with sources (Cody)
+- [x] Overflow error in `parseProfile`, pool counter and capped + on the Skillpoints card, `left` in the skill-point advice (Cody)
+- [x] Wording polish from Edith's read
 
 ### TEST
 
+- [x] Tests for the cap, the error, the advice and the card (Tycho): 41 files, 1251 tests green; `npm run lint` clean
+- [x] Code review (Victor): nothing blocking
+- [x] Dave looks at the Skillpoints card at phone width before the merge
+
 ### DEPLOY: app/136-skillpoint-cap
 
-**Score:**
+The total SP you can spend is now capped by your level, in two separate pools: Beginner skills get level − 1
+points up to 9, 1st-job skills get 1 at level 10 plus 3 per level after (61 at level 30), per NiaMeowDB.
+`parseProfile` refuses a profile over either cap, the Skillpoints card shows "used / cap SP" per group and
+disables + when a pool is full, and the skill-point advice says when no point is left. Advancement at
+level 10 is assumed; late advancement is not modelled.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A player can no longer fill in more skill points than their level gives, so the skill-point advice and every
+cost are worked out for a character that can actually exist.
+
+**Score:** 3
 
 #### Pull Request
 

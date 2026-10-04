@@ -15,8 +15,9 @@ import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
+import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
+import { BEGINNER_SP_SOURCE, JOB_SP_SOURCE, skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
@@ -514,6 +515,23 @@ function LevelAdviceCard(props: {
   )
 }
 
+/** Waar het aantal skillpunten per level vandaan komt (issue #136). */
+function SkillPointSources() {
+  return (
+    <p class="source">
+      Skillpunten per level:{' '}
+      <a href={BEGINNER_SP_SOURCE.url} target="_blank" rel="noopener noreferrer">
+        beginnersgids
+      </a>{' '}
+      en{' '}
+      <a href={JOB_SP_SOURCE.url} target="_blank" rel="noopener noreferrer">
+        woordenlijst
+      </a>{' '}
+      van NiaMeowDB, opgehaald op {formatDate(JOB_SP_SOURCE.retrieved)}. De app gaat uit van je 1e jobwissel op level 10.
+    </p>
+  )
+}
+
 /** Waar de skills vandaan komen die het skilladvies doorrekent. */
 function SkillSources(props: { job: Job }) {
   return (
@@ -527,6 +545,7 @@ function SkillSources(props: { job: Job }) {
           , opgehaald op {formatDate(s.source.retrieved)}.
         </p>
       ))}
+      <SkillPointSources />
     </>
   )
 }
@@ -1080,6 +1099,11 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   const head = useRef<HTMLButtonElement>(null)
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   const levels = skillLevels(props.draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  // Is de pot van deze groep vol (zonder geldig level: nooit), dan kan er geen punt meer bij.
+  const full = (job: SkillLevel['job']) => {
+    const { spent, cap } = skillPoolUsage(props.draft, props.job, skillPoolOf(job))
+    return cap !== null && spent >= cap
+  }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
@@ -1095,7 +1119,10 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
         <CardPopup title="Skillpoints" head={head} error={props.error} onClose={() => setOpen(false)}>
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
-              <h3>{title}</h3>
+              <h3>
+                {title}
+                <PoolCount usage={skillPoolUsage(props.draft, props.job, skillPoolOf(job))} />
+              </h3>
               {levels
                 .filter((s) => s.job === job)
                 .map((s) => (
@@ -1127,7 +1154,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                         type="button"
                         class="step"
                         aria-label={`${s.name} een level hoger`}
-                        disabled={s.level === s.max}
+                        disabled={s.level === s.max || full(job)}
                         onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], 1, s.max) })}
                       >
                         +
@@ -1138,9 +1165,20 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                 ))}
             </div>
           ))}
+          <SkillPointSources />
         </CardPopup>
       )}
     </section>
+  )
+}
+
+/** "12 / 16 SP": hoeveel punten van de pot je hebt gezet; zonder geldig level alleen wat je zette. Boven het maximum in de foutkleur. */
+function PoolCount(props: { usage: { spent: number; cap: number | null } }) {
+  const { spent, cap } = props.usage
+  return (
+    <span class={`skill-sp${cap !== null && spent > cap ? ' over' : ''}`}>
+      {cap === null ? `${spent} SP` : `${spent} / ${cap} SP`}
+    </span>
   )
 }
 
@@ -1483,8 +1521,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
         </>
       ) : (
         <>
-          <p class="verdict">Geen van de skills die de app kan doorrekenen bespaart iets.</p>
-          {a.choices.length === 0 && <p class="hint">Alle skills die de app kan doorrekenen, staan al op het maximum.</p>}
+          <p class="verdict">{a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : 'Geen van de skills die de app kan doorrekenen bespaart iets.'}</p>
+          {a.left > 0 && a.choices.length === 0 && <p class="hint">Alle skills die de app kan doorrekenen, staan al op het maximum.</p>}
           {a.choices.length > 0 && a.base === 0 && <p class="hint">Dit level is al gratis.</p>}
         </>
       )}
