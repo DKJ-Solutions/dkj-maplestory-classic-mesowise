@@ -1329,6 +1329,11 @@ describe('een Magician in de app', () => {
   describe('het beginscherm', () => {
     beforeEach(() => open())
 
+    it('zet de job achter het level en niet achter Ability points', () => {
+      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20 (Magician)')
+      expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
+    })
+
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
       expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)

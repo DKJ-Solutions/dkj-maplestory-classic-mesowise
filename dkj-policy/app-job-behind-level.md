@@ -41,17 +41,24 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: the job moves from the Ability points card title to the level line at the top ("Level 10 (Magician)"), only once a job has been chosen
 
 ### TEST
 
+- [x] Tycho: a test in the Magician block pins "Level 20 (Magician)" and no job in the Ability points title; full suite and typecheck green
+- [ ] Dave looks at the preview before the merge (visible result)
+
 ### DEPLOY: app/job-behind-level
 
-**Score:**
+The job you play now sits behind your level at the top of the start screen ("Level 10 (Magician)") instead of in the title of the Ability points card, which is now just "Ability points".
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees their level and job together at a glance, where they look first.
+
+**Score:** 2
 
 #### Pull Request
 
