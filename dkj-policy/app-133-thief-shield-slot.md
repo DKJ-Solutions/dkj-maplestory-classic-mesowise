@@ -39,19 +39,30 @@
 
 ### PLAN
 
+- [x] Cody: `hasSlot` gives the Shield slot to every job except the Bowman (bow and crossbow are two-handed); the Thief wears wristguards there (#133, NiaMeowDB items 681, 921-923, read 2026-10-04)
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/equipment.ts`: the shield rule and its comment
+- [x] `src/equipment.test.ts` (Tycho): the Thief's slot list now includes `shield`; a wristguard filled in as an own item counts its WDEF
 
 ### TEST
 
+- [x] Vitest 1218/1218 green, `tsc --noEmit` clean
+- [x] Victor: no other code or text assumed the Thief has no shield (grep on "beide handen")
+- [ ] Dave looks at the equipment card for a Thief (visible result)
+
 ### DEPLOY: app/133-thief-shield-slot
 
-**Score:**
+The equipment logic now gives the Thief a Shield slot, so `slotsFor` lists it and its WDEF counts like any other armor slot.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Thief can now fill in the wristguard he wears in the Shield slot, so its W.DEF counts in the calculation instead of being missing.
+
+**Score:** 3
 
 #### Pull Request
 
