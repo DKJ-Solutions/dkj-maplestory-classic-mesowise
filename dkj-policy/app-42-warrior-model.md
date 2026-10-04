@@ -1,4 +1,4 @@
-## app/42-warrior-model
+﻿## app/42-warrior-model
 
 > **How this file is read.** A step is `- [ ]` until it is resolved -- `- [x]` done, or
 > `- [~]` dropped with the reason, which exists so nobody ticks a box for work they did not do.
@@ -40,7 +40,7 @@
 ### PLAN
 
 Stap 2 van #42: het mob-model, het profiel, de level-up, de skillpunten, de equipment en het upgrade-advies
-rekenen met de Warrior-gegevens uit stap 1 (#57). Zichtbaar resultaat: Dave kijkt vóór de pull request.
+rekenen met de Warrior-gegevens uit stap 1 (#57). Zichtbaar resultaat: Dave kijkt vÃ³Ã³r de pull request.
 
 #### Modelkeuzes
 
@@ -59,9 +59,9 @@ rekenen met de Warrior-gegevens uit stap 1 (#57). Zichtbaar resultaat: Dave kijk
 
 ### TEST
 
-- [x] Tests (Tycho): damage-gids-voorbeeld 60–172 en Power Strike 20 157–449, Thief ongewijzigd; `npx vitest run` 659 geslaagd, 1 verwacht gefaald (#52); `tsc --noEmit` schoon
+- [x] Tests (Tycho): damage-gids-voorbeeld 60â€“172 en Power Strike 20 157â€“449, Thief ongewijzigd; `npx vitest run` 659 geslaagd, 1 verwacht gefaald (#52); `tsc --noEmit` schoon
 - [x] Review door Victor (code) en Edith (tekst)
-- [ ] Dave kijkt naar het scherm op telefoonbreedte
+- [x] Dave kijkt naar het scherm op telefoonbreedte: "gezien en akkoord" (4 oktober 2026)
 
 ### DEPLOY: app/42-warrior-model
 
