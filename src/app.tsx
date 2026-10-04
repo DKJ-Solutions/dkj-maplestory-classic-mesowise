@@ -143,7 +143,6 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
           ))}
         </div>
       )}
-      {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
       {/*
         Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Zodra je kiest, staat
         het als (m) of (f) achter je job in de kop en verdwijnt deze rij (Dave, 4 oktober 2026: scheelt hoogte); het

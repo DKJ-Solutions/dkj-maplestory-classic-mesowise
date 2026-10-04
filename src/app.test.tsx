@@ -906,6 +906,10 @@ describe('het geslacht (issue #55)', () => {
     expect(screen.queryByText(JOB_HINT)).toBeNull()
   })
 
+  it('toont de uitleg "Kies je job; daarna ligt hij vast" niet meer (Dave, 4 oktober 2026)', () => {
+    expect(screen.queryByText(/daarna ligt hij vast/)).toBeNull()
+  })
+
   it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Gender:"', () => {
     expect(jobTitle()).toBe('Job:')
     const job = document.getElementById('job-title')!
