@@ -421,6 +421,21 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(JOB_KEY).job).toBe('warrior')
   })
 
+  it('bewaart de gekozen stars en zet hun weapon attack en herlaadprijs in het profiel', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Stars', 'Wolbi Throwing Stars')
+    expect(slots().ammo.pick).toBe('Wolbi Throwing Stars')
+    expect(profileFields().starWatk).toBe('17')
+    expect(profileFields().starRecharge).toBe('0.4')
+  })
+
+  it('noemt het ammo-slot Arrows bij een Bowman en biedt daar pijlen aan', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Bowman' }))
+    openHomeEquipment()
+    const row = typeIn(cards()[0], 'Arrows', 'Arrows')
+    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toContain('Arrows for Bows')
+  })
+
   it('bewaart een eigen item met naam en, na Opslaan, het getal', () => {
     openHomeEquipment()
     pickOwn(cards()[0], 'Weapon', 'Mijn claw')

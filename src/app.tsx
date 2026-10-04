@@ -10,14 +10,14 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, slotLabel, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
-import { NIMBLE_BODY } from './data/thief'
+import { NIMBLE_BODY, THROWING_STARS } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -286,7 +286,7 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => (
             <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
+          {thief && <p class="hint">De app rekent met de stars uit je equipment, die je laat herladen; zonder keuze met Subi Throwing Stars.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
@@ -502,7 +502,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {
@@ -529,14 +529,14 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
     }
   }
   const picked = wornName(entry)
-  const slotLabel = EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+  const label = slotLabel(slot, props.job)
   return (
     <div class="equip-search">
       {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
       {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
           de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
       {!open && picked !== null && (
-        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+        <button type="button" class="equip-picked" aria-label={`${label}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
           {picked}
         </button>
       )}
@@ -547,7 +547,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         aria-hidden={!open && picked !== null ? true : undefined}
         type="text"
         role="combobox"
-        aria-label={`Zoek je ${slotLabel}`}
+        aria-label={`Zoek je ${label}`}
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
@@ -668,7 +668,8 @@ function EquipmentCard(props: {
         <div class="spot-body">
           {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
           {thief ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {EQUIP_SLOTS.map(({ slot, label }) => {
+          {EQUIP_SLOTS.map(({ slot }) => {
+            const label = slotLabel(slot, props.job)
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
             const stat = statName(slot)
@@ -757,7 +758,11 @@ function EquipmentCard(props: {
               <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
-              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
+              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
+              <a href={THROWING_STARS[1].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(THROWING_STARS[1].source.retrieved)}.
             </p>
           )}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />

@@ -31,13 +31,34 @@ export const NIMBLE_BODY = {
   source: { url: 'https://meowdb.com/msclassic/skills/thief/nimble-body', retrieved: R } satisfies Source,
 } as const
 
+const STARS_RETRIEVED = '2026-10-04'
+const star = (id: number, name: string, watk: number, rechargePerStar: number, npc: boolean): ThrowingStar => ({
+  name,
+  watk,
+  rechargePerStar,
+  level: 10,
+  npc,
+  source: { url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: id === 294 ? R : STARS_RETRIEVED },
+})
+
 /** De goedkoopste stars, die je laat herladen in plaats van nieuwe te kopen (het levelplan). */
-export const SUBI: ThrowingStar = {
-  name: 'Subi Throwing Stars',
-  watk: 15,
-  rechargePerStar: 0.3,
-  source: { url: 'https://meowdb.com/msclassic/item-db/294', retrieved: R },
-}
+export const SUBI: ThrowingStar = star(294, 'Subi Throwing Stars', 15, 0.3, true)
+
+/**
+ * De throwing stars die je kunt kiezen, per itempagina: weapon attack en herladen per ster, elk level 10. Alleen
+ * Subi (twaalf NPC's) en Wolbi (alleen Max, Kerning City Civic Center) verkoopt een NPC; de rest is een drop of
+ * Free Market, maar wie ze heeft, laat ze net zo herladen. Steely Throwing Knives staan erbij: de pagina noemt
+ * de waarden, alleen waar je ze krijgt nog niet ("Coming soon").
+ */
+export const THROWING_STARS: readonly ThrowingStar[] = [
+  SUBI,
+  star(295, 'Wolbi Throwing Stars', 17, 0.4, true),
+  star(296, 'Mokbi Throwing Stars', 19, 0.5, false),
+  star(297, 'Kumbi Throwing Stars', 21, 0.6, false),
+  star(298, 'Tobi Throwing Stars', 23, 0.7, false),
+  star(299, 'Steely Throwing Knives', 25, 0.8, false),
+  star(300, 'Ilbi Throwing Stars', 27, 0.9, false),
+]
 
 /** De damage-formule (min en max van een aanval) en de mastery-regel van de gewone aanval. */
 export const DAMAGE_FORMULA_SOURCE: Source = {

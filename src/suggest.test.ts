@@ -83,6 +83,19 @@ describe('hourPlan', () => {
   it('kost niets bij 0 kills', () => {
     expect(hourPlan(s, 0)).toMatchObject({ expPerHour: 0, potions: 0, ammo: 0 })
   })
+
+  it('rekent het herladen met de prijs van je eigen stars', () => {
+    const tobi = suggestMonsters({ ...profile, starRecharge: 0.7 }, subway)[0]
+    expect(tobi.rechargePerStar).toBe(0.7)
+    expect(hourPlan(tobi, 100).ammo).toBeCloseTo(100 * tobi.estimate.starsPerKill * 0.7, 9)
+  })
+
+  it('doodt een monster met sterkere stars in minder aanvallen, dus met minder stars per kill', () => {
+    const subi = suggestMonsters(profile, subway)[0]
+    const ilbi = suggestMonsters({ ...profile, starWatk: 27 }, subway).find((x) => x.monster.name === subi.monster.name)!
+    expect(ilbi.estimate.starsPerKill).toBeLessThanOrEqual(subi.estimate.starsPerKill)
+    expect(ilbi.estimate.killsPerHour).toBeGreaterThan(subi.estimate.killsPerHour)
+  })
 })
 
 describe('resolveSpot', () => {
