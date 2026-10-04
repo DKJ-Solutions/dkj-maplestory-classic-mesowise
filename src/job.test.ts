@@ -31,7 +31,7 @@ const ALL: Job[] = JOBS.map((j) => j.job)
 
 describe('JOBS, DEFAULT_JOB en jobLabel', () => {
   it('kent vijf jobs, met de Thief als standaard', () => {
-    expect(ALL).toEqual(['beginner', 'warrior', 'magician', 'bowman', 'thief'])
+    expect(ALL).toEqual(['warrior', 'magician', 'bowman', 'thief'])
     expect(DEFAULT_JOB).toBe('thief')
   })
 
@@ -106,16 +106,21 @@ describe('loadJob en saveJob', () => {
 })
 
 describe('jobChoices', () => {
-  it('wie nog niet koos, kiest uit alle vijf jobs', () => {
-    for (const job of ALL) expect(jobChoices(job, false)).toEqual(ALL)
+  it('wie nog niet koos, kiest uit alle vier jobs', () => {
+    expect(jobChoices(false)).toEqual(ALL)
   })
 
-  it('een gekozen Beginner kiest bij de job advancement uit de vier andere', () => {
-    expect(jobChoices('beginner', true)).toEqual(['warrior', 'magician', 'bowman', 'thief'])
+  it('een gekozen job ligt vast', () => {
+    expect(jobChoices(true)).toEqual([])
   })
 
-  it('elke andere gekozen job ligt vast', () => {
-    for (const job of ALL.filter((j) => j !== 'beginner')) expect(jobChoices(job, true)).toEqual([])
+  it('de Beginner is geen keuze (Dave, 4 oktober 2026)', () => {
+    expect(jobChoices(false)).not.toContain('beginner')
+  })
+
+  it('een bewaarde Beginner telt niet als keuze: de app vraagt opnieuw en rekent als Thief', () => {
+    expect(isJobStored(stored('beginner'))).toBe(false)
+    expect(loadJob(stored('beginner'))).toBe('thief')
   })
 })
 

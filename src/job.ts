@@ -6,11 +6,10 @@
 export const JOB_KEY = 'mesowise.job.v1'
 const VERSION = 1
 
-export type Job = 'beginner' | 'warrior' | 'magician' | 'bowman' | 'thief'
+export type Job = 'warrior' | 'magician' | 'bowman' | 'thief'
 
 /** De jobs in de volgorde waarin het scherm ze toont. */
 export const JOBS: readonly { job: Job; label: string }[] = [
-  { job: 'beginner', label: 'Beginner' },
   { job: 'warrior', label: 'Warrior' },
   { job: 'magician', label: 'Magician' },
   { job: 'bowman', label: 'Bowman' },
@@ -32,12 +31,11 @@ export const notComputedText = (job: Job): string => `Nog niet doorgerekend voor
 
 /**
  * De jobs waaruit je nog kunt kiezen (Dave, 4 oktober 2026): een job ligt vast zodra je hem kiest. Wie nog
- * niets koos, kiest uit alle vijf; een Beginner kiest bij de job advancement uit de vier andere;
- * elke andere job heeft geen keuze meer.
+ * niets koos, kiest uit alle vier; daarna is er geen keuze meer. De Beginner staat er niet in: niemand speelt
+ * hem als job (Dave, 4 oktober 2026).
  */
-export function jobChoices(job: Job, chosen: boolean): readonly Job[] {
-  if (!chosen) return JOBS.map((j) => j.job)
-  return job === 'beginner' ? JOBS.flatMap((j) => (j.job === 'beginner' ? [] : [j.job])) : []
+export function jobChoices(chosen: boolean): readonly Job[] {
+  return chosen ? [] : JOBS.map((j) => j.job)
 }
 
 /** De bewaarde job, of null als er geen geldige is. */

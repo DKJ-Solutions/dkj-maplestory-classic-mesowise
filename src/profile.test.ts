@@ -102,7 +102,7 @@ describe('profileFieldsFor', () => {
   it('verbergt voor een andere job alleen Lucky Seven en Nimble Body en houdt de volgorde', () => {
     const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
     expect(expected.length).toBe(PROFILE_FIELDS.length - 2)
-    for (const j of ['beginner', 'warrior', 'magician', 'bowman'] as const) {
+    for (const j of ['warrior', 'magician', 'bowman'] as const) {
       expect(profileFieldsFor(j), j).toEqual(expected)
       expect(profileFieldsFor(j).map((f) => f.key), j).not.toContain('luckySeven')
       expect(profileFieldsFor(j).map((f) => f.key), j).not.toContain('nimbleBody')

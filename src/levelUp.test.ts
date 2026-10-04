@@ -279,7 +279,7 @@ describe('CHECK_FIELDS', () => {
 })
 
 describe('applyLevelUp per job', () => {
-  const others: Job[] = ['beginner', 'warrior', 'magician', 'bowman']
+  const others: Job[] = ['warrior', 'magician', 'bowman']
 
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
@@ -329,7 +329,7 @@ describe('checkFieldsFor', () => {
   })
 
   it('laat voor een andere job alleen Lucky Seven en Nimble Body weg, in dezelfde volgorde', () => {
-    for (const j of ['beginner', 'warrior', 'magician', 'bowman'] as const) {
+    for (const j of ['warrior', 'magician', 'bowman'] as const) {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key).filter((k) => k !== 'luckySeven' && k !== 'nimbleBody'))
       expect(keys[0], j).toBe('level')

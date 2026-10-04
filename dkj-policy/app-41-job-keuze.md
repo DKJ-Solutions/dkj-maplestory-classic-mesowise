@@ -59,7 +59,9 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
   Uitzondering uit het spel: een Beginner ziet de vier jobs van de job advancement. `jobChoices` en
   `isJobStored` in `src/job.ts`, met tests van Tycho.
 - [x] Gwen: een potlood helemaal rechts in de job-kaart herstelt een vergissing: het toont weer alle vijf
-  jobs, met je huidige job gemarkeerd (Dave, 4 oktober 2026).
+  jobs, met je huidige job omlijnd (Dave, 4 oktober 2026).
+- [x] Cody: de Beginner is geen keuze meer, want niemand speelt hem (Dave, 4 oktober 2026). Daarmee is ook
+  de job advancement uit de kaart; een bewaarde Beginner telt niet als keuze en wordt de Thief.
 
 #### Ontwerpkeuzes
 
@@ -82,8 +84,8 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
 
 ### DEPLOY: app/41-job-keuze
 
-Je kiest nu je job (Beginner, Warrior, Magician, Bowman of Thief) in een eigen kaart boven "Je
-equipment". De Thief werkt zoals altijd. Voor een andere job zegt de app eerlijk "Nog niet doorgerekend
+Je kiest nu je job (Warrior, Magician, Bowman of Thief) in een eigen kaart boven "Je equipment".
+Je kiest één keer; een vergissing herstel je met het potlood. De Thief werkt zoals altijd. Voor een andere job zegt de app eerlijk "Nog niet doorgerekend
 voor <job>" en geeft hij geen getal, want een Thief-formule op een Warrior geeft een fout getal. De wapen-
 en armorlijsten tonen alleen wat jouw job kan kopen. Voor de andere jobs zijn dat er nog geen, dus daar
 kies je "Ander item" of "Weet ik niet". Lucky Seven en Nimble Body staan alleen bij de Thief.
@@ -93,7 +95,7 @@ kies je "Ander item" of "Weet ik niet". Lucky Seven en Nimble Body staan alleen 
 #### What makes this deploy extra special
 
 Vrienden die geen Thief spelen, krijgen geen Thief-advies meer dat op hen niet klopt. De Warrior,
-Magician, Bowman en Beginner volgen in #42 tot #45.
+Magician en Bowman volgen in #42 tot #44.
 
 **Score:** 3
 

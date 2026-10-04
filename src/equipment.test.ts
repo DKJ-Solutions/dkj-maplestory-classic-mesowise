@@ -394,7 +394,7 @@ describe('loadEquipment en saveEquipment', () => {
 })
 
 describe('equipment per job', () => {
-  const others: Job[] = ['beginner', 'warrior', 'magician', 'bowman']
+  const others: Job[] = ['warrior', 'magician', 'bowman']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
   const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }

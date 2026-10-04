@@ -85,13 +85,12 @@ function NotComputed(props: { job: Job }) {
 /**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
- * job (Dave, 4 oktober 2026). Een Beginner ziet de vier jobs van de job advancement. Het potlood rechts
- * herstelt een vergissing: het toont weer alle vijf jobs.
+ * job (Dave, 4 oktober 2026). Het potlood rechts herstelt een vergissing: het toont weer alle jobs.
  */
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
   const { job, chosen } = props
   const [editing, setEditing] = useState(false)
-  const choices = jobChoices(job, chosen && !editing)
+  const choices = jobChoices(chosen && !editing)
   const pick = (j: Job) => {
     setEditing(false)
     props.onChange(j)
@@ -115,22 +114,19 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         )}
       </div>
       {choices.length > 0 && (
-        <>
-          {chosen && !editing && <p class="hint">Job advancement: kies je nieuwe job.</p>}
-          <div class="job-choices" role="group" aria-labelledby="job-title">
-            {choices.map((j) => (
-              <button
-                key={j}
-                type="button"
-                class="btn job-choice"
-                aria-pressed={editing ? j === job : undefined}
-                onClick={() => pick(j)}
-              >
-                {jobLabel(j)}
-              </button>
-            ))}
-          </div>
-        </>
+        <div class="job-choices" role="group" aria-labelledby="job-title">
+          {choices.map((j) => (
+            <button
+              key={j}
+              type="button"
+              class="btn job-choice"
+              aria-pressed={editing ? j === job : undefined}
+              onClick={() => pick(j)}
+            >
+              {jobLabel(j)}
+            </button>
+          ))}
+        </div>
       )}
       {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
       {!isComputed(job) && (
