@@ -162,12 +162,14 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
 
 /**
  * Onderaan een open kaart: inklappen zonder terug te scrollen naar het pijltje in de kop. De focus (en
- * daarmee het beeld) gaat daarna naar de kop, anders sta je na het dichtklappen ergens verderop.
+ * daarmee het beeld) gaat daarna naar de kop, anders sta je na het dichtklappen ergens verderop. Pas na de
+ * volgende render: een plek kan bij het inklappen in de lijst verschuiven, en een verplaatst element verliest
+ * in sommige browsers zijn focus.
  */
 function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onCollapse: () => void }) {
   const collapse = () => {
     props.onCollapse()
-    props.head.current?.focus()
+    requestAnimationFrame(() => props.head.current?.focus())
   }
   return (
     <button type="button" class="collapse-foot" onClick={collapse}>

@@ -48,7 +48,7 @@ bij getallen niet. Bij een plek blijft het getal "EXP per meso" in de kop: dat i
 - [x] Gwen + Cody: gedeelde CardIcon (boek, zwaard, poppetje, kaartspeld) en CollapseFoot; Je equipment, Je karakter, Skillpoints en elke plek gebruiken ze
 - [x] Cody: onderschriften weg; isDefaultProfile en wornSummary werden daardoor nergens meer gebruikt en zijn met hun tests verwijderd, net als de CSS van het onderschrift
 - [x] Tycho: 462 groen, typecheck en lint schoon
-- [ ] Victor: review van de diff
+- [x] Victor: review van de diff; geen bugs. De focus na Inklappen gaat nu pas na de render naar de kop, omdat een plek bij het inklappen kan verschuiven
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
