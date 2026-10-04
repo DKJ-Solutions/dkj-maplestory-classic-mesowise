@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**19 / 36 minor entries** <!-- pending-tally -->
+**20 / 37 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/58-att-def-names · 20261004-103805Z
+
+The app now names the weapon stat ATT and the armor stat DEF everywhere, as the game does: in the
+character fields and in the armor advice, not only on the equipment card. Both names come from one
+constant, so they cannot drift apart again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+One stat had two names on one screen (ATT on the equipment card, WDEF in the armor advice); a player
+no longer has to wonder whether they are the same number.
+
+**Score:** 2
+
+#### Pull Request
+
+ATT and DEF everywhere the UI names the weapon and armor stats
+
+[PR #73](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/73)
+
+---
 
 ### DEPLOY: app/63-stat-editor · 20261004-103333Z
 
