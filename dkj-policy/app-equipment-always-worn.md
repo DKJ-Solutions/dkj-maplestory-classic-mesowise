@@ -80,7 +80,7 @@ shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear 
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
 own item. Each slot is one row: the item name, the WATK or WDEF that counts, and a pencil. The value
 comes from the database until you correct it: the pencil opens a popup (a sheet at the bottom of a
-phone) with the expected value, − and + buttons (tap the number to type over it) and "Terug naar" the
+phone) with the expected value, − and + buttons (tap the number to type over it) and "Reset" to the
 database value; an "Opslaan" button appears once the value differs, and closing without it discards. A corrected value is outlined, with the
 expected value small and struck through beside it; the game value always overrules the expected one.
 A slot not filled in yet shows a search

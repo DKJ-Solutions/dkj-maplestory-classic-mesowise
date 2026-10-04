@@ -478,7 +478,7 @@ function EquipmentCard(props: {
             // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
             const value = wornStat(slot, entry)
             const isEditing = editing === slot
-            // Het corrigeervak werkt met een concept (pending): - en +, typen en "Terug naar" veranderen pas iets na Opslaan.
+            // Het corrigeervak werkt met een concept (pending): - en +, typen en Reset veranderen pas iets na Opslaan.
             const reset = () => props.onStatInput(slot, String(db ?? ''))
             const draft = props.pending[slot]
             const saved = draft === undefined ? null : commitStat(slot, entry, draft)
@@ -533,8 +533,8 @@ function EquipmentCard(props: {
                         </div>
                         <div class="stat-dialog-actions">
                           {db !== undefined && (saved ?? entry).stat !== '' && (
-                            <button type="button" class="equip-reset" onClick={reset}>
-                              Terug naar {db}
+                            <button type="button" class="equip-reset" aria-label={`Reset naar ${db}`} onClick={reset}>
+                              Reset
                             </button>
                           )}
                           {dirty && (
