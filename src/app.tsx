@@ -565,13 +565,18 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       {edit !== null && (
         <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
           {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
-          {/* Twee kolommen (Dave, 4 oktober 2026): links Base AP en Extra AP onder elkaar, rechts het totaal over de hele hoogte. */}
+          {/* Eén kolom (Dave, 4 oktober 2026): Base AP, Extra AP en Totaal onder elkaar, de drie getallen precies boven elkaar. */}
           <div class="ap-edit">
             <ApInput stat={`Base ${f.label}`} label="Base AP" id={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
             <ApInput stat={`Extra ${f.label}`} label="Extra AP" id={`${uid}-extra`} value={edit.extra} min={0} max={f.max} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
-            <div class="ap-edit-col ap-edit-total-col">
+            <div class="ap-edit-col">
               <span class="stat-dialog-label" id={`${uid}-total`}>Totaal</span>
-              <output class="ap-edit-total" aria-labelledby={`${uid}-total`}>{totalInEdit === null ? '?' : nfInt.format(totalInEdit)}</output>
+              {/* Dezelfde drie kolommen als de rijen erboven, zonder − en +: zo staat het totaal precies onder de andere getallen. */}
+              <div class="equip-step ap-edit-steps">
+                <span />
+                <output class="ap-edit-total" aria-labelledby={`${uid}-total`}>{totalInEdit === null ? '?' : nfInt.format(totalInEdit)}</output>
+                <span />
+              </div>
             </div>
           </div>
           {/* Opslaan staat er altijd (Dave, 4 oktober 2026); zolang er niets gewijzigd is, kun je er niet op tikken. */}
