@@ -83,34 +83,30 @@ function NotComputed(props: { job: Job }) {
 }
 
 /** De job kiezen: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. */
+/** Eén vraag, altijd zichtbaar (Dave, 4 oktober 2026): de vijf jobs als knoppen naast elkaar. */
 function JobCard(props: { job: Job; onChange: (job: Job) => void }) {
-  const [open, setOpen] = useState(false)
   const { job } = props
   return (
     <section class="card job">
-      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span class="spot-name">Je job</span>
-        <span class="spot-exp">{isComputed(job) ? jobLabel(job) : `${jobLabel(job)} · nog niet doorgerekend`}</span>
-      </button>
-      <Collapse open={open}>
-        <div class="spot-body">
-          <label class="field">
-            <span>Job</span>
-            <select value={job} onChange={(e) => props.onChange((e.currentTarget as HTMLSelectElement).value as Job)}>
-              {JOBS.map((j) => (
-                <option key={j.job} value={j.job}>
-                  {j.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p class="hint">
-            {isComputed(job)
-              ? 'De app rekent nu alleen de Thief door. De winkelitems in je equipment passen bij je job.'
-              : `${notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.`}
-          </p>
-        </div>
-      </Collapse>
+      <h2 id="job-title">Je job</h2>
+      <div class="job-choices" role="group" aria-labelledby="job-title">
+        {JOBS.map((j) => (
+          <button
+            key={j.job}
+            type="button"
+            class="btn job-choice"
+            aria-pressed={j.job === job}
+            onClick={() => j.job !== job && props.onChange(j.job)}
+          >
+            {j.label}
+          </button>
+        ))}
+      </div>
+      <p class="hint">
+        {isComputed(job)
+          ? 'De app rekent nu alleen de Thief door. De winkelitems in je equipment passen bij je job.'
+          : `${notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.`}
+      </p>
     </section>
   )
 }

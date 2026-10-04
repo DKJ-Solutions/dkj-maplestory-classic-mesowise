@@ -190,6 +190,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* Je volgende level (issue #24) */
 .level-cost h2 { margin: 0 0 0.375rem; font-size: 1rem; }
+.job h2 { margin: 0 0 0.625rem; font-size: 1rem; }
+.job-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.job-choice { flex: 1 1 auto; padding: 0.5rem 0.75rem; }
+.job-choice[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.job .hint { margin-bottom: 0; }
 .level-cost-value { margin: 0 0 0.25rem; }
 .level-cost-value strong { font-size: 2rem; color: var(--accent); }
 .level-cost .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
