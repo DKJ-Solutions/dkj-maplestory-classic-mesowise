@@ -30,7 +30,7 @@ const stored = (job: unknown, version: unknown = 1) => fakeStorage({ [JOB_KEY]: 
 const ALL: Job[] = JOBS.map((j) => j.job)
 
 describe('JOBS, DEFAULT_JOB en jobLabel', () => {
-  it('kent vijf jobs, met de Thief als standaard', () => {
+  it('kent vier jobs, met de Thief als standaard', () => {
     expect(ALL).toEqual(['warrior', 'magician', 'bowman', 'thief'])
     expect(DEFAULT_JOB).toBe('thief')
   })

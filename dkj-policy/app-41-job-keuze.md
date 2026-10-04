@@ -54,11 +54,11 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
   vraagt de job verplicht, de vraagtitels zijn gedeeld, de job-kaart staat vóór de equipment, en Ediths
   tekstpunten zijn verwerkt.
 - [x] Gwen: de job-kaart is niet inklapbaar en heeft geen keuzelijst. Het is één vraag, dus hij staat
-  altijd open, met de vijf jobs als knoppen (Dave, 4 oktober 2026).
+  altijd open, met de jobs als knoppen (Dave, 4 oktober 2026).
 - [x] Cody: de job ligt vast zodra je kiest (Dave, 4 oktober 2026). Daarna toont de kaart alleen je job.
-  Uitzondering uit het spel: een Beginner ziet de vier jobs van de job advancement. `jobChoices` en
+  `jobChoices` en
   `isJobStored` in `src/job.ts`, met tests van Tycho.
-- [x] Gwen: een potlood helemaal rechts in de job-kaart herstelt een vergissing: het toont weer alle vijf
+- [x] Gwen: een potlood helemaal rechts in de job-kaart herstelt een vergissing: het toont weer alle
   jobs, met je huidige job omlijnd (Dave, 4 oktober 2026).
 - [x] Cody: de Beginner is geen keuze meer, want niemand speelt hem (Dave, 4 oktober 2026). Daarmee is ook
   de job advancement uit de kaart; een bewaarde Beginner telt niet als keuze en wordt de Thief.
@@ -80,7 +80,7 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
 ### TEST
 
 - [x] Tycho: `src/job.test.ts` (nieuw), en uitbreidingen in `equipment.test.ts`, `profile.test.ts` en
-  `levelUp.test.ts`. 435 tests groen, `tsc` schoon.
+  `levelUp.test.ts`. 442 tests groen, `tsc` schoon.
 - [x] Victor: code-review. Eén blokkerend punt (verborgen velden), opgelost. Geen modelgetal dat bij een
   andere job op het scherm komt.
 - [x] Edith: de Nederlandse tekst. Vijf punten, verwerkt.
