@@ -39,37 +39,53 @@
 
 ### PLAN
 
-Issue #126: one card on the home screen instead of three. "Wat kost dit level?" stays the card's `h2`;
-the skill point and the weapon become `h3` sub-questions under it, because #25 and #26 are the
-sub-questions of #24. Visible result, so Dave looks before the merge.
+Issue #126: one card on the home screen instead of three. After the first preview Dave named what the card is
+for (issue comment, October 4, 2026): three advices, each lowering the cost of the level. Does an equipment
+upgrade pay off, does switching mob pay off, does a skill point pay off with its extra mana counted. On the
+mob question he chose the mob over the spot (#122: "mob is het belangrijkste omdat dit hp, exp etc heeft"), so
+#122 is absorbed here. Visible result, so Dave looks before the merge.
 
 ### CREATE
 
-- [x] `LevelAdviceCard` in `src/app.tsx` wraps the three parts (`LevelCostPart`, `SkillPointPart`,
-      `ClawUpgradePart`) in one `section.card.level-cost`; a job the app cannot compute shows only `NotComputed`
-- [x] `src/style.css`: a rule between the parts and a smaller `h3`
+- [x] Brought the branch up to date with `main` (it was cut before #124 replaced the spot list with the Monster card)
+- [x] `src/mobAdvice.ts`: the hunted mob, with your own corrections, next to every other mob in `MOBS`; the cheapest
+      safe one wins, a dangerous mob is never advised
+- [x] `LevelAdviceCard` in `src/app.tsx`: "Wat kost dit level?" with the amount, then three questions with a chip,
+      each under a rule: equipment (weapon and armor in `EquipQuestion`), mob (`MobQuestion`) and skill point
+      (`SkillQuestion`, with its MP line and the "Punt zetten" button); a job the app cannot compute shows only `NotComputed`
+- [x] `Question` takes `part`, to render as a block in the card instead of a card of its own
+- [x] The advice screen after a level-up asks "Moet ik van mob wisselen?" instead of the hunting-ground question;
+      `huntingGroundAdvice`, `bestSpotOf` and the best spot kept for undo are removed with their tests
+- [x] Removed what only the old home parts used: three weapon sentences and the `.choices` style
 
 ### TEST
 
-- [x] `src/app.test.tsx`: one `.level-cost` card on the home screen, holding both sub-headings (Magician)
-- [x] `npx vitest run` (1180 passed) and `npm run lint` green
-- [ ] Dave looks at the merged card at phone width
+- [x] `src/mobAdvice.test.ts`: none without profile, mob or table level; stay on the winner; switch from a dearer
+      safe mob; never a dangerous mob; your own numbers count
+- [x] `src/app.test.tsx`: one card with the three questions in order, three chips and an MP line (Magician);
+      equipment names wands and staffs; the advice screen asks the mob question; "gezet" shows on the screen you are on
+- [x] `npx vitest run` (1208 passed), `npm run lint` and `scripts/lint/lint.ps1` green
+- [ ] Dave looks at the card at phone width
 
 ### DEPLOY: app/126-merge-home-cards
 
-The home screen no longer shows three advice cards in a row. One card answers "Wat kost dit level?",
-with the skill point and the new weapon below it as sub-questions, each under its own rule.
-
-**Score:** 2
-
-#### What makes this deploy extra special
-
-The level-up question, the skill point and the weapon now read as one answer instead of three loose
-cards, so the home screen is shorter on a phone.
+The home screen has one card instead of three. It answers "Wat kost dit level?" and then the three questions
+that make the level cheaper, each with a Ja/Nee chip: equipment (weapon and armor together), switching mob,
+and a skill point, with the extra MP of an attack skill named. The mob question compares the mob you hunt
+with every other mob in the data and never advises a dangerous one. It also replaces the hunting-ground
+question on the advice screen after a level-up, which could only ever answer "stay" since #124.
 
 **Score:** 3
 
+#### What makes this deploy extra special
+
+At every level the player sees on one card whether to buy equipment, switch mob or place a skill point,
+instead of a level cost and two loose cards that disappeared when there was nothing to say.
+
+**Score:** 4
+
 #### Pull Request
 
-Merge the level-cost, skill-point and weapon cards into one home card
+Merge the level cost and the equipment, mob and skill-point advice into one home card
 
+<!-- resolves: #126, #122 -->

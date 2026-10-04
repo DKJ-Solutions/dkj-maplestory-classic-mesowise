@@ -3,17 +3,12 @@
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
 // Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior, Bowman of Magician krijgt level +1,
 // zijn Max HP (data/warrior.ts, data/bowman.ts, data/magician.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
-import type { BestVerdict } from './best'
-import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
-import { isInvalid } from './calc/rankSpots'
-import { expToNextLevel } from './data/expTable'
 import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
-import { expPerMesoOf } from './mesoCostAt'
-import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type Profile, type ProfileDraft, type ProfileKey } from './profile'
+import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
 
 const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
@@ -151,43 +146,4 @@ export function applySkillPoint(draft: ProfileDraft, id: SkillId, job: Job = 'th
   const after = skill.plusOne(parsed.profile)
   const touched = DRAFT_FIELDS.filter((f) => after[f.key] !== parsed.profile[f.key])
   return { ...draft, ...Object.fromEntries(touched.map((f) => [f.key, String(after[f.key])])) }
-}
-
-/** De beste plek, zoals de speler hem zag: genoeg om hem later terug te vinden. */
-export interface BestSpot {
-  id: string
-  name: string
-}
-
-/** De plek met het label "Beste", of null als er geen is (of hij geen geldig resultaat heeft). */
-export function bestSpotOf(verdict: BestVerdict): BestSpot | null {
-  const best = verdict.ranked.find((r) => r.spot.id === verdict.bestId)
-  return best && !isInvalid(best) ? { id: best.spot.id, name: best.spot.name } : null
-}
-
-export type HuntingGroundAdvice =
-  /** Er is nu geen plek met het label "Beste". */
-  | { kind: 'noBest' }
-  /** Dezelfde plek als voor de level-up. */
-  | { kind: 'stay'; name: string }
-  /**
-   * Een andere plek (of er was er eerst geen). `from` is de plek van voor de level-up, of null; `fromGone` is true als die plek er niet meer is (dan is `from` null). De kosten
-   * zijn die van het huidige level: undefined als ze niet uit te rekenen vallen (geen EXP-tabel, plek
-   * verdwenen of ongeldig), null als de plek geen EXP oplevert, 0 als hij niets kost.
-   */
-  | { kind: 'move'; from: string | null; fromGone: boolean; to: string; mesoFrom: number | null | undefined; mesoTo: number | null | undefined }
-
-/** Moet je naar een andere plek, nu je level omhoog is? Vergelijkt de beste plek van toen met die van nu. */
-export function huntingGroundAdvice(before: BestSpot | null, verdict: BestVerdict, profile: Profile | null): HuntingGroundAdvice {
-  const now = bestSpotOf(verdict)
-  if (!now) return { kind: 'noBest' }
-  if (before && before.id === now.id) return { kind: 'stay', name: now.name }
-  const expToNext = profile ? expToNextLevel(profile.level) : undefined
-  const costAt = (id: string | undefined) => {
-    const epm = expPerMesoOf(verdict.ranked, id)
-    return expToNext === undefined || epm === undefined ? undefined : mesoCostOfLevel(expToNext, epm)
-  }
-  // De oude plek kan intussen verwijderd zijn; dan noemen we hem niet.
-  const old = verdict.ranked.find((r) => r.spot.id === before?.id)
-  return { kind: 'move', from: old?.spot.name ?? null, fromGone: before !== null && !old, to: now.name, mesoFrom: costAt(old?.spot.id), mesoTo: costAt(now.id) }
 }
