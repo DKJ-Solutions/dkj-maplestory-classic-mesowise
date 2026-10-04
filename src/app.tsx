@@ -10,14 +10,14 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, slotLabel, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, slotLabel, slotsFor, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
-import { NIMBLE_BODY, THROWING_STARS } from './data/thief'
+import { NIMBLE_BODY, SUBI } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -286,7 +286,7 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => (
             <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {thief && <p class="hint">De app rekent met de stars uit je equipment, die je laat herladen; zonder keuze met Subi Throwing Stars.</p>}
+          {thief && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
@@ -668,7 +668,7 @@ function EquipmentCard(props: {
         <div class="spot-body">
           {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
           {thief ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {EQUIP_SLOTS.map(({ slot }) => {
+          {slotsFor(props.job).map(({ slot }) => {
             const label = slotLabel(slot, props.job)
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
@@ -759,10 +759,10 @@ function EquipmentCard(props: {
                 NiaMeowDB
               </a>
               , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
-              <a href={THROWING_STARS[1].source.url} target="_blank" rel="noopener noreferrer">
+              <a href={SUBI.source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(THROWING_STARS[1].source.retrieved)}.
+              </a>{' '}
+              (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
             </p>
           )}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />

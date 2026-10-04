@@ -35,6 +35,10 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'shoes', label: 'Shoes' },
 ]
 
+/** De slots die een job heeft: ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets. */
+export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] =>
+  job === 'thief' || job === 'bowman' ? EQUIP_SLOTS : EQUIP_SLOTS.filter((s) => s.slot !== 'ammo')
+
 /** Hoe het scherm een slot noemt: het ammo-slot heet bij een Bowman "Arrows", bij de rest "Stars". */
 export const slotLabel = (slot: EquipSlot, job: Job): string =>
   slot === 'ammo' && job === 'bowman' ? 'Arrows' : (EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot)

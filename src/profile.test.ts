@@ -62,6 +62,10 @@ describe('toCharacter', () => {
     expect(toCharacter(r.profile).watk).toBe(10 + 23)
   })
 
+  it('blokkeert de berekening niet bij een eigen star met een hoge weapon attack', () => {
+    expect('profile' in parseProfile({ ...DEFAULT_PROFILE, starWatk: '150' })).toBe(true)
+  })
+
   it('begint met de stars van Subi: weapon attack 15, herladen 0,3 per star', () => {
     expect(DEFAULT_PROFILE.starWatk).toBe('15')
     expect(DEFAULT_PROFILE.starRecharge).toBe('0.3')

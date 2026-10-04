@@ -38,7 +38,9 @@ const STATS = [
  * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi.
  */
 const AMMO = [
-  { key: 'starWatk', label: 'Weapon attack van je stars', min: 0, max: 99, integer: true },
+  // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
+  // toont, mag de berekening niet blokkeren.
+  { key: 'starWatk', label: 'Weapon attack van je stars', min: 0, max: 999, integer: true },
   { key: 'starRecharge', label: 'Herladen per star (meso)', min: 0, max: 100, integer: false },
 ] as const
 

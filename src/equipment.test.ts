@@ -14,6 +14,7 @@ import {
   saveEquipment,
   searchCatalog,
   slotLabel,
+  slotsFor,
   statName,
   statOverride,
   wornName,
@@ -655,6 +656,13 @@ describe('het ammo-slot (issue #65)', () => {
   it('heeft voor de Bowman de pijlen, zonder level', () => {
     expect(catalogItems('ammo', 'bowman').map((i) => i.name)).toEqual(NPC_ARROWS.map((a) => a.name))
     expect(catalogItems('ammo', 'bowman')[0].level).toBeUndefined()
+  })
+
+  it('is er alleen voor de Thief en de Bowman: een Warrior of Magician gooit niets', () => {
+    expect(slotsFor('thief').map((s) => s.slot)).toContain('ammo')
+    expect(slotsFor('bowman').map((s) => s.slot)).toContain('ammo')
+    expect(slotsFor('warrior').map((s) => s.slot)).not.toContain('ammo')
+    expect(slotsFor('magician').map((s) => s.slot)).toEqual(['claw', 'hat', 'top', 'bottom', 'shoes'])
   })
 
   it('heet bij een Bowman Arrows en bij de rest Stars', () => {
