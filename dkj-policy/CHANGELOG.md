@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**20 / 37 minor entries** <!-- pending-tally -->
+**20 / 38 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/64-bronze-arrows · 20261004-104154Z
+
+The Bowman data now holds the bronze arrows (+1 W.ATT for 2 mesos an arrow), each with its source, in a list of
+their own: Raymond sells them only from the "Helpful Stranger" citizenship rank, so they count only once the
+player says they have it. Nothing changes in the app yet; the switch comes with the Bowman calculation (#44).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bronze arrows in the Bowman data, behind the Helpful Stranger rank
+
+[PR #75](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/75)
+
+---
 
 ### DEPLOY: app/58-att-def-names · 20261004-103805Z
 
