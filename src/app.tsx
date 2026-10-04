@@ -129,9 +129,6 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         </div>
       )}
       {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
-      {!isComputed(job) && (
-        <p class="hint">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
-      )}
     </section>
   )
 }
@@ -153,10 +150,10 @@ function ProfileCard(props: {
           {isDefaultProfile(draft)
             ? thief
               ? 'Een voorbeeld-Thief op lv 10. Vul je eigen karakter in voor betere voorstellen.'
-              : `Dit is een voorbeeld-Thief op lv 10. De app rekent ${jobLabel(job)} nog niet door: vul je eigen karakter in.`
+              : 'Een voorbeeldkarakter op lv 10. Vul je eigen karakter in.'
             : thief
               ? `lv ${draft.level || '?'}, LUK ${draft.luk || '?'}, Lucky Seven ${draft.luckySeven || '?'} · gebruikt voor de voorstellen`
-              : `lv ${draft.level || '?'}, Max HP ${draft.hp || '?'} · nog niet doorgerekend voor ${jobLabel(job)}`}
+              : `lv ${draft.level || '?'}, Max HP ${draft.hp || '?'}`}
         </span>
       </button>
       <p class="error" aria-live="polite">
@@ -399,12 +396,7 @@ function EquipmentCard(props: {
       </button>
       <Collapse open={open}>
         <div class="spot-body">
-          <p class="hint">{thief ? props.hint : `De app rekent ${jobLabel(props.job)} nog niet door, dus wat je hier zet telt nog nergens mee. Je kunt het wel alvast invullen.`}</p>
-          {!thief && (
-            <p class="hint">
-              De app kent voor {jobLabel(props.job)} nog geen winkelitems. Kies "Ander item" en vul de stat zelf in, of laat een slot op "Weet ik niet" staan.
-            </p>
-          )}
+          <p class="hint">{thief ? props.hint : 'Kies bij een slot "Ander item" en vul de stat in van wat je draagt.'}</p>
           {thief && <p class="hint">Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>}
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]

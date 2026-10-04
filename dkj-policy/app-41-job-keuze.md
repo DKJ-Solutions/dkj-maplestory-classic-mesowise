@@ -62,6 +62,9 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
   jobs, met je huidige job omlijnd (Dave, 4 oktober 2026).
 - [x] Cody: de Beginner is geen keuze meer, want niemand speelt hem (Dave, 4 oktober 2026). Daarmee is ook
   de job advancement uit de kaart; een bewaarde Beginner telt niet als keuze en wordt de Thief.
+- [x] Gwen: geen ontwikkelaarsuitleg meer voor de speler (Dave, 4 oktober 2026). De job-, equipment- en
+  karakterkaart zeggen niet meer dat een job niet is doorgerekend. "Nog niet doorgerekend voor <job>" staat
+  alleen nog waar anders een getal had gestaan.
 
 #### Ontwerpkeuzes
 
