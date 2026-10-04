@@ -39,21 +39,40 @@
 
 ### PLAN
 
+#### Status
+
+Issue #43, step 2: the Magician data from step 1 (#62) drives the mob model, the advice and the screen,
+following the Warrior's shape from #66. A visible result, so the branch is parked for Dave's look and no
+pull request is opened before he has seen it.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: Magician selectable and computed; spell damage from `MAGIC_DAMAGE`, 810 ms cast, MP cost via the cheapest MP potion, the shared hit check, INT/LUK gear advice (`src/magicianGear.ts`), skill-point advice for Energy Bolt and Magic Claw, level-up
+- [x] Review fixes: monster DEF reduces spells by Raw x 100 / (DEF + 100) as the sourced comment says; the spell is chosen per monster on EXP per meso; Magic Claw needs Energy Bolt 1; (HP)/(MP) on the potion line; Edith's Dutch fixes
+- [x] Out of this branch and filed: the physical defence formula (#89), Magic Claw per hit or per cast (#90), the naming debt sites (comment on #69)
 
 ### TEST
 
+- [x] Tycho: hand-computed tests on `spellAttack`, INT boundaries, defence, spell choice and the Wind Shoes boundary; `npm test` and `npm run lint` green
+- [x] Victor: code review, then a re-review of the fix delta
+- [x] Edith: the Dutch UI text
+
 ### DEPLOY: app/43-magician-model
 
-**Score:**
+De Magician is nu te kiezen en wordt doorgerekend. De app kiest per monster de spreuk (Energy Bolt of Magic
+Claw) die de minste potions per EXP kost, rekent met 810 ms per cast en met Orange als MP-potion, en trekt de
+DEF van het monster van de spreukschade af volgens de damage-formule van NiaMeowDB. Wands, staffs en armor
+worden geadviseerd op INT en LUK, en de skillpoint-adviezen gaan over Energy Bolt en Magic Claw. De
+potionregel zegt voortaan bij elke job welke potion HP is en welke MP.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Magician in the mob model and on the screen
-
