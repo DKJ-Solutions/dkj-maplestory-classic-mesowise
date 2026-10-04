@@ -517,6 +517,15 @@ describe('bewaren na elke wijziging', () => {
     expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('Slime (lv 6)')
   })
 
+  it('zet bij de mob meteen zijn HP, EXP en schade, op de kaart en in de keuzelijst', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Laatst gejaagd op/ }))
+    const select = screen.getByLabelText('De mob die je het meest killt') as HTMLSelectElement
+    // Pig op MeowDB: 128 HP, 13 EXP, Touch DMG 16–22 (src/data/spots.ts).
+    expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7): 128 HP · 13 EXP · 16–22 dmg')
+    fireEvent.change(select, { target: { value: 'Pig' } })
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('128 HP · 13 EXP · 16–22 dmg')
+  })
+
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
     expect(document.querySelector('.summary')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Laatst gejaagd op/ }))

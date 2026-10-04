@@ -7,7 +7,7 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import { MAX_NAME_LENGTH, type SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOBS, findKnownSpot, huntedMob, mobDraft } from './data/spots'
-import type { ArmorSlot, Potion } from './data/types'
+import type { ArmorSlot, Monster, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
@@ -1218,6 +1218,9 @@ function Warnings(props: { s: MonsterSuggestion | undefined }) {
   )
 }
 
+/** Wat een mob heeft en geeft, in één regel (Dave, 4 oktober 2026): HP, EXP per kill en de schade als hij je raakt. */
+const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.expPerKill)} EXP · ${nfInt.format(m.touch.min)}–${nfInt.format(m.touch.max)} dmg`
+
 /**
  * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
  * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in.
@@ -1250,6 +1253,7 @@ function HuntedMobCard(props: {
           <span>
             {title}
             <small class="hunted-mob">{mob ? `${mob.name} (lv ${mob.level})` : 'Kies een mob'}</small>
+            {mob && <small class="hunted-mob">{mobStats(mob)}</small>}
           </span>
         </span>
         {mob && (
@@ -1275,14 +1279,14 @@ function HuntedMobCard(props: {
               {!mob && <option value="">Kies een mob</option>}
               {MOBS.map((m) => (
                 <option key={m.name} value={m.name}>
-                  {m.name} (lv {m.level})
+                  {m.name} (lv {m.level}): {mobStats(m)}
                 </option>
               ))}
             </select>
           </label>
           {mob && (
             <p class="hint">
-              {nfInt.format(mob.hp)} HP, {nfInt.format(mob.expPerKill)} EXP per kill. Bron:{' '}
+              {mobStats(mob)} (dmg: de schade als hij je raakt). Bron:{' '}
               <a href={mob.source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
