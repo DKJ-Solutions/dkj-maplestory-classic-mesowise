@@ -75,7 +75,7 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
   handberekeningen; `npm test` 403 groen, lint en build groen
 - [x] Review: Victor (drie rondes), Sebastian (geen bevindingen), Edith (zes tekstpunten verwerkt)
 - [x] Bevinding: het scherm zelf heeft geen component-tests. Apart gemeld in #40.
-- [ ] Dave heeft het scherm bekeken en akkoord gegeven
+- [x] Dave heeft het scherm bekeken en akkoord gegeven (4 oktober 2026)
 
 ### DEPLOY: app/equipment-section
 
