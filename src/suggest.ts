@@ -4,7 +4,7 @@ import { expPerHour, potionCostPerHour } from './calc/expPerHour'
 import { ASSUMPTIONS, characterAttack, estimateMob, meleeAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { POTIONS } from './data/spots'
-import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS, SUBI } from './data/thief'
+import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion } from './data/types'
 import { POWER_STRIKE_LEVELS } from './data/warrior'
 import { toCharacter, type Profile } from './profile'
@@ -47,7 +47,7 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één ster kost: een Warrior gooit niets, dus 0. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars; een Warrior gooit niets, dus 0. */
   rechargePerStar: number
 }
 
@@ -55,7 +55,7 @@ export interface MonsterSuggestion {
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attack = attackOf(profile, character)
-  const rechargePerStar = profile.job === 'warrior' ? 0 : SUBI.rechargePerStar
+  const rechargePerStar = profile.job === 'warrior' ? 0 : profile.starRecharge
   return spot.monsters
     .map((monster) => {
       const estimate = estimateMob(character, attack, monster, assumptions)

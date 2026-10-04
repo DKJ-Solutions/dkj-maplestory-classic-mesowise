@@ -41,11 +41,12 @@ export interface SkillLevel {
   damagePct: number
 }
 
-/** Throwing stars: de weapon attack en wat het herladen per ster kost. */
+/** Throwing stars: de weapon attack, wat het herladen per star kost en het level dat ze vragen. */
 export interface ThrowingStar {
   name: string
   watk: number
   rechargePerStar: number
+  level: number
   source: Source
 }
 
@@ -143,6 +144,41 @@ export interface MagicianWeapon extends ShopItem, Requires<'int' | 'luk'> {
 /** Een stuk Magician-armor uit een NPC-winkel: wat het vraagt (level, INT, LUK), wat het aan WDEF en MDEF geeft en wat het kost. */
 export interface MagicianArmor extends ShopArmor, Requires<'int' | 'luk'> {
   mdef: number
+}
+
+/** De soort Bowman-wapen: een boog of een kruisboog (de pijlen verschillen per soort). */
+export type BowmanWeaponKind = 'bow' | 'crossbow'
+
+/**
+ * Een boog of kruisboog uit een NPC-winkel: wat hij vraagt (level, DEX, STR), wat hij geeft en wat hij kost.
+ * Een eis die de pagina niet noemt staat als 0. De snelheid is het label en de "Attack cycle" van de itempagina.
+ */
+export interface BowmanWeapon extends ShopItem, Requires<'dex' | 'str'> {
+  kind: BowmanWeaponKind
+  watk: number
+  speed: { label: string; attackMs: number }
+}
+
+/** Een stuk Bowman-armor uit een NPC-winkel: wat het vraagt (level, DEX, STR), wat het aan WDEF geeft en wat het kost. Geen MDEF: de pagina's tonen er geen. */
+export interface BowmanArmor extends ShopArmor, Requires<'dex' | 'str'> {}
+
+/** Pijlen: de weapon attack die ze bijdragen en wat ze per pijl kosten. Pijlen worden gekocht, niet herladen (anders dan ThrowingStar). */
+export interface Arrow {
+  name: string
+  watk: number
+  pricePerArrow: number
+  /** Voor welke soort wapen: pijlen voor bogen of voor kruisbogen. */
+  for: BowmanWeaponKind
+  source: Source
+}
+
+/** Focus per skill-level: de extra accuracy en evasion, wat de buff aan MP kost en hoe lang hij duurt. */
+export interface FocusLevel {
+  level: number
+  accuracy: number
+  evasion: number
+  mp: number
+  seconds: number
 }
 
 /** Een spreuk per skill-level (Energy Bolt, Magic Claw): zoals Lucky Seven, plus de spell mastery in procent-stappen van de pagina. */

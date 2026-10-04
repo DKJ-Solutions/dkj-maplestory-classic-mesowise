@@ -13,6 +13,9 @@ import {
   loadEquipment,
   saveEquipment,
   searchCatalog,
+  isOptionalSlot,
+  slotLabel,
+  slotsFor,
   statName,
   statOverride,
   wornName,
@@ -23,7 +26,9 @@ import {
   equipmentForJob,
 } from './equipment'
 import { NPC_ARMOR } from './data/armor'
+import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
+import { THROWING_STARS } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR, WORN_ARMOR } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
@@ -54,9 +59,9 @@ const prof = (over: Partial<ProfileDraft>): ProfileDraft => ({ ...DEFAULT_PROFIL
 const stored = (slots: unknown, version: unknown = 1) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version, slots }) })
 
 describe('defaultEquipment en catalogItems', () => {
-  it('begint met vijf slots die allemaal nog niet zijn ingevuld', () => {
+  it('begint met zes slots die allemaal nog niet zijn ingevuld', () => {
     const eq = defaultEquipment()
-    expect(Object.keys(eq).sort()).toEqual(['bottom', 'claw', 'hat', 'shoes', 'top'])
+    expect(Object.keys(eq).sort()).toEqual(['ammo', 'bottom', 'claw', 'hat', 'shoes', 'top'])
     for (const { slot } of EQUIP_SLOTS) expect(eq[slot]).toEqual(unknown)
     expect(wornWdef(eq)).toEqual({})
   })
@@ -232,6 +237,7 @@ describe('entryLabel', () => {
 describe('wornWdef en wornName', () => {
   const eq: Equipment = {
     claw: shop('Meba'),
+    ammo: unknown,
     hat: unknown,
     top: shop('Red Pao'),
     bottom: unknown,
@@ -445,6 +451,7 @@ describe('loadEquipment en saveEquipment', () => {
     const storage = fakeStorage()
     const eq: Equipment = {
       claw: shop('Meba'),
+      ammo: shop('Wolbi Throwing Stars'),
       hat: other('5', 'Mijn muts'),
       top: other('0', 'Startshirt'),
       bottom: unknown,
@@ -574,12 +581,14 @@ describe('equipment per job', () => {
   const others: Job[] = ['magician', 'bowman']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const storedFor = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
-  const thiefGear: Equipment = { claw: shop('Meba'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
+  const thiefGear: Equipment = { claw: shop('Meba'), ammo: shop('Subi Throwing Stars'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
 
   it('heeft voor de Thief in elk slot een catalogus en voor een andere job niets, ook niet in de zoekbalk', () => {
     for (const s of slots) {
       expect(catalogItems(s, 'thief').length, s).toBeGreaterThan(0)
       for (const j of others) {
+        // Het ammo-slot van de Bowman heeft pijlen (zie de tests van het ammo-slot).
+        if (s === 'ammo' && j === 'bowman') continue
         expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
         expect(searchCatalog(s, j, ''), `${s} ${j}`).toEqual([])
       }
@@ -612,7 +621,7 @@ describe('equipment per job', () => {
     const eq: Equipment = { ...thiefGear, bottom: other('7', 'Mijn broek') }
     for (const j of others) {
       const out = equipmentForJob(eq, j)
-      for (const s of ['claw', 'hat', 'top', 'shoes'] as const) expect(out[s], `${s} ${j}`).toEqual(unknown)
+      for (const s of ['claw', 'ammo', 'hat', 'top', 'shoes'] as const) expect(out[s], `${s} ${j}`).toEqual(unknown)
       expect(out.bottom, j).toEqual(other('7', 'Mijn broek'))
     }
   })
@@ -646,8 +655,8 @@ describe('equipment per job', () => {
 describe('equipment voor een Warrior', () => {
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
-  const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
-  const warriorShop: Equipment = { claw: shop('Gladius'), hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, shoes: shop('Bronze Grieves') }
+  const thiefShop: Equipment = { claw: shop('Meba'), ammo: unknown, hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
+  const warriorShop: Equipment = { claw: shop('Gladius'), ammo: unknown, hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, shoes: shop('Bronze Grieves') }
 
   describe('catalogItems voor een Warrior', () => {
     it('geeft bij Weapon de NPC-wapens van de Warrior, dan de wapens zonder prijs, met naam, level en weapon attack', () => {
@@ -690,8 +699,11 @@ describe('equipment voor een Warrior', () => {
       expect(catalogItems('hat', 'thief').map((i) => i.name)).toContain('Red Thief Hood')
     })
 
-    it('geeft Magician en Bowman nog niets', () => {
-      for (const s of slots) for (const j of ['magician', 'bowman'] as const) expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
+    it('geeft Magician en Bowman nog niets, behalve de pijlen van de Bowman (issue #65)', () => {
+      for (const s of slots) for (const j of ['magician', 'bowman'] as const) {
+        if (s === 'ammo' && j === 'bowman') continue
+        expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
+      }
     })
 
     it('heeft geen dubbele namen in een lijst en geen naam die bij de Thief en de Warrior een ander item is', () => {
@@ -832,5 +844,72 @@ describe('equipment voor een Warrior', () => {
       expect(saveEquipment(storage, warriorShop)).toBe(true)
       expect(loadEquipment(storage, 'warrior')).toEqual(warriorShop)
     })
+  })
+})
+
+describe('het ammo-slot (issue #65)', () => {
+  const prof = (patch: Partial<ProfileDraft> = {}): ProfileDraft => ({ ...DEFAULT_PROFILE, ...patch })
+
+  it('heeft voor de Thief alle stars uit de lijst, met hun weapon attack en level', () => {
+    expect(catalogItems('ammo', 'thief').map((i) => i.name)).toEqual(THROWING_STARS.map((t) => t.name))
+    expect(catalogItems('ammo', 'thief').find((i) => i.name === 'Wolbi Throwing Stars')).toEqual({ name: 'Wolbi Throwing Stars', level: 10, stat: 17 })
+  })
+
+  it('heeft voor de Bowman de pijlen, zonder level', () => {
+    expect(catalogItems('ammo', 'bowman').map((i) => i.name)).toEqual(NPC_ARROWS.map((a) => a.name))
+    expect(catalogItems('ammo', 'bowman')[0].level).toBeUndefined()
+  })
+
+  it('is er alleen voor de Thief en de Bowman: een Warrior of Magician gooit niets', () => {
+    expect(slotsFor('thief').map((s) => s.slot)).toContain('ammo')
+    expect(slotsFor('bowman').map((s) => s.slot)).toContain('ammo')
+    expect(slotsFor('warrior').map((s) => s.slot)).not.toContain('ammo')
+    expect(slotsFor('magician').map((s) => s.slot)).toEqual(['claw', 'hat', 'top', 'bottom', 'shoes'])
+  })
+
+  it('heet voor elke job Ammo, en is als enige slot optioneel', () => {
+    expect(slotLabel('ammo')).toBe('Ammo')
+    expect(slotLabel('claw')).toBe('Weapon')
+    expect(EQUIP_SLOTS.filter((s) => isOptionalSlot(s.slot)).map((s) => s.slot)).toEqual(['ammo'])
+  })
+
+  it('zet bij een andere star zijn weapon attack en herlaadprijs in het profiel', () => {
+    const p = applyEquipChange(prof(), 'ammo', unknown, shop('Tobi Throwing Stars'))
+    expect(p.starWatk).toBe('23')
+    expect(p.starRecharge).toBe('0.7')
+    expect(p.clawWatk).toBe(DEFAULT_PROFILE.clawWatk)
+  })
+
+  it('zet bij een gecorrigeerde weapon attack van dezelfde star alleen de weapon attack', () => {
+    const p = applyEquipChange(prof({ starRecharge: '0.4' }), 'ammo', shop('Wolbi Throwing Stars'), shop('Wolbi Throwing Stars', '18'))
+    expect(p.starWatk).toBe('18')
+    expect(p.starRecharge).toBe('0.4')
+  })
+
+  it('laat bij een eigen star de herlaadprijs staan: die weet de app niet', () => {
+    const p = applyEquipChange(prof(), 'ammo', unknown, other('20', 'Mijn stars'))
+    expect(p.starWatk).toBe('20')
+    expect(p.starRecharge).toBe(DEFAULT_PROFILE.starRecharge)
+  })
+
+  it('verandert niets aan het profiel bij pijlen: de Bowman rekent de app nog niet door', () => {
+    expect(applyEquipChange(prof(), 'ammo', unknown, shop('Arrows for Bows'))).toEqual(prof())
+  })
+
+  it('geeft stars WATK (ATT) en geen WDEF', () => {
+    expect(statName('ammo')).toBe('ATT')
+    expect(wornWdef({ ...defaultEquipment(), ammo: shop('Ilbi Throwing Stars') })).toEqual({})
+    expect(wornStat('ammo', shop('Ilbi Throwing Stars'))).toBe(27)
+  })
+
+  it('laat een bewaarde star staan voor de Thief en maakt hem "nog niet ingevuld" voor een Bowman', () => {
+    const storage = fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: { ammo: { pick: 'Kumbi Throwing Stars' } } }) })
+    expect(loadEquipment(storage, 'thief').ammo).toEqual(shop('Kumbi Throwing Stars'))
+    expect(loadEquipment(storage, 'bowman').ammo).toEqual(unknown)
+  })
+
+  it('geeft een oude opslag zonder ammo-slot een leeg ammo-slot', () => {
+    const storage = fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: { claw: { pick: 'Meba' } } }) })
+    expect(loadEquipment(storage, 'thief').ammo).toEqual(unknown)
   })
 })

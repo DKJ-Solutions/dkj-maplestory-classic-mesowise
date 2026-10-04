@@ -56,6 +56,21 @@ describe('toCharacter', () => {
     if (!('profile' in r)) throw new Error('voorbeeldprofiel ongeldig')
     expect(toCharacter(r.profile).watk).toBe(10 + 15)
   })
+
+  it('telt de weapon attack van de gekozen stars mee in plaats van die van Subi', () => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, starWatk: '23' })
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    expect(toCharacter(r.profile).watk).toBe(10 + 23)
+  })
+
+  it('blokkeert de berekening niet bij een eigen star met een hoge weapon attack', () => {
+    expect('profile' in parseProfile({ ...DEFAULT_PROFILE, starWatk: '150' })).toBe(true)
+  })
+
+  it('begint met de stars van Subi: weapon attack 15, herladen 0,3 per star', () => {
+    expect(DEFAULT_PROFILE.starWatk).toBe('15')
+    expect(DEFAULT_PROFILE.starRecharge).toBe('0.3')
+  })
 })
 
 describe('loadProfile en saveProfile', () => {
@@ -128,7 +143,7 @@ describe('profileFieldsFor', () => {
 
   it('noemt het wapenveld niet meer een claw', () => {
     const label = PROFILE_FIELDS.find((f) => f.key === 'clawWatk')!.label
-    expect(label).toBe('Weapon attack van je wapen')
+    expect(label).toBe('ATT van je wapen')
     expect(label).not.toMatch(/claw/i)
   })
 })

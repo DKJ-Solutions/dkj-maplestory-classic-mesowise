@@ -31,13 +31,34 @@ export const NIMBLE_BODY = {
   source: { url: 'https://meowdb.com/msclassic/skills/thief/nimble-body', retrieved: R } satisfies Source,
 } as const
 
+// De starpagina's (294 tot 300) zijn op 4 oktober 2026 alle zeven gelezen, Subi opnieuw (zijn waarden klopten).
+const STARS_RETRIEVED = '2026-10-04'
+const star = (id: number, name: string, watk: number, rechargePerStar: number): ThrowingStar => ({
+  name,
+  watk,
+  rechargePerStar,
+  level: 10,
+  source: { url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: STARS_RETRIEVED },
+})
+
 /** De goedkoopste stars, die je laat herladen in plaats van nieuwe te kopen (het levelplan). */
-export const SUBI: ThrowingStar = {
-  name: 'Subi Throwing Stars',
-  watk: 15,
-  rechargePerStar: 0.3,
-  source: { url: 'https://meowdb.com/msclassic/item-db/294', retrieved: R },
-}
+export const SUBI: ThrowingStar = star(294, 'Subi Throwing Stars', 15, 0.3)
+
+/**
+ * De throwing stars die je kunt kiezen, per itempagina: weapon attack en herladen per star, elk level 10. Alleen
+ * Subi (twaalf NPC's) en Wolbi (alleen Max, Kerning City Civic Center) verkoopt een NPC; de rest is een drop of
+ * Free Market, maar wie ze heeft, laat ze net zo herladen. Steely Throwing Knives staan erbij: de pagina noemt
+ * de waarden, alleen waar je ze krijgt nog niet ("Coming soon").
+ */
+export const THROWING_STARS: readonly ThrowingStar[] = [
+  SUBI,
+  star(295, 'Wolbi Throwing Stars', 17, 0.4),
+  star(296, 'Mokbi Throwing Stars', 19, 0.5),
+  star(297, 'Kumbi Throwing Stars', 21, 0.6),
+  star(298, 'Tobi Throwing Stars', 23, 0.7),
+  star(299, 'Steely Throwing Knives', 25, 0.8),
+  star(300, 'Ilbi Throwing Stars', 27, 0.9),
+]
 
 /** De damage-formule (min en max van een aanval) en de mastery-regel van de gewone aanval. */
 export const DAMAGE_FORMULA_SOURCE: Source = {
@@ -75,3 +96,10 @@ export const ACCURACY_SOURCE: Source = { url: 'https://meowdb.com/msclassic/guid
  */
 export const baseAccuracy = (dex: number, level: number, luk: number): number =>
   Math.floor((12 * dex + 20 * level + 6 * luk + 600) / 40)
+
+/**
+ * Het stat-deel van de avoid (EVA), voor elke job hetzelfde: floor(LUK / 3) + floor(DEX / 6) + 5, met de totale
+ * DEX en LUK en zonder level. Avoid uit skills (Nimble Body) en items komt er los bij. Bron: de damage-formule-gids,
+ * sectie "Derived combat stats" (DAMAGE_FORMULA_SOURCE); het voorbeeld daar: LUK 4 en DEX 30 geven 11.
+ */
+export const baseAvoid = (dex: number, luk: number): number => Math.floor(luk / 3) + Math.floor(dex / 6) + 5

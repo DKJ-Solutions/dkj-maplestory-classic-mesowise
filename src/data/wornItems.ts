@@ -42,7 +42,6 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Blue Bandana', slot: 'hat', level: 10, wdef: 15, source: src(721) },
   { name: 'Yellow Bandana', slot: 'hat', level: 10, wdef: 15, source: src(722) },
   { name: 'Black Bandana', slot: 'hat', level: 10, wdef: 15, source: src(723) },
-  { name: 'Red Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, source: src(732) },
   { name: 'Blue Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, source: src(733) },
   { name: 'Brown Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, source: src(734) },
   { name: 'Black Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, source: src(735) },

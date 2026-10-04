@@ -2,7 +2,145 @@
 
 ## [Unreleased]
 
-**17 / 31 minor entries** <!-- pending-tally -->
+**20 / 37 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/58-att-def-names · 20261004-103805Z
+
+The app now names the weapon stat ATT and the armor stat DEF everywhere, as the game does: in the
+character fields and in the armor advice, not only on the equipment card. Both names come from one
+constant, so they cannot drift apart again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+One stat had two names on one screen (ATT on the equipment card, WDEF in the armor advice); a player
+no longer has to wonder whether they are the same number.
+
+**Score:** 2
+
+#### Pull Request
+
+ATT and DEF everywhere the UI names the weapon and armor stats
+
+[PR #73](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/73)
+
+---
+
+### DEPLOY: app/63-stat-editor · 20261004-103333Z
+
+The stat popups of the character card and the equipment card are now built from one shared piece, so the two can
+no longer drift apart. Nothing changes in what you see, except that integer stats on the character card open the
+plain number pad on an iPhone, as the equipment stats already did.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Shared StatEditor for the character and equipment stat popups
+
+[PR #72](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/72)
+
+---
+
+### DEPLOY: app/65-ranged-ammo · 20261004-103041Z
+
+The equipment card gets an optional Ammo slot. A Thief picks their throwing stars there (Subi, Wolbi, Mokbi,
+Kumbi, Tobi, Steely or Ilbi), and the advice counts their weapon attack and their recharge price. A Bowman sees only
+arrows there, which the app shows but does not count yet; a Warrior or Magician has no such slot. Without a choice the app still counts with Subi.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Thief who uses better stars than Subi now sees advice that counts them: more damage per throw, and the
+recharge price of those stars in the cost per hour.
+
+**Score:** 4
+
+#### Pull Request
+
+Choose your ranged ammo on the equipment card: throwing stars (Thief) and arrows (Bowman)
+
+[PR #71](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/71)
+
+---
+
+### DEPLOY: data/49-ghetto-beanie · 20261004-102513Z
+
+Een Thief krijgt op level 10 nu ook een hoed in het armor-advies: de Ghetto Beanie (15 WDEF, 1.200 meso bij
+Don Hwang in Kerning City). Omdat hij goedkoop is, komt hij ook op hogere levels als hoed naar voren waar
+de Thief Hood duurder is dan wat hij extra bespaart.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ghetto Beanie als level-10 Thief-hoed in de NPC-armor (#49)
+
+[PR #70](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/70)
+
+---
+
+### DEPLOY: app/profile-stats-pencil · 20261004-101708Z
+
+The character card is now read-only at a glance: each stat sits on one row with its value and a pencil, and a
+change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Accuracy and avoid show the value the formulas expect, struck through beside the
+number when your game differs, with Reset in the popup. Level, Max HP,
+weapon attack and WDEF are no longer on this card.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player can no longer change a stat by an accidental tap or scroll, and the card takes far less height on a
+phone; level, max HP, weapon attack and WDEF are set where they belong (Level up and the equipment card).
+
+**Score:** 3
+
+#### Pull Request
+
+Character stats editable only via the pencil, like equipment
+
+[PR #67](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/67)
+
+---
+
+### DEPLOY: data/44-bowman · 20261004-101706Z
+
+De Bowman heeft nu eigen spelgegevens, elk met zijn bron: de bogen, kruisbogen en armor uit de NPC-winkels voor
+level 10 tot 30, de gewone pijlen (1 meso per pijl), Arrow Blow en Double Shot per level, Critical Shot, The Eye
+of Amazon en Focus, HP en MP per level, de accuracy-formule en de constanten van de projectiel-schade. In de app
+verandert nog niets: de Bowman blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Bronze
+arrows ontbreken nog (#64), en een mannelijke Bowman heeft in de winkel geen broek op level 15.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bowman-gegevens met bronnen: bogen, kruisbogen, pijlen, armor, skills en HP/MP (stap 1 van #44)
+
+[PR #68](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/68)
+
+---
 
 ### DEPLOY: data/43-magician · 20261004-100326Z
 

@@ -15,16 +15,18 @@
 // - Handschoenen, overalls en schilden: er is geen NPC-item voor een Thief in level 10 tot 30 met een
 //   prijs op MeowDB.
 //
-// Er is geen Thief-hoed op level 10 met een jobregel. De Pao Bottoms en Qi Pao Pants hebben een mannen- en
-// een vrouwenversie met dezelfde stats, dus die blijven. 'Red Stealer Pants' is de naam zoals
-// hij hier staat; de pagina noemt hem "Red / Gold".
+// De Ghetto Beanie (level 10, jobregel Thief) verkoopt Don Hwang in Kerning City in vijf kleuren voor 1.200
+// meso (#49, gelezen op 2026-10-04); hier staat de rode, de andere kleuren staan in wornItems.ts.
+// De Pao Bottoms en Qi Pao Pants hebben een mannen- en een vrouwenversie met dezelfde stats, dus die
+// blijven. 'Red Stealer Pants' is de naam zoals hij hier staat; de pagina noemt hem "Red / Gold".
 import type { Armor, Source } from './types'
 
 const R = '2026-10-03'
-const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
+const src = (id: number, retrieved = R): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved })
 
 /** De NPC-armor, per slot (hat, top, bottom, shoes) van laag naar hoog level. */
 export const NPC_ARMOR: readonly Armor[] = [
+  { name: 'Red Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, luk: 10, dex: 0, price: 1_200, source: src(732, '2026-10-04') },
   { name: 'Red Thief Hood', slot: 'hat', level: 15, wdef: 18, luk: 20, dex: 0, price: 1_900, source: src(756) },
   { name: 'Red Loosecap', slot: 'hat', level: 20, wdef: 21, luk: 30, dex: 10, price: 3_600, source: src(776) },
   { name: 'Red Tiberian', slot: 'hat', level: 25, wdef: 24, luk: 40, dex: 15, price: 4_500, source: src(803) },

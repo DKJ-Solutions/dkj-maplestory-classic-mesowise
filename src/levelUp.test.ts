@@ -18,7 +18,7 @@ import {
 } from './levelUp'
 import { isSkillKey } from './data/skills'
 import type { Job } from './job'
-import { DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, statFieldsFor, type Profile } from './profile'
+import { AMMO_FIELDS, DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, statFieldsFor, type Profile } from './profile'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -269,9 +269,10 @@ describe('huntingGroundAdvice', () => {
 })
 
 describe('CHECK_FIELDS', () => {
-  it('bevat elke stat precies één keer, en geen skills (die hebben hun eigen kaart)', () => {
+  it('bevat elke stat precies één keer, en geen skills of stars (die hebben hun eigen kaart)', () => {
     const keys = CHECK_FIELDS.map((f) => f.key)
-    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k))
+    const ammo = AMMO_FIELDS.map((f) => f.key)
+    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k) && !ammo.includes(k))
     expect([...keys].sort()).toEqual([...stats].sort())
     expect(new Set(keys).size).toBe(keys.length)
   })
@@ -337,7 +338,7 @@ describe('checkFieldsFor', () => {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
-      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key)).length)
+      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f)).length)
     }
   })
 })

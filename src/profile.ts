@@ -4,6 +4,7 @@
 import type { Character } from './calc/mobModel'
 import { isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
+import { STAT_NAME } from './equipment'
 import type { Job } from './job'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
@@ -26,18 +27,31 @@ const STATS = [
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
-  { key: 'clawWatk', label: 'Weapon attack van je wapen', min: 0, max: 999, integer: true },
+  { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
   { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
-  { key: 'wdef', label: 'WDEF', min: 0, max: 9_999, integer: true },
+  { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
+/**
 /**
  * De weapon multiplier van je wapen, alleen voor een Warrior (de Thief heeft de vaste waarden van zijn aanval).
  * Een wapen uit de winkel vult hem in; kies je een ander wapen, dan staat hier wat je zelf invult.
  */
 const WEAPON_MULT_FIELD = { key: 'weaponMult', label: 'Weapon multiplier van je wapen', min: 1, max: 5, integer: false } as const
+
+/**
+ * Je stars (issue #65): hun weapon attack en wat het herladen per ster kost. Geen kaart toont ze; de star die je bij
+ * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi. Een Warrior gooit niets:
+ * voor hem tellen ze niet mee (zie toCharacter en suggestMonsters).
+ */
+const AMMO = [
+  // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
+  // toont, mag de berekening niet blokkeren.
+  { key: 'starWatk', label: `${STAT_NAME.weapon} van je stars`, min: 0, max: 999, integer: true },
+  { key: 'starRecharge', label: 'Herladen per star (meso)', min: 0, max: 100, integer: false },
+] as const
 
 /** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
 const skillFields = (skills: readonly SkillInfo[]): readonly ProfileField[] =>
@@ -45,15 +59,18 @@ const skillFields = (skills: readonly SkillInfo[]): readonly ProfileField[] =>
 const SKILL_FIELDS = skillFields(THIEF_SKILLS)
 const WARRIOR_SKILL_FIELDS = skillFields(WARRIOR_SKILLS)
 
-export type ProfileKey = (typeof STATS)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
 
 /** De stats van je karakter; je skills hebben hun eigen kaart. */
 export const STAT_FIELDS: readonly ProfileField[] = STATS
 
-/** De getalvelden van een Thief: eerst de stats, dan de skills. */
-export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...SKILL_FIELDS]
+/** De velden van je stars; ze komen uit je equipment. */
+export const AMMO_FIELDS: readonly ProfileField[] = AMMO
 
-/** De getalvelden van een Warrior: dezelfde stats plus de weapon multiplier, en de Beginner-skills met die van zijn 1e job. */
+/** De getalvelden van een Thief: eerst de stats, dan je stars, dan de skills. */
+export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...AMMO_FIELDS, ...SKILL_FIELDS]
+
+/** De getalvelden van een Warrior: dezelfde stats plus de weapon multiplier (zonder stars), en de Beginner-skills met die van zijn 1e job. */
 const WARRIOR_FIELDS: readonly ProfileField[] = [
   ...STAT_FIELDS,
   WEAPON_MULT_FIELD,
@@ -81,8 +98,8 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
       ? WARRIOR_FIELDS
       : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
 
-/** De stats (zonder skills) die een job invult, voor de kaart "Je karakter". */
-export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key))
+/** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
+export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
 
 /** Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. */
 export const DEFAULT_PROFILE: ProfileDraft = {
@@ -96,6 +113,8 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   avoid: '23',
   wdef: '72',
   attackMs: String(ATTACK_MS.fast5),
+  starWatk: String(SUBI.watk),
+  starRecharge: String(SUBI.rechargePerStar),
   threeSnails: '0',
   nimbleFeet: '0',
   recovery: '0',
@@ -139,7 +158,7 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
   return { profile: out }
 }
 
-/** Het profiel in de vorm van het mob-model: bij een Thief zijn de stars Subi's, dus hun weapon attack telt mee. */
+/** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw; een Warrior gooit niets. */
 export function toCharacter(p: Profile): Character {
   return {
     level: p.level,
@@ -147,7 +166,7 @@ export function toCharacter(p: Profile): Character {
     str: p.str,
     dex: p.dex,
     luk: p.luk,
-    watk: p.job === 'warrior' ? p.clawWatk : p.clawWatk + SUBI.watk,
+    watk: p.job === 'warrior' ? p.clawWatk : p.clawWatk + p.starWatk,
     accuracy: p.accuracy,
     avoid: p.avoid,
     wdef: p.wdef,
