@@ -39,21 +39,37 @@
 
 ### PLAN
 
+Stap 1 van #42: de Warrior-gegevens als zuivere module met bronnen, nog niet aangesloten op het mob-model
+of het scherm. Het aansluiten is een volgende stap; #42 blijft daarvoor open.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Bronnen gezocht bij NiaMeowDB (Rebecca); de ruwe pagina's opgehaald op 2026-10-04
+- [x] `src/data/warrior.ts` en de Warrior-typen in `src/data/types.ts`, elk getal tegen de ruwe pagina gecontroleerd (Vera)
+- [x] De uitsluitingen volgens de regel van `armor.ts` (geen jobregel, alleen mannen) als beslissing gefiled: #55
 
 ### TEST
 
+- [ ] `src/data/warrior.test.ts` (Tycho)
+- [ ] Review door Victor
+
 ### DEPLOY: data/42-warrior
 
-**Score:**
+De Warrior heeft nu eigen spelgegevens, elk met zijn bron: de wapens en armor uit de NPC-winkels voor level
+10 tot 30, Power Strike en Slash Blast per level, de passieve skills, HP en MP per level, de accuracy-formule
+en de regel dat een gewone aanval voor 60% zwaait en voor 40% steekt. In de app verandert nog niets: de
+Warrior blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Tops en bottoms ontbreken
+nog, want die zijn in de winkel alleen voor mannen (#55).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
-Calculate the Warrior: damage formula, weapons, armor, skills and HP/AP per level
+Warrior-gegevens met bronnen: wapens, armor, skills, HP/MP en accuracy (stap 1 van #42)
 
