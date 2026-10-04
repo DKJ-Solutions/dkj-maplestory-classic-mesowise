@@ -6,15 +6,18 @@
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
-import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { ALL_SKILLS, THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { ENERGY_BOLT_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ARROW_BLOW_LEVELS } from './data/bowman'
 import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
-import type { Profile, ProfileDraft } from './profile'
+import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
+
+const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
 
 /** De skills die het mob-model kan doorrekenen. */
 export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'arrowBlow' | 'energyBolt' | 'magicClaw'>
@@ -212,6 +215,8 @@ export type SkillPointAdvice =
       base: number
       /** Per skill die nog omhoog kan, van meeste naar minste besparing. */
       choices: SkillChoice[]
+      /** Hoeveel skillpunten van de 1e job je op dit level nog hebt; bij 0 is er niets te kiezen. */
+      left: number
       /** De namen van de skills die al op het maximum staan. */
       maxed: string[]
       /** De skill met de grootste besparing boven 0, of null als geen punt iets bespaart. */
@@ -225,8 +230,10 @@ const bySaving = (a: SkillChoice, b: SkillChoice) => (b.saving ?? -Infinity) - (
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions) {
   const base = mesoCost(drafts, profile, a)
   if (typeof base !== 'number') return null
+  // De modelleerbare skills zijn allemaal van de 1e job: zonder punt over in die pot is er niets te kiezen.
+  const left = skillPointsLeft(profile, 'job')
   const choices = skillsOf(profile.job)
-    .filter((s) => s.level(profile) < s.max && (s.learnable?.(profile) ?? true))
+    .filter((s) => left > 0 && s.level(profile) < s.max && (s.learnable?.(profile) ?? true))
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
       const known = typeof meso === 'number'
@@ -235,7 +242,19 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
     .sort(bySaving)
   const top = choices[0]
   const winner = top && top.saving !== null && top.saving > 0 ? top.id : null
-  return { base, choices, winner }
+  return { base, choices, winner, left }
+}
+
+/** De skillpunten van een pot zoals de speler ze nu heeft gezet, tegenover wat zijn level hem geeft; `cap` is null als het level geen geldig getal is. */
+export function skillPoolUsage(draft: ProfileDraft, job: Job, pool: SkillPool): { spent: number; cap: number | null } {
+  const shown = profileFieldsFor(job).map((f) => f.key)
+  const spent = skillLevels(draft, ALL_SKILLS)
+    .filter((s) => shown.includes(s.key) && skillPoolOf(s.job) === pool)
+    .reduce((sum, s) => sum + (s.level ?? 0), 0)
+  const text = draft.level.trim()
+  const level = text === '' ? NaN : Number(text)
+  const valid = Number.isInteger(level) && level >= LEVEL_FIELD.min && level <= LEVEL_FIELD.max
+  return { spent, cap: valid ? skillPointCap(level, pool) : null }
 }
 
 export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile | null): SkillPointAdvice {

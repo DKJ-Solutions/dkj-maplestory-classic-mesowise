@@ -1651,3 +1651,72 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
   })
 })
+
+describe('skillpunten per level (issue #136)', () => {
+  const setProfile = (fields: Partial<ProfileDraft>) => {
+    cleanup()
+    localStorage.clear()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
+    render(<App />)
+  }
+  const plusOf = (card: HTMLElement, skill: string) => within(card).getByLabelText(`${skill} een level hoger`) as HTMLButtonElement
+
+  it('toont op de Skillpoints-kaart per pot "x / y SP"', () => {
+    setProfile({ level: '11', luckySeven: '3', nimbleBody: '1', threeSnails: '2' })
+    const card = openHomeSkills()
+    expect(card.textContent).toContain('4 / 4 SP')
+    expect(card.textContent).toContain('2 / 9 SP')
+  })
+
+  it('zet de + van de skills van de 1e job uit als die pot vol is, en laat de Beginner-skills met rust', () => {
+    setProfile({ level: '11', luckySeven: '3', nimbleBody: '1' })
+    const card = openHomeSkills()
+    expect(plusOf(card, 'Lucky Seven').disabled).toBe(true)
+    expect(plusOf(card, 'Keen Eyes').disabled).toBe(true)
+    expect(plusOf(card, 'Three Snails').disabled).toBe(false)
+  })
+
+  it('zet de + van de Beginner-skills uit als de Beginner-pot vol is', () => {
+    setProfile({ level: '5', luckySeven: '0', threeSnails: '3', nimbleFeet: '1' })
+    const card = openHomeSkills()
+    expect(card.textContent).toContain('4 / 4 SP')
+    expect(plusOf(card, 'Recovery').disabled).toBe(true)
+    expect(plusOf(card, 'Three Snails').disabled).toBe(true)
+  })
+
+  it('laat de + aan zolang er een punt over is, en zet er dan een bij', () => {
+    setProfile({ level: '11', luckySeven: '3' })
+    const card = openHomeSkills()
+    expect(plusOf(card, 'Keen Eyes').disabled).toBe(false)
+    fireEvent.click(plusOf(card, 'Keen Eyes'))
+    expect(profileFields().keenEyes).toBe('1')
+    expect(card.textContent).toContain('4 / 4 SP')
+    expect(plusOf(card, 'Keen Eyes').disabled).toBe(true)
+  })
+
+  it('toont alleen wat je zette als het level geen geldig getal is, en zet de + niet uit', () => {
+    setProfile({ level: '', luckySeven: '3' })
+    const card = openHomeSkills()
+    expect(card.textContent).toContain('3 SP')
+    expect(card.textContent).not.toMatch(/\d+ \/ \d+ SP/)
+    expect(plusOf(card, 'Keen Eyes').disabled).toBe(false)
+  })
+
+  it('zegt bij de skillvraag dat je geen skillpunten meer over hebt als de pot vol is', () => {
+    setProfile({ level: '10', luckySeven: '1' })
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    cleanup()
+    render(<App />)
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+    // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
+    expect(section.textContent).not.toContain('geen skillpunten meer over')
+    // Zet de pot vol via de Skillpoints-kaart van het adviesscherm.
+    const card = within(panels()[2]).getByRole('button', { name: /Skillpoints/ })
+    fireEvent.click(card)
+    fireEvent.input(within(panels()[2]).getByLabelText(/^Lucky Seven, level van 0 tot/), { target: { value: '4' } })
+    expect(section.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
+    expect(within(section).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+})

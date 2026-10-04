@@ -391,7 +391,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-group { margin-bottom: 1rem; }
 .skill-group:last-of-type { margin-bottom: 0; }
 .skill-group:last-of-type .skill-row:last-child { border-bottom: 0; }
-.skill-group h3 { margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.skill-group h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+/* Hoeveel punten van de pot je hebt gezet (issue #136); boven het maximum in de foutkleur */
+.skill-sp { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.skill-sp.over { color: #dc2626; }
 .skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
 .skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 /* Onder de naam: de MP die de skill per keer kost op je level (issue #83) */

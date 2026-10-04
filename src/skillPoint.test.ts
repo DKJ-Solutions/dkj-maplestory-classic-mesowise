@@ -8,10 +8,11 @@ import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
 import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
-import { NOT_MODELLED, notModelled, SKILLS, skillLevels, skillPointAdvice, skillsOf, stepSkill } from './skillPoint'
+import { NOT_MODELLED, notModelled, SKILLS, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
-const parsed = parseProfile(DEFAULT_PROFILE)
+// Op level 10 heb je 1 skillpunt van de 1e job (issue #136): het voorbeeldprofiel heeft Lucky Seven 1, dus zet de fixture die op 0.
+const parsed = parseProfile({ ...DEFAULT_PROFILE, luckySeven: '0' })
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
 const profile: Profile = parsed.profile
 
@@ -90,7 +91,7 @@ describe('skillPointAdvice', () => {
   })
 
   it('slaat een skill op het maximum over en noemt hem', () => {
-    const maxed = { ...profile, luckySeven: LUCKY_SEVEN_LEVELS.length }
+    const maxed = { ...profile, level: 30, luckySeven: LUCKY_SEVEN_LEVELS.length }
     const advice = skillPointAdvice(drafts, maxed)
     expect(advice).toMatchObject({ kind: 'advice', maxed: ['Lucky Seven'] })
     if (advice.kind === 'advice') expect(advice.choices.map((c) => c.id)).toEqual(['nimbleBody'])
@@ -277,5 +278,50 @@ describe('skillLevels voor de Warrior', () => {
     const all = skillLevels({ ...DEFAULT_PROFILE, powerStrike: '21', preciseStrikes: '16' }, ALL_SKILLS)
     expect(all.find((s) => s.key === 'powerStrike')!.level).toBeNull()
     expect(all.find((s) => s.key === 'preciseStrikes')!.level).toBeNull()
+  })
+})
+
+describe('skillPoolUsage (issue #136)', () => {
+  const usage = (over: Partial<ProfileDraft>, job: 'thief' | 'warrior', pool: 'beginner' | 'job') => skillPoolUsage({ ...DEFAULT_PROFILE, ...over }, job, pool)
+
+  it('geeft wat je zette en wat je level geeft, per pot', () => {
+    expect(usage({ level: '11', luckySeven: '3', nimbleBody: '1', threeSnails: '2' }, 'thief', 'job')).toEqual({ spent: 4, cap: 4 })
+    expect(usage({ level: '11', luckySeven: '3', nimbleBody: '1', threeSnails: '2' }, 'thief', 'beginner')).toEqual({ spent: 2, cap: 9 })
+  })
+
+  it('telt alleen de skills die de job toont', () => {
+    expect(usage({ level: '30', luckySeven: '9', powerStrike: '7' }, 'warrior', 'job')).toEqual({ spent: 7, cap: 61 })
+    expect(usage({ level: '30', luckySeven: '9', powerStrike: '7' }, 'thief', 'job')).toEqual({ spent: 9, cap: 61 })
+  })
+
+  it('geeft cap null bij een level dat geen geldig getal is, en telt de rest gewoon', () => {
+    for (const level of ['', 'abc', '10.5', '0', '201']) expect(usage({ level, luckySeven: '2' }, 'thief', 'job'), level).toEqual({ spent: 2, cap: null })
+  })
+
+  it('telt een ongeldig skillveld als 0', () => {
+    expect(usage({ level: '10', luckySeven: 'x' }, 'thief', 'job')).toEqual({ spent: 0, cap: 1 })
+  })
+})
+
+describe('skillPointAdvice: punten over (issue #136)', () => {
+  it('geeft de punten die je nog over hebt in `left`', () => {
+    expect(skillPointAdvice(drafts, { ...profile, level: 11 })).toMatchObject({ kind: 'advice', left: 4 })
+    expect(skillPointAdvice(drafts, { ...profile, level: 11, luckySeven: 3 })).toMatchObject({ kind: 'advice', left: 1 })
+  })
+
+  it('adviseert nog gewoon zolang er een punt over is', () => {
+    const advice = skillPointAdvice(drafts, profile)
+    expect(advice).toMatchObject({ kind: 'advice', left: 1 })
+    if (advice.kind === 'advice') expect(advice.choices.length).toBeGreaterThan(0)
+  })
+
+  it('geeft geen keuzes en geen winnaar als er geen punt meer over is, maar toch een advies met left 0', () => {
+    const advice = skillPointAdvice(drafts, { ...profile, luckySeven: 1 })
+    expect(advice).toMatchObject({ kind: 'advice', left: 0, choices: [], winner: null })
+  })
+
+  it('geeft bij een Warrior zonder punt over ook geen keuzes', () => {
+    const warrior = { ...profile, job: 'warrior' as const, level: 10, powerStrike: 1, luckySeven: 0 }
+    expect(skillPointAdvice(drafts, warrior)).toMatchObject({ kind: 'advice', left: 0, choices: [], winner: null })
   })
 })

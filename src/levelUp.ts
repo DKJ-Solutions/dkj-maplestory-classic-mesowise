@@ -8,7 +8,7 @@ import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
-import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
+import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, skillPointsLeft, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
 
 const LEVEL_FIELD = PROFILE_FIELDS.find((f) => f.key === 'level')!
@@ -153,7 +153,8 @@ export const checkFieldsFor = (job: Job) => {
 export function applySkillPoint(draft: ProfileDraft, id: SkillId, job: Job = 'thief'): ProfileDraft {
   const parsed = parseProfile(draft, job)
   const skill = skillsOf(job).find((s) => s.id === id)
-  if (!('profile' in parsed) || !skill || skill.level(parsed.profile) >= skill.max) return draft
+  // Ook zonder punt over in de pot van de 1e job blijft het profiel zoals het was (issue #136).
+  if (!('profile' in parsed) || !skill || skill.level(parsed.profile) >= skill.max || skillPointsLeft(parsed.profile, 'job') <= 0) return draft
   // Alleen de velden die het punt raakt gaan terug in het concept; al het andere (ook wat de speler voor een
   // andere job typte) blijft zoals getypt.
   const after = skill.plusOne(parsed.profile)

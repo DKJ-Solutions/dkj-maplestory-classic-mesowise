@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BRONZE_ARROW, PLAIN_ARROW } from './bowmanGear'
 import { isSkillKey } from './data/skills'
 import { SUBI } from './data/thief'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, skillPointsLeft, skillPointsSpent, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -43,7 +43,7 @@ describe('parseProfile', () => {
   it('meldt een fout skillveld bij Skillpoints, met de grens uit de spelgegevens', () => {
     expect(parse({ keenEyes: '' })).toEqual({ error: 'Vul bij Skillpoints "Keen Eyes" in.', key: 'keenEyes' })
     expect(parse({ threeSnails: '4' })).toEqual({ error: '"Three Snails" moet tussen 0 en 3 liggen.', key: 'threeSnails' })
-    expect(parse({ darkSight: '20', recovery: '3' })).toHaveProperty('profile')
+    expect(parse({ level: '30', darkSight: '20', recovery: '3' })).toHaveProperty('profile')
   })
 
   it('wil hele getallen waar het spel hele getallen heeft', () => {
@@ -294,7 +294,7 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
   it('valideert de Warrior-skills met de maxima uit de spelgegevens, en de Thief-skills niet', () => {
     expect(parseW({ powerStrike: '21' })).toEqual({ error: '"Power Strike" moet tussen 0 en 20 liggen.', key: 'powerStrike' })
     expect(parseW({ preciseStrikes: '16' })).toHaveProperty('error')
-    expect(parseW({ preciseStrikes: '15', slashBlast: '20', ironBody: '20', maxHpIncrease: '15', improvedHpRecovery: '15' })).toHaveProperty('profile')
+    expect(parseW({ level: '50', preciseStrikes: '15', slashBlast: '20', ironBody: '20', maxHpIncrease: '15', improvedHpRecovery: '15' })).toHaveProperty('profile')
     // De Thief-skills zijn voor een Warrior verborgen, dus een kapotte waarde telt niet.
     expect(parseW({ luckySeven: 'x', nimbleBody: '99' })).toHaveProperty('profile')
     // En omgekeerd: een kapotte Warrior-skill telt niet voor een Thief.
@@ -379,5 +379,91 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     expect(shortfall({}, t.profile)).toEqual([])
     expect(shortfall({ int: 20 }, t.profile)).toEqual([{ stat: 'int', amount: 16 }])
     expect(shortfall({ int: 20 }, { ...t.profile, int: 20 })).toEqual([])
+  })
+})
+
+describe('skillpunten per level (issue #136)', () => {
+  const warrior = (over: Partial<ProfileDraft>) => parseProfile({ ...DEFAULT_PROFILE, luckySeven: '0', level: '30', str: '132', ...over }, 'warrior')
+  const keyOf = (r: unknown) => (r as { key: string }).key
+
+  it('laat precies het maximum aan 1e-jobpunten toe, en meldt er één meer', () => {
+    // Level 11: 4 punten.
+    expect(parse({ level: '11', luckySeven: '4' })).toHaveProperty('profile')
+    expect(parse({ level: '11', luckySeven: '3', nimbleBody: '1' })).toHaveProperty('profile')
+    const r = parse({ level: '11', luckySeven: '4', nimbleBody: '1' })
+    expect(r).toMatchObject({ error: 'Je hebt 5 skillpunten in de skills van je 1e job gezet, maar op level 11 heb je er slechts 4.' })
+    expect(['nimbleBody', 'keenEyes', 'doubleStab', 'disorder', 'darkSight', 'luckySeven']).toContain(keyOf(r))
+  })
+
+  it('meldt op level 10 een tweede punt van de 1e job, op een skill van de 1e job', () => {
+    const r = parse({ level: '10', luckySeven: '2' })
+    expect(r).toMatchObject({ error: 'Je hebt 2 skillpunten in de skills van je 1e job gezet, maar op level 10 heb je er slechts 1.' })
+    expect(isSkillKey(keyOf(r))).toBe(true)
+  })
+
+  it('laat precies het maximum aan Beginner-punten toe, en meldt er één meer', () => {
+    // Level 5: 4 punten.
+    expect(parse({ level: '5', threeSnails: '3', nimbleFeet: '1', luckySeven: '0' })).toHaveProperty('profile')
+    const r = parse({ level: '5', threeSnails: '3', nimbleFeet: '2', luckySeven: '0' })
+    expect(r).toMatchObject({ error: 'Je hebt 5 skillpunten in de Beginner-skills gezet, maar op level 5 heb je er slechts 4.' })
+    expect(['threeSnails', 'nimbleFeet', 'recovery']).toContain(keyOf(r))
+  })
+
+  it('geeft op level 10 geen Beginner-fout bij 9 punten, en op level 1 bij 1 punt wel', () => {
+    expect(parse({ level: '10', threeSnails: '3', nimbleFeet: '3', recovery: '3', luckySeven: '1' })).toHaveProperty('profile')
+    expect(parse({ level: '1', threeSnails: '1', luckySeven: '0' })).toMatchObject({ error: expect.stringContaining('op level 1 heb je er slechts 0') })
+  })
+
+  it('houdt de twee potten gescheiden: een volle Beginner-pot neemt niets van de 1e job af', () => {
+    expect(parse({ level: '10', threeSnails: '3', nimbleFeet: '3', recovery: '3', luckySeven: '1' })).toHaveProperty('profile')
+  })
+
+  it('geeft bij een Warrior op level 30 met 61 punten geen fout, en met 62 een fout op een Warrior-skill', () => {
+    // 20 + 20 + 20 + 1 = 61
+    expect(warrior({ powerStrike: '20', slashBlast: '20', ironBody: '20', maxHpIncrease: '1' })).toHaveProperty('profile')
+    const r = warrior({ powerStrike: '20', slashBlast: '20', ironBody: '20', maxHpIncrease: '2' })
+    expect(r).toMatchObject({ error: 'Je hebt 62 skillpunten in de skills van je 1e job gezet, maar op level 30 heb je er slechts 61.' })
+    expect(['powerStrike', 'slashBlast', 'preciseStrikes', 'ironBody', 'maxHpIncrease', 'improvedHpRecovery']).toContain(keyOf(r))
+  })
+
+  it('meldt bij een Warrior een Beginner-overschrijding op een Beginner-skill', () => {
+    const r = warrior({ level: '5', threeSnails: '3', nimbleFeet: '2', powerStrike: '0' })
+    expect(r).toMatchObject({ error: 'Je hebt 5 skillpunten in de Beginner-skills gezet, maar op level 5 heb je er slechts 4.' })
+    expect(['threeSnails', 'nimbleFeet', 'recovery']).toContain(keyOf(r))
+  })
+
+  it('telt velden die de job niet toont niet mee: Thief-skills van een Warrior en andersom', () => {
+    expect(warrior({ level: '10', powerStrike: '1', luckySeven: '20', nimbleBody: '20' })).toHaveProperty('profile')
+    expect(parse({ level: '10', luckySeven: '1', powerStrike: '20' })).toHaveProperty('profile')
+  })
+})
+
+describe('skillPointsSpent en skillPointsLeft (issue #136)', () => {
+  const p = (over: Partial<ProfileDraft>) => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, luckySeven: '0', ...over })
+    if (!('profile' in r)) throw new Error(r.error)
+    return r.profile
+  }
+
+  it('telt per pot alleen de skills die de job toont', () => {
+    const profile = { ...p({ level: '30', luckySeven: '5', nimbleBody: '3', threeSnails: '2', recovery: '1' }), powerStrike: 9 }
+    expect(skillPointsSpent(profile, 'thief', 'job')).toBe(8)
+    expect(skillPointsSpent(profile, 'thief', 'beginner')).toBe(3)
+    // Voor een Warrior tellen Lucky Seven en Nimble Body niet; Power Strike wel.
+    expect(skillPointsSpent(profile, 'warrior', 'job')).toBe(9)
+  })
+
+  it('geeft wat er nog over is per pot', () => {
+    const profile = p({ level: '11', luckySeven: '3', threeSnails: '2' })
+    expect(skillPointsLeft(profile, 'job')).toBe(1)
+    expect(skillPointsLeft(profile, 'beginner')).toBe(7)
+  })
+
+  it('geeft 0 als de pot precies vol is', () => {
+    expect(skillPointsLeft(p({ level: '10', luckySeven: '1' }), 'job')).toBe(0)
+  })
+
+  it('komt nooit onder 0, ook niet als er meer staat dan het level geeft', () => {
+    expect(skillPointsLeft({ ...p({ level: '30' }), level: 10, luckySeven: 20 }, 'job')).toBe(0)
   })
 })

@@ -5,6 +5,7 @@ import { arrowFor } from './bowmanGear'
 import type { Character } from './calc/mobModel'
 import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { ATTACK_MS, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
@@ -248,8 +249,24 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
     out.starWatk = arrow.watk
     out.starRecharge = arrow.pricePerArrow
   }
+  // Je zet niet meer skillpunten dan je op dit level verdiende (issue #136). Het level is hier al goedgekeurd.
+  for (const pool of ['beginner', 'job'] as const) {
+    const spent = skillPointsSpent(out, job, pool)
+    const cap = skillPointCap(out.level, pool)
+    if (spent > cap) {
+      const key = shown.find((f) => isSkillKey(f.key) && skillPoolOf(skillInfo(f.key).job) === pool)!.key
+      return { error: `Je hebt ${spent} skillpunten in de ${SKILL_POOL_NAME[pool]} gezet, maar op level ${out.level} heb je er slechts ${cap}.`, key }
+    }
+  }
   return { profile: out }
 }
+
+/** De skillpunten die in een pot zijn gezet, alleen in de skills die deze job toont. */
+export const skillPointsSpent = (values: Partial<Record<ProfileKey, number>>, job: Job, pool: SkillPool): number =>
+  profileFieldsFor(job).reduce((sum, f) => (isSkillKey(f.key) && skillPoolOf(skillInfo(f.key).job) === pool ? sum + (values[f.key] ?? 0) : sum), 0)
+
+/** Hoeveel punten van een pot dit profiel nog te zetten heeft (nooit onder 0). */
+export const skillPointsLeft = (p: Profile, pool: SkillPool): number => Math.max(0, skillPointCap(p.level, pool) - skillPointsSpent(p, p.job, pool))
 
 /** De pijl van een Bowman uit het concept: bronze alleen met de schakelaar aan én de bronze pijl gekozen (zie ARROW_CHOICE). */
 const bowmanArrow = (d: ProfileDraft) => arrowFor(d.helpfulStranger.trim() === '1', d.bronzeArrows.trim() === '1')
