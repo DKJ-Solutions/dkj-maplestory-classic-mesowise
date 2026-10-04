@@ -20,7 +20,8 @@ import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
-import { loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
+import { expectedStat } from './expectedStats'
+import { loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -178,6 +179,87 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
   )
 }
 
+/**
+ * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
+ * weapon attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
+ */
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'wdef'])
+const CHARACTER_STATS = STAT_FIELDS.filter((f) => !HIDDEN_STATS.has(f.key))
+/** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
+const EQUIPMENT_STATS: ReadonlySet<string> = new Set<keyof ProfileDraft>(['clawWatk', 'wdef'])
+
+/** Het getal in een stat-popup één omhoog of omlaag, binnen min en max; een leeg of onleesbaar vak telt als `fallback`. */
+function stepValue(text: string, by: number, min: number, max: number, fallback: number): string {
+  const n = Number(text.trim())
+  const base = text.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : fallback
+  return String(Math.min(max, Math.max(min, base + by)))
+}
+
+/**
+ * Eén stat op één rij: de naam, het getal dat telt en het potlood; wijzigen gaat alleen via de popup, met een concept
+ * dat pas na Opslaan (of Enter) meetelt, net als bij equipment. Heeft de stat een verwachting (een formule) en wijkt
+ * het getal daarvan af, dan staat de verwachting doorgestreept ernaast en zet Reset hem terug.
+ */
+function StatLine(props: { field: ProfileField; value: string; expected?: number; onSave: (text: string) => void }) {
+  const { field: f, value, expected } = props
+  const uid = useId()
+  const [draft, setDraft] = useState<string | null>(null)
+  const corrected = expected !== undefined && value.trim() !== String(expected)
+  const shown = value.trim() !== '' ? value : '?'
+  const save = () => {
+    if (draft !== null && draft !== value) props.onSave(draft)
+    setDraft(null)
+  }
+  const step = (by: number) => draft !== null && setDraft(stepValue(draft, by, f.min, f.max, f.min))
+  return (
+    <div class="stat-line">
+      <span class="stat-line-name">{f.label}</span>
+      <div class={corrected ? 'equip-value changed' : 'equip-value'} aria-label={`${f.label} ${value.trim() !== '' ? value : 'onbekend'}${corrected ? `, gecorrigeerd, verwacht ${expected}` : ''}`}>
+        <span class="equip-value-num">
+          {corrected && <s class="equip-value-db">{expected}</s>}
+          <strong>{shown}</strong>
+        </span>
+      </div>
+      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      {draft !== null && (
+        <StatDialog title={f.label} onCancel={() => setDraft(null)}>
+          {expected !== undefined && <p class="stat-dialog-db">Verwacht volgens de formule: <strong>{expected}</strong></p>}
+          <span class="stat-dialog-label" id={`${uid}-game`}>{f.label} in game</span>
+          <div class={f.integer ? 'equip-step' : 'equip-step plain'}>
+            {f.integer && <button type="button" aria-label={`${f.label} min 1`} onClick={() => step(-1)}>−</button>}
+            <input type="number" inputMode={f.integer ? 'numeric' : 'decimal'} min={f.min} max={f.max} enterKeyHint="done" aria-labelledby={`${uid}-game`}
+              value={draft}
+              onFocus={(e) => e.currentTarget.select()}
+              onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  save()
+                }
+              }}
+            />
+            {f.integer && <button type="button" aria-label={`${f.label} plus 1`} onClick={() => step(1)}>+</button>}
+          </div>
+          <div class="stat-dialog-actions">
+            {expected !== undefined && draft.trim() !== String(expected) && (
+              <button type="button" class="equip-reset" aria-label={`Reset naar ${expected}`} onClick={() => setDraft(String(expected))}>
+                Reset
+              </button>
+            )}
+            {draft !== value && (
+              <button type="button" class="equip-save" onClick={save}>
+                Opslaan
+              </button>
+            )}
+          </div>
+        </StatDialog>
+      )}
+    </div>
+  )
+}
+
 function ProfileCard(props: {
   job: Job
   draft: ProfileDraft
@@ -201,8 +283,8 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {STAT_FIELDS.map((f) => (
-            <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
+          {CHARACTER_STATS.map((f) => (
+            <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
           {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
@@ -506,7 +588,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
 }
 
 /**
- * De popup om een stat te corrigeren: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
+ * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
  * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
  */
 function StatDialog(props: { title: string; onCancel: () => void; children: ComponentChildren }) {
@@ -562,6 +644,8 @@ function EquipmentCard(props: {
   onCommit: (slot: EquipSlot) => void
   /** Het concept in het corrigeervak weggooien (sluiten zonder opslaan). */
   onDiscard: (slot: EquipSlot) => void
+  /** De melding als weapon attack of WDEF in het profiel ongeldig is. */
+  error: string | null
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
   const head = useRef<HTMLButtonElement>(null)
@@ -570,13 +654,16 @@ function EquipmentCard(props: {
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
   return (
-    <section class="card equipment">
+    <section class={`card equipment${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name with-icon">
           <CardIcon name="sword" />
           Je equipment
         </span>
       </button>
+      <p class="error" aria-live="polite">
+        {props.error}
+      </p>
       <Collapse open={open}>
         <div class="spot-body">
           {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
@@ -600,10 +687,7 @@ function EquipmentCard(props: {
               props.onCommit(slot)
               setEditing(null)
             }
-            const step = (by: number) => {
-              const n = Number(shown.trim())
-              props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
-            }
+            const step = (by: number) => props.onStatInput(slot, stepValue(shown, by, 0, 999, db ?? 0))
             return (
               <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
@@ -1306,6 +1390,9 @@ export function App() {
   const profile = computed ? parsedProfile : null
   // De melding staat bij de kaart waar het foute veld staat.
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
+  // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
+  const equipError = statError !== null && 'key' in parsed && EQUIPMENT_STATS.has(parsed.key) ? statError : null
+  const characterError = equipError === null ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   const [openId, setOpenId] = useState<string | null>(null)
   // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
@@ -1525,9 +1612,10 @@ export function App() {
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
               onDiscard={(slot) => setPendingFor(slot, undefined)}
+              error={equipError}
             />
 
-            <ProfileCard job={job} draft={profileDraft} error={statError} onChange={updateProfile} />
+            <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
             <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
             {computed ? (
@@ -1623,6 +1711,7 @@ export function App() {
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
               onDiscard={(slot) => setPendingFor(slot, undefined)}
+              error={equipError}
             />
             <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
             {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
