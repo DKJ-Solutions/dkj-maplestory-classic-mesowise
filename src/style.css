@@ -224,6 +224,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Waar zet je je skillpunt? (issue #26) */
 .level-cost .choices { margin: 0 0 0.875rem; padding-left: 1.25rem; font-size: 0.875rem; color: var(--muted); }
 
+/* Kosten, skillpunt en wapen in één kaart (#126): elke deelvraag onder een lijn. */
+.level-cost .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.level-cost h3 { margin: 0 0 0.375rem; font-size: 0.9375rem; }
+
 /* Level up: drie schermen naast elkaar die naar links schuiven */
 .flow {
   margin: 0 -0.25rem; /* ruimte voor de focusrand aan de zijkant */

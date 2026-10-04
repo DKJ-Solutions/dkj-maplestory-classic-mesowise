@@ -489,15 +489,36 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   )
 }
 
+/**
+ * De centrale vraag en haar twee deelvragen in één kaart (Dave, 4 oktober 2026, #126): wat kost dit level,
+ * waar zet je je skillpunt, en loont een nieuw wapen. Kan de app de job nog niet doorrekenen, dan staat er
+ * alleen waarom niet.
+ */
+function LevelAdviceCard(props: { job: Job; computed: boolean; cost: LevelCost; skillAdvice: SkillPointAdvice; clawAdvice: ClawUpgradeAdvice }) {
+  return (
+    <section class="card level-cost" aria-live="polite">
+      <h2>Wat kost dit level?</h2>
+      {props.computed ? (
+        <>
+          <LevelCostPart cost={props.cost} />
+          <SkillPointPart advice={props.skillAdvice} job={props.job} />
+          <ClawUpgradePart advice={props.clawAdvice} job={props.job} />
+        </>
+      ) : (
+        <NotComputed job={props.job} />
+      )}
+    </section>
+  )
+}
+
 /** De centrale vraag: wat kost je huidige level in mesos op de beste plek (issue #24). */
-function LevelCostCard(props: { cost: LevelCost }) {
+function LevelCostPart(props: { cost: LevelCost }) {
   const c = props.cost
   const first = EXP_TABLE_LEVELS[0]
   const last = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
   const step = c.kind === 'cost' || c.kind === 'noBest' ? `Van lv ${c.level} naar ${c.level + 1}: ${nfInt.format(c.expToNext)} EXP.` : null
   return (
-    <section class="card level-cost" aria-live="polite">
-      <h2>Wat kost dit level?</h2>
+    <div class="advice-part">
       {c.kind === 'noProfile' && <p class="hint">Vul je karakter in, dan rekent de app uit wat je level kost.</p>}
       {c.kind === 'noTable' && (
         <p class="hint">
@@ -527,7 +548,7 @@ function LevelCostCard(props: { cost: LevelCost }) {
         </a>
         , opgehaald op {formatDate(EXP_TABLE_SOURCE.retrieved)}.
       </p>
-    </section>
+    </div>
   )
 }
 
@@ -554,13 +575,13 @@ const SKILL_SOURCES = {
 }
 
 /** Waar je skillpunt de meeste mesos bespaart (issue #26). */
-function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
+function SkillPointPart(props: { advice: SkillPointAdvice; job: Job }) {
   const a = props.advice
   if (a.kind === 'none') return null
   const winner = a.choices.find((c) => c.id === a.winner)
   return (
-    <section class="card level-cost" aria-live="polite">
-      <h2>Waar zet je je skillpunt?</h2>
+    <div class="advice-part">
+      <h3>Waar zet je je skillpunt?</h3>
       {winner ? (
         <>
           <p class="level-cost-value">
@@ -601,7 +622,7 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
           , opgehaald op {formatDate(s.source.retrieved)}.
         </p>
       ))}
-    </section>
+    </div>
   )
 }
 
@@ -703,14 +724,14 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
 }
 
 /** Loont een nieuwe claw uit de winkel nu? (issue #25) */
-function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
+function ClawUpgradePart(props: { advice: ClawUpgradeAdvice; job: Job }) {
   const a = props.advice
   const t = weaponText(props.job)
   if (a.kind === 'none' || (a.choices.length === 0 && a.notWearable.length === 0)) return null
   const win = a.choices.find((c) => c.claw === a.winner)
   return (
-    <section class="card level-cost" aria-live="polite">
-      <h2>{t.title}</h2>
+    <div class="advice-part">
+      <h3>{t.title}</h3>
       {win ? (
         <>
           <p class="level-cost-value">
@@ -744,7 +765,7 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
         </ul>
       )}
       <ClawNotes advice={a} job={props.job} />
-    </section>
+    </div>
   )
 }
 
@@ -2042,18 +2063,7 @@ export function App() {
               <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
               <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
-              {computed ? (
-                <>
-                  <LevelCostCard cost={cost} />
-                  <SkillPointCard advice={skillAdvice} job={job} />
-                  <ClawUpgradeCard advice={clawAdvice} job={job} />
-                </>
-              ) : (
-                <section class="card level-cost">
-                  <h2>Wat kost dit level?</h2>
-                  <NotComputed job={job} />
-                </section>
-              )}
+              <LevelAdviceCard job={job} computed={computed} cost={cost} skillAdvice={skillAdvice} clawAdvice={clawAdvice} />
 
               {drafts.length === 0 && <p class="empty">Nog geen plekken. Voeg er een toe om te vergelijken.</p>}
 

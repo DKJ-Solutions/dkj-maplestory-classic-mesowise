@@ -39,19 +39,35 @@
 
 ### PLAN
 
+Issue #126: one card on the home screen instead of three. "Wat kost dit level?" stays the card's `h2`;
+the skill point and the weapon become `h3` sub-questions under it, because #25 and #26 are the
+sub-questions of #24. Visible result, so Dave looks before the merge.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `LevelAdviceCard` in `src/app.tsx` wraps the three parts (`LevelCostPart`, `SkillPointPart`,
+      `ClawUpgradePart`) in one `section.card.level-cost`; a job the app cannot compute shows only `NotComputed`
+- [x] `src/style.css`: a rule between the parts and a smaller `h3`
 
 ### TEST
 
+- [x] `src/app.test.tsx`: one `.level-cost` card on the home screen, holding both sub-headings (Magician)
+- [x] `npx vitest run` (1180 passed) and `npm run lint` green
+- [ ] Dave looks at the merged card at phone width
+
 ### DEPLOY: app/126-merge-home-cards
 
-**Score:**
+The home screen no longer shows three advice cards in a row. One card answers "Wat kost dit level?",
+with the skill point and the new weapon below it as sub-questions, each under its own rule.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+The level-up question, the skill point and the weapon now read as one answer instead of three loose
+cards, so the home screen is shorter on a phone.
+
+**Score:** 3
 
 #### Pull Request
 

@@ -1437,6 +1437,14 @@ describe('een Magician in de app', () => {
       expect(home.textContent).not.toContain('Loont een nieuwe claw?')
       expect(home.textContent).toContain('Loont een nieuwe wand of staff?')
     })
+
+    it('zet de kosten, het skillpunt en het wapen in één kaart (#126)', () => {
+      const home = panels()[0]
+      expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
+      const card = within(home).getByRole('heading', { level: 2, name: 'Wat kost dit level?' }).closest('section')!
+      expect(within(card).getByRole('heading', { level: 3, name: 'Waar zet je je skillpunt?' })).toBeTruthy()
+      expect(within(card).getByRole('heading', { level: 3, name: 'Loont een nieuwe wand of staff?' })).toBeTruthy()
+    })
   })
 
   describe('het adviesscherm na een level-up', () => {
