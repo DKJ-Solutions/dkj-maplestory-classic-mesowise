@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**21 / 39 minor entries** <!-- pending-tally -->
+**21 / 40 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/74-preview-link · 20261004-104728Z
+
+When a design is finished, the handover now always ends with a link that works:
+`scripts/preview/start-preview.ps1` starts the dev server and prints the address it really runs on
+(with `-Lan`, also the address for a phone on the same network). A typed `localhost:5173` could point
+at a different server, because Vite moves to the next free port.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+A live localhost link at every design handover
+
+[PR #78](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/78)
+
+---
 
 ### DEPLOY: app/42-warrior-model · 20261004-104446Z
 
