@@ -1,5 +1,5 @@
 // De skills die een Thief kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
-// elk met het hoogste skill-level. Alleen namen en maxima, voor de sectie "Je skillpunten"; wat een
+// elk met het hoogste skill-level. Alleen namen en maxima, voor de sectie "Skillpoints"; wat een
 // skill doet, staat in thief.ts voor de skills die het model doorrekent.
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
 // als op de skillpagina's.
@@ -54,7 +54,7 @@ export const THIEF_SKILLS: readonly SkillInfo[] = [
 
 export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)
 
-/** Of een profielveld een skill is (die hoort in "Je skillpunten", niet bij je stats). */
+/** Of een profielveld een skill is (die hoort in "Skillpoints", niet bij je stats). */
 export const isSkillKey = (key: string): key is SkillKey => (SKILL_KEYS as readonly string[]).includes(key)
 
 export const skillInfo = (key: SkillKey): SkillInfo => THIEF_SKILLS.find((s) => s.key === key)!

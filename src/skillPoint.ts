@@ -69,9 +69,6 @@ export function skillLevels(draft: ProfileDraft): SkillLevel[] {
   })
 }
 
-/** Het aantal gezette punten; een ongeldig veld telt niet mee. */
-export const pointsPlaced = (levels: readonly SkillLevel[]): number => levels.reduce((sum, s) => sum + (s.level ?? 0), 0)
-
 /** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {
   const expToNext = expToNextLevel(profile.level)

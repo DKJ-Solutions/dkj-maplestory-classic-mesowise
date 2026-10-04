@@ -37,8 +37,8 @@ describe('parseProfile', () => {
     expect(parse({ luckySeven: '0' })).toHaveProperty('profile')
   })
 
-  it('meldt een fout skillveld bij je skillpunten, met de grens uit de spelgegevens', () => {
-    expect(parse({ keenEyes: '' })).toEqual({ error: 'Vul bij je skillpunten "Keen Eyes" in.', key: 'keenEyes' })
+  it('meldt een fout skillveld bij Skillpoints, met de grens uit de spelgegevens', () => {
+    expect(parse({ keenEyes: '' })).toEqual({ error: 'Vul bij Skillpoints "Keen Eyes" in.', key: 'keenEyes' })
     expect(parse({ threeSnails: '4' })).toEqual({ error: '"Three Snails" moet tussen 0 en 3 liggen.', key: 'threeSnails' })
     expect(parse({ darkSight: '20', recovery: '3' })).toHaveProperty('profile')
   })

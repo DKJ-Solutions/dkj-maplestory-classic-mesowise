@@ -84,7 +84,7 @@ export function parseProfile(d: ProfileDraft): { profile: Profile } | { error: s
   for (const f of PROFILE_FIELDS) {
     const text = d[f.key].trim()
     const n = text === '' ? NaN : Number(text)
-    const where = isSkillKey(f.key) ? 'je skillpunten' : 'je karakter'
+    const where = isSkillKey(f.key) ? 'Skillpoints' : 'je karakter'
     if (!Number.isFinite(n)) return { error: `Vul bij ${where} "${f.label}" in.`, key: f.key }
     if (n < f.min || n > f.max) return { error: `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`, key: f.key }
     if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.`, key: f.key }

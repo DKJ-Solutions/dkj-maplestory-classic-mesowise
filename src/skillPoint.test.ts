@@ -7,7 +7,7 @@ import { knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { THIEF_SKILLS, type SkillKey } from './data/skills'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
-import { NOT_MODELLED, pointsPlaced, SKILLS, skillLevels, skillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, SKILLS, skillLevels, skillPointAdvice } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
@@ -137,19 +137,5 @@ describe('skillLevels', () => {
 
   it('kijkt alleen naar de skillvelden: een ongeldig ander veld maakt niets uit', () => {
     expect(levelOf({ level: '', luckySeven: '5' }, 'luckySeven')).toBe(5)
-  })
-})
-
-describe('pointsPlaced', () => {
-  it('telt de gezette punten van alle skills op', () => {
-    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, threeSnails: '3', luckySeven: '3', nimbleBody: '2' }))).toBe(8)
-  })
-
-  it('telt een ongeldig veld niet mee', () => {
-    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, luckySeven: 'x', nimbleBody: '2' }))).toBe(2)
-  })
-
-  it('is 0 zonder punten', () => {
-    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, luckySeven: '0' }))).toBe(0)
   })
 })

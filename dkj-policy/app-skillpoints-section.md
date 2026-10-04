@@ -57,19 +57,20 @@ niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten ove
 - [x] Victor en Edith: review ronde 2; skillkaart ook op het controlescherm (anders liep je vast op een fout skillveld), één geëxporteerde STAT_FIELDS, Lucky Seven uit de samenvatting van je karakter, "0 is nog niet geleerd", een datum per bron
 - [x] Dave: de Beginner-skills helemaal onderin de kaart
 - [x] Dave: de uitleg en de bronregel onder de skills weg; de naamsvermelding van NiaMeowDB staat onderaan de app, de bron per skill in src/data/skills.ts
+- [x] Dave: de kaart heet Skillpoints, zonder onderschrift (pointsPlaced viel daarmee weg), met een boek-icoon links van de kop
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
 
 ### DEPLOY: app/skillpoints-section
 
-Onder je karakter staat nu een inklapbare kaart "Je skillpunten" met alle skills van een Thief tot de
-2e job: de drie van de Beginner (Three Snails, Nimble Feet, Recovery) en de zes van de 1e job (Nimble
-Body, Keen Eyes, Double Stab, Disorder, Dark Sight, Lucky Seven), elk met het maximum van NiaMeowDB. Hier
-vul je je skill-levels in; ze staan niet meer bij je karakter. In de kop zie je hoeveel punten je per
-job hebt gezet. De kaart staat ook in "Wat nu?" boven de skillvraag, zodat een punt dat je met
-"Punt zetten" zet daar meteen te zien is. In het advies rekenen nog steeds alleen Lucky Seven en Nimble
-Body mee.
+Onder je karakter staat nu een inklapbare kaart "Skillpoints", met een boekje in de kop. Daarin staan alle
+skills van een Thief tot de 2e job: eerst de zes van de 1e job (Nimble Body, Keen Eyes, Double Stab,
+Disorder, Dark Sight, Lucky Seven), helemaal onderin de drie van de Beginner (Three Snails, Nimble Feet,
+Recovery), elk met het maximum van NiaMeowDB. Hier vul je je skill-levels in; ze staan niet meer bij je
+karakter. De kaart staat ook in het controlescherm na een level-up en in "Wat nu?" boven de skillvraag,
+zodat een punt dat je met "Punt zetten" zet daar meteen te zien is. In het advies rekenen nog steeds
+alleen Lucky Seven en Nimble Body mee.
 
 **Score:** 3
 
@@ -81,4 +82,4 @@ Al je skillpunten staan op één plek, ook de skills die het advies (nog) niet d
 
 #### Pull Request
 
-Sectie Skillpunten: alle skills van een Thief met de punten die je hebt gezet
+Sectie Skillpoints: alle skills van een Thief met de punten die je hebt gezet

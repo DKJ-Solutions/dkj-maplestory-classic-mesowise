@@ -15,7 +15,7 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, pointsPlaced, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
@@ -392,8 +392,15 @@ function EquipmentCard(props: {
   )
 }
 
-/** "1 punt" of "3 punten". */
-const points = (n: number) => `${n} ${n === 1 ? 'punt' : 'punten'}`
+/** Een open boek, het icoon van Skillpoints. Eigen tekening, zodat er niets uit het spel in de repo komt. */
+function BookIcon() {
+  return (
+    <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5Z" />
+      <path d="M12 6v13.5" />
+    </svg>
+  )
+}
 
 const JOBS = [
   { job: 'Thief', title: 'Thief (1e job)' },
@@ -408,13 +415,12 @@ const JOBS = [
 function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const [open, setOpen] = useState(false)
   const levels = skillLevels(props.draft)
-  const summary = JOBS.map(({ job }) => `${job} ${pointsPlaced(levels.filter((s) => s.job === job))}`).join(', ')
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span class="spot-name">Je skillpunten</span>
-        <span class="spot-exp">
-          {points(pointsPlaced(levels))} gezet: {summary}
+        <span class="spot-name with-icon">
+          <BookIcon />
+          Skillpoints
         </span>
       </button>
       <p class="error" aria-live="polite">

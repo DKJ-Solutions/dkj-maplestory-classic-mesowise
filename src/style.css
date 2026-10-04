@@ -108,6 +108,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   cursor: pointer;
 }
 .spot-name { grid-column: 1; font-weight: 600; overflow-wrap: anywhere; }
+/* Een kaartkop met een icoon ervoor, in de accentkleur */
+.spot-name.with-icon { display: flex; align-items: center; gap: 0.5rem; }
+.card-icon { flex-shrink: 0; color: var(--accent); }
 /* Een pijltje in een eigen kolom helemaal rechts: deze kaart klap je open en dicht met een tik. Omlaag = dicht, omhoog = open. */
 .spot-head::after {
   content: '';
