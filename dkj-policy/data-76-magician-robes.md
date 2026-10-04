@@ -39,19 +39,36 @@
 
 ### PLAN
 
+#### Read the robes raw
+
+#76 had the robe numbers only through a summarizer, because a plain `curl` was blocked. With a browser user
+agent the raw pages load now (item pages are `/msclassic/item-db/<id>`), so all seven robe pages and Serabi's
+shop page (NPC 311) were read raw on 2026-10-04. The summarized table was right on every row.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/magician.ts`: one overall row, Doros Robe / Doroness Robe (1098, level 25, INT 40, LUK 15, WDEF 40, MDEF 49, 13,500 mesos): a male/female pair with identical stats, the rule from `armor.ts`
+- [x] The header records the raw numbers of the male-only Plain Robe and Wizard Robe, which wait on the gender question (#55)
+- [x] The review notes from #50 about weighing an overall against a top+bottom pair moved to #87, since the Magician armor does not feed the advice yet (#43)
 
 ### TEST
 
+- [x] `src/data/magician.test.ts`: 15 rows, five pairs, the robe as the only overall, Plain and Wizard Robe absent, slot order with the overall
+- [x] `npm run lint` and `npx vitest run` green locally (906 tests)
+
 ### DEPLOY: data/76-magician-robes
 
-**Score:**
+The Magician data gains its first robe: the Doros Robe (for women, the Doroness Robe) from Serabi in Ellinia,
+level 25, 40 DEF and 49 magic DEF for 13,500 mesos, read from the raw MeowDB pages. The app does not
+calculate with the Magician's gear yet, so nothing changes on screen until #43 wires it in.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
