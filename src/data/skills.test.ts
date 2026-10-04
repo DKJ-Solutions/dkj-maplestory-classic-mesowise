@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ARROW_BLOW_LEVELS, DOUBLE_SHOT_LEVELS, FOCUS_LEVELS } from './bowman'
-import { ALL_SKILLS, isSkillKey, SKILL_KEYS, skillInfo, skillMpAt, THIEF_SKILLS } from './skills'
+import { ALL_SKILLS, isSkillKey, mpPerUse, SKILL_KEYS, skillInfo, skillMpAt, THIEF_SKILLS } from './skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './thief'
 import { IRON_BODY_LEVELS, POWER_STRIKE_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 
@@ -76,6 +76,30 @@ describe('MP per skill-level (#83)', () => {
     expect(skillMpAt(skillInfo('darkSight'), 20)).toBe(30)
     expect(skillMpAt(skillInfo('threeSnails'), 0)).toBe(3)
     expect(skillMpAt(skillInfo('keenEyes'), 4)).toBeNull()
+  })
+})
+
+describe('mpPerUse (#101: één bron voor de MP van een skill)', () => {
+  it('geeft de MP uit de tabel per level', () => {
+    LUCKY_SEVEN_LEVELS.forEach((l, i) => expect(mpPerUse('luckySeven', i + 1)).toBe(l.mp))
+    expect(mpPerUse('luckySeven', 1)).toBe(8)
+    expect(mpPerUse('luckySeven', 20)).toBe(16)
+    expect(mpPerUse('powerStrike', 1)).toBe(4)
+    expect(mpPerUse('powerStrike', 20)).toBe(12)
+    expect(mpPerUse('arrowBlow', 20)).toBe(skillInfo('arrowBlow').mp![19])
+  })
+
+  it('is 0 zolang de skill niet geleerd is, anders dan skillMpAt (die toont wat level 1 gaat kosten)', () => {
+    for (const key of ['luckySeven', 'powerStrike', 'arrowBlow'] as const) {
+      expect(mpPerUse(key, 0), key).toBe(0)
+      expect(skillMpAt(skillInfo(key), 0), key).toBe(skillInfo(key).mp![0])
+    }
+  })
+
+  it('blijft op het hoogste level boven het maximum, en is 0 bij een passieve skill', () => {
+    expect(mpPerUse('luckySeven', 21)).toBe(16)
+    expect(mpPerUse('luckySeven', 999)).toBe(16)
+    expect(mpPerUse('nimbleBody', 5)).toBe(0)
   })
 })
 

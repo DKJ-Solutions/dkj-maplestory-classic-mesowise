@@ -16,12 +16,12 @@ import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
-import { ALL_SKILLS, isSkillKey, skillMpAt } from './data/skills'
+import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
-import { applyLevelUp, applySkillPoint, arrowBlowMp, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -1476,11 +1476,11 @@ function noCostReason(c: LevelCost): string | null {
   return null
 }
 
-/** De skills die een aanval zijn: de MP per aanval op een skill-level, en hoe de speler één aanval noemt. */
-const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { mp: (level: number) => number; noun: string }>> = {
-  luckySeven: { mp: luckySevenMp, noun: 'worp' },
-  powerStrike: { mp: powerStrikeMp, noun: 'aanval' },
-  arrowBlow: { mp: arrowBlowMp, noun: 'schot' },
+/** De skills die een aanval zijn, en hoe de speler één aanval noemt. De MP per aanval komt uit mpPerUse. */
+const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
+  luckySeven: { noun: 'worp' },
+  powerStrike: { noun: 'aanval' },
+  arrowBlow: { noun: 'schot' },
 }
 
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
@@ -1506,7 +1506,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
     )
   }
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
-  const mpFrom = winner && attack ? attack.mp(winner.to - 1) : 0
+  const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
   return (
     <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading}>
       {winner ? (
@@ -1518,8 +1518,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
           {attack && (
             <p class="hint">
               {mpFrom === 0
-                ? `Elke ${attack.noun} kost je dan ${attack.mp(winner.to)} MP (nu 0).`
-                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${attack.mp(winner.to)} MP.`}{' '}
+                ? `Elke ${attack.noun} kost je dan ${mpPerUse(winner.id, winner.to)} MP (nu 0).`
+                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${mpPerUse(winner.id, winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
