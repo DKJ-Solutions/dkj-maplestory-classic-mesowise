@@ -34,7 +34,7 @@ const STATS = [
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
-  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je equipment (totalAttack).
+  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. W.ATT en M.ATT zijn geen velden: ze volgen uit je equipment (totalAttack, totalMagicAttack).
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
   { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },

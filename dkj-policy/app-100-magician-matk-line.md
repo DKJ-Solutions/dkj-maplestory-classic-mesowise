@@ -53,7 +53,7 @@ Stacked on app/43-magician-model (PR #96), per Dave's choice on #100: the PR tar
 
 ### DEPLOY: app/100-magician-matk-line
 
-The Total stats card always shows W.ATT and M.ATT, as the game's stat window does; one of the two is 0. A Magician sees their M.ATT there instead of an empty Attack line: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
+The Total stats card always shows W.ATT and M.ATT, as the game's stat window does; one of the two is 0. A Magician sees their M.ATT there, next to a W.ATT of 0: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
 
 **Score:** 2
 

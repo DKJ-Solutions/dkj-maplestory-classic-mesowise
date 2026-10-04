@@ -390,7 +390,7 @@ function StatsCard(props: {
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">{job === 'magician' ? 'M.ATT is de M.ATT van je wapen plus de helft van je INT (naar beneden afgerond); pas het wapen aan bij je equipment en INT bij Ability points. W.ATT en Weapon Def komen uit je equipment; pas ze daar aan.' : 'W.ATT, M.ATT en Weapon Def komen uit je equipment; pas ze daar aan.'} Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">{job === 'magician' ? 'M.ATT is de M.ATT van je wapen plus de helft van je INT (naar beneden afgerond); pas het wapen aan bij je equipment en INT bij Ability points. W.ATT is voor een Magician altijd 0. Weapon Def komt uit je equipment; pas hem daar aan.' : 'W.ATT en Weapon Def komen uit je equipment; pas ze daar aan. M.ATT is voor deze job altijd 0.'} Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
@@ -409,7 +409,7 @@ function ProfileCard(props: StatsCardProps) {
   )
 }
 
-/** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
+/** De Total stats uit het statvenster: W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps) {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : String(n))
