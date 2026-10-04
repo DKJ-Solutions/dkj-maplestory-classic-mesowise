@@ -171,8 +171,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .known ul { margin: 0 0 0.375rem; padding-left: 1.25rem; }
 .known p { margin: 0; }
 .known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
-.profile { padding: 0; overflow: hidden; }
-.profile.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
+.profile, .total-stats { padding: 0; overflow: hidden; }
+.profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
 .note { margin-top: 1.25rem; }
 .spot-notes { padding: 0 1rem; }
@@ -189,7 +189,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
   .debug { color: #f87171; border-color: #f87171; }
-  .spot.invalid, .profile.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
+  .spot.invalid, .profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }
 .error:empty { display: none; }

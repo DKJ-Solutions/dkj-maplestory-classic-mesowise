@@ -23,7 +23,7 @@ import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -149,6 +149,8 @@ const ICON_PATHS = {
   sword: ['M14.5 17.5 3 6V3h3l11.5 11.5', 'M13 19l6-6', 'M16 16l4 4', 'M19 21l2-2'],
   // Een poppetje: je karakter
   person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
+  // Een staafdiagram: Total stats
+  chart: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
   // Een kaartspeld: een plek
   pin: ['M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21Z', 'M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
 } as const
@@ -183,9 +185,13 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
 
 /**
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
- * weapon attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
+ * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'wdef'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
+/** De Attack uit het statvenster: geen opgeslagen veld, maar de weapon attack uit je equipment (totalAttack). */
+const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
+/** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
+const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
 const EQUIPMENT_STATS: ReadonlySet<string> = new Set<keyof ProfileDraft>(['clawWatk', 'wdef'])
 
@@ -201,7 +207,7 @@ function stepValue(text: string, by: number, min: number, max: number, fallback:
  * dat pas na Opslaan (of Enter) meetelt, net als bij equipment. Heeft de stat een verwachting (een formule) en wijkt
  * het getal daarvan af, dan staat de verwachting doorgestreept ernaast en zet Reset hem terug.
  */
-function StatLine(props: { field: ProfileField; value: string; expected?: number; onSave: (text: string) => void }) {
+function StatLine(props: { field: ProfileField; value: string; expected?: number; readOnly?: boolean; onSave: (text: string) => void }) {
   const { field: f, value, expected } = props
   const uid = useId()
   const [draft, setDraft] = useState<string | null>(null)
@@ -220,9 +226,13 @@ function StatLine(props: { field: ProfileField; value: string; expected?: number
           <strong>{shown}</strong>
         </span>
       </div>
-      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-      </button>
+      {props.readOnly ? (
+        <span />
+      ) : (
+        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      )}
       {draft !== null && (
         <StatDialog title={f.label} onCancel={() => setDraft(null)}>
           <StatEditor
@@ -306,21 +316,32 @@ function StatEditor(props: {
   )
 }
 
-function ProfileCard(props: {
+/**
+ * Een inklapbare kaart met een rij stat-regels (zelfde patroon als de andere kaarten). `children` zijn de hints
+ * onder de regels.
+ */
+function StatsCard(props: {
+  className: string
+  icon: keyof typeof ICON_PATHS
+  title: string
+  fields: readonly ProfileField[]
   job: Job
   draft: ProfileDraft
   error: string | null
   onChange: (patch: Partial<ProfileDraft>) => void
+  /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
+  lead?: ComponentChildren
+  children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
   return (
-    <section class={`card profile${props.error ? ' invalid' : ''}`}>
+    <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name with-icon">
-          <CardIcon name="person" />
-          Je karakter ({jobLabel(job)})
+          <CardIcon name={props.icon} />
+          {props.title}
         </span>
       </button>
       <p class="error" aria-live="polite">
@@ -328,30 +349,52 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {statFieldsFor(job)
-            .filter((f) => !HIDDEN_STATS.has(f.key))
-            .map((f) => (
-              <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
-            ))}
-          {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
-          {job === 'warrior' && (
-            <>
-              <p class="hint">
-                De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
-                vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
-                steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
-                multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
-              </p>
-              <p class="hint">
-                Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
-                {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
-              </p>
-            </>
-          )}
+          {props.lead}
+          {props.fields.map((f) => (
+            <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
+          ))}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
+          {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
     </section>
+  )
+}
+
+type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
+const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
+
+/** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
+function ProfileCard(props: StatsCardProps) {
+  return (
+    <StatsCard {...props} className="profile" icon="person" title={`Ability points (${jobLabel(props.job)})`} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+  )
+}
+
+/** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
+function TotalStatsCard(props: StatsCardProps) {
+  const { job } = props
+  const attack = totalAttack(props.draft, job)
+  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
+  return (
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
+      {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+      {job === 'warrior' && (
+        <>
+          <p class="hint">
+            De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
+            vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
+            steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
+            multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
+          </p>
+          <p class="hint">
+            Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
+            {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
+          </p>
+        </>
+      )}
+    </StatsCard>
   )
 }
 
@@ -1495,7 +1538,10 @@ export function App() {
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
   const equipError = statError !== null && 'key' in parsed && EQUIPMENT_STATS.has(parsed.key) ? statError : null
-  const characterError = equipError === null ? statError : null
+  // Total stats heeft zijn eigen kaart; level en Max HP staan niet op een stat-kaart en melden zich bij Ability points.
+  const totalKey = 'key' in parsed && !ABILITY_KEYS.includes(parsed.key) && !HIDDEN_STATS.has(parsed.key) && !isSkillKey(parsed.key)
+  const totalError = equipError === null && totalKey ? statError : null
+  const characterError = equipError === null && !totalKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   const [openId, setOpenId] = useState<string | null>(null)
   // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
@@ -1720,6 +1766,7 @@ export function App() {
             />
 
             <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+            <TotalStatsCard job={job} draft={profileDraft} error={totalError} onChange={updateProfile} />
             <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
             {computed ? (
@@ -1790,8 +1837,8 @@ export function App() {
             <p class="hint">
               {changes ? `${levelUpSummary(changes)} ` : ''}
               {job === 'warrior'
-                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je avoid in het spel.'
-                : 'Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
+                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.'
+                : 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
             </p>
             <div class="card stats">
               {checkFieldsFor(job).map((f) => (
