@@ -1223,7 +1223,8 @@ const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.e
 
 /**
  * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
- * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in.
+ * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in. Net als de andere kaarten toont de
+ * kop alleen de titel; de mob, zijn eigenschappen en de EXP per meso staan in de popup.
  */
 function HuntedMobCard(props: {
   result: RankResult | undefined
@@ -1250,24 +1251,9 @@ function HuntedMobCard(props: {
       <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
         <span class="spot-name with-icon">
           <CardIcon name="target" />
-          <span>
-            {title}
-            <small class="hunted-mob">{mob ? `${mob.name} (lv ${mob.level})` : 'Kies een mob'}</small>
-            {mob && <small class="hunted-mob">{mobStats(mob)}</small>}
-          </span>
+          {title}
         </span>
-        {mob && (
-          <span class="spot-value">
-            <strong>{value}</strong>
-            <small>EXP per meso</small>
-          </span>
-        )}
       </CardHead>
-      {picked && (picked.estimate.dangerous || picked.estimate.missesOften) && (
-        <div class="spot-notes">
-          <Warnings s={picked} />
-        </div>
-      )}
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
@@ -1291,6 +1277,11 @@ function HuntedMobCard(props: {
                 NiaMeowDB
               </a>
               , opgehaald op {formatDate(mob.source.retrieved)}.
+            </p>
+          )}
+          {mob && (
+            <p class="hunted-value">
+              <strong>{value}</strong> EXP per meso
             </p>
           )}
           {picked && plan && (
@@ -1900,6 +1891,14 @@ export function App() {
               <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
               <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
               <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
+              <HuntedMobCard
+                result={verdict.ranked[0]}
+                draft={drafts[0]}
+                profile={profile}
+                computed={computed}
+                onPick={pickMob}
+                onChange={(patch) => update(drafts[0].id, patch)}
+              />
 
               {computed ? (
                 <>
@@ -1913,15 +1912,6 @@ export function App() {
                   <NotComputed job={job} />
                 </section>
               )}
-
-              <HuntedMobCard
-                result={verdict.ranked[0]}
-                draft={drafts[0]}
-                profile={profile}
-                computed={computed}
-                onPick={pickMob}
-                onChange={(patch) => update(drafts[0].id, patch)}
-              />
 
               {computed && (
                 <p class="note">

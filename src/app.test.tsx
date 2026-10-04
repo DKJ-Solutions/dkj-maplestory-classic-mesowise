@@ -159,7 +159,14 @@ describe('begin zonder opslag', () => {
     expect(screen.queryByRole('button', { name: 'Plek toevoegen' })).toBeNull()
     expect(screen.queryByText(/Voorbeeldplek/)).toBeNull()
     expect(document.querySelector('ol.spots')).toBeNull()
-    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('Kies een mob')
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toBe('Laatst gejaagd op')
+  })
+
+  // Dave, 4 oktober 2026: de kaart staat onder Skillpoints, en net als de andere kaarten toont de kop alleen de titel.
+  it('zet Laatst gejaagd op direct onder Skillpoints', () => {
+    const skills = screen.getByRole('button', { name: /Skillpoints/ }).closest('section')!
+    const mob = screen.getByRole('button', { name: /Laatst gejaagd op/ }).closest('section')!
+    expect(skills.nextElementSibling).toBe(mob)
   })
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
@@ -514,16 +521,20 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig', monster: 'Pig' }])
     fireEvent.change(select, { target: { value: 'Slime' } })
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime', monster: 'Slime' }])
-    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('Slime (lv 6)')
+    expect(select.value).toBe('Slime')
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toBe('Laatst gejaagd op')
   })
 
-  it('zet bij de mob meteen zijn HP, EXP, schade en WDEF, op de kaart en in de keuzelijst', () => {
+  it('toont de HP, EXP, schade en WDEF van de mob in de popup: in de keuzelijst en bij de gekozen mob', () => {
     fireEvent.click(screen.getByRole('button', { name: /Laatst gejaagd op/ }))
     const select = screen.getByLabelText('De mob die je het meest killt') as HTMLSelectElement
     // Pig op MeowDB: 128 HP, 13 EXP, Touch DMG 16–22, P.DEF 0 (src/data/spots.ts).
     expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7): 128 HP · 13 EXP · 16–22 dmg · 0 WDEF')
     fireEvent.change(select, { target: { value: 'Pig' } })
-    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('128 HP · 13 EXP · 16–22 dmg · 0 WDEF')
+    const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLElement
+    expect(dialog.textContent).toContain('128 HP · 13 EXP · 16–22 dmg · 0 WDEF (dmg: de schade als hij je raakt)')
+    expect(dialog.querySelector('.hunted-value')?.textContent).toMatch(/EXP per meso$/)
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toBe('Laatst gejaagd op')
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {

@@ -94,9 +94,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .result { display: flex; justify-content: space-between; align-items: baseline; }
 .result strong { font-size: 2rem; color: var(--accent); }
 
-/* De mob waarop je jaagt (Dave, 4 oktober 2026): één kaart, de mob onder de titel. */
+/* De mob waarop je jaagt (Dave, 4 oktober 2026): één kaart; de mob en zijn EXP per meso staan in de popup. */
 .hunted { padding: 0; overflow: hidden; }
-.hunted-mob { display: block; color: var(--muted); font-size: 0.875rem; font-weight: 400; }
+.hunted-value { margin: 0 0 0.875rem; }
+.hunted-value strong { font-size: 1.5rem; color: var(--accent); }
 .hunted .hint a { color: var(--accent); }
 .spot.invalid { border-color: #dc2626; }
 
