@@ -41,17 +41,31 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: each skill row shows "Nu: <n> MP per keer" and "Volgend level: <n> MP"; at level 0 "Nu: niet geleerd", at the maximum no next line, passive unchanged
+- [x] Cody: drop the "Skillpunten per level" source line from the Skillpoints card and the skill advice (Dave: adds nothing for the user); the sources stay in `src/data/skillPoints.ts`
 
 ### TEST
 
+- [x] Tycho: the #83 test now pins both lines (Slash Blast 4 -> 5 MP, the maximum, level 0, passive, empty field), plus a test that the source line is gone; vitest 1263/1263 green
+- [x] Lint gate clean
+- [x] Victor: no findings; Edith: UI text reads right
+- [ ] Dave looks at the Skillpoints card at phone width (visible result)
+
 ### DEPLOY: app/138-skill-next-level-mp
 
-**Score:**
+Each skill in the Skillpoints card now shows the MP it costs at your level and, on a second line, at the next
+level (e.g. "Nu: 4 MP per keer" / "Volgend level: 5 MP"). A skill at level 0 reads "Nu: niet geleerd" with the
+cost of level 1; at the maximum there is no next line. The "Skillpunten per level" source line is gone from the
+card and the skill advice; the sources stay with the data.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Before spending a skill point you see what it does to the skill's MP cost, and the card is one line of
+source text shorter.
+
+**Score:** 2
 
 #### Pull Request
 
