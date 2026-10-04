@@ -15,8 +15,8 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
-import { ALL_SKILLS, isSkillKey } from './data/skills'
+import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
+import { ALL_SKILLS, isSkillKey, skillMpAt } from './data/skills'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
@@ -920,6 +920,17 @@ const SKILL_GROUPS = [
 ] as const
 
 /**
+ * De MP die een skill per keer kost op het gezette level (issue #83); op level 0 die van level 1. Leeg als het
+ * veld geen geldig level is: dat meldt het veld zelf al.
+ */
+function skillMpText(s: SkillLevel): string {
+  if (s.level === null) return ''
+  const mp = skillMpAt(s, s.level)
+  if (mp === null) return 'Passief, kost geen MP'
+  return s.level === 0 ? `${mp} MP per keer op level 1` : `${mp} MP per keer`
+}
+
+/**
  * De skillpunten die je nu hebt gezet: elke skill van je job tot de 2e job, met zijn maximum. Hier vul
  * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent ziet
  * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
@@ -949,7 +960,10 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                 .filter((s) => s.job === job)
                 .map((s) => (
                   <div class="skill-row" key={s.key}>
-                    <span>{s.name}</span>
+                    <span>
+                      {s.name}
+                      <small class="skill-mp">{skillMpText(s)}</small>
+                    </span>
                     <span class="skill-input">
                       <button
                         type="button"
