@@ -861,13 +861,13 @@ describe('adviesscherm na de level-up', () => {
 
   it('zet een punt in de aanbevolen skill en bewaart het', () => {
     toAdvice()
-    const button = screen.getByRole('button', { name: 'Punt zetten' })
+    const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
     expect(button.closest('section')!.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Lucky Seven (→ 3).')
     expect(profileFields().luckySeven).toBe('2')
     fireEvent.click(button)
     expect(profileFields().luckySeven).toBe('3')
     expect(profileFields().level).toBe('11')
-    expect(screen.getByText('Lucky Seven → 3 gezet.')).toBeTruthy()
+    expect(within(panels()[2]).getByText('Lucky Seven → 3 gezet.')).toBeTruthy()
   })
 
   it('biedt op het adviesscherm geen "Level-up ongedaan maken" meer aan', () => {
@@ -1047,7 +1047,7 @@ describe('een Warrior in de app', () => {
       expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
     })
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
@@ -1058,7 +1058,7 @@ describe('een Warrior in de app', () => {
 
     it('geeft als skillpunt Power Strike (→ 2), met zijn MP, en zet het punt in het bewaarde profiel', () => {
       // Gemeten met skillPointAdvice voor dit profiel (STR 90, WATK 40, Power Strike 1): Power Strike wint, Precise Strikes spaart niets.
-      const button = screen.getByRole('button', { name: 'Punt zetten' })
+      const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
       const section = button.closest('section')!
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Power Strike (→ 2).')
       // Power Strike 1 en 2 kosten allebei 4 MP per aanval (de skillpagina).
@@ -1068,7 +1068,7 @@ describe('een Warrior in de app', () => {
       expect(profileFields().powerStrike).toBe('2')
       expect(profileFields().preciseStrikes).toBe('0')
       expect(profileFields().level).toBe('21')
-      expect(screen.getByText('Power Strike → 2 gezet.')).toBeTruthy()
+      expect(within(panels()[2]).getByText('Power Strike → 2 gezet.')).toBeTruthy()
     })
 
     it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
@@ -1390,7 +1390,7 @@ describe('een Bowman in de app', () => {
       expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
     })
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -1520,10 +1520,22 @@ describe('een Magician in de app', () => {
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight', 'Power Strike', 'Slash Blast']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('noemt bij het wapenadvies wands en staffs, geen claws', () => {
+    it('noemt bij het equipmentadvies wands en staffs, geen claws', () => {
+      const equip = within(panels()[0]).getByRole('heading', { level: 3, name: 'Moet ik mijn equipment nu upgraden?' }).closest('.advice-part')!
+      expect(equip.textContent).toMatch(/wand|staff/i)
+      expect(equip.textContent).not.toMatch(/claw/i)
+    })
+
+    it('zet de kosten en de drie adviezen in één kaart: equipment, mob en skillpunt (#126)', () => {
       const home = panels()[0]
-      expect(home.textContent).not.toContain('Loont een nieuwe claw?')
-      expect(home.textContent).toContain('Loont een nieuwe wand of staff?')
+      expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
+      const card = within(home).getByRole('heading', { level: 2, name: 'Wat kost dit level?' }).closest('section')!
+      const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+      expect(questions).toEqual(['Moet ik mijn equipment nu upgraden?', 'Moet ik van mob wisselen?', 'Moet ik mijn skillpunt nu verhogen?'])
+      // Elk advies heeft een antwoord, en het skilladvies noemt de mana die de skill kost.
+      expect(card.querySelectorAll('.chip')).toHaveLength(3)
+      expect(card.textContent).not.toMatch(NOT_YET)
+      expect(card.textContent).toMatch(/MP/)
     })
   })
 
@@ -1546,7 +1558,7 @@ describe('een Magician in de app', () => {
       expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
       expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
     })
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -1573,7 +1585,7 @@ describe('een Magician in de app', () => {
     // Gemeten met skillPointAdvice voor dit profiel (INT 20, M.ATT 10, Energy Bolt 3): Energy Bolt wint; Magic Claw 1 geeft evenveel schade per cast en spaart niets.
     open({ int: '20', clawWatk: '10', energyBolt: '3' })
     toAdvice()
-    const button = screen.getByRole('button', { name: 'Punt zetten' })
+    const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
     const section = button.closest('section')!
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Energy Bolt (→ 4).')
     // Energy Bolt 3 en 4 kosten allebei 8 MP per cast (de skillpagina).
@@ -1583,7 +1595,7 @@ describe('een Magician in de app', () => {
     expect(profileFields().energyBolt).toBe('4')
     expect(profileFields().magicClaw).toBe('0')
     expect(profileFields().level).toBe('21')
-    expect(screen.getByText('Energy Bolt → 4 gezet.')).toBeTruthy()
+    expect(within(panels()[2]).getByText('Energy Bolt → 4 gezet.')).toBeTruthy()
   })
 
   it('toont op het controlescherm INT bovenaan, met de zin over de AP', () => {

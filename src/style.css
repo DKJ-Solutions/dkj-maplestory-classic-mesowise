@@ -212,8 +212,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .level-cost .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .level-cost .source a { color: var(--accent); }
 
-/* Waar zet je je skillpunt? (issue #26) */
-.level-cost .choices { margin: 0 0 0.875rem; padding-left: 1.25rem; font-size: 0.875rem; color: var(--muted); }
+/* Wat dit level kost en de drie adviezen in één kaart (#126): elk advies onder een lijn. */
+.level-cost .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 
 /* Level up: drie schermen naast elkaar die naar links schuiven */
 .flow {
