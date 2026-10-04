@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**30 / 67 minor entries** <!-- pending-tally -->
+**31 / 68 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/117-shield-cape-earrings · 20261004-134135Z
+
+The equipment card has four new slots: Shield (Warrior and Magician only), Gloves, Cape and Earrings, and no slot is labelled "(optioneel)" any more, because every slot may stay empty. What you
+wear there counts toward your WDEF like the other armor. The app has no items for them yet, so a tap on the search box says to type the name, and you
+fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, because a custom item carries no MDEF.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+You can now describe your full gear; a shield, gloves, cape or earrings with DEF no longer goes missing from the card.
+
+**Score:** 3
+
+#### Pull Request
+
+Shield, Gloves, Cape and Earrings slots on the equipment card
+
+[PR #127](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/127)
+
+---
 
 ### DEPLOY: app/118-overall-unknown-wdef-pair · 20261004-134012Z
 
