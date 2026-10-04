@@ -85,27 +85,54 @@ function NotComputed(props: { job: Job }) {
 /**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
- * job (Dave, 4 oktober 2026). Een Beginner ziet de vier jobs van de job advancement.
+ * job (Dave, 4 oktober 2026). Een Beginner ziet de vier jobs van de job advancement. Het potlood rechts
+ * herstelt een vergissing: het toont weer alle vijf jobs.
  */
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
   const { job, chosen } = props
-  const choices = jobChoices(job, chosen)
+  const [editing, setEditing] = useState(false)
+  const choices = jobChoices(job, chosen && !editing)
+  const pick = (j: Job) => {
+    setEditing(false)
+    props.onChange(j)
+  }
   return (
     <section class="card job">
-      <h2 id="job-title">{chosen ? `Je job: ${jobLabel(job)}` : 'Welke job speel je?'}</h2>
+      <div class="job-head">
+        <h2 id="job-title">{chosen && !editing ? `Je job: ${jobLabel(job)}` : 'Welke job speel je?'}</h2>
+        {chosen && (
+          <button
+            type="button"
+            class="job-edit"
+            aria-label={editing ? 'Job niet wijzigen' : 'Job wijzigen'}
+            aria-pressed={editing}
+            onClick={() => setEditing(!editing)}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
       {choices.length > 0 && (
         <>
-          {chosen && <p class="hint">Job advancement: kies je nieuwe job.</p>}
+          {chosen && !editing && <p class="hint">Job advancement: kies je nieuwe job.</p>}
           <div class="job-choices" role="group" aria-labelledby="job-title">
             {choices.map((j) => (
-              <button key={j} type="button" class="btn job-choice" onClick={() => props.onChange(j)}>
+              <button
+                key={j}
+                type="button"
+                class="btn job-choice"
+                aria-pressed={editing ? j === job : undefined}
+                onClick={() => pick(j)}
+              >
                 {jobLabel(j)}
               </button>
             ))}
           </div>
         </>
       )}
-      {!chosen && <p class="hint">Je kiest één keer: daarna ligt je job vast.</p>}
+      {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
       <p class="hint">
         {isComputed(job)
           ? 'De app rekent nu alleen de Thief door. De winkelitems in je equipment passen bij je job.'

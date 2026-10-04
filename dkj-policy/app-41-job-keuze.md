@@ -58,6 +58,8 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
 - [x] Cody: de job ligt vast zodra je kiest (Dave, 4 oktober 2026). Daarna toont de kaart alleen je job.
   Uitzondering uit het spel: een Beginner ziet de vier jobs van de job advancement. `jobChoices` en
   `isJobStored` in `src/job.ts`, met tests van Tycho.
+- [x] Gwen: een potlood helemaal rechts in de job-kaart herstelt een vergissing: het toont weer alle vijf
+  jobs, met je huidige job gemarkeerd (Dave, 4 oktober 2026).
 
 #### Ontwerpkeuzes
 
