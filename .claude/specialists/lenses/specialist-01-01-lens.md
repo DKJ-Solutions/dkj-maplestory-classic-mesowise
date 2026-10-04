@@ -16,6 +16,10 @@ group: 01
   `.claude/rules/this-repo.md`). A switch away from it is a new choice of this kind.
 - **Mobile-first is the bar, not a later pass.** Every visible change is judged at phone width
   first; Dave looks at it before the merge.
+- **A visible result is handed over with a live link** (Dave, October 4, 2026, #74). Once Gwen or
+  Cody finishes a design, run `scripts/preview/start-preview.ps1` (`-Lan` for the phone link) and put
+  the URL it prints in the handover. Never type `localhost:5173` from memory: Vite moves to the next
+  free port when 5173 is taken, and the app lives under `/dkj-maplestory-classic-mesowise/`.
 - **The number is the product.** A change to the calculation or the game data does not go to
   Derek without Tycho's tests on it, and data without a stated source does not go in at all.
 - **Public repo.** Nothing about Dave's friends (names, characters, accounts) lands in it.

@@ -204,9 +204,16 @@ describe('armorUpgradeAdvice: de horizon', () => {
     expect(choice(a, 'Blue Gidder Shoes')).toMatchObject({ from: 10, to: 14, truncated: false })
   })
 
-  it('loopt bij lv 20 voor top, bottom en hoed (Red Ghetto Beanie) tot 24 (de lv 25-stukken zijn beter)', () => {
+  it('loopt bij lv 20 voor top en bottom tot 24 (de lv 25-stukken zijn beter)', () => {
     const a = advice(drafts, strong({ level: 20 }))
-    for (const n of ['Red Cloth Vest', 'Red Cloth Pants', 'Red Ghetto Beanie']) expect(choice(a, n), n).toMatchObject({ from: 20, to: 24, truncated: false })
+    for (const n of ['Red Cloth Vest', 'Red Cloth Pants']) expect(choice(a, n), n).toMatchObject({ from: 20, to: 24, truncated: false })
+  })
+
+  it('stopt bij lv 20 voor de hoed (Red Ghetto Beanie) al op 21: de Red Baseball Cap (lv 22, WDEF 22, zonder jobregel, #55) is eerder beter dan de lv 25-hoed', () => {
+    // Voor #55 liep de hoed tot 24 (Red Tiberian, lv 25). De Red Baseball Cap heeft WDEF 22 > 15 op lv 22, dus de horizon eindigt op 21.
+    // EXP met de hand: level 20 (20.216) + level 21 (24.402) = 44.618.
+    expect(expSum(20, 21)).toBe(44_618)
+    expect(choice(advice(drafts, strong({ level: 20 })), 'Red Ghetto Beanie')).toMatchObject({ from: 20, to: 21, truncated: false })
   })
 
   it('loopt bij lv 25 voor Red Ghetto Beanie van 25 tot 29 (vóór Red Guise, lv 30)', () => {
@@ -283,7 +290,7 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
       [20, 'Red Ninja Sandals', 20, 30],
       [20, 'Red Cloth Vest', 20, 24],
       [20, 'Red Cloth Pants', 20, 24],
-      [20, 'Red Ghetto Beanie', 20, 24],
+      [20, 'Red Ghetto Beanie', 20, 21], // de Red Baseball Cap (lv 22, WDEF 22) is eerder beter dan de Red Tiberian (lv 25), zie de horizon hierboven
       [25, 'Red Cloth Vest', 25, 29],
       [25, 'Red Cloth Pants', 25, 29],
       [25, 'Red Ghetto Beanie', 25, 29],
@@ -374,10 +381,36 @@ describe('armorUpgradeAdvice: meer WDEF geeft nooit minder besparing (de "nee is
 })
 
 describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
-  it('heeft geen winnaar zonder kandidaten (geen enkel stuk draagbaar)', () => {
-    const a = advice(drafts, { ...base, level: 15, luk: 0, dex: 0 })
+  it('heeft geen winnaar zonder kandidaten (geen enkel stuk draagbaar): LUK 0 en DEX 0, en de hoed die zonder eis te dragen is, draag je al', () => {
+    // Sinds #55 is de White Bandana (lv 10, WDEF 15, geen LUK- of DEX-eis) voor elk profiel vanaf lv 10 draagbaar; zonder hoed aan
+    // zou LUK 0 dus niet meer "niets draagbaar" geven. Met hoed 15 aan is de Bandana geen upgrade (niet strikt meer WDEF), de Red
+    // Thief Hood (LUK 20) is niet draagbaar en de rest (top, bottom, schoenen) vraagt LUK 10: nu is er echt geen kandidaat.
+    const a = armorUpgradeAdvice(drafts, { ...base, level: 15, luk: 0, dex: 0 }, { hat: 15 })
+    if (a.kind !== 'advice') throw new Error('advies verwacht')
     expect(a.choices).toEqual([])
     expect(a.winner).toBeNull()
+  })
+
+  it('heeft met LUK 0 en DEX 0 op lv 15 alleen de White Bandana als kandidaat (geen eis, #55), en die verdient zich niet terug', () => {
+    const p = { ...base, level: 15, luk: 0, dex: 0 }
+    const a = advice(drafts, p)
+    expect(names(a)).toEqual(['White Bandana'])
+    // Met de hand: horizon 15 t/m 19 (de Red Loosecap, lv 20, is beter), EXP 57.326, WDEF +15, prijs 1.200.
+    expect(choice(a, 'White Bandana')).toMatchObject({ from: 15, to: 19, truncated: false })
+    const saving = EXP_15_19 / epm(p) - EXP_15_19 / epm({ ...p, wdef: p.wdef + 15 })
+    expect(choice(a, 'White Bandana').saving).toBeCloseTo(saving, 6)
+    expect(saving).toBeLessThan(1_200)
+    expect(a.winner).toBeNull()
+  })
+
+  it('kiest bij gelijke netto het eerste stuk van de lijst: de White Bandana is een kopie van de Red Ghetto Beanie (WDEF 15, 1.200, zelfde horizon)', () => {
+    for (const level of [10, 15, 20, 25]) {
+      const a = advice(drafts, strong({ level }))
+      const beanie = a.choices.find((c) => c.armor.name === 'Red Ghetto Beanie')
+      expect(beanie, `lv ${level}`).toBeDefined()
+      expect(handNet(strong({ level }), armor('White Bandana'))).toBeCloseTo(handNet(strong({ level }), armor('Red Ghetto Beanie')), 9)
+      expect(a.choices.some((c) => c.armor.name === 'White Bandana'), `lv ${level}`).toBe(false)
+    }
   })
 
   it('kiest het stuk met de grootste netto besparing boven 0 en sorteert de lijst op netto, aflopend', () => {
@@ -462,7 +495,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     expect(a.robust).toBe(false)
   })
 
-  it('meldt robust false op lv 25 omdat bij minder contacten (0,15) alleen de goedkope Red Ghetto Beanie zich nog terugverdient, terwijl Red Cloth Vest nu wint', () => {
+  it('meldt robust false op lv 25 omdat bij minder contacten (0,15) alleen de goedkope Red Ghetto Beanie zich nog terugverdient, terwijl Red Cloth Vest nu wint (de White Bandana is daarbij gelijk aan de Beanie)', () => {
     const p = strong({ level: 25 })
     const a = advice(drafts, p)
     expect(a.winner).toBe(armor('Red Cloth Vest'))
@@ -477,8 +510,11 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     const beanieNet = EXP_25_29 / 0.9047805 - EXP_25_29 / 0.9079706 - 1_200
     expect(beanieNet).toBeCloseTo(52.6, 0)
     expect(handNet(p, armor('Red Ghetto Beanie'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
-    // Geen enkel ander stuk doet het dan wel: alleen de Beanie staat boven 0, dus die wint onder deze aanname.
-    for (const x of wearableNets(p, V_FEW_CONTACTS).filter((y) => y.armor.name !== 'Red Ghetto Beanie')) expect(x.net, x.armor.name).toBeLessThan(0)
+    // De White Bandana (#55, WDEF 15, 1.200, zelfde horizon 25 t/m 29) is een kopie van de Beanie: dezelfde netto, ongeveer +53.
+    // Bij gelijkspel wint de eerste van de lijst, dus de Beanie.
+    expect(handNet(p, armor('White Bandana'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
+    // Geen enkel ander stuk doet het dan wel: alleen de Beanie en de Bandana staan boven 0, dus de Beanie wint onder deze aanname.
+    for (const x of wearableNets(p, V_FEW_CONTACTS).filter((y) => !['Red Ghetto Beanie', 'White Bandana'].includes(y.armor.name))) expect(x.net, x.armor.name).toBeLessThan(0)
     expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Ghetto Beanie'))
     expect(a.robust).toBe(false)
   })
@@ -586,9 +622,17 @@ describe('armorUpgradeAdvice met worn: kandidaatfilter', () => {
     expect(zero.winner).toBe(plain.winner)
   })
 
-  it('laat LUK/DEX bepalen wat draagbaar is, ook met worn (lv 25, LUK 35, DEX 10, hoed 21 aan: geen hoedkeuze)', () => {
-    const a = adviceW({ ...base, level: 25, luk: 35, dex: 10 }, { hat: 21 })
+  it('laat LUK/DEX bepalen wat draagbaar is, ook met worn (lv 25, LUK 35, DEX 10, hoed 22 aan: geen hoedkeuze)', () => {
+    // Red Tiberian (WDEF 24) vraagt LUK 40 en DEX 15: niet draagbaar. Sinds #55 is de Red Baseball Cap (WDEF 22, geen eis) er wel,
+    // dus de gedragen hoed is 22 (niet 21, dan was de Cap een upgrade): niet strikt meer WDEF, en zo blijft alleen de LUK/DEX-poort over.
+    const a = adviceW({ ...base, level: 25, luk: 35, dex: 10 }, { hat: 22 })
     expect(a.choices.some((c) => c.armor.slot === 'hat')).toBe(false)
+    expect(a.notWearable.map((u) => u.armor.name)).toContain('Red Tiberian')
+  })
+
+  it('laat bij hoed 21 aan (lv 25, LUK 35, DEX 10) alleen de Red Baseball Cap over: zonder eis draagbaar, de Red Tiberian niet', () => {
+    const a = adviceW({ ...base, level: 25, luk: 35, dex: 10 }, { hat: 21 })
+    expect(a.choices.filter((c) => c.armor.slot === 'hat').map((c) => c.armor.name)).toEqual(['Red Baseball Cap'])
   })
 
   it('neemt de hoed lv 15 (WDEF 18) mee bij gedragen 17, en niet bij gedragen 18', () => {

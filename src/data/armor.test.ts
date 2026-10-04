@@ -3,6 +3,8 @@ import { NPC_ARMOR } from './armor'
 import { EXP_TABLE_LEVELS } from './expTable'
 
 const SLOTS = ['hat', 'top', 'bottom', 'shoes'] as const
+/** De stukken zonder jobregel op MeowDB: voor elke klas, dus zonder stat-eis (Dave, #55, 2026-10-04). */
+const NO_JOB_LINE = ['White Bandana', 'Red Baseball Cap']
 const slotRank = (s: string) => SLOTS.indexOf(s as (typeof SLOTS)[number])
 
 describe('NPC_ARMOR', () => {
@@ -51,10 +53,28 @@ describe('NPC_ARMOR', () => {
     }
   })
 
-  it('heeft de Red Qi Pao Skirt (id 1216, alleen voor vrouwen) er niet in, en dus 17 stukken', () => {
+  it('heeft de Red Qi Pao Skirt (id 1216, alleen voor vrouwen) er niet in, en dus 19 stukken (17 met jobregel plus de twee zonder, #55)', () => {
     expect(NPC_ARMOR.map((a) => a.name)).not.toContain('Red Qi Pao Skirt')
     expect(NPC_ARMOR.map((a) => a.source.url)).not.toContain('https://meowdb.com/msclassic/item-db/1216')
-    expect(NPC_ARMOR).toHaveLength(17)
+    expect(NPC_ARMOR).toHaveLength(19)
+  })
+
+  it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel precies zoals op MeowDB gelezen', () => {
+    expect(NPC_ARMOR.find((a) => a.name === 'White Bandana')).toEqual({
+      name: 'White Bandana', slot: 'hat', level: 10, wdef: 15, luk: 0, dex: 0, price: 1_200,
+      source: { url: 'https://meowdb.com/msclassic/item-db/719', retrieved: '2026-10-04' },
+    })
+    expect(NPC_ARMOR.find((a) => a.name === 'Red Baseball Cap')).toEqual({
+      name: 'Red Baseball Cap', slot: 'hat', level: 22, wdef: 22, luk: 0, dex: 0, price: 3_900,
+      source: { url: 'https://meowdb.com/msclassic/item-db/781', retrieved: '2026-10-04' },
+    })
+  })
+
+  it('heeft LUK 0 en DEX 0 bij de stukken zonder jobregel (geen stat-eis), en bij alle andere minstens één eis', () => {
+    for (const a of NPC_ARMOR) {
+      const noReq = a.luk === 0 && a.dex === 0
+      expect(noReq, a.name).toBe(NO_JOB_LINE.includes(a.name))
+    }
   })
 
   it('heeft de Red Ghetto Beanie (id 732, Don Hwang, Kerning City) precies zoals op MeowDB gelezen', () => {
