@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**25 / 61 minor entries** <!-- pending-tally -->
+**26 / 62 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/64-helpful-stranger-arrows · 20261004-131127Z
+
+A Bowman who has the Helpful Stranger citizenship rank can turn on "Ik heb Helpful Stranger" under the Ammo
+row of the equipment card. The bronze arrows (+1 W.ATT, 2 mesos per arrow, Raymond's shop) then appear in the
+ammo list, and picking one makes the EXP per meso and the upgrade advice count with it. Switched off, the app
+counts with the plain arrow, as before.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Bowman with the rank can now see whether bronze arrows pay for themselves in mesos, which was the open
+question of #64.
+
+**Score:** 2
+
+#### Pull Request
+
+Bowman: a Helpful Stranger switch that lets bronze arrows count
+
+[PR #119](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/119)
+
+---
 
 ### DEPLOY: app/108-attack-damage-range · 20261004-130241Z
 
