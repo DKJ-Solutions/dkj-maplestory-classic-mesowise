@@ -90,9 +90,12 @@ const V_FEW_CONTACTS = ASSUMPTION_VARIANTS[0]
 describe('armorUpgradeAdvice: wanneer er niets te rekenen valt', () => {
   it('geeft none zonder profiel, buiten de EXP-tabel of zonder "Beste"', () => {
     expect(armorUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
-    expect(armorUpgradeAdvice(drafts, strong({ level: 9 }))).toEqual({ kind: 'none' })
     expect(armorUpgradeAdvice(drafts, strong({ level: 31 }))).toEqual({ kind: 'none' })
     expect(armorUpgradeAdvice([], strong({ level: 15 }))).toEqual({ kind: 'none' })
+  })
+
+  it('rekent ook onder lv 10, nu de EXP-tabel bij lv 1 begint (issue #146)', () => {
+    expect(armorUpgradeAdvice(drafts, strong({ level: 9 }))).toMatchObject({ kind: 'advice', level: 9 })
   })
 
   it('rekent op de randen van de tabel wel: lv 10 en lv 30', () => {

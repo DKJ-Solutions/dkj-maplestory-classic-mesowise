@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE, FIRST_LEVEL, expToNextLevel } from './expTable'
 
 describe('de EXP-tabel', () => {
-  it('dekt precies lv 10 tot en met 30', () => {
-    expect(EXP_TABLE_LEVELS).toEqual(Array.from({ length: 21 }, (_, i) => 10 + i))
-    expect(FIRST_LEVEL).toBe(10)
+  it('dekt precies lv 1 tot en met 30', () => {
+    expect(EXP_TABLE_LEVELS).toEqual(Array.from({ length: 30 }, (_, i) => 1 + i))
+    expect(FIRST_LEVEL).toBe(1)
   })
 
   it('heeft per level een heel getal groter dan 0 dat met elk level stijgt', () => {
@@ -17,9 +17,19 @@ describe('de EXP-tabel', () => {
     }
   })
 
+  it('telt lv 1–9 op tot de 3.347 die de bronpagina vóór lv 10 zet (issue #146)', () => {
+    const sum = EXP_TABLE_LEVELS.filter((l) => l <= 9).reduce((s, level) => s + expToNextLevel(level)!, 0)
+    expect(sum).toBe(3_347)
+  })
+
+  it('noemt lv 1 tot en met 9 zoals de bronpagina (guides/exp-table-level-1-to-100)', () => {
+    const expected = [15, 34, 57, 92, 135, 372, 560, 840, 1_242]
+    expect(expected.map((_, i) => expToNextLevel(1 + i))).toEqual(expected)
+  })
+
   it('telt op tot het verschil in de cumulatieve kolom van de bronpagina (3.347 tot 97.841)', () => {
     // De pagina zet 3.347 EXP vóór lv 10 en 97.841 vóór lv 21: het verschil is de som van lv 10–20.
-    const sum = EXP_TABLE_LEVELS.filter((l) => l <= 20).reduce((s, level) => s + expToNextLevel(level)!, 0)
+    const sum = EXP_TABLE_LEVELS.filter((l) => l >= 10 && l <= 20).reduce((s, level) => s + expToNextLevel(level)!, 0)
     expect(sum).toBe(97_841 - 3_347)
   })
 
@@ -36,7 +46,7 @@ describe('de EXP-tabel', () => {
   })
 
   it('geeft undefined buiten de tabel of bij een gebroken level', () => {
-    for (const level of [0, 9, 31, 10.5, Number.NaN]) expect(expToNextLevel(level), `lv ${level}`).toBeUndefined()
+    for (const level of [0, -1, 31, 10.5, Number.NaN]) expect(expToNextLevel(level), `lv ${level}`).toBeUndefined()
   })
 
   it('heeft een MeowDB-bron met een datum', () => {

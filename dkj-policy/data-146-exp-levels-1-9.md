@@ -39,21 +39,31 @@
 
 ### PLAN
 
+- [x] Issue #146: below level 10 every advice that needs the cost of the level fell back to "niet uit te rekenen", because the EXP table started at level 10.
+- [x] Source: NiaMeowDB, exp-table-level-1-to-100 (retrieved 2026-10-04); the page lists levels 1-49 as confirmed in the current game.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/expTable.ts`: levels 1-9 added (15, 34, 57, 92, 135, 372, 560, 840, 1,242), `FIRST_LEVEL` is now 1.
+- [x] Tests that used level 9 as "outside the table" now assert that level 9 gets advice; level 31 stays the upper edge.
 
 ### TEST
 
+- [x] Vera: levels 1-9 sum to 3,347, the page's cumulative EXP before level 10 (now a test).
+- [x] `npx vitest run`: 1,410 passed.
+
 ### DEPLOY: data/146-exp-levels-1-9
 
-**Score:**
+The EXP table now starts at level 1 instead of level 10 (#146), so the level cost and the ATT, DEF, Skill and Mob advice work for a character below level 10 instead of saying "niet uit te rekenen". Levels 1-9 come from NiaMeowDB's EXP table and add up to the 3,347 EXP the page lists before level 10.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A friend opening the app at a level below 10 now gets an answer: Dave hit the empty weapon advice at level 9.
+
+**Score:** 3
 
 #### Pull Request
 
 EXP table: add levels 1-9
-

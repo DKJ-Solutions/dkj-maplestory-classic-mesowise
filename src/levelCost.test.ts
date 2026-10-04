@@ -48,8 +48,11 @@ describe('levelCost', () => {
   })
 
   it('zegt het als het level buiten de EXP-tabel valt', () => {
-    expect(levelCost(lv(9), verdict([], null))).toEqual({ kind: 'noTable', level: 9 })
     expect(levelCost(lv(31), verdict([], null))).toEqual({ kind: 'noTable', level: 31 })
+  })
+
+  it('kent de EXP ook onder lv 10 (issue #146)', () => {
+    expect(levelCost(lv(9), verdict([], null))).toEqual({ kind: 'noBest', level: 9, expToNext: 1_242 })
   })
 
   it('zegt het als er geen beste plek is, of als die ongeldig is', () => {
