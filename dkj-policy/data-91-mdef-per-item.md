@@ -51,6 +51,8 @@ read-only line derived from the chosen equipment. Visible result, so the branch 
 - [x] Cody: optional `mdef` on `ShopArmor` (absent = 0), Bronze Pride row, `mdef` in the armor catalog,
   `wornMdef` in `src/equipment.ts`, and the Magic Def line on the Total stats card as read-only via `derived`;
   while a slot is open or holds a custom item, the line stays the hand-entered field (a Magician has no catalog yet, #43).
+- [x] Rebecca, after merging main: the 29 Warrior item pages #55 added (female tops and bottoms, colours, Kendo, Dragon and
+  Engrit robes) read the same way on 2026-10-04; none has an M.DEF line, so the data and its pin stand.
 - [x] Victor: an empty overall now reads top and bottom (`isEmptyEntry`), and the hand-entered fallback above. Edith: hint and wording.
 
 ### TEST
