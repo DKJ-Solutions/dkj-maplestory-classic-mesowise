@@ -1,8 +1,8 @@
 // De Warrior-winkelgegevens (data/warrior.ts, eigen types met `str`) in de gedeelde vorm van wapens en armor
 // (Weapon en ArmorPiece, op de ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde
 // manier kunnen lezen als de Thief-lijsten. De STR-eis blijft `str` (issue #69). Puur, zonder UI-import.
-import type { ArmorPiece, WarriorWeaponKind, Weapon, WornClaw } from './data/types'
-import { averageAttackMs, effectiveMultiplier, MULT, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
+import type { ArmorPiece, Weapon, WornClaw } from './data/types'
+import { averageAttackMs, effectiveMultiplier, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 
 /**
@@ -42,22 +42,4 @@ export const WARRIOR_ARMOR: readonly ArmorPiece[] = NPC_WARRIOR_ARMOR.map((a) =>
   price: a.price,
   source: a.source,
   ...(a.gender ? { gender: a.gender } : {}),
-}))
-
-/** Hoe een soort wapen heet op het scherm. */
-const KIND_LABEL: Record<WarriorWeaponKind, string> = {
-  '1h-sword': '1H Sword',
-  '2h-sword': '2H Sword',
-  '1h-axe': '1H Axe',
-  '2h-axe': '2H Axe',
-  '1h-blunt': '1H Blunt',
-  '2h-blunt': '2H Blunt',
-  spear: 'Spear',
-  polearm: 'Polearm',
-}
-
-/** De verwachte weapon multiplier per soort wapen, voor de speler die een wapen zelf invult. */
-export const WEAPON_MULT_BY_KIND: readonly { label: string; mult: number }[] = (Object.keys(MULT) as WarriorWeaponKind[]).map((k) => ({
-  label: KIND_LABEL[k],
-  mult: effectiveMultiplier(MULT[k]),
 }))
