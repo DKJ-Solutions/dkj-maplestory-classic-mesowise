@@ -148,9 +148,10 @@ export const ENERGY_BOLT_TARGETS = 1
 
 /**
  * Magic Claw: MP, schade per hit en spell mastery per skill-level (1 tot 20). Raakt 1 mob, 2 hits per mob.
- * Vraagt Energy Bolt 1. Per hit is AFGELEID, niet gelezen: de pagina zegt "attack an enemy twice" en "2 hits per
- * target" en toont alleen "Basic Attack 45 tot 65", zonder te zeggen of dat per hit of per cast is. Per hit
- * past: 2 x 65 = 130 is de Energy Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
+ * Vraagt Energy Bolt 1. De schade is per hit, en zo staat het op de pagina (sectie "How output is calculated",
+ * gelezen in de ruwe HTML, issue #90): "Magic Claw creates 2 magic hits using skill power 45 to 65. Each hit scales
+ * with INT, Magic Attack, and spell mastery", en "Hits Per Cast: 2". Het klopt ook met 2 x 65 = 130, de Energy
+ * Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
  */
 export const MAGIC_CLAW_SOURCE: Source = skill('magic-claw')
 export const MAGIC_CLAW_LEVELS: readonly SpellLevel[] = [
