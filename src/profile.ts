@@ -36,6 +36,8 @@ const STATS = [
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
+  // De AP die je equipment je extra geeft, bovenop de AP van je level (apAtLevel). Alleen ter info: de berekening gebruikt het veld niet.
+  { key: 'extraAp', label: 'Extra AP', min: 0, max: 999, integer: true, informative: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je ability points en je equipment (statWindowRange in suggest.ts).
   // W.ATT en M.ATT ook niet: ze volgen uit je equipment (totalAttack, totalMagicAttack).
@@ -169,6 +171,7 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   dex: '25',
   int: '4',
   luk: '40',
+  extraAp: '0',
   clawWatk: '10',
   accuracy: '33',
   avoid: '23',

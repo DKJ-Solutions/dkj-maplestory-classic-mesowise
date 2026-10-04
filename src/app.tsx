@@ -27,7 +27,7 @@ import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, STAT_FIELDS, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -252,7 +252,7 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
  * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'extraAp'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
 /** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
@@ -260,6 +260,8 @@ const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min
 const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
 /** De AP die je op je level hebt, zonder equipment (apAtLevel): geen opgeslagen veld, alleen om te lezen. */
 const AP_FIELD: ProfileField = { key: 'level', label: 'AP', min: 0, max: 9_999, integer: true }
+/** De AP die je equipment je extra geeft: je vult hem zelf in, en hij telt op bij Totaal AP. */
+const EXTRA_AP_FIELD = STAT_FIELDS.find((f) => f.key === 'extraAp')!
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -461,8 +463,16 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 function ProfileCard(props: StatsCardProps) {
   const level = Number(props.draft.level.trim())
   const known = props.draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200
+  const extraText = props.draft.extraAp.trim()
+  const extra = Number(extraText)
+  // Een leeg of fout getal telt als 0, net als bij de andere velden die alleen ter info zijn.
+  const extraAp = extraText !== '' && Number.isInteger(extra) && extra >= EXTRA_AP_FIELD.min && extra <= EXTRA_AP_FIELD.max ? extra : 0
   const lead = (
-    <StatLine key="ap" field={{ ...AP_FIELD, label: known ? `AP op level ${level}` : 'AP op je level' }} value={known ? nfInt.format(apAtLevel(level)) : ''} readOnly onSave={() => {}} />
+    <>
+      <StatLine key="ap" field={{ ...AP_FIELD, label: known ? `AP op level ${level}` : 'AP op je level' }} value={known ? nfInt.format(apAtLevel(level)) : ''} readOnly onSave={() => {}} />
+      <StatLine key="extra-ap" field={EXTRA_AP_FIELD} value={props.draft.extraAp} onSave={(text) => props.onChange({ extraAp: text })} />
+      <StatLine key="total-ap" field={{ ...AP_FIELD, label: 'Totaal AP' }} value={known ? nfInt.format(apAtLevel(level) + extraAp) : ''} readOnly onSave={() => {}} />
+    </>
   )
   return (
     <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
