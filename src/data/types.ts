@@ -83,6 +83,13 @@ export type Requires<S extends Stat> = Record<S, number>
 export interface ShopArmor extends ShopItem {
   slot: ArmorSlot
   wdef: number
+  /**
+   * De MDEF ("M.DEF" op MeowDB). Elke item-pagina van de app is op 2026-10-04 hierop nagelezen (#91): een pagina zonder
+   * M.DEF-regel geeft hier geen `mdef`, en dat telt als 0. In de Thief-, Warrior- en Bowman-armor heeft alleen de Bronze
+   * Pride er een; de Magician-armor draagt zijn MDEF altijd (MagicianArmor).
+   * Ook geen enkel wapen van de app heeft MDEF; daarom draagt een wapen dit veld niet.
+   */
+  mdef?: number
 }
 
 /**
@@ -95,7 +102,7 @@ export interface ArmorPiece extends ShopArmor, Partial<Requires<Stat>> {}
 export type Armor = ArmorPiece & Requires<'luk' | 'dex'>
 
 /** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
-export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
+export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'mdef' | 'source'>
 
 /** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
 export type WornClaw = Pick<Weapon, 'name' | 'level' | 'watk' | 'speed' | 'source'>

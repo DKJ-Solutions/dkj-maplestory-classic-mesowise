@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -363,6 +363,8 @@ function StatsCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
   /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
   lead?: ComponentChildren
+  /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
+  derived?: Partial<Record<keyof ProfileDraft, string>>
   children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
@@ -382,10 +384,21 @@ function StatsCard(props: {
       <Collapse open={open}>
         <div class="spot-body">
           {props.lead}
-          {props.fields.map((f) => (
-            <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
-          ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
+          {props.fields.map((f) => {
+            const derived = props.derived?.[f.key]
+            return derived !== undefined ? (
+              <StatLine key={f.key} field={f} value={derived} readOnly onSave={() => {}} />
+            ) : (
+              <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
+            )
+          })}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && (
+            <p class="hint">
+              Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic Def ook, zodra je hat, top en bottom (of overall) en shoes
+              uit de lijst hebt gekozen; tot dan, of met een eigen item, vul je hem zelf in. Magic, Crit., Speed en Jump vul je zelf in; de app
+              rekent er (nog) niet mee.
+            </p>
+          )}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
@@ -405,12 +418,13 @@ function ProfileCard(props: StatsCardProps) {
 }
 
 /** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
-function TotalStatsCard(props: StatsCardProps) {
+function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const { job } = props
   const attack = totalAttack(props.draft, job)
   const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
+  const mdef = wornMdef(props.equipment)
   return (
-    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
       {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
       {job === 'bowman' && (
         <p class="hint">
@@ -1868,7 +1882,7 @@ export function App() {
               />
 
               <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-              <TotalStatsCard job={job} draft={profileDraft} error={totalError} onChange={updateProfile} />
+              <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
               <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
               {computed ? (

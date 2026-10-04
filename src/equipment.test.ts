@@ -21,6 +21,7 @@ import {
   statName,
   statOverride,
   wornName,
+  wornMdef,
   wornStat,
   wornWdef,
   type EquipEntry,
@@ -258,6 +259,59 @@ describe('wornWdef en wornName', () => {
     expect(wornName(other('7', '   '))).toBe('eigen item')
   })
 
+})
+
+describe('wornMdef (#91)', () => {
+  const dressed = (over: Partial<Equipment>): Equipment => ({
+    ...defaultEquipment(),
+    hat: shop('Red Thief Hood'),
+    top: shop('Red Pao'),
+    bottom: shop('Red Pao Bottoms'),
+    shoes: shop('Red Enamel Boots'),
+    ...over,
+  })
+
+  it('telt de MDEF van hat, top, bottom en shoes op; Thief-armor zonder M.DEF-regel geeft 0', () => {
+    expect(wornMdef(dressed({}))).toBe(0)
+    expect(wornMdef(dressed({ hat: shop('Bronze Pride') }))).toBe(18)
+  })
+
+  it('laat het wapen en de ammo buiten de som', () => {
+    expect(wornMdef(dressed({ claw: unknown, ammo: unknown }))).toBe(0)
+  })
+
+  it('is null zolang een armorslot nog niet is ingevuld of een eigen item draagt: daarvan is de MDEF onbekend', () => {
+    expect(wornMdef(defaultEquipment())).toBeNull()
+    expect(wornMdef(dressed({ shoes: unknown }))).toBeNull()
+    expect(wornMdef(dressed({ hat: other('20', 'Eigen hoed') }))).toBeNull()
+  })
+
+  it('telt bij een overall de overall en niet de lege top en bottom; een bekend lege helft telt als 0', () => {
+    expect(wornMdef(dressed({ overall: shop('Blue Sauna Robe'), top: unknown, bottom: unknown }))).toBe(0)
+    expect(wornMdef(dressed({ hat: shop('Bronze Pride'), bottom: { pick: 'empty', name: '', stat: '' } }))).toBe(18)
+  })
+
+  it('leest bij een bekend lege overall de top en bottom, niet de lege overall', () => {
+    const empty: EquipEntry = { pick: 'empty', name: '', stat: '' }
+    expect(wornMdef(dressed({ hat: shop('Bronze Pride'), overall: empty, top: unknown, bottom: unknown }))).toBeNull()
+    expect(wornMdef(dressed({ hat: shop('Bronze Pride'), overall: empty }))).toBe(18)
+  })
+
+  it('volgt de MDEF uit de database, ook als je de DEF van het stuk hebt gecorrigeerd', () => {
+    expect(wornMdef(dressed({ hat: shop('Bronze Pride', '20') }))).toBe(18)
+  })
+})
+
+describe('MDEF in de data (#91)', () => {
+  it('heeft in de Thief-, Warrior- en Bowman-armor alleen de Bronze Pride een MDEF, zoals de pagina\'s op 2026-10-04 zeiden', () => {
+    const all = [...NPC_ARMOR, ...WORN_ARMOR, ...NPC_WARRIOR_ARMOR, ...WORN_WARRIOR_ARMOR, ...NPC_BOWMAN_ARMOR]
+    expect(all.filter((a) => (a.mdef ?? 0) > 0).map((a) => [a.name, a.mdef])).toEqual([['Bronze Pride', 18]])
+  })
+
+  it('geeft de MDEF door in de catalogus van een armorslot, ook voor een andere job die het item draagt', () => {
+    expect(catalogItems('hat', 'thief').find((i) => i.name === 'Bronze Pride')?.mdef).toBe(18)
+    expect(catalogItems('hat', 'warrior').every((i) => i.mdef === 0)).toBe(true)
+  })
 })
 
 describe('entryChanged', () => {
@@ -677,8 +731,8 @@ describe('equipment voor een Warrior', () => {
       const names = (slot: 'hat' | 'shoes') => [...NPC_WARRIOR_ARMOR, ...WORN_WARRIOR_ARMOR].filter((a) => a.slot === slot).map((a) => a.name)
       expect(hats.map((i) => i.name)).toEqual(names('hat'))
       expect(shoes.map((i) => i.name)).toEqual(names('shoes'))
-      expect(hats.find((i) => i.name === 'Bronze Full Helm')).toEqual({ name: 'Bronze Full Helm', level: 15, stat: 26 })
-      expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21 })
+      expect(hats.find((i) => i.name === 'Bronze Full Helm')).toEqual({ name: 'Bronze Full Helm', level: 15, stat: 26, mdef: 0 })
+      expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21, mdef: 0 })
     })
 
     it('geeft een Warrior tops en broeken: de items zonder prijs, zonder eisen', () => {
@@ -1117,8 +1171,8 @@ describe('equipment voor een Bowman', () => {
       const names = catalogItems(slot, 'bowman').map((i) => i.name)
       for (const a of NPC_BOWMAN_ARMOR.filter((x) => x.slot === slot)) expect(names, a.name).toContain(a.name)
     }
-    expect(catalogItems('hat', 'bowman').find((i) => i.name === 'Hunter')).toEqual({ name: 'Hunter', level: 25, stat: 24 })
-    expect(catalogItems('top', 'bowman').find((i) => i.name === "Hunter's Armor / Huntress Armor")).toEqual({ name: "Hunter's Armor / Huntress Armor", level: 30, stat: 40 })
+    expect(catalogItems('hat', 'bowman').find((i) => i.name === 'Hunter')).toEqual({ name: 'Hunter', level: 25, stat: 24, mdef: 0 })
+    expect(catalogItems('top', 'bowman').find((i) => i.name === "Hunter's Armor / Huntress Armor")).toEqual({ name: "Hunter's Armor / Huntress Armor", level: 30, stat: 40, mdef: 0 })
   })
 
   it('heeft geen mannen-only items van de Warrior (#55)', () => {

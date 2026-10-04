@@ -49,17 +49,21 @@ read-only line derived from the chosen equipment. Visible result, so the branch 
 - [x] Vera: spot-checked the one positive (809) and the one weakly worded answer (War Bow, 663) again; both hold.
   A reported level mismatch on three level-0 tops collapsed on re-reading (the pages show no REQ LEV), so it was not filed.
 - [x] Cody: optional `mdef` on `ShopArmor` (absent = 0), Bronze Pride row, `mdef` in the armor catalog,
-  `wornMdef` in `src/equipment.ts`, and the Magic Def line on the Total stats card as read-only via `derived`.
+  `wornMdef` in `src/equipment.ts`, and the Magic Def line on the Total stats card as read-only via `derived`;
+  while a slot is open or holds a custom item, the line stays the hand-entered field (a Magician has no catalog yet, #43).
+- [x] Victor: an empty overall now reads top and bottom (`isEmptyEntry`), and the hand-entered fallback above. Edith: hint and wording.
 
 ### TEST
 
 - [x] Tycho: `wornMdef` (sum, overall against top + bottom, the known-empty half, unknown and custom slots, a corrected
-  DEF), a data pin (only the Bronze Pride outside the Magician armor) and an app test on the card. Full suite 987/987, typecheck clean.
+  DEF, an empty overall), a data pin (only the Bronze Pride in the Thief, Warrior and Bowman armor) and an app test on the card
+  (hand-entered until the last slot, then derived). Full suite 988/988, typecheck clean.
 
 ### DEPLOY: data/91-mdef-per-item
 
 The Total stats card now fills in Magic Def itself from your equipment, as it already did for Attack and Weapon Def: the MDEF
-of your hat, top and bottom (or overall) and shoes, read-only, and empty until all of those are filled in. Every item
+of your hat, top and bottom (or overall) and shoes, read-only once all of those are picked from the list; until then, or with
+a custom item, you still fill it in yourself. Every item
 page was checked: of the items the app knows outside the Magician's, only the Bronze Pride gives MDEF (18).
 
 **Score:** 2
