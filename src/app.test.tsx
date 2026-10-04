@@ -155,10 +155,9 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(profileFields().wdef).toBe(DEFAULT_PROFILE.wdef)
   })
 
-  it('toont de nieuwe aanvalstijd in het karakterveld', () => {
+  it('toont de nieuwe aanvalstijd onder je Weapon', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     expect(statShown('Tijd per aanval (ms)')).toBe(String(IGOR.speed.attackMs))
   })
 
@@ -333,16 +332,22 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont geen level, Max HP, weapon attack en WDEF: die liggen elders vast', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    const names = Array.from(panels()[0].querySelectorAll('.stat-line-name')).map((n) => n.textContent)
+    const names = Array.from(panels()[0].querySelectorAll('section.profile .stat-line-name')).map((n) => n.textContent)
     expect(names).not.toContain('Level')
     expect(names).not.toContain('Max HP')
     expect(names).not.toContain('Weapon attack van je wapen')
     expect(names).not.toContain('WDEF')
-    expect(names).toContain('Tijd per aanval (ms)')
+    expect(names).not.toContain('Tijd per aanval (ms)')
+  })
+
+  it('zet de tijd per aanval op de equipment-kaart, direct onder je Weapon', () => {
+    const line = statLine('Tijd per aanval (ms)')
+    expect(line.closest('section.equipment')).toBe(cards()[0])
+    expect(line.previousElementSibling).toBe(rowOf(cards()[0], 'Weapon'))
   })
 
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    openHomeEquipment()
     const h = openStat('Tijd per aanval (ms)')
     expect(h.d.queryByRole('button', { name: /plus 1/ })).toBeNull()
     h.type('812.5')
