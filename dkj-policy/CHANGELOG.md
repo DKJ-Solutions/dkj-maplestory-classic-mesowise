@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**22 / 47 minor entries** <!-- pending-tally -->
+**22 / 48 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/86-top-menu-bar · 20261004-122513Z
+
+A white menu bar now runs across the top of the screen, with the app name and a menu button on the right.
+The menu holds your job: once you have picked one, the job card no longer takes up space on the home
+screen, and you change your job through the menu.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+White top menu bar with the app name and a settings menu
+
+[PR #97](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/97)
+
+---
 
 ### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
 
