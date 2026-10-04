@@ -1,8 +1,9 @@
 // De skills die een Thief of Warrior kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
-// elk met het hoogste skill-level. Alleen namen en maxima, voor de sectie "Skillpoints"; wat een
-// skill doet, staat in thief.ts voor de skills die het model doorrekent.
+// elk met het hoogste skill-level en de MP die hij per keer kost (issue #83). Alleen namen, maxima en MP, voor de
+// sectie "Skillpoints"; wat een skill doet, staat in thief.ts voor de skills die het model doorrekent.
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
-// als op de skillpagina's.
+// als op de skillpagina's, de MP per level in de tabel op elke skillpagina (daar als "MP -8").
+import { LUCKY_SEVEN_LEVELS } from './thief'
 import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_GUARD, MAX_MP_INCREASE } from './magician'
 import type { Source } from './types'
@@ -42,28 +43,42 @@ export interface SkillInfo {
   job: 'Beginner' | 'Thief' | 'Warrior' | 'Magician'
   /** Het hoogste skill-level. */
   max: number
+  /** De MP die de skill per keer kost, per skill-level (index 0 is level 1); ontbreekt bij een passieve skill. */
+  mp?: readonly number[]
   source: Source
 }
 
-const skill = (key: SkillKey, name: string, job: SkillInfo['job'], max: number, path: string): SkillInfo => ({
+const skill = (key: SkillKey, name: string, job: SkillInfo['job'], max: number, path: string, mp?: readonly number[]): SkillInfo => ({
   key,
   name,
   job,
   max,
+  ...(mp && { mp }),
   source: { url: `https://meowdb.com/msclassic/skills/${path}`, retrieved: R },
 })
 
+// De MP per level van de skills die het model niet doorrekent, uit de tabel op hun skillpagina.
+const THREE_SNAILS_MP = [3, 4, 5]
+const NIMBLE_FEET_MP = [4, 7, 10]
+const RECOVERY_MP = [5, 10, 15]
+const DOUBLE_STAB_MP = [8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16]
+const DISORDER_MP = [5, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10]
+// Level 19 kost 32 en level 20 kost 30 (geen vaste stap): zo staat het op de pagina.
+const DARK_SIGHT_MP = [50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 30]
+
+const mpOf = (levels: readonly { mp: number }[]): number[] => levels.map((l) => l.mp)
+
 /** Alle skills van een Thief tot de 2e job, in de volgorde van de klassenpagina's. */
 export const THIEF_SKILLS: readonly SkillInfo[] = [
-  skill('threeSnails', 'Three Snails', 'Beginner', 3, 'beginner/three-snails'),
-  skill('nimbleFeet', 'Nimble Feet', 'Beginner', 3, 'beginner/nimble-feet'),
-  skill('recovery', 'Recovery', 'Beginner', 3, 'beginner/recovery'),
+  skill('threeSnails', 'Three Snails', 'Beginner', 3, 'beginner/three-snails', THREE_SNAILS_MP),
+  skill('nimbleFeet', 'Nimble Feet', 'Beginner', 3, 'beginner/nimble-feet', NIMBLE_FEET_MP),
+  skill('recovery', 'Recovery', 'Beginner', 3, 'beginner/recovery', RECOVERY_MP),
   skill('nimbleBody', 'Nimble Body', 'Thief', 15, 'thief/nimble-body'),
   skill('keenEyes', 'Keen Eyes', 'Thief', 15, 'thief/keen-eyes'),
-  skill('doubleStab', 'Double Stab', 'Thief', 20, 'thief/double-stab'),
-  skill('disorder', 'Disorder', 'Thief', 20, 'thief/disorder'),
-  skill('darkSight', 'Dark Sight', 'Thief', 20, 'thief/dark-sight'),
-  skill('luckySeven', 'Lucky Seven', 'Thief', 20, 'thief/lucky-seven'),
+  skill('doubleStab', 'Double Stab', 'Thief', 20, 'thief/double-stab', DOUBLE_STAB_MP),
+  skill('disorder', 'Disorder', 'Thief', 20, 'thief/disorder', DISORDER_MP),
+  skill('darkSight', 'Dark Sight', 'Thief', 20, 'thief/dark-sight', DARK_SIGHT_MP),
+  skill('luckySeven', 'Lucky Seven', 'Thief', 20, 'thief/lucky-seven', mpOf(LUCKY_SEVEN_LEVELS)),
 ]
 
 /**
@@ -73,9 +88,9 @@ export const THIEF_SKILLS: readonly SkillInfo[] = [
 export const WARRIOR_SKILLS: readonly SkillInfo[] = [
   skill('improvedHpRecovery', 'Improved HP Recovery', 'Warrior', IMPROVED_HP_RECOVERY.itemRecoveryPct.length, 'warrior/improved-hp-recovery'),
   skill('maxHpIncrease', 'Max HP Increase', 'Warrior', MAX_HP_INCREASE.maxHpPct.length, 'warrior/max-hp-increase'),
-  skill('ironBody', 'Iron Body', 'Warrior', IRON_BODY_LEVELS.length, 'warrior/iron-body'),
-  skill('powerStrike', 'Power Strike', 'Warrior', POWER_STRIKE_LEVELS.length, 'warrior/power-strike'),
-  skill('slashBlast', 'Slash Blast', 'Warrior', SLASH_BLAST_LEVELS.length, 'warrior/slash-blast'),
+  skill('ironBody', 'Iron Body', 'Warrior', IRON_BODY_LEVELS.length, 'warrior/iron-body', mpOf(IRON_BODY_LEVELS)),
+  skill('powerStrike', 'Power Strike', 'Warrior', POWER_STRIKE_LEVELS.length, 'warrior/power-strike', mpOf(POWER_STRIKE_LEVELS)),
+  skill('slashBlast', 'Slash Blast', 'Warrior', SLASH_BLAST_LEVELS.length, 'warrior/slash-blast', mpOf(SLASH_BLAST_LEVELS)),
   skill('preciseStrikes', 'Precise Strikes', 'Warrior', PRECISE_STRIKES_LEVELS.length, 'warrior/precise-strikes'),
 ]
 
@@ -84,12 +99,12 @@ export const WARRIOR_SKILLS: readonly SkillInfo[] = [
  * levels in de gegevens van het model (data/magician.ts), dezelfde als op de skillpagina's.
  */
 export const MAGICIAN_SKILLS: readonly SkillInfo[] = [
-  skill('magicGuard', 'Magic Guard', 'Magician', MAGIC_GUARD.mp.length, 'magician/magic-guard'),
-  skill('magicArmor', 'Magic Armor', 'Magician', MAGIC_ARMOR_LEVELS.length, 'magician/magic-armor'),
+  skill('magicGuard', 'Magic Guard', 'Magician', MAGIC_GUARD.mp.length, 'magician/magic-guard', MAGIC_GUARD.mp),
+  skill('magicArmor', 'Magic Armor', 'Magician', MAGIC_ARMOR_LEVELS.length, 'magician/magic-armor', mpOf(MAGIC_ARMOR_LEVELS)),
   skill('improvedMpRecovery', 'Improved MP Recovery', 'Magician', IMPROVED_MP_RECOVERY.itemRecoveryPct.length, 'magician/improved-mp-recovery'),
   skill('maxMpIncrease', 'Max MP Increase', 'Magician', MAX_MP_INCREASE.maxMpPct.length, 'magician/max-mp-increase'),
-  skill('energyBolt', 'Energy Bolt', 'Magician', ENERGY_BOLT_LEVELS.length, 'magician/energy-bolt'),
-  skill('magicClaw', 'Magic Claw', 'Magician', MAGIC_CLAW_LEVELS.length, 'magician/magic-claw'),
+  skill('energyBolt', 'Energy Bolt', 'Magician', ENERGY_BOLT_LEVELS.length, 'magician/energy-bolt', mpOf(ENERGY_BOLT_LEVELS)),
+  skill('magicClaw', 'Magic Claw', 'Magician', MAGIC_CLAW_LEVELS.length, 'magician/magic-claw', mpOf(MAGIC_CLAW_LEVELS)),
 ]
 
 /** Alle skills van alle jobs die de app kent. */
@@ -102,3 +117,7 @@ export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)
 export const isSkillKey = (key: string): key is SkillKey => ALL_SKILLS.some((s) => s.key === key)
 
 export const skillInfo = (key: SkillKey): SkillInfo => ALL_SKILLS.find((s) => s.key === key)!
+
+/** De MP die een skill per keer kost op dit level; null bij een passieve skill. Op level 0 die van level 1. */
+export const skillMpAt = (s: SkillInfo, level: number): number | null =>
+  s.mp ? s.mp[Math.min(Math.max(level, 1), s.mp.length) - 1] : null

@@ -95,6 +95,8 @@ const statLine = (label: string) => {
   if (!line) throw new Error(`geen stat ${label}`)
   return line
 }
+/** De namen van de stat-regels in één kaart van het beginscherm. */
+const cardNames = (selector: string) => Array.from(panels()[0].querySelectorAll(`${selector} .stat-line-name`)).map((n) => n.textContent)
 const statShown = (label: string) => statLine(label).querySelector('.equip-value strong')?.textContent
 /** Opent de popup achter het potlood van een stat op de karakterkaart. */
 const openStat = (label: string) => {
@@ -158,7 +160,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('toont de nieuwe aanvalstijd op de karakterkaart', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     expect(statShown('Tijd per aanval (ms)')).toBe(String(IGOR.speed.attackMs))
   })
 
@@ -334,7 +336,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('bewaart een profielveld pas na Opslaan in de popup van het potlood', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const h = openStat('LUK')
     h.type('55')
     expect(profileFields()?.luk ?? DEFAULT_PROFILE.luk).toBe(DEFAULT_PROFILE.luk)
@@ -344,13 +346,14 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     expect(panels()[0].querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
   it('toont geen level, Max HP, ATT en DEF: die liggen elders vast', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    const names = Array.from(panels()[0].querySelectorAll('section.profile .stat-line-name')).map((n) => n.textContent)
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const names = [...cardNames('section.profile'), ...cardNames('section.total-stats')]
     expect(names).not.toContain('Level')
     expect(names).not.toContain('Max HP')
     expect(names).not.toContain('ATT van je wapen')
@@ -358,8 +361,24 @@ describe('bewaren na elke wijziging', () => {
     expect(names).toContain('Tijd per aanval (ms)')
   })
 
+  it('zet de stats in twee kaarten zoals het statvenster: Ability points (STR, DEX, INT, LUK) en Total stats (#82)', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
+    expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
+  })
+
+  it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openStat('STR')
+    h.type('5000')
+    h.save()
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(true)
+    expect(panels()[0].querySelector('section.total-stats')!.classList.contains('invalid')).toBe(false)
+  })
+
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     const h = openStat('Tijd per aanval (ms)')
     expect(h.d.queryByRole('button', { name: /plus 1/ })).toBeNull()
     h.type('812.5')
@@ -369,7 +388,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont de verwachte accuracy pas doorgestreept als het getal ervan afwijkt', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     expect(statLine('Accuracy').querySelector('s')).toBeNull()
     const h = openStat('Accuracy')
     expect(h.d.getByText(/Verwacht volgens de formule/).textContent).toContain(DEFAULT_PROFILE.accuracy)
@@ -380,14 +399,14 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Accuracy').querySelector('.equip-value.changed')).not.toBeNull()
   })
 
-  it('toont bij het voorbeeldprofiel de verwachte avoid doorgestreept: 23 in het spel, 22 volgens de formule', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    expect(statShown('Avoid')).toBe(DEFAULT_PROFILE.avoid)
-    expect(statLine('Avoid').querySelector('s')?.textContent).toBe('22')
+  it('toont bij het voorbeeldprofiel de verwachte evasion doorgestreept: 23 in het spel, 22 volgens de formule', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    expect(statShown('Evasion')).toBe(DEFAULT_PROFILE.avoid)
+    expect(statLine('Evasion').querySelector('s')?.textContent).toBe('22')
   })
 
   it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     const first = openStat('Accuracy')
     first.type('40')
     first.save()
@@ -399,18 +418,19 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont een ongeldige tijd per aanval op de karakterkaart, niet op de equipment-kaart', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     const h = openStat('Tijd per aanval (ms)')
     h.type('50')
     h.save()
-    const profile = panels()[0].querySelector('section.profile')!
+    const profile = panels()[0].querySelector('section.total-stats')!
     expect(profile.classList.contains('invalid')).toBe(true)
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
     expect(profile.querySelector('.error')?.textContent).not.toBe('')
     expect(cards()[0].classList.contains('invalid')).toBe(false)
   })
 
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const h = openStat('LUK')
     h.type('77')
     h.close()
@@ -419,7 +439,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('verhoogt een stat met + en slaat op met Enter', () => {
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const h = openStat('LUK')
     fireEvent.click(h.d.getByRole('button', { name: 'LUK plus 1' }))
     expect(h.input().value).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
@@ -444,6 +464,15 @@ describe('bewaren na elke wijziging', () => {
     expect(slots().ammo.pick).toBe('Wolbi Throwing Stars')
     expect(profileFields().starWatk).toBe('17')
     expect(profileFields().starRecharge).toBe('0.4')
+  })
+
+  it('toont bij Total stats de Attack uit je equipment: claw plus stars, niet 0 (#82)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    expect(statShown('Attack')).toBe(String(IGOR.watk + 17))
+    expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
   })
 
   it('toont het ammo-slot als optioneel: leeg blijft het advies gewoon rekenen', () => {
@@ -749,7 +778,7 @@ describe('een Warrior in de app', () => {
     })
 
     it('toont bij je karakter de weapon multiplier en STR, en niet de Subi-zin van de Thief', () => {
-      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
       expect(statShown('STR')).toBe('90')
@@ -757,8 +786,20 @@ describe('een Warrior in de app', () => {
       expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
     })
 
+    it('toont bij Total stats de Attack van het wapen, zonder stars (#82)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      expect(statShown('Attack')).toBe('40')
+    })
+
+    it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
+      expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
+    })
+
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
-      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const editor = openStat('Weapon multiplier van je wapen')
       editor.type('2.4')
       editor.save()
@@ -769,17 +810,32 @@ describe('een Warrior in de app', () => {
       expect(cards()[0].textContent).not.toMatch(/Ammo/)
     })
 
-    it('toont de verwachte Warrior-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
-      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    it('toont de verwachte Warrior-accuracy en -evasion doorgestreept als je getal afwijkt (#77)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       // floor((1,2 x 20 + 2 x 20 + 0,6 x 4) / 2,5 + 10) = floor(36,56) = 36; avoid floor(4 / 3) + floor(20 / 6) + 5 = 9
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('36')
-      expect(statLine('Avoid').querySelector('s')?.textContent).toBe('9')
+      expect(statLine('Evasion').querySelector('s')?.textContent).toBe('9')
     })
 
     it('toont bij Skillpoints de skills van de Warrior en niet die van de Thief', () => {
       const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
       for (const name of ['Power Strike', 'Slash Blast', 'Precise Strikes', 'Iron Body']) expect(skills.textContent, name).toContain(name)
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
+    })
+
+    it('toont bij elke skill de MP per keer op het gezette level, en bij een passieve skill dat hij niets kost (#83)', () => {
+      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const row = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)).closest('.skill-row')!
+      const input = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)) as HTMLInputElement
+      fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
+      // Slash Blast 20 kost 12 MP (de skillpagina, data/warrior.ts).
+      expect(row('Slash Blast').querySelector('.skill-mp')?.textContent).toBe('12 MP per keer')
+      fireEvent.input(input('Iron Body'), { target: { value: '0' } })
+      expect(row('Iron Body').querySelector('.skill-mp')?.textContent).toBe('15 MP per keer op level 1')
+      expect(row('Precise Strikes').querySelector('.skill-mp')?.textContent).toBe('Passief, kost geen MP')
+      // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
+      fireEvent.input(input('Power Strike'), { target: { value: '' } })
+      expect(row('Power Strike').querySelector('.skill-mp')?.textContent).toBe('')
     })
   })
 
@@ -839,7 +895,7 @@ describe('een Warrior in de app', () => {
     expect(panels()[2].textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
     expect(panels()[2].textContent).not.toMatch(NOT_YET)
     fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
-    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     expect(panels()[0].textContent).toMatch(/De app rekent met de stars die je bij je equipment kiest/)
     expect(panels()[0].textContent).not.toMatch(/Weapon multiplier/)
   })
@@ -942,13 +998,17 @@ describe('een Magician in de app', () => {
       expect(within(dialog).getByLabelText('M.ATT in game')).toBeTruthy()
     })
 
-    it('toont bij je karakter INT, DEX en LUK, en geen STR, tijd per aanval, multiplier of Subi-zin', () => {
-      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en de Attack onbekend (?)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('INT')).toBe('60')
+      expect(statShown('LUK')).toBe('10')
       const names = Array.from(home.querySelectorAll('.stat-line-name')).map((e) => e.textContent)
-      expect(names).toEqual(expect.arrayContaining(['INT', 'DEX', 'LUK', 'Accuracy', 'Avoid']))
-      for (const n of ['STR', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen']) expect(names, n).not.toContain(n)
+      expect(names).toEqual(expect.arrayContaining(['STR', 'DEX', 'INT', 'LUK', 'Accuracy', 'Evasion']))
+      for (const n of ['Tijd per aanval (ms)', 'Weapon multiplier van je wapen']) expect(names, n).not.toContain(n)
+      // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
+      expect(statShown('Attack')).toBe('?')
       expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier/)
       expect(home.textContent).toMatch(/Een cast duurt\s+altijd 810 ms/)
       expect(home.textContent).toMatch(/Een Magician heeft geen munitie/)
@@ -956,10 +1016,10 @@ describe('een Magician in de app', () => {
     })
 
     it('toont de verwachte Magician-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
-      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       // Accuracy: (12 x 60 + 20 x 20 + 6 x 10 + 1020) / 51 = 2200 / 51 = 43,1, dus 43. Avoid: floor(10 / 3) + floor(20 / 6) + 5 = 11.
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('43')
-      expect(statLine('Avoid').querySelector('s')?.textContent).toBe('11')
+      expect(statLine('Evasion').querySelector('s')?.textContent).toBe('11')
     })
 
     it('toont bij Skillpoints de skills van de Magician en niet die van de Thief of Warrior', () => {
@@ -1034,13 +1094,12 @@ describe('een Magician in de app', () => {
     expect(screen.getByText('Energy Bolt → 4 gezet.')).toBeTruthy()
   })
 
-  it('toont op het controlescherm INT en geen STR, met de zin over de AP', () => {
+  it('toont op het controlescherm INT bovenaan, met de zin over de AP', () => {
     open()
     levelUp()
     const check = panels()[1]
     expect(check.textContent).toContain('Verdeel je AP zelf: INT voor schade en accuracy, LUK voor wapen-eisen.')
     const labels = Array.from(check.querySelectorAll('.stats .stat-row-name, .stats label, .stats span')).map((e) => e.textContent)
     expect(labels).toContain('INT')
-    expect(labels).not.toContain('STR')
   })
 })

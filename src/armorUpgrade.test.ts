@@ -4,7 +4,7 @@ import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { knownSpotPatch } from './data/spots'
-import type { Armor } from './data/types'
+import type { ArmorPiece } from './data/types'
 import { horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
@@ -61,12 +61,12 @@ const EXP_30 = 95_700
 const EXP_20_30 = 566_712
 
 /** Het laatste level van de horizon van een stuk, met de hand: net vóór het volgende stuk met meer WDEF in dat slot, hoogstens 30. */
-const handTo = (level: number, a: Armor) => {
+const handTo = (level: number, a: ArmorPiece) => {
   const next = NPC_ARMOR.find((b) => b.slot === a.slot && b.level > level && b.wdef > a.wdef)
   return Math.min(next ? next.level - 1 : 30, 30)
 }
 /** De netto besparing van een stuk met de hand: EXP-som over de horizon gedeeld door de EXP per meso zonder en met het stuk, min de prijs. */
-const handNet = (p: Profile, a: Armor, v: Assumptions = ASSUMPTIONS) => {
+const handNet = (p: Profile, a: ArmorPiece, v: Assumptions = ASSUMPTIONS) => {
   const exp = expSum(p.level, handTo(p.level, a))
   return exp / epm(p, v) - exp / epm({ ...p, wdef: p.wdef + a.wdef }, v) - a.price
 }
@@ -74,8 +74,8 @@ const handNet = (p: Profile, a: Armor, v: Assumptions = ASSUMPTIONS) => {
 const wearableNets = (p: Profile, v: Assumptions = ASSUMPTIONS) =>
   NPC_ARMOR.filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex).map((a) => ({ armor: a, net: handNet(p, a, v) }))
 /** De winnaar volgens brute force: het stuk met de hoogste netto, mits boven 0. */
-const bruteWinner = (p: Profile, v: Assumptions = ASSUMPTIONS): Armor | null => {
-  const best = wearableNets(p, v).reduce<{ armor: Armor; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
+const bruteWinner = (p: Profile, v: Assumptions = ASSUMPTIONS): ArmorPiece | null => {
+  const best = wearableNets(p, v).reduce<{ armor: ArmorPiece; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
   return best && best.net > 0 ? best.armor : null
 }
 const LEVELS = Array.from({ length: 21 }, (_, i) => 10 + i)
@@ -151,18 +151,18 @@ describe('armorUpgradeAdvice: niet draagbaar', () => {
   it('noemt per slot het beste stuk dat je niet kunt dragen, met het juiste tekort', () => {
     const a = advice(drafts, { ...base, level: 25, luk: 35, dex: 10 })
     expect(a.notWearable).toEqual([
-      { armor: armor('Red Tiberian'), needLuk: 5, needDex: 5 },
-      { armor: armor('Brown Sneak'), needLuk: 5, needDex: 5 },
+      { armor: armor('Red Tiberian'), needs: [{ stat: 'luk', amount: 5 }, { stat: 'dex', amount: 5 }] },
+      { armor: armor('Brown Sneak'), needs: [{ stat: 'luk', amount: 5 }, { stat: 'dex', amount: 5 }] },
       // Bij bottom is Brown Sneak Pants (WDEF 26) het beste stuk dat nog niet draagbaar is.
-      { armor: armor('Brown Sneak Pants'), needLuk: 5, needDex: 5 },
+      { armor: armor('Brown Sneak Pants'), needs: [{ stat: 'luk', amount: 5 }, { stat: 'dex', amount: 5 }] },
     ])
   })
 
-  it('noemt alleen het tekort dat er is: genoeg DEX geeft needDex 0, genoeg LUK needLuk 0', () => {
+  it('noemt alleen het tekort dat er is: genoeg DEX laat DEX weg, genoeg LUK laat LUK weg', () => {
     const dexOk = advice(drafts, { ...base, level: 20, luk: 25, dex: 50 })
-    expect(dexOk.notWearable.find((u) => u.armor.name === 'Red Loosecap')).toEqual({ armor: armor('Red Loosecap'), needLuk: 5, needDex: 0 })
+    expect(dexOk.notWearable.find((u) => u.armor.name === 'Red Loosecap')).toEqual({ armor: armor('Red Loosecap'), needs: [{ stat: 'luk', amount: 5 }] })
     const lukOk = advice(drafts, { ...base, level: 25, luk: 100, dex: 5 })
-    expect(lukOk.notWearable.find((u) => u.armor.name === 'Red Tiberian')).toEqual({ armor: armor('Red Tiberian'), needLuk: 0, needDex: 10 })
+    expect(lukOk.notWearable.find((u) => u.armor.name === 'Red Tiberian')).toEqual({ armor: armor('Red Tiberian'), needs: [{ stat: 'dex', amount: 10 }] })
   })
 
   it('draagt een stuk bij precies genoeg stats (LUK 20, DEX 0 voor Red Thief Hood; LUK 19 niet)', () => {
@@ -171,7 +171,7 @@ describe('armorUpgradeAdvice: niet draagbaar', () => {
     expect(wearableNets({ ...base, level: 15, luk: 20, dex: 0 }).map((x) => x.armor.name)).toContain('Red Thief Hood')
     // Eén LUK minder: de Hood kan niet, de Red Ghetto Beanie (LUK 10) wel.
     const b = advice(drafts, { ...base, level: 15, luk: 19, dex: 0 })
-    expect(b.notWearable).toContainEqual({ armor: armor('Red Thief Hood'), needLuk: 1, needDex: 0 })
+    expect(b.notWearable).toContainEqual({ armor: armor('Red Thief Hood'), needs: [{ stat: 'luk', amount: 1 }] })
     expect(names(b)).toContain('Red Ghetto Beanie')
   })
 
@@ -429,7 +429,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     const boots = armor('Red Enamel Boots')
     const sandals = armor('Red Ninja Sandals')
     expect(boots.wdef).toBeGreaterThan(sandals.wdef)
-    const savingOf = (x: Armor) => EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: p.wdef + x.wdef })
+    const savingOf = (x: ArmorPiece) => EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: p.wdef + x.wdef })
     expect(savingOf(boots)).toBeGreaterThan(savingOf(sandals))
     expect(savingOf(boots) - boots.price).toBeLessThan(savingOf(sandals) - sandals.price)
     expect(names(a)).toContain('Red Ninja Sandals')
@@ -573,9 +573,9 @@ const adviceW = (p: Profile | null, worn: Worn): Advice => {
   return a
 }
 /** De WDEF in het profiel met dit stuk erbij, met de hand: het gedragen stuk (w) eraf (niet onder 0), het nieuwe erbij. */
-const handWdef = (p: Profile, a: Armor, w: number) => Math.max(0, p.wdef - w) + a.wdef
+const handWdef = (p: Profile, a: ArmorPiece, w: number) => Math.max(0, p.wdef - w) + a.wdef
 /** Netto met vervanging, met de hand: EXP-som over de horizon gedeeld door EXP per meso zonder en met het stuk, min de prijs. */
-const handNetW = (p: Profile, a: Armor, w: number, v: Assumptions = ASSUMPTIONS) => {
+const handNetW = (p: Profile, a: ArmorPiece, w: number, v: Assumptions = ASSUMPTIONS) => {
   const exp = expSum(p.level, handTo(p.level, a))
   return exp / epm(p, v) - exp / epm({ ...p, wdef: handWdef(p, a, w) }, v) - a.price
 }
@@ -585,8 +585,8 @@ const wornNets = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS) =>
     armor: a,
     net: handNetW(p, a, worn[a.slot] ?? 0, v),
   }))
-const bruteWinnerW = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS): Armor | null => {
-  const best = wornNets(p, worn, v).reduce<{ armor: Armor; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
+const bruteWinnerW = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS): ArmorPiece | null => {
+  const best = wornNets(p, worn, v).reduce<{ armor: ArmorPiece; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
   return best && best.net > 0 ? best.armor : null
 }
 
@@ -760,7 +760,7 @@ describe('armorUpgradeAdvice met worn: niet draagbaar', () => {
 
   it('geeft het tekort ongewijzigd door, ook als worn is ingevuld', () => {
     const u = adviceW(p, { hat: 23 }).notWearable.find((x) => x.armor.slot === 'hat')
-    expect(u).toEqual({ armor: armor('Red Tiberian'), needLuk: 5, needDex: 5 })
+    expect(u).toEqual({ armor: armor('Red Tiberian'), needs: [{ stat: 'luk', amount: 5 }, { stat: 'dex', amount: 5 }] })
   })
 })
 
@@ -871,9 +871,9 @@ describe('armorUpgradeAdvice met een gedragen overall', () => {
 
 describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de winkel verkoopt er nog geen)', () => {
   // NPC_ARMOR is de enige bron van kandidaten; een test zet er tijdelijk een overall in en haalt hem weer weg.
-  const fakeOverall = (over: Partial<Armor> = {}): Armor => ({ name: 'Test Overall', slot: 'overall', level: 20, wdef: 60, luk: 0, dex: 0, price: 5_000, source: armor('Red Pao').source, ...over })
-  const withInjected = <T>(a: Armor, fn: () => T): T => {
-    const list = NPC_ARMOR as Armor[]
+  const fakeOverall = (over: Partial<ArmorPiece> = {}): ArmorPiece => ({ name: 'Test Overall', slot: 'overall', level: 20, wdef: 60, luk: 0, dex: 0, price: 5_000, source: armor('Red Pao').source, ...over })
+  const withInjected = <T>(a: ArmorPiece, fn: () => T): T => {
+    const list = NPC_ARMOR as ArmorPiece[]
     list.push(a)
     try {
       return fn()

@@ -45,7 +45,6 @@ import {
   parseProfile,
   profileFieldsFor,
   saveProfile,
-  secondaryStatOf,
   statFieldsFor,
   toCharacter,
   type Profile,
@@ -95,10 +94,10 @@ describe('de Magician rekent', () => {
 })
 
 describe('magicianGear: de winkelgegevens in de vorm van de Thief-lijsten', () => {
-  it('zet bij een wapen de M.ATT in watk, INT in luk (hoofdstat) en LUK in dex (tweede eis), met de vaste cast van 810 ms', () => {
+  it('zet bij een wapen de M.ATT in watk, met INT en LUK in hun eigen stat en de vaste cast van 810 ms', () => {
     const mithril = MAGICIAN_WEAPONS.find((w) => w.name === 'Mithril Wand')!
     // Mithril Wand (item 653): level 30, INT 60, LUK 20, M.ATT 55, 22.000 meso.
-    expect(mithril).toMatchObject({ level: 30, watk: 55, luk: 60, dex: 20, price: 22_000, speed: { attackMs: 810 } })
+    expect(mithril).toMatchObject({ level: 30, watk: 55, int: 60, luk: 20, price: 22_000, speed: { attackMs: 810 } })
     expect(mithril.mult).toBeUndefined()
     expect(MAGICIAN_WEAPONS.map((w) => w.name)).toEqual(NPC_MAGICIAN_WEAPONS.map((w) => w.name))
     for (const w of MAGICIAN_WEAPONS) expect(w.speed.attackMs, w.name).toBe(SPELL_CAST_MS.normal)
@@ -106,14 +105,14 @@ describe('magicianGear: de winkelgegevens in de vorm van de Thief-lijsten', () =
 
   it('geeft een staff zijn M.ATT, niet zijn W.ATT (Wizard Staff: M.ATT 45, W.ATT 35)', () => {
     expect(NPC_MAGICIAN_WEAPONS.find((w) => w.name === 'Wizard Staff')).toMatchObject({ watk: 35, matk: 45 })
-    expect(MAGICIAN_WEAPONS.find((w) => w.name === 'Wizard Staff')).toMatchObject({ watk: 45, luk: 50, dex: 20 })
+    expect(MAGICIAN_WEAPONS.find((w) => w.name === 'Wizard Staff')).toMatchObject({ watk: 45, int: 50, luk: 20 })
   })
 
-  it('zet bij armor INT in luk en LUK in dex, en neemt alleen de WDEF mee', () => {
+  it('zet bij armor INT in int en LUK in luk, en neemt alleen de WDEF mee', () => {
     // Wizardry Hat (item 768): level 20, INT 30, LUK 10, WDEF 12 (MDEF 14).
-    expect(MAGICIAN_ARMOR.find((a) => a.name === 'Wizardry Hat')).toMatchObject({ slot: 'hat', level: 20, luk: 30, dex: 10, wdef: 12, price: 3_600 })
+    expect(MAGICIAN_ARMOR.find((a) => a.name === 'Wizardry Hat')).toMatchObject({ slot: 'hat', level: 20, int: 30, luk: 10, wdef: 12, price: 3_600 })
     expect(MAGICIAN_ARMOR).toHaveLength(NPC_MAGICIAN_ARMOR.length)
-    expect(new Set(MAGICIAN_ARMOR.map((a) => a.slot))).toEqual(new Set(['hat', 'top', 'bottom', 'shoes']))
+    expect(new Set(MAGICIAN_ARMOR.map((a) => a.slot))).toEqual(new Set(['hat', 'top', 'bottom', 'overall', 'shoes']))
   })
 
   it('heeft items zonder prijs: de items zonder jobregel, dezelfde objecten als bij de Thief, zonder wat de Magician in de winkel koopt', () => {
@@ -126,11 +125,13 @@ describe('magicianGear: de winkelgegevens in de vorm van de Thief-lijsten', () =
 })
 
 describe('profiel: de velden van een Magician', () => {
-  it('toont INT, DEX en LUK met de M.ATT van het wapen, en geen STR, tijd per aanval, multiplier of stars', () => {
+  it('toont de stats van het statvenster met de M.ATT van het wapen, en geen tijd per aanval, multiplier of stars', () => {
     const keys = profileFieldsFor('magician').map((f) => f.key)
-    expect(keys.slice(0, 9)).toEqual(['level', 'hp', 'int', 'dex', 'luk', 'clawWatk', 'accuracy', 'avoid', 'wdef'])
-    for (const k of ['str', 'attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
-    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.slice(0, 9))
+    // Dezelfde stats en volgorde als de Warrior (kaarten Ability points en Total stats, #82), zonder de tijd per aanval.
+    expect(keys.slice(0, 5)).toEqual(['level', 'hp', 'str', 'dex', 'int'])
+    expect(keys).toContain('luk')
+    for (const k of ['attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
+    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.filter((k) => !isSkillKey(k)))
   })
 
   it('noemt het wapenveld M.ATT en niet ATT', () => {
@@ -145,9 +146,13 @@ describe('profiel: de velden van een Magician', () => {
     expect(MAGICIAN_SKILLS).toHaveLength(6)
   })
 
-  it('geeft de Thief en de Warrior geen INT-veld', () => {
-    for (const j of ['thief', 'warrior', 'bowman'] as const) expect(profileFieldsFor(j).map((f) => f.key), j).not.toContain('int')
-    expect(DRAFT_FIELDS.map((f) => f.key)).toContain('int')
+  it('deelt het INT-veld met de andere jobs en geeft hen de Magician-skills niet', () => {
+    for (const j of ['thief', 'warrior', 'bowman'] as const) {
+      const keys = profileFieldsFor(j).map((f) => f.key)
+      expect(keys, j).toContain('int')
+      expect(keys, j).not.toContain('energyBolt')
+    }
+    expect(DRAFT_FIELDS.filter((f) => f.key === 'int')).toHaveLength(1)
   })
 
   it('valideert voor een Magician INT en zijn skills, en voor een andere job niet', () => {
@@ -155,11 +160,12 @@ describe('profiel: de velden van een Magician', () => {
     expect(parseProfile({ ...mDraft, int: '1000' }, 'magician')).toMatchObject({ key: 'int' })
     expect(parseProfile({ ...mDraft, energyBolt: '21' }, 'magician')).toMatchObject({ key: 'energyBolt' })
     expect(parseProfile({ ...mDraft, magicClaw: 'x' }, 'magician')).toMatchObject({ key: 'magicClaw' })
-    for (const j of ['thief', 'warrior'] as const) expect(parseProfile({ ...mDraft, int: '', energyBolt: '99' }, j), j).toHaveProperty('profile')
+    // De Magician-skills telt een andere job niet mee.
+    for (const j of ['thief', 'warrior'] as const) expect(parseProfile({ ...mDraft, energyBolt: '99' }, j), j).toHaveProperty('profile')
   })
 
-  it('valideert voor een Magician geen STR, tijd per aanval, multiplier of Thief- en Warrior-skills', () => {
-    const r = parseProfile({ ...mDraft, str: '', attackMs: 'x', weaponMult: '', luckySeven: '99', powerStrike: 'x' }, 'magician')
+  it('valideert voor een Magician geen tijd per aanval, multiplier of Thief- en Warrior-skills', () => {
+    const r = parseProfile({ ...mDraft, attackMs: 'x', weaponMult: '', luckySeven: '99', powerStrike: 'x' }, 'magician')
     expect(r).toHaveProperty('profile')
     expect('profile' in r && r.profile.luckySeven).toBe(Number(DEFAULT_PROFILE.luckySeven))
   })
@@ -189,12 +195,11 @@ describe('profiel: de velden van een Magician', () => {
     expect(toCharacter(w.profile)).toMatchObject({ matk: 0, watk: 55, attackMs: Number(DEFAULT_PROFILE.attackMs) })
   })
 
-  it('mainStatOf is INT en secondaryStatOf is LUK voor een Magician; de rest blijft zoals het was', () => {
+  it('mainStatOf is INT voor een Magician; de Thief houdt LUK', () => {
     expect(mainStatOf(magician)).toBe(100)
-    expect(secondaryStatOf(magician)).toBe(30)
     const t = parseProfile(DEFAULT_PROFILE, 'thief')
     if (!('profile' in t)) throw new Error('ongeldig')
-    expect([mainStatOf(t.profile), secondaryStatOf(t.profile)]).toEqual([t.profile.luk, t.profile.dex])
+    expect(mainStatOf(t.profile)).toBe(t.profile.luk)
   })
 })
 
@@ -245,8 +250,8 @@ describe('Magician: applyLevelUp en het controlescherm', () => {
   it('laat het controlescherm met INT beginnen, dan LUK en DEX, en toont geen skills', () => {
     const keys = checkFieldsFor('magician').map((f) => f.key)
     expect(keys.slice(0, 7)).toEqual(['level', 'hp', 'int', 'luk', 'dex', 'accuracy', 'avoid'])
-    expect(keys).toEqual([...keys.slice(0, 7), 'clawWatk', 'wdef'])
-    expect(keys).not.toContain('str')
+    // De rest staat erachter, zonder de velden die alleen ter info zijn (Magic, Crit. enzovoort).
+    expect(keys).toEqual([...keys.slice(0, 7), 'str', 'clawWatk', 'wdef'])
   })
 
   it('geeft de MP per cast van Energy Bolt en Magic Claw (0 op level 0)', () => {
@@ -527,25 +532,25 @@ describe('Magician-wapens: de winkel', () => {
     expect(hardwood.net).toBeCloseTo(hardwood.saving! - 5_000, 6)
   })
 
-  it('zet een wapen zonder genoeg INT of LUK bij de niet-draagbare, met het tekort in INT (needLuk) en LUK (needDex)', () => {
+  it('zet een wapen zonder genoeg INT of LUK bij de niet-draagbare, met het tekort in INT en LUK', () => {
     // Mithril Wand (lv 30) vraagt INT 60 en LUK 20. Met INT 50 en LUK 5 ontbreken 10 INT en 15 LUK.
     const a = advice(strong({ level: 30, int: 50, luk: 5, clawWatk: 0 }))
     const mithril = a.notWearable.find((u) => u.claw.name === 'Mithril Wand')
-    expect(mithril).toEqual({ claw: MAGICIAN_WEAPONS.find((w) => w.name === 'Mithril Wand'), needLuk: 10, needDex: 15 })
+    expect(mithril).toEqual({ claw: MAGICIAN_WEAPONS.find((w) => w.name === 'Mithril Wand'), needs: [{ stat: 'int', amount: 10 }, { stat: 'luk', amount: 15 }] })
     expect(a.choices.map((c) => c.claw.name)).not.toContain('Mithril Wand')
   })
 
   it('kijkt bij een Magician niet naar STR en DEX: een hoge DEX of STR maakt een INT- of LUK-tekort niet goed', () => {
     const a = advice(strong({ level: 30, int: 50, luk: 5, dex: 999, str: 999, clawWatk: 0 }))
-    expect(a.notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needLuk: 10, needDex: 15 })
+    expect(a.notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needs: [{ stat: 'int', amount: 10 }, { stat: 'luk', amount: 15 }] })
   })
 
   it('draagt een wapen bij precies genoeg INT en LUK (Mithril Wand 60/20), en niet bij één INT of LUK te weinig', () => {
     const exact = advice(strong({ level: 30, int: 60, luk: 20, clawWatk: 0 }))
     expect(exact.notWearable.find((u) => u.claw.name === 'Mithril Wand')).toBeUndefined()
     expect(exact.choices.map((c) => c.claw.name)).toContain('Mithril Wand')
-    expect(advice(strong({ level: 30, int: 59, luk: 20, clawWatk: 0 })).notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needLuk: 1, needDex: 0 })
-    expect(advice(strong({ level: 30, int: 60, luk: 19, clawWatk: 0 })).notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needLuk: 0, needDex: 1 })
+    expect(advice(strong({ level: 30, int: 59, luk: 20, clawWatk: 0 })).notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needs: [{ stat: 'int', amount: 1 }] })
+    expect(advice(strong({ level: 30, int: 60, luk: 19, clawWatk: 0 })).notWearable.find((u) => u.claw.name === 'Mithril Wand')).toMatchObject({ needs: [{ stat: 'luk', amount: 1 }] })
   })
 
   it('zet met withClaw de M.ATT in het profiel en laat de weapon multiplier staan', () => {
@@ -591,21 +596,22 @@ describe('Magician-armor: de winkel', () => {
     }
   })
 
-  it('zet een stuk zonder genoeg INT of LUK bij de niet-draagbare, met het tekort aan INT (needLuk) en LUK (needDex)', () => {
+  it('zet een stuk zonder genoeg INT of LUK bij de niet-draagbare, met het tekort aan INT en LUK', () => {
     // INT 25 en LUK 5 op level 25: de Wind Shoes (lv 25, INT 40, LUK 15) zijn de beste schoenen en mist 15 INT en 10 LUK.
     const a = advice(strong({ level: 25, int: 25, luk: 5 }))
     expect(a.notWearable.length).toBeGreaterThan(0)
     for (const u of a.notWearable) {
-      expect(u.needLuk, u.armor.name).toBe(Math.max(0, u.armor.luk - 25))
-      expect(u.needDex, u.armor.name).toBe(Math.max(0, u.armor.dex - 5))
-      expect(u.needLuk + u.needDex, u.armor.name).toBeGreaterThan(0)
+      const need = (stat: 'int' | 'luk') => u.needs.find((n) => n.stat === stat)?.amount ?? 0
+      expect(need('int'), u.armor.name).toBe(Math.max(0, (u.armor.int ?? 0) - 25))
+      expect(need('luk'), u.armor.name).toBe(Math.max(0, (u.armor.luk ?? 0) - 5))
+      expect(u.needs.length, u.armor.name).toBeGreaterThan(0)
     }
-    expect(a.notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needLuk: 15, needDex: 10 })
+    expect(a.notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needs: [{ stat: 'int', amount: 15 }, { stat: 'luk', amount: 10 }] })
   })
 
   it('kijkt bij een Magician niet naar DEX: een hoge DEX maakt een LUK-tekort niet goed', () => {
     const a = advice(strong({ level: 25, int: 25, luk: 5, dex: 999 }))
-    expect(a.notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needLuk: 15, needDex: 10 })
+    expect(a.notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needs: [{ stat: 'int', amount: 15 }, { stat: 'luk', amount: 10 }] })
   })
 
   it('geeft een stuk dat meer INT vraagt dan je hebt niet als winnaar', () => {
@@ -635,7 +641,8 @@ describe('Magician: equipment', () => {
       expect(names.length, slot).toBeGreaterThan(0)
     }
     expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12 })
-    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
+    // Doros Robe / Doroness Robe (#76) is zijn eigen overall; de Sauna Robe heeft geen jobregel en geldt voor elke klas.
+    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
   })
 
   it('heeft geen dubbele namen in een lijst, geen wapennaam die ook bij de Thief of Warrior staat, en dezelfde stats bij een gedeelde armornaam', () => {
@@ -764,7 +771,7 @@ describe('Magician-armor: de INT-eis op de grens', () => {
   it('draagt de Wind Shoes (level 25, INT 40, LUK 15) bij precies INT 40 en LUK 15, en niet bij één INT of één LUK minder', () => {
     const ok = wind(strong({ level: 25, int: 40, luk: 15 }))
     expect(ok.notWearable.find((u) => u.armor.name === 'Wind Shoes')).toBeUndefined()
-    expect(wind(strong({ level: 25, int: 39, luk: 15 })).notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needLuk: 1, needDex: 0 })
-    expect(wind(strong({ level: 25, int: 40, luk: 14 })).notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needLuk: 0, needDex: 1 })
+    expect(wind(strong({ level: 25, int: 39, luk: 15 })).notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needs: [{ stat: 'int', amount: 1 }] })
+    expect(wind(strong({ level: 25, int: 40, luk: 14 })).notWearable.find((u) => u.armor.name === 'Wind Shoes')).toMatchObject({ needs: [{ stat: 'luk', amount: 1 }] })
   })
 })

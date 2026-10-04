@@ -2,7 +2,93 @@
 
 ## [Unreleased]
 
-**21 / 43 minor entries** <!-- pending-tally -->
+**22 / 47 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
+
+The Skillpoints card now shows under every skill what it costs in MP per use at the level you have set, for
+example "12 MP per keer" under Slash Blast 20; a skill still at 0 shows the cost of level 1, and a passive skill
+says it costs nothing. The MP comes from the skill pages on MeowDB.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Show the mana cost per skill point
+
+[PR #95](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/95)
+
+---
+
+### DEPLOY: app/82-split-ability-total-stats · 20261004-122003Z
+
+The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Attack, Weapon Def, Magic, Magic Def, Accuracy, Evasion, Crit. Rate, Crit. Damage, Speed, Jump, then time per attack and, for a Warrior, the weapon multiplier). INT, Magic, Magic Def, Crit., Speed and Jump are new: you fill them in yourself (they start as "?"), they are stored with your profile but not used in any calculation yet, and leaving one blank never blocks it. Attack and Weapon Def come from your equipment: Attack is your weapon's attack, plus your stars for a Thief. An item's INT requirement is now checked against your INT. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The character cards read like the stat window in the game, so filling in your stats means copying block by block.
+
+**Score:** 2
+
+#### Pull Request
+
+Split the character card into Ability points and Total stats
+
+[PR #94](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/94)
+
+---
+
+### DEPLOY: data/76-magician-robes · 20261004-120114Z
+
+The Magician data gains its first robe: the Doros Robe (for women, the Doroness Robe) from Serabi in Ellinia,
+level 25, 40 DEF and 49 magic DEF for 13,500 mesos, read from the raw MeowDB pages. The app does not
+calculate with the Magician's gear yet, so nothing changes on screen until #43 wires it in.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician robes from Serabi's shop (Doros and Doroness)
+
+[PR #88](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/88)
+
+---
+
+### DEPLOY: fix/69-stat-requirements · 20261004-115543Z
+
+Nothing changes on screen: the advice still says, for example, "je hebt nog 5 STR en 10 DEX nodig". Behind
+it, a Warrior weapon's STR requirement is now stored as STR instead of being filed under LUK, so the Magician
+and Bowman can use the same advice without another rename.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Upgrade advice reads each stat requirement in its own stat
+
+[PR #85](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/85)
+
+---
 
 ### DEPLOY: app/50-overall-slot · 20261004-114221Z
 

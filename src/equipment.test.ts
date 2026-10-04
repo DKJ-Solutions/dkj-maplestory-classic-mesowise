@@ -930,7 +930,8 @@ describe('overall (issue #50)', () => {
     expect(catalogItems('top', 'thief').map((i) => i.name)).not.toContain('Blue Sauna Robe')
     expect(catalogItems('overall', 'warrior').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
     // Een Magician heeft sinds #43 de items zonder jobregel, en dus ook de Sauna Robe (#55).
-    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
+    // en sinds #76 ook zijn eigen robe uit de winkel.
+    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
     expect(catalogItems('overall', 'bowman')).toEqual([])
     expect(slotLabel('overall')).toBe('Overall')
     expect(slotsFor('thief').map((s) => s.slot)).toContain('overall')
