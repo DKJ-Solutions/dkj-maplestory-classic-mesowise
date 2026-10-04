@@ -474,13 +474,19 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Base AP over')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
   })
 
-  it('zet per stat twee kolommen op de kaart: links de extra AP van items, rechts de base AP, zonder totaal', () => {
+  it('zet per stat op de kaart eerst de base AP, dan een plus en de extra AP van items, zonder totaal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const head = panels()[0].querySelector('section.profile .ability-head')!
-    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Extra', 'Base', ''])
-    const values = Array.from(statLine('LUK').querySelectorAll('.equip-value strong')).map((v) => v.textContent)
-    expect(values).toEqual(['3', '37'])
+    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', ''])
+    expect(Array.from(statLine('LUK').children).slice(1, 4).map((c) => c.textContent)).toEqual(['37', '+', '3'])
     expect(statLine('LUK').textContent).not.toContain('40')
+  })
+
+  it('laat de plus en de extra AP weg bij een stat zonder extra AP van items', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(statShown('DEX')).toBe('25')
+    expect(statLine('DEX').querySelector('.ap-plus')?.textContent).toBe('')
+    expect(extraShown('DEX')).toBeUndefined()
   })
 
   it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {

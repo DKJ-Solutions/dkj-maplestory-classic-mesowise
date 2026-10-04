@@ -468,11 +468,12 @@ function ProfileCard(props: StatsCardProps) {
   const lead = (
     <>
       <StatLine key="ap-left" field={{ ...AP_FIELD, label: left !== null && left < 0 ? 'Base AP te veel' : 'Base AP over' }} value={left === null ? '' : nfInt.format(Math.abs(left))} readOnly onSave={() => {}} />
-      {/* Twee kolommen per stat (Dave, 4 oktober 2026): links de extra AP van items, rechts de base AP; geen totaal. */}
+      {/* Per stat (Dave, 4 oktober 2026): eerst de base AP, dan een plus en de extra AP van items als je die hebt; geen totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
-        <span>Extra</span>
         <span>Base</span>
+        <span />
+        <span>Extra</span>
         <span />
       </div>
       {shownStats(props.job)
@@ -486,8 +487,8 @@ function ProfileCard(props: StatsCardProps) {
 }
 
 /**
- * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de extra AP van items en de base AP als twee
- * kolommen naast elkaar, in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
+ * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de base AP, en met een plus ernaast de extra AP van
+ * items als je die hebt; in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
  */
 function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: number | null; onSave: (patch: Partial<ProfileDraft>) => void }) {
   const { field: f, draft, cap } = props
@@ -496,6 +497,9 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   const uid = useId()
   const [edit, setEdit] = useState<{ base: string; extra: string } | null>(null)
   const baseNow = Number(draft[stat].trim()) || 0
+  const extraText = draft[extraKey].trim()
+  // Geen extra AP (0 of leeg): dan blijven de plus en het extra-vak leeg, zodat de kolommen onder elkaar blijven staan.
+  const hasExtra = extraText !== '' && extraText !== '0'
   // De base kan tot wat je level nog over laat; staat er al meer, dan hoeft hij niet omlaag.
   const maxBase = cap === null ? f.max : Math.min(f.max, Math.max(baseNow, cap - (baseApSpent(draft) - baseNow)))
   const save = () => {
@@ -509,16 +513,21 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   return (
     <div class="stat-line ability-line">
       <span class="stat-line-name">{f.label}</span>
-      <div class="equip-value ap-extra" aria-label={`${f.label} extra ${draft[extraKey].trim() || 'onbekend'}`}>
-        <span class="equip-value-num">
-          <strong>{draft[extraKey].trim() || '?'}</strong>
-        </span>
-      </div>
       <div class="equip-value ap-base" aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
         <span class="equip-value-num">
           <strong>{draft[stat].trim() || '?'}</strong>
         </span>
       </div>
+      <span class="ap-plus" aria-hidden="true">{hasExtra ? '+' : ''}</span>
+      {hasExtra ? (
+        <div class="equip-value ap-extra" aria-label={`${f.label} extra ${extraText}`}>
+          <span class="equip-value-num">
+            <strong>{extraText}</strong>
+          </span>
+        </div>
+      ) : (
+        <span />
+      )}
       <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
