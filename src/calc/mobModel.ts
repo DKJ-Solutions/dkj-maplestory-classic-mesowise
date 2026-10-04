@@ -121,6 +121,14 @@ export function hitChance(accuracy: number, avoid: number, levelDiff: number): n
   return Math.min(1, accuracy / ((1.84 + 0.07 * Math.max(0, levelDiff)) * avoid))
 }
 
+/**
+ * Stap 2: je schade na de verdediging van het monster (issue #89). Bron: de damage-formule van MeowDB
+ * (sectie "Defense"): Raw x 100 / (DEF + 100), en "physical and magic defense use the same curve with
+ * different stats". Een fysieke klap gebruikt dus de WDEF van het monster; een spreuk hoort dezelfde curve te
+ * gebruiken (MAGIC_DAMAGE in data/magician.ts noemt hem ook).
+ */
+export const defended = (raw: number, def: number): number => (raw * 100) / (Math.max(0, def) + 100)
+
 /** AANNAME: schade zakt 1% per level dat de ontvanger boven de aanvaller staat, nooit onder 1. */
 export function dampedTouch(value: number, levelDiff: number): number {
   return Math.max(1, value * (1 - 0.01 * levelDiff))
@@ -159,10 +167,11 @@ export function estimateMob(
   mob: MobStats,
   assumptions: Assumptions = ASSUMPTIONS,
 ): MobEstimate {
-  // Stap 2 (AANNAME): het monster dempt je schade per level dat het hoger is, en trekt zijn WDEF af.
+  // Stap 2: het monster dempt je schade per level dat het hoger is (AANNAME), en zijn WDEF met de
+  // verdedigingscurve van de bron (defended).
   const up = Math.max(0, mob.level - c.level)
-  const maxHit = Math.max(1, attack.max * (1 - 0.01 * up) - mob.wdef * 0.5)
-  const minHit = Math.max(1, attack.min * (1 - 0.01 * up) - mob.wdef * 0.6)
+  const maxHit = Math.max(1, defended(attack.max * (1 - 0.01 * up), mob.wdef))
+  const minHit = Math.max(1, defended(attack.min * (1 - 0.01 * up), mob.wdef))
   const avgHit = (minHit + maxHit) / 2
 
   // Stap 3 en 4: raakkans, aanvallen per kill en kills per uur.

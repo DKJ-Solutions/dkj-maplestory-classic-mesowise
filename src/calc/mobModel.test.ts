@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, defended, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -119,11 +119,20 @@ describe('estimateMob', () => {
     expect(e.starsPerKill).toBe(8)
   })
 
-  it('vloert de schade op 1 bij een hoge WDEF in plaats van negatief door te rekenen', () => {
-    // Iron Hog-achtig: lv 28, WDEF 500, avoid 17. D = 18 → raakkans 100/(3.1·17) > 1 → 1.
-    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: 28, hp: 1000, wdef: 500, avoid: 17 }))
+  it('vloert de schade op 1 als de WDEF van het monster de klap onder 1 drukt', () => {
+    // Lv 28, avoid 17: raakkans 1. Met WDEF 100.000 is 100 x 100 / 100.100 < 1, dus elke klap doet 1.
+    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: 28, hp: 1000, wdef: 100_000, avoid: 17 }))
     expect(e.hitChance).toBe(1)
     expect(e.attacksToKill).toBe(1000)
+  })
+
+  it('verlaagt een fysieke klap met de verdedigingscurve van de bron, niet door WDEF af te trekken (#89)', () => {
+    // Het voorbeeld uit #89: DEF 50 en een klap van 100 → 100 x 100 / 150 = 66,7 (aftrekken gaf 75 en 70).
+    expect(defended(100, 50)).toBeCloseTo(200 / 3, 9)
+    expect(defended(100, 0)).toBe(100)
+    // Een monster op je eigen level, zonder levelverschil: de gemiddelde klap is (50 + 100) / 2 x 100 / 150 = 50.
+    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: char().level, hp: 500, wdef: 50, avoid: 0 }))
+    expect(e.attacksToKill).toBe(10)
   })
 
   it('geeft met meer LUK niet minder kills per uur', () => {
