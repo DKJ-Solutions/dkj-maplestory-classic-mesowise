@@ -368,3 +368,13 @@ describe('applySkillPoint: de pot is vol (issue #136)', () => {
     expect(applySkillPoint(once, 'luckySeven')).toBe(once)
   })
 })
+
+describe('applyLevelUp met extra AP van items', () => {
+  it('zet de 5 nieuwe AP in je base LUK, en rekent de accuracy met je totale DEX en LUK', () => {
+    const draft = { ...DEFAULT_PROFILE, dex: '25', dexExtra: '5', luk: '37', lukExtra: '3', accuracy: '40' }
+    const next = applyLevelUp(draft, 'thief')
+    expect(next.luk).toBe('42')
+    expect(next.lukExtra).toBe('3')
+    expect(next.accuracy).toBe(String(40 + baseAccuracy(30, 11, 45) - baseAccuracy(30, 10, 40)))
+  })
+})

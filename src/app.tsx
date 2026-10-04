@@ -20,14 +20,14 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import { NIMBLE_BODY, SUBI } from './data/thief'
+import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { applyLevelDown, applyLevelUp, applySkillPoint, checkFieldsFor, isMaxLevel, levelUpChanges, levelUpSummary } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -252,12 +252,14 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
  * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
 /** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
 const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
 const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
+/** Hoe de popup van een ability point de base AP noemt die je nog hebt (apAtLevel min wat er al staat); onder 0 staat er te veel. */
+const apLeftLabel = (left: number): string => (left < 0 ? 'Base AP te veel' : 'Base AP over')
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -339,6 +341,8 @@ function StatLine(props: {
 function StatEditor(props: {
   /** De naam van de stat, zoals in "<stat> in game" en de knoplabels. */
   stat: string
+  /** De tekst boven het getal; zonder: "<stat> in game". */
+  heading?: string
   labelId: string
   /** Wat de app verwacht en waar dat vandaan komt ("de formule", "de database"). */
   expected?: { value: number; from: string }
@@ -360,7 +364,7 @@ function StatEditor(props: {
   return (
     <>
       {props.expected && <p class="stat-dialog-db">Verwacht volgens {props.expected.from}: <strong>{props.expected.value}</strong></p>}
-      <span class="stat-dialog-label" id={props.labelId}>{stat} in game</span>
+      <span class="stat-dialog-label" id={props.labelId}>{props.heading ?? `${stat} in game`}</span>
       <div class={integer ? 'equip-step' : 'equip-step plain'}>
         {integer && <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
         <input type="number" inputMode={integer ? 'numeric' : 'decimal'} pattern={integer ? '[0-9]*' : undefined} min={min} max={max} enterKeyHint="done" aria-labelledby={props.labelId}
@@ -389,6 +393,35 @@ function StatEditor(props: {
         )}
       </div>
     </>
+  )
+}
+
+/**
+ * Eén getal in de popup van een ability point: het label erboven en daaronder −, het vak en +. Tik je op het getal, dan
+ * is het geselecteerd; Enter slaat op.
+ */
+function ApInput(props: { stat: string; label: string; id: string; value: string; min: number; max: number; onInput: (text: string) => void; onSave: () => void }) {
+  const { stat, value, min, max } = props
+  const step = (by: number) => props.onInput(stepValue(value, by, min, max, min))
+  return (
+    <div class="ap-edit-col">
+      <span class="stat-dialog-label" id={props.id}>{props.label}</span>
+      <div class="equip-step ap-edit-steps">
+        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+        <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
+          value={value}
+          onFocus={(e) => e.currentTarget.select()}
+          onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              props.onSave()
+            }
+          }}
+        />
+        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+      </div>
+    </div>
   )
 }
 
@@ -457,8 +490,114 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps) {
+  const { draft } = props
+  const level = Number(draft.level.trim())
+  const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
+  const lead = (
+    <>
+      {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
+      <div class="stat-line ability-line ability-head" aria-hidden="true">
+        <span />
+        <span>Base</span>
+        <span />
+        <span>Extra</span>
+        <span />
+        <span>Totaal</span>
+        <span />
+      </div>
+      {shownStats(props.job)
+        .filter((f) => ABILITY_KEYS.includes(f.key))
+        .map((f) => (
+          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
+        ))}
+    </>
+  )
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} />
+}
+
+/**
+ * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de base AP, en met een plus ernaast de extra AP van
+ * items (altijd een vak, 0 als je die niet hebt); in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
+ */
+function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: number | null; onSave: (patch: Partial<ProfileDraft>) => void }) {
+  const { field: f, draft, cap } = props
+  const stat = f.key as 'str' | 'dex' | 'int' | 'luk'
+  const extraKey = EXTRA_KEY[stat]
+  const uid = useId()
+  const [edit, setEdit] = useState<{ base: string; extra: string } | null>(null)
+  const baseNow = Number(draft[stat].trim()) || 0
+  // Het extra-vak staat er altijd, ook zonder extra AP (0).
+  const extraText = draft[extraKey].trim() || '0'
+  // Base plus extra, waar de app mee rekent; onbekend als de base geen heel getal is.
+  const total = draftStatTotal(draft, stat)
+  // De base kan tot wat je level nog over laat; staat er al meer, dan hoeft hij niet omlaag.
+  const maxBase = cap === null ? f.max : Math.min(f.max, Math.max(baseNow, cap - (baseApSpent(draft) - baseNow)))
+  const save = () => {
+    if (edit === null) return
+    const n = Number(edit.base.trim())
+    // Een getypt getal buiten de grenzen gaat naar de dichtstbijzijnde: niet onder 4 (STARTING_AP) en niet boven wat je level nog over laat.
+    const base = edit.base.trim() !== '' && Number.isInteger(n) ? String(Math.min(maxBase, Math.max(f.min, n))) : edit.base
+    // Geen extra AP van items is 0: een leeg vak wordt bij Opslaan 0, anders blokkeert het de berekening.
+    props.onSave({ [stat]: base, [extraKey]: edit.extra.trim() === '' ? '0' : edit.extra })
+    setEdit(null)
+  }
+  const dirty = edit !== null && (edit.base !== draft[stat] || edit.extra !== draft[extraKey])
+  // Base plus extra zoals je ze in de popup typt; een leeg extra-vak telt als 0, een base die geen heel getal is als onbekend.
+  const typedBase = edit === null ? NaN : Number(edit.base.trim())
+  const typedExtra = edit === null ? NaN : edit.extra.trim() === '' ? 0 : Number(edit.extra.trim())
+  const totalInEdit = edit !== null && edit.base.trim() !== '' && Number.isInteger(typedBase) && Number.isInteger(typedExtra) ? typedBase + typedExtra : null
+  // Wat je level aan base AP geeft (apAtLevel) min wat er al staat, met de base die je in de popup typt in plaats van de bewaarde.
+  // Alleen de popup toont dit; op de kaart stond het dubbel (Dave, 4 oktober 2026).
+  const leftInEdit = (cap ?? 0) - (baseApSpent(draft) - baseNow) - (Number(edit?.base.trim()) || 0)
   return (
-    <StatsCard {...props} className="profile" icon="person" title="Ability points" fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+    <div class="stat-line ability-line">
+      <span class="stat-line-name">{f.label}</span>
+      <div class="equip-value ap-base" aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
+        <span class="equip-value-num">
+          <strong>{draft[stat].trim() || '?'}</strong>
+        </span>
+      </div>
+      <span class="ap-plus" aria-hidden="true">+</span>
+      <div class="equip-value ap-extra" aria-label={`${f.label} extra ${extraText}`}>
+        <span class="equip-value-num">
+          <strong>{extraText}</strong>
+        </span>
+      </div>
+      <span class="ap-plus" aria-hidden="true">=</span>
+      <div class="equip-value ap-total" aria-label={`${f.label} totaal ${total === null ? 'onbekend' : total}`}>
+        <span class="equip-value-num">
+          <strong>{total === null ? '?' : nfInt.format(total)}</strong>
+        </span>
+      </div>
+      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      {edit !== null && (
+        <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
+          {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
+          {/* Eén kolom (Dave, 4 oktober 2026): Base AP, Extra AP en Totaal onder elkaar, de drie getallen precies boven elkaar. */}
+          <div class="ap-edit">
+            <ApInput stat={`Base ${f.label}`} label="Base AP" id={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
+            <ApInput stat={`Extra ${f.label}`} label="Extra AP" id={`${uid}-extra`} value={edit.extra} min={0} max={f.max} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
+            <div class="ap-edit-col">
+              <span class="stat-dialog-label" id={`${uid}-total`}>Totaal</span>
+              {/* Dezelfde drie kolommen als de rijen erboven, zonder − en +: zo staat het totaal precies onder de andere getallen. */}
+              <div class="equip-step ap-edit-steps">
+                <span />
+                <output class="ap-edit-total" aria-labelledby={`${uid}-total`}>{totalInEdit === null ? '?' : nfInt.format(totalInEdit)}</output>
+                <span />
+              </div>
+            </div>
+          </div>
+          {/* Opslaan staat er altijd (Dave, 4 oktober 2026); zolang er niets gewijzigd is, kun je er niet op tikken. */}
+          <div class="stat-dialog-actions">
+            <button type="button" class="equip-save" disabled={!dirty} onClick={save}>
+              Opslaan
+            </button>
+          </div>
+        </StatDialog>
+      )}
+    </div>
   )
 }
 

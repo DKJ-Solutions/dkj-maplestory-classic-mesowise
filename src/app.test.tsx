@@ -5,7 +5,7 @@ import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
-import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, STARTER_PROFILE, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
 import { mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
@@ -104,7 +104,10 @@ const statLine = (label: string) => {
 }
 /** De namen van de stat-regels in één kaart van het beginscherm. */
 const cardNames = (selector: string) => Array.from(panels()[0].querySelectorAll(`${selector} .stat-line-name`)).map((n) => n.textContent)
-const statShown = (label: string) => statLine(label).querySelector('.equip-value strong')?.textContent
+/** Het getal van een stat op de kaart; bij een ability point (STR, DEX, INT, LUK) de base AP. */
+const statShown = (label: string) => (statLine(label).querySelector('.ap-base strong') ?? statLine(label).querySelector('.equip-value strong'))?.textContent
+/** De extra AP van items van een ability point op de kaart. */
+const extraShown = (label: string) => statLine(label).querySelector('.ap-extra strong')?.textContent
 /** Opent de popup achter het potlood van een stat op de karakterkaart. */
 const openStat = (label: string) => {
   fireEvent.click(within(statLine(label)).getByRole('button', { name: `${label} wijzigen` }))
@@ -113,6 +116,23 @@ const openStat = (label: string) => {
   return {
     input,
     type: (v: string) => fireEvent.input(input(), { target: { value: v } }),
+    save: () => fireEvent.click(d.getByRole('button', { name: 'Opslaan' })),
+    close: () => fireEvent.click(d.getByRole('button', { name: 'Sluiten zonder opslaan' })),
+    d,
+  }
+}
+
+/** Opent de popup van een ability point (STR, DEX, INT, LUK): een vak voor de base AP, een voor de extra AP van items, en het totaal. */
+const openAbility = (label: string) => {
+  fireEvent.click(within(statLine(label)).getByRole('button', { name: `${label} wijzigen` }))
+  const d = within(statLine(label).querySelector('dialog') as HTMLDialogElement)
+  const base = () => d.getByLabelText('Base AP') as HTMLInputElement
+  const extra = () => d.getByLabelText('Extra AP') as HTMLInputElement
+  return {
+    base,
+    extra,
+    typeBase: (v: string) => fireEvent.input(base(), { target: { value: v } }),
+    typeExtra: (v: string) => fireEvent.input(extra(), { target: { value: v } }),
     save: () => fireEvent.click(d.getByRole('button', { name: 'Opslaan' })),
     close: () => fireEvent.click(d.getByRole('button', { name: 'Sluiten zonder opslaan' })),
     d,
@@ -415,12 +435,13 @@ describe('bewaren na elke wijziging', () => {
 
   it('bewaart een profielveld pas na Opslaan in de popup van het potlood', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    const h = openStat('LUK')
-    h.type('55')
-    expect(profileFields()?.luk ?? DEFAULT_PROFILE.luk).toBe(DEFAULT_PROFILE.luk)
+    const h = openAbility('LUK')
+    h.typeExtra('15')
+    expect(profileFields()?.lukExtra ?? STARTER_PROFILE.lukExtra).toBe(STARTER_PROFILE.lukExtra)
     h.save()
-    expect(profileFields().luk).toBe('55')
-    expect(statShown('LUK')).toBe('55')
+    expect(profileFields().lukExtra).toBe('15')
+    expect(extraShown('LUK')).toBe('15')
+    expect(statShown('LUK')).toBe('37')
   })
 
   it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
@@ -446,10 +467,129 @@ describe('bewaren na elke wijziging', () => {
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
+  it('toont de base AP die je nog over hebt alleen in de popup, niet als eigen regel op de kaart', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(panels()[0].querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
+    // Het beginprofiel verdeelt precies de 70 base AP van level 10.
+    expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
+  })
+
+  it('zet per stat op de kaart de base AP, plus de extra AP van items, is het totaal', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const head = panels()[0].querySelector('section.profile .ability-head')!
+    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', '', 'Totaal', ''])
+    expect(Array.from(statLine('LUK').children).slice(1, 6).map((c) => c.textContent)).toEqual(['37', '+', '3', '=', '40'])
+  })
+
+  it('toont ook bij een stat zonder extra AP van items de plus en een extra-vak met 0', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(Array.from(statLine('DEX').children).slice(1, 6).map((c) => c.textContent)).toEqual(['25', '+', '0', '=', '25'])
+  })
+
+  it('bewaart een leeg extra-veld als 0, zonder foutmelding', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    h.typeExtra('')
+    h.save()
+    expect(profileFields().lukExtra).toBe('0')
+    expect(extraShown('LUK')).toBe('0')
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+  })
+
+  it('toont in de popup het totaal van base en extra, en rekent mee terwijl je typt', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    const total = () => h.d.getByLabelText('Totaal').textContent
+    expect(total()).toBe('40')
+    h.typeExtra('10')
+    expect(total()).toBe('47')
+    h.typeExtra('')
+    expect(total()).toBe('37')
+    h.typeBase('')
+    expect(total()).toBe('?')
+  })
+
+  it('toont Opslaan in de popup altijd, maar uitgeschakeld zolang er niets gewijzigd is', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    const save = () => h.d.getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement
+    expect(save().disabled).toBe(true)
+    h.typeExtra('4')
+    expect(save().disabled).toBe(false)
+    h.typeExtra('3')
+    expect(save().disabled).toBe(true)
+  })
+
+  it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    expect(h.base().value).toBe('37')
+    expect(h.extra().value).toBe('3')
+    expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
+    // Base, Extra en Totaal onder elkaar in één kolom, met één Opslaan eronder; het totaal staat in de middelste kolom, net als de getallen erboven.
+    const dialog = statLine('LUK').querySelector('dialog')!
+    expect(dialog.querySelector('.ap-edit-total')!.parentElement!.children[1].classList.contains('ap-edit-total')).toBe(true)
+    expect(Array.from(dialog.querySelectorAll('.ap-edit > .ap-edit-col > .stat-dialog-label')).map((l) => l.textContent)).toEqual(['Base AP', 'Extra AP', 'Totaal'])
+    expect(Array.from(dialog.querySelectorAll('.stat-dialog-actions')).map((a) => a.textContent)).toEqual(['Opslaan'])
+  })
+
+  it('laat de base AP niet hoger gaan dan je nog over hebt; de extra AP is vrij', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    fireEvent.click(h.d.getByRole('button', { name: 'Base LUK plus 1' }))
+    expect(h.base().value).toBe('37')
+    h.typeBase('50')
+    h.typeExtra('100')
+    h.save()
+    expect(profileFields().luk).toBe('37')
+    expect(profileFields().lukExtra).toBe('100')
+    expect(extraShown('LUK')).toBe('100')
+    expect(statShown('LUK')).toBe('37')
+  })
+
+  it('laat de base AP in de popup niet onder 4 gaan, het minimum van elke stat', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('STR')
+    expect(h.base().value).toBe('4')
+    fireEvent.click(h.d.getByRole('button', { name: 'Base STR min 1' }))
+    expect(h.base().value).toBe('4')
+    expect(h.base().min).toBe('4')
+    h.typeBase('1')
+    h.typeExtra('2')
+    h.save()
+    expect(profileFields().str).toBe('4')
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+  })
+
+  it('geeft base AP vrij die je uit een andere stat haalt', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const dex = openAbility('DEX')
+    dex.typeBase('20')
+    dex.save()
+    const luk = openAbility('LUK')
+    expect(luk.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 5 van 70')
+    luk.typeBase('42')
+    luk.save()
+    expect(profileFields().luk).toBe('42')
+    expect(openAbility('INT').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
+  })
+
+  it('toont in de popup hoeveel base AP te veel staat als je level omlaag gaat', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    expect(h.d.getByText(/Base AP te veel:/).textContent).toBe('Base AP te veel: 5 van 65')
+    // Wat je in de popup lager zet, telt meteen mee.
+    h.typeBase('32')
+    expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 65')
+    h.save()
+    expect(openAbility('DEX').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 65')
+  })
+
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    const h = openStat('STR')
-    h.type('5000')
+    const h = openAbility('STR')
+    h.typeExtra('5000')
     h.save()
     expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(true)
     expect(panels()[0].querySelector('section.total-stats')!.classList.contains('invalid')).toBe(false)
@@ -509,20 +649,20 @@ describe('bewaren na elke wijziging', () => {
 
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    const h = openStat('LUK')
-    h.type('77')
+    const h = openAbility('LUK')
+    h.typeExtra('77')
     h.close()
-    expect(statShown('LUK')).toBe(DEFAULT_PROFILE.luk)
+    expect(extraShown('LUK')).toBe('3')
     expect(statLine('LUK').querySelector('dialog')).toBeNull()
   })
 
   it('verhoogt een stat met + en slaat op met Enter', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    const h = openStat('LUK')
-    fireEvent.click(h.d.getByRole('button', { name: 'LUK plus 1' }))
-    expect(h.input().value).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
-    fireEvent.keyDown(h.input(), { key: 'Enter' })
-    expect(profileFields().luk).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
+    const h = openAbility('LUK')
+    fireEvent.click(h.d.getByRole('button', { name: 'Extra LUK plus 1' }))
+    expect(h.extra().value).toBe('4')
+    fireEvent.keyDown(h.extra(), { key: 'Enter' })
+    expect(profileFields().lukExtra).toBe('4')
   })
 
   it('bewaart de gekozen mob als enige plek, en een andere mob vervangt hem', () => {
@@ -717,7 +857,7 @@ describe('level-up en ongedaan maken', () => {
     levelUp()
     expect(profileFields().level).toBe('11')
     undoLevelUp()
-    expect(profileFields()).toEqual(DEFAULT_PROFILE)
+    expect(profileFields()).toEqual(STARTER_PROFILE)
   })
 
   it('zet equipment en profiel allebei terug, ook na een wissel op het controlescherm', () => {

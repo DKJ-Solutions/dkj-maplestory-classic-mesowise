@@ -132,7 +132,8 @@ describe('profiel: de velden van een Magician', () => {
     expect(keys.slice(0, 5)).toEqual(['level', 'hp', 'str', 'dex', 'int'])
     expect(keys).toContain('luk')
     for (const k of ['attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
-    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.filter((k) => !isSkillKey(k)))
+    // De extra AP van items staat niet als eigen stat op de kaart: die staat in de popup van zijn stat.
+    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.filter((k) => !isSkillKey(k) && !k.endsWith('Extra')))
   })
 
   it('noemt het wapenveld M.ATT en niet ATT', () => {
@@ -767,7 +768,8 @@ describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () =>
   })
 
   it('geeft bij INT 0 en M.ATT 0 wel een voorstel (de schade is dan 0, dus minimaal 1 per klap) in plaats van te crashen', () => {
-    const p = parseM({ int: '0', clawWatk: '0' })
+    // Het profiel laat INT niet onder 4 (het minimum van elke stat); het model zelf moet INT 0 nog steeds aankunnen.
+    const p = { ...parseM({ clawWatk: '0' }), int: 0 }
     const out = suggestMonsters(p, perionEast)
     expect(out.length).toBeGreaterThan(0)
     for (const s of out) {
@@ -778,7 +780,7 @@ describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () =>
 
   it('geeft meer INT een hogere of gelijke schade per cast: de klappen per kill dalen nooit als INT stijgt', () => {
     let previous = Infinity
-    for (const int of ['0', '1', '2', '50', '99', '100', '500']) {
+    for (const int of ['4', '5', '50', '99', '100', '500']) {
       const total = suggestMonsters(parseM({ int }), perionEast).reduce((n, s) => n + s.estimate.attacksToKill, 0)
       expect(total, `INT ${int}`).toBeLessThanOrEqual(previous)
       previous = total

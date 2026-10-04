@@ -97,6 +97,20 @@ export const AP_PER_LEVEL = {
   source: { url: 'https://meowdb.com/msclassic/guides/beginners-guide-first-steps-in-maple-world', retrieved: R } satisfies Source,
 } as const
 
+/**
+ * De AP die je op een level hebt, zonder equipment: elke stat begint op 4, bij het maken van je karakter zet je er 9
+ * bij, en elk level-up geeft er 5 ("Every character starts with 4 in each stat. You place 9 more AP at character
+ * creation, then get 5 AP per level"). Op level 1 is dat 25, en op level L dus 25 + 5 x (L - 1).
+ */
+export const STARTING_AP = {
+  perStat: 4,
+  atCreation: 9,
+  source: AP_PER_LEVEL.source,
+} as const
+
+export const apAtLevel = (level: number): number =>
+  4 * STARTING_AP.perStat + STARTING_AP.atCreation + AP_PER_LEVEL.amount * (level - 1)
+
 /** De Thief-gids: de accuracy-formule en het advies om de rest van de AP in LUK te zetten. */
 export const ACCURACY_SOURCE: Source = { url: 'https://meowdb.com/msclassic/guides/thief-class-guide', retrieved: R }
 
