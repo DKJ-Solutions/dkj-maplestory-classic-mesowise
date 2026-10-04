@@ -532,9 +532,44 @@ describe('bewaren na elke wijziging', () => {
     expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7): 128 HP · 13 EXP · 16–22 dmg · 0 WDEF')
     fireEvent.change(select, { target: { value: 'Pig' } })
     const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLElement
-    expect(dialog.textContent).toContain('128 HP · 13 EXP · 16–22 dmg · 0 WDEF (dmg: de schade als hij je raakt)')
-    expect(dialog.querySelector('.hunted-value')?.textContent).toMatch(/EXP per meso$/)
+    const lines = Array.from(dialog.querySelectorAll('.stat-line .equip-value')).map((v) => v.getAttribute('aria-label'))
+    expect(lines).toEqual(['HP 128', 'EXP 13', 'Dmg laag 16', 'Dmg hoog 22', 'WDEF 0'])
+    // De EXP per meso hoort in de calculator zelf, niet op deze kaart (Dave, 4 oktober 2026).
+    expect(dialog.textContent).not.toMatch(/EXP per meso/)
     expect(screen.getByRole('button', { name: /^Monster$/ }).textContent).toBe('Monster')
+  })
+
+  // Dave, 4 oktober 2026: net als bij equipment pas je de monsterinfo aan als het spel iets anders zegt.
+  it('past een eigenschap van de mob aan met het potlood, bewaart hem en rekent ermee', () => {
+    fireEvent.click(screen.getByRole('button', { name: /^Monster$/ }))
+    fireEvent.change(screen.getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
+    const before = document.querySelector('.summary')?.textContent
+    const hp = openStat('HP')
+    expect(hp.d.getByText('Verwacht volgens de database:')).toBeTruthy()
+    hp.type('256')
+    hp.save()
+    expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig', mobHp: '256' }])
+    expect(statLine('HP').querySelector('.equip-value')!.getAttribute('aria-label')).toBe('HP 256, gecorrigeerd, verwacht 128')
+    // Twee keer zoveel HP: minder kills per uur, dus een duurder level.
+    expect(document.querySelector('.summary')?.textContent).not.toBe(before)
+    const back = openStat('HP')
+    fireEvent.click(back.d.getByRole('button', { name: 'Reset naar 128' }))
+    back.save()
+    expect(stored(STORAGE_KEY).spots[0].mobHp).toBeUndefined()
+    expect(document.querySelector('.summary')?.textContent).toBe(before)
+  })
+
+  it('zet de aanpassingen terug als je een andere mob kiest', () => {
+    fireEvent.click(screen.getByRole('button', { name: /^Monster$/ }))
+    const select = screen.getByLabelText('De mob die je het meest killt') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'Pig' } })
+    const wdef = openStat('WDEF')
+    wdef.type('5')
+    wdef.save()
+    expect(stored(STORAGE_KEY).spots[0].mobWdef).toBe('5')
+    fireEvent.change(select, { target: { value: 'Slime' } })
+    expect(stored(STORAGE_KEY).spots[0].mobWdef).toBeUndefined()
+    expect(statLine('WDEF').querySelector('.equip-value')!.getAttribute('aria-label')).toBe('WDEF 10')
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {

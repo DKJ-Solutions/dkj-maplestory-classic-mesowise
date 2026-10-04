@@ -3,7 +3,7 @@
 // De getallen zijn die van de tweede gesloten testfase (COT2, closed operations test 2) en
 // kunnen bij de lancering nog veranderen.
 // Prijzen: de NPC-winkel van Dr. Faymus in Kerning City (COT2-prijzen volgens de itempagina).
-import type { SpotDraft } from '../spotDraft'
+import type { MobKey, SpotDraft } from '../spotDraft'
 import type { KnownSpot, Monster, Potion } from './types'
 
 const R = '2026-10-03'
@@ -133,4 +133,63 @@ export function mobDraft(name: string): SpotDraft | undefined {
 export function huntedMob(d: SpotDraft | undefined): Monster | undefined {
   const spot = d?.known?.startsWith('mob:') ? findKnownSpot(d.known) : undefined
   return spot?.monsters[0]
+}
+
+/** Een eigenschap van een mob die je zelf kunt corrigeren: het veld in de plek, de naam op het scherm en de grenzen. */
+export interface MobField {
+  key: MobKey
+  label: string
+  min: number
+  max: number
+  get: (m: Monster) => number
+  set: (m: Monster, n: number) => Monster
+}
+
+/**
+ * Wat je van een mob kunt aanpassen als het spel iets anders zegt dan de database (Dave, 4 oktober 2026): dezelfde
+ * eigenschappen als de app toont. Hele getallen; HP minstens 1, want een mob zonder HP valt niet te verslaan.
+ */
+export const MOB_FIELDS: readonly MobField[] = [
+  { key: 'mobHp', label: 'HP', min: 1, max: 9_999_999, get: (m) => m.hp, set: (m, hp) => ({ ...m, hp }) },
+  { key: 'mobExp', label: 'EXP', min: 0, max: 9_999_999, get: (m) => m.expPerKill, set: (m, expPerKill) => ({ ...m, expPerKill }) },
+  { key: 'mobTouchMin', label: 'Dmg laag', min: 0, max: 99_999, get: (m) => m.touch.min, set: (m, min) => ({ ...m, touch: { ...m.touch, min } }) },
+  { key: 'mobTouchMax', label: 'Dmg hoog', min: 0, max: 99_999, get: (m) => m.touch.max, set: (m, max) => ({ ...m, touch: { ...m.touch, max } }) },
+  { key: 'mobWdef', label: 'WDEF', min: 0, max: 9_999, get: (m) => m.wdef, set: (m, wdef) => ({ ...m, wdef }) },
+]
+
+/** Een eigen getal voor een eigenschap: een heel getal binnen de grenzen, anders undefined (en dan telt de database). */
+export function parseMobStat(f: MobField, text: string | undefined): number | undefined {
+  if (text === undefined || text.trim() === '') return undefined
+  const n = Number(text)
+  return Number.isInteger(n) && n >= f.min && n <= f.max ? n : undefined
+}
+
+/** De mob zoals jij hem kent: de database, met je eigen getallen erover. */
+export function correctedMob(m: Monster, d: SpotDraft): Monster {
+  return MOB_FIELDS.reduce((out, f) => {
+    const n = parseMobStat(f, d[f.key])
+    return n === undefined ? out : f.set(out, n)
+  }, m)
+}
+
+/** De bekende plek van een plek, met bij een mob je eigen getallen; zo rekent de app met wat jij in het spel ziet. */
+export function spotOf(d: SpotDraft): KnownSpot | undefined {
+  const spot = findKnownSpot(d.known)
+  const mob = huntedMob(d)
+  if (!spot || !mob) return spot
+  const own = correctedMob(mob, d)
+  return own === mob ? spot : { ...spot, monsters: [own] }
+}
+
+/**
+ * Wat een correctie in de plek verandert: je getal als het afwijkt van de database, niets meer als het gelijk is of
+ * leeg (dan telt de database weer). Null als het geen geldig getal is of de plek geen mob is: dan verandert er niets.
+ */
+export function mobStatPatch(d: SpotDraft, f: MobField, text: string): Partial<SpotDraft> | null {
+  const mob = huntedMob(d)
+  if (!mob) return null
+  if (text.trim() === '') return { [f.key]: undefined }
+  const n = parseMobStat(f, text)
+  if (n === undefined) return null
+  return { [f.key]: n === f.get(mob) ? undefined : String(n) }
 }

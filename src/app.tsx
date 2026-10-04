@@ -6,7 +6,7 @@ import { bestVerdict } from './best'
 import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import { MAX_NAME_LENGTH, type SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
-import { MOBS, findKnownSpot, huntedMob, mobDraft } from './data/spots'
+import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Monster, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
@@ -289,7 +289,15 @@ function stepValue(text: string, by: number, min: number, max: number, fallback:
  * dat pas na Opslaan (of Enter) meetelt, net als bij equipment. Heeft de stat een verwachting (een formule) en wijkt
  * het getal daarvan af, dan staat de verwachting doorgestreept ernaast en zet Reset hem terug.
  */
-function StatLine(props: { field: ProfileField; value: string; expected?: number; readOnly?: boolean; onSave: (text: string) => void }) {
+function StatLine(props: {
+  field: Pick<ProfileField, 'label' | 'min' | 'max' | 'integer'>
+  value: string
+  expected?: number
+  /** Waar de verwachting vandaan komt; zonder: de formule. */
+  from?: string
+  readOnly?: boolean
+  onSave: (text: string) => void
+}) {
   const { field: f, value, expected } = props
   const uid = useId()
   const [draft, setDraft] = useState<string | null>(null)
@@ -320,7 +328,7 @@ function StatLine(props: { field: ProfileField; value: string; expected?: number
           <StatEditor
             stat={f.label}
             labelId={`${uid}-game`}
-            expected={expected === undefined ? undefined : { value: expected, from: 'de formule' }}
+            expected={expected === undefined ? undefined : { value: expected, from: props.from ?? 'de formule' }}
             value={draft}
             min={f.min}
             max={f.max}
@@ -1224,7 +1232,8 @@ const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.e
 /**
  * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
  * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in. Net als de andere kaarten toont de
- * kop alleen de titel; de mob, zijn eigenschappen en de EXP per meso staan in de popup.
+ * kop alleen de titel; de mob en zijn eigenschappen staan in de popup. De EXP per meso hoort in de calculator zelf, niet hier. Een eigenschap pas je aan met
+ * het potlood, net als een stat of je equipment; het getal uit de database staat dan doorgestreept ernaast.
  */
 function HuntedMobCard(props: {
   result: RankResult | undefined
@@ -1239,11 +1248,10 @@ function HuntedMobCard(props: {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
-  const known = findKnownSpot(draft?.known)
+  const known = draft ? spotOf(draft) : undefined
   const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
   const plan = picked ? hourPlan(picked, picked.estimate.killsPerHour) : undefined
   const invalid = result !== undefined && isInvalid(result)
-  const value = !result || invalid ? '–' : Number.isFinite(result.expPerMeso) ? nf.format(result.expPerMeso) : 'onbegrensd (kost niets)'
   const title = 'Monster'
   const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
   return (
@@ -1270,18 +1278,31 @@ function HuntedMobCard(props: {
               ))}
             </select>
           </label>
+          {mob && draft && (
+            <>
+              {/* Zegt het spel iets anders dan de database, pas het dan aan; de app rekent met jouw getal (Dave, 4 oktober 2026). */}
+              {MOB_FIELDS.map((f) => (
+                <StatLine
+                  key={f.key}
+                  field={{ ...f, integer: true }}
+                  value={draft[f.key] ?? String(f.get(mob))}
+                  expected={f.get(mob)}
+                  from="de database"
+                  onSave={(text) => {
+                    const patch = mobStatPatch(draft, f, text)
+                    if (patch) props.onChange(patch)
+                  }}
+                />
+              ))}
+            </>
+          )}
           {mob && (
             <p class="hint">
-              {mobStats(mob)} (dmg: de schade als hij je raakt). Bron:{' '}
+              Dmg is de schade als hij je raakt. Bron:{' '}
               <a href={mob.source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
               , opgehaald op {formatDate(mob.source.retrieved)}.
-            </p>
-          )}
-          {mob && (
-            <p class="hunted-value">
-              <strong>{value}</strong> EXP per meso
             </p>
           )}
           {picked && plan && (

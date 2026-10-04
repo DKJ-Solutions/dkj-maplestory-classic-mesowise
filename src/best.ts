@@ -3,7 +3,7 @@
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { pickBest, type NotBestReason } from './calc/pickBest'
 import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
-import { findKnownSpot } from './data/spots'
+import { spotOf } from './data/spots'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { pickMonster, resolveSpot, suggestMonsters } from './suggest'
@@ -18,14 +18,14 @@ export const ASSUMPTION_VARIANTS: readonly Assumptions[] = [
 
 /** De plekken als getallen: bij een bekende plek vullen lege velden zich met het voorstel. */
 export const resolveAll = (drafts: readonly SpotDraft[], profile: Profile | null, assumptions: Assumptions = ASSUMPTIONS) =>
-  drafts.map((d) => resolveSpot(d, findKnownSpot(d.known), profile, assumptions))
+  drafts.map((d) => resolveSpot(d, spotOf(d), profile, assumptions))
 
 /**
  * Of het monster waarop je traint gevaarlijk is; bij een eigen plek weet de app dat niet. De aannames
  * tellen mee, omdat ze bepalen welk monster het voorstel kiest als de speler er geen koos.
  */
 export function isDangerousSpot(d: SpotDraft, profile: Profile | null, assumptions: Assumptions = ASSUMPTIONS): boolean {
-  const known = findKnownSpot(d.known)
+  const known = spotOf(d)
   if (!known || !profile) return false
   return pickMonster(suggestMonsters(profile, known, assumptions), d.monster)?.estimate.dangerous ?? false
 }

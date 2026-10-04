@@ -121,6 +121,12 @@ describe('bestVerdict', () => {
     expect(bestVerdict([d], profile)).toMatchObject({ bestId: d.id, excluded: new Map() })
   })
 
+  it('rekent met je eigen getallen voor de mob: meer HP is minder EXP per meso', () => {
+    const pig = mobDraft('Pig')!
+    const epm = (d: SpotDraft) => ratio(d)
+    expect(epm({ ...pig, mobHp: '1000' })).toBeLessThan(epm(pig))
+  })
+
   it('geeft geen winnaar als de enige plek ongeldig is', () => {
     expect(bestVerdict([{ ...own('a', 1, 1), expPerHour: '' }], profile).bestId).toBeNull()
   })
