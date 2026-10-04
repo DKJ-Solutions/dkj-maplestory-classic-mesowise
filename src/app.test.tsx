@@ -1126,7 +1126,7 @@ describe('een Magician in de app', () => {
       expect(within(dialog).getByLabelText('M.ATT in game')).toBeTruthy()
     })
 
-    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en de Attack onbekend (?)', () => {
+    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en M.ATT in plaats van Attack (#100)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
@@ -1135,8 +1135,10 @@ describe('een Magician in de app', () => {
       const names = Array.from(home.querySelectorAll('.stat-line-name')).map((e) => e.textContent)
       expect(names).toEqual(expect.arrayContaining(['STR', 'DEX', 'INT', 'LUK', 'Accuracy', 'Evasion']))
       for (const n of ['Tijd per aanval (ms)', 'Weapon multiplier van je wapen']) expect(names, n).not.toContain(n)
-      // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
-      expect(statShown('Attack')).toBe('?')
+      // Zijn wapen geeft M.ATT, geen weapon attack: de regel heet M.ATT en toont MagicTotal = floor(60 / 2) + 31 = 61.
+      expect(names).not.toContain('Attack')
+      expect(statShown('M.ATT')).toBe('61')
+      expect(within(statLine('M.ATT')).queryByRole('button')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier/)
       expect(home.textContent).toMatch(/Een cast duurt\s+altijd 810 ms/)
       expect(home.textContent).toMatch(/Een Magician heeft geen munitie/)

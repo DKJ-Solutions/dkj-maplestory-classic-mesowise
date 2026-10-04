@@ -3,7 +3,7 @@
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
 import { PLAIN_ARROW } from './bowmanGear'
 import type { Character } from './calc/mobModel'
-import { SPELL_CAST_MS } from './data/magician'
+import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
@@ -239,11 +239,16 @@ const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (
 /**
  * De Attack uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
  * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ * Bij een Magician is het zijn M.ATT: MagicTotal = floor(INT / 2) + de M.ATT van zijn wapen, zoals de berekening
+ * die gebruikt (Dave, #100); null als INT of het wapen niet is ingevuld.
  */
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
   const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
   const claw = whole(d.clawWatk)
-  if (job === 'magician') return null // zijn wapen geeft M.ATT, geen weapon attack
+  if (job === 'magician') {
+    const int = whole(d.int)
+    return claw === null || int === null ? null : Math.floor(int / MAGIC_DAMAGE.intPerMagicAttack) + claw
+  }
   // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
   const stars = job === 'warrior' ? 0 : job === 'bowman' ? PLAIN_ARROW.watk : whole(d.starWatk)
   return claw === null || stars === null ? null : weaponAttack(job, claw, stars)

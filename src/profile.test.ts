@@ -119,6 +119,14 @@ describe('loadProfile en saveProfile', () => {
     expect(totalAttack({ ...d, starWatk: 'x' }, 'bowman')).toBe(39)
   })
 
+  it('geeft een Magician zijn M.ATT: floor(INT / 2) plus de M.ATT van zijn wapen, zoals de berekening (#100)', () => {
+    const d = { ...DEFAULT_PROFILE, int: '101', clawWatk: '55', starWatk: '17' }
+    expect(totalAttack(d, 'magician')).toBe(105) // floor(50,5) + 55; stars tellen niet
+    expect(totalAttack({ ...d, int: '100' }, 'magician')).toBe(105)
+    expect(totalAttack({ ...d, clawWatk: '' }, 'magician')).toBeNull()
+    expect(totalAttack({ ...d, int: 'x' }, 'magician')).toBeNull()
+  })
+
   it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60', attack: '99' } })
     expect('attack' in loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toBe(false)

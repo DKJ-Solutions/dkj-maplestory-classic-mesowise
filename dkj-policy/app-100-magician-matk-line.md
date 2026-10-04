@@ -49,7 +49,7 @@ Stacked on app/43-magician-model (PR #96), per Dave's choice on #100: the PR tar
 ### TEST
 
 - [x] Tests: profile.test.ts pins MagicTotal (rounding, empty fields); app.test.tsx pins the M.ATT line (61) and no Attack line
-- [ ] Review: Victor (code) and Edith (UI text)
+- [x] Review: Victor (code, no correctness findings) and Edith (UI text: the Magician hint rewritten so INT points to Ability points)
 
 ### DEPLOY: app/100-magician-matk-line
 
