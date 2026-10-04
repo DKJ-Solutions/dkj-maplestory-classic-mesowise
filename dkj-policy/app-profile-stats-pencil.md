@@ -59,7 +59,7 @@ corrected, as on the equipment card. The attack time briefly moved to the equipm
 - [x] `npx vitest run` (603 green), `npm run lint`, `scripts/lint/lint.ps1` clean
 - [x] Code review (Victor) and proofread of the UI text (Edith): shared `stepValue` helper, typed hidden-stat set, an attackMs test and neutral popup comments taken in; merging the duplicated popup body filed as #63
 - [x] Code review of the expected-value step (Victor): the error of weapon attack and WDEF now shows on the equipment card, where those stats come from; ranged ammo filed as #65
-- [ ] Dave looks at the result at phone width before the merge
+- [x] Dave looked at the result and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/profile-stats-pencil
 
