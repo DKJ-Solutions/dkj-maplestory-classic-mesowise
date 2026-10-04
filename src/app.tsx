@@ -398,7 +398,7 @@ function EquipmentCard(props: {
   /** Wat in het getalveld staat maar nog niet is vastgelegd; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
-  hint: string
+  hint?: string
   /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
   defaultOpen: boolean
   onPick: (slot: EquipSlot, pick: string, name?: string) => void
@@ -417,8 +417,7 @@ function EquipmentCard(props: {
       </button>
       <Collapse open={open}>
         <div class="spot-body">
-          <p class="hint">{props.hint}</p>
-          <p class="hint">Zoek wat je draagt. Links staat wat de database verwacht; wijkt je game daarvan af, typ dan rechts de juiste waarde in: die telt. Kies je bij Weapon een eigen item, dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          {props.hint && <p class="hint">{props.hint}</p>}
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
@@ -446,11 +445,11 @@ function EquipmentCard(props: {
                   // Links wat de database verwacht, rechts wat je game zegt: dat telt. Bij een eigen item kent de app geen verwachting.
                   <div class="equip-stats">
                     <div class={gameCounts ? 'field ignored' : 'field counts'}>
-                      <span>{stat} verwacht</span>
+                      <span>{stat} (verwacht)</span>
                       <output class="equip-db" aria-label={`${stat} volgens de database${gameCounts ? ', telt niet' : ', telt'}`}>{db ?? '–'}</output>
                     </div>
                     <div class={gameCounts ? 'field counts' : 'field'}>
-                      <span id={`${uid}-${slot}-game`}>{stat} in je game</span>
+                      <span id={`${uid}-${slot}-game`}>{stat} (in game)</span>
                       {/* Op een telefoon: - en + passen met één tik aan en tellen meteen; tik je op het getal, dan is het
                           geselecteerd en vervangt wat je typt het hele getal. */}
                       <div class="equip-step">
@@ -1198,7 +1197,6 @@ export function App() {
             <EquipmentCard
               equipment={equipment}
               defaultOpen={false}
-              hint="Wat je hier zet, rekent mee in het advies. Je weapon vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
               pending={pending}
               onPick={pickEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
