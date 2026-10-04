@@ -49,7 +49,7 @@
 - [x] Tycho: the #83 test now pins both lines (Slash Blast 4 -> 5 MP, the maximum, level 0, passive, empty field), plus a test that the source line is gone; vitest 1263/1263 green
 - [x] Lint gate clean
 - [x] Victor: no findings; Edith: UI text reads right
-- [ ] Dave looks at the Skillpoints card at phone width (visible result)
+- [x] Dave looked at the Skillpoints card and said "ship it" (October 4, 2026)
 
 ### DEPLOY: app/138-skill-next-level-mp
 
