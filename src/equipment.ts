@@ -50,8 +50,9 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
 const hasSlot = (job: Job, slot: EquipSlot): boolean => {
   // Ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets.
   if (slot === 'ammo') return job === 'thief' || job === 'bowman'
-  // Een shield (issue #117) alleen naast een wapen voor één hand: een claw, boog of kruisboog vraagt beide handen.
-  if (slot === 'shield') return job === 'warrior' || job === 'magician'
+  // Een shield (issue #117) alleen naast een wapen voor één hand: een boog of kruisboog vraagt beide handen. Een claw niet:
+  // de Thief draagt in het shield-slot zijn wristguards (issue #133; Seclusion, Nimble en Jurgen Wristguard op NiaMeowDB).
+  if (slot === 'shield') return job !== 'bowman'
   return true
 }
 

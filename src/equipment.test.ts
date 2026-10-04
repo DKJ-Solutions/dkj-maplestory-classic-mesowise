@@ -1319,11 +1319,16 @@ describe('equipment voor een Bowman', () => {
 describe('shield, gloves, cape en earrings (issue #117)', () => {
   const slotsOf = (job: Job) => slotsFor(job).map((s) => s.slot)
 
-  it('geeft een shield alleen aan de Warrior en de Magician: een claw, boog of kruisboog vraagt beide handen', () => {
+  it('geeft een shield aan de Warrior, de Magician en de Thief (wristguards, #133); een boog of kruisboog vraagt beide handen', () => {
     expect(slotsOf('warrior')).toEqual(['claw', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
     expect(slotsOf('magician')).toContain('shield')
-    expect(slotsOf('thief')).toEqual(['claw', 'ammo', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
+    expect(slotsOf('thief')).toEqual(['claw', 'ammo', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
     expect(slotsOf('bowman')).not.toContain('shield')
+  })
+
+  it('telt de WDEF van een wristguard die een Thief als eigen item invult (#133)', () => {
+    const eq: Equipment = { ...defaultEquipment(), shield: other('54', 'Wristguard') }
+    expect(wornWdef(eq).shield).toBe(54)
   })
 
   it('heten zoals in het spel, tellen als armor (DEF) en hebben nog geen catalogus: je vult ze als eigen item', () => {
