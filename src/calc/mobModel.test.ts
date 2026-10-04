@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, bowAttack, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, bowAttack, characterAttack, DANGER_SHARE, dampedTouch, defended, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -119,11 +119,20 @@ describe('estimateMob', () => {
     expect(e.starsPerKill).toBe(8)
   })
 
-  it('vloert de schade op 1 bij een hoge WDEF in plaats van negatief door te rekenen', () => {
-    // Iron Hog-achtig: lv 28, WDEF 500, avoid 17. D = 18 → raakkans 100/(3.1·17) > 1 → 1.
-    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: 28, hp: 1000, wdef: 500, avoid: 17 }))
+  it('vloert de schade op 1 als de WDEF van het monster de klap onder 1 drukt', () => {
+    // Lv 28, avoid 17: raakkans 1. Met WDEF 100.000 is 100 x 100 / 100.100 < 1, dus elke klap doet 1.
+    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: 28, hp: 1000, wdef: 100_000, avoid: 17 }))
     expect(e.hitChance).toBe(1)
     expect(e.attacksToKill).toBe(1000)
+  })
+
+  it('verlaagt een fysieke klap met de verdedigingscurve van de bron, niet door WDEF af te trekken (#89)', () => {
+    // Het voorbeeld uit #89: DEF 50 en een klap van 100 → 100 x 100 / 150 = 66,7 (aftrekken gaf 75 en 70).
+    expect(defended(100, 50)).toBeCloseTo(200 / 3, 9)
+    expect(defended(100, 0)).toBe(100)
+    // Een monster op je eigen level, zonder levelverschil: de gemiddelde klap is (50 + 100) / 2 x 100 / 150 = 50.
+    const e = estimateMob(char(), { min: 50, max: 100, stars: 1, mpPerAttack: 0 }, mob({ level: char().level, hp: 500, wdef: 50, avoid: 0 }))
+    expect(e.attacksToKill).toBe(10)
   })
 
   it('geeft met meer LUK niet minder kills per uur', () => {
@@ -273,16 +282,17 @@ describe('bowAttack', () => {
     expect(bowAttack({ ...bowman, dex: 101 }, BOW, null).max - base).toBeCloseTo(0.5 * 2.5, 9)
   })
 
-  it('rekent een Arrow Blow-kill uit: 4 aanvallen, 4 pijlen, 56 MP en 720 kills per uur', () => {
+  it('rekent een Arrow Blow-kill uit: 5 aanvallen, 5 pijlen, 70 MP en 576 kills per uur', () => {
     // Arrow Blow lv 20 geeft 444 en 144. Het monster heeft 1000 HP en WDEF 20, op hetzelfde level, zonder avoid.
-    // maxHit = 444 - 20 · 0,5 = 434, minHit = 144 - 20 · 0,6 = 132, gemiddeld 283 en de raakkans is 1.
-    // 1000 / 283 = 3,53, dus 4 aanvallen. Per kill: 4 · 14 = 56 MP en 4 pijlen. 4 · 750 ms / 0,6 = 5 s per kill, dus 720 per uur.
+    // Na de verdedigingscurve (#89): maxHit = 444 · 100 / 120 = 370, minHit = 144 · 100 / 120 = 120, gemiddeld 245
+    // en de raakkans is 1. 1000 / 245 = 4,08, dus 5 aanvallen. Per kill: 5 · 14 = 70 MP en 5 pijlen.
+    // 5 · 750 ms / 0,6 = 6,25 s per kill, dus 576 per uur.
     const attack = bowAttack(bowman, BOW, { mp: 14, damagePct: 240 })
     const e = estimateMob(char({ level: 30, ...bowman }), attack, mob({ level: 30, hp: 1000, wdef: 20 }))
     expect(e.hitChance).toBe(1)
-    expect(e.attacksToKill).toBe(4)
-    expect(e.starsPerKill).toBe(4)
-    expect(e.mpPerKill).toBe(56)
-    expect(e.killsPerHour).toBeCloseTo(720, 9)
+    expect(e.attacksToKill).toBe(5)
+    expect(e.starsPerKill).toBe(5)
+    expect(e.mpPerKill).toBe(70)
+    expect(e.killsPerHour).toBeCloseTo(576, 9)
   })
 })
