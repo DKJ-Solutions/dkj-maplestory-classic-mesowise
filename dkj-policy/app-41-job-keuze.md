@@ -39,9 +39,16 @@
 
 ### PLAN
 
+Issue #41 (Dave, 4 oktober 2026): de app is niet alleen voor Thieves. Een sectie "Je job" bij de
+equipment, wapen- en armorlijsten gefilterd op job, en voor een job die nog niet is doorgerekend bij elk
+advies "Nog niet doorgerekend voor <job>" in plaats van een getal. De rekenkern is alleen voor de Thief
+gemaakt; een Thief-formule op een andere job geeft een fout getal. De standaardjob is Thief, zodat wie de
+app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jobs krijgen pas data in
+#42 tot #45. Zichtbaar resultaat: Dave kijkt voor de merge.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [ ] Cody: `src/job.ts`, de job-sectie, gefilterde lijsten, de "nog niet doorgerekend"-gate en het job-afhankelijke profiel
 
 ### TEST
 
