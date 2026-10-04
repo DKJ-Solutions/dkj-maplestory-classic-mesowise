@@ -9,6 +9,7 @@
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import type { WornWdef } from './armorUpgrade'
+import { accessoriesFor } from './data/accessories'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -141,13 +142,14 @@ export const MAX_RESULTS = 8
  * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
  * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
  * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde
- * item (dezelfde stat en bron; een test bewaakt dat). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
+ * item (dezelfde stat en bron; een test bewaakt dat). Elke job krijgt ook de items voor shield, gloves, cape en earrings
+ * die hij mag dragen (accessories.ts, #125). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
-  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
-  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
-  bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: WORN_BOWMAN_ARMOR },
-  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: WORN_MAGICIAN_ARMOR },
+  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
+  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: [...WORN_WARRIOR_ARMOR, ...accessoriesFor('warrior')] },
+  bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
+  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
 }
 
 /**
@@ -156,6 +158,9 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
  * rang kan hij ze niet kopen, dus de lijst biedt ze dan niet aan.
  */
 export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false): readonly CatalogItem[] {
+  // Een slot dat de job niet heeft, heeft voor hem geen items (#125): anders bleef bij een wissel van job een shield staan
+  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF.
+  if (!hasSlot(job, slot)) return []
   // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
     if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))
@@ -239,9 +244,10 @@ function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
 
 /**
  * De Magic Def uit je equipment (#91): de MDEF van je hat, je body (een overall, of top en bottom samen) en je shoes.
- * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Shield, gloves, cape en earrings (issue #117) tellen ook niet: die
- * vul je als eigen item, waarvan de app alleen de WDEF vraagt, dus hun MDEF is nooit bekend. Null zolang van één van die slots de MDEF onbekend is:
- * een som met een gat erin zou een te laag getal tonen.
+ * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Null zolang van één van die slots de MDEF onbekend is:
+ * een som met een gat erin zou een te laag getal tonen. Shield, gloves, cape en earrings (issue #117) tellen mee als je er
+ * een item uit de catalogus draagt (#125: earrings geven vooral MDEF); leeg of een eigen item (waarvan de app alleen de WDEF
+ * vraagt) telt als 0 en maakt de som niet onbekend, want die slots mogen leeg blijven.
  */
 export function wornMdef(eq: Equipment): number | null {
   const body: readonly ArmorSlot[] = isEmptyEntry(eq.overall) ? ['top', 'bottom'] : ['overall']
@@ -251,6 +257,7 @@ export function wornMdef(eq: Equipment): number | null {
     if (m === undefined) return null
     sum += m
   }
+  for (const slot of ['shield', 'gloves', 'cape', 'earrings'] as const) sum += slotMdef(slot, eq[slot]) ?? 0
   return sum
 }
 

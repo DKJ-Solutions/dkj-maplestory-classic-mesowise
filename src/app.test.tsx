@@ -686,13 +686,14 @@ describe('bewaren na elke wijziging', () => {
     expect(slots().claw.pick).toBe(MEBA.name)
   })
 
-  it('klapt bij een slot zonder items (Gloves, #117) toch open met wat je doet, en neemt dan je eigen item', () => {
+  it('biedt in de slots van #117 de items met een bron aan (#125): Gloves voor een Thief, zonder die van een andere job', () => {
     openHomeEquipment()
-    const row = typeIn(cards()[0], 'Gloves', '')
-    expect(row.querySelector('.equip-list li.more')?.textContent).toBe('Hier kent de app nog geen items: typ de naam van wat je draagt.')
-    pickOwn(cards()[0], 'Gloves', 'Work Gloves')
+    const row = typeIn(cards()[0], 'Gloves', 'Duo')
+    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toEqual(['Brown Duo', 'Blue Duo', 'Black Duo', 'Gebruik "Duo" als eigen item'])
+    expect(options(typeIn(cards()[0], 'Gloves', 'Juno')).map((o) => o.textContent)).toEqual(['Gebruik "Juno" als eigen item'])
+    pick(cards()[0], 'Gloves', 'Work Gloves')
     expect(worn(cards()[0], 'Gloves')).toBe('Work Gloves')
-    expect(slots().gloves.pick).toBe('other')
+    expect(slots().gloves.pick).toBe('Work Gloves')
   })
 
   it('biedt geen eigen-item-rij als je precies een naam uit de lijst typt', () => {
