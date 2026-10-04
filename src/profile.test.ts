@@ -94,6 +94,11 @@ describe('loadProfile en saveProfile', () => {
     expect(p).toMatchObject({ luk: '60', luckySeven: '7', nimbleBody: '3', keenEyes: '0', threeSnails: '0' })
   })
 
+  it('geeft een bewaard profiel van vóór INT (#82) INT 4, zonder dat de rest verandert', () => {
+    const raw = JSON.stringify({ version: 1, fields: { str: '50', luk: '60' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, str: '50', luk: '60', int: '4' })
+  })
+
   it('houdt een goed veld en geeft een fout veld de standaardwaarde', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60', dex: 7, geheim: 'x', level: '9'.repeat(50) } })
     const p = loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))

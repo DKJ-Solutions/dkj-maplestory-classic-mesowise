@@ -39,31 +39,32 @@
 
 ### PLAN
 
-Dave chose: regroup only, no new fields. Ability points: STR, DEX, LUK. Total stats: Accuracy, Evasion (was Avoid), time per attack, weapon multiplier (Warrior).
+Dave chose: regroup only, no new calculation fields. Then, on the preview: add INT after all ("vergeet INT niet"), and give Total stats its own collapsible card ("TOTAL STATS krijgt gewoon zijn eigen dropdown").
 
 ### CREATE
 
-- [x] Cody: `ProfileCard` renders two groups, Ability points (`ABILITY_KEYS` in `src/profile.ts`) and Total stats; the "Avoid" label and hints say "Evasion"
-- [x] CSS for the group subheadings in `src/style.css`
+- [x] Cody: the "Je karakter" card becomes "Ability points (<job>)" with STR, DEX, INT, LUK (`ABILITY_KEYS` in `src/profile.ts`)
+- [x] Cody: new collapsible "Total stats" card with Accuracy, Evasion, time per attack and the Warrior weapon multiplier, plus the hints that belong to them; both cards share `StatsCard`
+- [x] Cody: new profile field `int` (default 4, stored, used in no calculation); the "Avoid" label and hints say "Evasion"
+- [x] Cody: a character error shows on the card that holds the offending field
 
 ### TEST
 
-- [x] Tycho: grouping tests for Thief and Warrior in `src/app.test.tsx`; `npm test` 906/906, `npm run lint` clean
-- [x] Victor (code review) and Edith (UI text): no findings
+- [x] Tycho/Cody: two-card tests for Thief and Warrior, error-routing tests per card, and an older stored profile without `int` loading INT 4, in `src/app.test.tsx` and `src/profile.test.ts`; `npm test` 908/908, `npm run lint` clean
+- [x] Victor (code review, twice) and Edith (UI text): no blocking findings
 
 ### DEPLOY: app/82-split-ability-total-stats
 
-The "Je karakter" card is split into the two blocks of the in-game stat window: **Ability points** (STR, DEX, LUK) and **Total stats** (Accuracy, Evasion, time per attack and, for a Warrior, the weapon multiplier). "Avoid" is now called "Evasion", as in the game. No new fields and no change to the calculation or the stored profile (#82).
+The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Accuracy, Evasion, time per attack and, for a Warrior, the weapon multiplier). INT is new: it is stored with your profile but not used in any calculation yet. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
-The character card reads like the stat window in the game, so filling in your stats means copying block by block.
+The character cards read like the stat window in the game, so filling in your stats means copying block by block.
 
 **Score:** 2
 
 #### Pull Request
 
 Split the character card into Ability points and Total stats
-

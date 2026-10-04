@@ -171,8 +171,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .known ul { margin: 0 0 0.375rem; padding-left: 1.25rem; }
 .known p { margin: 0; }
 .known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
-.profile { padding: 0; overflow: hidden; }
-.profile.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
+.profile, .total-stats { padding: 0; overflow: hidden; }
+.profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
 .note { margin-top: 1.25rem; }
 .spot-notes { padding: 0 1rem; }
@@ -189,7 +189,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
   .debug { color: #f87171; border-color: #f87171; }
-  .spot.invalid, .profile.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
+  .spot.invalid, .profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }
 .error:empty { display: none; }
@@ -339,9 +339,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Je karakter: per stat op één rij de naam, het getal en het potlood (zelfde vakken als bij equipment); scheelt hoogte */
 .stat-line { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; column-gap: 0.375rem; align-items: center;
   padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
-/* De twee groepen van het statvenster in het spel: Ability points en Total stats */
-.stat-group-title { margin: 0.875rem 0 0.125rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-.stat-group + .stat-group .stat-group-title { margin-top: 1rem; }
+.spot-body .stat-line:first-child { margin-top: 0.875rem; }
 .stat-line:last-of-type { border-bottom: 0; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }

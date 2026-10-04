@@ -26,6 +26,7 @@ const STATS = [
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
+  { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
@@ -100,9 +101,9 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
 
 /**
  * De velden onder "Ability points" op de kaart "Je karakter", zoals in het statvenster van het spel. Alle andere
- * stats vallen onder "Total stats". INT staat er niet: de app rekent er niet mee.
+ * stats vallen onder "Total stats". INT staat er wel, maar de app rekent er niet mee.
  */
-export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'luk']
+export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'int', 'luk']
 
 /** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
 export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
@@ -113,6 +114,7 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   hp: '444',
   str: '4',
   dex: '25',
+  int: '4',
   luk: '40',
   clawWatk: '10',
   accuracy: '33',

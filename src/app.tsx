@@ -149,6 +149,8 @@ const ICON_PATHS = {
   sword: ['M14.5 17.5 3 6V3h3l11.5 11.5', 'M13 19l6-6', 'M16 16l4 4', 'M19 21l2-2'],
   // Een poppetje: je karakter
   person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
+  // Een staafdiagram: Total stats
+  chart: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
   // Een kaartspeld: een plek
   pin: ['M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21Z', 'M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
 } as const
@@ -306,22 +308,30 @@ function StatEditor(props: {
   )
 }
 
-function ProfileCard(props: {
+/**
+ * Een inklapbare kaart met een rij stat-regels (zelfde patroon als de andere kaarten). `children` zijn de hints
+ * onder de regels.
+ */
+function StatsCard(props: {
+  className: string
+  icon: keyof typeof ICON_PATHS
+  title: string
+  fields: readonly ProfileField[]
   job: Job
   draft: ProfileDraft
   error: string | null
   onChange: (patch: Partial<ProfileDraft>) => void
+  children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
-  const shown = statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
   return (
-    <section class={`card profile${props.error ? ' invalid' : ''}`}>
+    <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name with-icon">
-          <CardIcon name="person" />
-          Je karakter ({jobLabel(job)})
+          <CardIcon name={props.icon} />
+          {props.title}
         </span>
       </button>
       <p class="error" aria-live="polite">
@@ -329,36 +339,48 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {[
-            { title: 'Ability points', fields: shown.filter((f) => ABILITY_KEYS.includes(f.key)) },
-            { title: 'Total stats', fields: shown.filter((f) => !ABILITY_KEYS.includes(f.key)) },
-          ].map((g) => (
-            <div class="stat-group" key={g.title}>
-              <h3 class="stat-group-title">{g.title}</h3>
-              {g.fields.map((f) => (
-                <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
-              ))}
-            </div>
+          {props.fields.map((f) => (
+            <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
-          {job === 'warrior' && (
-            <>
-              <p class="hint">
-                De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
-                vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
-                steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
-                multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
-              </p>
-              <p class="hint">
-                Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
-                {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
-              </p>
-            </>
-          )}
+          {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
     </section>
+  )
+}
+
+type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
+const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
+
+/** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
+function ProfileCard(props: StatsCardProps) {
+  return (
+    <StatsCard {...props} className="profile" icon="person" title={`Ability points (${jobLabel(props.job)})`} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+  )
+}
+
+/** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
+function TotalStatsCard(props: StatsCardProps) {
+  const { job } = props
+  return (
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
+      {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+      {job === 'warrior' && (
+        <>
+          <p class="hint">
+            De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
+            vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
+            steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
+            multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
+          </p>
+          <p class="hint">
+            Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
+            {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
+          </p>
+        </>
+      )}
+    </StatsCard>
   )
 }
 
@@ -1505,7 +1527,10 @@ export function App() {
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
   const equipError = statError !== null && 'key' in parsed && EQUIPMENT_STATS.has(parsed.key) ? statError : null
-  const characterError = equipError === null ? statError : null
+  // Total stats heeft zijn eigen kaart; level en Max HP staan niet op een stat-kaart en melden zich bij Ability points.
+  const totalKey = 'key' in parsed && !ABILITY_KEYS.includes(parsed.key) && !HIDDEN_STATS.has(parsed.key) && !isSkillKey(parsed.key)
+  const totalError = equipError === null && totalKey ? statError : null
+  const characterError = equipError === null && !totalKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   const [openId, setOpenId] = useState<string | null>(null)
   // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
@@ -1730,6 +1755,7 @@ export function App() {
             />
 
             <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+            <TotalStatsCard job={job} draft={profileDraft} error={totalError} onChange={updateProfile} />
             <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
             {computed ? (
