@@ -342,8 +342,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
-/* Op de equipment-kaart (tijd per aanval onder je Weapon) dezelfde ruimte en lijn als een slot */
-.equipment .stat-line { padding: 0 0 0.75rem; margin-bottom: 0.75rem; }
 /* De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): op een telefoon een paneel onderaan het scherm, breder gecentreerd */
 .stat-dialog {
   width: 100%; max-width: 26rem; margin: auto auto 0; padding: 0;

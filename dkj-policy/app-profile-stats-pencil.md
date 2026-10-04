@@ -42,7 +42,7 @@
 Dave, October 4, 2026: the stats on the character card change only through the pencil, as on the equipment
 card; name and value share one row to save height; level, max HP, weapon attack and WDEF leave this card.
 Later the same day: accuracy and avoid get an expected value, struck through beside the number when it was
-corrected, as on the equipment card. And the attack time moves to the equipment card, under the Weapon.
+corrected, as on the equipment card. The attack time briefly moved to the equipment card and, on Dave's word, back to the character card.
 
 ### CREATE
 
@@ -50,22 +50,22 @@ corrected, as on the equipment card. And the attack time moves to the equipment 
 - [x] Level, Max HP, weapon attack and WDEF removed from the card (level and HP rise via Level up, the other two follow equipment)
 - [x] Styling for the stat row and the popup without -/+ for the decimal attack time
 - [x] `expectedStats.ts`: expected accuracy (stat part from the Thief guide + Nimble Body) and avoid (`baseAvoid`, floor(LUK/3) + floor(DEX/6) + 5 from the damage-formula guide, "Derived combat stats", checked against its own example) + Nimble Body
-- [x] `StatLine`: the stat row with its popup as one component, used by both cards; the attack time sits on the equipment card right under the Weapon row
+- [x] `StatLine`: the stat row with its popup as one component, shared by the character card (the equipment card's own popup body stays separate, #63)
 - [x] Character card: the expectation struck through when the number differs, and in the popup the expectation and Reset
 
 ### TEST
 
 - [x] Component tests updated and added: save only after Opslaan/Enter, discard on close, + steps, no inputs outside the popup, the four stats absent
-- [x] `npx vitest run` (604 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [x] `npx vitest run` (603 green), `npm run lint`, `scripts/lint/lint.ps1` clean
 - [x] Code review (Victor) and proofread of the UI text (Edith): shared `stepValue` helper, typed hidden-stat set, an attackMs test and neutral popup comments taken in; merging the duplicated popup body filed as #63
-- [x] Code review of the expected-value step (Victor): the error of weapon attack, WDEF and attack time now shows on the equipment card (with a test); ranged ammo filed as #65
+- [x] Code review of the expected-value step (Victor): the error of weapon attack and WDEF now shows on the equipment card, where those stats come from; ranged ammo filed as #65
 - [ ] Dave looks at the result at phone width before the merge
 
 ### DEPLOY: app/profile-stats-pencil
 
 The character card is now read-only at a glance: each stat sits on one row with its value and a pencil, and a
 change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Accuracy and avoid show the value the formulas expect, struck through beside the
-number when your game differs, with Reset in the popup. The attack time now sits on the equipment card, right under your weapon. Level, Max HP,
+number when your game differs, with Reset in the popup. Level, Max HP,
 weapon attack and WDEF are no longer on this card.
 
 **Score:** 2

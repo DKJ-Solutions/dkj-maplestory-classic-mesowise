@@ -155,9 +155,10 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(profileFields().wdef).toBe(DEFAULT_PROFILE.wdef)
   })
 
-  it('toont de nieuwe aanvalstijd onder je Weapon', () => {
+  it('toont de nieuwe aanvalstijd op de karakterkaart', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     expect(statShown('Tijd per aanval (ms)')).toBe(String(IGOR.speed.attackMs))
   })
 
@@ -337,17 +338,11 @@ describe('bewaren na elke wijziging', () => {
     expect(names).not.toContain('Max HP')
     expect(names).not.toContain('Weapon attack van je wapen')
     expect(names).not.toContain('WDEF')
-    expect(names).not.toContain('Tijd per aanval (ms)')
-  })
-
-  it('zet de tijd per aanval op de equipment-kaart, direct onder je Weapon', () => {
-    const line = statLine('Tijd per aanval (ms)')
-    expect(line.closest('section.equipment')).toBe(cards()[0])
-    expect(line.previousElementSibling).toBe(rowOf(cards()[0], 'Weapon'))
+    expect(names).toContain('Tijd per aanval (ms)')
   })
 
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
-    openHomeEquipment()
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('Tijd per aanval (ms)')
     expect(h.d.queryByRole('button', { name: /plus 1/ })).toBeNull()
     h.type('812.5')
@@ -386,16 +381,15 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Accuracy').querySelector('s')).toBeNull()
   })
 
-  it('toont een ongeldige tijd per aanval op de equipment-kaart, niet op de karakterkaart', () => {
-    openHomeEquipment()
+  it('toont een ongeldige tijd per aanval op de karakterkaart, niet op de equipment-kaart', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('Tijd per aanval (ms)')
     h.type('50')
     h.save()
-    expect(cards()[0].classList.contains('invalid')).toBe(true)
-    expect(cards()[0].querySelector('.error')?.textContent).not.toBe('')
     const profile = panels()[0].querySelector('section.profile')!
-    expect(profile.classList.contains('invalid')).toBe(false)
-    expect(profile.querySelector('.error')?.textContent).toBe('')
+    expect(profile.classList.contains('invalid')).toBe(true)
+    expect(profile.querySelector('.error')?.textContent).not.toBe('')
+    expect(cards()[0].classList.contains('invalid')).toBe(false)
   })
 
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
