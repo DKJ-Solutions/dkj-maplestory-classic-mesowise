@@ -407,6 +407,7 @@ function EquipmentCard(props: {
   onCommit: (slot: EquipSlot) => void
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
+  const uid = useId()
   const worn = wornSummary(props.equipment)
   return (
     <section class="card equipment">
@@ -424,6 +425,12 @@ function EquipmentCard(props: {
             const stat = slot === 'claw' ? 'WATK' : 'WDEF'
             const db = databaseStat(slot, entry)
             const own = statOverride(slot, entry)
+            const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
+            const step = (by: number) => {
+              const n = Number(shown.trim())
+              props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
+              props.onCommit(slot)
+            }
             return (
               <div class="equip-row" key={slot}>
                 <div class="field">
@@ -440,14 +447,23 @@ function EquipmentCard(props: {
                       <span>{stat} verwacht</span>
                       <output class="equip-db" aria-label={`${stat} volgens de database`}>{db ?? '–'}</output>
                     </div>
-                    <label class="field">
-                      <span>{stat} in je game</span>
-                      <input type="number" inputMode="numeric" min={0} class={own !== undefined ? 'changed' : undefined}
-                        value={props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))}
-                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                        onChange={() => props.onCommit(slot)}
-                      />
-                    </label>
+                    <div class="field">
+                      <span id={`${uid}-${slot}-game`}>{stat} in je game</span>
+                      {/* Op een telefoon: - en + passen met één tik aan en tellen meteen; tik je op het getal, dan is het
+                          geselecteerd en vervangt wat je typt het hele getal. */}
+                      <div class="equip-step">
+                        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+                        <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
+                          class={own !== undefined ? 'changed' : undefined}
+                          value={shown}
+                          onFocus={(e) => e.currentTarget.select()}
+                          onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                          onChange={() => props.onCommit(slot)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                        />
+                        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
