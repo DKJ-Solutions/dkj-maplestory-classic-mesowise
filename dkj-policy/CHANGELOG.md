@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**29 / 65 minor entries** <!-- pending-tally -->
+**30 / 66 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/hunted-mob-card · 20261004-133843Z
+
+The spot list is gone: no "Plek toevoegen" button, no example spot and no maps. One card under Skillpoints, "Monster",
+picks the mob you kill most; its popup shows the mob's HP, EXP, damage and WDEF, each correctable with the pencil when the game says otherwise (the
+level cost and advice then use your numbers); the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
+also when it is dangerous (the warning stays on the card). Kills per hour are no longer typed in: the app computes them. A
+saved list of maps or own spots from before is dropped on load. Follow-ups: #122 (the hunting-ground question),
+#123 (removing the now unused map data).
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+A player no longer builds a list of spots: they pick the mob they hunt and get the cost of their level at once.
+Their old spots are gone after updating.
+
+**Score:** 4
+
+#### Pull Request
+
+Hunted-mob card replaces the spot list, the add-spot button and the example spot
+
+[PR #124](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/124)
+
+---
 
 ### DEPLOY: app/100-magician-matk-line · 20261004-133302Z
 
