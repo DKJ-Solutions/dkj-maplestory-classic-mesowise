@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**21 / 41 minor entries** <!-- pending-tally -->
+**21 / 42 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/77-warrior-expected-stats · 20261004-113850Z
+
+Op de kaart "Je karakter" ziet een Warrior nu ook welke accuracy en avoid hij volgens de formules hoort te
+hebben, met Precise Strikes erbij. Wijkt je getal af, dan staat de verwachting doorgestreept ernaast, zoals bij
+de Thief.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Expected accuracy and avoid for the Warrior on the character card
+
+[PR #80](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/80)
+
+---
 
 ### DEPLOY: data/55-no-job-line · 20261004-105758Z
 
