@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**27 / 63 minor entries** <!-- pending-tally -->
+**28 / 64 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/87-overall-vs-pair · 20261004-131855Z
+
+The Defense advice now weighs an overall against a top and bottom bought together. When an overall is in
+play (the shop has one for your level, or you wear one), a pair of top + bottom is a candidate of its own,
+with both prices added up. "Until your next upgrade" now also sees an overall coming for a top or bottom,
+and a better top + bottom coming for an overall. If a single top or bottom wins over an overall you wear,
+the advice now says that the other half is left bare. Thief and Bowman shops have no overall, so their advice
+does not change.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Magician (from level 25) or a Warrior no longer gets overall advice that only looks at one half. The
+advice can now say "buy this top and these pants together", and a top's payback no longer runs past the
+level where the robe would replace it.
+
+**Score:** 3
+
+#### Pull Request
+
+Armor advice: weigh an overall against a top+bottom pair
+
+[PR #121](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/121)
+
+---
 
 ### DEPLOY: app/job-behind-level · 20261004-131732Z
 
