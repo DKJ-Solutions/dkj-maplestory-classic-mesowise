@@ -3,6 +3,7 @@ import type { BestVerdict } from './best'
 import type { RankResult } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { baseAccuracy, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { warriorAccuracy } from './data/warrior'
 import {
   applyLevelUp,
   applySkillPoint,
@@ -13,10 +14,11 @@ import {
   levelUpChanges,
   levelUpSummary,
   luckySevenMp,
+  powerStrikeMp,
 } from './levelUp'
 import { isSkillKey } from './data/skills'
 import type { Job } from './job'
-import { DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, type Profile } from './profile'
+import { DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, statFieldsFor, type Profile } from './profile'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -280,7 +282,8 @@ describe('CHECK_FIELDS', () => {
 })
 
 describe('applyLevelUp per job', () => {
-  const others: Job[] = ['warrior', 'magician', 'bowman']
+  // De Warrior rekent sinds issue #42 en heeft zijn eigen tests; deze twee jobs rekenen nog niet.
+  const others: Job[] = ['magician', 'bowman']
 
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
@@ -307,7 +310,7 @@ describe('applyLevelUp per job', () => {
   })
 
   it('houdt het hoogste level en een ongeldig level ongewijzigd, voor elke job', () => {
-    for (const j of [...others, 'thief' as Job]) {
+    for (const j of [...others, 'warrior' as Job, 'thief' as Job]) {
       const max = { ...DEFAULT_PROFILE, level: '200' }
       expect(applyLevelUp(max, j), j).toEqual(max)
       for (const level of ['', 'x', '10.5']) {
@@ -330,11 +333,137 @@ describe('checkFieldsFor', () => {
   })
 
   it('geeft voor een andere job dezelfde stats: skills staan niet op het controlescherm', () => {
-    for (const j of ['warrior', 'magician', 'bowman'] as const) {
+    for (const j of ['magician', 'bowman'] as const) {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
       expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key)).length)
     }
+  })
+})
+
+describe('een Warrior: applyLevelUp', () => {
+  // De Warrior krijgt vanaf level 10 +28 HP per level, daaronder +16 (de HP/MP-gids), en geen AP: die verdeelt hij zelf.
+  const w = { ...DEFAULT_PROFILE, level: '10', hp: '444', str: '60', dex: '25', luk: '4', accuracy: '33' }
+
+  it('geeft van level 10 naar 11 +28 HP, en laat STR, DEX en LUK staan (geen AP-verdeling)', () => {
+    const out = applyLevelUp(w, 'warrior')
+    expect(out.level).toBe('11')
+    expect(out.hp).toBe('472')
+    expect(out.str).toBe('60')
+    expect(out.dex).toBe('25')
+    expect(out.luk).toBe('4')
+  })
+
+  it('geeft onder level 10 nog de Beginner-waarde: +16 HP van level 9 naar 10', () => {
+    expect(applyLevelUp({ ...w, level: '9' }, 'warrior').hp).toBe('460')
+    expect(applyLevelUp({ ...w, level: '1' }, 'warrior').hp).toBe('460')
+    expect(applyLevelUp({ ...w, level: '10' }, 'warrior').hp).toBe('472')
+    expect(applyLevelUp({ ...w, level: '100' }, 'warrior').hp).toBe('472')
+  })
+
+  it('past de accuracy aan met het verschil van de Warrior-formule (floor((1,2·DEX + 2·level + 0,6·LUK)/2,5 + 10))', () => {
+    // DEX 25, LUK 4: level 10 geeft floor(52,4/2,5 + 10) = floor(30,96) = 30; level 11 geeft floor(54,4/2,5 + 10) = floor(31,76) = 31.
+    expect(warriorAccuracy(25, 10, 4)).toBe(30)
+    expect(warriorAccuracy(25, 11, 4)).toBe(31)
+    expect(applyLevelUp(w, 'warrior').accuracy).toBe('34')
+    // Over meerdere levels loopt het delta mee: de som van de stappen is het totaalverschil.
+    let d = { ...w, accuracy: '0' }
+    for (let i = 0; i < 20; i++) d = applyLevelUp(d, 'warrior')
+    expect(Number(d.accuracy)).toBe(warriorAccuracy(25, 30, 4) - warriorAccuracy(25, 10, 4))
+  })
+
+  it('gebruikt de Warrior-accuracy en niet die van de Thief', () => {
+    const same = { ...DEFAULT_PROFILE, level: '10', luk: '40', dex: '25', accuracy: '33' }
+    expect(applyLevelUp(same, 'warrior').accuracy).toBe(String(33 + warriorAccuracy(25, 11, 40) - warriorAccuracy(25, 10, 40)))
+    expect(applyLevelUp(same, 'warrior').luk).toBe('40')
+    expect(applyLevelUp(same, 'thief').luk).toBe('45')
+  })
+
+  it('laat HP en accuracy zoals getypt als een van de velden geen geheel getal is', () => {
+    const out = applyLevelUp({ ...w, hp: 'x', accuracy: '33.5' }, 'warrior')
+    expect(out).toEqual({ ...w, hp: 'x', accuracy: '33.5', level: '11' })
+    expect(applyLevelUp({ ...w, dex: '' }, 'warrior').accuracy).toBe('33')
+  })
+
+  it('laat de andere velden (weapon multiplier, skills, wdef, avoid) staan', () => {
+    const out = applyLevelUp({ ...w, weaponMult: '2.6', powerStrike: '5', wdef: '88', avoid: '9' }, 'warrior')
+    expect(out).toMatchObject({ weaponMult: '2.6', powerStrike: '5', wdef: '88', avoid: '9' })
+  })
+})
+
+describe('een Warrior: checkFieldsFor', () => {
+  const keys = checkFieldsFor('warrior').map((f) => f.key)
+
+  it('begint met Level, HP, STR, DEX, accuracy en avoid, in die volgorde', () => {
+    expect(keys.slice(0, 6)).toEqual(['level', 'hp', 'str', 'dex', 'accuracy', 'avoid'])
+  })
+
+  it('heeft alle stats van een Warrior precies één keer, met de weapon multiplier, en geen skills', () => {
+    expect(new Set(keys).size).toBe(keys.length)
+    expect([...keys].sort()).toEqual(statFieldsFor('warrior').map((f) => f.key).sort())
+    expect(keys).toContain('weaponMult')
+    expect(keys).toContain('luk')
+    expect(keys.filter(isSkillKey)).toEqual([])
+  })
+
+  it('verandert niets voor de Thief: geen weapon multiplier', () => {
+    expect(checkFieldsFor('thief')).toEqual(CHECK_FIELDS)
+    expect(checkFieldsFor('thief').map((f) => f.key)).not.toContain('weaponMult')
+  })
+})
+
+describe('een Warrior: applySkillPoint', () => {
+  const w = { ...DEFAULT_PROFILE, level: '30', accuracy: '80', powerStrike: '3', preciseStrikes: '0' }
+
+  it('zet bij Precise Strikes 0 → 1 de accuracy van level 1 erbij (+5), en laat de rest staan', () => {
+    expect(applySkillPoint(w, 'preciseStrikes', 'warrior')).toEqual({ ...w, preciseStrikes: '1', accuracy: '85' })
+  })
+
+  it('telt van level naar level alleen het verschil van de accuracy, volgens de skillpagina (5, 6, 7, 8, ... 18, 20)', () => {
+    const delta = (from: number) => {
+      const out = applySkillPoint({ ...w, preciseStrikes: String(from) }, 'preciseStrikes', 'warrior')
+      return Number(out.accuracy) - 80
+    }
+    expect(delta(1)).toBe(6 - 5)
+    expect(delta(3)).toBe(8 - 7)
+    expect(delta(13)).toBe(18 - 17)
+    expect(delta(14)).toBe(20 - 18) // de laatste stap springt 2
+  })
+
+  it('zet bij Power Strike een level erbij zonder accuracy of andere stats te raken', () => {
+    expect(applySkillPoint(w, 'powerStrike', 'warrior')).toEqual({ ...w, powerStrike: '4' })
+  })
+
+  it('laat het profiel staan op het maximum (Power Strike 20, Precise Strikes 15)', () => {
+    const maxed = { ...w, powerStrike: '20', preciseStrikes: '15' }
+    expect(applySkillPoint(maxed, 'powerStrike', 'warrior')).toBe(maxed)
+    expect(applySkillPoint(maxed, 'preciseStrikes', 'warrior')).toBe(maxed)
+  })
+
+  it('kent een Thief-skill niet voor een Warrior, en een Warrior-skill niet voor een Thief', () => {
+    expect(applySkillPoint(w, 'luckySeven', 'warrior')).toBe(w)
+    expect(applySkillPoint(w, 'powerStrike')).toBe(w)
+    expect(applySkillPoint(w, 'powerStrike', 'thief')).toBe(w)
+  })
+
+  it('laat de velden die deze job niet invult zoals getypt (een terugwissel van job verliest niets)', () => {
+    // De profielkaart belooft: de getypte waarden blijven in het concept staan, zodat een terugwissel niets kwijt is.
+    const typed = { ...w, luckySeven: '7', nimbleBody: '4' }
+    const out = applySkillPoint(typed, 'powerStrike', 'warrior')
+    expect(out.luckySeven).toBe('7')
+    expect(out.nimbleBody).toBe('4')
+    const thiefTyped = { ...DEFAULT_PROFILE, weaponMult: '2.6', powerStrike: '9' }
+    const out2 = applySkillPoint(thiefTyped, 'luckySeven', 'thief')
+    expect(out2.weaponMult).toBe('2.6')
+    expect(out2.powerStrike).toBe('9')
+  })
+})
+
+describe('powerStrikeMp', () => {
+  it('geeft de MP per aanval van het skill-level, en 0 als hij nog niet geleerd is', () => {
+    expect(powerStrikeMp(0)).toBe(0)
+    expect(powerStrikeMp(1)).toBe(4)
+    expect(powerStrikeMp(20)).toBe(12)
   })
 })

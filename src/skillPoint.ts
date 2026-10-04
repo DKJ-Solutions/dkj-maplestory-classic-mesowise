@@ -1,17 +1,20 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
+// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes.
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
 import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody'>
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes'>
 
 interface Skill {
   id: SkillId
@@ -46,10 +49,54 @@ export const SKILLS: readonly Skill[] = [
   },
 ]
 
+/** De accuracy die Precise Strikes op dit level geeft (0 op level 0). */
+const preciseAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS[level - 1]?.accuracy ?? 0
+
+/**
+ * De skills van de 1e job van een Warrior die het model kan doorrekenen. Power Strike telt als de aanval van
+ * elke klap. Van Precise Strikes telt alleen de accuracy; de extra kans op een critical hit niet, want de
+ * damage-gids noemt geen schade voor een crit (de voorzichtige keuze: het punt lijkt dan minder waard dan het is).
+ */
+export const WARRIOR_MODELLED: readonly Skill[] = [
+  {
+    id: 'powerStrike',
+    name: 'Power Strike',
+    max: POWER_STRIKE_LEVELS.length,
+    level: (p) => p.powerStrike,
+    plusOne: (p) => ({ ...p, powerStrike: p.powerStrike + 1 }),
+  },
+  {
+    id: 'preciseStrikes',
+    name: 'Precise Strikes',
+    max: PRECISE_STRIKES_LEVELS.length,
+    level: (p) => p.preciseStrikes,
+    // De accuracy in het profiel is het totaal uit je statvenster, met Precise Strikes erin.
+    plusOne: (p) => ({
+      ...p,
+      preciseStrikes: p.preciseStrikes + 1,
+      accuracy: p.accuracy + preciseAccuracy(p.preciseStrikes + 1) - preciseAccuracy(p.preciseStrikes),
+    }),
+  },
+]
+
+/** De skills die het model voor deze job kan doorrekenen. */
+export const skillsOf = (job: Job): readonly Skill[] => (job === 'warrior' ? WARRIOR_MODELLED : SKILLS)
+
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
 export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
   (s) => s.name,
 )
+
+/**
+ * Wat het model van een Warrior niet kan doorrekenen, met de reden. Slash Blast raakt tot 4 monsters, en hoeveel
+ * monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Power Strike en kost hij HP.
+ * Improved HP Recovery, Max HP Increase en Iron Body werken op herstel, HP en WDEF van een buff die het profiel
+ * niet kent.
+ */
+export const WARRIOR_NOT_MODELLED: readonly string[] = ['Improved HP Recovery', 'Max HP Increase', 'Iron Body', 'Slash Blast']
+
+/** De skills van deze job die het model niet doorrekent. */
+export const notModelled = (job: Job): readonly string[] => (job === 'warrior' ? WARRIOR_NOT_MODELLED : NOT_MODELLED)
 
 /** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
 export interface SkillLevel extends SkillInfo {
@@ -60,8 +107,8 @@ export interface SkillLevel extends SkillInfo {
  * De skillpunten die de speler nu heeft gezet, voor elke skill van een Thief tot de 2e job. Leest het
  * profiel zoals ingevuld, zodat de sectie ook klopt als een ander veld nog niet goed is.
  */
-export function skillLevels(draft: ProfileDraft): SkillLevel[] {
-  return THIEF_SKILLS.map((s) => {
+export function skillLevels(draft: ProfileDraft, skills: readonly SkillInfo[] = THIEF_SKILLS): SkillLevel[] {
+  return skills.map((s) => {
     const text = draft[s.key].trim()
     const n = text === '' ? NaN : Number(text)
     const valid = Number.isInteger(n) && n >= 0 && n <= s.max
@@ -118,7 +165,8 @@ const bySaving = (a: SkillChoice, b: SkillChoice) => (b.saving ?? -Infinity) - (
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions) {
   const base = mesoCost(drafts, profile, a)
   if (typeof base !== 'number') return null
-  const choices = SKILLS.filter((s) => s.level(profile) < s.max)
+  const choices = skillsOf(profile.job)
+    .filter((s) => s.level(profile) < s.max)
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
       const known = typeof meso === 'number'
@@ -135,6 +183,6 @@ export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile 
   const main = adviseUnder(drafts, profile, ASSUMPTIONS)
   if (!main) return { kind: 'none' }
   const robust = ASSUMPTION_VARIANTS.every((a) => (adviseUnder(drafts, profile, a)?.winner ?? null) === main.winner)
-  const maxed = SKILLS.filter((s) => s.level(profile) >= s.max).map((s) => s.name)
+  const maxed = skillsOf(profile.job).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
   return { kind: 'advice', ...main, maxed, robust }
 }

@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -171,5 +171,71 @@ describe('estimateMob', () => {
     expect(e.hitChance).toBe(0)
     expect(Number.isFinite(e.killsPerHour)).toBe(true)
     expect(e.killsPerHour).toBeGreaterThan(0)
+  })
+})
+
+describe('meleeAttack', () => {
+  // De werkvoorbeelden komen uit de damage-gids van NiaMeowDB (externe waarheid, niet uit onze code):
+  // https://meowdb.com/msclassic/guides/explaining-the-damage-formula
+  // Level 30 Warrior, 47 weapon attack, STR 132, DEX 30, multiplier 1,8.
+  const warrior = { str: 132, dex: 30, watk: 47 }
+
+  it('geeft de gewone aanval van de gids: 60 tot 172', () => {
+    const a = meleeAttack(warrior, 1.8, null)
+    expect(Math.floor(a.min)).toBe(60)
+    expect(Math.floor(a.max)).toBe(172)
+  })
+
+  it('geeft Power Strike lv 20 (260%) van de gids: 157 tot 449', () => {
+    const a = meleeAttack(warrior, 1.8, { mp: 12, damagePct: 260 })
+    expect(Math.floor(a.min)).toBe(157)
+    expect(Math.floor(a.max)).toBe(449)
+  })
+
+  it('rekent het voorbeeld met de hand na (47 · (1 + (132 · 1,8 + 30)/100) = 172,772 en 47 · (0,8 + (132 · 0,08 · 1,8 + 30)/100) = 60,634)', () => {
+    const a = meleeAttack(warrior, 1.8, null)
+    expect(a.max).toBeCloseTo(172.772, 9)
+    expect(a.min).toBeCloseTo(60.63376, 9)
+  })
+
+  it('slaat één keer per aanval, zonder munitie, en rekent de MP van de skill (0 bij de gewone aanval)', () => {
+    expect(meleeAttack(warrior, 1.8, null)).toMatchObject({ stars: 1, mpPerAttack: 0 })
+    expect(meleeAttack(warrior, 1.8, { mp: 4, damagePct: 160 })).toMatchObject({ stars: 1, mpPerAttack: 4 })
+  })
+
+  it('schaalt min en max allebei met de skill-percentage', () => {
+    const plain = meleeAttack(warrior, 1.8, null)
+    const ps = meleeAttack(warrior, 1.8, { mp: 4, damagePct: 160 })
+    expect(ps.max).toBeCloseTo(1.6 * plain.max, 9)
+    expect(ps.min).toBeCloseTo(1.6 * plain.min, 9)
+  })
+
+  it('gebruikt STR als hoofdstat en DEX als secundaire stat, en kijkt niet naar LUK', () => {
+    const withLuk = meleeAttack({ ...warrior, luk: 999 } as Parameters<typeof meleeAttack>[0], 1.8, null)
+    expect(withLuk).toEqual(meleeAttack(warrior, 1.8, null))
+    expect(meleeAttack({ ...warrior, str: 200 }, 1.8, null).max).toBeGreaterThan(meleeAttack(warrior, 1.8, null).max)
+    // Eén punt DEX telt ongewogen (1/100 · watk), één punt STR telt met de multiplier (1,8/100 · watk).
+    const base = meleeAttack(warrior, 1.8, null).max
+    expect(meleeAttack({ ...warrior, dex: 31 }, 1.8, null).max - base).toBeCloseTo(0.47, 9)
+    expect(meleeAttack({ ...warrior, str: 133 }, 1.8, null).max - base).toBeCloseTo(0.47 * 1.8, 9)
+  })
+
+  it('geeft bij de gemiddelde multiplier van zwaaien en steken het gemiddelde van de twee acties', () => {
+    // 1H Axe: zwaai 2,4 en steek 1,2 geeft samen 1,92; min en max zijn lineair in de multiplier.
+    const swing = meleeAttack(warrior, 2.4, null)
+    const stab = meleeAttack(warrior, 1.2, null)
+    const mean = meleeAttack(warrior, 0.6 * 2.4 + 0.4 * 1.2, null)
+    expect(mean.max).toBeCloseTo(0.6 * swing.max + 0.4 * stab.max, 9)
+    expect(mean.min).toBeCloseTo(0.6 * swing.min + 0.4 * stab.min, 9)
+  })
+
+  it('verandert de Thief-aanval niet: characterAttack gebruikt nog steeds LUK en STR + DEX', () => {
+    // Zelfde handmatige uitkomst als in de characterAttack-tests hierboven (vóór de Warrior-wijziging vastgelegd).
+    const a = characterAttack(char(), LS_LV1, LS)
+    expect(a.max).toBeCloseTo(32.85, 9)
+    expect(a.min).toBeCloseTo(23.1, 9)
+    // STR telt bij de Thief mee als secundaire stat, LUK als hoofdstat.
+    expect(characterAttack(char({ str: 5 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25, 9)
+    expect(characterAttack(char({ luk: 31 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25 * 2.5, 9)
   })
 })

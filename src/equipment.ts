@@ -4,9 +4,10 @@
 // onbetrouwbaar: wat niet klopt, valt terug op "Weet ik niet".
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
-import type { ArmorSlot } from './data/types'
+import type { Armor, ArmorSlot, Claw } from './data/types'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
+import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
 const VERSION = 1
@@ -14,6 +15,9 @@ const VERSION = 1
 export const MAX_NAME_LENGTH = 40
 const MAX_STAT_LENGTH = 12
 const MAX_STAT = 999
+
+/** Alle winkelwapens van beide jobs, eenmaal samengesteld. */
+const ALL_WEAPONS: readonly Claw[] = [...NPC_CLAWS, ...WARRIOR_WEAPONS]
 
 export type EquipSlot = 'claw' | ArmorSlot
 
@@ -56,18 +60,32 @@ export const defaultEquipment = (): Equipment => ({
 const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw'
 
 /**
+ * De winkelwapens en -armor per job die de app kent: de Thief (claws, Thief-armor) en de Warrior (zijn wapens, hats
+ * en shoes; tops en broeken volgen in #55). Voor een andere job is de lijst leeg tot die data er is (issues #43
+ * en #44), want een item van een andere job aanbieden zou onwaar zijn.
+ */
+const SHOP: Partial<Record<Job, { weapons: readonly Claw[]; armor: readonly Armor[] }>> = {
+  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR },
+  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR },
+}
+
+/**
  * De winkelitems van een slot voor een job: naam, level en de stat die telt (WATK voor een wapen, WDEF voor
- * armor). Alle winkeldata is nu van de Thief (claws, Thief-armor); voor een andere job is de lijst leeg tot
- * die data er is (issues #42 tot #45), want een Thief-item aanbieden aan een Warrior zou onwaar zijn.
+ * armor).
  */
 export function shopItems(slot: EquipSlot, job: Job): readonly { name: string; level: number; stat: number }[] {
-  if (job !== 'thief') return []
+  const shop = SHOP[job]
+  if (!shop) return []
   return isArmorSlot(slot)
-    ? NPC_ARMOR.filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
-    : NPC_CLAWS.map((c) => ({ name: c.name, level: c.level, stat: c.watk }))
+    ? shop.armor.filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
+    : shop.weapons.map((c) => ({ name: c.name, level: c.level, stat: c.watk }))
 }
 
 const shopItem = (slot: EquipSlot, name: string, job: Job) => shopItems(slot, job).find((i) => i.name === name)
+
+/** De WATK of WDEF van een winkelitem, van welke job ook: de namen van de lijsten overlappen niet. */
+const anyShopStat = (slot: EquipSlot, name: string): number | undefined =>
+  (Object.keys(SHOP) as Job[]).map((j) => shopItem(slot, name, j)?.stat).find((s) => s !== undefined)
 
 /** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij "Ander item" zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
 export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined {
@@ -78,8 +96,8 @@ export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined
     return entry.stat.trim() !== '' && Number.isFinite(n) ? Math.min(MAX_STAT, Math.max(0, Math.trunc(n))) : undefined
   }
   // Een winkelkeuze bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob zorgen
-  // daarvoor), dus hier zoeken we in de Thief-lijst: een andere job heeft nooit een winkelkeuze.
-  return shopItem(slot, entry.pick, 'thief')?.stat
+  // daarvoor), en de namen overlappen niet tussen jobs: zoek in alle lijsten.
+  return anyShopStat(slot, entry.pick)
 }
 
 /** De WDEF per armorslot waarvan de app weet wat je draagt. */
@@ -106,7 +124,7 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
 
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
- * claw uit de winkel ook je aanvalssnelheid. Armor: de WDEF in het profiel is het totaal uit je statvenster,
+ * claw uit de winkel ook je aanvalssnelheid (en bij een Warrior-wapen ook zijn weapon multiplier). Armor: de WDEF in het profiel is het totaal uit je statvenster,
  * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Van of naar "weet ik niet" blijft
  * de WDEF staan (van onbekend naar bekend verandert de WDEF niet: dat stuk zat er al in).
  */
@@ -114,8 +132,13 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
   const next = wornStat(slot, after)
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const claw = after.pick === OTHER || after.pick === NONE ? undefined : NPC_CLAWS.find((c) => c.name === after.pick)
-    return { ...profile, clawWatk: String(next), ...(claw ? { attackMs: String(claw.speed.attackMs) } : {}) }
+    const claw = after.pick === OTHER || after.pick === NONE ? undefined : ALL_WEAPONS.find((c) => c.name === after.pick)
+    return {
+      ...profile,
+      clawWatk: String(next),
+      ...(claw ? { attackMs: String(claw.speed.attackMs) } : {}),
+      ...(claw?.mult !== undefined ? { weaponMult: String(claw.mult) } : {}),
+    }
   }
   const prev = wornStat(slot, before)
   const wdef = profile.wdef.trim()

@@ -60,7 +60,10 @@ export interface KnownSpot {
 /** Het deel van je lichaam waar een stuk armor hoort. Handschoenen, overalls en schilden zitten er niet in. */
 export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'shoes'
 
-/** Een stuk armor uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
+/**
+ * Een stuk armor uit een NPC-winkel: wat hij vraagt (level, hoofdstat, DEX), wat hij aan WDEF geeft en wat hij kost.
+ * `luk` is de eis in de hoofdstat van de job: LUK voor een Thief, STR voor een Warrior (zie warriorGear.ts).
+ */
 export interface Armor {
   name: string
   slot: ArmorSlot
@@ -141,7 +144,10 @@ export interface PreciseStrikesLevel {
   critPct: number
 }
 
-/** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
+/**
+ * Een claw uit een NPC-winkel: wat hij vraagt (level, hoofdstat, DEX), wat hij geeft en wat hij kost. Een
+ * Warrior-wapen heeft dezelfde vorm (zie warriorGear.ts): `luk` is dan de STR-eis en `mult` de weapon multiplier.
+ */
 export interface Claw {
   name: string
   /** Het level dat je nodig hebt om hem te dragen. */
@@ -149,6 +155,8 @@ export interface Claw {
   watk: number
   /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
   speed: { label: string; attackMs: number }
+  /** Alleen bij een Warrior-wapen: de verwachte weapon multiplier van een basisaanval (60% zwaai, 40% steek). */
+  mult?: number
   luk: number
   dex: number
   price: number

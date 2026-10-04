@@ -16,6 +16,9 @@ import {
   type EquipEntry,
   type Equipment,
 } from './equipment'
+import { NPC_ARMOR } from './data/armor'
+import { NPC_CLAWS } from './data/claws'
+import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 
@@ -388,7 +391,8 @@ describe('loadEquipment en saveEquipment', () => {
 })
 
 describe('equipment per job', () => {
-  const others: Job[] = ['warrior', 'magician', 'bowman']
+  // De Warrior heeft sinds issue #42 wapens, hats en shoes; deze twee jobs hebben nog niets.
+  const others: Job[] = ['magician', 'bowman']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
   const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
@@ -456,5 +460,174 @@ describe('equipment per job', () => {
     const after = equipmentForJob(thiefShop, 'bowman')
     for (const s of slots) expect(wornStat(s, after[s]), s).toBeUndefined()
     expect(wornWdef(after)).toEqual({})
+  })
+})
+
+describe('equipment voor een Warrior', () => {
+  const slots = EQUIP_SLOTS.map((s) => s.slot)
+  const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
+  const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
+  const warriorShop: Equipment = { claw: shop('Gladius'), hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, shoes: shop('Bronze Grieves') }
+
+  describe('shopItems', () => {
+    it('geeft bij Weapon de NPC-wapens van de Warrior, met naam, level en weapon attack', () => {
+      const items = shopItems('claw', 'warrior')
+      expect(items).toHaveLength(NPC_WARRIOR_WEAPONS.length)
+      expect(items.map((i) => i.name)).toEqual(NPC_WARRIOR_WEAPONS.map((w) => w.name))
+      expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47 })
+      expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30 })
+    })
+
+    it('geeft bij Hat en Shoes de Warrior-armor, met WDEF als stat', () => {
+      const hats = shopItems('hat', 'warrior')
+      const shoes = shopItems('shoes', 'warrior')
+      expect(hats.map((i) => i.name)).toEqual(NPC_WARRIOR_ARMOR.filter((a) => a.slot === 'hat').map((a) => a.name))
+      expect(shoes.map((i) => i.name)).toEqual(NPC_WARRIOR_ARMOR.filter((a) => a.slot === 'shoes').map((a) => a.name))
+      expect(hats.find((i) => i.name === 'Bronze Full Helm')).toEqual({ name: 'Bronze Full Helm', level: 15, stat: 26 })
+      expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21 })
+    })
+
+    it('heeft voor een Warrior nog geen tops en broeken (#55): die lijsten zijn leeg', () => {
+      expect(shopItems('top', 'warrior')).toEqual([])
+      expect(shopItems('bottom', 'warrior')).toEqual([])
+    })
+
+    it('laat de Thief-lijsten zoals ze waren', () => {
+      expect(shopItems('claw', 'thief').map((i) => i.name)).toEqual(NPC_CLAWS.map((c) => c.name))
+      expect(shopItems('top', 'thief').length).toBeGreaterThan(0)
+      expect(shopItems('hat', 'thief').map((i) => i.name)).toContain('Red Thief Hood')
+    })
+
+    it('geeft Magician en Bowman nog niets', () => {
+      for (const s of slots) for (const j of ['magician', 'bowman'] as const) expect(shopItems(s, j), `${s} ${j}`).toEqual([])
+    })
+
+    it('heeft geen dubbele namen in een lijst en geen naam die in de Thief- en de Warrior-lijst van hetzelfde slot staat', () => {
+      // De keuze in het scherm wordt bewaard op naam, dus een dubbele naam zou het verkeerde item geven.
+      for (const s of slots) {
+        const warrior = shopItems(s, 'warrior').map((i) => i.name)
+        const thief = shopItems(s, 'thief').map((i) => i.name)
+        expect(new Set(warrior).size, `warrior ${s}`).toBe(warrior.length)
+        expect(new Set(thief).size, `thief ${s}`).toBe(thief.length)
+        expect(warrior.filter((n) => thief.includes(n)), s).toEqual([])
+      }
+      // Ook over de slots heen: wornStat zoekt per slot, maar een naam in twee slots zou verwarren.
+      const allWarrior = slots.flatMap((s) => shopItems(s, 'warrior').map((i) => i.name))
+      expect(new Set(allWarrior).size).toBe(allWarrior.length)
+    })
+  })
+
+  describe('wornStat en wornWdef', () => {
+    it('geven de WATK en WDEF van een Warrior-winkelitem', () => {
+      expect(wornStat('claw', shop('Gladius'))).toBe(47)
+      expect(wornStat('hat', shop('Bronze Full Helm'))).toBe(26)
+      expect(wornStat('shoes', shop('Bronze Grieves'))).toBe(18)
+      expect(wornWdef(warriorShop)).toEqual({ hat: 26, shoes: 18 })
+    })
+
+    it('geven nog steeds die van een Thief-winkelitem', () => {
+      expect(wornStat('claw', shop('Meba'))).toBe(19)
+      expect(wornStat('hat', shop('Red Thief Hood'))).toBe(NPC_ARMOR.find((a) => a.name === 'Red Thief Hood')!.wdef)
+    })
+
+    it('geven undefined voor een naam die in dat slot niet bestaat', () => {
+      expect(wornStat('hat', shop('Gladius'))).toBeUndefined()
+      expect(wornStat('claw', shop('Bronze Full Helm'))).toBeUndefined()
+    })
+  })
+
+  describe('applyEquipChange', () => {
+    const w = prof({ clawWatk: '30', attackMs: '750', weaponMult: '1.8', wdef: '60' })
+
+    it('zet bij een zwaard weapon attack, tijd per aanval en multiplier (Gladius: 47, 720 ms, 1,8)', () => {
+      expect(applyEquipChange(w, 'claw', unknown, shop('Gladius'))).toEqual({ ...w, clawWatk: '47', attackMs: '720', weaponMult: '1.8' })
+    })
+
+    it('zet bij een bijl de gemiddelde multiplier van zwaai en steek (Fireman Axe: 0,6 × 2,4 + 0,4 × 1,2 = 1,92)', () => {
+      const out = applyEquipChange(w, 'claw', shop('Gladius'), shop("Fireman's Axe"))
+      expect(out).toMatchObject({ clawWatk: '47', attackMs: '720', weaponMult: '1.92' })
+    })
+
+    it('zet bij een spear en een polearm ook het gemiddelde van de tijd van zwaai en steek', () => {
+      // Spear (lv 10): 0,6 × 870 + 0,4 × 810 = 846 ms; multiplier 0,6 × 1,5 + 0,4 × 3,5 = 2,3.
+      expect(applyEquipChange(w, 'claw', unknown, shop('Spear'))).toMatchObject({ clawWatk: '32', attackMs: '846', weaponMult: '2.3' })
+      // Pole Arm (lv 10, Slow 8): 0,6 × 900 + 0,4 × 870 = 888 ms; multiplier 0,6 × 3,5 + 0,4 × 1,5 = 2,7.
+      expect(applyEquipChange(w, 'claw', unknown, shop('Pole Arm'))).toMatchObject({ clawWatk: '35', attackMs: '888', weaponMult: '2.7' })
+    })
+
+    it('laat WDEF en de rest van het profiel staan bij een wapenwissel', () => {
+      const out = applyEquipChange(w, 'claw', unknown, shop('Gladius'))
+      expect(out.wdef).toBe('60')
+      expect(out.level).toBe(w.level)
+      expect(out.str).toBe(w.str)
+    })
+
+    it('laat bij een Thief-claw de weapon multiplier staan (de Thief heeft er geen)', () => {
+      const out = applyEquipChange({ ...w, weaponMult: '2.6' }, 'claw', unknown, shop('Meba'))
+      expect(out.weaponMult).toBe('2.6')
+      expect(out.clawWatk).toBe('19')
+    })
+
+    it('laat bij "Ander item" en "Niets" de aanvalssnelheid en de multiplier staan', () => {
+      const a = applyEquipChange({ ...w, weaponMult: '2.4' }, 'claw', shop('Gladius'), other('50'))
+      expect(a).toMatchObject({ clawWatk: '50', attackMs: '750', weaponMult: '2.4' })
+      const b = applyEquipChange({ ...w, weaponMult: '2.4' }, 'claw', shop('Gladius'), none)
+      expect(b).toMatchObject({ clawWatk: '0', attackMs: '750', weaponMult: '2.4' })
+    })
+
+    it('telt bij Warrior-armor alleen het verschil in WDEF (Bronze Full Helm 26 naar Bronze Football Helmet 30: +4)', () => {
+      expect(applyEquipChange(w, 'hat', shop('Bronze Full Helm'), shop('Bronze Football Helmet')).wdef).toBe('64')
+      expect(applyEquipChange(w, 'shoes', none, shop('Brown High Boots')).wdef).toBe('81')
+    })
+  })
+
+  describe('equipmentForJob en loadEquipment', () => {
+    it('zet bij een wissel van Thief naar Warrior elke Thief-winkelkeuze op "weet ik niet" en laat de rest staan', () => {
+      const eq: Equipment = { ...thiefShop, top: none, bottom: other('7', 'Mijn broek') }
+      const out = equipmentForJob(eq, 'warrior')
+      expect(out.claw).toEqual(unknown)
+      expect(out.hat).toEqual(unknown)
+      expect(out.shoes).toEqual(unknown)
+      expect(out.top).toEqual(none)
+      expect(out.bottom).toEqual(other('7', 'Mijn broek'))
+    })
+
+    it('houdt een Warrior-winkelkeuze bij een Warrior, en zet hem bij een wissel naar de Thief op "weet ik niet"', () => {
+      expect(equipmentForJob(warriorShop, 'warrior')).toEqual(warriorShop)
+      const out = equipmentForJob(warriorShop, 'thief')
+      expect(out.claw).toEqual(unknown)
+      expect(out.hat).toEqual(unknown)
+      expect(out.shoes).toEqual(unknown)
+    })
+
+    it('laat een Warrior-winkelkeuze voor Magician en Bowman ook "weet ik niet" zijn', () => {
+      for (const j of ['magician', 'bowman'] as const) {
+        const out = equipmentForJob(warriorShop, j)
+        for (const s of slots) expect(out[s], `${j} ${s}`).toEqual(unknown)
+      }
+    })
+
+    it('laadt een bewaarde Warrior-winkelkeuze voor een Warrior en niet voor een Thief', () => {
+      const data = { claw: { pick: 'Gladius' }, hat: { pick: 'Bronze Full Helm' }, shoes: { pick: 'Bronze Grieves' } }
+      const eq = loadEquipment(stored(data), 'warrior')
+      expect(eq.claw).toEqual(shop('Gladius'))
+      expect(eq.hat).toEqual(shop('Bronze Full Helm'))
+      expect(eq.shoes).toEqual(shop('Bronze Grieves'))
+      const t = loadEquipment(stored(data), 'thief')
+      expect(t.claw).toEqual(unknown)
+      expect(t.hat).toEqual(unknown)
+    })
+
+    it('laadt een bewaarde Thief-winkelkeuze niet voor een Warrior', () => {
+      const eq = loadEquipment(stored({ claw: { pick: 'Meba' }, top: { pick: 'Red Pao' } }), 'warrior')
+      expect(eq.claw).toEqual(unknown)
+      expect(eq.top).toEqual(unknown)
+    })
+
+    it('bewaart en laadt de Warrior-equipment heen en terug', () => {
+      const storage = fakeStorage()
+      expect(saveEquipment(storage, warriorShop)).toBe(true)
+      expect(loadEquipment(storage, 'warrior')).toEqual(warriorShop)
+    })
   })
 })

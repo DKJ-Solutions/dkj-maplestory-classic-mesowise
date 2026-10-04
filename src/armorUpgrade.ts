@@ -7,7 +7,8 @@
 // een stuk wordt gerekend als `wdef + stuk.wdef`, alsof dat slot nu leeg is. Dat is de grootst mogelijke
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:
 // je stats van nu blijven gelden over de hele horizon, de verkoopwaarde van je oude stuk telt niet mee en
-// het huidige level telt vol mee.
+// het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts (alleen hats
+// en shoes) en is de eis in de hoofdstat zijn STR.
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
@@ -15,8 +16,9 @@ import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { Armor, ArmorSlot } from './data/types'
 import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
-import type { Profile } from './profile'
+import { mainStatOf, type Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
+import { WARRIOR_ARMOR } from './warriorGear'
 
 const LAST_TABLE_LEVEL = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
 
@@ -41,7 +43,7 @@ export type WornWdef = Partial<Record<ArmorSlot, number>>
 /** Een stuk dat je level wel toestaat, maar waar je stats nog tekortschieten. */
 export interface UnwearableArmor {
   armor: Armor
-  /** Hoeveel LUK en DEX je tekortkomt (0 = genoeg). */
+  /** Hoeveel hoofdstat (LUK voor een Thief, STR voor een Warrior) en DEX je tekortkomt (0 = genoeg). */
   needLuk: number
   needDex: number
 }
@@ -69,9 +71,12 @@ export const withArmor = (p: Profile, a: Armor, replaced = 0): Profile => ({ ...
 /** Het stuk met de hoogste WDEF, bij gelijkspel het goedkoopste (voor het stuk dat je nog niet kunt dragen). */
 const bestOf = (list: readonly Armor[]): Armor | undefined => list.reduce<Armor | undefined>((best, a) => (!best || a.wdef > best.wdef || (a.wdef === best.wdef && a.price < best.price) ? a : best), undefined)
 
+/** De winkelarmor van de job van dit profiel. */
+const shopOf = (profile: Profile): readonly Armor[] => (profile.job === 'warrior' ? WARRIOR_ARMOR : NPC_ARMOR)
+
 /** De horizon van een stuk: van je level tot net vóór het volgende stuk met meer WDEF in hetzelfde slot, hoogstens de hele tabel. */
 function horizon(profile: Profile, armor: Armor): { from: number; to: number; truncated: boolean } {
-  const next = NPC_ARMOR.find((a) => a.slot === armor.slot && a.level > profile.level && a.wdef > armor.wdef)
+  const next = shopOf(profile).find((a) => a.slot === armor.slot && a.level > profile.level && a.wdef > armor.wdef)
   const end = next ? next.level - 1 : Infinity
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
 }
@@ -99,8 +104,9 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 
 export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, worn: WornWdef = {}): ArmorUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
-  const canWear = (a: Armor) => profile.luk >= a.luk && profile.dex >= a.dex
-  const available = NPC_ARMOR.filter((a) => a.level <= profile.level)
+  const mainStat = mainStatOf(profile)
+  const canWear = (a: Armor) => mainStat >= a.luk && profile.dex >= a.dex
+  const available = shopOf(profile).filter((a) => a.level <= profile.level)
   // Een stuk dat niet meer WDEF geeft dan wat je in dat slot draagt, is geen upgrade.
   const betterThanWorn = (a: Armor) => a.wdef > (worn[a.slot] ?? -Infinity)
   const wearable = available.filter((a) => canWear(a) && betterThanWorn(a))
@@ -110,7 +116,7 @@ export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profil
     const mine = bestOf(inSlot.filter(canWear))
     const blocked = bestOf(inSlot.filter((a) => !canWear(a)))
     if (blocked && blocked.wdef > Math.max(mine?.wdef ?? -Infinity, worn[slot] ?? -Infinity)) {
-      notWearable.push({ armor: blocked, needLuk: Math.max(0, blocked.luk - profile.luk), needDex: Math.max(0, blocked.dex - profile.dex) })
+      notWearable.push({ armor: blocked, needLuk: Math.max(0, blocked.luk - mainStat), needDex: Math.max(0, blocked.dex - profile.dex) })
     }
   }
   const main = adviseUnder(drafts, profile, wearable, worn, ASSUMPTIONS)

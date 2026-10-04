@@ -1,6 +1,6 @@
-// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven) haalt op een monster, en
-// wat hij daarbij per kill verbruikt. Puur, zonder UI-import. Overgenomen uit het mob-advies-model
-// in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
+// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven) of een Warrior (melee-wapen met
+// Power Strike) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
+// Overgenomen uit het mob-advies-model in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
 //
 // Een voorstel uit dit model is een SCHATTING. De formules komen uit de community voor het oude GMS
 // (vóór de Big Bang) en zijn niet in MapleStory Classic World zelf nagemeten.
@@ -32,6 +32,7 @@ export interface SkillStats {
 export interface Attack {
   min: number
   max: number
+  /** Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen. */
   stars: number
   mpPerAttack: number
 }
@@ -53,7 +54,10 @@ export interface MobStats {
 export const ASSUMPTIONS = {
   /** Het deel van de tijd dat je echt aanvalt, in plaats van lopen of wachten op respawn (0 tot 1). */
   timeEfficiency: 0.6,
-  /** Hoe vaak een monster je gemiddeld aanraakt per kill; met een claw meestal minder dan 1. */
+  /**
+   * Hoe vaak een monster je gemiddeld aanraakt per kill; met een claw meestal minder dan 1. Een Warrior vecht van
+   * dichtbij en wordt waarschijnlijk vaker geraakt, maar daar is geen bron voor: hij rekent met dezelfde waarde.
+   */
   contactsPerKill: 0.3,
 } as const
 
@@ -65,8 +69,11 @@ export type Assumptions = { timeEfficiency: number; contactsPerKill: number }
  */
 export const DANGER_SHARE = 0.25
 
-/** De gewone claw-aanval zonder Lucky Seven: 1 ster, multiplier 2.5, mastery (0/10 + 0.1) × 0.8. */
-const PLAIN_CLAW = { stars: 1, weaponMult: 2.5, mastery: 0.08 } as const
+/** De mastery van een gewone aanval op mastery-level 0: (0/10 + 0.1) × 0.8 (de damage-gids; de Warrior heeft in de 1e job geen mastery-skill). */
+const BASE_MASTERY = 0.08
+
+/** De gewone claw-aanval zonder Lucky Seven: 1 ster, multiplier 2.5, basis-mastery. */
+const PLAIN_CLAW = { stars: 1, weaponMult: 2.5, mastery: BASE_MASTERY } as const
 
 /**
  * Stap 1: de schade van één ster, van min tot max. Bron: de damage-formule van MeowDB
@@ -80,15 +87,28 @@ export function characterAttack(
   skill: SkillStats | null,
   luckySeven: { stars: number; weaponMult: number; mastery: number },
 ): Attack {
-  const k = skill ? skill.damagePct / 100 : 1
   const { stars, weaponMult, mastery } = skill ? luckySeven : PLAIN_CLAW
-  const secondary = c.str + c.dex
+  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, mastery), stars, mpPerAttack: skill ? skill.mp : 0 }
+}
+
+/** De min en max van de damage-formule (stap 1), voor een hoofdstat, een secundaire stat en een skill (null = de gewone aanval, K = 1). */
+function damageRange(skill: SkillStats | null, watk: number, primary: number, secondary: number, weaponMult: number, mastery: number) {
+  const k = skill ? skill.damagePct / 100 : 1
   return {
-    max: k * c.watk * (1 + (c.luk * weaponMult + secondary) / 100),
-    min: k * c.watk * (0.8 + (c.luk * mastery * weaponMult + secondary) / 100),
-    stars,
-    mpPerAttack: skill ? skill.mp : 0,
+    max: k * watk * (1 + (primary * weaponMult + secondary) / 100),
+    min: k * watk * (0.8 + (primary * mastery * weaponMult + secondary) / 100),
   }
+}
+
+/**
+ * De aanval van een Warrior met een melee-wapen: dezelfde formule als hierboven, met STR als hoofdstat en
+ * DEX als secundaire stat (de damage-gids, "Sword, Axe, Blunt, Spear, Polearm"). `weaponMult` is de
+ * verwachte multiplier van het wapen (0,6 × zwaai + 0,4 × steek, zie data/warrior.ts); min en max zijn lineair
+ * in de multiplier, dus het gemiddelde van de twee acties geeft precies de gemiddelde schade. `skill` is Power
+ * Strike op het gezette level, of null voor de gewone aanval. Eén klap per aanval, en geen munitie.
+ */
+export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMult: number, skill: SkillStats | null): Attack {
+  return { ...damageRange(skill, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**

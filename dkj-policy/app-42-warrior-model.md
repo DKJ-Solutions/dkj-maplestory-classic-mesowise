@@ -39,19 +39,45 @@
 
 ### PLAN
 
+Stap 2 van #42: het mob-model, het profiel, de level-up, de skillpunten, de equipment en het upgrade-advies
+rekenen met de Warrior-gegevens uit stap 1 (#57). Zichtbaar resultaat: Dave kijkt vóór de pull request.
+
+#### Modelkeuzes
+
+- Schade volgens de damage-gids: STR primair, DEX secundair, mastery 0,08, multiplier = 60/40 zwaai/steek.
+- Power Strike op zijn skill-level, anders de basisaanval; Slash Blast niet (geen gegevens over hoeveel mobs je raakt).
+- Geen munitie; MP van Power Strike in de potionkosten; accuracy uit `warriorAccuracy` plus Precise Strikes.
+- Improved HP Recovery, Max HP Increase en Iron Body niet doorgerekend (staan onder "Niet doorgerekend").
+- AP na een level-up niet verdeeld: geen bron voor de STR/DEX-verdeling; de hint vraagt het zelf te doen.
+- Aanname zonder bron: dezelfde `contactsPerKill` 0,3 als de Thief (genoteerd op #20).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Mob-model, profiel (`job`, `weaponMult`), level-up, skillpunten, equipment en wapen-/armor-upgrade voor de Warrior (Cody)
+- [x] #61 (een skillpunt wiste de velden van de andere job) gevonden en hier opgelost
+- [x] Reviewbevindingen van Victor en Edith verwerkt (munitieveld verborgen voor de Warrior, Engelse wapensoorten, hints)
 
 ### TEST
 
+- [x] Tests (Tycho): damage-gids-voorbeeld 60–172 en Power Strike 20 157–449, Thief ongewijzigd; `npx vitest run` 659 geslaagd, 1 verwacht gefaald (#52); `tsc --noEmit` schoon
+- [x] Review door Victor (code) en Edith (tekst)
+- [ ] Dave kijkt naar het scherm op telefoonbreedte
+
 ### DEPLOY: app/42-warrior-model
 
-**Score:**
+Een Warrior krijgt nu echte getallen in plaats van "Nog niet doorgerekend": kills en EXP per uur,
+potionkosten, de beste plek, wat een level kost, of een nieuw wapen of een nieuwe hoed of schoenen loont,
+en welk skillpunt (Power Strike of Precise Strikes) het meeste spaart. Je kiest je wapen uit de NPC-winkel,
+en het vult je weapon attack, aanvalssnelheid en multiplier in. Voor Top en Bottom zijn er nog geen
+winkelitems (#55). Magician en Bowman blijven "Nog niet doorgerekend".
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+Vrienden die een Warrior spelen kunnen de app nu echt gebruiken.
+
+**Score:** 3
 
 #### Pull Request
 
