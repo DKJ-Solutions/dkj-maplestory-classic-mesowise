@@ -396,8 +396,9 @@ function EquipmentCard(props: {
 const points = (n: number) => `${n} ${n === 1 ? 'punt' : 'punten'}`
 
 const JOBS = [
-  { job: 'Beginner', title: 'Beginner', source: BEGINNER_CLASS_SOURCE },
   { job: 'Thief', title: 'Thief (1e job)', source: THIEF_CLASS_SOURCE },
+  // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
+  { job: 'Beginner', title: 'Beginner', source: BEGINNER_CLASS_SOURCE },
 ] as const
 
 /**

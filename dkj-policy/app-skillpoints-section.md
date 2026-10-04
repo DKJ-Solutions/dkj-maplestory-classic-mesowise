@@ -55,6 +55,7 @@ niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten ove
 - [x] Cody: src/data/skills.ts; skillvelden in het profiel uit die data, verhuisd van Je karakter en het controlescherm naar de skillkaart, die nu invulbaar is; foutmelding bij de kaart van het foute veld
 - [x] Tycho: tests voor de data, de nieuwe skillvelden en een bewaard profiel van vóór de wijziging (424 groen)
 - [x] Victor en Edith: review ronde 2; skillkaart ook op het controlescherm (anders liep je vast op een fout skillveld), één geëxporteerde STAT_FIELDS, Lucky Seven uit de samenvatting van je karakter, "0 is nog niet geleerd", een datum per bron
+- [x] Dave: de Beginner-skills helemaal onderin de kaart
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
