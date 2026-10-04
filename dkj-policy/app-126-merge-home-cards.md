@@ -65,7 +65,7 @@ mob question he chose the mob over the spot (#122: "mob is het belangrijkste omd
 - [x] `src/app.test.tsx`: one card with the three questions in order, three chips and an MP line (Magician);
       equipment names wands and staffs; the advice screen asks the mob question; "gezet" shows on the screen you are on
 - [x] `npx vitest run` (1208 passed), `npm run lint` and `scripts/lint/lint.ps1` green
-- [ ] Dave looks at the card at phone width
+- [x] Dave looked at the card and approved it ("ship it")
 
 ### DEPLOY: app/126-merge-home-cards
 
@@ -87,5 +87,3 @@ instead of a level cost and two loose cards that disappeared when there was noth
 #### Pull Request
 
 Merge the level cost and the equipment, mob and skill-point advice into one home card
-
-<!-- resolves: #126, #122 -->
