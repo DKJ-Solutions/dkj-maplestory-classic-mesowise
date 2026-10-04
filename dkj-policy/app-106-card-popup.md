@@ -39,19 +39,42 @@
 
 ### PLAN
 
+Dave (October 4, 2026, #106): the cards stop being dropdowns. The chevron becomes an eye icon, and tapping
+it shows what the dropdown used to show, in a popup.
+
+- [x] Scope: Ability points, Total stats, Je equipment, Skillpoints and every spot card. The equipment card on
+  the level-up check screen was open by default there; it now shows its content directly on the card, since a
+  popup that opens by itself would cover the "Alles klopt" button.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `CardHead` (eye icon, `aria-haspopup="dialog"`) and `CardPopup` (on the existing `StatDialog`);
+  `Collapse`, `CollapseFoot` and their CSS removed
+- [x] Cody: `StatDialog` takes `focusInput` (off for card popups, so a search box does not open its list on its
+  own) and `className`; the card's error message also shows inside the popup
+- [x] Tycho: tests updated for content that only exists while the popup is open; new tests for the eye and
+  popup, closing and focus return, a kept pick after reopening, a new spot opening in its popup, and the
+  inline equipment on the check screen
 
 ### TEST
 
+- [x] `npm test`: 982 green; `scripts/lint/lint.ps1` clean; `npm run build` green
+- [x] Victor (code) and Edith (Dutch) reviewed the diff
+
 ### DEPLOY: app/106-card-popup
 
-**Score:**
+The cards no longer fold open. Each card head ends in an eye icon, and tapping it shows the card's content
+in a popup (a bottom sheet on a phone); the cross closes it and puts the focus back on the card. A new spot
+opens straight into its popup. On the level-up check screen the equipment stays directly on the card.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Dave and his friends see the cards change: the content opens in a popup behind an eye icon instead of
+folding open under the card.
+
+**Score:** 3
 
 #### Pull Request
 
