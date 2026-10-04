@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Dave, October 4, 2026: a player always knows what they wear, and always wears something, so the
+equipment dropdown loses "Weet ik niet" and "Niets". The internal not-yet-filled-in state stays (shown
+as a disabled "Kies wat je draagt"), because filling a slot in for the first time must leave the
+profile WDEF alone: that piece is already in the stat window total.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `equipment.ts`: drop `NONE`; a stored `none` loads as not filled in
+- [x] `app.tsx`: dropdown without both options, disabled placeholder while a slot is unfilled; armor-advice texts no longer name "Weet ik niet"
+- [x] "was" badge shows a shop item's own name (it fell through to "Ander item")
 
 ### TEST
 
+- [x] `equipment.test.ts` updated; 404 tests green, typecheck green
+- [ ] Victor (code) and Edith (UI text) review
+- [ ] Dave looks at the equipment card at phone width before the merge
+
 ### DEPLOY: app/equipment-always-worn
 
-**Score:**
+The equipment card no longer offers "Weet ik niet" or "Niets": every slot is either a shop item or
+"Ander item". A slot that has not been filled in yet shows a disabled "Kies wat je draagt" until you
+pick, and filling it in for the first time still leaves your WDEF as it was. A slot saved earlier as
+"Niets" comes back as not filled in. The "was" badge now names the shop item you wore instead of
+"Ander item".
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player picks what they actually wear and is never offered a choice that cannot be true.
+
+**Score:** 2
 
 #### Pull Request
 
