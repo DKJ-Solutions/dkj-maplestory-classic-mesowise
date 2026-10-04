@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**16 / 27 minor entries** <!-- pending-tally -->
+**16 / 28 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/42-warrior · 20261004-093317Z
+
+De Warrior heeft nu eigen spelgegevens, elk met zijn bron: de wapens en armor uit de NPC-winkels voor level
+10 tot 30, Power Strike en Slash Blast per level, de passieve skills, HP en MP per level, de accuracy-formule
+en de regel dat een gewone aanval voor 60% zwaait en voor 40% steekt. In de app verandert nog niets: de
+Warrior blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Tops en bottoms ontbreken
+nog, want die zijn in de winkel alleen voor mannen (#55).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Warrior-gegevens met bronnen: wapens, armor, skills, HP/MP en accuracy (stap 1 van #42)
+
+[PR #57](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/57)
+
+---
 
 ### DEPLOY: app/kaarten-zelfde-design · 20261004-092948Z
 
