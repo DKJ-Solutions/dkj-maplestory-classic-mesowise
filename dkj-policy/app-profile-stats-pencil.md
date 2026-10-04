@@ -56,9 +56,9 @@ corrected, as on the equipment card. And the attack time moves to the equipment 
 ### TEST
 
 - [x] Component tests updated and added: save only after Opslaan/Enter, discard on close, + steps, no inputs outside the popup, the four stats absent
-- [x] `npx vitest run` (603 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [x] `npx vitest run` (604 green), `npm run lint`, `scripts/lint/lint.ps1` clean
 - [x] Code review (Victor) and proofread of the UI text (Edith): shared `stepValue` helper, typed hidden-stat set, an attackMs test and neutral popup comments taken in; merging the duplicated popup body filed as #63
-- [ ] Code review of the expected-value step (Victor)
+- [x] Code review of the expected-value step (Victor): the error of weapon attack, WDEF and attack time now shows on the equipment card (with a test); ranged ammo filed as #65
 - [ ] Dave looks at the result at phone width before the merge
 
 ### DEPLOY: app/profile-stats-pencil

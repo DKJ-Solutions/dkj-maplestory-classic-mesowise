@@ -386,6 +386,18 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Accuracy').querySelector('s')).toBeNull()
   })
 
+  it('toont een ongeldige tijd per aanval op de equipment-kaart, niet op de karakterkaart', () => {
+    openHomeEquipment()
+    const h = openStat('Tijd per aanval (ms)')
+    h.type('50')
+    h.save()
+    expect(cards()[0].classList.contains('invalid')).toBe(true)
+    expect(cards()[0].querySelector('.error')?.textContent).not.toBe('')
+    const profile = panels()[0].querySelector('section.profile')!
+    expect(profile.classList.contains('invalid')).toBe(false)
+    expect(profile.querySelector('.error')?.textContent).toBe('')
+  })
+
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('LUK')
