@@ -73,10 +73,20 @@ describe('equipment: de claw past het profiel aan', () => {
     expect((within(panels()[0]).getByLabelText('Tijd per aanval (ms)') as HTMLInputElement).value).toBe(String(IGOR.speed.attackMs))
   })
 
-  it('zet de naam van wat je draagt in de kaartkop', () => {
+  it('houdt in de kaartkop alleen de titel, ook als je iets draagt', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(within(cards()[0]).getByRole('button', { name: /Je equipment/ }).textContent).toContain(`Je draagt: ${IGOR.name}.`)
+    expect(within(cards()[0]).getByRole('button', { name: /Je equipment/ }).textContent?.trim()).toBe('Je equipment')
+  })
+
+  it('klapt onderaan in met Inklappen, en zet de focus daarna op de kop', async () => {
+    openHomeEquipment()
+    const head = within(cards()[0]).getByRole('button', { name: /Je equipment/ })
+    expect(head.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Inklappen' }))
+    expect(head.getAttribute('aria-expanded')).toBe('false')
+    await new Promise((done) => requestAnimationFrame(() => done(undefined)))
+    expect(document.activeElement).toBe(head)
   })
 
   it('zet bij "Niets" de weapon attack op 0 en laat de aanvalssnelheid staan', () => {
