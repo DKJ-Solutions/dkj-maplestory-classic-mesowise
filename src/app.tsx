@@ -1,5 +1,5 @@
 import type { ComponentChildren, Ref, RefObject } from 'preact'
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
 import type { NotBestReason } from './calc/pickBest'
 import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, entryChanged, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, NONE, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -458,9 +458,145 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
   )
 }
 
-/** Hoe een keuze in een slot heet: voor in de "was"-badge. */
-const entryLabel = (e: EquipEntry): string =>
-  e.pick === UNKNOWN ? 'Weet ik niet' : e.pick === NONE ? 'Niets' : (e.name.trim() || 'Ander item')
+/**
+ * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
+ * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
+ */
+function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPick: (pick: string, name?: string) => void }) {
+  const { slot, entry } = props
+  const id = useId()
+  const input = useRef<HTMLInputElement>(null)
+  // null: je typt niet, de balk is dicht; anders de tekst in de balk en staat de lijst open.
+  const [text, setText] = useState<string | null>(null)
+  const [active, setActive] = useState(0)
+  const open = text !== null
+  const typed = (text ?? '').trim()
+  const found = searchCatalog(slot, props.job, typed)
+  const stat = statName(slot)
+  // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
+  const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
+  const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
+  ]
+  const choose = (row: { pick: string; name?: string }) => {
+    props.onPick(row.pick, row.name)
+    setText(null)
+    input.current?.blur()
+  }
+  const move = (to: number) => {
+    if (!open) {
+      setText('')
+      setActive(0)
+    } else if (rows.length > 0) setActive((to + rows.length) % rows.length)
+  }
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      move(active + (e.key === 'ArrowDown' ? 1 : -1))
+    } else if (e.key === 'Enter' && open && rows[active]) {
+      e.preventDefault()
+      choose(rows[active])
+    } else if (e.key === 'Escape' && open) {
+      e.preventDefault()
+      setText(null)
+    }
+  }
+  const picked = wornName(entry)
+  const slotLabel = EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+  return (
+    <div class="equip-search">
+      {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
+      {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
+          de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
+      {!open && picked !== null && (
+        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+          {picked}
+        </button>
+      )}
+      <input
+        ref={input}
+        class={!open && picked !== null ? 'under' : undefined}
+        tabIndex={!open && picked !== null ? -1 : undefined}
+        aria-hidden={!open && picked !== null ? true : undefined}
+        type="text"
+        role="combobox"
+        aria-label={`Zoek je ${slotLabel}`}
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && rows[active] ? `${id}-${active}` : undefined}
+        autoComplete="off"
+        autoCapitalize="off"
+        spellcheck={false}
+        enterKeyHint="done"
+        maxLength={MAX_EQUIP_NAME}
+        placeholder={wornName(entry) ?? 'Zoek wat je draagt'}
+        value={text ?? wornName(entry) ?? ''}
+        onFocus={() => {
+          setText('')
+          setActive(0)
+        }}
+        onBlur={() => setText(null)}
+        onInput={(e) => {
+          setText((e.currentTarget as HTMLInputElement).value)
+          setActive(0)
+        }}
+        onKeyDown={onKeyDown}
+      />
+      {open && rows.length > 0 && (
+        // mousedown niet laten blurren: anders sluit de lijst voordat de tik als keuze aankomt.
+        <ul class="equip-list" id={`${id}-list`} role="listbox" onMouseDown={(e) => e.preventDefault()}>
+          {rows.map((r, n) => (
+            <li key={r.pick + (r.name ?? '')} id={`${id}-${n}`} role="option" aria-selected={n === active} class={[n === active ? 'active' : '', r.pick === OTHER ? 'own' : ''].join(' ').trim() || undefined} onClick={() => choose(r)}>
+              <span class="equip-name">{r.label}</span>
+              {r.meta && ' '}
+              {r.meta && <span class="equip-meta">{r.meta}</span>}
+            </li>
+          ))}
+          {found.length > MAX_RESULTS && <li role="presentation" class="more">Typ meer om te zoeken.</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/**
+ * De popup om een stat te corrigeren: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
+ * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
+ */
+function StatDialog(props: { title: string; onCancel: () => void; children: ComponentChildren }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const d = ref.current
+    d?.showModal()
+    // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
+    if (window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
+    return () => d?.close()
+  }, [])
+  return (
+    <dialog
+      ref={ref}
+      class="stat-dialog"
+      aria-label={props.title}
+      onCancel={(e) => {
+        e.preventDefault()
+        props.onCancel()
+      }}
+      onClick={(e) => e.target === ref.current && props.onCancel()}
+    >
+      <div class="stat-dialog-body">
+      <div class="stat-dialog-head">
+        <strong>{props.title}</strong>
+        <button type="button" class="stat-dialog-close" aria-label="Sluiten zonder opslaan" onClick={props.onCancel}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
+        </button>
+      </div>
+      {props.children}
+      </div>
+    </dialog>
+  )
+}
 
 /**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
@@ -470,21 +606,25 @@ function EquipmentCard(props: {
   job: Job
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
-  /** Wat in het getalveld van "Ander item" staat maar nog niet is vastgelegd; telt nergens mee. */
+  /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
-  hint: string
+  hint?: string
   /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
   defaultOpen: boolean
-  onPick: (slot: EquipSlot, pick: string) => void
-  onName: (slot: EquipSlot, name: string) => void
+  onPick: (slot: EquipSlot, pick: string, name?: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
-  /** Het getalveld legt zich vast (blur of Enter). */
+  /** Het concept uit het corrigeervak wordt vastgelegd (Opslaan of Enter). */
   onCommit: (slot: EquipSlot) => void
+  /** Het concept in het corrigeervak weggooien (sluiten zonder opslaan). */
+  onDiscard: (slot: EquipSlot) => void
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
   const head = useRef<HTMLButtonElement>(null)
   const computed = isComputed(props.job)
+  const uid = useId()
+  // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
+  const [editing, setEditing] = useState<EquipSlot | null>(null)
   return (
     <section class="card equipment">
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -495,49 +635,85 @@ function EquipmentCard(props: {
       </button>
       <Collapse open={open}>
         <div class="spot-body">
-          <p class="hint">{computed ? props.hint : 'Kies bij een slot "Ander item" en vul de stat in van wat je draagt.'}</p>
-          {computed && (
-            <p class="hint">
-              Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid{props.job === 'warrior' ? ' en weapon multiplier' : ''} zoals {props.job === 'warrior' ? 'ze waren' : 'hij was'}. Vul die zo nodig zelf in bij je karakter.
-            </p>
-          )}
-          {props.job === 'warrior' && <p class="hint">Voor een Warrior heeft de app bij Top en Bottom nog geen winkelitems: kies "Ander item" als je er een draagt.</p>}
+          {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
+          {computed ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
-            const stat = slot === 'claw' ? 'WATK' : 'WDEF'
-            const onPick = (e: Event) => props.onPick(slot, (e.currentTarget as HTMLSelectElement).value)
+            const stat = statName(slot)
+            const db = databaseStat(slot, entry)
+            const own = statOverride(slot, entry)
+            const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
+            // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
+            const value = wornStat(slot, entry)
+            const isEditing = editing === slot
+            // Het corrigeervak werkt met een concept (pending): - en +, typen en Reset veranderen pas iets na Opslaan.
+            const reset = () => props.onStatInput(slot, String(db ?? ''))
+            const draft = props.pending[slot]
+            const saved = draft === undefined ? null : commitStat(slot, entry, draft)
+            const dirty = saved !== null && saved.stat !== entry.stat
+            const saveDraft = () => {
+              props.onCommit(slot)
+              setEditing(null)
+            }
+            const step = (by: number) => {
+              const n = Number(shown.trim())
+              props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
+            }
             return (
-              <div class="equip-row" key={slot}>
-                <label class="field">
-                  <span>
-                    {label}
-                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
-                  </span>
-                  <select value={entry.pick} onChange={onPick}>
-                    <option value={UNKNOWN}>Weet ik niet</option>
-                    <option value={NONE}>Niets</option>
-                    {shopItems(slot, props.job).map((i) => (
-                      <option key={i.name} value={i.name}>
-                        {i.name} (lv {i.level}, {stat} {i.stat})
-                      </option>
-                    ))}
-                    <option value={OTHER}>Ander item</option>
-                  </select>
-                </label>
-                {entry.pick === OTHER && (
-                  <div class="equip-other">
-                    <label class="field">
-                      <span>Naam (mag leeg)</span>
-                      <input type="text" maxLength={MAX_EQUIP_NAME} value={entry.name} onInput={(e) => props.onName(slot, (e.currentTarget as HTMLInputElement).value)} />
-                    </label>
-                    <label class="field">
-                      <span>{stat}</span>
-                      <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? entry.stat}
-                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                        onChange={() => props.onCommit(slot)}
-                      />
-                    </label>
+              <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
+                <div class="field equip-head">
+                  <span class="slot-name">{label}</span>
+                  <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
+                </div>
+                {entry.pick !== UNKNOWN && (
+                  <div class="equip-stats">
+                    <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
+                      <span class="equip-value-num">
+                        {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
+                        <strong>{value ?? '?'}</strong>
+                      </span>
+                      <span class="equip-value-head" aria-hidden="true">{stat}</span>
+                    </div>
+                    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${stat} corrigeren`} onClick={() => setEditing(slot)}>
+                      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                    </button>
+                    {isEditing && (
+                      // Corrigeren: - en + en typen maken een concept; Opslaan (of Enter) legt het vast. Tik je op het getal, dan is
+                      // het geselecteerd en vervangt wat je typt het hele getal.
+                      <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
+                        {db !== undefined && <p class="stat-dialog-db">Verwacht volgens de database: <strong>{db}</strong></p>}
+                        <span class="stat-dialog-label" id={`${uid}-${slot}-game`}>{stat} in game</span>
+                        <div class="equip-step">
+                          <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+                          <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
+                            value={shown}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                saveDraft()
+                              }
+                            }}
+                          />
+                          <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+                        </div>
+                        <div class="stat-dialog-actions">
+                          {db !== undefined && (saved ?? entry).stat !== '' && (
+                            <button type="button" class="equip-reset" aria-label={`Reset naar ${db}`} onClick={reset}>
+                              Reset
+                            </button>
+                          )}
+                          {dirty && (
+                            <button type="button" class="equip-save" onClick={saveDraft}>
+                              Opslaan
+                            </button>
+                          )}
+                        </div>
+                      </StatDialog>
+                    )}
                   </div>
                 )}
               </div>
@@ -911,10 +1087,9 @@ const SLOT_NAME = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.slot, s.label])) 
 type ArmorAdvice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
 const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof het slot leeg is. */
+/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen WDEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ', als je in dat slot nu niets draagt.'
-  if (equipment[win.armor.slot].pick === NONE) return '.'
+  if (win.replaces === undefined) return ' in plaats van je huidige stuk (WDEF onbekend).'
   return ` in plaats van je ${wornName(equipment[win.armor.slot]) ?? 'huidige stuk'}.`
 }
 
@@ -937,7 +1112,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
     <>
       <p class="hint">
         {a.choices.some((c) => c.replaces === undefined) &&
-          'Waar je "Weet ik niet" hebt gekozen, is gerekend alsof je in dat slot nu niets draagt: dat is de grootste besparing die een stuk kan geven. Draag je er al iets, dan is de winst kleiner. '}
+          'Waar de app niet weet hoeveel WDEF je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder WDEF), is gerekend alsof het geen WDEF geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel WDEF, dan is de winst kleiner. '}
         Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
       </p>
       {first && (
@@ -981,7 +1156,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
             ? 'Geen stuk dat je kunt dragen en beter is dan wat je al draagt.'
             : unknown
               ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
-              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet als je in een slot met "Weet ik niet" nu niets draagt' : ''}.`}
+              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet waar de app je huidige stuk rekent alsof het geen WDEF geeft' : ''}.`}
         </p>
       )}
       {a.notWearable.map((u) => (
@@ -1211,7 +1386,7 @@ export function App() {
   const equipmentDirty = useRef(false)
   // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
   // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
-  // render verliezen zo niets. Een getal dat nog getypt wordt bij "Ander item" staat apart in `pending`.
+  // render verliezen zo niets. Een getal dat nog getypt wordt bij een eigen item staat apart in `pending`.
   const profileRef = useRef(profileDraft)
   const equipmentRef = useRef(equipment)
   const pendingRef = useRef<Partial<Record<EquipSlot, string>>>({})
@@ -1277,7 +1452,7 @@ export function App() {
   }
 
   const levelUp = () => {
-    // Eerst wat nog in een getalveld staat, dan pas rekenen: alles uit de refs, niet uit deze render.
+    // Eerst een nog niet opgeslagen concept uit het corrigeervak, dan pas rekenen: alles uit de refs, niet uit deze render.
     commitAllEquipment()
     if (applyLevelUp(profileRef.current, job) === profileRef.current) return
     setPlaced(null)
@@ -1340,22 +1515,17 @@ export function App() {
     writeProfile((p) => applyEquipChange(p, slot, before, after))
     writeEquipment({ ...equipmentRef.current, [slot]: after })
   }
-  const pickEquipment = (slot: EquipSlot, pick: string) => {
+  const pickEquipment = (slot: EquipSlot, pick: string, name?: string) => {
     setPendingFor(slot, undefined)
-    applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick))
+    applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick, name))
   }
-  // De naam raakt het profiel niet.
-  const nameEquipment = (slot: EquipSlot, name: string) => {
-    writeEquipment({ ...equipmentRef.current, [slot]: { ...equipmentRef.current[slot], name } })
-  }
-  // Een leeg of ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde.
+  // Een ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde (zie commitStat).
   const commitEquipment = (slot: EquipSlot) => {
     const text = pendingRef.current[slot]
     if (text === undefined) return
     setPendingFor(slot, undefined)
-    const cur = equipmentRef.current[slot]
-    if (cur.pick !== OTHER || text.trim() === '' || !Number.isFinite(Number(text))) return
-    applyEntry(slot, { ...cur, stat: text })
+    const next = commitStat(slot, equipmentRef.current[slot], text)
+    if (next) applyEntry(slot, next)
   }
   const commitAllEquipment = () => EQUIP_SLOTS.forEach(({ slot }) => commitEquipment(slot))
   // Een andere job: winkelitems die hij niet heeft, worden "weet ik niet". Het profiel blijft staan.
@@ -1418,12 +1588,16 @@ export function App() {
               job={job}
               equipment={equipment}
               defaultOpen={false}
-              hint={`Wat je hier zet, rekent mee in het advies. Je weapon vult je weapon attack en aanvalssnelheid in${job === 'warrior' ? ', bij een Warrior ook de weapon multiplier' : ''}, armor past je WDEF aan.`}
+              hint={
+                job === 'warrior'
+                  ? 'Je weapon vult ook je weapon multiplier in. Voor Top en Bottom kent de app nog geen items: typ de naam, kies "als eigen item" en vul de stat in.'
+                  : undefined
+              }
               pending={pending}
               onPick={pickEquipment}
-              onName={nameEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
+              onDiscard={(slot) => setPendingFor(slot, undefined)}
             />
 
             <ProfileCard job={job} draft={profileDraft} error={statError} onChange={updateProfile} />
@@ -1523,12 +1697,12 @@ export function App() {
               hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
               pending={pending}
               onPick={pickEquipment}
-              onName={nameEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
+              onDiscard={(slot) => setPendingFor(slot, undefined)}
             />
             <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-            {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
+            {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
             <button
               type="button"
               class="btn primary"

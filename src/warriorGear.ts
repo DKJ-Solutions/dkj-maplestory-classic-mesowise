@@ -1,6 +1,7 @@
-// De Warrior-winkelgegevens (data/warrior.ts) in de vorm van de Thief-lijsten (Claw en Armor), zodat het
-// equipment-scherm en de upgrade-adviezen ze op dezelfde manier kunnen lezen. De eis in de hoofdstat (STR)
-// staat in het veld `luk`: dat veld heet zo omdat de Thief begon, en betekent "hoofdstat". Puur, zonder UI-import.
+// De Warrior-winkelgegevens (data/warrior.ts, eigen types met `str`) in de vorm van de Thief-lijsten (Claw en
+// Armor, op de gedeelde ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde manier
+// kunnen lezen. Alleen hier, aan de rand van die adviezen, staat de STR-eis nog in het veld `luk` ("hoofdstat");
+// de data zelf noemt hem `str`. Puur, zonder UI-import.
 import type { Armor, Claw, WarriorWeaponKind } from './data/types'
 import { averageAttackMs, effectiveMultiplier, MULT, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 

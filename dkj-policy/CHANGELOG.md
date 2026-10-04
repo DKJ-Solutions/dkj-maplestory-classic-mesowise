@@ -2,7 +2,87 @@
 
 ## [Unreleased]
 
-**16 / 28 minor entries** <!-- pending-tally -->
+**17 / 31 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/43-magician · 20261004-100326Z
+
+De Magician heeft nu eigen spelgegevens, elk met zijn bron: de staffen en wands en de armor uit de NPC-winkels
+voor level 10 tot 30, Energy Bolt en Magic Claw per level, Magic Guard, Magic Armor en de MP-passieven, HP en
+MP per level, de accuracy-formule en de Orange en Lemon als goedkoopste MP. In de app verandert nog niets: de
+Magician blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. De drie goedkoopste wands
+(geen jobregel) en de tops, broeken en robes voor één geslacht ontbreken nog (#55, #50).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician-gegevens met bronnen: wapens, armor, skills en HP/MP (stap 1 van #43)
+
+[PR #62](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/62)
+
+---
+
+### DEPLOY: app/equipment-always-worn · 20261004-095327Z
+
+The equipment card no longer offers "Weet ik niet" or "Niets": a player always wears something. Each
+slot is now a search bar: type the name of what you wear and pick it from the list, which covers the
+shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
+items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
+own item. Each slot is one row: the item name, the ATT (weapon) or DEF (armor) that counts, and a pencil,
+with a line between the slots. The value comes from the database until you correct it: the pencil opens a
+popup (a sheet at the bottom of a phone) that shows the expected value ("Verwacht volgens de database")
+and the value in your game ("ATT in game" or "DEF in game") with − and + buttons (tap the number to type
+over it). "Reset" puts the database value back, and an "Opslaan" button appears once the value differs;
+closing without it discards the change. A corrected value is outlined, with the expected value small and
+struck through beside it; the value from your game always overrules the expected one. A slot not filled
+in yet shows a search prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
+"Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player finds what they wear by searching, among far more items than the shop sells, and can correct
+the value when the database is off.
+
+**Score:** 3
+
+#### Pull Request
+
+Equipment: search for what you wear, with a correctable stat and the Thief items up to level 30
+
+[PR #59](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/59)
+
+---
+
+### DEPLOY: data/56-shared-speed-and-item-types · 20261004-094949Z
+
+Intern opgeruimd: de aanvalssnelheden staan voor alle klassen in één tabel en de winkelitems delen één
+basistype, zodat de Magician en Bowman ze niet opnieuw kopiëren. In de app verandert niets; geen getal of
+bron is gewijzigd. Het voorkomt dat één snelheidslabel bij twee klassen een andere aanvalstijd krijgt, en
+daarmee een andere EXP per uur.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Eén tabel voor de aanvalssnelheden en één basistype voor winkelitems (#56)
+
+[PR #60](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/60)
+
+---
 
 ### DEPLOY: data/42-warrior · 20261004-093317Z
 

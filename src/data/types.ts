@@ -60,21 +60,32 @@ export interface KnownSpot {
 /** Het deel van je lichaam waar een stuk armor hoort. Handschoenen, overalls en schilden zitten er niet in. */
 export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'shoes'
 
-/**
- * Een stuk armor uit een NPC-winkel: wat hij vraagt (level, hoofdstat, DEX), wat hij aan WDEF geeft en wat hij kost.
- * `luk` is de eis in de hoofdstat van de job: LUK voor een Thief, STR voor een Warrior (zie warriorGear.ts).
- */
-export interface Armor {
+/** Wat elk ding uit een NPC-winkel heeft: een naam, het level om het te dragen, de prijs in meso en de bron. */
+export interface ShopItem {
   name: string
-  slot: ArmorSlot
-  /** Het level dat je nodig hebt om hem te dragen. */
+  /** Het level dat je nodig hebt om het te dragen. */
   level: number
-  wdef: number
-  luk: number
-  dex: number
   price: number
   source: Source
 }
+
+/** De stat-eisen van een item: `Requires<'luk' | 'dex'>` is { luk: number; dex: number }. Een eis die de pagina niet noemt staat als 0. */
+export type Requires<Stat extends 'str' | 'dex' | 'int' | 'luk'> = Record<Stat, number>
+
+/** Een stuk armor uit een NPC-winkel zonder de stat-eisen (slot en WDEF); die komen per klas erbij. */
+export interface ShopArmor extends ShopItem {
+  slot: ArmorSlot
+  wdef: number
+}
+
+/** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
+export interface Armor extends ShopArmor, Requires<'luk' | 'dex'> {}
+
+/** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
+export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
+
+/** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
+export type WornClaw = Pick<Claw, 'name' | 'level' | 'watk' | 'speed' | 'source'>
 
 /** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
 export type WarriorWeaponKind =
@@ -91,14 +102,9 @@ export type WarriorWeaponKind =
  * Een wapen uit een NPC-winkel dat een Warrior kan dragen: wat het vraagt (level, STR, DEX), wat het geeft
  * en wat het kost. Een eis die de pagina niet noemt staat als 0.
  */
-export interface WarriorWeapon {
-  name: string
+export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
   kind: WarriorWeaponKind
-  /** Het level dat je nodig hebt om het te dragen. */
-  level: number
   watk: number
-  str: number
-  dex: number
   /**
    * De aanvalssnelheid zoals het spel hem noemt en de "Attack cycle" van de pagina, zonder Booster.
    * Zwaard, bijl en stomp hebben een cyclus voor alles (`attackMs`). Spear en polearm hebben er twee:
@@ -107,21 +113,42 @@ export interface WarriorWeapon {
   speed: { label: string; attackMs: number; stabMs?: number }
   /** De weapon multipliers van de basisaanval (zwaaien en steken). */
   mult: { swing: number; stab: number }
-  price: number
-  source: Source
 }
 
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
-export interface WarriorArmor {
-  name: string
-  slot: ArmorSlot
-  /** Het level dat je nodig hebt om het te dragen. */
+export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}
+
+/** De soort Magician-wapen. */
+export type MagicianWeaponKind = 'wand' | 'staff'
+
+/**
+ * Een wand of staff uit een NPC-winkel: wat hij vraagt (level, INT, LUK), wat hij geeft (weapon attack en
+ * magic attack) en wat hij kost. Een eis die de pagina niet noemt staat als 0. Spreuken gebruiken `matk`, niet `watk`.
+ */
+export interface MagicianWeapon extends ShopItem, Requires<'int' | 'luk'> {
+  kind: MagicianWeaponKind
+  watk: number
+  matk: number
+  /** De aanvalssnelheid zoals de itempagina hem geeft: het label en de "Attack cycle" in ms. */
+  speed: { label: string; attackMs: number }
+}
+
+/** Een stuk Magician-armor uit een NPC-winkel: wat het vraagt (level, INT, LUK), wat het aan WDEF en MDEF geeft en wat het kost. */
+export interface MagicianArmor extends ShopArmor, Requires<'int' | 'luk'> {
+  mdef: number
+}
+
+/** Een spreuk per skill-level (Energy Bolt, Magic Claw): zoals Lucky Seven, plus de spell mastery in procent-stappen van de pagina. */
+export interface SpellLevel extends SkillLevel {
+  mastery: number
+}
+
+/** Magic Armor per skill-level: de vaste extra WDEF en MDEF (hetzelfde getal), wat de buff aan MP kost en hoe lang hij duurt. */
+export interface MagicArmorLevel {
   level: number
-  wdef: number
-  str: number
-  dex: number
-  price: number
-  source: Source
+  def: number
+  mp: number
+  seconds: number
 }
 
 /** Slash Blast per skill-level: zoals Lucky Seven (MP en schade in procent), plus de HP die elke aanval kost. */
@@ -145,20 +172,13 @@ export interface PreciseStrikesLevel {
 }
 
 /**
- * Een claw uit een NPC-winkel: wat hij vraagt (level, hoofdstat, DEX), wat hij geeft en wat hij kost. Een
- * Warrior-wapen heeft dezelfde vorm (zie warriorGear.ts): `luk` is dan de STR-eis en `mult` de weapon multiplier.
+ * Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. De upgrade-adviezen
+ * lezen ook een Warrior-wapen in deze vorm (zie warriorGear.ts): `luk` is dan de STR-eis en `mult` de weapon multiplier.
  */
-export interface Claw {
-  name: string
-  /** Het level dat je nodig hebt om hem te dragen. */
-  level: number
+export interface Claw extends ShopItem, Requires<'luk' | 'dex'> {
   watk: number
   /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
   speed: { label: string; attackMs: number }
   /** Alleen bij een Warrior-wapen: de verwachte weapon multiplier van een basisaanval (60% zwaai, 40% steek). */
   mult?: number
-  luk: number
-  dex: number
-  price: number
-  source: Source
 }
