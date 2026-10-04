@@ -10,6 +10,9 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { applyEquipChange, choosePick, entryChanged, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, NONE, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { NPC_ARMOR } from './data/armor'
+import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
@@ -61,6 +64,18 @@ function Field(props: {
   )
 }
 
+/**
+ * De inhoud van een inklapbare kaart: schuift open en dicht in plaats van te verspringen. Dicht blijft de
+ * inhoud in de pagina staan (zodat hij kan wegschuiven), maar is dan niet bereikbaar met Tab of een schermlezer.
+ */
+function Collapse(props: { open: boolean; children: ComponentChildren }) {
+  return (
+    <div class={`collapse${props.open ? ' open' : ''}`} inert={!props.open} aria-hidden={!props.open}>
+      <div class="collapse-inner">{props.children}</div>
+    </div>
+  )
+}
+
 function ProfileCard(props: {
   draft: ProfileDraft
   error: string | null
@@ -81,14 +96,14 @@ function ProfileCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {open && (
+      <Collapse open={open}>
         <div class="spot-body">
           {PROFILE_FIELDS.map((f) => (
             <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
           ))}
           <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>
         </div>
-      )}
+      </Collapse>
     </section>
   )
 }
@@ -283,6 +298,99 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
   )
 }
 
+/** Hoe een keuze in een slot heet: voor in de "was"-badge. */
+const entryLabel = (e: EquipEntry): string =>
+  e.pick === UNKNOWN ? 'Weet ik niet' : e.pick === NONE ? 'Niets' : (e.name.trim() || 'Ander item')
+
+/**
+ * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
+ * WDEF aan (zie equipment.ts). `was` is de toestand van vóór de level-up; wat daarvan afwijkt krijgt een badge.
+ */
+function EquipmentCard(props: {
+  /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
+  equipment: Equipment
+  /** Wat in het getalveld van "Ander item" staat maar nog niet is vastgelegd; telt nergens mee. */
+  pending: Partial<Record<EquipSlot, string>>
+  was?: Equipment
+  hint: string
+  /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
+  defaultOpen: boolean
+  onPick: (slot: EquipSlot, pick: string) => void
+  onName: (slot: EquipSlot, name: string) => void
+  onStatInput: (slot: EquipSlot, text: string) => void
+  /** Het getalveld legt zich vast (blur of Enter). */
+  onCommit: (slot: EquipSlot) => void
+}) {
+  const [open, setOpen] = useState(props.defaultOpen)
+  const worn = wornSummary(props.equipment)
+  return (
+    <section class="card equipment">
+      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name">Je equipment</span>
+        <span class="spot-exp">{worn.length > 0 ? `Je draagt: ${listFormat.format(worn)}.` : 'Je hebt nog niets ingevuld.'}</span>
+      </button>
+      <Collapse open={open}>
+        <div class="spot-body">
+          <p class="hint">{props.hint}</p>
+          <p class="hint">Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          {EQUIP_SLOTS.map(({ slot, label }) => {
+            const entry = props.equipment[slot]
+            const before = props.was?.[slot]
+            const stat = slot === 'claw' ? 'WATK' : 'WDEF'
+            const onPick = (e: Event) => props.onPick(slot, (e.currentTarget as HTMLSelectElement).value)
+            return (
+              <div class="equip-row" key={slot}>
+                <label class="field">
+                  <span>
+                    {label}
+                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
+                  </span>
+                  <select value={entry.pick} onChange={onPick}>
+                    <option value={UNKNOWN}>Weet ik niet</option>
+                    <option value={NONE}>Niets</option>
+                    {shopItems(slot).map((i) => (
+                      <option key={i.name} value={i.name}>
+                        {i.name} (lv {i.level}, {stat} {i.stat})
+                      </option>
+                    ))}
+                    <option value={OTHER}>Ander item</option>
+                  </select>
+                </label>
+                {entry.pick === OTHER && (
+                  <div class="equip-other">
+                    <label class="field">
+                      <span>Naam (mag leeg)</span>
+                      <input type="text" maxLength={MAX_EQUIP_NAME} value={entry.name} onInput={(e) => props.onName(slot, (e.currentTarget as HTMLInputElement).value)} />
+                    </label>
+                    <label class="field">
+                      <span>{stat}</span>
+                      <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? entry.stat}
+                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                        onChange={() => props.onCommit(slot)}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          <p class="source">
+            Claws:{' '}
+            <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
+              NiaMeowDB
+            </a>
+            , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Armor:{' '}
+            <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+              NiaMeowDB
+            </a>
+            , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
+          </p>
+        </div>
+      </Collapse>
+    </section>
+  )
+}
+
 function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
   const onChange = (e: Event) => props.onChange(knownSpotPatch((e.currentTarget as HTMLSelectElement).value))
   return (
@@ -450,7 +558,7 @@ function SpotCard(props: {
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
-      {open && (
+      <Collapse open={open}>
         <div class="spot-body">
           <KnownSpotPicker value={known?.id ?? ''} onChange={props.onChange} />
           {known && <KnownSpotInfo spot={known} />}
@@ -480,7 +588,7 @@ function SpotCard(props: {
             Verwijderen
           </button>
         </div>
-      )}
+      </Collapse>
     </li>
   )
 }
@@ -520,13 +628,21 @@ function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadi
   )
 }
 
-const SLOT_NL: Record<ArmorSlot, string> = { hat: 'hoed', top: 'bovenstuk', bottom: 'broek', shoes: 'schoenen' }
+/** De naam van een slot zoals het spel hem noemt (Hat, Top, ...), dezelfde als in de equipment-kaart. */
+const SLOT_NAME = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.slot, s.label])) as Record<ArmorSlot, string>
 
 type ArmorAdvice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
 const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
 const armorMissing = (u: UnwearableArmor) =>
   [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+
+/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof het slot leeg is. */
+function replaceClause(win: ArmorChoice, equipment: Equipment): string {
+  if (win.replaces === undefined) return ', als je in dat slot nu niets draagt.'
+  if (equipment[win.armor.slot].pick === NONE) return '.'
+  return ` in plaats van je ${wornName(equipment[win.armor.slot]) ?? 'huidige stuk'}.`
+}
 
 /** Wat het winnende stuk armor oplevert, in een zin. */
 function ArmorWinnerLine(props: { win: ArmorChoice }) {
@@ -546,8 +662,9 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
   return (
     <>
       <p class="hint">
-        Gerekend alsof je in het slot van het stuk nu niets draagt: dat is de grootste besparing die het stuk kan geven. Draag je er al
-        iets, dan is de winst kleiner. Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
+        {a.choices.some((c) => c.replaces === undefined) &&
+          'Waar je "Weet ik niet" hebt gekozen, is gerekend alsof je in dat slot nu niets draagt: dat is de grootste besparing die een stuk kan geven. Draag je er al iets, dan is de winst kleiner. '}
+        Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
       </p>
       {first && (
         <p class="source">
@@ -563,7 +680,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
 }
 
 /** Defense: loont een nieuw stuk armor uit de winkel? Per slot het stuk dat het meeste netto oplevert. */
-function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost }) {
+function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment }) {
   const a = props.advice
   const title = 'Moet ik mijn defense nu upgraden?'
   if (a.kind === 'none') {
@@ -580,22 +697,22 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost }) {
       {win ? (
         <>
           <p class="verdict">
-            Koop {win.armor.name} ({SLOT_NL[win.armor.slot]}), als je in dat slot nu niets draagt.
+            Koop {win.armor.name} ({SLOT_NAME[win.armor.slot]}){replaceClause(win, props.equipment)}
           </p>
           <ArmorWinnerLine win={win} />
         </>
       ) : (
         <p class="verdict">
           {a.choices.length === 0
-            ? 'Geen stuk dat je kunt dragen.'
+            ? 'Geen stuk dat je kunt dragen en beter is dan wat je al draagt.'
             : unknown
               ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
-              : 'Geen stuk verdient zich terug vóór je volgende upgrade, ook niet als je in dat slot nu niets draagt.'}
+              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet als je in een slot met "Weet ik niet" nu niets draagt' : ''}.`}
         </p>
       )}
       {a.notWearable.map((u) => (
         <p class="hint" key={u.armor.name}>
-          {u.armor.name} ({SLOT_NL[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
+          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
         </p>
       ))}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -796,6 +913,15 @@ export function App() {
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
+  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage))
+  const equipmentDirty = useRef(false)
+  // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
+  // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
+  // render verliezen zo niets. Een getal dat nog getypt wordt bij "Ander item" staat apart in `pending`.
+  const profileRef = useRef(profileDraft)
+  const equipmentRef = useRef(equipment)
+  const pendingRef = useRef<Partial<Record<EquipSlot, string>>>({})
+  const [pending, setPending] = useState<Partial<Record<EquipSlot, string>>>({})
 
   useEffect(() => {
     if (dirty.current) saveSpots(storage, drafts)
@@ -803,12 +929,15 @@ export function App() {
   useEffect(() => {
     if (profileDirty.current) saveProfile(storage, profileDraft)
   }, [profileDraft])
+  useEffect(() => {
+    if (equipmentDirty.current) saveEquipment(storage, equipment)
+  }, [equipment])
 
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
   const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
-  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile), [drafts, profile])
+  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment)), [drafts, profile, equipment])
   const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
   const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
@@ -816,7 +945,7 @@ export function App() {
   // maak-gegevens blijven in het geheugen: het profiel van voor de level-up en de beste plek van toen.
   const [step, setStep] = useState<Step>(0)
   const [settled, setSettled] = useState<Step>(0)
-  const [undo, setUndo] = useState<{ draft: ProfileDraft; best: BestSpot | null } | null>(null)
+  const [undo, setUndo] = useState<{ draft: ProfileDraft; equipment: Equipment; best: BestSpot | null } | null>(null)
   const headings = useRef<(HTMLElement | null)[]>([null, null, null])
   const moved = useRef(false)
   // De bevestiging na "Punt zetten", zodat een dubbele tik zichtbaar is.
@@ -851,24 +980,25 @@ export function App() {
   }
 
   const levelUp = () => {
-    if (!canLevelUp) return
+    // Eerst wat nog in een getalveld staat, dan pas rekenen: alles uit de refs, niet uit deze render.
+    commitAllEquipment()
+    if (applyLevelUp(profileRef.current) === profileRef.current) return
     setPlaced(null)
-    setUndo({ draft: profileDraft, best: bestSpotOf(verdict) })
-    profileDirty.current = true
-    setProfileDraft(applyLevelUp(profileDraft))
+    setUndo({ draft: profileRef.current, equipment: equipmentRef.current, best: bestSpotOf(verdict) })
+    writeProfile(applyLevelUp)
     go(1)
   }
   const finish = () => go(0)
   const undoLevelUp = () => {
     if (undo) {
-      profileDirty.current = true
-      setProfileDraft(undo.draft)
+      writeProfile(() => undo.draft)
+      writeEquipment(undo.equipment)
+      clearPending()
     }
     finish()
   }
   const applyPoint = (choice: SkillChoice) => {
-    profileDirty.current = true
-    setProfileDraft((p) => applySkillPoint(p, choice.id))
+    writeProfile((p) => applySkillPoint(p, choice.id))
     setPlaced(`${choice.name} → ${choice.to} gezet.`)
   }
   const levelUpped = applyLevelUp(profileDraft)
@@ -878,14 +1008,59 @@ export function App() {
   const changes = undo ? levelUpChanges(undo.draft, applyLevelUp(undo.draft)) : null
   const huntingAdvice = useMemo(() => huntingGroundAdvice(undo?.best ?? null, verdict, profile), [undo, verdict, profile])
 
+  // Het profiel bijwerken: de ref loopt voor op de render, zodat een tweede event niets overschrijft.
+  const writeProfile = (change: (p: ProfileDraft) => ProfileDraft) => {
+    profileDirty.current = true
+    profileRef.current = change(profileRef.current)
+    setProfileDraft(profileRef.current)
+  }
   const update = (id: string, patch: Partial<SpotDraft>) => {
     dirty.current = true
     setDrafts((list) => list.map((d) => (d.id === id ? { ...d, ...patch } : d)))
   }
   const updateProfile = (patch: Partial<ProfileDraft>) => {
-    profileDirty.current = true
-    setProfileDraft((p) => ({ ...p, ...patch }))
+    writeProfile((p) => ({ ...p, ...patch }))
   }
+  const writeEquipment = (next: Equipment) => {
+    equipmentDirty.current = true
+    equipmentRef.current = next
+    setEquipment(next)
+  }
+  const setPendingFor = (slot: EquipSlot, text: string | undefined) => {
+    const next = { ...pendingRef.current }
+    if (text === undefined) delete next[slot]
+    else next[slot] = text
+    pendingRef.current = next
+    setPending(next)
+  }
+  const clearPending = () => {
+    pendingRef.current = {}
+    setPending({})
+  }
+  // Een wissel past ook het profiel aan (weapon attack, aanvalssnelheid of WDEF), zodat het advies meteen klopt.
+  const applyEntry = (slot: EquipSlot, after: EquipEntry) => {
+    const before = equipmentRef.current[slot]
+    writeProfile((p) => applyEquipChange(p, slot, before, after))
+    writeEquipment({ ...equipmentRef.current, [slot]: after })
+  }
+  const pickEquipment = (slot: EquipSlot, pick: string) => {
+    setPendingFor(slot, undefined)
+    applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick))
+  }
+  // De naam raakt het profiel niet.
+  const nameEquipment = (slot: EquipSlot, name: string) => {
+    writeEquipment({ ...equipmentRef.current, [slot]: { ...equipmentRef.current[slot], name } })
+  }
+  // Een leeg of ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde.
+  const commitEquipment = (slot: EquipSlot) => {
+    const text = pendingRef.current[slot]
+    if (text === undefined) return
+    setPendingFor(slot, undefined)
+    const cur = equipmentRef.current[slot]
+    if (cur.pick !== OTHER || text.trim() === '' || !Number.isFinite(Number(text))) return
+    applyEntry(slot, { ...cur, stat: text })
+  }
+  const commitAllEquipment = () => EQUIP_SLOTS.forEach(({ slot }) => commitEquipment(slot))
   const toggle = (id: string) => {
     setOrder(rankedIds(drafts, profile))
     setOpenId(openId === id ? null : id)
@@ -929,6 +1104,17 @@ export function App() {
                 Beste plek: <strong>{placeName(cost.spotName)}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
               </p>
             )}
+
+            <EquipmentCard
+              equipment={equipment}
+              defaultOpen={false}
+              hint="Wat je hier zet, rekent mee in het advies. Je weapon vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
+              pending={pending}
+              onPick={pickEquipment}
+              onName={nameEquipment}
+              onStatInput={(slot, text) => setPendingFor(slot, text)}
+              onCommit={commitEquipment}
+            />
 
             <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
 
@@ -1002,7 +1188,27 @@ export function App() {
                 {'error' in parsed ? parsed.error : null}
               </p>
             </div>
-            <button type="button" class="btn primary" onClick={() => go(2)} disabled={!profile}>
+            <EquipmentCard
+              equipment={equipment}
+              was={undo?.equipment}
+              defaultOpen
+              hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
+              pending={pending}
+              onPick={pickEquipment}
+              onName={nameEquipment}
+              onStatInput={(slot, text) => setPendingFor(slot, text)}
+              onCommit={commitEquipment}
+            />
+            {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
+            <button
+              type="button"
+              class="btn primary"
+              onClick={() => {
+                commitAllEquipment()
+                go(2)
+              }}
+              disabled={!profile}
+            >
               Alles klopt, toon advies
             </button>
             <button type="button" class="btn back" onClick={undoLevelUp}>
@@ -1016,7 +1222,7 @@ export function App() {
             </h2>
             <AdviceHeader cost={cost} />
             <ClawQuestion advice={clawAdvice} cost={cost} />
-            <ArmorQuestion advice={armorAdvice} cost={cost} />
+            <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
             <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
             <button
