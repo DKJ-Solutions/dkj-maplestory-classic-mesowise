@@ -243,6 +243,8 @@ describe('maxHpAfterPoint', () => {
     expect(maxHpAfterPoint(1120, 3)).toBe(1130)
     // Level 14 (23%) naar 15 (25%): 1 230 / 1,23 x 1,25 = 1 250.
     expect(maxHpAfterPoint(1230, 14)).toBe(1250)
+    // Op het maximum (15) is er geen volgend level: de Max HP blijft gelijk.
+    expect(maxHpAfterPoint(1250, 15)).toBe(1250)
   })
 
   it('rondt naar beneden af', () => {

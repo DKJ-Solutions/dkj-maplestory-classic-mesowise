@@ -72,7 +72,7 @@ const preciseAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS[level 
  * De skills van de 1e job van een Warrior die het model kan doorrekenen. Power Strike telt als de aanval van
  * elke klap. Van Precise Strikes telt alleen de accuracy; de extra kans op een critical hit niet, want de
  * damage-gids noemt geen schade voor een crit (de voorzichtige keuze: het punt lijkt dan minder waard dan het is).
- * Max HP Increase telt als Max HP (of één tik gevaarlijk is), Iron Body als DEF met de MP om hem aan te houden (issue #139).
+ * Max HP Increase telt als Max HP en bepaalt zo of één tik gevaarlijk is, Iron Body als DEF met de MP om hem aan te houden (issue #139).
  */
 export const WARRIOR_MODELLED: readonly Skill[] = [
   {

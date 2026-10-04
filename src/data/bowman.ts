@@ -239,7 +239,7 @@ export const FOCUS_LEVELS: readonly FocusLevel[] = Array.from({ length: 20 }, (_
     seconds: [70, 130, 195, 260][block] + (i % 5) * 10,
   }
 })
-/** Het The Eye of Amazon-level dat Focus vraagt (de skillpagina). */
+/** Het level van The Eye of Amazon dat Focus vraagt (de skillpagina). */
 export const FOCUS_REQUIRES_EYE_OF_AMAZON = 3
 
 /**

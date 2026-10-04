@@ -1060,21 +1060,33 @@ const SKILL_GROUPS = [
 
 /**
  * De MP die een skill per keer kost op het gezette level (issue #83), en daaronder die van het volgende level, zodat
- * je ziet wat een punt verandert (issue #138). Verandert de skill een total (DEF, accuracy, evasion, Max HP, crit), dan
- * staat wat hij geeft ernaast (issue #139): wat je betaalt met een −, wat je ervoor terugkrijgt met een +. Op level 0 is hij nog niet geleerd, op het maximum is er geen volgend
- * level. Leeg als het veld geen geldig level is: dat meldt het veld zelf al. `wdef` is de DEF uit je profiel (voor Iron Body).
+ * je ziet wat een punt verandert (issue #138). Verandert de skill een total (DEF, Accuracy, Evasion, Max HP, Max MP,
+ * Crit. Rate), dan staat wat hij geeft ernaast (issue #139): wat je betaalt met een −, wat je terugkrijgt met een +.
+ * Op level 0 is hij nog niet geleerd, op het maximum is er geen volgend level. Leeg als het veld geen geldig level is:
+ * dat meldt het veld zelf al. `wdef` is de DEF uit je profiel (voor Iron Body).
  */
-function skillMpLines(s: SkillLevel, wdef: number | null): string[] {
+function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
   if (s.level === null) return []
   const level = s.level
   const effect = (l: number) => skillEffectText(s.key, l, wdef)
   const passive = skillMpAt(s, 1) === null
-  if (passive && effect(1) === null) return ['Passief, kost geen MP']
+  if (passive && effect(1) === null) return [[{ text: 'Passief, kost geen MP' }]]
   // Een passief: wat hij geeft. Een skill met MP: de MP, en wat hij geeft als hij een total verandert.
-  const line = (l: number, mp: string) => (passive ? effect(l)! : [mp, effect(l)].filter(Boolean).join(', '))
-  const now = level === 0 ? 'Nu: niet geleerd' : `Nu: ${line(level, `−${skillMpAt(s, level)} MP per keer`)}`
-  const lines = passive ? ['Passief, kost geen MP', now] : [now]
-  return level < s.max ? [...lines, `Volgend level: ${line(level + 1, `−${skillMpAt(s, level + 1)} MP`)}`] : lines
+  const line = (label: string, l: number, mp: string): SkillLinePart[] => {
+    const gain = effect(l)
+    const parts: SkillLinePart[] = passive ? [] : [{ text: mp, tone: 'cost' }]
+    if (gain !== null) parts.push(...(parts.length ? [{ text: ', ' }] : []), { text: gain, tone: 'gain' })
+    return [{ text: label }, ...parts]
+  }
+  const now = level === 0 ? [{ text: 'Nu: niet geleerd' }] : line('Nu: ', level, `−${skillMpAt(s, level)} MP per keer`)
+  const lines = passive ? [[{ text: 'Passief, kost geen MP' }], now] : [now]
+  return level < s.max ? [...lines, line('Volgend level: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : lines
+}
+
+/** Een stuk van een regel onder een skill: wat hij kost (rood), wat hij geeft (groen), of gewone tekst. */
+interface SkillLinePart {
+  text: string
+  tone?: 'cost' | 'gain'
 }
 
 /**
@@ -1122,7 +1134,9 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                       {s.name}
                       <small class="skill-mp">
                         {skillMpLines(s, wdef).map((line) => (
-                          <span key={line}>{line}</span>
+                          <span key={line.map((p) => p.text).join('')}>
+                            {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
+                          </span>
                         ))}
                       </small>
                     </span>

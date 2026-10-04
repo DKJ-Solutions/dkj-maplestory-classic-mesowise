@@ -1029,6 +1029,10 @@ describe('een Warrior in de app', () => {
       // Level 5 geeft 9% (floor(5,4) = +5), level 6 geeft 10% (+6).
       fireEvent.input(input('Iron Body'), { target: { value: '5' } })
       expect(lines('Iron Body')).toEqual(['Nu: −15 MP per keer, +5 DEF (9%)', 'Volgend level: −15 MP, +6 DEF (10%)'])
+      // Wat het kost is rood (.cost), wat het geeft groen (.gain); "Nu: " en de komma niet.
+      const toned = (tone: string) => [...row('Iron Body').querySelectorAll(`.skill-mp .${tone}`)].map((p) => p.textContent)
+      expect(toned('cost')).toEqual(['−15 MP per keer', '−15 MP'])
+      expect(toned('gain')).toEqual(['+5 DEF (9%)', '+6 DEF (10%)'])
       // Een passief met een effect: dat staat onder "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
       fireEvent.input(input('Precise Strikes'), { target: { value: '2' } })
       expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])

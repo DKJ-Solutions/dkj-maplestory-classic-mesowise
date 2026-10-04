@@ -53,7 +53,10 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
   say of what; total DEF is the assumption.
 - **Max HP Increase is a percent of base HP** (the data comment); a point scales the stat-window HP by
   (100 + new%) / (100 + old%). It counts through the "dangerous" check, which steers the best spot.
-- **Card: cost with a −, gain with a +** (the requester, mid-build): "Nu: −15 MP per keer, +10 DEF (5%)".
+- **Card: cost with a − in red, gain with a + in green** (the requester, mid-build): "Nu: −15 MP per keer, +10 DEF (5%)".
+  New tokens `--cost` and `--gain`, light and dark.
+- **Max HP Increase scales the whole stat-window Max HP** (equipment and AP included); the page does not say of what.
+  It only reaches the "dangerous" check, so an overstatement there is small (Victor).
 - **Out of scope:** crit (Precise Strikes, Critical Shot): there is no crit damage in the damage guide, so it is only
   shown. Improved HP/MP Recovery's potion bonus is not a total: filed as #141.
 
@@ -63,22 +66,31 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
 - [x] `toCharacter` adds the buffs; `hourPlan` adds the buffs' upkeep MP
 - [x] Advice weighs Max HP Increase, Iron Body, Magic Armor and Focus, each behind its prerequisite level
 - [x] Prerequisite levels in the data files, checked against the four skill pages (Vera, October 4, 2026)
-- [x] Skillpoints card shows the effect now and at the next level, cost with − and gain with +
+- [x] Skillpoints card shows the effect now and at the next level, cost with − in red and gain with + in green
 
 ### TEST
 
-- [ ] Tycho: updated and new tests, lint + vitest green
-- [ ] Victor: code review
-- [ ] Edith: the Dutch on the card
+- [x] Tycho: 8 tests updated, 38 added (1263 to 1301); lint gate and vitest green
+- [x] Victor: no blockers; max-level guard on `maxHpAfterPoint` and the HP assumption written down, taken along
+- [x] Edith: no blockers; five comment wordings taken along
 - [ ] Dave looks at the card at phone width (visible result)
 
 ### DEPLOY: app/139-skill-stat-effects
 
-**Score:**
+Skills that change a total now count in the calculation. Iron Body, Magic Armor and Focus are buffs: the model
+assumes they are always on, adds their DEF, accuracy and evasion to the character, and charges the MP to keep them
+up to the MP potions. Max HP Increase counts as Max HP. The skill-point advice weighs all four, each behind the skill
+level it requires. The Skillpoints card shows what a skill gives next to its MP, now and at the next level, with the
+cost as a red − and the gain as a green +. New module `src/skillEffects.ts`.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+The skill-point advice now weighs the defensive skills too. Magic Armor can be the best point for a Magician, and
+the card shows what each point costs and what it gives back, in red and green.
+
+**Score:** 3
 
 #### Pull Request
 

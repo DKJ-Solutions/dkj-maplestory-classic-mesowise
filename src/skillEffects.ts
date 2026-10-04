@@ -13,7 +13,7 @@ import { NIMBLE_BODY } from './data/thief'
 import { IRON_BODY_LEVELS, MAX_HP_INCREASE, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import type { Profile } from './profile'
 
-/** Wat een buff op dit level geeft; undefined op level 0 (niet geleerd) of buiten de tabel. */
+/** De rij van de tabel voor dit level; undefined op level 0 (niet geleerd) of buiten de tabel. */
 const at = <T>(levels: readonly T[], level: number): T | undefined => (level >= 1 ? levels[level - 1] : undefined)
 
 /** De WDEF die Iron Body bovenop deze WDEF geeft: een procent ervan, naar beneden afgerond. */
@@ -91,8 +91,13 @@ export function skillEffectText(key: SkillKey, level: number, wdef: number | nul
   }
 }
 
-/** Max HP na een punt in Max HP Increase: de basis (je Max HP zonder de skill) maal het nieuwe procent, naar beneden afgerond. */
+/**
+ * Max HP na een punt in Max HP Increase: de basis (je Max HP zonder de skill) maal (100 + het nieuwe procent) / 100, naar
+ * beneden afgerond. Als basis telt je hele Max HP uit het statvenster zonder de skill, ook wat equipment en AP geven: de
+ * skillpagina zegt niet waarvan het procent is. Op het maximum verandert er niets.
+ */
 export function maxHpAfterPoint(hp: number, from: number): number {
+  if (from >= MAX_HP_INCREASE.maxHpPct.length) return hp
   const pct = (level: number) => at(MAX_HP_INCREASE.maxHpPct, level) ?? 0
   return Math.floor((hp * (100 + pct(from + 1))) / (100 + pct(from)))
 }
