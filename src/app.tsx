@@ -8,11 +8,12 @@ import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spo
 import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, type SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
-import type { ArmorSlot, KnownSpot } from './data/types'
+import type { ArmorSlot, KnownSpot, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
+import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS, SPELL_CAST_MS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
@@ -26,7 +27,7 @@ import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gen
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, MAGICIAN_MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -480,6 +481,14 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
           en elke aanval verbruikt er één.
         </p>
       )}
+      {job === 'magician' && (
+        <p class="hint">
+          De app rekent per monster met de spreuk die de minste potions per EXP kost: Energy Bolt of Magic Claw, naar wat je hebt geleerd. Een cast duurt
+          altijd {SPELL_CAST_MS.normal} ms. Een wand of staff uit je equipment vult je M.ATT in. Voor je MP rekent de app met de MP-potion {MAGICIAN_MP_POTION.name} (niet de Orange Potion voor HP).
+          Een Magician heeft geen munitie. Een monster heeft in de gegevens maar één verdediging; de app gebruikt die ook tegen spreuken. Magic Claw raakt
+          2 keer per cast, met de schade van de skillpagina per klap.
+        </p>
+      )}
       {job === 'warrior' && (
         <>
           <p class="hint">
@@ -556,6 +565,10 @@ const SKILL_SOURCES = {
     { name: 'Precise Strikes', source: PRECISE_STRIKES_SOURCE },
   ],
   bowman: [{ name: 'Arrow Blow', source: ARROW_BLOW_SOURCE }],
+  magician: [
+    { name: 'Energy Bolt', source: ENERGY_BOLT_SOURCE },
+    { name: 'Magic Claw', source: MAGIC_CLAW_SOURCE },
+  ],
 }
 
 /** Waar je skillpunt de meeste mesos bespaart (issue #26). */
@@ -597,7 +610,7 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
       )}
       {a.maxed.length > 0 && <p class="hint">Al op het maximum: {listFormat.format(a.maxed)}.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
-      {SKILL_SOURCES[computedJob(props.job)].map((s) => (
+      {SKILL_SOURCES[props.job].map((s) => (
         <p class="source" key={s.name}>
           {s.name}:{' '}
           <a href={s.source.url} target="_blank" rel="noopener noreferrer">
@@ -613,10 +626,7 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
 /** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
 const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-/** De jobs waarvoor de app rekent, als sleutel van de teksten per job; een andere job (Magician) valt terug op de Thief. */
-const computedJob = (job: Job): 'thief' | 'warrior' | 'bowman' => (job === 'warrior' || job === 'bowman' ? job : 'thief')
-
-/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior en de Bowman een wapen (een ander lidwoord en een andere uitgang). */
+/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior, de Bowman en de Magician een wapen (een ander lidwoord en een andere uitgang). */
 const WEAPON_TEXT = {
   thief: {
     title: 'Loont een nieuwe claw?',
@@ -657,8 +667,21 @@ const WEAPON_TEXT = {
     prices: 'Wapenprijzen',
     noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
   },
+  magician: {
+    title: 'Loont een nieuwe wand of staff?',
+    noBetter: 'Geen wand of staff die je kunt dragen en die beter is dan de jouwe.',
+    noBetterQuestion: 'Geen betere wand of staff die je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de wands en staffs niet doorrekenen.',
+    notYet: 'Nog niet: geen wand of staff verdient zich terug vóór je volgende upgrade.',
+    noPayback: 'Geen wand of staff verdient zich terug vóór je volgende upgrade.',
+    toWear: 'deze wand of staff',
+    old: 'je oude wapen',
+    unpriced: 'Wapens zonder vaste winkelprijs, of waarvan de bron geen Mage als job noemt, telt de app niet. Als beter telt een wapen met meer M.ATT: een spreuk duurt altijd even lang.',
+    prices: 'Wapenprijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
+  },
 } as const
-const weaponText = (job: Job) => WEAPON_TEXT[computedJob(job)]
+const weaponText = (job: Job) => WEAPON_TEXT[job]
 
 /** Wat je tekortkomt om een wapen of stuk armor te dragen, als tekst: "5 STR en 10 DEX" (de hoofdstat eerst). */
 const missingStats = (u: UnwearableClaw | UnwearableArmor) => u.needs.map((n) => `${n.amount} ${n.stat.toUpperCase()}`).join(' en ')
@@ -757,7 +780,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
   const open = text !== null
   const typed = (text ?? '').trim()
   const found = searchCatalog(slot, props.job, typed)
-  const stat = statName(slot)
+  const stat = statName(slot, props.job)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
@@ -931,7 +954,7 @@ function EquipmentCard(props: {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
-            const stat = statName(slot)
+            const stat = statName(slot, props.job)
             const db = databaseStat(slot, entry)
             const own = statOverride(slot, entry)
             const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
@@ -1022,6 +1045,19 @@ function EquipmentCard(props: {
               , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
             </p>
           )}
+          {props.job === 'magician' && (
+            <p class="source">
+              Wands en staffs:{' '}
+              <a href={NPC_MAGICIAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_MAGICIAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
+              <a href={NPC_MAGICIAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_MAGICIAN_ARMOR[0].source.retrieved)}.
+            </p>
+          )}
           {props.job === 'thief' && (
             <p class="source">
               Claws:{' '}
@@ -1049,6 +1085,7 @@ function EquipmentCard(props: {
 const SKILL_GROUPS = [
   { job: 'Warrior', title: 'Warrior (1e job)' },
   { job: 'Bowman', title: 'Bowman (1e job)' },
+  { job: 'Magician', title: 'Magician (1e job)' },
   { job: 'Thief', title: 'Thief (1e job)' },
   // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
   { job: 'Beginner', title: 'Beginner' },
@@ -1160,6 +1197,9 @@ function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotD
   )
 }
 
+/** De naam van een potion met wat hij herstelt, zodat de Orange (MP) van de Orange Potion (HP) te onderscheiden is. */
+const potionLabel = (p: Potion) => `${p.name} (${p.mp > 0 ? 'MP' : 'HP'})`
+
 /** Het monster kiezen, met het voorstel van het model en de waarschuwingen. */
 function MonsterSuggestionBlock(props: {
   suggestions: readonly MonsterSuggestion[]
@@ -1184,7 +1224,7 @@ function MonsterSuggestionBlock(props: {
       </label>
       <p class="hint">
         Voorstel: ± {nfInt.format(plan.killsPerHour)} kills per uur, raakkans {nfPct.format(s.estimate.hitChance)},{' '}
-        {nf.format(plan.hpPotionsPerHour)} × {HP_POTION.name} en {nf.format(plan.mpPotionsPerHour)} × {MP_POTION.name} per uur.
+        {nf.format(plan.hpPotionsPerHour)} × {potionLabel(HP_POTION)} en {nf.format(plan.mpPotionsPerHour)} × {potionLabel(s.mpPotion)} per uur.
       </p>
       <Warnings s={s} />
       <Field
@@ -1328,7 +1368,7 @@ function SpotCard(props: {
             placeholder={hint(auto?.cost.potions)}
             onInput={(potions) => props.onChange({ potions })}
           />
-          {props.job !== 'warrior' && (
+          {props.job !== 'warrior' && props.job !== 'magician' && (
             <Field
               label={`Ammokosten (meso per uur)${leeg}`}
               value={draft.ammo}
@@ -1356,6 +1396,7 @@ const LEVEL_UP_HINT = {
   thief: 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.',
   warrior: 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.',
   bowman: 'Verdeel je AP zelf: DEX voor schade, accuracy en wapen-eisen, STR voor de wapens die dat vragen. Controleer je evasion in het spel.',
+  magician: 'Verdeel je AP zelf: INT voor schade en accuracy, LUK voor wapen-eisen. Controleer je evasion in het spel.',
 } as const
 
 /** Kosten in meso, voor in een zin; de kosten van een level ronden naar boven af. */
@@ -1542,6 +1583,8 @@ const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   luckySeven: { noun: 'worp' },
   powerStrike: { noun: 'aanval' },
   arrowBlow: { noun: 'schot' },
+  energyBolt: { noun: 'cast' },
+  magicClaw: { noun: 'cast' },
 }
 
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
@@ -2013,7 +2056,7 @@ export function App() {
               </h2>
               <p class="hint">
                 {changes ? `${levelUpSummary(changes)} ` : ''}
-                {LEVEL_UP_HINT[computedJob(job)]}
+                {LEVEL_UP_HINT[job]}
               </p>
               <div class="card stats">
                 {checkFieldsFor(job).map((f) => (

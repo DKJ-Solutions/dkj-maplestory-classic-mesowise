@@ -1,12 +1,13 @@
 // De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior of Bowman krijgt level +1,
-// zijn Max HP (data/warrior.ts, data/bowman.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
+// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior, Bowman of Magician krijgt level +1,
+// zijn Max HP (data/warrior.ts, data/bowman.ts, data/magician.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
+import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
@@ -34,13 +35,15 @@ const wholeOf = (text: string): number | null => {
 }
 
 /**
- * Wat een level-up bijwerkt voor een job die zijn AP zelf verdeelt (Warrior en Bowman): zijn eigen Max HP per level en het
- * stat-deel van zijn accuracy (dat van het level afhangt). De Thief heeft zijn eigen regels in applyLevelUp.
+ * Wat een level-up bijwerkt voor een job die zijn AP zelf verdeelt (Warrior, Bowman en Magician): zijn eigen Max HP per level en het
+ * stat-deel van zijn accuracy (dat van het level afhangt), met `stat` als de stat waaruit dat deel volgt (DEX; bij een Magician INT).
+ * De Thief heeft zijn eigen regels in applyLevelUp.
  */
-const OWN_AP = {
-  warrior: { hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
-  bowman: { hpFrom: bowmanHpPerLevelFrom, accuracy: bowmanAccuracy },
-} as const
+const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number) => number; accuracy: (stat: number, level: number, luk: number) => number }>> = {
+  warrior: { stat: 'dex', hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
+  bowman: { stat: 'dex', hpFrom: bowmanHpPerLevelFrom, accuracy: bowmanAccuracy },
+  magician: { stat: 'int', hpFrom: magicianHpPerLevelFrom, accuracy: magicianAccuracy },
+}
 
 /**
  * Het profiel na een level-up: level +1, Max HP + de vaste waarde van die job, de 5 AP in LUK en de
@@ -59,12 +62,13 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
   const accuracy = wholeOf(draft.accuracy)
-  if (job === 'warrior' || job === 'bowman') {
-    // De AP laat de app aan de speler (de hoofdstat voor schade, DEX voor accuracy en wapen-eisen); alleen het level telt in de accuracy.
-    const own = OWN_AP[job]
+  const own = OWN_AP[job]
+  if (own) {
+    // De AP laat de app aan de speler (de hoofdstat voor schade, de accuracy-stat en wapen-eisen); alleen het level telt in de accuracy.
+    const stat = wholeOf(draft[own.stat])
     if (hp !== null) next.hp = String(hp + own.hpFrom(level))
-    if (dex !== null && luk !== null && accuracy !== null) {
-      next.accuracy = String(accuracy + own.accuracy(dex, level + 1, luk) - own.accuracy(dex, level, luk))
+    if (stat !== null && luk !== null && accuracy !== null) {
+      next.accuracy = String(accuracy + own.accuracy(stat, level + 1, luk) - own.accuracy(stat, level, luk))
     }
     return next
   }
@@ -115,10 +119,12 @@ export const CHECK_FIELDS = [
   ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !f.informative),
 ]
 
-/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest; bij een Bowman staat DEX (zijn hoofdstat) voor STR. */
+/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest; bij een Bowman staat DEX (zijn hoofdstat) voor STR; bij een Magician INT (zijn hoofdstat) vóór LUK. */
 const OWN_AFTER_LEVEL_UP: Partial<Record<Job, readonly ProfileKey[]>> = {
   warrior: ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid'],
   bowman: ['level', 'hp', 'dex', 'str', 'accuracy', 'avoid'],
+  // Zijn M.ATT en WDEF volgen uit de equipment; de overige velden staan erachter.
+  magician: ['level', 'hp', 'int', 'luk', 'dex', 'accuracy', 'avoid'],
 }
 
 /** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */

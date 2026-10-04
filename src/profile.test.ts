@@ -193,22 +193,8 @@ describe('loadProfile en saveProfile', () => {
 })
 
 describe('profileFieldsFor', () => {
-  // De zes skills van de 1e job van een Thief; de Beginner-skills heeft elke job.
-  const hidden = ['nimbleBody', 'keenEyes', 'doubleStab', 'disorder', 'darkSight', 'luckySeven']
-
   it('toont voor de Thief elk veld, in dezelfde volgorde', () => {
     expect(profileFieldsFor('thief')).toEqual(PROFILE_FIELDS)
-  })
-
-  it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
-    const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
-    expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['magician'] as const) {
-      const keys = profileFieldsFor(j).map((f) => f.key)
-      expect(profileFieldsFor(j), j).toEqual(expected)
-      for (const k of hidden) expect(keys, j).not.toContain(k)
-      for (const k of ['threeSnails', 'nimbleFeet', 'recovery']) expect(keys, j).toContain(k)
-    }
   })
 
   it('valideert de Thief-skills alleen voor een Thief; voor een andere job staat de standaardwaarde in het profiel', () => {
