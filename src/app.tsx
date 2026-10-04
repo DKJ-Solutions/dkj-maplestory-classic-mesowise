@@ -7,14 +7,14 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot } from './data/types'
+import type { ArmorSlot, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
-import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
+import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
@@ -619,8 +619,8 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
 }
 
 /**
- * Wat dit level kost, en de drie adviezen die het goedkoper maken, in één kaart (Dave, 4 oktober 2026, #126):
- * loont betere equipment, loont een andere mob, en loont een skillpunt (de extra mana meegerekend). Kan de app
+ * Wat dit level kost, en de vier adviezen die het goedkoper maken, in één kaart (Dave, 4 oktober 2026, #126):
+ * loont een beter wapen (ATT), een beter stuk armor (DEF), een skillpunt (de extra mana meegerekend) en een andere mob. Kan de app
  * de job nog niet doorrekenen, dan staat er alleen waarom niet.
  */
 function LevelAdviceCard(props: {
@@ -628,6 +628,8 @@ function LevelAdviceCard(props: {
   computed: boolean
   cost: LevelCost
   clawAdvice: ClawUpgradeAdvice
+  /** Het eerstvolgende betere wapen; null = er komt er geen meer, undefined = onbekend (geen geldig profiel). */
+  nextWeapon: Weapon | null | undefined
   armorAdvice: ArmorUpgradeAdvice
   equipment: Equipment
   gender: Gender | null
@@ -638,15 +640,16 @@ function LevelAdviceCard(props: {
 }) {
   return (
     <section class="card level-cost" aria-live="polite">
-      <h2>Wat kost dit level?</h2>
+      <h2>Report</h2>
       {props.computed ? (
         <>
           <LevelCostPart cost={props.cost} />
-          <EquipQuestion claw={props.clawAdvice} armor={props.armorAdvice} cost={props.cost} equipment={props.equipment} job={props.job} gender={props.gender} />
-          <MobQuestion advice={props.mobAdvice} cost={props.cost} part />
+          <ClawQuestion advice={props.clawAdvice} cost={props.cost} equipment={props.equipment} next={props.nextWeapon} job={props.job} part />
+          <ArmorQuestion advice={props.armorAdvice} cost={props.cost} equipment={props.equipment} job={props.job} gender={props.gender} part />
           <SkillQuestion advice={props.skillAdvice} cost={props.cost} job={props.job} placed={props.placed} onApply={props.onApply} part>
             <SkillSources job={props.job} />
           </SkillQuestion>
+          <MobQuestion advice={props.mobAdvice} cost={props.cost} part />
         </>
       ) : (
         <NotComputed job={props.job} />
@@ -1437,29 +1440,35 @@ function Panel(props: { active: boolean; collapsed: boolean; children: Component
   )
 }
 
-/** De vier vragen van het advies; ook het "nog niet doorgerekend"-scherm gebruikt ze. */
-const QUESTION_TITLE = {
-  claw: 'Moet ik mijn attack nu upgraden?',
-  armor: 'Moet ik mijn defense nu upgraden?',
-  skill: 'Moet ik mijn skillpunt nu verhogen?',
-  mob: 'Moet ik van mob wisselen?',
+/** Eén regel onder elke kop: wat dat deel tegen elkaar afweegt. */
+const QUESTION_LEAD = {
+  claw: 'Een sterker wapen: de prijs tegenover wat je bespaart doordat je sneller killt.',
+  armor: 'Betere armor: de prijs tegenover de HP potions die je daardoor minder nodig hebt.',
+  skill: 'Welke skill het meeste bespaart: sneller killen tegenover de extra mana potions.',
+  mob: 'Welke mob dit level het goedkoopst is: hoe snel je killt tegenover wat je aan potions kwijt bent.',
 } as const
-/** Op het beginscherm staan wapen en armor samen onder één vraag (#126). */
-const EQUIP_TITLE = 'Moet ik mijn equipment nu upgraden?'
+/** De vier delen van het advies, met dezelfde kop op het beginscherm en na een level-up; ook het "nog niet doorgerekend"-scherm gebruikt ze. */
+const QUESTION_TITLE = {
+  claw: 'ATT',
+  armor: 'DEF',
+  skill: 'Skill',
+  mob: 'Mob',
+} as const
 
 type Chip = 'yes' | 'no' | 'todo' | 'unknown'
 const CHIP_TEXT: Record<Chip, string> = { yes: 'Ja', no: 'Nee', todo: 'Nog niet doorgerekend', unknown: 'Niet uit te rekenen' }
 
-/** Eén vraag van het advies: de vraag, het oordeel en het waarom. */
-function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadingElement>; part?: boolean; children?: ComponentChildren }) {
+/** Eén deel van het advies: de kop, een regel over wat het afweegt, het oordeel en het waarom. */
+function Question(props: { title: string; abbr?: string; chip: Chip; chipText?: string; lead?: string; headingRef?: Ref<HTMLHeadingElement>; part?: boolean; children?: ComponentChildren }) {
   const body = (
     <>
-      <h3 tabIndex={-1} ref={props.headingRef}>
-        {props.title}
-      </h3>
-      <p class="chip-row">
-        <span class={`chip ${props.chip}`}>{CHIP_TEXT[props.chip]}</span>
-      </p>
+      <div class="question-head">
+        <h3 tabIndex={-1} ref={props.headingRef}>
+          {props.abbr ? <abbr title={props.abbr}>{props.title}</abbr> : props.title}
+        </h3>
+        <span class={`chip ${props.chip}`}>{props.chipText ?? CHIP_TEXT[props.chip]}</span>
+      </div>
+      {props.lead && <p class="hint">{props.lead}</p>}
       {props.children}
     </>
   )
@@ -1522,13 +1531,16 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
   )
 }
 
+/** Het label van de chip bij ATT en DEF; bij "niet uit te rekenen" geldt de gewone tekst van de chip. `complete`: nu niets beters te dragen of te kopen; een beter stuk op een hoger level vraagt nu geen actie. */
+const upgradeChipText = (win: boolean, unknown: boolean, complete: boolean) => (win ? 'Upgraden' : unknown ? undefined : complete ? 'Upgrade complete' : 'Niet upgraden')
+
 /** Defense: loont een nieuw stuk armor uit de winkel? Per slot het stuk dat het meeste netto oplevert. */
-function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job; gender: Gender | null }) {
+function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job; gender: Gender | null; part?: boolean }) {
   const a = props.advice
   const title = QUESTION_TITLE.armor
   if (a.kind === 'none') {
     return (
-      <Question title={title} chip="unknown">
+      <Question title={title} abbr="Defense" chip="unknown" lead={QUESTION_LEAD.armor} part={props.part}>
         <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen armor afwegen.</p>
       </Question>
     )
@@ -1536,24 +1548,26 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
   // De winnaar staat vooraan; een paar deelt zijn top met de losse top, dus niet zoeken op het stuk.
   const win = a.winner ? a.choices[0] : undefined
   const unknown = !win && noArmorComputable(a)
+  // Zonder gekozen geslacht valt alle armor voor één geslacht af: lege keuzes zeggen dan niet dat je klaar bent.
+  const complete = a.choices.length === 0 && a.notWearable.length === 0 && props.gender !== null
   return (
-    <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
+    <Question title={title} abbr="Defense" chip={win || complete ? 'yes' : unknown ? 'unknown' : 'no'} chipText={upgradeChipText(!!win, unknown, complete)} lead={QUESTION_LEAD.armor} part={props.part}>
       {win ? (
         <>
-          <p class="verdict">
+          <h4 class="verdict">
             Koop {buyText(win)}
             {replaceClause(win, props.equipment)}
-          </p>
+          </h4>
           <ArmorWinnerLine win={win} />
         </>
       ) : (
-        <p class="verdict">
+        <h4 class="verdict">
           {a.choices.length === 0
             ? 'Geen stuk dat je kunt dragen en beter is dan wat je al draagt.'
             : unknown
               ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
               : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? `, ook niet waar de app je huidige stuk rekent alsof het geen ${STAT_NAME.armor} geeft` : ''}.`}
-        </p>
+        </h4>
       )}
       {a.notWearable.map((u) => (
         <p class="hint" key={u.armor.name}>
@@ -1567,37 +1581,60 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
   )
 }
 
+/** Het wapen dat je nu draagt, met zijn ATT of M.ATT zoals de app die kent; niets als het slot nog niet is ingevuld. */
+function wornWeaponLine(equipment: Equipment, job: Job): string | null {
+  const name = wornName(equipment.claw)
+  if (name === null) return null
+  const stat = wornStat('claw', equipment.claw)
+  return `Je draagt ${name}${stat === undefined ? '' : ` (${weaponStatName(job)} ${stat})`}.`
+}
+
+/** Waar het volgende betere wapen vandaan komt, voor een level waarop er nog geen te koop of te dragen is. */
+function nextWeaponLine(next: Weapon | null, job: Job): string {
+  const thief = job === 'thief'
+  if (!next) return `De app kent geen ${thief ? 'betere claw' : 'beter wapen'} meer voor je job.`
+  return `${thief ? 'De eerstvolgende betere claw' : 'Het eerstvolgende betere wapen'}, ${next.name}, kun je vanaf lv ${next.level} dragen.`
+}
+
 /** Attack: loont een nieuwe claw uit de winkel? De kaart op het beginscherm en dit advies delen de zinnen. */
-function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; job: Job }) {
+function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; equipment: Equipment; next: Weapon | null | undefined; job: Job; part?: boolean }) {
   const a = props.advice
   const t = weaponText(props.job)
   const title = QUESTION_TITLE.claw
+  const worn = wornWeaponLine(props.equipment, props.job)
   if (a.kind === 'none') {
     return (
-      <Question title={title} chip="unknown">
+      <Question title={title} abbr="Attack" chip="unknown" lead={QUESTION_LEAD.claw} part={props.part}>
+        {worn && <p class="hint">{worn}</p>}
+        {props.next !== undefined && <p class="hint">{nextWeaponLine(props.next, props.job)}</p>}
         <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} {t.noCost}</p>
       </Question>
     )
   }
   const win = a.choices.find((c) => c.claw === a.winner)
   const unknown = !win && noClawComputable(a)
+  // Alleen als er nu niets beters te koop of te dragen is: anders zegt het advies zelf wat er kan.
+  const complete = a.choices.length === 0 && a.notWearable.length === 0
+  const next = complete && props.next !== undefined ? nextWeaponLine(props.next, props.job) : null
   return (
-    <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
+    <Question title={title} abbr="Attack" chip={win || complete ? 'yes' : unknown ? 'unknown' : 'no'} chipText={upgradeChipText(!!win, unknown, complete)} lead={QUESTION_LEAD.claw} part={props.part}>
+      {worn && <p class="hint">{worn}</p>}
       {win ? (
         <>
-          <p class="verdict">Koop {win.claw.name}.</p>
+          <h4 class="verdict">Koop {win.claw.name}.</h4>
           <ClawWinnerLine win={win} />
         </>
       ) : (
         <>
-          <p class="verdict">
+          <h4 class="verdict">
             {a.choices.length === 0 ? t.noBetterQuestion : unknown ? t.uncomputable : t.noPayback}
-          </p>
+          </h4>
           {a.notWearable.map((u) => (
             <p class="hint" key={u.claw.name}>
               {u.claw.name}: je hebt nog {missingStats(u)} nodig om {t.toWear} te dragen.
             </p>
           ))}
+          {next && <p class="hint">{next}</p>}
         </>
       )}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -1624,6 +1661,30 @@ const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   magicClaw: { noun: 'cast' },
 }
 
+/** De bevestiging na "Punt zetten": waarom dit de beste keuze was, naast de tweede keus, uit het advies van vóór het punt. */
+function placedText(choice: SkillChoice, advice: SkillPointAdvice): string {
+  const saving = choice.saving as number // de winnaar heeft altijd een besparing
+  const why =
+    saving > 0
+      ? ` De beste keuze: bespaart ${formatMeso(saving)} op dit level.`
+      : saving === 0
+        ? ' De beste keuze: geen skill bespaart hier meso, deze scheelt niets.'
+        : ` De beste keuze: geen skill bespaart hier meso, deze kost het minst extra (${formatMeso(-saving)}).`
+  const second = advice.kind === 'advice' ? advice.choices.find((c) => c.id !== choice.id) : undefined
+  const name = second && `${second.name} → ${second.to}`
+  const versus = !second
+    ? ''
+    : second.saving === saving
+      ? ` ${name} scheelt evenveel; de app koos de eerste.`
+      : ` De tweede keuze, ${name}, ${second.saving === null ? 'is ' : ''}${skillOptionText(second.saving)}.`
+  const caution = advice.kind === 'advice' && !advice.robust ? ' Let op: valt een aanname anders uit, dan was een andere skill misschien beter.' : ''
+  return `${choice.name} → ${choice.to} gezet.${why}${versus}${caution}`
+}
+
+/** Wat één skillpunt op dit level doet, in een korte regel voor de lijst met keuzes. */
+const skillOptionText = (saving: number | null) =>
+  saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
+
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void; part?: boolean; children?: ComponentChildren }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
@@ -1640,23 +1701,43 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   )
   if (a.kind === 'none') {
     return (
-      <Question title={title} chip="unknown" headingRef={heading} part={props.part}>
+      <Question title={title} chip="unknown" lead={QUESTION_LEAD.skill} headingRef={heading} part={props.part}>
         <p class="hint">{noCostReason(props.cost)} Zonder de kosten van dit level kan de app geen skillpunt afwegen.</p>
         {placed}
         {props.children}
       </Question>
     )
   }
+  const saving = winner?.saving as number
+  const options = a.kind === 'advice' ? a.choices : []
+  const placement = a.kind === 'advice' ? a.placement : null
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
   const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
   return (
-    <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading} part={props.part}>
+    <Question title={title} chip={winner || placement?.kind === 'good' ? 'yes' : 'no'} chipText={winner ? `${winner.name} → ${winner.to}` : placement ? (placement.kind === 'good' ? 'Goed gezet' : `Beter in ${placement.to}`) : a.left === 0 ? 'Geen punt over' : 'Geen keuze'} lead={QUESTION_LEAD.skill} headingRef={heading} part={props.part}>
       {winner ? (
         <>
-          <p class="verdict">
+          <h4 class="verdict">
             Zet je skillpunt in {winner.name} (→ {winner.to}).
-          </p>
-          <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
+          </h4>
+          {saving > 0 ? (
+            <p class="hint">Bespaart {formatMeso(saving)} op dit level.</p>
+          ) : saving === 0 ? (
+            <p class="hint">Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.</p>
+          ) : (
+            <p class="hint">
+              Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen. Deze kost het minst extra: {formatMeso(-saving)}.
+            </p>
+          )}
+          {options.length > 1 && (
+            <ul class="skill-options hint">
+              {options.map((c) => (
+                <li key={c.id}>
+                  {c.name} → {c.to}: {skillOptionText(c.saving)}
+                </li>
+              ))}
+            </ul>
+          )}
           {attack && (
             <p class="hint">
               {mpFrom === 0
@@ -1669,8 +1750,20 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
         </>
       ) : (
         <>
-          <p class="verdict">{a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : 'Geen van de skills die de app kan doorrekenen bespaart iets.'}</p>
+          <h4 class="verdict">{placement ? (placement.kind === 'good' ? 'Je skillpunten staan goed.' : `Een punt in ${placement.to} in plaats van in ${placement.from} had dit level ${formatMeso(placement.saving)} bespaard.`) : a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : a.choices.length === 0 ? 'Er is geen skill meer om je punt in te zetten.' : 'De app kan niet doorrekenen wat je punt voor deze skills doet.'}</h4>
           {a.left > 0 && a.choices.length === 0 && <p class="hint">Alle skills die de app kan doorrekenen, staan al op het maximum.</p>}
+          {placement?.kind === 'good' && (
+            <>
+              <p class="hint">Geen enkel punt in een andere skill was dit level goedkoper.</p>
+              {placement.closest && (
+                <p class="hint">
+                  {placement.closest.saving < 0
+                    ? `Het dichtstbij: een punt in ${placement.closest.to} in plaats van in ${placement.closest.from} had dit level ${formatMeso(-placement.closest.saving)} extra gekost.`
+                    : `Een punt in ${placement.closest.to} in plaats van in ${placement.closest.from} scheelt evenveel; je keuze is even goed.`}
+                </p>
+              )}
+            </>
+          )}
           {a.choices.length > 0 && a.base === 0 && <p class="hint">Dit level is al gratis.</p>}
         </>
       )}
@@ -1692,77 +1785,6 @@ const costClause = (meso: number | null, first: boolean) =>
   meso === null ? `is ${first ? 'dit level' : 'het'} niet haalbaar` : `kost ${first ? 'dit level' : 'het'} je ${formatCost(meso)}`
 
 /**
- * Equipment op het beginscherm (#126): het wapen en de armor onder één vraag. "Ja" zodra een van de twee loont;
- * per soort de uitkomst in één regel, met dezelfde zinnen als het advies na een level-up.
- */
-function EquipQuestion(props: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job; gender: Gender | null }) {
-  const { claw, armor } = props
-  const t = weaponText(props.job)
-  const title = EQUIP_TITLE
-  if (claw.kind === 'none' && armor.kind === 'none') {
-    return (
-      <Question title={title} chip="unknown" part>
-        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen equipment afwegen.</p>
-      </Question>
-    )
-  }
-  const clawWin = claw.kind === 'advice' ? claw.choices.find((c) => c.claw === claw.winner) : undefined
-  const armorWin = armor.kind === 'advice' && armor.winner ? armor.choices[0] : undefined
-  const clawUnknown = claw.kind === 'advice' && !clawWin && noClawComputable(claw)
-  const armorUnknown = armor.kind === 'advice' && !armorWin && noArmorComputable(armor)
-  const chip: Chip = clawWin || armorWin ? 'yes' : clawUnknown && armorUnknown ? 'unknown' : 'no'
-  return (
-    <Question title={title} chip={chip} part>
-      {claw.kind === 'advice' &&
-        (clawWin ? (
-          <>
-            <p class="verdict">Koop {clawWin.claw.name}.</p>
-            <ClawWinnerLine win={clawWin} />
-          </>
-        ) : (
-          <p class="verdict">{claw.choices.length === 0 ? t.noBetterQuestion : clawUnknown ? t.uncomputable : t.noPayback}</p>
-        ))}
-      {armor.kind === 'advice' &&
-        (armorWin ? (
-          <>
-            <p class="verdict">
-              Koop {buyText(armorWin)}
-              {replaceClause(armorWin, props.equipment)}
-            </p>
-            <ArmorWinnerLine win={armorWin} />
-          </>
-        ) : (
-          <p class="verdict">
-            {armor.choices.length === 0
-              ? 'Geen armor die je kunt dragen en beter is dan wat je al draagt.'
-              : armorUnknown
-                ? 'Niet uit te rekenen: de app kan de armor niet doorrekenen.'
-                : 'Geen armor verdient zich terug vóór je volgende upgrade.'}
-          </p>
-        ))}
-      {claw.kind === 'advice' &&
-        claw.notWearable.map((u) => (
-          <p class="hint" key={u.claw.name}>
-            {u.claw.name}: je hebt nog {missingStats(u)} nodig om {t.toWear} te dragen.
-          </p>
-        ))}
-      {armor.kind === 'advice' &&
-        armor.notWearable.map((u) => (
-          <p class="hint" key={u.armor.name}>
-            {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {missingStats(u)} nodig om dit stuk te dragen.
-          </p>
-        ))}
-      {((claw.kind === 'advice' && !claw.robust) || (armor.kind === 'advice' && !armor.robust)) && (
-        <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>
-      )}
-      {props.gender === null && <p class="hint">Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.</p>}
-      {claw.kind === 'advice' && <ClawNotes advice={claw} job={props.job} />}
-      {armor.kind === 'advice' && <ArmorNotes advice={armor} />}
-    </Question>
-  )
-}
-
-/**
  * Moet je van mob wisselen? (Dave, 4 oktober 2026, #122): je mob naast elke andere mob uit de data. De mob is het
  * advies, niet de plek, want de mob draagt de HP en de EXP.
  */
@@ -1771,7 +1793,7 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
   const title = QUESTION_TITLE.mob
   if (a.kind === 'none' || a.best === null) {
     return (
-      <Question title={title} chip="unknown" part={props.part}>
+      <Question title={title} chip="unknown" lead={QUESTION_LEAD.mob} part={props.part}>
         <p class="hint">
           {a.kind === 'none' ? `${noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen mob afwegen.` : 'Geen enkele mob levert nu een getal op.'}
         </p>
@@ -1782,8 +1804,8 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
   // Je eigen mob is goedkoper en wint toch niet: dan is hij gevaarlijk voor je en kiest de app een veilige.
   const dangerous = !a.stay && typeof mesoHunted === 'number' && typeof mesoBest === 'number' && mesoHunted <= mesoBest
   return (
-    <Question title={title} chip={a.stay ? 'no' : 'yes'} part={props.part}>
-      <p class="verdict">{a.stay ? `Blijf op ${hunted}.` : `Wissel naar ${best}.`}</p>
+    <Question title={title} chip={a.stay ? 'no' : 'yes'} chipText={a.stay ? 'Blijven' : 'Wisselen'} lead={QUESTION_LEAD.mob} part={props.part}>
+      <h4 class="verdict">{a.stay ? `Blijf op ${hunted}.` : `Wissel naar ${best}.`}</h4>
       {a.stay && <p class="hint">Geen andere mob maakt dit level goedkoper.</p>}
       {!a.stay && dangerous && <p class="hint">{hunted} is gevaarlijk voor je, dus de app raadt de goedkoopste veilige mob aan.</p>}
       {!a.stay && !dangerous && mesoHunted !== undefined && mesoBest !== undefined && (
@@ -1900,6 +1922,7 @@ export function App() {
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
   const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
+  const nextWeapon = useMemo(() => (profile ? nextBetterWeapon(profile) : undefined), [profile])
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment)), [drafts, profile, equipment])
 
@@ -1961,7 +1984,7 @@ export function App() {
   }
   const applyPoint = (choice: SkillChoice) => {
     writeProfile((p) => applySkillPoint(p, choice.id, job))
-    setPlaced(`${choice.name} → ${choice.to} gezet.`)
+    setPlaced(placedText(choice, skillAdvice))
   }
   const levelUpped = applyLevelUp(profileDraft, job)
   // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.
@@ -2103,8 +2126,12 @@ export function App() {
                 error={equipError}
               />
 
-              <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-              <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok onder de kop "Stats". De kaarten zelf hebben geen kop (alleen een knop), dus de h2 is de kop van het blok. */}
+              <section class="stats-group" aria-labelledby="stats-heading">
+                <h2 id="stats-heading">Stats</h2>
+                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+              </section>
               <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
               <HuntedMobCard
                 result={verdict.ranked[0]}
@@ -2119,6 +2146,7 @@ export function App() {
                 computed={computed}
                 cost={cost}
                 clawAdvice={clawAdvice}
+                nextWeapon={nextWeapon}
                 armorAdvice={armorAdvice}
                 equipment={equipment}
                 gender={gender}
@@ -2208,7 +2236,7 @@ export function App() {
               {computed ? (
                 <>
                   <AdviceHeader cost={cost} />
-                  <ClawQuestion advice={clawAdvice} cost={cost} job={job} />
+                  <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} />
                   <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} />
                   <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
                   <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={step === 2 ? placed : null} onApply={applyPoint} />

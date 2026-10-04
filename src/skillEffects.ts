@@ -154,3 +154,14 @@ export function maxHpAfterPoint(hp: number, from: number): number {
   const pct = (level: number) => at(MAX_HP_INCREASE.maxHpPct, level) ?? 0
   return Math.floor((hp * (100 + pct(from + 1))) / (100 + pct(from)))
 }
+
+/**
+ * Max HP na een punt minder in Max HP Increase (van `from` naar `from - 1`): het omgekeerde van maxHpAfterPoint. Niet exact,
+ * want maxHpAfterPoint rondt naar beneden af en de basis zonder skill is nergens opgeslagen; het resultaat kan een paar HP
+ * afwijken. Voor de vraag of een ander punt beter was, is dat ruim genoeg.
+ */
+export function maxHpBeforePoint(hp: number, from: number): number {
+  if (from < 1) return hp
+  const pct = (level: number) => at(MAX_HP_INCREASE.maxHpPct, level) ?? 0
+  return Math.floor((hp * (100 + pct(from - 1))) / (100 + pct(from)))
+}

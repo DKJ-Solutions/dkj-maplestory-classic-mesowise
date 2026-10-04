@@ -1,6 +1,7 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
+// Staat er nog een punt open, dan is "niet zetten" geen antwoord: het punt moet ergens heen, ook als geen skill iets bespaart.
 // De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
 // Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
 // sinds issue #141, Max HP Increase en de buffs sinds issue #139).
@@ -31,7 +32,7 @@ import {
 import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
 import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
-import { maxHpAfterPoint } from './skillEffects'
+import { maxHpAfterPoint, maxHpBeforePoint } from './skillEffects'
 import type { SpotDraft } from './spotDraft'
 
 const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
@@ -61,9 +62,22 @@ interface Skill {
   level: (p: Profile) => number
   /** Het profiel met één punt erbij in deze skill. */
   plusOne: (p: Profile) => Profile
+  /** Het profiel met één punt minder in deze skill: het omgekeerde van plusOne (bij Max HP Increase bij benadering, zie maxHpBeforePoint). */
+  minusOne: (p: Profile) => Profile
+  /** Of het skill-level dat deze skill vraagt gehaald is (los van of je hem al hebt); zonder dit altijd. */
+  prereq?: (p: Profile) => boolean
   /** Of je de skill nu kunt leren (een skill die een ander skill-level vraagt); zonder dit altijd. */
   learnable?: (p: Profile) => boolean
 }
+
+/** Eén punt minder in een skill die alleen zijn eigen level in het profiel zet. */
+const levelDown = (key: SkillId) => (p: Profile): Profile => ({ ...p, [key]: (p[key] as number) - 1 })
+
+/** De velden `prereq` en `learnable` van een skill die het level van een andere skill vraagt: eenmaal geleerd, blijft hij leerbaar. */
+const dependent = (own: (p: Profile) => number, prereq: (p: Profile) => boolean) => ({
+  prereq,
+  learnable: (p: Profile) => own(p) > 0 || prereq(p),
+})
 
 /** De skills van de 1e job die het model kan doorrekenen. */
 export const SKILLS: readonly Skill[] = [
@@ -73,6 +87,7 @@ export const SKILLS: readonly Skill[] = [
     max: LUCKY_SEVEN_LEVELS.length,
     level: (p) => p.luckySeven,
     plusOne: (p) => ({ ...p, luckySeven: p.luckySeven + 1 }),
+    minusOne: levelDown('luckySeven'),
   },
   {
     id: 'nimbleBody',
@@ -85,6 +100,12 @@ export const SKILLS: readonly Skill[] = [
       nimbleBody: p.nimbleBody + 1,
       accuracy: p.accuracy + NIMBLE_BODY.accuracyPerLevel,
       avoid: p.avoid + NIMBLE_BODY.avoidPerLevel,
+    }),
+    minusOne: (p) => ({
+      ...p,
+      nimbleBody: p.nimbleBody - 1,
+      accuracy: p.accuracy - NIMBLE_BODY.accuracyPerLevel,
+      avoid: p.avoid - NIMBLE_BODY.avoidPerLevel,
     }),
   },
 ]
@@ -106,6 +127,7 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
     max: POWER_STRIKE_LEVELS.length,
     level: (p) => p.powerStrike,
     plusOne: (p) => ({ ...p, powerStrike: p.powerStrike + 1 }),
+    minusOne: levelDown('powerStrike'),
   },
   {
     id: 'preciseStrikes',
@@ -118,6 +140,11 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
       preciseStrikes: p.preciseStrikes + 1,
       accuracy: p.accuracy + preciseAccuracy(p.preciseStrikes + 1) - preciseAccuracy(p.preciseStrikes),
     }),
+    minusOne: (p) => ({
+      ...p,
+      preciseStrikes: p.preciseStrikes - 1,
+      accuracy: p.accuracy - (preciseAccuracy(p.preciseStrikes) - preciseAccuracy(p.preciseStrikes - 1)),
+    }),
   },
   {
     id: 'improvedHpRecovery',
@@ -125,6 +152,7 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
     max: IMPROVED_HP_RECOVERY.itemRecoveryPct.length,
     level: (p) => p.improvedHpRecovery,
     plusOne: (p) => ({ ...p, improvedHpRecovery: p.improvedHpRecovery + 1 }),
+    minusOne: levelDown('improvedHpRecovery'),
   },
   {
     id: 'maxHpIncrease',
@@ -133,7 +161,8 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
     level: (p) => p.maxHpIncrease,
     // De Max HP in het profiel is het totaal uit je statvenster, met Max HP Increase erin.
     plusOne: (p) => ({ ...p, maxHpIncrease: p.maxHpIncrease + 1, hp: maxHpAfterPoint(p.hp, p.maxHpIncrease) }),
-    learnable: (p) => p.maxHpIncrease > 0 || p.improvedHpRecovery >= MAX_HP_INCREASE_REQUIRES_IMPROVED_HP_RECOVERY,
+    minusOne: (p) => ({ ...p, maxHpIncrease: p.maxHpIncrease - 1, hp: maxHpBeforePoint(p.hp, p.maxHpIncrease) }),
+    ...dependent((p) => p.maxHpIncrease, (p) => p.improvedHpRecovery >= MAX_HP_INCREASE_REQUIRES_IMPROVED_HP_RECOVERY),
   },
   {
     id: 'ironBody',
@@ -142,7 +171,8 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
     level: (p) => p.ironBody,
     // Een buff staat niet in het profiel: toCharacter telt hem erbij (buffBonus in skillEffects.ts).
     plusOne: (p) => ({ ...p, ironBody: p.ironBody + 1 }),
-    learnable: (p) => p.ironBody > 0 || p.maxHpIncrease >= IRON_BODY_REQUIRES_MAX_HP_INCREASE,
+    minusOne: levelDown('ironBody'),
+    ...dependent((p) => p.ironBody, (p) => p.maxHpIncrease >= IRON_BODY_REQUIRES_MAX_HP_INCREASE),
   },
 ]
 
@@ -159,6 +189,7 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     max: ENERGY_BOLT_LEVELS.length,
     level: (p) => p.energyBolt,
     plusOne: (p) => ({ ...p, energyBolt: p.energyBolt + 1 }),
+    minusOne: levelDown('energyBolt'),
   },
   {
     id: 'magicClaw',
@@ -166,7 +197,8 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     max: MAGIC_CLAW_LEVELS.length,
     level: (p) => p.magicClaw,
     plusOne: (p) => ({ ...p, magicClaw: p.magicClaw + 1 }),
-    learnable: (p) => p.magicClaw > 0 || p.energyBolt >= MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+    minusOne: levelDown('magicClaw'),
+    ...dependent((p) => p.magicClaw, (p) => p.energyBolt >= MAGIC_CLAW_REQUIRES_ENERGY_BOLT),
   },
   {
     id: 'improvedMpRecovery',
@@ -174,6 +206,7 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     max: IMPROVED_MP_RECOVERY.itemRecoveryPct.length,
     level: (p) => p.improvedMpRecovery,
     plusOne: (p) => ({ ...p, improvedMpRecovery: p.improvedMpRecovery + 1 }),
+    minusOne: levelDown('improvedMpRecovery'),
   },
   {
     id: 'magicArmor',
@@ -181,7 +214,8 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     max: MAGIC_ARMOR_LEVELS.length,
     level: (p) => p.magicArmor,
     plusOne: (p) => ({ ...p, magicArmor: p.magicArmor + 1 }),
-    learnable: (p) => p.magicArmor > 0 || p.magicGuard >= MAGIC_ARMOR_REQUIRES_MAGIC_GUARD,
+    minusOne: levelDown('magicArmor'),
+    ...dependent((p) => p.magicArmor, (p) => p.magicGuard >= MAGIC_ARMOR_REQUIRES_MAGIC_GUARD),
   },
 ]
 
@@ -197,6 +231,7 @@ export const BOWMAN_MODELLED: readonly Skill[] = [
     max: ARROW_BLOW_LEVELS.length,
     level: (p) => p.arrowBlow,
     plusOne: (p) => ({ ...p, arrowBlow: p.arrowBlow + 1 }),
+    minusOne: levelDown('arrowBlow'),
   },
   {
     id: 'focus',
@@ -204,7 +239,8 @@ export const BOWMAN_MODELLED: readonly Skill[] = [
     max: FOCUS_LEVELS.length,
     level: (p) => p.focus,
     plusOne: (p) => ({ ...p, focus: p.focus + 1 }),
-    learnable: (p) => p.focus > 0 || p.eyeOfAmazon >= FOCUS_REQUIRES_EYE_OF_AMAZON,
+    minusOne: levelDown('focus'),
+    ...dependent((p) => p.focus, (p) => p.eyeOfAmazon >= FOCUS_REQUIRES_EYE_OF_AMAZON),
   },
 ]
 
@@ -288,6 +324,10 @@ export interface SkillChoice {
   saving: number | null
 }
 
+/** Zonder punt over: zit je verdeling goed, of had één punt in skill B in plaats van in skill A de kosten van het level verlaagd? */
+export type SkillMove = { from: string; to: string; saving: number }
+export type SkillPlacement = { kind: 'good'; /** De beste andere verplaatsing van één punt (besparing 0 of negatief), als de app er een kon doorrekenen. */ closest: SkillMove | null } | { kind: 'better'; from: string; to: string; saving: number }
+
 export type SkillPointAdvice =
   /** De kosten van je level zijn niet uit te rekenen (geen profiel, buiten de tabel, geen "Beste"). */
   | { kind: 'none' }
@@ -301,13 +341,47 @@ export type SkillPointAdvice =
       left: number
       /** De namen van de skills die al op het maximum staan. */
       maxed: string[]
-      /** De skill met de grootste besparing boven 0, of null als geen punt iets bespaart. */
+      /**
+       * De skill met de grootste besparing, ook als die 0 of negatief is (het punt moet toch ergens heen: de skill met de
+       * minste extra kosten wint). Null alleen als er geen punt over is, geen skill om te kiezen, of geen skill uit te rekenen is.
+       */
       winner: SkillId | null
+      /** Alleen bij left === 0: of een ander punt beter was; null als er geen punt te verplaatsen valt of niets uit te rekenen is. */
+      placement: SkillPlacement | null
       /** False als een andere skill wint (of geen) zodra één aanname naar de rand gaat. */
       robust: boolean
     }
 
+/** Een verschil onder een halve meso is afrondruis: gelijke skills tonen dan allemaal 0 in plaats van "minder dan 1 meso". */
+const snapSaving = (x: number) => (Math.abs(x) < 0.5 ? 0 : x)
+
 const bySaving = (a: SkillChoice, b: SkillChoice) => (b.saving ?? -Infinity) - (a.saving ?? -Infinity)
+
+/**
+ * Zonder punt over: de beste verplaatsing van één punt van een skill A met een punt (zodat de skills die A vragen
+ * geldig blijven) naar een andere skill B die op het kleinere profiel leerbaar is en onder het maximum zit. Skills waarvan het
+ * model niets weet (Eye of Amazon, Magic Guard) blijven zoals ze zijn. Null als er geen verplaatsing is die de app kan doorrekenen.
+ */
+function placementUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions, base: number): SkillPlacement | null {
+  const skills = skillsOf(profile.job)
+  let best: SkillMove | null = null
+  let closest: SkillMove | null = null
+  for (const from of skills) {
+    if (from.level(profile) < 1) continue
+    const reduced = from.minusOne(profile)
+    if (!skills.every((s) => s.level(reduced) === 0 || (s.prereq?.(reduced) ?? true))) continue
+    for (const to of skills) {
+      if (to === from || to.level(reduced) >= to.max || !(to.learnable?.(reduced) ?? true)) continue
+      const meso = mesoCost(drafts, to.plusOne(reduced), a)
+      if (typeof meso !== 'number') continue
+      const saving = snapSaving(base - meso)
+      const move = { from: from.name, to: to.name, saving }
+      if (saving > 0 && (best === null || saving > best.saving)) best = move
+      if (closest === null || saving > closest.saving) closest = move
+    }
+  }
+  return best ? { kind: 'better', ...best } : closest ? { kind: 'good', closest } : null
+}
 
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions) {
   const base = mesoCost(drafts, profile, a)
@@ -319,12 +393,14 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
       const known = typeof meso === 'number'
-      return { id: s.id, name: s.name, to: s.level(profile) + 1, meso: known ? meso : null, saving: known ? base - meso : null }
+      return { id: s.id, name: s.name, to: s.level(profile) + 1, meso: known ? meso : null, saving: known ? snapSaving(base - meso) : null }
     })
     .sort(bySaving)
+  // Gesorteerd van meeste naar minste besparing, en niet-uit-te-rekenen skills staan achteraan: de eerste is de beste.
   const top = choices[0]
-  const winner = top && top.saving !== null && top.saving > 0 ? top.id : null
-  return { base, choices, winner, left }
+  const winner = left > 0 && top && top.saving !== null ? top.id : null
+  const placement = left === 0 ? placementUnder(drafts, profile, a, base) : null
+  return { base, choices, winner, left, placement }
 }
 
 /** De skillpunten van een pot zoals de speler ze nu heeft gezet, tegenover wat zijn level hem geeft; `cap` is null als het level geen geldig getal is. */
@@ -339,11 +415,22 @@ export function skillPoolUsage(draft: ProfileDraft, job: Job, pool: SkillPool): 
   return { spent, cap: valid ? skillPointCap(level, pool) : null }
 }
 
+/** Of twee uitkomsten van de plaatsing hetzelfde zeggen: dezelfde soort, en bij 'better' dezelfde skills. */
+const samePlacement = (a: SkillPlacement | null, b: SkillPlacement | null): boolean =>
+  a === null || b === null ? a === b : a.kind === b.kind && (a.kind !== 'better' || (b.kind === 'better' && a.from === b.from && a.to === b.to))
+
 export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile | null): SkillPointAdvice {
   if (!profile) return { kind: 'none' }
   const main = adviseUnder(drafts, profile, ASSUMPTIONS)
   if (!main) return { kind: 'none' }
-  const robust = ASSUMPTION_VARIANTS.every((a) => (adviseUnder(drafts, profile, a)?.winner ?? null) === main.winner)
+  // Robuust: onder elke variant ligt de besparing van de hoofdwinnaar binnen een halve meso van de beste (gelijkspel telt mee).
+  const robust = ASSUMPTION_VARIANTS.every((a) => {
+    const v = adviseUnder(drafts, profile, a)
+    if (main.winner === null) return (v?.winner ?? null) === null && samePlacement(main.placement, v?.placement ?? null)
+    const mine = v?.choices.find((c) => c.id === main.winner)?.saving
+    const best = v?.choices[0]?.saving
+    return typeof mine === 'number' && typeof best === 'number' && best - mine <= 0.5
+  })
   const maxed = skillsOf(profile.job).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
   return { kind: 'advice', ...main, maxed, robust }
 }

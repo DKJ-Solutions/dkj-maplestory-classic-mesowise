@@ -1007,7 +1007,7 @@ describe('adviesscherm na de level-up', () => {
     fireEvent.click(button)
     expect(profileFields().luckySeven).toBe('3')
     expect(profileFields().level).toBe('11')
-    expect(within(panels()[2]).getByText('Lucky Seven → 3 gezet.')).toBeTruthy()
+    expect(within(panels()[2]).getByText(/^Lucky Seven → 3 gezet./)).toBeTruthy()
   })
 
   it('biedt op het adviesscherm geen "Level-up ongedaan maken" meer aan', () => {
@@ -1050,7 +1050,7 @@ describe('een Warrior in de app', () => {
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
       expect(home.textContent).toMatch(/Op .* · lv 20: kost /)
-      expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
     })
@@ -1058,15 +1058,15 @@ describe('een Warrior in de app', () => {
     it('noemt op het beginscherm geen claws, en toont de skillkaart en (zodra er een wapen beter is) de wapenkaart', () => {
       const home = panels()[0]
       expect(home.textContent).not.toMatch(/claw/i)
-      expect(home.textContent).toContain('Wat kost dit level?')
+      expect(within(home).getByRole('heading', { level: 2, name: 'Report' })).toBeTruthy()
       // Het wapenadvies heet bij een Warrior "nieuw wapen", nooit "nieuwe claw".
       expect(home.textContent).not.toContain('Loont een nieuwe claw?')
     })
 
     it('rekent het level met het Warrior-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
-      const warriorCost = within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+      const warriorCost = within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
       open('thief')
-      const thiefCost = within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+      const thiefCost = within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
       expect(warriorCost).toBeTruthy()
       expect(thiefCost).toBeTruthy()
       expect(warriorCost).not.toBe(thiefCost)
@@ -1206,10 +1206,7 @@ describe('een Warrior in de app', () => {
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = panels()[2]
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
@@ -1230,11 +1227,11 @@ describe('een Warrior in de app', () => {
       expect(profileFields().powerStrike).toBe('2')
       expect(profileFields().preciseStrikes).toBe('0')
       expect(profileFields().level).toBe('21')
-      expect(within(panels()[2]).getByText('Power Strike → 2 gezet.')).toBeTruthy()
+      expect(within(panels()[2]).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
     })
 
     it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
-      const claw = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      const claw = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wapen/)
     })
@@ -1405,7 +1402,7 @@ describe('het geslacht (issue #55)', () => {
       levelUp()
       fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
     }
-    const armorSection = () => screen.getByText('Moet ik mijn defense nu upgraden?').closest('section')!
+    const armorSection = () => screen.getByRole('heading', { level: 3, name: 'DEF' }).closest('section')!
 
     it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
       toAdvice()
@@ -1442,7 +1439,7 @@ describe('een Bowman in de app', () => {
   }
   const NOT_YET = /Nog niet doorgerekend/
   const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
-  const costText = () => within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+  const costText = () => within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
 
   describe('het beginscherm', () => {
     beforeEach(open)
@@ -1549,10 +1546,7 @@ describe('een Bowman in de app', () => {
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = panels()[2]
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -1561,15 +1555,20 @@ describe('een Bowman in de app', () => {
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Slash Blast/)
     })
 
-    it('rekent Arrow Blow als enige skill door en zegt eerlijk dat een extra punt niets bespaart', () => {
+    it('rekent Arrow Blow als enige skill door en zet het punt toch, met de eerlijke hint dat het niets scheelt', () => {
       // Dit profiel (DEX 80, 30 ATT) heeft elke Rain Forest-kill in 2 schoten; 4% meer schade van Arrow Blow 1 → 2 verandert dat niet.
-      const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
-      expect(section.querySelector('.verdict')!.textContent).toBe('Geen van de skills die de app kan doorrekenen bespaart iets.')
-      expect(screen.queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+      // Een vrij punt moet ergens heen (Dave, 4 oktober 2026): Arrow Blow wint dus met besparing 0.
+      const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+      expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
+      expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
+      expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+      // Eén keuze: geen lijst met opties.
+      expect(section.querySelector('.skill-options')).toBeNull()
+      expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
     })
 
     it('noemt wapens, geen claws', () => {
-      const weapon = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      const weapon = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
       expect(weapon.textContent).not.toMatch(/claw/i)
       expect(weapon.textContent).toMatch(/wapen|boog/)
     })
@@ -1608,7 +1607,7 @@ describe('een Magician in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
-      expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
     })
@@ -1683,19 +1682,19 @@ describe('een Magician in de app', () => {
     })
 
     it('noemt bij het equipmentadvies wands en staffs, geen claws', () => {
-      const equip = within(panels()[0]).getByRole('heading', { level: 3, name: 'Moet ik mijn equipment nu upgraden?' }).closest('.advice-part')!
+      const equip = within(panels()[0]).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
       expect(equip.textContent).toMatch(/wand|staff/i)
       expect(equip.textContent).not.toMatch(/claw/i)
     })
 
-    it('zet de kosten en de drie adviezen in één kaart: equipment, mob en skillpunt (#126)', () => {
+    it('zet de kosten en de vier adviezen in één kaart Report: ATT, DEF, Skill en Mob (#126)', () => {
       const home = panels()[0]
       expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
-      const card = within(home).getByRole('heading', { level: 2, name: 'Wat kost dit level?' }).closest('section')!
+      const card = within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
       const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-      expect(questions).toEqual(['Moet ik mijn equipment nu upgraden?', 'Moet ik van mob wisselen?', 'Moet ik mijn skillpunt nu verhogen?'])
+      expect(questions).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
       // Elk advies heeft een antwoord, en het skilladvies noemt de mana die de skill kost.
-      expect(card.querySelectorAll('.chip')).toHaveLength(3)
+      expect(card.querySelectorAll('.chip')).toHaveLength(4)
       expect(card.textContent).not.toMatch(NOT_YET)
       expect(card.textContent).toMatch(/MP/)
     })
@@ -1717,10 +1716,7 @@ describe('een Magician in de app', () => {
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = panels()[2]
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
-      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
-      expect(advice.textContent).toContain('Moet ik van mob wisselen?')
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -1732,12 +1728,12 @@ describe('een Magician in de app', () => {
     it('noemt Magic Claw niet als punt zolang Energy Bolt op 0 staat', () => {
       open({ energyBolt: '0' })
       toAdvice()
-      const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+      const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
       expect(section.textContent).not.toContain('Magic Claw → 1')
     })
 
     it('noemt wands en staffs, geen claws', () => {
-      const claw = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      const claw = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wand of staff|wapen/)
     })
@@ -1757,7 +1753,7 @@ describe('een Magician in de app', () => {
     expect(profileFields().energyBolt).toBe('4')
     expect(profileFields().magicClaw).toBe('0')
     expect(profileFields().level).toBe('21')
-    expect(within(panels()[2]).getByText('Energy Bolt → 4 gezet.')).toBeTruthy()
+    expect(within(panels()[2]).getByText(/^Energy Bolt → 4 gezet./)).toBeTruthy()
   })
 
   it('toont op het controlescherm INT bovenaan, met de zin over de AP', () => {
@@ -1864,21 +1860,354 @@ describe('skillpunten per level (issue #136)', () => {
     expect(plusOf(card, 'Keen Eyes').disabled).toBe(false)
   })
 
-  it('zegt bij de skillvraag dat je geen skillpunten meer over hebt als de pot vol is', () => {
+  it('zegt bij de skillvraag dat je skillpunten goed staan als de pot vol is', () => {
     setProfile({ level: '10', luckySeven: '1' })
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     cleanup()
     render(<App />)
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
-    const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+    const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
     // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
     expect(section.textContent).not.toContain('geen skillpunten meer over')
     // Zet de pot vol via de Skillpoints-kaart van het adviesscherm.
     const card = within(panels()[2]).getByRole('button', { name: /Skillpoints/ })
     fireEvent.click(card)
     fireEvent.input(within(panels()[2]).getByLabelText(/^Lucky Seven, level van 0 tot/), { target: { value: '4' } })
-    expect(section.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
+    // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.
+    expect(section.querySelector('.chip')!.textContent).toBe('Goed gezet')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Je skillpunten staan goed.')
     expect(within(section).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+})
+
+describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart', () => {
+  // Level 20 Bowman op een plek waar Arrow Blow niets verandert; The Eye of Amazon 3 maakt Focus leerbaar, en Focus kost extra.
+  const bowman = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', eyeOfAmazon: '3' }
+  const skillSection = (job: string, fields: object, spot: string) => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(spot)] }))
+    render(<App />)
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    return within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+  }
+  const lines = (section: HTMLElement) => Array.from(section.querySelectorAll('.skill-options li')).map((li) => li.textContent)
+
+  it('noemt bij besparing 0 de hint "scheelt geen enkele skill meso", met Ja en de knop, en toont elke keuze met zijn eigen slot', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '1' }, 'Ribbon Pig')
+    expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
+    expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+    expect(section.textContent).not.toContain('Bespaart ±')
+    // Gelijkspel op 0 is robuust: geen "Hangt af van de aannames".
+    expect(section.textContent).not.toContain('Hangt af van de aannames')
+    expect(lines(section)).toEqual(['Arrow Blow → 2: scheelt niets', expect.stringMatching(/^Focus → 1: kost ± [\d.]+ meso extra$/)])
+    expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
+  })
+
+  it('noemt bij een negatieve besparing de extra kosten van de skill die het minst kost, en laat de knop staan', () => {
+    // Arrow Blow op 20 is het maximum: alleen Focus is nog te leren, en die kost extra.
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
+    expect(section.querySelector('.chip')!.textContent).toBe('Focus → 1')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
+    expect(section.textContent).toMatch(/Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
+    expect(section.textContent).not.toContain('Geen van de skills')
+    expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
+  })
+
+  it('kiest bij alleen negatieve besparingen de minst negatieve, en sorteert de lijst op die volgorde', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '15' }, 'Ribbon Pig')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
+    const l = lines(section)
+    expect(l).toHaveLength(2)
+    expect(l[0]).toMatch(/^Focus → 1: kost ± [\d.]+ meso extra$/)
+    expect(l[1]).toMatch(/^Arrow Blow → 16: kost ± [\d.]+ meso extra$/)
+    const num = (t: string) => Number(t.match(/± ([\d.]+) meso/)![1].replace(/\./g, ''))
+    expect(num(l[0]!)).toBeLessThan(num(l[1]!))
+  })
+
+  it('zet het punt met de knop in de winnaar, ook als die extra kost', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
+    fireEvent.click(within(section).getByRole('button', { name: 'Punt zetten' }))
+    expect(profileFields().focus).toBe('1')
+  })
+
+  it('toont een regel per keuze met het juiste einde: bespaart, scheelt niets en kost extra', () => {
+    // Warrior op Snail: Improved HP Recovery bespaart, Power Strike en Max HP Increase doen niets, Iron Body kost extra.
+    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
+    const section = skillSection('warrior', w, 'Snail')
+    expect(section.querySelector('.chip')!.textContent).toBe('Improved HP Recovery → 4')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Improved HP Recovery (→ 4).')
+    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso op dit level\./)
+    const l = lines(section)
+    expect(l).toHaveLength(5)
+    expect(l[0]).toMatch(/^Improved HP Recovery → 4: bespaart ± [\d.]+ meso$/)
+    expect(l).toContain('Power Strike → 2: scheelt niets')
+    expect(l).toContain('Precise Strikes → 1: scheelt niets')
+    expect(l).toContain('Max HP Increase → 4: scheelt niets')
+    expect(l[4]).toMatch(/^Iron Body → 1: kost ± [\d.]+ meso extra$/)
+  })
+
+  const placedHint = (section: HTMLElement) => {
+    fireEvent.click(within(section).getByRole('button', { name: 'Punt zetten' }))
+    return within(panels()[2]).getByText(/ gezet\./).textContent!
+  }
+
+  it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
+    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
+    const text = placedHint(skillSection('warrior', w, 'Snail'))
+    expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso op dit level\./)
+    // De tweede keuze (Power Strike → 2, scheelt niets) staat er als eigen zin achter.
+    expect(text).toContain(' De tweede keuze, Power Strike → 2, scheelt niets.')
+  })
+
+  it('zegt na het zetten bij een besparing < 0 dat geen skill bespaart en deze het minst extra kost, met de tweede keuze als extra kosten', () => {
+    const text = placedHint(skillSection('bowman', { ...bowman, arrowBlow: '15' }, 'Ribbon Pig'))
+    expect(text).toMatch(/^Focus → 1 gezet\. De beste keuze: geen skill bespaart hier meso, deze kost het minst extra \(± [\d.]+ meso\)\./)
+    expect(text).toMatch(/ De tweede keuze, Arrow Blow → 16, kost ± [\d.]+ meso extra\./)
+  })
+
+  it('zegt na het zetten bij besparing 0 dat de winnaar niets extra kost, en noemt de tweede keuze die extra kost', () => {
+    const text = placedHint(skillSection('bowman', { ...bowman, arrowBlow: '1' }, 'Ribbon Pig'))
+    expect(text).toMatch(/^Arrow Blow → 2 gezet\. De beste keuze: geen skill bespaart hier meso, deze scheelt niets\./)
+    expect(text).toMatch(/ De tweede keuze, Focus → 1, kost ± [\d.]+ meso extra\./)
+  })
+
+  it('noemt bij een gelijkspel dat de andere evenveel scheelt en dat de app dan de eerste kiest', () => {
+    // Warrior op Snail met Improved HP Recovery op het maximum: Power Strike, Precise Strikes en Max HP Increase scheelt allemaal niets.
+    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '15' }
+    const section = skillSection('warrior', w, 'Snail')
+    const l = lines(section)
+    expect(l.length).toBeGreaterThan(1)
+    expect(l.slice(0, 2).every((x) => x!.endsWith('scheelt niets'))).toBe(true)
+    expect(placedHint(section)).toMatch(/ scheelt evenveel; de app koos de eerste\./)
+  })
+})
+
+describe('de kaart Report en het blok Stats op het beginscherm', () => {
+  const home = () => {
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    return panels()[0]
+  }
+  const card = (h: HTMLElement) => within(h).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
+
+  it('zet onder Report de koppen ATT, DEF, Skill en Mob in die volgorde, en niets van de oude vraag over equipment', () => {
+    const c = card(home())
+    expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+    // ATT en DEF zijn afkortingen met hun volle naam als tooltip.
+    expect(Array.from(c.querySelectorAll('h3 abbr')).map((a) => [a.textContent, a.getAttribute('title')])).toEqual([['ATT', 'Attack'], ['DEF', 'Defense']])
+    expect(c.textContent).not.toContain('Moet ik mijn equipment nu upgraden?')
+    expect(c.textContent).not.toContain('Wat kost dit level?')
+  })
+
+  it('zet onder elke kop één regel die zegt wat er wordt afgewogen', () => {
+    const c = card(home())
+    const leads = Array.from(c.querySelectorAll('h3')).map((h) => h.closest('.question-head')!.nextElementSibling!)
+    for (const l of leads) {
+      expect(l.tagName).toBe('P')
+      expect(l.classList.contains('hint')).toBe(true)
+    }
+    expect(leads.map((l) => l.textContent)).toEqual([
+      'Een sterker wapen: de prijs tegenover wat je bespaart doordat je sneller killt.',
+      'Betere armor: de prijs tegenover de HP potions die je daardoor minder nodig hebt.',
+      'Welke skill het meeste bespaart: sneller killen tegenover de extra mana potions.',
+      'Welke mob dit level het goedkoopst is: hoe snel je killt tegenover wat je aan potions kwijt bent.',
+    ])
+  })
+
+  it('zet de chip in dezelfde .question-head als zijn kop', () => {
+    const c = card(home())
+    const heads = Array.from(c.querySelectorAll('h3')).map((h) => h.closest('.question-head')!)
+    expect(heads).toHaveLength(4)
+    for (const head of heads) {
+      expect(head.querySelectorAll('h3')).toHaveLength(1)
+      expect(head.querySelectorAll('.chip')).toHaveLength(1)
+    }
+  })
+
+  it('geeft ATT, DEF en Mob een label in plaats van Ja of Nee', () => {
+    const c = card(home())
+    const chips = Array.from(c.querySelectorAll('.chip')).map((x) => x.textContent!)
+    expect(chips).toHaveLength(4)
+    expect(chips[0]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
+    expect(chips[1]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
+    expect(chips[3]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
+    for (const t of chips) expect(t).not.toMatch(/^(Ja|Nee)$/)
+  })
+
+  it('zet Upgraden bij ATT of DEF alleen bij een winnaar, anders Niet upgraden, en Blijven bij Mob als je mob de goedkoopste is', () => {
+    const c = card(home())
+    const chipOf = (title: string) => within(c).getByRole('heading', { level: 3, name: title }).closest('.advice-part')!.querySelector('.chip')!.textContent
+    // De verdict-regel zegt hetzelfde als het label: "Koop …" hoort bij Upgraden.
+    for (const t of ['ATT', 'DEF']) {
+      const part = within(c).getByRole('heading', { level: 3, name: t }).closest('.advice-part')!
+      expect(part.textContent!.includes('Koop ')).toBe(chipOf(t) === 'Upgraden')
+    }
+    const mob = within(c).getByRole('heading', { level: 3, name: 'Mob' }).closest('.advice-part')!
+    expect(mob.textContent!.includes('Blijf op ')).toBe(chipOf('Mob') === 'Blijven')
+    expect(mob.textContent!.includes('Wissel naar ')).toBe(chipOf('Mob') === 'Wisselen')
+  })
+
+  it('zet Ability points en Total stats in één blok Stats, en alleen die twee', () => {
+    const h = home()
+    const heading = within(h).getByRole('heading', { level: 2, name: 'Stats' })
+    const group = heading.closest('section.stats-group')!
+    expect(group.getAttribute('aria-labelledby')).toBe(heading.id)
+    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats/ })).toHaveLength(2)
+    expect(within(group as HTMLElement).getByRole('button', { name: /Ability points/ })).toBeTruthy()
+    expect(within(group as HTMLElement).getByRole('button', { name: /Total stats/ })).toBeTruthy()
+    // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen naast de kop.
+    expect(Array.from(group.children).filter((e) => e !== heading)).toHaveLength(2)
+    expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip/ })).toBeNull()
+  })
+
+  it('noemt bij een Thief op lv 10 wat hij draagt en vanaf welk level de eerstvolgende betere claw te dragen is', () => {
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '10' } }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const att = () => within(panels()[0]).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
+    // Zonder wapen in het slot staat er geen "Je draagt", wel de eerstvolgende claw.
+    expect(att().textContent).not.toContain('Je draagt')
+    expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Garnier')
+    expect(att().textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
+    expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
+  })
+
+  describe('ATT en DEF: Upgrade complete, Niet upgraden en het wapen op lv 9', () => {
+    const homeWith = (fields: object, equipment?: object, gender?: 'male' | 'female') => {
+      cleanup()
+      localStorage.clear()
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+      if (gender) localStorage.setItem('mesowise.gender.v1', JSON.stringify({ version: 1, gender }))
+      if (equipment) localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: equipment }))
+      render(<App />)
+      return panels()[0]
+    }
+    const part = (h: HTMLElement, title: string) => within(h).getByRole('heading', { level: 3, name: title }).closest('.advice-part') as HTMLElement
+    const chipOf = (el: HTMLElement) => el.querySelector('.chip')!
+
+    it('noemt een Thief op lv 9 de Garnier vanaf lv 10, en wat hij draagt zodra het slot is ingevuld', () => {
+      const h = homeWith({ level: '9', clawWatk: '5', luckySeven: '0', nimbleBody: '0' })
+      expect(part(h, 'ATT').textContent).toContain('De eerstvolgende betere claw, Garnier, kun je vanaf lv 10 dragen.')
+      expect(part(h, 'ATT').textContent).not.toContain('Je draagt')
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Garnier')
+      expect(part(panels()[0], 'ATT').textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
+      expect(part(panels()[0], 'ATT').textContent).toContain('Steel Titans, kun je vanaf lv 15 dragen.')
+    })
+
+    it('noemt bij een ongeldig profiel op lv 9 geen "geen betere claw meer": onbekend is niet hetzelfde als het einde van de winkel', () => {
+      // Lv 9 met de skillpunten van het voorbeeldprofiel: meer dan een Thief op lv 9 heeft, dus het profiel parst niet.
+      const h = homeWith({ level: '9', clawWatk: '5' })
+      const att = part(h, 'ATT')
+      expect(att.textContent).toContain('Je karakter is niet volledig ingevuld')
+      expect(att.textContent).not.toContain('De app kent geen betere claw meer')
+      expect(att.textContent).not.toContain('De eerstvolgende betere claw')
+      expect(chipOf(att).textContent).toBe('Niet uit te rekenen')
+    })
+
+    it('zet bij ATT de chip op "Upgrade complete" (klasse yes) als je de beste claw draagt die je level toelaat', () => {
+      // Lv 15 met 13 ATT: Steel Titans (13) is de beste die je kunt dragen; Steel Igor komt pas op lv 20.
+      const h = homeWith({ level: '15', luk: '60', dex: '40', clawWatk: '13' })
+      const chip = chipOf(part(h, 'ATT'))
+      expect(chip.textContent).toBe('Upgrade complete')
+      expect(chip.classList.contains('yes')).toBe(true)
+      expect(part(h, 'ATT').textContent).toContain('De eerstvolgende betere claw, Steel Igor, kun je vanaf lv 20 dragen.')
+    })
+
+    it('zegt na de laatste claw dat de app er geen betere kent', () => {
+      const h = homeWith({ level: '30', luk: '80', dex: '40', clawWatk: '23' })
+      expect(chipOf(part(h, 'ATT')).textContent).toBe('Upgrade complete')
+      expect(part(h, 'ATT').textContent).toContain('De app kent geen betere claw meer voor je job.')
+    })
+
+    it('zet bij ATT "Niet upgraden" als een betere claw er is maar zich niet terugverdient', () => {
+      const h = homeWith({ level: '15' })
+      expect(chipOf(part(h, 'ATT')).textContent).toBe('Niet upgraden')
+      expect(part(h, 'ATT').textContent).toContain('Geen claw verdient zich terug')
+    })
+
+    it('zet bij ATT "Niet upgraden" als een betere claw je stats nog niet haalt', () => {
+      const h = homeWith({ level: '25', luk: '4', dex: '4' })
+      const att = part(h, 'ATT')
+      expect(chipOf(att).textContent).toBe('Niet upgraden')
+      expect(chipOf(att).classList.contains('yes')).toBe(false)
+      expect(att.textContent).toMatch(/Steel Titans: je hebt nog \d+ LUK en \d+ DEX nodig/)
+    })
+
+    it('zet bij DEF "Upgrade complete" als je in elk slot meer WDEF draagt dan de winkel biedt', () => {
+      const slot = { pick: 'other', name: 'Testpak', stat: '999' }
+      const h = homeWith({ level: '30', luk: '80', dex: '40' }, { hat: slot, top: slot, bottom: slot, shoes: slot, shield: slot, gloves: slot, cape: slot, earrings: slot }, 'male')
+      const chip = chipOf(part(h, 'DEF'))
+      expect(chip.textContent).toBe('Upgrade complete')
+      expect(chip.classList.contains('yes')).toBe(true)
+    })
+
+    it('zet bij DEF zonder gekozen geslacht "Niet upgraden", ook als je overal meer WDEF draagt dan de winkel biedt', () => {
+      const slot = { pick: 'other', name: 'Testpak', stat: '999' }
+      const h = homeWith({ level: '30', luk: '80', dex: '40' }, { hat: slot, top: slot, bottom: slot, shoes: slot, shield: slot, gloves: slot, cape: slot, earrings: slot })
+      const chip = chipOf(part(h, 'DEF'))
+      expect(chip.textContent).toBe('Niet upgraden')
+      expect(chip.classList.contains('yes')).toBe(false)
+    })
+
+    it('zet bij DEF "Niet upgraden" als er stukken zijn maar geen zich terugverdient', () => {
+      const h = homeWith({ level: '10' })
+      expect(chipOf(part(h, 'DEF')).textContent).toBe('Niet upgraden')
+    })
+  })
+})
+
+describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
+  const skillPart = (fields: object, mob = 'Ribbon Pig') => {
+    cleanup()
+    localStorage.clear()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(mob)] }))
+    render(<App />)
+    return within(panels()[0]).getByRole('heading', { level: 3, name: 'Skill' }).closest('.advice-part') as HTMLElement
+  }
+
+  it('zegt "Goed gezet" (yes) als geen punt in een andere skill goedkoper was', () => {
+    // Lv 10 geeft 1 punt: dat staat in Nimble Body. Het in Lucky Seven zetten kost extra mana, dus goedkoper kan niet.
+    const part = skillPart({ level: '10', luckySeven: '0', nimbleBody: '1' })
+    const chip = part.querySelector('.chip')!
+    expect(chip.textContent).toBe('Goed gezet')
+    expect(chip.classList.contains('yes')).toBe(true)
+    expect(part.querySelector('.verdict')!.textContent).toBe('Je skillpunten staan goed.')
+    expect(within(part).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+
+  it('noemt onder "Goed gezet" de beste andere verdeling met de extra kosten, als die iets kost', () => {
+    const part = skillPart({ level: '10', luckySeven: '0', nimbleBody: '1' })
+    expect(part.textContent).toContain('Geen enkel punt in een andere skill was dit level goedkoper.')
+    expect(part.textContent).toMatch(/Het dichtstbij: een punt in Lucky Seven in plaats van in Nimble Body had dit level ± [\d.]+ meso extra gekost\./)
+    expect(part.textContent).not.toContain('scheelt evenveel')
+  })
+
+  it('zegt "Beter in {skill}" (no) en noemt de besparing als een punt in een andere skill goedkoper was', () => {
+    // Lucky Seven 1 kost op deze mob veel extra mana; hetzelfde punt in Nimble Body kost niets.
+    const part = skillPart({ level: '10', luckySeven: '1' })
+    const chip = part.querySelector('.chip')!
+    expect(chip.textContent).toBe('Beter in Nimble Body')
+    expect(chip.classList.contains('no')).toBe(true)
+    expect(part.querySelector('.verdict')!.textContent).toMatch(/^Een punt in Nimble Body in plaats van in Lucky Seven had dit level ± [\d.]+ meso bespaard\.$/)
+    expect(within(part).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+
+  it('houdt "Geen punt over" als de app het punt niet kan verplaatsen, omdat het in een skill staat die ze niet doorrekent', () => {
+    const part = skillPart({ level: '10', luckySeven: '0', keenEyes: '1' })
+    expect(part.querySelector('.chip')!.textContent).toBe('Geen punt over')
+    expect(part.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
   })
 })

@@ -11,7 +11,7 @@ import { MAGIC_CLAW_LEVELS } from './data/magician'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileDraft } from './profile'
-import { buffBonus, ironBodyDef, maxHpAfterPoint, skillEffectText, skillExtraCostText } from './skillEffects'
+import { buffBonus, ironBodyDef, maxHpAfterPoint, maxHpBeforePoint, skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { hourPlan, MP_POTION, suggestMonsters, type MonsterSuggestion } from './suggest'
@@ -363,7 +363,7 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     expect(armor.saving).toBeCloseTo(costOf(drafts, m) - costOf(drafts, { ...m, magicArmor: 1 }), 6)
   })
 
-  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (ze winnen niet, negatieve besparing)', () => {
+  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (negatieve besparing; ze winnen alleen als niets beters is)', () => {
     const drafts = [known('a', 'henesys-rain-forest-east')]
     const w = parse('warrior', { ...warriorDraft, improvedHpRecovery: '3', maxHpIncrease: '3' })
     const wAdvice = skillPointAdvice(drafts, w)
@@ -376,9 +376,18 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     expect(iron.meso).toBeCloseTo(costOf(drafts, { ...w, ironBody: 1 }), 6)
     expect(focus.saving!).toBeLessThan(0)
     expect(focus.meso).toBeCloseTo(costOf(drafts, { ...b, focus: 1 }), 6)
-    // Bij de Warrior wint Improved HP Recovery (#141); de Bowman heeft geen punt dat iets bespaart.
+    // Bij de Warrior wint Improved HP Recovery (#141). Bij de Bowman bespaart niets: Arrow Blow scheelt niets (0) en wint,
+    // want een vrij punt moet ergens heen en Focus kost extra.
     expect(wAdvice.winner).toBe('improvedHpRecovery')
-    expect(bAdvice.winner).toBeNull()
+    expect(bAdvice.winner).toBe('arrowBlow')
+    expect(bAdvice.choices.find((c) => c.id === 'arrowBlow')!.saving).toBe(0)
+    expect(bAdvice.choices[0].saving!).toBeGreaterThan(focus.saving!)
+    // Staat Arrow Blow op het maximum, dan is Focus het enige wat kan: het wint met zijn negatieve besparing.
+    const bMaxed = parse('bowman', { ...bowmanDraft, eyeOfAmazon: '3', arrowBlow: '20' })
+    const maxedAdvice = skillPointAdvice(drafts, bMaxed)
+    if (maxedAdvice.kind !== 'advice') throw new Error('geen advies')
+    expect(maxedAdvice.winner).toBe('focus')
+    expect(maxedAdvice.choices.find((c) => c.id === 'focus')!.saving!).toBeLessThan(0)
   })
 
   it('telt Max HP Increase als Max HP: op een plek waar niets gevaarlijk is, verandert het de kosten niet', () => {
@@ -389,5 +398,24 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     const hp = advice.choices.find((c) => c.id === 'maxHpIncrease')!
     expect(hp.saving).toBe(0)
     expect(hp.meso).toBe(advice.base)
+  })
+})
+
+describe('maxHpBeforePoint', () => {
+  it('geeft hetzelfde terug zonder punt in de skill om af te halen', () => {
+    expect(maxHpBeforePoint(1000, 0)).toBe(1000)
+  })
+
+  it('haalt het procent van het level af: 1100 met Max HP Increase 1 is 1000 zonder', () => {
+    expect(maxHpBeforePoint(1100, 1)).toBe(1000)
+  })
+
+  it('is het omgekeerde van maxHpAfterPoint, op hoogstens 1 HP na (gemeten: precies 1 HP het grootst, door het afronden naar beneden)', () => {
+    // Gemeten over HP 50 t/m 6000 en elk level 1 t/m 15: de afwijking is nooit meer dan 1 HP, en komt voor.
+    let max = 0
+    for (let n = 1; n <= 15; n++) {
+      for (let hp = 50; hp <= 6000; hp++) max = Math.max(max, Math.abs(hp - maxHpBeforePoint(maxHpAfterPoint(hp, n - 1), n)))
+    }
+    expect(max).toBe(1)
   })
 })
