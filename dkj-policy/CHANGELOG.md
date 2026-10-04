@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**38 / 75 minor entries** <!-- pending-tally -->
+**39 / 76 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/141-potion-recovery-skill · 20261004-181159Z
+
+A point in Improved HP Recovery (Warrior) or Improved MP Recovery (Magician) now counts in the potion cost:
+each potion heals 5% to 20% more, so the model needs that many fewer potions per hour. Both skills are now
+options in the skill advice and no longer listed under "Niet doorgerekend". The per-10-seconds recovery is
+still not counted.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Warrior or Magician sees what a point in their recovery skill saves on potions, and the advice can now
+recommend it when it beats a damage skill.
+
+**Score:** 3
+
+#### Pull Request
+
+Count Improved HP/MP Recovery's potion bonus in the potion cost
+
+[PR #142](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/142)
+
+---
 
 ### DEPLOY: app/138-skill-next-level-mp · 20261004-155851Z
 
