@@ -500,13 +500,12 @@ function EquipmentCard(props: {
                 </div>
                 {entry.pick !== UNKNOWN && (
                   <div class="equip-stats">
-                    {/* Kop boven de waarde, net als de slotnaam boven de naam */}
-                    <span class="equip-value-head" aria-hidden="true">{stat}</span>
                     <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
                       <span class="equip-value-num">
                         {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
                         <strong>{value ?? '?'}</strong>
                       </span>
+                      <span class="equip-value-head" aria-hidden="true">{stat}</span>
                     </div>
                     <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${stat} corrigeren`} onClick={() => setEditing(slot)}>
                       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
