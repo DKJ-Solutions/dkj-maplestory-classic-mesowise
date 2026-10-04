@@ -1244,7 +1244,7 @@ function HuntedMobCard(props: {
   const plan = picked ? hourPlan(picked, picked.estimate.killsPerHour) : undefined
   const invalid = result !== undefined && isInvalid(result)
   const value = !result || invalid ? '–' : Number.isFinite(result.expPerMeso) ? nf.format(result.expPerMeso) : 'onbegrensd (kost niets)'
-  const title = 'Laatst gejaagd op'
+  const title = 'Monster'
   const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
