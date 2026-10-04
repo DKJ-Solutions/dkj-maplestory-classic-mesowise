@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { BRONZE_ARROW, PLAIN_ARROW } from './bowmanGear'
 import { isSkillKey } from './data/skills'
+import { SUBI } from './data/thief'
 import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
@@ -144,6 +146,45 @@ describe('loadProfile en saveProfile', () => {
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     expect(totalAttack(d, 'bowman')).toBe(toCharacter(r.profile).watk)
     expect(totalAttack({ ...d, starWatk: 'x' }, 'bowman')).toBe(39)
+  })
+
+  describe('Helpful Stranger (#64)', () => {
+    const bowman = (over: Partial<ProfileDraft>) => {
+      const r = parseProfile({ ...DEFAULT_PROFILE, clawWatk: '39', ...over }, 'bowman')
+      if (!('profile' in r)) throw new Error('profiel ongeldig')
+      return r.profile
+    }
+
+    it('rekent met de gewone pijl als de schakelaar uit staat, ook als de bronze pijl gekozen is', () => {
+      for (const over of [{}, { bronzeArrows: '1' }, { helpfulStranger: '1' }]) {
+        const p = bowman(over)
+        expect(p, JSON.stringify(over)).toMatchObject({ starWatk: PLAIN_ARROW.watk, starRecharge: PLAIN_ARROW.pricePerArrow })
+        expect(toCharacter(p).watk).toBe(39)
+        expect(totalAttack({ ...DEFAULT_PROFILE, clawWatk: '39', ...over }, 'bowman')).toBe(39)
+      }
+    })
+
+    it('rekent met +1 W.ATT en 2 meso per pijl als de schakelaar aan staat en de bronze pijl gekozen is', () => {
+      const over = { helpfulStranger: '1', bronzeArrows: '1' }
+      const p = bowman(over)
+      expect(p).toMatchObject({ starWatk: BRONZE_ARROW.watk, starRecharge: BRONZE_ARROW.pricePerArrow })
+      expect(toCharacter(p).watk).toBe(40)
+      expect(totalAttack({ ...DEFAULT_PROFILE, clawWatk: '39', ...over }, 'bowman')).toBe(40)
+      expect(BRONZE_ARROW).toMatchObject({ watk: 1, pricePerArrow: 2 })
+    })
+
+    it('laat de pijlkeuze een Thief niet raken', () => {
+      const r = parseProfile({ ...DEFAULT_PROFILE, helpfulStranger: '1', bronzeArrows: '1' })
+      expect('profile' in r && r.profile).toMatchObject({ starWatk: SUBI.watk, starRecharge: SUBI.rechargePerStar })
+    })
+
+    it('bewaart de keuze, en een oud profiel zonder deze velden laadt als uit', () => {
+      const storage = fakeStorage()
+      saveProfile(storage, { ...DEFAULT_PROFILE, helpfulStranger: '1', bronzeArrows: '1' })
+      expect(loadProfile(storage)).toMatchObject({ helpfulStranger: '1', bronzeArrows: '1' })
+      const old = fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 1, fields: { luk: '60' } }) })
+      expect(loadProfile(old)).toMatchObject({ luk: '60', helpfulStranger: '0', bronzeArrows: '0' })
+    })
   })
 
   it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {

@@ -15,6 +15,8 @@ import {
   loadEquipment,
   saveEquipment,
   searchCatalog,
+  setHelpfulStranger,
+  syncArrow,
   isOptionalSlot,
   slotLabel,
   slotsFor,
@@ -29,7 +31,7 @@ import {
   equipmentForJob,
 } from './equipment'
 import { NPC_ARMOR } from './data/armor'
-import { NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
@@ -952,8 +954,66 @@ describe('het ammo-slot (issue #65)', () => {
     expect(p.starRecharge).toBe(DEFAULT_PROFILE.starRecharge)
   })
 
-  it('verandert niets aan het profiel bij pijlen: de Bowman rekent altijd met de gewone pijl (zie parseProfile)', () => {
+  it('zet bij een gewone pijl alleen de bronze-vlag uit en laat de star-velden staan (de pijl volgt uit parseProfile)', () => {
     expect(applyEquipChange(prof(), 'ammo', unknown, shop('Arrows for Bows'))).toEqual(prof())
+    expect(applyEquipChange(prof({ bronzeArrows: '1' }), 'ammo', shop('Bronze Arrows for Bows'), shop('Arrows for Bows')).bronzeArrows).toBe('0')
+  })
+
+  describe('Helpful Stranger (#64)', () => {
+    const bronzeNames = HELPFUL_STRANGER_ARROWS.map((a) => a.name)
+    const gear = (ammo: EquipEntry): Equipment => ({ ...defaultEquipment(), ammo })
+
+    it('biedt de bronze pijlen alleen aan met de schakelaar aan, en kent ze altijd bij het opzoeken', () => {
+      expect(catalogItems('ammo', 'bowman').map((i) => i.name)).toEqual(NPC_ARROWS.map((a) => a.name))
+      expect(catalogItems('ammo', 'bowman', true).map((i) => i.name)).toEqual([...NPC_ARROWS.map((a) => a.name), ...bronzeNames])
+      expect(catalogItems('ammo', 'bowman', true).find((i) => i.name === bronzeNames[0])?.stat).toBe(1)
+      expect(searchCatalog('ammo', 'bowman', 'bronze')).toEqual([])
+      expect(searchCatalog('ammo', 'bowman', 'bronze', true).map((i) => i.name)).toEqual(bronzeNames)
+      expect(catalogItems('ammo', 'thief', true).map((i) => i.name)).not.toContain(bronzeNames[0])
+    })
+
+    it('laadt een bewaarde bronze pijl alleen met de schakelaar aan, anders als de gewone pijl van dezelfde soort', () => {
+      const storage = stored({ ammo: { pick: bronzeNames[1] } })
+      expect(loadEquipment(storage, 'bowman', true).ammo).toEqual(shop(bronzeNames[1]))
+      expect(loadEquipment(storage, 'bowman', false).ammo).toEqual(shop('Arrows for Crossbows'))
+      expect(loadEquipment(storage, 'bowman').ammo).toEqual(shop('Arrows for Crossbows'))
+      expect(syncArrow(prof({ bronzeArrows: '1' }), loadEquipment(storage, 'bowman', false)).bronzeArrows).toBe('0')
+    })
+
+    it('valt terug op de gewone pijl als je de bronze pijl vervangt door een leeg slot of een eigen item', () => {
+      const bronzeOn = prof({ helpfulStranger: '1', bronzeArrows: '1' })
+      expect(applyEquipChange(bronzeOn, 'ammo', shop(bronzeNames[0]), unknown).bronzeArrows).toBe('0')
+      expect(applyEquipChange(bronzeOn, 'ammo', shop(bronzeNames[0]), other('5', 'Mijn pijl')).bronzeArrows).toBe('0')
+      expect(changeEquipment(bronzeOn, gear(shop(bronzeNames[0])), 'ammo', unknown).profile.bronzeArrows).toBe('0')
+    })
+
+    it('zet de bronze-vlag als je een bronze pijl kiest', () => {
+      expect(applyEquipChange(prof({ helpfulStranger: '1' }), 'ammo', unknown, shop(bronzeNames[0])).bronzeArrows).toBe('1')
+    })
+
+    it('zet de schakelaar aan zonder iets anders te veranderen', () => {
+      const eq = gear(shop('Arrows for Bows'))
+      expect(setHelpfulStranger(prof(), eq, true)).toEqual({ profile: prof({ helpfulStranger: '1' }), equipment: eq })
+    })
+
+    it('valt bij uitzetten terug op de gewone pijl van dezelfde soort', () => {
+      const on = prof({ helpfulStranger: '1', bronzeArrows: '1' })
+      const bow = setHelpfulStranger(on, gear(shop('Bronze Arrows for Bows')), false)
+      expect(bow.equipment.ammo).toEqual(shop('Arrows for Bows'))
+      expect(bow.profile).toMatchObject({ helpfulStranger: '0', bronzeArrows: '0' })
+      expect(setHelpfulStranger(on, gear(shop('Bronze Arrows for Crossbows')), false).equipment.ammo).toEqual(shop('Arrows for Crossbows'))
+    })
+
+    it('laat bij uitzetten een gewone pijl of een leeg slot staan', () => {
+      const eq = gear(shop('Arrows for Crossbows'))
+      expect(setHelpfulStranger(prof({ helpfulStranger: '1' }), eq, false).equipment).toBe(eq)
+      expect(setHelpfulStranger(prof({ helpfulStranger: '1' }), defaultEquipment(), false).equipment.ammo).toEqual(unknown)
+    })
+
+    it('syncArrow volgt wat in het ammo-slot staat', () => {
+      expect(syncArrow(prof({ bronzeArrows: '1' }), gear(unknown)).bronzeArrows).toBe('0')
+      expect(syncArrow(prof(), gear(shop(bronzeNames[0]))).bronzeArrows).toBe('1')
+    })
   })
 
   it('geeft stars WATK (ATT) en geen WDEF', () => {
