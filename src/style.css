@@ -342,7 +342,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
-/* De popup om een stat te corrigeren: op een telefoon een paneel onderaan het scherm, breder gecentreerd */
+/* De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): op een telefoon een paneel onderaan het scherm, breder gecentreerd */
 .stat-dialog {
   width: 100%; max-width: 26rem; margin: auto auto 0; padding: 0;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem 1rem 0 0;

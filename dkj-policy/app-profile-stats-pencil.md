@@ -51,8 +51,8 @@ card; name and value share one row to save height; level, weapon attack and WDEF
 ### TEST
 
 - [x] Component tests updated and added: save only after Opslaan/Enter, discard on close, + steps, no inputs outside the popup, the three stats absent
-- [x] `npx vitest run` (589 green), `npm run lint`, `scripts/lint/lint.ps1` clean
-- [ ] Code review (Victor) and proofread of the UI text (Edith)
+- [x] `npx vitest run` (590 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [x] Code review (Victor) and proofread of the UI text (Edith): shared `stepValue` helper, typed hidden-stat set, an attackMs test and neutral popup comments taken in; merging the duplicated popup body filed as #63
 - [ ] Dave looks at the result at phone width before the merge
 
 ### DEPLOY: app/profile-stats-pencil

@@ -340,6 +340,16 @@ describe('bewaren na elke wijziging', () => {
     expect(names).toContain('Tijd per aanval (ms)')
   })
 
+  it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const h = openStat('Tijd per aanval (ms)')
+    expect(h.d.queryByRole('button', { name: /plus 1/ })).toBeNull()
+    h.type('812.5')
+    h.save()
+    expect(profileFields().attackMs).toBe('812.5')
+    expect(statShown('Tijd per aanval (ms)')).toBe('812.5')
+  })
+
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('LUK')

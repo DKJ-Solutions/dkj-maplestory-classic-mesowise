@@ -182,7 +182,15 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level gaat omhoog met Level up, weapon
  * attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
  */
-const CHARACTER_STATS = STAT_FIELDS.filter((f) => !['level', 'clawWatk', 'wdef'].includes(f.key))
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'clawWatk', 'wdef'])
+const CHARACTER_STATS = STAT_FIELDS.filter((f) => !HIDDEN_STATS.has(f.key))
+
+/** Het getal in een stat-popup één omhoog of omlaag, binnen min en max; een leeg of onleesbaar vak telt als `fallback`. */
+function stepValue(text: string, by: number, min: number, max: number, fallback: number): string {
+  const n = Number(text.trim())
+  const base = text.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : fallback
+  return String(Math.min(max, Math.max(min, base + by)))
+}
 
 function ProfileCard(props: {
   job: Job
@@ -218,12 +226,7 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => {
             const value = draft[f.key]
             const isEditing = editing?.key === f.key
-            const step = (by: number) => {
-              if (!editing) return
-              const n = Number(editing.text.trim())
-              const base = editing.text.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : f.min
-              setEditing({ key: f.key, text: String(Math.min(f.max, Math.max(f.min, base + by))) })
-            }
+            const step = (by: number) => editing && setEditing({ key: f.key, text: stepValue(editing.text, by, f.min, f.max, f.min) })
             return (
               <div class="stat-line" key={f.key}>
                 <span class="stat-line-name">{f.label}</span>
@@ -567,7 +570,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
 }
 
 /**
- * De popup om een stat te corrigeren: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
+ * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
  * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
  */
 function StatDialog(props: { title: string; onCancel: () => void; children: ComponentChildren }) {
@@ -661,10 +664,7 @@ function EquipmentCard(props: {
               props.onCommit(slot)
               setEditing(null)
             }
-            const step = (by: number) => {
-              const n = Number(shown.trim())
-              props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
-            }
+            const step = (by: number) => props.onStatInput(slot, stepValue(shown, by, 0, 999, db ?? 0))
             return (
               <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
