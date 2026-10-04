@@ -459,3 +459,4 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 /* Opslaan op de jobkaart: verschijnt pas als je met het potlood open iets wijzigt (Dave, 4 oktober 2026). */
 .job-actions { display: flex; margin-bottom: 0.75rem; }
+.job-actions .equip-save { margin-left: 0; }
