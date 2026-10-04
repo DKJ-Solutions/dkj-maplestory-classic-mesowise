@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**22 / 54 minor entries** <!-- pending-tally -->
+**22 / 55 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/55-character-gender · 20261004-124443Z
+
+The app now asks whether your character is a man or a woman, and shows it as (m) or (f) behind the job. A Warrior then gets advice on tops, bottoms and
+overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
+you choose, the advice only counts armor both can wear.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ask the character's gender, so gender-locked shop items count
+
+[PR #103](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/103)
+
+---
 
 ### DEPLOY: fix/101-one-skill-mp-helper · 20261004-124227Z
 
