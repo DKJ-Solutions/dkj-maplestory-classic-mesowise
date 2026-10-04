@@ -270,8 +270,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-head, .equip-search, .equip-stats { display: contents; }
 /* De slotnaam gecentreerd bovenaan; de stat (ATT of DEF) staat in het waardevak, rechts van het getal */
 .equip-head .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
-/* "(optioneel)" achter de slotnaam: gedempt en niet vet, zodat de naam leidend blijft */
-.equip-head .slot-name .slot-optional { display: inline; margin: 0; font-size: 0.875rem; font-weight: 400; color: var(--muted); }
 .equip-value-head { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
 /* De zoekbalk zakt mee met de onderrand van waardevak en potlood (marge plus rand), zodat alles op één lijn staat */
 /* De naam ligt als knop boven op de zoekbalk (zelfde cel); de zoekbalk eronder is onzichtbaar tot je tikt */
