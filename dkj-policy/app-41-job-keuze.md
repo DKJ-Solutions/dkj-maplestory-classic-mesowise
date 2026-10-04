@@ -53,6 +53,8 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
   leeg Lucky Seven-veld blokkeerde anders "Alles klopt, toon advies" voor een andere job), `applyLevelUp`
   vraagt de job verplicht, de vraagtitels zijn gedeeld, de job-kaart staat vóór de equipment, en Ediths
   tekstpunten zijn verwerkt.
+- [x] Gwen: de job-kaart is niet inklapbaar en heeft geen keuzelijst. Het is één vraag, dus hij staat
+  altijd open, met de vijf jobs als knoppen (Dave, 4 oktober 2026).
 
 #### Ontwerpkeuzes
 
