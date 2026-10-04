@@ -122,8 +122,13 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
             aria-pressed={editing}
             onClick={() => setDraft(editing ? null : { job, gender })}
           >
+            {/* Open: een kruis, want een klik sluit en gooit het concept weg (Dave, 4 oktober 2026); dicht: het potlood. */}
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path d="M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              {editing ? (
+                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              ) : (
+                <path d="M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              )}
             </svg>
           </button>
         )}

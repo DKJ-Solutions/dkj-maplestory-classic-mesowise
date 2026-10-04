@@ -965,6 +965,16 @@ describe('het geslacht (issue #55)', () => {
     expect(jobTitle()).toBe('Je job: Thief (m)')
   })
 
+  it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
+    withWarrior('female')
+    const icon = () => pencil().querySelector('path')!.getAttribute('d')
+    const closed = icon()
+    fireEvent.click(pencil())
+    expect(icon()).toBe('M6 6l12 12M18 6L6 18')
+    fireEvent.click(pencil())
+    expect(icon()).toBe(closed)
+  })
+
   it('gooit het concept weg als je het potlood weer dichtklikt', () => {
     withWarrior('female')
     fireEvent.click(pencil())
