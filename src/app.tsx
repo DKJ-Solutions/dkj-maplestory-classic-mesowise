@@ -506,7 +506,8 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   const save = () => {
     if (edit === null) return
     const n = Number(edit.base.trim())
-    const base = edit.base.trim() !== '' && Number.isInteger(n) && n > maxBase ? String(maxBase) : edit.base
+    // Een getypt getal buiten de grenzen gaat naar de dichtstbijzijnde: niet onder 4 (STARTING_AP) en niet boven wat je level nog over laat.
+    const base = edit.base.trim() !== '' && Number.isInteger(n) ? String(Math.min(maxBase, Math.max(f.min, n))) : edit.base
     // Geen extra AP van items is 0: een leeg vak wordt bij Opslaan 0, anders blokkeert het de berekening.
     props.onSave({ [stat]: base, [extraKey]: edit.extra.trim() === '' ? '0' : edit.extra })
     setEdit(null)

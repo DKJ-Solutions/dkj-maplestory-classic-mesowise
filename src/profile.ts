@@ -6,7 +6,7 @@ import type { Character } from './calc/mobModel'
 import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
-import { ATTACK_MS, SUBI } from './data/thief'
+import { ATTACK_MS, STARTING_AP, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
 import type { Gender } from './gender'
@@ -32,10 +32,11 @@ export interface ProfileField {
 const STATS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
-  { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
-  { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
-  { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
-  { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
+  // Je base AP in een stat kan niet onder 4: daar begint elk karakter (STARTING_AP).
+  { key: 'str', label: 'STR', min: STARTING_AP.perStat, max: 999, integer: true },
+  { key: 'dex', label: 'DEX', min: STARTING_AP.perStat, max: 999, integer: true },
+  { key: 'int', label: 'INT', min: STARTING_AP.perStat, max: 999, integer: true },
+  { key: 'luk', label: 'LUK', min: STARTING_AP.perStat, max: 999, integer: true },
   // Wat je items per stat extra geven, bovenop je base AP in STR, DEX, INT en LUK (Dave, 4 oktober 2026). De berekening telt ze op (zie parseProfile).
   { key: 'strExtra', label: 'Extra STR', min: 0, max: 999, integer: true },
   { key: 'dexExtra', label: 'Extra DEX', min: 0, max: 999, integer: true },

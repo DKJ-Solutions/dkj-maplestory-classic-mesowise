@@ -506,6 +506,11 @@ describe('base AP en extra AP van items (Dave, 4 oktober 2026)', () => {
     expect(baseApSpent(draft)).toBe(70)
   })
 
+  it('laat een base stat niet onder 4: daar begint elk karakter', () => {
+    expect(parseProfile({ ...draft, int: '3' })).toEqual({ error: '"INT" moet tussen 4 en 999 liggen.', key: 'int' })
+    expect('profile' in parseProfile({ ...draft, int: '4', luk: '37' })).toBe(true)
+  })
+
   it('weigert een extra AP buiten 0 tot 999, met de naam van de stat', () => {
     expect(parseProfile({ ...draft, lukExtra: '1000' })).toEqual({ error: '"Extra LUK" moet tussen 0 en 999 liggen.', key: 'lukExtra' })
   })

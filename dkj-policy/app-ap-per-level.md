@@ -53,12 +53,13 @@ by what the level still leaves, and the optional extra AP from items.
 
 ### TEST
 
-- [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; base plus extra in `parseProfile`, `toCharacter`, `shortfall` and the level-up accuracy; the starter profile spends exactly 70; an old saved profile gets 0 extra; Extra outside 0 to 999 is refused
+- [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; base plus extra in `parseProfile`, `toCharacter`, `shortfall` and the level-up accuracy; the starter profile spends exactly 70; an old saved profile gets 0 extra; Extra outside 0 to 999 and a base stat under 4 are refused
 - [x] Tycho: the popup shows both fields, base cannot go past what is left, freeing base AP in one stat makes it available in another, Back to level 9 shows 5 too many; existing card tests moved to the new popup
 - [x] Gwen: the popup no longer keeps an empty button row under each field, so Extra AP sits right under Base AP (Dave: too much space between them)
 - [~] Gwen: the card showed a stat as "28 (25+3)", the game's stat window form -- replaced by the two columns below
 - [x] Gwen and Cody: the card shows each stat as "Base", a plus and "Extra" (AP from items, always a field, 0 when there is none; an empty field is saved as 0), with the headings above them and no total (Dave: they need not be added up; base first)
 - [x] Cody: the popup and the card count the base AP left the same way (one label helper, one sum); with too much base AP the popup said "over: 0" while the card said "te veel 3" (Dave: the two screens disagreed)
+- [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
 ### DEPLOY: app/ap-per-level

@@ -523,6 +523,20 @@ describe('bewaren na elke wijziging', () => {
     expect(statShown('LUK')).toBe('37')
   })
 
+  it('laat de base AP in de popup niet onder 4 gaan, het minimum van elke stat', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('STR')
+    expect(h.base().value).toBe('4')
+    fireEvent.click(h.d.getByRole('button', { name: 'Base STR min 1' }))
+    expect(h.base().value).toBe('4')
+    expect(h.base().min).toBe('4')
+    h.typeBase('1')
+    h.typeExtra('2')
+    h.save()
+    expect(profileFields().str).toBe('4')
+    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+  })
+
   it('geeft base AP vrij die je uit een andere stat haalt', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const dex = openAbility('DEX')
