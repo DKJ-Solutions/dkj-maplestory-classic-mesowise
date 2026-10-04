@@ -1,17 +1,19 @@
 // De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler.
+// Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
+// zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
+import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
 import { expPerMesoOf } from './mesoCostAt'
-import { parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
-import { SKILLS, type SkillId } from './skillPoint'
-import { luckySevenAt } from './suggest'
+import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type Profile, type ProfileDraft, type ProfileKey } from './profile'
+import { skillsOf, type SkillId } from './skillPoint'
+import { luckySevenAt, powerStrikeAt } from './suggest'
 
 const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
 
@@ -36,8 +38,8 @@ const wholeOf = (text: string): number | null => {
  * accuracy die daarbij hoort (alleen het verschil van het stat-deel, want de accuracy in het profiel is
  * het totaal uit het statvenster). Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
  * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van
- * parseProfile). HP per level en AP in LUK zijn van de Thief: een andere job krijgt alleen level +1 en de
- * speler vult de rest zelf in.
+ * parseProfile). HP per level en AP in LUK zijn van de Thief: een Warrior krijgt zijn eigen HP per level en geen AP,
+ * een andere job krijgt alleen level +1 en de speler vult de rest zelf in.
  */
 export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const level = numberOf(draft.level)
@@ -48,6 +50,14 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
   const accuracy = wholeOf(draft.accuracy)
+  if (job === 'warrior') {
+    // De AP laat de app aan de speler (STR voor schade, DEX voor accuracy en wapen-eisen); alleen het level telt in de accuracy.
+    if (hp !== null) next.hp = String(hp + warriorHpPerLevelFrom(level))
+    if (dex !== null && luk !== null && accuracy !== null) {
+      next.accuracy = String(accuracy + warriorAccuracy(dex, level + 1, luk) - warriorAccuracy(dex, level, luk))
+    }
+    return next
+  }
   if (hp !== null) next.hp = String(hp + hpPerLevelFrom(level))
   if (luk !== null) next.luk = String(luk + AP_PER_LEVEL.amount)
   if (dex !== null && luk !== null && accuracy !== null) {
@@ -95,29 +105,39 @@ export const CHECK_FIELDS = [
   ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
 ]
 
+/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest. */
+const WARRIOR_AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid']
+
 /** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */
 export const checkFieldsFor = (job: Job) => {
+  if (job === 'warrior') {
+    const first = WARRIOR_AFTER_LEVEL_UP.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
+    return [...first, ...statFieldsFor(job).filter((f) => !WARRIOR_AFTER_LEVEL_UP.includes(f.key))]
+  }
   const shown = profileFieldsFor(job)
   return CHECK_FIELDS.filter((f) => shown.includes(f))
 }
-
-/** Een profiel als invulvelden, zoals ProfileDraft ze bewaart. */
-const toDraftStrings = (p: Profile): ProfileDraft =>
-  Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, String(p[f.key])])) as ProfileDraft
 
 /**
  * Het profiel met één punt erbij in deze skill (dezelfde stap als het skillpuntadvies rekent). Is het
  * profiel niet volledig, of staat de skill al op het maximum, dan blijft het zoals het was.
  */
-export function applySkillPoint(draft: ProfileDraft, id: SkillId): ProfileDraft {
-  const parsed = parseProfile(draft, 'thief')
-  const skill = SKILLS.find((s) => s.id === id)
+export function applySkillPoint(draft: ProfileDraft, id: SkillId, job: Job = 'thief'): ProfileDraft {
+  const parsed = parseProfile(draft, job)
+  const skill = skillsOf(job).find((s) => s.id === id)
   if (!('profile' in parsed) || !skill || skill.level(parsed.profile) >= skill.max) return draft
-  return toDraftStrings(skill.plusOne(parsed.profile))
+  // Alleen de velden die het punt raakt gaan terug in het concept; al het andere (ook wat de speler voor een
+  // andere job typte) blijft zoals getypt.
+  const after = skill.plusOne(parsed.profile)
+  const touched = DRAFT_FIELDS.filter((f) => after[f.key] !== parsed.profile[f.key])
+  return { ...draft, ...Object.fromEntries(touched.map((f) => [f.key, String(after[f.key])])) }
 }
 
 /** De MP per worp van Lucky Seven op dit skill-level (0 als hij nog niet geleerd is). */
 export const luckySevenMp = (level: number): number => luckySevenAt(level)?.mp ?? 0
+
+/** De MP per aanval van Power Strike op dit skill-level (0 als hij nog niet geleerd is). */
+export const powerStrikeMp = (level: number): number => powerStrikeAt(level)?.mp ?? 0
 
 /** De beste plek, zoals de speler hem zag: genoeg om hem later terug te vinden. */
 export interface BestSpot {

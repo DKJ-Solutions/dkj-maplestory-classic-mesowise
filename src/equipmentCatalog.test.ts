@@ -9,6 +9,7 @@ vi.mock('./data/wornItems', () => {
       { name: 'Testhoed', slot: 'hat', level: 40, wdef: 30, source },
       { name: 'Red Pao', slot: 'top', level: 20, wdef: 1, source },
     ],
+    COMMON_WORN_ARMOR: [],
     WORN_CLAWS: [{ name: 'Testclaw', level: 40, watk: 30, speed: { label: 'Fast (5)', attackMs: 540 }, source }],
   }
 })

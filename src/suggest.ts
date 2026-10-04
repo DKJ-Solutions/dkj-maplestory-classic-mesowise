@@ -1,11 +1,12 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { ASSUMPTIONS, characterAttack, estimateMob, type Assumptions, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, characterAttack, estimateMob, meleeAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion } from './data/types'
+import { POWER_STRIKE_LEVELS } from './data/warrior'
 import { toCharacter, type Profile } from './profile'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
@@ -13,6 +14,23 @@ import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 export function luckySevenAt(level: number): SkillStats | null {
   if (level < 1) return null
   return LUCKY_SEVEN_LEVELS[Math.min(level, LUCKY_SEVEN_LEVELS.length) - 1] ?? null
+}
+
+/** Power Strike op dit skill-level, of null als hij nog niet geleerd is (level 0): dan telt de gewone aanval. */
+export function powerStrikeAt(level: number): SkillStats | null {
+  if (level < 1) return null
+  return POWER_STRIKE_LEVELS[Math.min(level, POWER_STRIKE_LEVELS.length) - 1] ?? null
+}
+
+/**
+ * De aanval van dit profiel. Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
+ * Power Strike op het gezette level, of zonder punten met de gewone aanval. Slash Blast is bewust niet
+ * meegenomen: hij raakt tot 4 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
+ */
+function attackOf(profile: Profile, character: Character): Attack {
+  return profile.job === 'warrior'
+    ? meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))
+    : characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
 }
 
 /** De potion die per punt herstel het minst kost (Orange bij HP, Blue bij MP). */
@@ -29,18 +47,19 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één star kost: die van je gekozen stars. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars; een Warrior gooit niets, dus 0. */
   rechargePerStar: number
 }
 
 /** Elk monster van de plek doorgerekend, van meeste naar minste EXP per uur. */
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
-  const attack = characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
+  const attack = attackOf(profile, character)
+  const rechargePerStar = profile.job === 'warrior' ? 0 : profile.starRecharge
   return spot.monsters
     .map((monster) => {
       const estimate = estimateMob(character, attack, monster, assumptions)
-      return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar: profile.starRecharge }
+      return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar }
     })
     .sort((a, b) => b.expPerHour - a.expPerHour)
 }
@@ -58,7 +77,7 @@ export interface HourPlan {
   mpPotionsPerHour: number
   /** Meso per uur aan potions. */
   potions: number
-  /** Meso per uur aan het herladen van stars. */
+  /** Meso per uur aan het herladen van stars (0 voor een Warrior). */
   ammo: number
 }
 
