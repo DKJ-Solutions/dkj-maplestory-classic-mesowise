@@ -52,6 +52,7 @@ Issue #58: the equipment card says ATT and DEF (Dave, October 4, 2026), the rest
 
 - [x] `npm run lint` (typecheck) clean; vitest 696 of 696 green, the two label tests updated
 - [x] Victor (code) and Edith (UI text) reviewed the diff
+- [x] Dave looked at it on localhost and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/58-att-def-names
 
