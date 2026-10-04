@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**14 / 24 minor entries** <!-- pending-tally -->
+**15 / 25 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/skillpoints-section · 20261004-090757Z
+
+Onder je karakter staat nu een inklapbare kaart "Skillpoints", met een boekje in de kop. Daarin staan alle
+skills van een Thief tot de 2e job: eerst de zes van de 1e job (Nimble Body, Keen Eyes, Double Stab,
+Disorder, Dark Sight, Lucky Seven), helemaal onderin de drie van de Beginner (Three Snails, Nimble Feet,
+Recovery), elk met het maximum van NiaMeowDB. Met grote − en + per skill zet je een level lager of hoger, of je typt het getal; ze staan niet meer bij je
+karakter. De kaart staat ook in het controlescherm na een level-up en in "Wat nu?" boven de skillvraag,
+zodat een punt dat je met "Punt zetten" zet daar meteen te zien is. Onderaan de open kaart klap je hem
+weer in, zonder terug te scrollen naar de kop. In het advies rekenen nog steeds
+alleen Lucky Seven en Nimble Body mee.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Al je skillpunten staan op één plek, ook de skills die het advies (nog) niet doorrekent.
+
+**Score:** 3
+
+#### Pull Request
+
+Sectie Skillpoints: alle skills van een Thief met de punten die je hebt gezet
+
+[PR #51](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/51)
+
+---
 
 ### DEPLOY: app/41-job-keuze · 20261004-085129Z
 
