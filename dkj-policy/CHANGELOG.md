@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**22 / 51 minor entries** <!-- pending-tally -->
+**22 / 52 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
+
+Nothing changes on screen. Magic Claw's damage was already counted per hit, two hits per cast; MeowDB's skill
+page turns out to say so in so many words, so the data now cites that sentence instead of calling it a guess.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magic Claw's damage is per hit, as its skill page states
+
+[PR #102](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/102)
+
+---
 
 ### DEPLOY: app/84-level-up-button · 20261004-123108Z
 
