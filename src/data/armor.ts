@@ -14,7 +14,7 @@
 // - Red Qi Pao Skirt (id 1216, level 22, WDEF 24): een item alleen voor vrouwen met eigen stats. De app
 //   kent het geslacht van het personage niet en zou een rok aan een mannelijk personage kunnen adviseren.
 // - Handschoenen, overalls en schilden: er is geen NPC-item voor een Thief in level 10 tot 30 met een
-//   prijs op MeowDB.
+//   prijs op MeowDB. De Sauna Robe (overall, geen prijs) staat in wornItems.ts.
 //
 // De Ghetto Beanie (level 10, jobregel Thief) verkoopt Don Hwang in Kerning City in vijf kleuren voor 1.200
 // meso (#49, gelezen op 2026-10-04); hier staat de rode, de andere kleuren staan in wornItems.ts.

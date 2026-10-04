@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, slotsFor, STAT_NAME, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -790,7 +790,7 @@ function EquipmentCard(props: {
               setEditing(null)
             }
             return (
-              <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
+              <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">
                     {label}
@@ -799,7 +799,7 @@ function EquipmentCard(props: {
                   <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>
-                {entry.pick !== UNKNOWN && (
+                {!isEmptyEntry(entry) && (
                   <div class="equip-stats">
                     <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
                       <span class="equip-value-num">
@@ -1210,7 +1210,9 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 /** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
   if (win.replaces === undefined) return ` in plaats van je huidige stuk (${STAT_NAME.armor} onbekend).`
-  return ` in plaats van je ${wornName(equipment[win.armor.slot]) ?? 'huidige stuk'}.`
+  // Een overall vervangt top en bottom samen, en een top of bottom een overall die je draagt.
+  const names = displacedSlots(equipment, win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
+  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.`
 }
 
 /** Wat het winnende stuk armor oplevert, in een zin. */
@@ -1634,9 +1636,10 @@ export function App() {
   }
   // Een wissel past ook het profiel aan (weapon attack, aanvalssnelheid of WDEF), zodat het advies meteen klopt.
   const applyEntry = (slot: EquipSlot, after: EquipEntry) => {
-    const before = equipmentRef.current[slot]
-    writeProfile((p) => applyEquipChange(p, slot, before, after))
-    writeEquipment({ ...equipmentRef.current, [slot]: after })
+    // Een overall vult top en bottom ook (en andersom): changeEquipment geeft de hele nieuwe toestand.
+    const changed = changeEquipment(profileRef.current, equipmentRef.current, slot, after)
+    writeProfile(() => changed.profile)
+    writeEquipment(changed.equipment)
   }
   const pickEquipment = (slot: EquipSlot, pick: string, name?: string) => {
     setPendingFor(slot, undefined)

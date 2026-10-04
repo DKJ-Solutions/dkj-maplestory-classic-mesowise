@@ -13,9 +13,9 @@
 //
 // Niet opgenomen: de GM-hoeden (Dr. Lim Hat, Nemi Hat, Inkwell Hat, Wizet Invincible Hat, elk +200 WDEF),
 // Wizet Plain Suit en Wizet Plain Shoes (geen stat op de pagina), en Black Sneak (id 1009: de pagina toont
-// geen W.DEF). Overalls ook niet: de app heeft geen overall-slot. Heet een item hetzelfde als een ander
-// (de mannen- en vrouwenversie, of Beginner's Garnier 681 en 2545), dan staat het er één keer in: de stats zijn
-// gelijk.
+// geen W.DEF). Overalls: alleen wat een Thief draagt (de Sauna Robe, 1105 en 1111); die van de andere jobs komen
+// met hun eigen data. Heet een item hetzelfde als een ander (de mannen- en vrouwenversie, of Beginner's Garnier
+// 681 en 2545), dan staat het er één keer in: de stats zijn gelijk.
 import { SPEED } from './attackSpeed'
 import type { Source, WornArmor, WornClaw } from './types'
 
@@ -24,7 +24,7 @@ const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-d
 
 const { fast5: FAST5, fast4: FAST4 } = SPEED
 
-/** Niet-winkel armor, per slot (hat, top, bottom, shoes) van laag naar hoog level. */
+/** Niet-winkel armor, per slot (hat, top, bottom, overall, shoes) van laag naar hoog level. */
 export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Brown Skullcap', slot: 'hat', level: 5, wdef: 6, source: src(708) },
   { name: 'Green Skullcap', slot: 'hat', level: 5, wdef: 6, source: src(709) },
@@ -127,6 +127,8 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Blue Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1253) },
   { name: 'Purple Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1254) },
   { name: 'Black Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1255) },
+  // Overall: één stuk voor top en bottom samen (issue #50). De Red Sauna Robe (1111) is de vrouwenversie met dezelfde stats.
+  { name: 'Blue Sauna Robe', slot: 'overall', level: 30, wdef: 75, source: src(1105) },
   { name: 'Leather Sandals', slot: 'shoes', level: 0, wdef: 2, source: src(1305) },
   { name: 'Red Rubber Boots', slot: 'shoes', level: 0, wdef: 2, source: src(1306) },
   { name: 'Yellow Rubber Boots', slot: 'shoes', level: 0, wdef: 2, source: src(1307) },
@@ -150,7 +152,7 @@ export const WORN_ARMOR: readonly WornArmor[] = [
  * 1308) en de items die deze kop met naam als "zonder jobregel" noemt: Bandana (720 tot 723; de White Bandana 719
  * is sinds #55 een NPC-item in elke klaslijst), Baseball Cap (782), One-lined T-Shirt (960) en Gomushin (1317 tot 1319), en de op 2026-10-04 op de ruwe
  * itempagina gecontroleerde Skullcaps, Headbands en andere items (708 tot 718, 740 tot 742, 961 tot 963, 1163, 1181
- * en 1233). De Warrior leest ze via
+ * en 1233) en de Sauna Robe (1105, overall; op de ruwe pagina geen jobregel, #50). De Warrior leest ze via
  * COMMON_WORN_ARMOR (zie wornWarrior.ts); de rijen staan maar op één plek.
  * Alleen wat met zekerheid zonder jobregel is staat hier; de overige rijen (o.a. 732 tot 736, 949, 950, 1169, 1170
  * en 1316, die een Thief-jobregel hebben) zijn niet opnieuw op hun pagina gecontroleerd en blijven Thief-only.
@@ -159,6 +161,7 @@ const COMMON_WORN_IDS: ReadonlySet<number> = new Set([
   720, 721, 722, 723, 782, 960, 1317, 1318, 1319,
   932, 933, 934, 935, 936, 937, 938, 939, 940, 1156, 1157, 1160, 1305, 1306, 1307, 1308,
   708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 740, 741, 742, 961, 962, 963, 1163, 1181, 1233,
+  1105,
 ])
 
 /** De rijen uit WORN_ARMOR die geen jobregel hebben (zie COMMON_WORN_IDS); dezelfde objecten, niet gekopieerd. */

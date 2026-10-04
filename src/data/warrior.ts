@@ -23,7 +23,7 @@
 //   10), 1182 en 1183 (Corporal Pants, 15), 1197 en 1198 (Sergeant Kilt, 20), 1219 en 1220 (Master Sergeant
 //   Kilt, 25), 1234 en 1235 (Martial Arts Pants, 30). Een vrouwenversie, als die bestaat, zit niet in de
 //   gelezen pagina's.
-// - Overalls: ArmorSlot kent ze niet. 1094 Steel Fitted Mail (level 15, alleen vrouwen) en 1095, 1096 en 1097
+// - Overalls: ArmorSlot kent ze sinds #50, maar er staat nog geen Warrior-overall in de data. 1094 Steel Fitted Mail (level 15, alleen vrouwen) en 1095, 1096 en 1097
 //   (Kendo Robe, level 20, alleen mannen).
 // - Handschoenen en schilden: niet gelezen, dus niet in de data.
 //

@@ -27,7 +27,7 @@ import { COMMON_WORN_ARMOR } from './wornItems'
 const R = '2026-10-04'
 const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
 
-const SLOT_RANK = { hat: 0, top: 1, bottom: 2, shoes: 3 } as const
+const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4 } as const
 
 const MALE_ONLY_WARRIOR_ARMOR: readonly WornArmor[] = [
   { name: 'Brown Lolico Armor', slot: 'top', level: 10, wdef: 35, source: src(942) },
