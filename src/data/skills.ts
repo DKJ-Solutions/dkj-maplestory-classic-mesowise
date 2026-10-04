@@ -65,7 +65,8 @@ const skill = (key: SkillKey, name: string, job: SkillInfo['job'], max: number, 
 
 // De MP per level van de skills die het model niet doorrekent, uit de tabel op hun skillpagina.
 const THREE_SNAILS_MP = [3, 4, 5]
-/** Three Snails per level: de vaste schade en de schelp die elke worp kost (de skillpagina, opgehaald op 4 oktober 2026, #139). */
+/** Three Snails per level: de vaste schade en de schelp die elke worp kost (de skillpagina, #139). */
+export const THREE_SNAILS_SOURCE: Source = { url: 'https://meowdb.com/msclassic/skills/beginner/three-snails', retrieved: R }
 export const THREE_SNAILS_DAMAGE = [15, 25, 40] as const
 export const THREE_SNAILS_SHELL = ['Snail Shell', 'Blue Snail Shell', 'Red Snail Shell'] as const
 const NIMBLE_FEET_MP = [4, 7, 10]

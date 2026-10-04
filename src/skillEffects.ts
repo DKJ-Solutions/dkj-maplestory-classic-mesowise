@@ -1,5 +1,6 @@
 // Wat een skill aan je totalen verandert (Dave, 4 oktober 2026, issue #139): DEF, accuracy, evasion, Max HP en crit,
-// per skill-level, en bij een aanval de schade per keer. Puur, zonder UI-import. Alle getallen komen uit de data van elke job, met hun bron daar.
+// per skill-level, en bij een aanval de schade per keer. Puur, zonder UI-import. Alle getallen komen uit de data van
+// elke job, met hun bron daar.
 //
 // Twee soorten, en het verschil telt:
 // - Een passief (Nimble Body, Precise Strikes, Max HP Increase) zit al in je statvenster, dus al in de totalen van
@@ -60,8 +61,8 @@ const damageText = (levels: readonly { damagePct: number }[], level: number, hit
 
 /**
  * Wat een skill op dit level aan je totalen geeft, en bij een aanval zijn schade per keer, als tekst voor de sectie
- * "Skillpoints"; null als de skill geen van beide verandert (een effect dat geen stat is) of het level 0 is. `wdef` is de DEF uit je profiel: Iron
- * Body geeft een procent ervan, dus zonder geldige DEF noemt de tekst alleen het procent.
+ * "Skillpoints"; null als de skill geen van beide verandert (een effect dat geen stat is) of het level 0 is. `wdef` is
+ * de DEF uit je profiel: Iron Body geeft een procent ervan, dus zonder geldige DEF noemt de tekst alleen het procent.
  */
 export function skillEffectText(key: SkillKey, level: number, wdef: number | null): string | null {
   if (level < 1) return null

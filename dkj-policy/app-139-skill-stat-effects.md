@@ -61,7 +61,7 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
   shows the MP"): "+2 × 80% schade", with "tot N monsters" for Slash Blast and Double Shot. Double Stab's damage
   was added to `data/thief.ts` from its skill page; Three Snails' flat damage and shell, and Slash Blast's HP, show
   too (the shell and the HP in red, as costs). Double Stab stays out of the advice: it needs a dagger, and the model
-  knows the Thief with a claw. Disorder weakens the monster rather than giving you a stat, so it shows nothing.
+  knows the Thief with a claw. Disorder weakens the monster rather than giving you a stat, so it gets no effect line (its MP still shows).
 - **Out of scope:** crit (Precise Strikes, Critical Shot): there is no crit damage in the damage guide, so it is only
   shown. Improved HP/MP Recovery's potion bonus is not a total: filed as #141.
 
@@ -76,7 +76,7 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
 
 ### TEST
 
-- [x] Tycho: 10 tests updated, 38 added (1263 to 1301); lint gate and vitest green
+- [x] Tycho: 10 tests updated, 40 added (1263 to 1303); lint gate and vitest green
 - [x] Victor: no blockers; max-level guard on `maxHpAfterPoint` and the HP assumption written down, taken along
 - [x] Edith: no blockers; five comment wordings taken along
 - [ ] Dave looks at the card at phone width (visible result)
