@@ -6,7 +6,7 @@ import { expToNextLevel } from './data/expTable'
 import { knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
-import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
 import { NOT_MODELLED, notModelled, SKILLS, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
@@ -172,8 +172,8 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
   if (!('profile' in wParsed)) throw new Error('Warrior-profiel ongeldig')
   const warrior: Profile = wParsed.profile
 
-  it('geeft een Warrior Power Strike, Precise Strikes, Max HP Increase en Iron Body en een Thief Lucky Seven en Nimble Body', () => {
-    expect(skillsOf('warrior').map((s) => s.id)).toEqual(['powerStrike', 'preciseStrikes', 'maxHpIncrease', 'ironBody'])
+  it('geeft een Warrior Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body en een Thief Lucky Seven en Nimble Body', () => {
+    expect(skillsOf('warrior').map((s) => s.id)).toEqual(['powerStrike', 'preciseStrikes', 'improvedHpRecovery', 'maxHpIncrease', 'ironBody'])
     expect(skillsOf('thief')).toBe(SKILLS)
     expect(SKILLS.map((s) => s.id)).toEqual(['luckySeven', 'nimbleBody'])
   })
@@ -203,8 +203,8 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
     expect(pr.plusOne({ ...warrior, preciseStrikes: 0 }).accuracy).toBe(warrior.accuracy + 5)
   })
 
-  it('noemt de twee andere skills van de 1e job van een Warrior onder "niet doorgerekend", en de Thief-lijst blijft zoals hij was', () => {
-    expect(notModelled('warrior')).toEqual(['Improved HP Recovery', 'Slash Blast'])
+  it('noemt de andere skill van de 1e job van een Warrior (Slash Blast) onder "niet doorgerekend", en de Thief-lijst blijft zoals hij was', () => {
+    expect(notModelled('warrior')).toEqual(['Slash Blast'])
     expect(notModelled('thief')).toEqual(NOT_MODELLED)
     expect(NOT_MODELLED).toEqual(['Keen Eyes', 'Double Stab', 'Disorder', 'Dark Sight'])
   })
@@ -220,7 +220,7 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
     const advice = skillPointAdvice(drafts, warrior)
     if (advice.kind !== 'advice') throw new Error('geen advies')
     expect(advice.base).toBeCloseTo(costOf(warrior), 6)
-    expect(advice.choices.map((c) => c.id).sort()).toEqual(['powerStrike', 'preciseStrikes'])
+    expect(advice.choices.map((c) => c.id).sort()).toEqual(['improvedHpRecovery', 'powerStrike', 'preciseStrikes'])
     for (const c of advice.choices) {
       const skill = skillsOf('warrior').find((s) => s.id === c.id)!
       expect(c.to).toBe(skill.level(warrior) + 1)
@@ -238,16 +238,30 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
   it('slaat een Warrior-skill op het maximum over en noemt hem bij naam', () => {
     const advice = skillPointAdvice(drafts, { ...warrior, powerStrike: 20 })
     expect(advice).toMatchObject({ kind: 'advice', maxed: ['Power Strike'] })
-    if (advice.kind === 'advice') expect(advice.choices.map((c) => c.id)).toEqual(['preciseStrikes'])
+    if (advice.kind === 'advice') expect(advice.choices.map((c) => c.id).sort()).toEqual(['improvedHpRecovery', 'preciseStrikes'])
   })
 
-  it('heeft niets te kiezen als beide Warrior-skills op het maximum staan', () => {
-    expect(skillPointAdvice(drafts, { ...warrior, powerStrike: 20, preciseStrikes: 15 })).toMatchObject({
+  it('heeft niets te kiezen als alle Warrior-skills op het maximum staan', () => {
+    expect(skillPointAdvice(drafts, { ...warrior, powerStrike: 20, preciseStrikes: 15, improvedHpRecovery: 15 })).toMatchObject({
       kind: 'advice',
       choices: [],
       winner: null,
-      maxed: ['Power Strike', 'Precise Strikes'],
+      maxed: ['Power Strike', 'Precise Strikes', 'Improved HP Recovery'],
     })
+  })
+
+  it('zet bij Improved HP Recovery één level erbij, tot het maximum van 15, en laat de rest staan (#141)', () => {
+    const hr = skillsOf('warrior').find((s) => s.id === 'improvedHpRecovery')!
+    expect(hr.max).toBe(IMPROVED_HP_RECOVERY.itemRecoveryPct.length)
+    expect(hr.max).toBe(15)
+    expect(hr.plusOne(warrior)).toEqual({ ...warrior, improvedHpRecovery: 1 })
+  })
+
+  it('laat een punt in Improved HP Recovery de mesokosten zakken zodra de Warrior HP-potions drinkt (#141)', () => {
+    const advice = skillPointAdvice(drafts, warrior)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    const hr = advice.choices.find((c) => c.id === 'improvedHpRecovery')!
+    expect(hr.saving!).toBeGreaterThan(0)
   })
 
   it('kiest als winnaar de skill met de grootste besparing boven 0', () => {

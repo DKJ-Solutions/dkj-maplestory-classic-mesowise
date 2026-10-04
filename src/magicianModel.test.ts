@@ -53,7 +53,7 @@ import {
 } from './profile'
 import { NOT_MODELLED, notModelled, skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
-import { energyBoltAt, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, resolveSpot, suggestMonsters } from './suggest'
+import { energyBoltAt, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, potionFactorOf, resolveSpot, suggestMonsters } from './suggest'
 
 const mDraft: ProfileDraft = {
   ...DEFAULT_PROFILE,
@@ -294,7 +294,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     const c = toCharacter(p)
     const attack = spell === 'bolt' ? spellAttack(c, energyBoltAt(p.energyBolt)!, 1) : spellAttack(c, magicClawAt(p.magicClaw)!, MAGIC_CLAW_HITS)
     const estimate = estimateMob(c, attack, monster)
-    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0 }
+    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
     const plan = hourPlan(s, estimate.killsPerHour)
     return { estimate, epm: plan.potions > 0 ? plan.expPerHour / plan.potions : Infinity }
   }
@@ -401,9 +401,20 @@ describe('Magician: de spreuken en het voorstel', () => {
 })
 
 describe('Magician: skillpunten', () => {
-  it('rekent Energy Bolt, Magic Claw en Magic Armor door en geeft de Magician geen skill van een andere job', () => {
-    expect(skillsOf('magician').map((s) => s.id)).toEqual(['energyBolt', 'magicClaw', 'magicArmor'])
-    expect(skillsOf('magician').map((s) => s.max)).toEqual([20, 20, 20])
+  it('rekent Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor door en geeft de Magician geen skill van een andere job', () => {
+    expect(skillsOf('magician').map((s) => s.id)).toEqual(['energyBolt', 'magicClaw', 'improvedMpRecovery', 'magicArmor'])
+    expect(skillsOf('magician').map((s) => s.max)).toEqual([20, 20, 15, 20])
+  })
+
+  it('zet bij Improved MP Recovery één level erbij en laat de rest staan (#141)', () => {
+    const mr = skillsOf('magician').find((s) => s.id === 'improvedMpRecovery')!
+    expect(mr.plusOne(magician)).toEqual({ ...magician, improvedMpRecovery: 1 })
+  })
+
+  it('laat een punt in Improved MP Recovery de mesokosten zakken: een Magician drinkt MP-potions voor elke spreuk (#141)', () => {
+    const advice = skillPointAdvice(drafts, parseM({ energyBolt: '5', magicClaw: '0' }))
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    expect(advice.choices.find((c) => c.id === 'improvedMpRecovery')!.saving!).toBeGreaterThan(0)
   })
 
   it('zet bij Energy Bolt één level erbij en laat de rest staan', () => {
@@ -412,8 +423,8 @@ describe('Magician: skillpunten', () => {
     expect(claw.plusOne(magician)).toEqual({ ...magician, magicClaw: 1 })
   })
 
-  it('noemt de drie andere skills van de 1e job onder "niet doorgerekend", en elke 1e-job-skill staat in precies één van de twee', () => {
-    expect(notModelled('magician')).toEqual(['Magic Guard', 'Improved MP Recovery', 'Max MP Increase'])
+  it('noemt de twee andere skills van de 1e job onder "niet doorgerekend", en elke 1e-job-skill staat in precies één van de twee', () => {
+    expect(notModelled('magician')).toEqual(['Magic Guard', 'Max MP Increase'])
     expect(notModelled('thief')).toBe(NOT_MODELLED)
     const modelled = skillsOf('magician').map((s) => s.name)
     expect([...modelled, ...notModelled('magician')].sort()).toEqual(MAGICIAN_SKILLS.map((s) => s.name).sort())
@@ -431,7 +442,7 @@ describe('Magician: skillpunten', () => {
     const p = parseM({ energyBolt: '5', magicClaw: '0' })
     const advice = skillPointAdvice(drafts, p)
     if (advice.kind !== 'advice') throw new Error('geen advies')
-    expect(advice.choices.map((c) => c.id).sort()).toEqual(['energyBolt', 'magicClaw'])
+    expect(advice.choices.map((c) => c.id).sort()).toEqual(['energyBolt', 'improvedMpRecovery', 'magicClaw'])
     for (const c of advice.choices) {
       const skill = skillsOf('magician').find((s) => s.id === c.id)!
       expect(c.to).toBe(skill.level(p) + 1)
@@ -444,7 +455,9 @@ describe('Magician: skillpunten', () => {
     // Zonder spreuk is er geen voorstel voor de bekende plek; het eerste punt in Energy Bolt maakt hem weer bruikbaar.
     const advice = skillPointAdvice(drafts, parseM({ energyBolt: '0', magicClaw: '0' }))
     if (advice.kind !== 'advice') throw new Error('geen advies')
-    expect(advice.choices.map((c) => c.id)).toEqual(['energyBolt'])
+    // Improved MP Recovery mag wel, maar zonder spreuk drinkt de Magician geen MP-potions: dat punt bespaart niets.
+    expect(advice.choices.map((c) => c.id)).not.toContain('magicClaw')
+    expect(advice.choices[0].id).toBe('energyBolt')
     expect(advice.winner).toBe('energyBolt')
     expect(advice.choices[0].saving!).toBeGreaterThan(0)
   })
@@ -457,8 +470,13 @@ describe('Magician: skillpunten', () => {
   it('slaat een spreuk op het maximum over en noemt hem bij naam; beide op het maximum geeft niets te kiezen', () => {
     const one = skillPointAdvice(drafts, parseM({ energyBolt: '20', magicClaw: '3' }))
     expect(one).toMatchObject({ kind: 'advice', maxed: ['Energy Bolt'] })
-    if (one.kind === 'advice') expect(one.choices.map((c) => c.id)).toEqual(['magicClaw'])
-    expect(skillPointAdvice(drafts, parseM({ energyBolt: '20', magicClaw: '20' }))).toMatchObject({ kind: 'advice', choices: [], winner: null, maxed: ['Energy Bolt', 'Magic Claw'] })
+    if (one.kind === 'advice') expect(one.choices.map((c) => c.id).sort()).toEqual(['improvedMpRecovery', 'magicClaw'])
+    expect(skillPointAdvice(drafts, parseM({ energyBolt: '20', magicClaw: '20', improvedMpRecovery: '15' }))).toMatchObject({
+      kind: 'advice',
+      choices: [],
+      winner: null,
+      maxed: ['Energy Bolt', 'Magic Claw', 'Improved MP Recovery'],
+    })
   })
 
   it('kent de skills aan de app toe: elke Magician-skill is een skill-veld van het profiel', () => {

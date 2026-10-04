@@ -5,7 +5,7 @@ import { findKnownSpot, knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS } from './data/thief'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile } from './profile'
 import { newDraft, toSpot } from './spotDraft'
-import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, powerStrikeAt, resolveSpot, statWindowRange, suggestMonsters } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, potionFactorOf, powerStrikeAt, resolveSpot, statWindowRange, suggestMonsters } from './suggest'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -165,6 +165,49 @@ describe('powerStrikeAt', () => {
   })
 })
 
+describe('Improved HP en MP Recovery: meer herstel per potion (#141)', () => {
+  // De tabel van beide skills (MeowDB, skills/warrior/improved-hp-recovery en skills/magician/improved-mp-recovery):
+  // +5% op level 1, 1 erbij per level tot 18% op level 14, en 20% op level 15. Hier met de hand overgenomen.
+  it('geeft de factor uit de tabel: 1 op level 0, 1,05 op 1, 1,18 op 14, 1,2 op 15 en erboven', () => {
+    const at = (hp: number, mp: number) => potionFactorOf({ ...profile, improvedHpRecovery: hp, improvedMpRecovery: mp })
+    expect(at(0, 0)).toEqual({ hp: 1, mp: 1 })
+    expect(at(1, 0).hp).toBeCloseTo(1.05, 12)
+    expect(at(14, 0).hp).toBeCloseTo(1.18, 12)
+    expect(at(15, 0).hp).toBeCloseTo(1.2, 12)
+    expect(at(99, 0).hp).toBeCloseTo(1.2, 12)
+    expect(at(0, 1).mp).toBeCloseTo(1.05, 12)
+    expect(at(0, 15).mp).toBeCloseTo(1.2, 12)
+    // De twee skills staan los van elkaar.
+    expect(at(15, 0).mp).toBe(1)
+    expect(at(0, 15).hp).toBe(1)
+  })
+
+  it('heeft zonder punten in die skills geen effect: een Thief rekent zoals altijd', () => {
+    expect(suggestMonsters(profile, subway)[0].potionFactor).toEqual({ hp: 1, mp: 1 })
+  })
+
+  it('deelt het potionverbruik door de factor: op level 15 een zesde minder potions en potion-meso (handmatig na te rekenen)', () => {
+    const plain = suggestMonsters(profile, subway)[0]
+    const boosted = { ...plain, potionFactor: { hp: 1.2, mp: 1.2 } }
+    const a = hourPlan(plain, 100)
+    const b = hourPlan(boosted, 100)
+    expect(b.hpPotionsPerHour).toBeCloseTo((100 * plain.estimate.hpLossPerKill) / (250 * 1.2), 9)
+    expect(b.mpPotionsPerHour).toBeCloseTo((100 * plain.estimate.mpPerKill) / (200 * 1.2), 9)
+    expect(b.potions).toBeCloseTo(a.potions / 1.2, 9)
+    // Wat er niet aan potions hangt, blijft gelijk.
+    expect(b.expPerHour).toBe(a.expPerHour)
+    expect(b.ammo).toBe(a.ammo)
+  })
+
+  it('telt de HP-factor alleen bij HP-potions en de MP-factor alleen bij MP-potions', () => {
+    const plain = suggestMonsters(profile, subway)[0]
+    const a = hourPlan(plain, 100)
+    const hpOnly = hourPlan({ ...plain, potionFactor: { hp: 1.2, mp: 1 } }, 100)
+    expect(hpOnly.hpPotionsPerHour).toBeCloseTo(a.hpPotionsPerHour / 1.2, 9)
+    expect(hpOnly.mpPotionsPerHour).toBe(a.mpPotionsPerHour)
+  })
+})
+
 describe('een Warrior: suggestMonsters en hourPlan', () => {
   // Level 30, 47 weapon attack, STR 132, DEX 30 (het werkvoorbeeld van de damage-gids), 1H-sword (multiplier 1,8).
   const warriorDraft = {
@@ -246,6 +289,15 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
     const t = suggestMonsters(profile, perionEast)[0]
     expect(t.rechargePerStar).toBe(0.3)
     expect(hourPlan(t, 100).ammo).toBeGreaterThan(0)
+  })
+
+  it('neemt Improved HP Recovery mee: dezelfde kills, minder potion-meso per uur (#141)', () => {
+    const plain = suggestMonsters(wp(), perionEast)[0]
+    const s = suggestMonsters(wp({ improvedHpRecovery: '15' }), perionEast).find((x) => x.monster.name === plain.monster.name)!
+    expect(s.potionFactor.hp).toBeCloseTo(1.2, 12)
+    expect(s.estimate).toEqual(plain.estimate)
+    expect(hourPlan(s, 100).hpPotionsPerHour).toBeCloseTo(hourPlan(plain, 100).hpPotionsPerHour / 1.2, 9)
+    expect(hourPlan(s, 100).hpPotionsPerHour).toBeGreaterThan(0)
   })
 
   it('rekent Slash Blast niet mee: zijn level verandert niets aan de uitkomst', () => {

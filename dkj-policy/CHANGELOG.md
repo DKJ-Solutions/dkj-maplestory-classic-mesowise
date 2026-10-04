@@ -2,7 +2,55 @@
 
 ## [Unreleased]
 
-**37 / 74 minor entries** <!-- pending-tally -->
+**39 / 76 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/141-potion-recovery-skill · 20261004-181159Z
+
+A point in Improved HP Recovery (Warrior) or Improved MP Recovery (Magician) now counts in the potion cost:
+each potion heals 5% to 20% more, so the model needs that many fewer potions per hour. Both skills are now
+options in the skill advice and no longer listed under "Niet doorgerekend". The per-10-seconds recovery is
+still not counted.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Warrior or Magician sees what a point in their recovery skill saves on potions, and the advice can now
+recommend it when it beats a damage skill.
+
+**Score:** 3
+
+#### Pull Request
+
+Count Improved HP/MP Recovery's potion bonus in the potion cost
+
+[PR #142](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/142)
+
+---
+
+### DEPLOY: app/138-skill-next-level-mp · 20261004-155851Z
+
+Each skill in the Skillpoints card now shows the MP it costs at your level and, on a second line, at the next
+level (e.g. "Nu: 4 MP per keer" / "Volgend level: 5 MP"). A skill at level 0 reads "Nu: niet geleerd" with the
+cost of level 1; at the maximum there is no next line. The "Skillpunten per level" source line is gone from the
+card and the skill advice; the sources stay with the data.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Before spending a skill point you see what it does to the skill's MP cost, and the card is one line of
+source text shorter.
+
+**Score:** 2
+
+#### Pull Request
+
+Skillpoints: show the next level's MP, drop the SP source line
+
+[PR #140](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/140)
+
+---
 
 ### DEPLOY: app/136-skillpoint-cap · 20261004-154955Z
 

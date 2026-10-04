@@ -1,17 +1,26 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes; de Bowman (issue #44) één: Arrow Blow; de Magician
-// (issue #43) twee: Energy Bolt en Magic Claw.
+// De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
+// Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
+// sinds issue #141, Max HP Increase en de buffs sinds issue #139).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { ALL_SKILLS, THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
-import { ENERGY_BOLT_LEVELS, MAGIC_ARMOR_LEVELS, MAGIC_ARMOR_REQUIRES_MAGIC_GUARD, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
+import {
+  ENERGY_BOLT_LEVELS,
+  IMPROVED_MP_RECOVERY,
+  MAGIC_ARMOR_LEVELS,
+  MAGIC_ARMOR_REQUIRES_MAGIC_GUARD,
+  MAGIC_CLAW_LEVELS,
+  MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+} from './data/magician'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ARROW_BLOW_LEVELS, FOCUS_LEVELS, FOCUS_REQUIRES_EYE_OF_AMAZON } from './data/bowman'
 import {
+  IMPROVED_HP_RECOVERY,
   IRON_BODY_LEVELS,
   IRON_BODY_REQUIRES_MAX_HP_INCREASE,
   MAX_HP_INCREASE,
@@ -28,7 +37,22 @@ import type { SpotDraft } from './spotDraft'
 const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'maxHpIncrease' | 'ironBody' | 'arrowBlow' | 'focus' | 'energyBolt' | 'magicClaw' | 'magicArmor'>
+export type SkillId = Extract<
+  SkillKey,
+  | 'luckySeven'
+  | 'nimbleBody'
+  | 'powerStrike'
+  | 'preciseStrikes'
+  | 'improvedHpRecovery'
+  | 'maxHpIncrease'
+  | 'ironBody'
+  | 'arrowBlow'
+  | 'focus'
+  | 'energyBolt'
+  | 'magicClaw'
+  | 'improvedMpRecovery'
+  | 'magicArmor'
+>
 
 interface Skill {
   id: SkillId
@@ -72,6 +96,7 @@ const preciseAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS[level 
  * De skills van de 1e job van een Warrior die het model kan doorrekenen. Power Strike telt als de aanval van
  * elke klap. Van Precise Strikes telt alleen de accuracy; de extra kans op een critical hit niet, want de
  * damage-gids noemt geen schade voor een crit (de voorzichtige keuze: het punt lijkt dan minder waard dan het is).
+ * Van Improved HP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
  * Max HP Increase telt als Max HP en bepaalt zo of één tik gevaarlijk is, Iron Body als DEF met de MP om hem aan te houden (issue #139).
  */
 export const WARRIOR_MODELLED: readonly Skill[] = [
@@ -93,6 +118,13 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
       preciseStrikes: p.preciseStrikes + 1,
       accuracy: p.accuracy + preciseAccuracy(p.preciseStrikes + 1) - preciseAccuracy(p.preciseStrikes),
     }),
+  },
+  {
+    id: 'improvedHpRecovery',
+    name: 'Improved HP Recovery',
+    max: IMPROVED_HP_RECOVERY.itemRecoveryPct.length,
+    level: (p) => p.improvedHpRecovery,
+    plusOne: (p) => ({ ...p, improvedHpRecovery: p.improvedHpRecovery + 1 }),
   },
   {
     id: 'maxHpIncrease',
@@ -117,6 +149,7 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
 /**
  * De skills van de 1e job van een Magician die het model kan doorrekenen: de twee spreuken. Elk punt verandert de schade (en de
  * spell mastery, de MP per cast) van die spreuk; het model kiest per monster de spreuk met de meeste EXP per meso (zie suggest.ts). Magic Claw vraagt Energy Bolt 1.
+ * Van Improved MP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
  * Magic Armor telt als DEF met de MP om hem aan te houden (issue #139); hij vraagt Magic Guard 3.
  */
 export const MAGICIAN_MODELLED: readonly Skill[] = [
@@ -134,6 +167,13 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     level: (p) => p.magicClaw,
     plusOne: (p) => ({ ...p, magicClaw: p.magicClaw + 1 }),
     learnable: (p) => p.magicClaw > 0 || p.energyBolt >= MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+  },
+  {
+    id: 'improvedMpRecovery',
+    name: 'Improved MP Recovery',
+    max: IMPROVED_MP_RECOVERY.itemRecoveryPct.length,
+    level: (p) => p.improvedMpRecovery,
+    plusOne: (p) => ({ ...p, improvedMpRecovery: p.improvedMpRecovery + 1 }),
   },
   {
     id: 'magicArmor',
@@ -181,16 +221,14 @@ export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job 
 /**
  * Wat het model van een Warrior niet kan doorrekenen, met de reden. Slash Blast raakt tot 4 monsters, en hoeveel
  * monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Power Strike en kost hij HP.
- * Improved HP Recovery werkt op het herstel van potions en per 10 seconden; hoeveel per 10 seconden, staat niet op de pagina.
  */
-export const WARRIOR_NOT_MODELLED: readonly string[] = ['Improved HP Recovery', 'Slash Blast']
+export const WARRIOR_NOT_MODELLED: readonly string[] = ['Slash Blast']
 
 /**
  * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies;
- * het model kent geen schade die naar MP gaat. Improved MP Recovery en Max MP Increase werken op
- * MP-herstel en Max MP, en het profiel kent geen Max MP (en het herstel per tijd hangt aan hoe lang je blijft).
+ * het model kent geen schade die naar MP gaat. Max MP Increase werkt op Max MP, en het profiel kent geen Max MP.
  */
-export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Improved MP Recovery', 'Max MP Increase']
+export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Max MP Increase']
 
 /**
  * Wat het model van een Bowman niet kan doorrekenen, met de reden. Double Shot raakt tot 2 monsters met 1 klap per monster,

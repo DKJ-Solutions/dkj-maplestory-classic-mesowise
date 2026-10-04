@@ -139,6 +139,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
         rechargePerStar: 0,
         mpPotion: MP_POTION,
         buffMpPerHour: buffBonus(p).mpPerHour,
+        potionFactor: { hp: 1, mp: 1 },
       }
       return { s, h: hourPlan(s, 1000) }
     }
@@ -248,6 +249,11 @@ describe('skillEffectText', () => {
     expect(skillEffectText('doubleStab', 21, null)).toBeNull()
   })
 
+  it('noemt bij Improved HP en MP Recovery het extra herstel uit potions (#141)', () => {
+    expect(skillEffectText('improvedHpRecovery', 1, null)).toBe('+5% HP uit potions')
+    expect(skillEffectText('improvedMpRecovery', 15, null)).toBe('+20% MP uit potions')
+  })
+
   it('noemt wat een skill naast MP kost: de schelp van Three Snails en de HP van Slash Blast', () => {
     expect(skillExtraCostText('threeSnails', 1)).toBe('−1 Snail Shell')
     expect(skillExtraCostText('threeSnails', 3)).toBe('−1 Red Snail Shell')
@@ -297,7 +303,8 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   const bowmanDraft = { level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', arrowBlow: '5' }
 
   it('biedt een Warrior Max HP Increase pas als Improved HP Recovery 3 is, en Iron Body pas als Max HP Increase 3 is', () => {
-    const base = ['powerStrike', 'preciseStrikes']
+    // Improved HP Recovery (#141) staat er altijd bij: hij vraagt niets.
+    const base = ['improvedHpRecovery', 'powerStrike', 'preciseStrikes']
     expect(ids(parse('warrior', { ...warriorDraft, improvedHpRecovery: '2' }))).toEqual(base)
     expect(ids(parse('warrior', { ...warriorDraft, improvedHpRecovery: '3' }))).toEqual([...base, 'maxHpIncrease'].sort())
     expect(ids(parse('warrior', { ...warriorDraft, improvedHpRecovery: '3', maxHpIncrease: '2' }))).toEqual([...base, 'maxHpIncrease'].sort())
@@ -310,8 +317,8 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   })
 
   it('biedt een Magician Magic Armor pas als Magic Guard 3 is', () => {
-    expect(ids(parse('magician', { ...magicianDraft, magicGuard: '2' }))).toEqual(['energyBolt', 'magicClaw'])
-    expect(ids(parse('magician', { ...magicianDraft, magicGuard: '3' }))).toEqual(['energyBolt', 'magicArmor', 'magicClaw'])
+    expect(ids(parse('magician', { ...magicianDraft, magicGuard: '2' }))).toEqual(['energyBolt', 'improvedMpRecovery', 'magicClaw'])
+    expect(ids(parse('magician', { ...magicianDraft, magicGuard: '3' }))).toEqual(['energyBolt', 'improvedMpRecovery', 'magicArmor', 'magicClaw'])
     expect(ids(parse('magician', { ...magicianDraft, magicGuard: '0', magicArmor: '1' }))).toContain('magicArmor')
   })
 
@@ -348,14 +355,15 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     const armor = advice.choices.find((c) => c.id === 'magicArmor')!
     expect(armor.to).toBe(1)
     expect(armor.saving!).toBeGreaterThan(0)
-    expect(advice.winner).toBe('magicArmor')
+    // Hier wint Improved MP Recovery (#141), want elke spreuk kost MP; Magic Armor bespaart wel, maar minder.
+    expect(advice.winner).toBe('improvedMpRecovery')
     // Dezelfde kosten rechtstreeks, met het skill-level in het profiel gezet in plaats van via plusOne.
     expect(advice.base).toBeCloseTo(costOf(drafts, m), 6)
     expect(armor.meso).toBeCloseTo(costOf(drafts, { ...m, magicArmor: 1 }), 6)
     expect(armor.saving).toBeCloseTo(costOf(drafts, m) - costOf(drafts, { ...m, magicArmor: 1 }), 6)
   })
 
-  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (geen winnaar, negatieve besparing)', () => {
+  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (ze winnen niet, negatieve besparing)', () => {
     const drafts = [known('a', 'henesys-rain-forest-east')]
     const w = parse('warrior', { ...warriorDraft, improvedHpRecovery: '3', maxHpIncrease: '3' })
     const wAdvice = skillPointAdvice(drafts, w)
@@ -368,7 +376,8 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     expect(iron.meso).toBeCloseTo(costOf(drafts, { ...w, ironBody: 1 }), 6)
     expect(focus.saving!).toBeLessThan(0)
     expect(focus.meso).toBeCloseTo(costOf(drafts, { ...b, focus: 1 }), 6)
-    expect(wAdvice.winner).toBeNull()
+    // Bij de Warrior wint Improved HP Recovery (#141); de Bowman heeft geen punt dat iets bespaart.
+    expect(wAdvice.winner).toBe('improvedHpRecovery')
     expect(bAdvice.winner).toBeNull()
   })
 

@@ -8,10 +8,10 @@
 // - Een buff (Iron Body, Magic Armor, Focus) staat niet in het profiel: dat vul je in zonder buff. Het model neemt
 //   aan dat je hem de hele tijd aanhoudt (Dave, #139) en telt dus zijn stat erbij én de MP om hem aan te houden.
 import { ARROW_BLOW_LEVELS, CRITICAL_SHOT, DOUBLE_SHOT_LEVELS, DOUBLE_SHOT_TARGETS, FOCUS_LEVELS } from './data/bowman'
-import { ENERGY_BOLT_LEVELS, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAX_MP_INCREASE } from './data/magician'
+import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAX_MP_INCREASE } from './data/magician'
 import { THREE_SNAILS_DAMAGE, THREE_SNAILS_SHELL, type SkillKey } from './data/skills'
 import { DOUBLE_STAB_HITS, DOUBLE_STAB_LEVELS, LUCKY_SEVEN, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
-import { IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS, SLASH_BLAST_TARGETS } from './data/warrior'
+import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS, SLASH_BLAST_TARGETS } from './data/warrior'
 import type { Profile } from './profile'
 
 /** De rij van de tabel voor dit level; undefined op level 0 (niet geleerd) of buiten de tabel. */
@@ -97,6 +97,14 @@ export function skillEffectText(key: SkillKey, level: number, wdef: number | nul
     case 'maxMpIncrease': {
       const pct = at(MAX_MP_INCREASE.maxMpPct, level)
       return pct === undefined ? null : `+${pct}% Max MP`
+    }
+    case 'improvedHpRecovery': {
+      const pct = at(IMPROVED_HP_RECOVERY.itemRecoveryPct, level)
+      return pct === undefined ? null : `+${pct}% HP uit potions`
+    }
+    case 'improvedMpRecovery': {
+      const pct = at(IMPROVED_MP_RECOVERY.itemRecoveryPct, level)
+      return pct === undefined ? null : `+${pct}% MP uit potions`
     }
     case 'threeSnails': {
       const damage = at(THREE_SNAILS_DAMAGE, level)

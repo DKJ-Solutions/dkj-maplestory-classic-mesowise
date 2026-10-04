@@ -39,8 +39,9 @@
 
 ### PLAN
 
-Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the card lines this branch extends live there
-(Dave chose stacking, October 4, 2026). #140 has to merge first.
+Built stacked on PR #140 (Dave chose stacking, October 4, 2026). #140 and #141 (Improved HP/MP Recovery's potion
+bonus, built in another session) merged first; `main` was merged in, not rebased, and the two sets of new advice
+skills were combined.
 
 #### Decisions
 
@@ -51,19 +52,18 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
   in `toCharacter`.
 - **Iron Body is a percent of the stat-window DEF**, rounded down. The skill page says "+5% Weapon Def." and does not
   say of what; total DEF is the assumption.
-- **Max HP Increase is a percent of base HP** (the data comment); a point scales the stat-window HP by
-  (100 + new%) / (100 + old%). It counts through the "dangerous" check, which steers the best spot.
+- **Max HP Increase scales the whole stat-window Max HP** (equipment and AP included): a point scales it by
+  (100 + new%) / (100 + old%). The page does not say what the percent is of, so this may overstate a little. It
+  only reaches the "dangerous" check, which steers the best spot (Victor).
 - **Card: cost with a − in red, gain with a + in green** (the requester, mid-build): "Nu: −15 MP per keer, +10 DEF (5%)".
   New tokens `--cost` and `--gain`, light and dark.
-- **Max HP Increase scales the whole stat-window Max HP** (equipment and AP included); the page does not say of what.
-  It only reaches the "dangerous" check, so an overstatement there is small (Victor).
 - **Attack skills show their damage per use as the gain** (the requester, after the first look: "Double Stab only
   shows the MP"): "+2 × 80% schade", with "tot N monsters" for Slash Blast and Double Shot. Double Stab's damage
   was added to `data/thief.ts` from its skill page; Three Snails' flat damage and shell, and Slash Blast's HP, show
   too (the shell and the HP in red, as costs). Double Stab stays out of the advice: it needs a dagger, and the model
   knows the Thief with a claw. Disorder weakens the monster rather than giving you a stat, so it gets no effect line (its MP still shows).
 - **Out of scope:** crit (Precise Strikes, Critical Shot): there is no crit damage in the damage guide, so it is only
-  shown. Improved HP/MP Recovery's potion bonus is not a total: filed as #141.
+  shown. Improved HP/MP Recovery's potion bonus came in through #141; the card now shows it as a gain too.
 
 ### CREATE
 
@@ -73,13 +73,16 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
 - [x] Prerequisite levels in the data files, checked against the four skill pages (Vera, October 4, 2026)
 - [x] Skillpoints card shows the effect now and at the next level, cost with − in red and gain with + in green
 - [x] Attack skills show their damage per use; Double Stab and Three Snails damage added from their skill pages
+- [x] `main` merged in after #140 and #141: both sets of advice skills combined, Improved HP/MP Recovery's potion
+  bonus shown on the card
 
 ### TEST
 
-- [x] Tycho: 10 tests updated, 40 added (1263 to 1303); lint gate and vitest green
+- [x] Tycho: tests updated and added, 1313 after the merge with `main`; lint gate and vitest green
 - [x] Victor: no blockers; max-level guard on `maxHpAfterPoint` and the HP assumption written down, taken along
 - [x] Edith: no blockers; five comment wordings taken along
-- [ ] Dave looks at the card at phone width (visible result)
+- [x] The look at phone width: the requester judged the card in the phone preview, steered it (red and green, the
+  attack damage) and then gave "open the pr" (October 4, 2026)
 
 ### DEPLOY: app/139-skill-stat-effects
 
@@ -94,8 +97,8 @@ Snails' shell show as costs. New module `src/skillEffects.ts`.
 
 #### What makes this deploy extra special
 
-The skill-point advice now weighs the defensive skills too. Magic Armor can be the best point for a Magician, and
-the card shows what each point costs and what it gives back, in red and green.
+The skill-point advice now weighs the defensive skills too, and the card shows what each point costs and what it
+gives back, in red and green, including an attack's damage.
 
 **Score:** 3
 

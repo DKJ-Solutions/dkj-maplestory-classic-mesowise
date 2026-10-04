@@ -4,11 +4,11 @@ import { expPerHour, potionCostPerHour } from './calc/expPerHour'
 import { ASSUMPTIONS, bowAttack, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { ARROW_BLOW_LEVELS, BOWMAN_DAMAGE, BOWMAN_MASTERY_BASE } from './data/bowman'
-import { ENERGY_BOLT_LEVELS, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT, MAGICIAN_MP_POTIONS } from './data/magician'
+import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT, MAGICIAN_MP_POTIONS } from './data/magician'
 import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion, SpellLevel } from './data/types'
-import { POWER_STRIKE_LEVELS } from './data/warrior'
+import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS } from './data/warrior'
 import type { Job } from './job'
 import { toCharacter, type Profile } from './profile'
 import { buffBonus } from './skillEffects'
@@ -118,6 +118,23 @@ export const MAGICIAN_MP_POTION = cheapest('mp', [...MAGICIAN_MP_POTIONS, ...POT
 /** De potion die deze job voor MP gebruikt. */
 export const mpPotionFor = (job: Job): Potion => (job === 'magician' ? MAGICIAN_MP_POTION : MP_POTION)
 
+/** Het herstel van items op dit skill-level als factor: 1 op level 0, 1,05 op level 1; boven het maximum telt het maximum. */
+function itemRecoveryFactor(pct: readonly number[], level: number): number {
+  if (level < 1) return 1
+  return 1 + (pct[Math.min(level, pct.length) - 1] ?? 0) / 100
+}
+
+/**
+ * Hoeveel meer HP en MP een potion herstelt dan er op staat (issue #141): Improved HP Recovery van een Warrior en Improved MP
+ * Recovery van een Magician verhogen het herstel van items met 5% tot 20%. Dat geldt voor elke potion, dus de goedkoopste per
+ * punt herstel blijft dezelfde. Het herstel per 10 seconden telt niet mee: bij HP staat er geen getal op de pagina, en bij MP
+ * is het een deel van je Max MP, die het profiel niet kent. Een andere job heeft 0 in die velden (parseProfile), dus 1.
+ */
+export const potionFactorOf = (profile: Profile): { hp: number; mp: number } => ({
+  hp: itemRecoveryFactor(IMPROVED_HP_RECOVERY.itemRecoveryPct, profile.improvedHpRecovery),
+  mp: itemRecoveryFactor(IMPROVED_MP_RECOVERY.itemRecoveryPct, profile.improvedMpRecovery),
+})
+
 /** Het voorstel voor één monster: wat het model verwacht, en de EXP per uur die daaruit volgt. */
 export interface MonsterSuggestion {
   monster: Monster
@@ -129,6 +146,8 @@ export interface MonsterSuggestion {
   mpPotion: Potion
   /** De MP per uur om je buffs aan te houden (buffBonus in skillEffects.ts); los van hoeveel je killt. */
   buffMpPerHour: number
+  /** Hoeveel meer een potion herstelt dan er op staat, door Improved HP en MP Recovery: 1 zonder punten, 1,2 op het maximum. */
+  potionFactor: { hp: number; mp: number }
 }
 
 /** EXP per meso aan potions en munitie van een voorstel; zonder kosten oneindig, zodat het gratis voorstel wint. */
@@ -149,11 +168,12 @@ export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: 
   const rechargePerStar = profile.job === 'warrior' || profile.job === 'magician' ? 0 : profile.starRecharge
   const mpPotion = mpPotionFor(profile.job)
   const buffMpPerHour = buffBonus(profile).mpPerHour
+  const potionFactor = potionFactorOf(profile)
   return spot.monsters
     .flatMap((monster) => {
       const options = attacks.map((attack): MonsterSuggestion => {
         const estimate = estimateMob(character, attack, monster, assumptions)
-        return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar, mpPotion, buffMpPerHour }
+        return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar, mpPotion, buffMpPerHour, potionFactor }
       })
       const better = (a: MonsterSuggestion, b: MonsterSuggestion) => expPerMeso(b) > expPerMeso(a) || (expPerMeso(b) === expPerMeso(a) && b.expPerHour > a.expPerHour)
       const best = options.reduce<MonsterSuggestion | undefined>((top, o) => (top === undefined || better(top, o) ? o : top), undefined)
@@ -181,8 +201,8 @@ export interface HourPlan {
 
 /** Het uur uitgerekend; het verbruik per kill schaalt mee met de kills per uur, de MP voor je buffs niet. */
 export function hourPlan(s: MonsterSuggestion, killsPerHour: number): HourPlan {
-  const hpPotionsPerHour = (killsPerHour * s.estimate.hpLossPerKill) / HP_POTION.hp
-  const mpPotionsPerHour = (killsPerHour * s.estimate.mpPerKill + s.buffMpPerHour) / s.mpPotion.mp
+  const hpPotionsPerHour = (killsPerHour * s.estimate.hpLossPerKill) / (HP_POTION.hp * s.potionFactor.hp)
+  const mpPotionsPerHour = (killsPerHour * s.estimate.mpPerKill + s.buffMpPerHour) / (s.mpPotion.mp * s.potionFactor.mp)
   return {
     killsPerHour,
     expPerHour: expPerHour(s.monster.expPerKill, killsPerHour),
