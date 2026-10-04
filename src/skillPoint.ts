@@ -1,26 +1,58 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-// De Warrior (issue #42) heeft er drie: Power Strike, Precise Strikes en Improved HP Recovery; de Bowman (issue #44) één: Arrow Blow;
-// de Magician (issue #43) drie: Energy Bolt, Magic Claw en Improved MP Recovery (de twee Recovery-skills sinds issue #141).
+// De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
+// Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
+// sinds issue #141, Max HP Increase en de buffs sinds issue #139).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { ALL_SKILLS, THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
-import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
+import {
+  ENERGY_BOLT_LEVELS,
+  IMPROVED_MP_RECOVERY,
+  MAGIC_ARMOR_LEVELS,
+  MAGIC_ARMOR_REQUIRES_MAGIC_GUARD,
+  MAGIC_CLAW_LEVELS,
+  MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+} from './data/magician'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
-import { ARROW_BLOW_LEVELS } from './data/bowman'
-import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import { ARROW_BLOW_LEVELS, FOCUS_LEVELS, FOCUS_REQUIRES_EYE_OF_AMAZON } from './data/bowman'
+import {
+  IMPROVED_HP_RECOVERY,
+  IRON_BODY_LEVELS,
+  IRON_BODY_REQUIRES_MAX_HP_INCREASE,
+  MAX_HP_INCREASE,
+  MAX_HP_INCREASE_REQUIRES_IMPROVED_HP_RECOVERY,
+  POWER_STRIKE_LEVELS,
+  PRECISE_STRIKES_LEVELS,
+} from './data/warrior'
 import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
 import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
+import { maxHpAfterPoint } from './skillEffects'
 import type { SpotDraft } from './spotDraft'
 
 const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'improvedHpRecovery' | 'arrowBlow' | 'energyBolt' | 'magicClaw' | 'improvedMpRecovery'>
+export type SkillId = Extract<
+  SkillKey,
+  | 'luckySeven'
+  | 'nimbleBody'
+  | 'powerStrike'
+  | 'preciseStrikes'
+  | 'improvedHpRecovery'
+  | 'maxHpIncrease'
+  | 'ironBody'
+  | 'arrowBlow'
+  | 'focus'
+  | 'energyBolt'
+  | 'magicClaw'
+  | 'improvedMpRecovery'
+  | 'magicArmor'
+>
 
 interface Skill {
   id: SkillId
@@ -65,6 +97,7 @@ const preciseAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS[level 
  * elke klap. Van Precise Strikes telt alleen de accuracy; de extra kans op een critical hit niet, want de
  * damage-gids noemt geen schade voor een crit (de voorzichtige keuze: het punt lijkt dan minder waard dan het is).
  * Van Improved HP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
+ * Max HP Increase telt als Max HP en bepaalt zo of één tik gevaarlijk is, Iron Body als DEF met de MP om hem aan te houden (issue #139).
  */
 export const WARRIOR_MODELLED: readonly Skill[] = [
   {
@@ -93,12 +126,31 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
     level: (p) => p.improvedHpRecovery,
     plusOne: (p) => ({ ...p, improvedHpRecovery: p.improvedHpRecovery + 1 }),
   },
+  {
+    id: 'maxHpIncrease',
+    name: 'Max HP Increase',
+    max: MAX_HP_INCREASE.maxHpPct.length,
+    level: (p) => p.maxHpIncrease,
+    // De Max HP in het profiel is het totaal uit je statvenster, met Max HP Increase erin.
+    plusOne: (p) => ({ ...p, maxHpIncrease: p.maxHpIncrease + 1, hp: maxHpAfterPoint(p.hp, p.maxHpIncrease) }),
+    learnable: (p) => p.maxHpIncrease > 0 || p.improvedHpRecovery >= MAX_HP_INCREASE_REQUIRES_IMPROVED_HP_RECOVERY,
+  },
+  {
+    id: 'ironBody',
+    name: 'Iron Body',
+    max: IRON_BODY_LEVELS.length,
+    level: (p) => p.ironBody,
+    // Een buff staat niet in het profiel: toCharacter telt hem erbij (buffBonus in skillEffects.ts).
+    plusOne: (p) => ({ ...p, ironBody: p.ironBody + 1 }),
+    learnable: (p) => p.ironBody > 0 || p.maxHpIncrease >= IRON_BODY_REQUIRES_MAX_HP_INCREASE,
+  },
 ]
 
 /**
  * De skills van de 1e job van een Magician die het model kan doorrekenen: de twee spreuken. Elk punt verandert de schade (en de
  * spell mastery, de MP per cast) van die spreuk; het model kiest per monster de spreuk met de meeste EXP per meso (zie suggest.ts). Magic Claw vraagt Energy Bolt 1.
  * Van Improved MP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
+ * Magic Armor telt als DEF met de MP om hem aan te houden (issue #139); hij vraagt Magic Guard 3.
  */
 export const MAGICIAN_MODELLED: readonly Skill[] = [
   {
@@ -123,11 +175,20 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     level: (p) => p.improvedMpRecovery,
     plusOne: (p) => ({ ...p, improvedMpRecovery: p.improvedMpRecovery + 1 }),
   },
+  {
+    id: 'magicArmor',
+    name: 'Magic Armor',
+    max: MAGIC_ARMOR_LEVELS.length,
+    level: (p) => p.magicArmor,
+    plusOne: (p) => ({ ...p, magicArmor: p.magicArmor + 1 }),
+    learnable: (p) => p.magicArmor > 0 || p.magicGuard >= MAGIC_ARMOR_REQUIRES_MAGIC_GUARD,
+  },
 ]
 
 /**
- * De skill van de 1e job van een Bowman die het model kan doorrekenen: Arrow Blow, de aanval van elk schot (1 klap, 1 pijl).
- * De andere vier tellen niet mee, zie BOWMAN_NOT_MODELLED.
+ * De skills van de 1e job van een Bowman die het model kan doorrekenen: Arrow Blow, de aanval van elk schot (1 klap, 1 pijl), en
+ * Focus, als accuracy en evasion met de MP om hem aan te houden (issue #139); Focus vraagt The Eye of Amazon 3. De andere drie
+ * tellen niet mee, zie BOWMAN_NOT_MODELLED.
  */
 export const BOWMAN_MODELLED: readonly Skill[] = [
   {
@@ -136,6 +197,14 @@ export const BOWMAN_MODELLED: readonly Skill[] = [
     max: ARROW_BLOW_LEVELS.length,
     level: (p) => p.arrowBlow,
     plusOne: (p) => ({ ...p, arrowBlow: p.arrowBlow + 1 }),
+  },
+  {
+    id: 'focus',
+    name: 'Focus',
+    max: FOCUS_LEVELS.length,
+    level: (p) => p.focus,
+    plusOne: (p) => ({ ...p, focus: p.focus + 1 }),
+    learnable: (p) => p.focus > 0 || p.eyeOfAmazon >= FOCUS_REQUIRES_EYE_OF_AMAZON,
   },
 ]
 
@@ -152,24 +221,22 @@ export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job 
 /**
  * Wat het model van een Warrior niet kan doorrekenen, met de reden. Slash Blast raakt tot 4 monsters, en hoeveel
  * monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Power Strike en kost hij HP.
- * Max HP Increase en Iron Body werken op HP en WDEF van een buff die het profiel niet kent.
  */
-export const WARRIOR_NOT_MODELLED: readonly string[] = ['Max HP Increase', 'Iron Body', 'Slash Blast']
+export const WARRIOR_NOT_MODELLED: readonly string[] = ['Slash Blast']
 
 /**
- * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies en
- * Magic Armor geeft een buff met WDEF voor een tijd: het profiel kent geen buffs. Max MP Increase werkt op Max MP, en het profiel
- * kent geen Max MP.
+ * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies;
+ * het model kent geen schade die naar MP gaat. Max MP Increase werkt op Max MP, en het profiel kent geen Max MP.
  */
-export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Magic Armor', 'Max MP Increase']
+export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Max MP Increase']
 
 /**
  * Wat het model van een Bowman niet kan doorrekenen, met de reden. Double Shot raakt tot 2 monsters met 1 klap per monster,
  * en hoeveel monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Arrow Blow en kost hij 2 pijlen
  * en meer MP. Critical Shot geeft een kans op een critical en "extra critical-schade"; de damage-gids noemt geen schade
- * voor een crit. The Eye of Amazon geeft alleen bereik en Focus is een buff (accuracy en evasion) met MP per cast.
+ * voor een crit. The Eye of Amazon geeft alleen bereik.
  */
-export const BOWMAN_NOT_MODELLED: readonly string[] = ['Double Shot', 'Critical Shot', 'The Eye of Amazon', 'Focus']
+export const BOWMAN_NOT_MODELLED: readonly string[] = ['Double Shot', 'Critical Shot', 'The Eye of Amazon']
 
 const NOT_MODELLED_BY_JOB: Partial<Record<Job, readonly string[]>> = { warrior: WARRIOR_NOT_MODELLED, bowman: BOWMAN_NOT_MODELLED, magician: MAGICIAN_NOT_MODELLED }
 

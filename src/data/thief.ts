@@ -17,6 +17,18 @@ export const LUCKY_SEVEN_LEVELS: readonly SkillLevel[] = [
 /** Lucky Seven gooit 2 stars, met een vaste multiplier van 3.0 en een vaste mastery van 50%. */
 export const LUCKY_SEVEN = { stars: 2, weaponMult: 3.0, mastery: 0.5 } as const
 
+/**
+ * Double Stab per skill-level (1 tot 20): MP en schade per klap, 2 klappen op 1 monster, met een dagger. Opgehaald op
+ * 4 oktober 2026 (issue #139). Het model rekent hem niet door (het kent de Thief met een claw), de sectie
+ * "Skillpoints" toont wat hij doet.
+ */
+export const DOUBLE_STAB_SOURCE: Source = { url: 'https://meowdb.com/msclassic/skills/thief/double-stab', retrieved: '2026-10-04' }
+export const DOUBLE_STAB_LEVELS: readonly SkillLevel[] = [
+  [8, 80], [8, 84], [8, 88], [8, 92], [9, 96], [9, 100], [9, 104], [10, 108], [10, 112], [11, 116],
+  [11, 120], [12, 124], [12, 128], [13, 132], [13, 136], [14, 140], [14, 144], [15, 148], [15, 152], [16, 160],
+].map(([mp, damagePct], i) => ({ level: i + 1, mp, damagePct }))
+export const DOUBLE_STAB_HITS = 2
+
 // De aanvalstijd per claw-snelheid (de Lucky Seven-pagina, zonder Claw Booster) staat in de gedeelde tabel.
 export { ATTACK_MS } from './attackSpeed'
 

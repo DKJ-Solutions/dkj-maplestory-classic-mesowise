@@ -190,6 +190,8 @@ export const MAGIC_ARMOR_LEVELS: readonly MagicArmorLevel[] = [
   [13, 80, 450], [13, 84, 465], [13, 88, 480], [13, 92, 495], [13, 96, 510],
   [16, 100, 525], [16, 104, 540], [16, 108, 555], [16, 112, 570], [16, 120, 600],
 ].map(([mp, def, seconds], i) => ({ level: i + 1, mp, def, seconds }))
+/** Het Magic Guard-level dat Magic Armor vraagt (de skillpagina). */
+export const MAGIC_ARMOR_REQUIRES_MAGIC_GUARD = 3
 
 /**
  * Improved MP Recovery (passief, level 1 tot 15): elk level herstelt 1% van je Max MP per 10 seconden, en

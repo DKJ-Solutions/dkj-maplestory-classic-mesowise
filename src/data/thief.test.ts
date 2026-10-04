@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PROFILE } from '../profile'
-import { ACCURACY_SOURCE, AP_PER_LEVEL, baseAccuracy, HP_PER_LEVEL, hpPerLevelFrom } from './thief'
+import { THREE_SNAILS_DAMAGE, THREE_SNAILS_SHELL, THREE_SNAILS_SOURCE } from './skills'
+import { ACCURACY_SOURCE, AP_PER_LEVEL, baseAccuracy, DOUBLE_STAB_HITS, DOUBLE_STAB_LEVELS, DOUBLE_STAB_SOURCE, HP_PER_LEVEL, hpPerLevelFrom } from './thief'
 
 describe('baseAccuracy', () => {
   it('geeft 33 voor het voorbeeldprofiel (dex 25, level 10, luk 40), gelijk aan de accuracy daarin', () => {
@@ -46,5 +47,22 @@ describe('bronnen en constanten', () => {
     expect(HP_PER_LEVEL.thiefFromLevel).toBe(10)
     expect(AP_PER_LEVEL.amount).toBe(5)
     expect(ACCURACY_SOURCE.url).toBe('https://meowdb.com/msclassic/guides/thief-class-guide')
+  })
+})
+
+describe("Double Stab en Three Snails (de skillpagina's, #139)", () => {
+  it('Double Stab: 20 levels, 2 klappen, schade 80% +4 per level tot 152% op 19 en 160% op 20, MP 8 tot 16', () => {
+    expect(DOUBLE_STAB_LEVELS).toHaveLength(20)
+    expect(DOUBLE_STAB_HITS).toBe(2)
+    expect(DOUBLE_STAB_LEVELS.slice(0, 19).map((l) => l.damagePct)).toEqual(Array.from({ length: 19 }, (_, i) => 80 + 4 * i))
+    expect(DOUBLE_STAB_LEVELS[19]).toEqual({ level: 20, mp: 16, damagePct: 160 })
+    expect(DOUBLE_STAB_LEVELS.map((l) => l.mp)).toEqual([8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16])
+    expect(DOUBLE_STAB_SOURCE).toEqual({ url: 'https://meowdb.com/msclassic/skills/thief/double-stab', retrieved: '2026-10-04' })
+  })
+
+  it('Three Snails: 15, 25 en 40 schade, met een Snail Shell, Blue en Red', () => {
+    expect(THREE_SNAILS_DAMAGE).toEqual([15, 25, 40])
+    expect(THREE_SNAILS_SHELL).toEqual(['Snail Shell', 'Blue Snail Shell', 'Red Snail Shell'])
+    expect(THREE_SNAILS_SOURCE).toEqual({ url: 'https://meowdb.com/msclassic/skills/beginner/three-snails', retrieved: '2026-10-04' })
   })
 })

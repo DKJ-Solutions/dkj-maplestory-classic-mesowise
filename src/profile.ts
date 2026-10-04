@@ -11,6 +11,7 @@ import type { Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
+import { buffBonus } from './skillEffects'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
 const VERSION = 1
@@ -303,9 +304,11 @@ export function totalMagicAttack(d: ProfileDraft, job: Job): number | null {
 /**
  * Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw, bij een Bowman die van zijn pijlen;
  * een Warrior gooit niets. Een Magician heeft in `clawWatk` de M.ATT van zijn wapen (`matk`, geen weapon attack) en een vaste cast van 810 ms.
+ * Je buffs (Iron Body, Magic Armor, Focus) staan de hele tijd aan: hun DEF, accuracy en evasion tellen bovenop je statvenster (issue #139).
  */
 export function toCharacter(p: Profile): Character {
   const magician = p.job === 'magician'
+  const buff = buffBonus(p)
   return {
     level: p.level,
     hp: p.hp,
@@ -315,9 +318,9 @@ export function toCharacter(p: Profile): Character {
     luk: p.luk,
     watk: magician ? 0 : weaponAttack(p.job, p.clawWatk, p.starWatk),
     matk: magician ? p.clawWatk : 0,
-    accuracy: p.accuracy,
-    avoid: p.avoid,
-    wdef: p.wdef,
+    accuracy: p.accuracy + buff.accuracy,
+    avoid: p.avoid + buff.avoid,
+    wdef: p.wdef + buff.wdef,
     attackMs: magician ? SPELL_CAST_MS.normal : p.attackMs,
   }
 }

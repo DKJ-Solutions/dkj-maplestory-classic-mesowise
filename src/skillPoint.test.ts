@@ -172,8 +172,8 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
   if (!('profile' in wParsed)) throw new Error('Warrior-profiel ongeldig')
   const warrior: Profile = wParsed.profile
 
-  it('geeft een Warrior Power Strike, Precise Strikes en Improved HP Recovery en een Thief Lucky Seven en Nimble Body', () => {
-    expect(skillsOf('warrior').map((s) => s.id)).toEqual(['powerStrike', 'preciseStrikes', 'improvedHpRecovery'])
+  it('geeft een Warrior Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body en een Thief Lucky Seven en Nimble Body', () => {
+    expect(skillsOf('warrior').map((s) => s.id)).toEqual(['powerStrike', 'preciseStrikes', 'improvedHpRecovery', 'maxHpIncrease', 'ironBody'])
     expect(skillsOf('thief')).toBe(SKILLS)
     expect(SKILLS.map((s) => s.id)).toEqual(['luckySeven', 'nimbleBody'])
   })
@@ -203,8 +203,8 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
     expect(pr.plusOne({ ...warrior, preciseStrikes: 0 }).accuracy).toBe(warrior.accuracy + 5)
   })
 
-  it('noemt de drie andere skills van de 1e job van een Warrior onder "niet doorgerekend", en de Thief-lijst blijft zoals hij was', () => {
-    expect(notModelled('warrior')).toEqual(['Max HP Increase', 'Iron Body', 'Slash Blast'])
+  it('noemt de andere skill van de 1e job van een Warrior (Slash Blast) onder "niet doorgerekend", en de Thief-lijst blijft zoals hij was', () => {
+    expect(notModelled('warrior')).toEqual(['Slash Blast'])
     expect(notModelled('thief')).toEqual(NOT_MODELLED)
     expect(NOT_MODELLED).toEqual(['Keen Eyes', 'Double Stab', 'Disorder', 'Dark Sight'])
   })
