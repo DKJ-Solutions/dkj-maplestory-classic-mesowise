@@ -64,7 +64,7 @@ The equipment card gets an Overall row. This branch is parked without a PR until
 - [x] Tycho: 16 tests for edge cases: the swap chain 60 → 80 → 37 → 80, old stored profiles, and an overall injected into the advice. `npm test` passes 749 tests, and `npm run lint` is clean.
 - [x] Victor's review found nothing that blocks. The duplicate WDEF logic was merged into `shiftWdef`, and the unknown-vs-empty rule is documented. His two points for later went to #76.
 - [x] Edith found no spelling errors. Her stale-text findings are fixed.
-- [ ] Dave looks at the equipment card at phone width.
+- [x] Dave looked at the equipment card on localhost and approved the merge (October 4, 2026).
 
 ### DEPLOY: app/50-overall-slot
 
