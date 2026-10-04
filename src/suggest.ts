@@ -4,7 +4,7 @@ import { expPerHour, potionCostPerHour } from './calc/expPerHour'
 import { ASSUMPTIONS, characterAttack, estimateMob, type Assumptions, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { POTIONS } from './data/spots'
-import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS, SUBI } from './data/thief'
+import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion } from './data/types'
 import { toCharacter, type Profile } from './profile'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
@@ -29,6 +29,8 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
+  /** Wat het herladen van één star kost: die van je gekozen stars. */
+  rechargePerStar: number
 }
 
 /** Elk monster van de plek doorgerekend, van meeste naar minste EXP per uur. */
@@ -38,7 +40,7 @@ export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: 
   return spot.monsters
     .map((monster) => {
       const estimate = estimateMob(character, attack, monster, assumptions)
-      return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour) }
+      return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar: profile.starRecharge }
     })
     .sort((a, b) => b.expPerHour - a.expPerHour)
 }
@@ -70,7 +72,7 @@ export function hourPlan(s: MonsterSuggestion, killsPerHour: number): HourPlan {
     hpPotionsPerHour,
     mpPotionsPerHour,
     potions: potionCostPerHour(hpPotionsPerHour, HP_POTION.price) + potionCostPerHour(mpPotionsPerHour, MP_POTION.price),
-    ammo: killsPerHour * s.estimate.starsPerKill * SUBI.rechargePerStar,
+    ammo: killsPerHour * s.estimate.starsPerKill * s.rechargePerStar,
   }
 }
 

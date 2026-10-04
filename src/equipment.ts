@@ -1,12 +1,16 @@
-// De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, hoed, bovenstuk, broek of schoenen.
-// Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, armor past je WDEF aan, en
+// De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je ammo (stars, of pijlen bij een Bowman,
+// issue #65; optioneel), hoed, bovenstuk, broek of schoenen.
+// Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, je stars hun weapon attack en
+// herlaadprijs, armor past je WDEF aan, en
 // het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
 // geen keuze "weet ik niet" of "niets", alleen een slot dat nog niet is ingevuld. Puur, zonder UI-import. Alles
 // uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op "nog niet ingevuld". Je zoekt wat je draagt in
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import { NPC_ARMOR } from './data/armor'
+import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
+import { THROWING_STARS } from './data/thief'
 import type { ArmorSlot } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import type { Job } from './job'
@@ -19,16 +23,30 @@ export const MAX_NAME_LENGTH = 40
 const MAX_STAT_LENGTH = 12
 const MAX_STAT = 999
 
-export type EquipSlot = 'claw' | ArmorSlot
+export type EquipSlot = 'claw' | 'ammo' | ArmorSlot
 
 /** De slots in de volgorde waarin het scherm ze toont. */
 export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'claw', label: 'Weapon' },
+  { slot: 'ammo', label: 'Ammo' },
   { slot: 'hat', label: 'Hat' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
   { slot: 'shoes', label: 'Shoes' },
 ]
+
+/** De slots die een job heeft: ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets. */
+export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] =>
+  job === 'thief' || job === 'bowman' ? EQUIP_SLOTS : EQUIP_SLOTS.filter((s) => s.slot !== 'ammo')
+
+/** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
+export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+
+/**
+ * Of een slot optioneel is: je ammo (Dave, 4 oktober 2026). Leeg laten mag; de app rekent dan met Subi zolang je
+ * nooit een star koos. De andere slots zijn niet verplicht in te vullen, maar je draagt er altijd iets.
+ */
+export const isOptionalSlot = (slot: EquipSlot): boolean => slot === 'ammo'
 
 /** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'
@@ -52,13 +70,14 @@ const emptyEntry = (): EquipEntry => ({ pick: UNKNOWN, name: '', stat: '' })
 /** Nog niets ingevuld: zo begint iedereen, ook wie de app al gebruikte. */
 export const defaultEquipment = (): Equipment => ({
   claw: emptyEntry(),
+  ammo: emptyEntry(),
   hat: emptyEntry(),
   top: emptyEntry(),
   bottom: emptyEntry(),
   shoes: emptyEntry(),
 })
 
-const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw'
+const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw' && slot !== 'ammo'
 
 /** Hoe het scherm de stat van het wapen en van armor noemt, zoals het spel: overal dezelfde namen (#58). */
 export const STAT_NAME = { weapon: 'ATT', armor: 'DEF' } as const
@@ -66,10 +85,11 @@ export const STAT_NAME = { weapon: 'ATT', armor: 'DEF' } as const
 /** De naam van de stat van een slot: ATT voor het wapen en DEF voor armor. */
 export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? STAT_NAME.armor : STAT_NAME.weapon)
 
-/** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw, WDEF voor armor). */
+/** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw of stars, WDEF voor armor). */
 export interface CatalogItem {
   name: string
-  level: number
+  /** Het level dat het item vraagt; pijlen vragen er geen. */
+  level?: number
   stat: number
   /** Alleen een claw: de tijd per aanval met Lucky Seven, zodat de aanvalssnelheid mee verandert. */
   attackMs?: number
@@ -85,6 +105,12 @@ export const MAX_RESULTS = 8
  * Warrior zou onwaar zijn.
  */
 export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] {
+  // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44).
+  if (slot === 'ammo') {
+    if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))
+    if (job === 'bowman') return NPC_ARROWS.map((a) => ({ name: a.name, stat: a.watk }))
+    return []
+  }
   if (job !== 'thief') return []
   const items: CatalogItem[] = isArmorSlot(slot)
     ? [...NPC_ARMOR, ...WORN_ARMOR].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
@@ -95,8 +121,9 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
 const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job).find((i) => i.name === name)
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
-// zorgen daarvoor), dus bij het rekenen zoeken we in de Thief-lijst: een andere job heeft nooit een catalogusitem.
-const thiefItem = (slot: EquipSlot, name: string) => catalogItem(slot, name, 'thief')
+// zorgen daarvoor), dus bij het rekenen zoeken we in de lijsten van de jobs die er een hebben: de Thief, en voor
+// het ammo-slot ook de Bowman.
+const knownItem = (slot: EquipSlot, name: string) => catalogItem(slot, name, 'thief') ?? catalogItem(slot, name, 'bowman')
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
 export function searchCatalog(slot: EquipSlot, job: Job, query: string): readonly CatalogItem[] {
@@ -113,7 +140,7 @@ function parseStat(text: string): number | undefined {
 
 /** De waarde uit de database van wat je draagt; undefined bij nog niet ingevuld, een eigen item of een naam die niet (meer) bestaat. */
 export const databaseStat = (slot: EquipSlot, entry: EquipEntry): number | undefined =>
-  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : thiefItem(slot, entry.pick)?.stat
+  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : knownItem(slot, entry.pick)?.stat
 
 /** De eigen waarde bij een catalogusitem als die geldig is en afwijkt van de database; anders undefined. */
 export function statOverride(slot: EquipSlot, entry: EquipEntry): number | undefined {
@@ -169,9 +196,16 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
  */
 export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before: EquipEntry, after: EquipEntry): ProfileDraft {
   const next = wornStat(slot, after)
+  if (slot === 'ammo') {
+    // Pijlen rekent de app nog niet door (de Bowman niet); stars zetten hun weapon attack, en een andere star uit de
+    // lijst ook zijn herlaadprijs. Een eigen item laat de herlaadprijs staan: die weet de app niet.
+    if (next === undefined || NPC_ARROWS.some((a) => a.name === after.pick)) return profile
+    const star = after.pick === before.pick ? undefined : THROWING_STARS.find((t) => t.name === after.pick)
+    return { ...profile, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }
+  }
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : thiefItem('claw', after.pick)?.attackMs
+    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : knownItem('claw', after.pick)?.attackMs
     return { ...profile, clawWatk: String(next), ...(attackMs !== undefined ? { attackMs: String(attackMs) } : {}) }
   }
   const prev = wornStat(slot, before)

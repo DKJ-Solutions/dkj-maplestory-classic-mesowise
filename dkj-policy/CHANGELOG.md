@@ -2,7 +2,74 @@
 
 ## [Unreleased]
 
-**18 / 33 minor entries** <!-- pending-tally -->
+**19 / 36 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/63-stat-editor · 20261004-103333Z
+
+The stat popups of the character card and the equipment card are now built from one shared piece, so the two can
+no longer drift apart. Nothing changes in what you see, except that integer stats on the character card open the
+plain number pad on an iPhone, as the equipment stats already did.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Shared StatEditor for the character and equipment stat popups
+
+[PR #72](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/72)
+
+---
+
+### DEPLOY: app/65-ranged-ammo · 20261004-103041Z
+
+The equipment card gets an optional Ammo slot. A Thief picks their throwing stars there (Subi, Wolbi, Mokbi,
+Kumbi, Tobi, Steely or Ilbi), and the advice counts their weapon attack and their recharge price. A Bowman sees only
+arrows there, which the app shows but does not count yet; a Warrior or Magician has no such slot. Without a choice the app still counts with Subi.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Thief who uses better stars than Subi now sees advice that counts them: more damage per throw, and the
+recharge price of those stars in the cost per hour.
+
+**Score:** 4
+
+#### Pull Request
+
+Choose your ranged ammo on the equipment card: throwing stars (Thief) and arrows (Bowman)
+
+[PR #71](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/71)
+
+---
+
+### DEPLOY: data/49-ghetto-beanie · 20261004-102513Z
+
+Een Thief krijgt op level 10 nu ook een hoed in het armor-advies: de Ghetto Beanie (15 WDEF, 1.200 meso bij
+Don Hwang in Kerning City). Omdat hij goedkoop is, komt hij ook op hogere levels als hoed naar voren waar
+de Thief Hood duurder is dan wat hij extra bespaart.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ghetto Beanie als level-10 Thief-hoed in de NPC-armor (#49)
+
+[PR #70](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/70)
+
+---
 
 ### DEPLOY: app/profile-stats-pencil · 20261004-101708Z
 

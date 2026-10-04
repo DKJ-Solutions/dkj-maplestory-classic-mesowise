@@ -97,18 +97,23 @@ describe('armorUpgradeAdvice: wanneer er niets te rekenen valt', () => {
 })
 
 describe('armorUpgradeAdvice: per slot het beste draagbare stuk', () => {
-  it('geeft op lv 10 alleen de stukken van lv 10 (top, bottom, shoes; geen hat)', () => {
-    expect(names(advice(drafts, strong({ level: 10 }))).sort()).toEqual(['Blue Gidder Shoes', 'Red Cloth Pants', 'Red Cloth Vest'])
+  it('geeft op lv 10 alleen de stukken van lv 10 (hat, top, bottom, shoes)', () => {
+    expect(names(advice(drafts, strong({ level: 10 }))).sort()).toEqual(['Blue Gidder Shoes', 'Red Cloth Pants', 'Red Cloth Vest', 'Red Ghetto Beanie'])
   })
 
   it('neemt een stuk pas mee vanaf zijn levelvereiste (hoed lv 15: op lv 14 nog niet)', () => {
+    // Red Thief Hood (lv 15) is op lv 15 wel een kandidaat, maar de Red Ghetto Beanie wint het hoedslot (zie lv 25 hieronder), dus kijk naar alle draagbare stukken.
+    expect(wearableNets(strong({ level: 14 })).map((x) => x.armor.name)).not.toContain('Red Thief Hood')
+    expect(wearableNets(strong({ level: 15 })).map((x) => x.armor.name)).toContain('Red Thief Hood')
     expect(names(advice(drafts, strong({ level: 14 })))).not.toContain('Red Thief Hood')
-    expect(names(advice(drafts, strong({ level: 15 })))).toContain('Red Thief Hood')
   })
 
-  it('geeft één stuk per slot, op lv 25 voor elk van de vier slots', () => {
+  it('geeft één stuk per slot, op lv 25 voor elk van de vier slots (de Red Ghetto Beanie wint het hoedslot van de Red Thief Hood)', () => {
     const a = advice(drafts, strong({ level: 25 }))
-    expect(names(a).sort()).toEqual(['Blue Gidder Shoes', 'Red Cloth Pants', 'Red Cloth Vest', 'Red Thief Hood'])
+    expect(names(a).sort()).toEqual(['Blue Gidder Shoes', 'Red Cloth Pants', 'Red Cloth Vest', 'Red Ghetto Beanie'])
+    // Met de hand: dezelfde horizon (25 t/m 29) en maar 3 WDEF minder, maar 700 mesos goedkoper: de Beanie levert netto meer op.
+    expect(handTo(25, armor('Red Ghetto Beanie'))).toBe(handTo(25, armor('Red Thief Hood')))
+    expect(handNet(strong({ level: 25 }), armor('Red Ghetto Beanie'))).toBeGreaterThan(handNet(strong({ level: 25 }), armor('Red Thief Hood')))
     expect(new Set(a.choices.map((c) => c.armor.slot)).size).toBe(a.choices.length)
   })
 
@@ -160,10 +165,14 @@ describe('armorUpgradeAdvice: niet draagbaar', () => {
     expect(lukOk.notWearable.find((u) => u.armor.name === 'Red Tiberian')).toEqual({ armor: armor('Red Tiberian'), needLuk: 0, needDex: 10 })
   })
 
-  it('draagt een stuk bij precies genoeg stats (LUK 20, DEX 0 voor Red Thief Hood)', () => {
+  it('draagt een stuk bij precies genoeg stats (LUK 20, DEX 0 voor Red Thief Hood; LUK 19 niet)', () => {
     const a = advice(drafts, { ...base, level: 15, luk: 20, dex: 0 })
-    expect(names(a)).toContain('Red Thief Hood')
     expect(a.notWearable.map((u) => u.armor.name)).not.toContain('Red Thief Hood')
+    expect(wearableNets({ ...base, level: 15, luk: 20, dex: 0 }).map((x) => x.armor.name)).toContain('Red Thief Hood')
+    // Eén LUK minder: de Hood kan niet, de Red Ghetto Beanie (LUK 10) wel.
+    const b = advice(drafts, { ...base, level: 15, luk: 19, dex: 0 })
+    expect(b.notWearable).toContainEqual({ armor: armor('Red Thief Hood'), needLuk: 1, needDex: 0 })
+    expect(names(b)).toContain('Red Ghetto Beanie')
   })
 
   it('rekent een niet-draagbaar stuk niet door', () => {
@@ -183,24 +192,25 @@ describe('armorUpgradeAdvice: het profiel met het stuk erbij', () => {
 })
 
 describe('armorUpgradeAdvice: de horizon', () => {
-  it('loopt bij lv 15 voor Red Thief Hood van 15 tot 19 (vóór Red Loosecap, lv 20)', () => {
-    expect(choice(advice(drafts, strong({ level: 15 })), 'Red Thief Hood')).toMatchObject({ from: 15, to: 19, truncated: false })
+  it('loopt bij lv 15 voor Red Ghetto Beanie van 15 tot 19 (vóór Red Loosecap, lv 20; de Red Thief Hood van lv 15 telt niet als "later")', () => {
+    expect(choice(advice(drafts, strong({ level: 15 })), 'Red Ghetto Beanie')).toMatchObject({ from: 15, to: 19, truncated: false })
   })
 
-  it('stopt per slot vóór het volgende betere stuk: top lv 10 tot 19 (Red Pao, lv 20), bottom en shoes lv 10 tot 14 (lv 15)', () => {
+  it('stopt per slot vóór het volgende betere stuk: top lv 10 tot 19 (Red Pao, lv 20), hat, bottom en shoes lv 10 tot 14 (lv 15)', () => {
     const a = advice(drafts, strong({ level: 10 }))
+    expect(choice(a, 'Red Ghetto Beanie')).toMatchObject({ from: 10, to: 14, truncated: false })
     expect(choice(a, 'Red Cloth Vest')).toMatchObject({ from: 10, to: 19, truncated: false })
     expect(choice(a, 'Red Cloth Pants')).toMatchObject({ from: 10, to: 14, truncated: false })
     expect(choice(a, 'Blue Gidder Shoes')).toMatchObject({ from: 10, to: 14, truncated: false })
   })
 
-  it('loopt bij lv 20 voor top, bottom en hoed tot 24 (de lv 25-stukken zijn beter)', () => {
+  it('loopt bij lv 20 voor top, bottom en hoed (Red Ghetto Beanie) tot 24 (de lv 25-stukken zijn beter)', () => {
     const a = advice(drafts, strong({ level: 20 }))
-    for (const n of ['Red Cloth Vest', 'Red Cloth Pants', 'Red Thief Hood']) expect(choice(a, n), n).toMatchObject({ from: 20, to: 24, truncated: false })
+    for (const n of ['Red Cloth Vest', 'Red Cloth Pants', 'Red Ghetto Beanie']) expect(choice(a, n), n).toMatchObject({ from: 20, to: 24, truncated: false })
   })
 
-  it('loopt bij lv 25 voor Red Thief Hood van 25 tot 29 (vóór Red Guise, lv 30)', () => {
-    expect(choice(advice(drafts, strong({ level: 25 })), 'Red Thief Hood')).toMatchObject({ from: 25, to: 29, truncated: false })
+  it('loopt bij lv 25 voor Red Ghetto Beanie van 25 tot 29 (vóór Red Guise, lv 30)', () => {
+    expect(choice(advice(drafts, strong({ level: 25 })), 'Red Ghetto Beanie')).toMatchObject({ from: 25, to: 29, truncated: false })
   })
 
   it('kapt af op de laatste tabelrij (lv 30) als er geen beter stuk meer komt, en meldt dat', () => {
@@ -268,16 +278,17 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
       [10, 'Red Cloth Vest', 10, 19],
       [10, 'Red Cloth Pants', 10, 14],
       [10, 'Blue Gidder Shoes', 10, 14],
-      [15, 'Red Thief Hood', 15, 19],
+      [10, 'Red Ghetto Beanie', 10, 14],
+      [15, 'Red Ghetto Beanie', 15, 19],
       [20, 'Red Ninja Sandals', 20, 30],
       [20, 'Red Cloth Vest', 20, 24],
       [20, 'Red Cloth Pants', 20, 24],
-      [20, 'Red Thief Hood', 20, 24],
+      [20, 'Red Ghetto Beanie', 20, 24],
       [25, 'Red Cloth Vest', 25, 29],
       [25, 'Red Cloth Pants', 25, 29],
-      [25, 'Red Thief Hood', 25, 29],
+      [25, 'Red Ghetto Beanie', 25, 29],
       [25, 'Blue Gidder Shoes', 25, 30],
-      [30, 'Red Thief Hood', 30, 30],
+      [30, 'Red Ghetto Beanie', 30, 30],
     ]
     for (const [level, name, from, to] of cases) {
       const p = strong({ level })
@@ -451,7 +462,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     expect(a.robust).toBe(false)
   })
 
-  it('meldt robust false op lv 25 omdat bij minder contacten (0,15) geen stuk zich terugverdient, terwijl Red Cloth Vest nu wint', () => {
+  it('meldt robust false op lv 25 omdat bij minder contacten (0,15) alleen de goedkope Red Ghetto Beanie zich nog terugverdient, terwijl Red Cloth Vest nu wint', () => {
     const p = strong({ level: 25 })
     const a = advice(drafts, p)
     expect(a.winner).toBe(armor('Red Cloth Vest'))
@@ -461,9 +472,14 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     const vestNet = EXP_25_29 / 0.9047805 - EXP_25_29 / 0.9097939 - 2_000
     expect(vestNet).toBeCloseTo(-35, -1) // net onder 0: de Vest verdient zich dan niet terug
     expect(vestNet).toBeLessThan(0)
-    // En geen enkel ander stuk doet het wel.
-    for (const x of wearableNets(p, V_FEW_CONTACTS)) expect(x.net, x.armor.name).toBeLessThan(0)
-    expect(bruteWinner(p, V_FEW_CONTACTS)).toBeNull()
+    // Met de hand, de Beanie (WDEF 15, 1.200 mesos): EXP per meso bij 0,15 contacten 0,9079706, dus ongeveer +53 netto.
+    expect(epm({ ...p, wdef: p.wdef + 15 }, V_FEW_CONTACTS)).toBeCloseTo(0.9079706, 6)
+    const beanieNet = EXP_25_29 / 0.9047805 - EXP_25_29 / 0.9079706 - 1_200
+    expect(beanieNet).toBeCloseTo(52.6, 0)
+    expect(handNet(p, armor('Red Ghetto Beanie'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
+    // Geen enkel ander stuk doet het dan wel: alleen de Beanie staat boven 0, dus die wint onder deze aanname.
+    for (const x of wearableNets(p, V_FEW_CONTACTS).filter((y) => y.armor.name !== 'Red Ghetto Beanie')) expect(x.net, x.armor.name).toBeLessThan(0)
+    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Ghetto Beanie'))
     expect(a.robust).toBe(false)
   })
 
@@ -484,12 +500,16 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
 })
 
 describe('armorUpgradeAdvice: wat de standaardwaarden geven (Cody, luk/dex 100)', () => {
-  it('geeft op lv 15 geen winnaar: het beste stuk (Blue Gidder Shoes) staat op ongeveer -835', () => {
+  it('geeft op lv 15 geen winnaar: het beste stuk (Red Ghetto Beanie) staat op ongeveer -659', () => {
     const a = advice(drafts, strong({ level: 15 }))
     expect(a.winner).toBeNull()
     const top = a.choices[0]
-    expect(top.armor.name).toBe('Blue Gidder Shoes')
-    expect(top.net!).toBeCloseTo(-834.6, 0)
+    expect(top.armor.name).toBe('Red Ghetto Beanie')
+    expect(top.net!).toBeCloseTo(-658.7, 0)
+    // Met de hand: EXP 15 t/m 19 (57.326) bij EXP per meso 0,8050842 zonder en 0,8112513 met WDEF 15, min 1.200 mesos.
+    expect(EXP_15_19 / 0.8050842 - EXP_15_19 / 0.8112513 - 1_200).toBeCloseTo(-658.7, 0)
+    // De Blue Gidder Shoes, tot nu toe de beste, komen er net achter (ongeveer -835).
+    expect(choice(a, 'Blue Gidder Shoes').net!).toBeCloseTo(-834.6, 0)
   })
 
   it('geeft op lv 20 Red Ninja Sandals als winnaar met ongeveer +2.113', () => {

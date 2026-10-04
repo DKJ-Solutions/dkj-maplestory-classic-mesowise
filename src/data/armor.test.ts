@@ -51,10 +51,17 @@ describe('NPC_ARMOR', () => {
     }
   })
 
-  it('heeft de Red Qi Pao Skirt (id 1216, alleen voor vrouwen) er niet in, en dus 16 stukken', () => {
+  it('heeft de Red Qi Pao Skirt (id 1216, alleen voor vrouwen) er niet in, en dus 17 stukken', () => {
     expect(NPC_ARMOR.map((a) => a.name)).not.toContain('Red Qi Pao Skirt')
     expect(NPC_ARMOR.map((a) => a.source.url)).not.toContain('https://meowdb.com/msclassic/item-db/1216')
-    expect(NPC_ARMOR).toHaveLength(16)
+    expect(NPC_ARMOR).toHaveLength(17)
+  })
+
+  it('heeft de Red Ghetto Beanie (id 732, Don Hwang, Kerning City) precies zoals op MeowDB gelezen', () => {
+    expect(NPC_ARMOR.find((a) => a.name === 'Red Ghetto Beanie')).toEqual({
+      name: 'Red Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, luk: 10, dex: 0, price: 1_200,
+      source: { url: 'https://meowdb.com/msclassic/item-db/732', retrieved: '2026-10-04' },
+    })
   })
 
   it('geeft binnen een slot een hoger level nooit minder WDEF', () => {

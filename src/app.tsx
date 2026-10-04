@@ -10,14 +10,14 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, STAT_NAME, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, slotsFor, STAT_NAME, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
-import { NIMBLE_BODY } from './data/thief'
+import { NIMBLE_BODY, SUBI } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -210,7 +210,6 @@ function StatLine(props: { field: ProfileField; value: string; expected?: number
     if (draft !== null && draft !== value) props.onSave(draft)
     setDraft(null)
   }
-  const step = (by: number) => draft !== null && setDraft(stepValue(draft, by, f.min, f.max, f.min))
   return (
     <div class="stat-line">
       <span class="stat-line-name">{f.label}</span>
@@ -225,38 +224,84 @@ function StatLine(props: { field: ProfileField; value: string; expected?: number
       </button>
       {draft !== null && (
         <StatDialog title={f.label} onCancel={() => setDraft(null)}>
-          {expected !== undefined && <p class="stat-dialog-db">Verwacht volgens de formule: <strong>{expected}</strong></p>}
-          <span class="stat-dialog-label" id={`${uid}-game`}>{f.label} in game</span>
-          <div class={f.integer ? 'equip-step' : 'equip-step plain'}>
-            {f.integer && <button type="button" aria-label={`${f.label} min 1`} onClick={() => step(-1)}>−</button>}
-            <input type="number" inputMode={f.integer ? 'numeric' : 'decimal'} min={f.min} max={f.max} enterKeyHint="done" aria-labelledby={`${uid}-game`}
-              value={draft}
-              onFocus={(e) => e.currentTarget.select()}
-              onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  save()
-                }
-              }}
-            />
-            {f.integer && <button type="button" aria-label={`${f.label} plus 1`} onClick={() => step(1)}>+</button>}
-          </div>
-          <div class="stat-dialog-actions">
-            {expected !== undefined && draft.trim() !== String(expected) && (
-              <button type="button" class="equip-reset" aria-label={`Reset naar ${expected}`} onClick={() => setDraft(String(expected))}>
-                Reset
-              </button>
-            )}
-            {draft !== value && (
-              <button type="button" class="equip-save" onClick={save}>
-                Opslaan
-              </button>
-            )}
-          </div>
+          <StatEditor
+            stat={f.label}
+            labelId={`${uid}-game`}
+            expected={expected === undefined ? undefined : { value: expected, from: 'de formule' }}
+            value={draft}
+            min={f.min}
+            max={f.max}
+            fallback={f.min}
+            integer={f.integer}
+            reset={expected !== undefined && draft.trim() !== String(expected) ? expected : undefined}
+            dirty={draft !== value}
+            onInput={setDraft}
+            onSave={save}
+          />
         </StatDialog>
       )}
     </div>
+  )
+}
+
+/**
+ * De inhoud van een stat-popup, voor de karakter- en de equipment-kaart samen: de verwachting, het getal met − en +
+ * (alleen voor hele getallen) en Reset en Opslaan. Het getal is een concept; wat het vastlegt, beslist de kaart via
+ * `onSave`. Tik je op het getal, dan is het geselecteerd en vervangt wat je typt het hele getal; Enter slaat op.
+ */
+function StatEditor(props: {
+  /** De naam van de stat, zoals in "<stat> in game" en de knoplabels. */
+  stat: string
+  labelId: string
+  /** Wat de app verwacht en waar dat vandaan komt ("de formule", "de database"). */
+  expected?: { value: number; from: string }
+  value: string
+  min: number
+  max: number
+  /** Waar − en + vanaf tellen als het vak leeg of onleesbaar is. */
+  fallback: number
+  integer: boolean
+  /** Waar Reset naartoe zet; zonder waarde staat er geen Reset. */
+  reset?: number
+  /** Of het concept afwijkt van wat er staat: dan pas staat Opslaan er. */
+  dirty: boolean
+  onInput: (text: string) => void
+  onSave: () => void
+}) {
+  const { stat, value, min, max, integer, reset } = props
+  const step = (by: number) => props.onInput(stepValue(value, by, min, max, props.fallback))
+  return (
+    <>
+      {props.expected && <p class="stat-dialog-db">Verwacht volgens {props.expected.from}: <strong>{props.expected.value}</strong></p>}
+      <span class="stat-dialog-label" id={props.labelId}>{stat} in game</span>
+      <div class={integer ? 'equip-step' : 'equip-step plain'}>
+        {integer && <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
+        <input type="number" inputMode={integer ? 'numeric' : 'decimal'} pattern={integer ? '[0-9]*' : undefined} min={min} max={max} enterKeyHint="done" aria-labelledby={props.labelId}
+          value={value}
+          onFocus={(e) => e.currentTarget.select()}
+          onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              props.onSave()
+            }
+          }}
+        />
+        {integer && <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>}
+      </div>
+      <div class="stat-dialog-actions">
+        {reset !== undefined && (
+          <button type="button" class="equip-reset" aria-label={`Reset naar ${reset}`} onClick={() => props.onInput(String(reset))}>
+            Reset
+          </button>
+        )}
+        {props.dirty && (
+          <button type="button" class="equip-save" onClick={props.onSave}>
+            Opslaan
+          </button>
+        )}
+      </div>
+    </>
   )
 }
 
@@ -286,7 +331,7 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => (
             <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
+          {thief && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
@@ -502,7 +547,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {
@@ -529,14 +574,14 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
     }
   }
   const picked = wornName(entry)
-  const slotLabel = EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+  const label = slotLabel(slot)
   return (
     <div class="equip-search">
       {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
       {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
           de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
       {!open && picked !== null && (
-        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+        <button type="button" class="equip-picked" aria-label={`${label}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
           {picked}
         </button>
       )}
@@ -547,7 +592,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         aria-hidden={!open && picked !== null ? true : undefined}
         type="text"
         role="combobox"
-        aria-label={`Zoek je ${slotLabel}`}
+        aria-label={`Zoek je ${label}`}
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
@@ -557,7 +602,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         spellcheck={false}
         enterKeyHint="done"
         maxLength={MAX_EQUIP_NAME}
-        placeholder={wornName(entry) ?? 'Zoek wat je draagt'}
+        placeholder={wornName(entry) ?? (isOptionalSlot(slot) ? 'Optioneel: zoek je ammo' : 'Zoek wat je draagt')}
         value={text ?? wornName(entry) ?? ''}
         onFocus={() => {
           setText('')
@@ -668,7 +713,8 @@ function EquipmentCard(props: {
         <div class="spot-body">
           {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
           {thief ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {EQUIP_SLOTS.map(({ slot, label }) => {
+          {slotsFor(props.job).map(({ slot }) => {
+            const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
             const stat = statName(slot)
@@ -679,7 +725,6 @@ function EquipmentCard(props: {
             const value = wornStat(slot, entry)
             const isEditing = editing === slot
             // Het corrigeervak werkt met een concept (pending): - en +, typen en Reset veranderen pas iets na Opslaan.
-            const reset = () => props.onStatInput(slot, String(db ?? ''))
             const draft = props.pending[slot]
             const saved = draft === undefined ? null : commitStat(slot, entry, draft)
             const dirty = saved !== null && saved.stat !== entry.stat
@@ -687,11 +732,13 @@ function EquipmentCard(props: {
               props.onCommit(slot)
               setEditing(null)
             }
-            const step = (by: number) => props.onStatInput(slot, stepValue(shown, by, 0, 999, db ?? 0))
             return (
               <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
-                  <span class="slot-name">{label}</span>
+                  <span class="slot-name">
+                    {label}
+                    {isOptionalSlot(slot) && <span class="slot-optional"> (optioneel)</span>}
+                  </span>
                   <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>
@@ -708,38 +755,22 @@ function EquipmentCard(props: {
                       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                     </button>
                     {isEditing && (
-                      // Corrigeren: - en + en typen maken een concept; Opslaan (of Enter) legt het vast. Tik je op het getal, dan is
-                      // het geselecteerd en vervangt wat je typt het hele getal.
+                      // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
                       <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
-                        {db !== undefined && <p class="stat-dialog-db">Verwacht volgens de database: <strong>{db}</strong></p>}
-                        <span class="stat-dialog-label" id={`${uid}-${slot}-game`}>{stat} in game</span>
-                        <div class="equip-step">
-                          <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
-                          <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
-                            value={shown}
-                            onFocus={(e) => e.currentTarget.select()}
-                            onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault()
-                                saveDraft()
-                              }
-                            }}
-                          />
-                          <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
-                        </div>
-                        <div class="stat-dialog-actions">
-                          {db !== undefined && (saved ?? entry).stat !== '' && (
-                            <button type="button" class="equip-reset" aria-label={`Reset naar ${db}`} onClick={reset}>
-                              Reset
-                            </button>
-                          )}
-                          {dirty && (
-                            <button type="button" class="equip-save" onClick={saveDraft}>
-                              Opslaan
-                            </button>
-                          )}
-                        </div>
+                        <StatEditor
+                          stat={stat}
+                          labelId={`${uid}-${slot}-game`}
+                          expected={db === undefined ? undefined : { value: db, from: 'de database' }}
+                          value={shown}
+                          min={0}
+                          max={999}
+                          fallback={db ?? 0}
+                          integer
+                          reset={db !== undefined && (saved ?? entry).stat !== '' ? db : undefined}
+                          dirty={dirty}
+                          onInput={(text) => props.onStatInput(slot, text)}
+                          onSave={saveDraft}
+                        />
                       </StatDialog>
                     )}
                   </div>
@@ -757,7 +788,11 @@ function EquipmentCard(props: {
               <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
-              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
+              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
+              <a href={SUBI.source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>{' '}
+              (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
             </p>
           )}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />

@@ -34,16 +34,30 @@ const STATS = [
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
+/**
+ * Je stars (issue #65): hun weapon attack en wat het herladen per ster kost. Geen kaart toont ze; de star die je bij
+ * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi.
+ */
+const AMMO = [
+  // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
+  // toont, mag de berekening niet blokkeren.
+  { key: 'starWatk', label: `${STAT_NAME.weapon} van je stars`, min: 0, max: 999, integer: true },
+  { key: 'starRecharge', label: 'Herladen per star (meso)', min: 0, max: 100, integer: false },
+] as const
+
 /** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
 const SKILL_FIELDS: readonly ProfileField[] = THIEF_SKILLS.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
 
-export type ProfileKey = (typeof STATS)[number]['key'] | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | SkillKey
 
 /** De stats van je karakter; je skills hebben hun eigen kaart. */
 export const STAT_FIELDS: readonly ProfileField[] = STATS
 
-/** Alle getalvelden: eerst de stats, dan de skills. */
-export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...SKILL_FIELDS]
+/** De velden van je stars; ze komen uit je equipment. */
+export const AMMO_FIELDS: readonly ProfileField[] = AMMO
+
+/** Alle getalvelden: eerst de stats, dan je stars, dan de skills. */
+export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...AMMO_FIELDS, ...SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /** Een ingevuld profiel, als getallen. */
@@ -69,6 +83,8 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   avoid: '23',
   wdef: '72',
   attackMs: String(ATTACK_MS.fast5),
+  starWatk: String(SUBI.watk),
+  starRecharge: String(SUBI.rechargePerStar),
   threeSnails: '0',
   nimbleFeet: '0',
   recovery: '0',
@@ -105,7 +121,7 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
   return { profile: out }
 }
 
-/** Het profiel in de vorm van het mob-model: de stars zijn Subi's, dus hun weapon attack telt mee. */
+/** Het profiel in de vorm van het mob-model: de weapon attack van je stars telt mee bij die van je claw. */
 export function toCharacter(p: Profile): Character {
   return {
     level: p.level,
@@ -113,7 +129,7 @@ export function toCharacter(p: Profile): Character {
     str: p.str,
     dex: p.dex,
     luk: p.luk,
-    watk: p.clawWatk + SUBI.watk,
+    watk: p.clawWatk + p.starWatk,
     accuracy: p.accuracy,
     avoid: p.avoid,
     wdef: p.wdef,

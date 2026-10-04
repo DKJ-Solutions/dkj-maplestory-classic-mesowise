@@ -45,7 +45,7 @@ Issue #58: the equipment card says ATT and DEF (Dave, October 4, 2026), the rest
 ### CREATE
 
 - [x] `STAT_NAME` in `src/equipment.ts` is the one source of both names; `statName` reads it
-- [x] `src/profile.ts`: the field labels read "ATT van je wapen" and "DEF"
+- [x] `src/profile.ts`: the field labels read "ATT van je wapen", "ATT van je stars" (the ammo field that came in with #65) and "DEF"
 - [x] `src/app.tsx`: the armor-advice texts say DEF instead of WDEF
 
 ### TEST
