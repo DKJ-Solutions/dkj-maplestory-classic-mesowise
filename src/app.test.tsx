@@ -836,12 +836,13 @@ describe('een Warrior in de app', () => {
       expect(profileFields().wdef).toBe('60')
     })
 
-    it('toont bij je karakter de weapon multiplier en STR, en niet de Subi-zin van de Thief', () => {
+    it('toont bij je karakter de weapon multiplier en STR, zonder uitleg eronder', () => {
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
-      expect(home.textContent).not.toMatch(/Subi|stars/)
-      expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
+      // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026).
+      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Subi|stars|rekent met Power Strike|geen munitie|per soort wapen/)
       fireEvent.click(within(home.querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       expect(statShown('STR')).toBe('90')
@@ -957,8 +958,8 @@ describe('een Warrior in de app', () => {
     expect(panels()[2].textContent).not.toMatch(NOT_YET)
     fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(panels()[0].textContent).toMatch(/De app rekent met de stars die je bij je equipment kiest/)
-    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier/)
+    expect(panels()[0].querySelector('dialog .hint')).toBeNull()
+    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
 
   for (const [job, label] of [['magician', 'Magician']] as const) {
@@ -1056,15 +1057,14 @@ describe('een Bowman in de app', () => {
       expect(profileFields().wdef).toBe('60')
     })
 
-    it('toont bij Ability points DEX en STR en bij Total stats de uitleg over Arrow Blow en pijlen, zonder weapon multiplier, Subi of stars', () => {
+    it('toont bij Ability points DEX en STR, en bij Total stats geen uitleg, weapon multiplier, Subi of stars', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       const home = panels()[0]
       expect(statShown('DEX')).toBe('80')
       expect(statShown('STR')).toBe('20')
-      expect(home.textContent).toMatch(/De app rekent met Arrow Blow als je hem hebt geleerd/)
-      expect(home.textContent).toMatch(/1 meso per pijl/)
-      expect(home.textContent).not.toMatch(/Weapon multiplier|Subi|stars/)
+      expect(home.querySelector('dialog.card-dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Arrow Blow als je hem hebt geleerd|1 meso per pijl|Weapon multiplier|Subi|stars/)
     })
 
     it('toont de verwachte Bowman-accuracy en -evasion doorgestreept als je getal afwijkt', () => {

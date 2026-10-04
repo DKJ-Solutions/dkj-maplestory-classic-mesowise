@@ -20,7 +20,6 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
-import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -354,8 +353,8 @@ function StatEditor(props: {
 }
 
 /**
- * Een kaart met een popup met een rij stat-regels (zelfde patroon als de andere kaarten). `children` zijn de hints
- * onder de regels.
+ * Een kaart met een popup met een rij stat-regels (zelfde patroon als de andere kaarten). Zonder uitleg eronder: die
+ * leest een speler toch niet (Dave, 4 oktober 2026).
  */
 function StatsCard(props: {
   className: string
@@ -368,7 +367,6 @@ function StatsCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
   /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
   lead?: ComponentChildren
-  children?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
@@ -390,8 +388,6 @@ function StatsCard(props: {
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
-          {props.children}
         </CardPopup>
       )}
     </section>
@@ -414,31 +410,7 @@ function TotalStatsCard(props: StatsCardProps) {
   const attack = totalAttack(props.draft, job)
   const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
   return (
-    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
-      {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
-      {job === 'bowman' && (
-        <p class="hint">
-          De app rekent met Arrow Blow als je hem hebt geleerd, anders met je gewone schot. Een boog of kruisboog uit je
-          equipment vult je weapon attack en tijd per aanval in. Zet je geen wapen, dan rekent de app met 750 ms per aanval
-          (Fast (5), zoals de meeste wapens), tot je een wapen zet. Je schiet gewone pijlen: 1 meso per pijl, zonder extra ATT,
-          en elke aanval verbruikt er één.
-        </p>
-      )}
-      {job === 'warrior' && (
-        <>
-          <p class="hint">
-            De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
-            vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
-            steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
-            multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
-          </p>
-          <p class="hint">
-            Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
-            {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
-          </p>
-        </>
-      )}
-    </StatsCard>
+    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
   )
 }
 
