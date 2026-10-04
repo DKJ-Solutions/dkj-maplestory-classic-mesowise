@@ -232,24 +232,31 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
-.level-row { display: grid; grid-template-columns: 6rem minmax(0, 1fr) 6rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
+.level-row { display: grid; grid-template-columns: 6.75rem minmax(0, 1fr) 6.75rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 .btn.level-down { justify-self: start; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; line-height: 1; }
 .current-level { margin: 0; font-size: clamp(1.75rem, 8vw, 2.5rem); line-height: 1.1; text-align: center; }
 /* Level up: een groen verloop, verder rustig, en niet groter dan het level ernaast (Dave, 4 oktober 2026). */
 .btn.levelup {
   justify-self: end;
   width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   min-height: 44px;
-  padding: 0 0.875rem;
-  border: 1px solid var(--levelup-lo);
+  padding: 0 0.625rem;
+  border: none;
   border-radius: 0.75rem;
   background: linear-gradient(180deg, var(--levelup-hi), var(--levelup-lo));
   color: var(--on-levelup);
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   white-space: nowrap;
 }
-.btn.levelup:disabled, .btn.level-down:disabled { opacity: 0.45; }.level-row-hint { margin-top: -0.5rem; text-align: right; }
+.levelup-plus { flex: none; }
+.btn.levelup:disabled, .btn.level-down:disabled { opacity: 0.45; }
+.level-row-hint { margin-top: -0.5rem; text-align: right; }
 .summary { margin: 0 0 1rem; color: var(--muted); }
 .summary strong { color: var(--text); }
 

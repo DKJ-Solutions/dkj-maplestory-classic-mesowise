@@ -149,14 +149,16 @@ describe('begin zonder opslag', () => {
     const [down, heading, up] = Array.from(row.children)
     expect(down).toBe(screen.getByRole('button', { name: 'Naar het vorige level' }))
     expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
-    expect(heading.textContent).toBe('Level 10')
+    expect(heading.textContent).toBe('LV. 10')
     expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))
+    // Hoofdletters komen uit de CSS, het plusje is decoratie: de naam blijft "Level up".
+    expect(up.querySelector('svg.levelup-plus')?.getAttribute('aria-hidden')).toBe('true')
     expect(screen.getAllByRole('button', { name: /Level up/ })).toHaveLength(1)
   })
 
   it('zet met de kleine knop alleen het level een terug, zonder de level-up-flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Naar het vorige level' }))
-    expect(document.querySelector('.current-level')?.textContent).toBe('Level 9')
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 9')
     expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
   })
 
@@ -177,7 +179,7 @@ describe('begin zonder opslag', () => {
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
     levelUp()
-    expect(document.querySelector('.current-level')?.textContent).toBe('Level 11')
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 11')
   })
 
   it('toont een slot dat nog niet is ingevuld als zoekbalk, zonder opties "Weet ik niet" of "Niets"', () => {
@@ -1431,7 +1433,7 @@ describe('een Magician in de app', () => {
     beforeEach(() => open())
 
     it('zet de job niet bij het level (Dave, 4 oktober 2026, #130) en niet achter Ability points', () => {
-      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20')
+      expect(document.querySelector('.current-level')?.textContent).toBe('LV. 20')
       expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
     })
 
