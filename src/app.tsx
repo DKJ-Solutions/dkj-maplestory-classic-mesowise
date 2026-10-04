@@ -431,7 +431,7 @@ function StatsCard(props: {
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack is je schadebereik met een gewone aanval, uit je ability points en de weapon attack van je equipment. Weapon Def komt uit je equipment; pas hem daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">{isComputed(job) ? 'Attack is je schadebereik met een gewone aanval, uit je ability points en de weapon attack van je equipment.' : 'Attack is de weapon attack van je equipment.'} Weapon Def komt uit je equipment; pas hem daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
@@ -450,7 +450,7 @@ function attackText(draft: ProfileDraft, job: Job): string {
   const range = 'profile' in parsed ? statWindowRange(parsed.profile) : null
   if (range) return `${nfInt.format(range.min)} – ${nfInt.format(range.max)}`
   const attack = isComputed(job) ? null : totalAttack(draft, job)
-  return attack === null ? '' : String(attack)
+  return attack === null ? '' : nfInt.format(attack)
 }
 
 type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }

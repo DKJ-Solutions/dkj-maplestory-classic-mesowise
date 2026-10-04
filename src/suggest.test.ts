@@ -308,10 +308,10 @@ describe('statWindowRange: de Attack uit het statvenster (#108)', () => {
     expect(statWindowRange(as('bowman', { arrowBlow: '20' }))).toEqual(statWindowRange(as('bowman')))
   })
 
-  it('rondt min en max naar beneden af, zoals de gids', () => {
-    const r = statWindowRange(profile)!
-    expect(Number.isInteger(r.min) && Number.isInteger(r.max)).toBe(true)
-    expect(r.min).toBeLessThanOrEqual(r.max)
+  it('rondt min en max naar beneden af, zoals de gids: 60,6 wordt 60 en 172,8 wordt 172, niet 61 en 173', () => {
+    const r = meleeAttack({ str: 132, dex: 30, watk: 47 }, 1.8, null)
+    expect([r.min, r.max].map((x) => Math.round(x))).toEqual([61, 173])
+    expect(statWindowRange(as('warrior', { str: '132', dex: '30', clawWatk: '47', weaponMult: '1.8' }))).toEqual({ min: 60, max: 172 })
   })
 
   it('is null voor een job die de app nog niet doorrekent', () => {

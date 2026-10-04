@@ -54,7 +54,9 @@ function attackOf(profile: Profile, character: Character, basic = false): Attack
  * De Attack uit het statvenster (issue #108): de laagste en hoogste schade van één gewone aanval, uit je ability points
  * en je weapon attack, zonder skill en vóór de verdediging van het monster. Bron: de damage-gids van MeowDB
  * (meowdb.com/msclassic/guides/explaining-the-damage-formula, "Character-window damage range"), die beide afrondt
- * naar beneden. Null voor een job die de app nog niet doorrekent: daar kent hij de formule niet.
+ * naar beneden. Null voor een job die de app nog niet doorrekent: daar kent hij de formule niet. Bij een Warrior is het
+ * een benadering: zijn weapon multiplier is het gemiddelde van zwaaien en steken (data/warrior.ts), waar het spel één
+ * multiplier gebruikt; het bereik kan daardoor een paar punten van het statvenster afwijken.
  */
 export function statWindowRange(profile: Profile): { min: number; max: number } | null {
   if (!isComputed(profile.job)) return null

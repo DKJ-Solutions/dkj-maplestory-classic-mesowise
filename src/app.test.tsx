@@ -5,7 +5,8 @@ import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
-import { DEFAULT_PROFILE, PROFILE_KEY } from './profile'
+import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
+import { statWindowRange } from './suggest'
 import { knownSpotPatch } from './data/spots'
 import { newDraft } from './spotDraft'
 import { STORAGE_KEY } from './storage/spots'
@@ -32,6 +33,13 @@ const [TOP_A] = twoItems('top')
 
 const stored = (key: string) => JSON.parse(localStorage.getItem(key) ?? 'null')
 const profileFields = () => stored(PROFILE_KEY)?.fields
+/** De Attack zoals Total stats hem moet tonen: het schadebereik van het bewaarde profiel (#108). */
+const rangeOf = (job: 'thief' | 'warrior' | 'bowman'): string => {
+  const r = parseProfile({ ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft> | undefined) }, job)
+  if (!('profile' in r)) throw new Error(r.error)
+  const range = statWindowRange(r.profile)!
+  return `${range.min} – ${range.max}`
+}
 const slots = () => stored(EQUIPMENT_KEY)?.slots
 
 /** De drie schermen van de flow: [0] thuis, [1] controle na de level-up, [2] advies. */
@@ -478,12 +486,14 @@ describe('bewaren na elke wijziging', () => {
     expect(profileFields().starRecharge).toBe('0.4')
   })
 
-  it('toont bij Total stats de Attack uit je equipment: claw plus stars, niet 0 (#82)', () => {
+  it('toont bij Total stats de Attack als schadebereik uit je ability points en je equipment: claw plus stars (#82, #108)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(statShown('Attack')).toBe(String(IGOR.watk + 17))
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(statShown('Attack')).toBe(rangeOf('thief'))
+    expect(statShown('Attack')).not.toBe(String(IGOR.watk + 17))
     expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
   })
 
@@ -798,9 +808,9 @@ describe('een Warrior in de app', () => {
       expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
     })
 
-    it('toont bij Total stats de Attack van het wapen, zonder stars (#82)', () => {
+    it('toont bij Total stats de Attack als schadebereik van het wapen en je STR, zonder stars (#82, #108)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-      expect(statShown('Attack')).toBe('40')
+      expect(statShown('Attack')).toBe(rangeOf('warrior'))
     })
 
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {

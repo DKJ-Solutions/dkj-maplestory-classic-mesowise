@@ -56,9 +56,9 @@ lowest and highest damage from one ordinary basic physical attack", with its own
 ### TEST
 
 - [x] Tycho: the guide's worked example (Warrior 132 STR, 30 DEX, 47 ATT, 1.8 -> 60 – 172), ability points move the range, a skill does not, Magician is null
-- [ ] Lint gate and the full suite green
-- [ ] Victor: code review of the diff
-- [ ] Edith: the Dutch hint text
+- [x] Lint gate and the full suite green
+- [x] Victor: code review of the diff -- no bugs; Warrior approximation now commented, formatting made consistent
+- [x] Edith: the Dutch hint text -- no errors; Magician hint now says weapon attack, rounding test now proves truncation
 - [ ] Dave looks at the preview (visible result)
 
 ### DEPLOY: app/108-attack-damage-range
