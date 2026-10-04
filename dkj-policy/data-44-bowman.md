@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Stap 1 van #44, zoals bij de Warrior (#42) en de Magician (#43): de Bowman-gegevens met bronnen, nog niet
+aangesloten op het mob-model of de app. Dezelfde regels als `magician.ts` en `armor.ts`; wat onder #55 valt
+blijft eruit, en bronze arrows wachten op #64.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: bogen, kruisbogen, pijlen, armor, skills, formule, accuracy en HP/MP van NiaMeowDB, met een
+  tweede letterlijke lezing van alles wat eerst alleen samengevat was, en een derde voor Focus.
+- [x] Vera: `src/data/bowman.ts` en de typen `BowmanWeapon`, `BowmanArmor`, `Arrow` en `FocusLevel` in
+  `types.ts`, op de gedeelde basis uit #56. Victors commentaarpunten verwerkt.
 
 ### TEST
 
+- [x] Tycho: `src/data/bowman.test.ts` pint elk getal tegen het onderzoek, de uitsluitingen, Balanche op 840 ms
+  en `bowmanAccuracy` met randgevallen en een rooster tegen de formule.
+- [x] Victor: geen bugs; elk getal klopt met het onderzoek en de inclusieregel volgt `magician.ts`.
+
 ### DEPLOY: data/44-bowman
 
-**Score:**
+De Bowman heeft nu eigen spelgegevens, elk met zijn bron: de bogen, kruisbogen en armor uit de NPC-winkels voor
+level 10 tot 30, de gewone pijlen (1 meso per pijl), Arrow Blow en Double Shot per level, Critical Shot, The Eye
+of Amazon en Focus, HP en MP per level, de accuracy-formule en de constanten van de projectiel-schade. In de app
+verandert nog niets: de Bowman blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Bronze
+arrows ontbreken nog (#64), en een mannelijke Bowman heeft in de winkel geen broek op level 15.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
