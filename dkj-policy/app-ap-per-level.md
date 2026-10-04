@@ -68,6 +68,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Gwen: the popup in one column after all: Base AP, Extra AP and Totaal stacked, the three numbers exactly above each other (Dave: the two-column version did not work)
 - [x] Gwen: in the popup each label (Base AP, Extra AP, Totaal) sits to the left of its field, all with one label width so the numbers stay aligned (Dave)
 - [x] Gwen: − and + in the popup are 52 x 52px, as in the other stat popups, instead of 44px wide (Dave: they looked thinner)
+- [x] Gwen and Cody: the card shows Base + Extra = Totaal per stat, the value boxes 3rem so the three fit at phone width (Dave)
 - [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
@@ -79,7 +80,7 @@ STR, DEX, INT and LUK are now split into base AP and extra AP from items. The st
 
 #### What makes this deploy extra special
 
-On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves (the popup says how many are left), and the extra AP your items give, which is free. The card shows each stat as its base AP, then a plus and the extra AP from items (0 when there is none).
+On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves (the popup says how many are left), and the extra AP your items give, which is free. The card shows each stat as base AP + extra AP from items (0 when there is none) = total.
 
 **Score:** 3
 

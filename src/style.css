@@ -391,12 +391,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .ap-edit-total { background: transparent; border-style: dashed; }
 /* − en + even groot als in de andere stat-popups (52 x 52px), ook in deze smallere rij */
 .ap-edit .ap-edit-steps { grid-template-columns: 52px minmax(0, 1fr) 52px; gap: 0.375rem; }
-/* Ability points op de kaart: per stat de naam, de base AP, een plus, de extra AP van items (0 als je die niet hebt) en het potlood; de kopjes staan erboven */
-/* De laatste kolom is breder dan het potlood en het potlood staat rechts: zo zit er 1rem tussen het extra-vak en het potlood */
-.stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 3.5rem 0.75rem 3.5rem calc(44px + 0.625rem); }
+/* Ability points op de kaart: per stat de naam, base + extra (0 als je die niet hebt) = totaal, en het potlood; de kopjes staan erboven.
+   De vakken zijn 3rem, zodat de drie op een telefoon naast de naam passen. */
+/* De laatste kolom is breder dan het potlood en het potlood staat rechts: zo zit er 1rem tussen het laatste vak en het potlood */
+.stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 3rem 0.75rem 3rem 0.75rem 3rem calc(44px + 0.625rem); }
 .ability-line .equip-edit { justify-self: end; }
 .ap-plus { text-align: center; font-weight: 600; color: var(--muted); }
 .ability-line .equip-value { min-width: 0; padding: 0.25rem; }
+/* Het totaal is alleen om te lezen: zonder achtergrond en met een gestippelde rand, net als het totaal in de popup */
+.ability-line .ap-total { background: transparent; border-style: dashed; }
 .ability-head { padding-bottom: 0; border-bottom: 0; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-align: center; }
 .equip-step { display: grid; grid-template-columns: 44px 3.5rem 44px; gap: 0.25rem; }
 .equip-step input { display: block; height: 44px; margin: 0; padding: 0 0.25rem; box-sizing: border-box; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums;

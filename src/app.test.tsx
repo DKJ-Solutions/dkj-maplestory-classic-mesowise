@@ -474,17 +474,16 @@ describe('bewaren na elke wijziging', () => {
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
 
-  it('zet per stat op de kaart eerst de base AP, dan een plus en de extra AP van items, zonder totaal', () => {
+  it('zet per stat op de kaart de base AP, plus de extra AP van items, is het totaal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const head = panels()[0].querySelector('section.profile .ability-head')!
-    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', ''])
-    expect(Array.from(statLine('LUK').children).slice(1, 4).map((c) => c.textContent)).toEqual(['37', '+', '3'])
-    expect(statLine('LUK').textContent).not.toContain('40')
+    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', '', 'Totaal', ''])
+    expect(Array.from(statLine('LUK').children).slice(1, 6).map((c) => c.textContent)).toEqual(['37', '+', '3', '=', '40'])
   })
 
   it('toont ook bij een stat zonder extra AP van items de plus en een extra-vak met 0', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(Array.from(statLine('DEX').children).slice(1, 4).map((c) => c.textContent)).toEqual(['25', '+', '0'])
+    expect(Array.from(statLine('DEX').children).slice(1, 6).map((c) => c.textContent)).toEqual(['25', '+', '0', '=', '25'])
   })
 
   it('bewaart een leeg extra-veld als 0, zonder foutmelding', () => {

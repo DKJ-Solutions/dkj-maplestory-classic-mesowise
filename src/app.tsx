@@ -27,7 +27,7 @@ import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, baseApSpent, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -495,12 +495,14 @@ function ProfileCard(props: StatsCardProps) {
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
   const lead = (
     <>
-      {/* Per stat (Dave, 4 oktober 2026): eerst de base AP, dan een plus en de extra AP van items (0 als je die niet hebt); geen totaal. */}
+      {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
         <span>Base</span>
         <span />
         <span>Extra</span>
+        <span />
+        <span>Totaal</span>
         <span />
       </div>
       {shownStats(props.job)
@@ -526,6 +528,8 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   const baseNow = Number(draft[stat].trim()) || 0
   // Het extra-vak staat er altijd, ook zonder extra AP (0).
   const extraText = draft[extraKey].trim() || '0'
+  // Base plus extra, waar de app mee rekent; onbekend als de base geen heel getal is.
+  const total = draftStatTotal(draft, stat)
   // De base kan tot wat je level nog over laat; staat er al meer, dan hoeft hij niet omlaag.
   const maxBase = cap === null ? f.max : Math.min(f.max, Math.max(baseNow, cap - (baseApSpent(draft) - baseNow)))
   const save = () => {
@@ -557,6 +561,12 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       <div class="equip-value ap-extra" aria-label={`${f.label} extra ${extraText}`}>
         <span class="equip-value-num">
           <strong>{extraText}</strong>
+        </span>
+      </div>
+      <span class="ap-plus" aria-hidden="true">=</span>
+      <div class="equip-value ap-total" aria-label={`${f.label} totaal ${total === null ? 'onbekend' : total}`}>
+        <span class="equip-value-num">
+          <strong>{total === null ? '?' : nfInt.format(total)}</strong>
         </span>
       </div>
       <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
