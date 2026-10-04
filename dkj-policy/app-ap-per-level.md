@@ -39,19 +39,29 @@
 
 ### PLAN
 
+Dave asked (October 4, 2026) to show per level the minimum number of AP he has, apart from AP that equipment adds.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `apAtLevel` and `STARTING_AP` in `src/data/thief.ts`, from the MeowDB beginners guide (4 per stat, 9 at creation, 5 per level)
+- [x] Cody: a read-only "AP op level N" line at the top of the Ability points card
 
 ### TEST
 
+- [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; the card shows 70 at level 10 and 65 after Back to level 9; two card-name tests updated
+- [x] Victor and Edith: review and Dutch copy read; lint and all 1317 tests green
+
 ### DEPLOY: app/ap-per-level
 
-**Score:**
+The Ability points card now opens with a read-only line "AP op level N": the AP a character has at that level without equipment, 25 at level 1 plus 5 per level, sourced from the MeowDB beginners guide.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees at a glance how many AP their STR, DEX, INT and LUK should add up to at their level, so a missed or misplaced point stands out.
+
+**Score:** 3
 
 #### Pull Request
 

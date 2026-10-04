@@ -442,8 +442,20 @@ describe('bewaren na elke wijziging', () => {
   it('zet de stats in twee kaarten zoals het statvenster: Ability points (STR, DEX, INT, LUK) en Total stats (#82)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
+    expect(cardNames('section.profile')).toEqual([expect.stringMatching(/^AP op level \d+$/), 'STR', 'DEX', 'INT', 'LUK'])
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
+  })
+
+  it('toont bij Ability points hoeveel AP je op je level hebt, zonder equipment: 25 op level 1 en 5 per level erbij', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(statShown('AP op level 10')).toBe('70')
+    expect(within(statLine('AP op level 10')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
+  })
+
+  it('past de AP aan als je level verandert', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(statShown('AP op level 9')).toBe('65')
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
@@ -983,7 +995,7 @@ describe('een Warrior in de app', () => {
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-      expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
+      expect(cardNames('section.profile')).toEqual([expect.stringMatching(/^AP op level \d+$/), 'STR', 'DEX', 'INT', 'LUK'])
       expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 

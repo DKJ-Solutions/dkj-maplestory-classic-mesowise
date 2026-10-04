@@ -20,7 +20,7 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import { NIMBLE_BODY, SUBI } from './data/thief'
+import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { applyLevelDown, applyLevelUp, applySkillPoint, checkFieldsFor, isMaxLevel, levelUpChanges, levelUpSummary } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
@@ -258,6 +258,8 @@ const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, m
 /** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
 const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
 const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
+/** De AP die je op je level hebt, zonder equipment (apAtLevel): geen opgeslagen veld, alleen om te lezen. */
+const AP_FIELD: ProfileField = { key: 'level', label: 'AP', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -457,8 +459,13 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps) {
+  const level = Number(props.draft.level.trim())
+  const known = props.draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200
+  const lead = (
+    <StatLine key="ap" field={{ ...AP_FIELD, label: known ? `AP op level ${level}` : 'AP op je level' }} value={known ? nfInt.format(apAtLevel(level)) : ''} readOnly onSave={() => {}} />
+  )
   return (
-    <StatsCard {...props} className="profile" icon="person" title="Ability points" fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+    <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
   )
 }
 
