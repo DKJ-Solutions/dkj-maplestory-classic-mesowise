@@ -54,6 +54,8 @@ The job card gets a "Geslacht" row (Man / Vrouw). Dave looks before the merge, s
   Red Qi Pao Skirt, read from the raw MeowDB item page on 2026-10-04 (requirements, gender, W.DEF, shop price).
 - [x] Cody: `gender.ts`, `gender` on shop armor and the profile, the advice filters by gender (candidates and
   horizon), the Geslacht row on the job card. The equipment catalog stays unfiltered: you state what you wear.
+- [x] Cody, after Dave's look (2026-10-04, "scheelt hoogte"): once chosen, the gender stands as (m) or (f) behind
+  the job in the card's heading and the Geslacht row goes away; the pencil shows it again.
 - [x] Data: Thief +3 rows, Warrior +23 rows (one colour per level and gender), the other colours in wornWarrior.ts.
 
 ### TEST
@@ -66,7 +68,7 @@ The job card gets a "Geslacht" row (Man / Vrouw). Dave looks before the merge, s
 
 ### DEPLOY: app/55-character-gender
 
-The app now asks whether your character is a man or a woman. A Warrior then gets advice on tops, bottoms and
+The app now asks whether your character is a man or a woman, and shows it as (m) or (f) behind the job. A Warrior then gets advice on tops, bottoms and
 overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
 you choose, the advice only counts armor both can wear.
 
