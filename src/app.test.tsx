@@ -1012,19 +1012,28 @@ describe('een Warrior in de app', () => {
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('toont bij elke skill de MP per keer op het gezette level, en bij een passieve skill dat hij niets kost (#83)', () => {
+    it('toont bij elke skill de MP op het gezette level en op het volgende, en bij een passieve skill dat hij niets kost (#83, #138)', () => {
       const skills = openHomeSkills()
       const row = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)).closest('.skill-row')!
       const input = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)) as HTMLInputElement
+      const lines = (name: string) => [...row(name).querySelectorAll('.skill-mp > span')].map((l) => l.textContent)
+      // Slash Blast kost 4 MP op level 4 en 5 MP op level 5 (de skillpagina, data/warrior.ts).
+      fireEvent.input(input('Slash Blast'), { target: { value: '4' } })
+      expect(lines('Slash Blast')).toEqual(['Nu: 4 MP per keer', 'Volgend level: 5 MP'])
+      // Op het maximum (20, 12 MP) is er geen volgend level.
       fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
-      // Slash Blast 20 kost 12 MP (de skillpagina, data/warrior.ts).
-      expect(row('Slash Blast').querySelector('.skill-mp')?.textContent).toBe('12 MP per keer')
+      expect(lines('Slash Blast')).toEqual(['Nu: 12 MP per keer'])
+      // Op level 0 is hij nog niet geleerd; level 1 kost 15 MP.
       fireEvent.input(input('Iron Body'), { target: { value: '0' } })
-      expect(row('Iron Body').querySelector('.skill-mp')?.textContent).toBe('15 MP per keer op level 1')
-      expect(row('Precise Strikes').querySelector('.skill-mp')?.textContent).toBe('Passief, kost geen MP')
+      expect(lines('Iron Body')).toEqual(['Nu: niet geleerd', 'Volgend level: 15 MP'])
+      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP'])
       // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
       fireEvent.input(input('Power Strike'), { target: { value: '' } })
-      expect(row('Power Strike').querySelector('.skill-mp')?.textContent).toBe('')
+      expect(lines('Power Strike')).toEqual([])
+    })
+
+    it('toont geen bron van de skillpunten per level meer: die voegt voor de speler niets toe (#138)', () => {
+      expect(openHomeSkills().textContent).not.toContain('Skillpunten per level')
     })
   })
 

@@ -17,7 +17,7 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
-import { BEGINNER_SP_SOURCE, JOB_SP_SOURCE, skillPoolOf } from './data/skillPoints'
+import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
@@ -515,23 +515,6 @@ function LevelAdviceCard(props: {
   )
 }
 
-/** Waar het aantal skillpunten per level vandaan komt (issue #136). */
-function SkillPointSources() {
-  return (
-    <p class="source">
-      Skillpunten per level:{' '}
-      <a href={BEGINNER_SP_SOURCE.url} target="_blank" rel="noopener noreferrer">
-        beginnersgids
-      </a>{' '}
-      en{' '}
-      <a href={JOB_SP_SOURCE.url} target="_blank" rel="noopener noreferrer">
-        woordenlijst
-      </a>{' '}
-      van NiaMeowDB, opgehaald op {formatDate(JOB_SP_SOURCE.retrieved)}. De app gaat uit van je 1e jobwissel op level 10.
-    </p>
-  )
-}
-
 /** Waar de skills vandaan komen die het skilladvies doorrekent. */
 function SkillSources(props: { job: Job }) {
   return (
@@ -545,7 +528,6 @@ function SkillSources(props: { job: Job }) {
           , opgehaald op {formatDate(s.source.retrieved)}.
         </p>
       ))}
-      <SkillPointSources />
     </>
   )
 }
@@ -1076,14 +1058,15 @@ const SKILL_GROUPS = [
 ] as const
 
 /**
- * De MP die een skill per keer kost op het gezette level (issue #83); op level 0 die van level 1. Leeg als het
- * veld geen geldig level is: dat meldt het veld zelf al.
+ * De MP die een skill per keer kost op het gezette level (issue #83), en daaronder die van het volgende level, zodat
+ * je ziet wat een punt verandert (issue #138). Op level 0 is hij nog niet geleerd, op het maximum is er geen volgend
+ * level. Leeg als het veld geen geldig level is: dat meldt het veld zelf al.
  */
-function skillMpText(s: SkillLevel): string {
-  if (s.level === null) return ''
-  const mp = skillMpAt(s, s.level)
-  if (mp === null) return 'Passief, kost geen MP'
-  return s.level === 0 ? `${mp} MP per keer op level 1` : `${mp} MP per keer`
+function skillMpLines(s: SkillLevel): string[] {
+  if (s.level === null) return []
+  if (skillMpAt(s, 1) === null) return ['Passief, kost geen MP']
+  const now = s.level === 0 ? 'Nu: niet geleerd' : `Nu: ${skillMpAt(s, s.level)} MP per keer`
+  return s.level < s.max ? [now, `Volgend level: ${skillMpAt(s, s.level + 1)} MP`] : [now]
 }
 
 /**
@@ -1126,7 +1109,11 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                   <div class="skill-row" key={s.key}>
                     <span>
                       {s.name}
-                      <small class="skill-mp">{skillMpText(s)}</small>
+                      <small class="skill-mp">
+                        {skillMpLines(s).map((line) => (
+                          <span key={line}>{line}</span>
+                        ))}
+                      </small>
                     </span>
                     <span class="skill-input">
                       <button
@@ -1162,7 +1149,6 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                 ))}
             </div>
           ))}
-          <SkillPointSources />
         </CardPopup>
       )}
     </section>
