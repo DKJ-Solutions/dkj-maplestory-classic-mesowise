@@ -143,10 +143,9 @@ describe('begin zonder opslag', () => {
     expect(localStorage.length).toBe(0)
   })
 
-  it('zet vorig level, het huidige level als h1 en Level up naast elkaar in de navigatiebalk, onder de menurij (#130)', () => {
-    const row = document.querySelector('header.topbar > .level-band > .level-row')!
-    expect(row).toBeTruthy()
-    expect(document.querySelector('header.topbar > .menubar')?.nextElementSibling?.classList.contains('level-band')).toBe(true)
+  it('zet helemaal bovenaan vorig level, het huidige level als h1 en Level up naast elkaar (#130)', () => {
+    const row = panels()[0].firstElementChild!
+    expect(row.classList.contains('level-row')).toBe(true)
     const [down, heading, up] = Array.from(row.children)
     expect(down).toBe(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     expect(down.textContent).toBe('Back')
@@ -177,10 +176,8 @@ describe('begin zonder opslag', () => {
     expect(skills.nextElementSibling).toBe(mob)
   })
 
-  it('toont het nieuwe level bovenaan na een level-up; de navigatiebalk blijft staan, zijn knoppen werken alleen thuis', () => {
+  it('toont het nieuwe level bovenaan na een level-up', () => {
     levelUp()
-    expect((screen.getByRole('button', { name: /Level up/ }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: /^Back/ }) as HTMLButtonElement).disabled).toBe(true)
     expect(document.querySelector('.current-level')?.textContent).toBe('LV. 11')
   })
 

@@ -155,7 +155,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
  * hamburgermenu met de instellingen. Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
  * je er geen hebt gekozen.
  */
-function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void; children?: ComponentChildren }) {
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
@@ -165,20 +165,16 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
   }
   return (
     <header class="topbar">
-      {/* De menubalk: donker, los van de witte navigatiebalk eronder (Dave, 4 oktober 2026, #130). */}
-      <div class="menubar">
-        <div class="topbar-inner">
-          <div class="topbar-brand">
-            <span class="topbar-name">Mesowise</span>
-            {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
-            <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
-          </div>
-          <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
-            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-          </button>
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <span class="topbar-name">Mesowise</span>
+          {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
+          <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
         </div>
+        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        </button>
       </div>
-      {props.children}
       {open && (
         <StatDialog title="Instellingen" closeLabel="Sluiten" onCancel={close}>
           <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
@@ -1845,29 +1841,26 @@ export function App() {
 
   return (
     <>
-      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender}>
-        {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130).
-           Een witte band over de hele breedte: de navigatiebalk, sticky onder de menubalk. Op elk scherm, met het level; de knoppen werken alleen thuis. */}
-        <div class="level-band">
-          <div class="level-row">
-            {/* De terugknop heet BACK; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
-            <button type="button" class="btn level-down" onClick={levelDown} disabled={step !== 0 || !canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
-              Back
-            </button>
-            <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
-              {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
-            </h1>
-            <button type="button" class="btn levelup" onClick={levelUp} disabled={step !== 0 || !canLevelUp} aria-describedby={step === 0 && !canLevelUp ? 'levelup-reason' : undefined}>
-              Level up
-            </button>
-          </div>
-          {step === 0 && !canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
-        </div>
-      </TopBar>
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
         <div class="flow">
           <div class="track" style={{ transform: `translateX(-${step * 100}%)` }}>
             <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
+              {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
+              <div class="level-row">
+                {/* De terugknop heet BACK; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
+                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
+                  Back
+                </button>
+                <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
+                  {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
+                </h1>
+                <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
+                  Level up
+                </button>
+              </div>
+              {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
+
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
                   Op <strong>{cost.spotName}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
