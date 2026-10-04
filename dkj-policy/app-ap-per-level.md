@@ -47,7 +47,7 @@ by what the level still leaves, and the optional extra AP from items.
 
 - [x] Cody: `apAtLevel` and `STARTING_AP` in `src/data/thief.ts`, from the MeowDB beginners guide (4 per stat, 9 at creation, 5 per level)
 - [x] Cody: `strExtra`, `dexExtra`, `intExtra`, `lukExtra` in the profile; the stat fields themselves are now the base AP, and `parseProfile`, `expectedStat`, `totalMagicAttack` and the level-up accuracy count base plus extra
-- [x] Cody: the Ability points card opens with "Base AP over" (or "Base AP te veel"), each stat shows its base AP and, after a plus, its extra AP, and its pencil opens a popup with a Base AP field capped at what is left and a free "Extra AP van items" field, one Opslaan for both
+- [x] Cody: on the Ability points card each stat shows its base AP and, after a plus, its extra AP, and its pencil opens a popup with a Base AP field capped at what is left and a free "Extra AP van items" field, one Opslaan for both
 - [x] Cody: a new player starts from `STARTER_PROFILE` (37 base + 3 extra LUK, so exactly the 70 base AP of level 10); a saved profile from before this change gets 0 extra AP, so its stats stay what the player entered
 - [~] Gwen: the two-column layout of the second round, dropped when Dave clarified he wanted the two fields inside the popup
 
@@ -59,6 +59,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [~] Gwen: the card showed a stat as "28 (25+3)", the game's stat window form -- replaced by the two columns below
 - [x] Gwen and Cody: the card shows each stat as "Base", a plus and "Extra" (AP from items, always a field, 0 when there is none; an empty field is saved as 0), with the headings above them and no total (Dave: they need not be added up; base first)
 - [x] Cody: the popup and the card count the base AP left the same way (one label helper, one sum); with too much base AP the popup said "over: 0" while the card said "te veel 3" (Dave: the two screens disagreed)
+- [x] Gwen: the "Base AP over" line left the card; the popup already shows it (Dave: shown twice)
 - [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
@@ -70,7 +71,7 @@ STR, DEX, INT and LUK are now split into base AP and extra AP from items. The st
 
 #### What makes this deploy extra special
 
-On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves ("Base AP over" at the top of the card says how many), and the extra AP your items give, which is free. The card shows each stat as its base AP, then a plus and the extra AP from items (0 when there is none).
+On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves (the popup says how many are left), and the extra AP your items give, which is free. The card shows each stat as its base AP, then a plus and the extra AP from items (0 when there is none).
 
 **Score:** 3
 

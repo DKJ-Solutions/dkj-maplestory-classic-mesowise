@@ -463,15 +463,15 @@ describe('bewaren na elke wijziging', () => {
   it('zet de stats in twee kaarten zoals het statvenster: Ability points (STR, DEX, INT, LUK) en Total stats (#82)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(cardNames('section.profile')).toEqual(['Base AP over', 'STR', 'DEX', 'INT', 'LUK'])
+    expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
-  it('toont bij Ability points hoeveel base AP je op je level nog over hebt: 25 op level 1 en 5 per level erbij', () => {
+  it('toont de base AP die je nog over hebt alleen in de popup, niet als eigen regel op de kaart', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    expect(panels()[0].querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
-    expect(statShown('Base AP over')).toBe('0')
-    expect(within(statLine('Base AP over')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
+    expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
 
   it('zet per stat op de kaart eerst de base AP, dan een plus en de extra AP van items, zonder totaal', () => {
@@ -542,26 +542,24 @@ describe('bewaren na elke wijziging', () => {
     const dex = openAbility('DEX')
     dex.typeBase('20')
     dex.save()
-    expect(statShown('Base AP over')).toBe('5')
     const luk = openAbility('LUK')
     expect(luk.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 5 van 70')
     luk.typeBase('42')
     luk.save()
     expect(profileFields().luk).toBe('42')
-    expect(statShown('Base AP over')).toBe('0')
+    expect(openAbility('INT').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
 
-  it('toont hoeveel base AP te veel staat als je level omlaag gaat, op de kaart en in de popup hetzelfde', () => {
+  it('toont in de popup hoeveel base AP te veel staat als je level omlaag gaat', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(statShown('Base AP te veel')).toBe('5')
     const h = openAbility('LUK')
     expect(h.d.getByText(/Base AP te veel:/).textContent).toBe('Base AP te veel: 5 van 65')
     // Wat je in de popup lager zet, telt meteen mee.
     h.typeBase('32')
     expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 65')
     h.save()
-    expect(statShown('Base AP over')).toBe('0')
+    expect(openAbility('DEX').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 65')
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
@@ -1101,7 +1099,7 @@ describe('een Warrior in de app', () => {
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-      expect(cardNames('section.profile')).toEqual(['Base AP over', 'STR', 'DEX', 'INT', 'LUK'])
+      expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
       expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 

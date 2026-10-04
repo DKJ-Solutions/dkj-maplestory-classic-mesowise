@@ -258,9 +258,7 @@ const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, m
 /** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
 const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
 const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
-/** De base AP die je nog kunt zetten (apAtLevel min wat er al staat): geen opgeslagen veld, alleen om te lezen. */
-const AP_FIELD: ProfileField = { key: 'level', label: 'AP', min: 0, max: 9_999, integer: true }
-/** Hoe de kaart en de popup de base AP noemen die je nog hebt; onder 0 staat er te veel. Eén plek, zodat ze nooit iets anders zeggen. */
+/** Hoe de popup van een ability point de base AP noemt die je nog hebt (apAtLevel min wat er al staat); onder 0 staat er te veel. */
 const apLeftLabel = (left: number): string => (left < 0 ? 'Base AP te veel' : 'Base AP over')
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
@@ -466,10 +464,8 @@ function ProfileCard(props: StatsCardProps) {
   const { draft } = props
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
-  const left = cap === null ? null : cap - baseApSpent(draft)
   const lead = (
     <>
-      <StatLine key="ap-left" field={{ ...AP_FIELD, label: apLeftLabel(left ?? 0) }} value={left === null ? '' : nfInt.format(Math.abs(left))} readOnly onSave={() => {}} />
       {/* Per stat (Dave, 4 oktober 2026): eerst de base AP, dan een plus en de extra AP van items (0 als je die niet hebt); geen totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -513,7 +509,8 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
     setEdit(null)
   }
   const dirty = edit !== null && (edit.base !== draft[stat] || edit.extra !== draft[extraKey])
-  // Dezelfde rekensom als de kaart (apAtLevel min de base AP), met de base die je in de popup typt in plaats van de bewaarde.
+  // Wat je level aan base AP geeft (apAtLevel) min wat er al staat, met de base die je in de popup typt in plaats van de bewaarde.
+  // Alleen de popup toont dit; op de kaart stond het dubbel (Dave, 4 oktober 2026).
   const leftInEdit = (cap ?? 0) - (baseApSpent(draft) - baseNow) - (Number(edit?.base.trim()) || 0)
   return (
     <div class="stat-line ability-line">
