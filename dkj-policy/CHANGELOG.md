@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**24 / 60 minor entries** <!-- pending-tally -->
+**25 / 61 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/108-attack-damage-range · 20261004-130241Z
+
+On the Total stats card, Attack now shows the damage range of one ordinary attack (min – max), just like the in-game
+stat window: your ability points count, not only the weapon attack from your equipment. Source: the MeowDB damage
+guide, whose own example (60 – 172) is pinned in a test.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends see the same Attack in the app as in their stat window, so they can check their profile at a glance.
+
+**Score:** 3
+
+#### Pull Request
+
+Attack on Total stats shows the stat window's damage range, from your ability points and weapon attack
+
+[PR #116](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/116)
+
+---
 
 ### DEPLOY: app/106-card-popup · 20261004-130103Z
 
