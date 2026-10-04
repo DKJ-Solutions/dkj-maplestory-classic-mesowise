@@ -39,21 +39,36 @@
 
 ### PLAN
 
+Dave (4 oktober 2026): alle inklapbare kaarten rechttrekken met het design van Skillpoints (#51). Gekozen
+onderdelen: een icoon links van de kop, geen onderschrift, en onderaan een knop Inklappen. De grote − en +
+bij getallen niet. Bij een plek blijft het getal "EXP per meso" in de kop: dat is de uitkomst, geen onderschrift.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Gwen + Cody: gedeelde CardIcon (boek, zwaard, poppetje, kaartspeld) en CollapseFoot; Je equipment, Je karakter, Skillpoints en elke plek gebruiken ze
+- [x] Cody: onderschriften weg; isDefaultProfile en wornSummary werden daardoor nergens meer gebruikt en zijn met hun tests verwijderd, net als de CSS van het onderschrift
+- [x] Tycho: 462 groen, typecheck en lint schoon
+- [ ] Victor: review van de diff
+- [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
 
 ### DEPLOY: app/kaarten-zelfde-design
 
-**Score:**
+Alle inklapbare kaarten zien er nu hetzelfde uit als Skillpoints: links van de titel een icoon (een zwaard
+bij Je equipment, een poppetje bij Je karakter, een boek bij Skillpoints, een kaartspeld bij elke plek), in
+de kop alleen de titel zonder regel eronder, en onderaan een open kaart een knop Inklappen, zodat je niet
+terug hoeft te scrollen naar het pijltje. Bij een plek staat het getal EXP per meso nog in de kop.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Een lange open kaart klap je op je telefoon in waar je duim al is, en de kaarten zijn in één oogopslag
+uit elkaar te houden.
+
+**Score:** 2
 
 #### Pull Request
 
 Alle inklapbare kaarten in het design van Skillpoints
-
