@@ -115,17 +115,23 @@ describe('loadProfile en saveProfile', () => {
     expect('attack' in loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toBe(false)
   })
 
-  it('geeft een bewaard profiel van vóór de info-velden (#82) hun neutrale standaardwaarden', () => {
+  it('geeft een bewaard profiel van vóór de info-velden (#82) blanco: niets beweert wat de speler niet invulde', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60' } })
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', magic: '0', magicDef: '0', critRate: '0', critDamage: '0', speed: '100', jump: '100' })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', magic: '', magicDef: '', critRate: '', critDamage: '', speed: '', jump: '' })
+  })
+
+  it('houdt een bewaarde 0 bij een info-veld (#82)', () => {
+    const raw = JSON.stringify({ version: 1, fields: { magicDef: '0', jump: '100' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ magicDef: '0', jump: '100', magic: '' })
   })
 
   it('laat een leeg of fout info-veld de berekening niet blokkeren (#82)', () => {
     const base = parseProfile(DEFAULT_PROFILE)
-    const r = parseProfile({ ...DEFAULT_PROFILE, speed: 'x', critRate: '500', jump: '300' })
+    const r = parseProfile({ ...DEFAULT_PROFILE, speed: 'x', critRate: '500', jump: '300', magic: '', magicDef: '  ' })
     expect('profile' in r).toBe(true)
     if ('profile' in r && 'profile' in base) {
       expect(r.profile).toEqual(base.profile)
+      for (const k of ['magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(Number.isFinite(r.profile[k]), k).toBe(true)
       expect(toCharacter(r.profile)).toEqual(toCharacter(base.profile))
     }
     expect('error' in parseProfile({ ...DEFAULT_PROFILE, accuracy: '' })).toBe(true)

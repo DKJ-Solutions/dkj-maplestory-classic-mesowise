@@ -353,7 +353,7 @@ function StatsCard(props: {
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump gebruikt de app niet; ze staan er voor het overzicht.</p>}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Attack en Weapon Def komen uit je equipment; pas ze daar aan. Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>

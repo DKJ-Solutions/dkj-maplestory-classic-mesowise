@@ -49,15 +49,16 @@ Dave chose: regroup only, no new calculation fields. Then, on the preview: add I
 - [x] Cody: a character error shows on the card that holds the offending field
 - [x] Cody: the full in-game Total stats block (Dave: "waar is de rest van de total stats?"): new informative fields Attack, Magic, Magic Def, Crit. Rate, Crit. Damage, Speed, Jump (stored, never block the calculation, kept out of the level-up check panel); Weapon Def shows the existing `wdef` read-only
 - [x] Cody: Attack is read-only and comes from the equipment (Dave: "waarom staat attack nu op 0?"): weapon attack, plus the stars for a Thief, through the same helper `toCharacter` uses; the stored `attack` field is dropped
+- [x] Cody: Magic, Magic Def, Crit., Speed and Jump start blank ("?") instead of 0/100 (Dave saw Magic Def at 0; deriving it from the equipment needs MDEF data, filed as #91)
 
 ### TEST
 
-- [x] Tycho/Cody: two-card tests for Thief and Warrior, error-routing tests per card, and an older stored profile without `int` loading INT 4, in `src/app.test.tsx` and `src/profile.test.ts`; plus the full Total stats order and informative fields that never block the calculation; and Attack from the equipment for Thief and Warrior; `npm test` 914/914, `npm run lint` clean
+- [x] Tycho/Cody: two-card tests for Thief and Warrior, error-routing tests per card, and an older stored profile without `int` loading INT 4, in `src/app.test.tsx` and `src/profile.test.ts`; plus the full Total stats order and informative fields that never block the calculation; and Attack from the equipment for Thief and Warrior; and blank informative fields; `npm test` 915/915, `npm run lint` clean
 - [x] Victor (code review, four times; `toCharacter`'s weapon attack unchanged for every job) and Edith (UI text): no blocking findings
 
 ### DEPLOY: app/82-split-ability-total-stats
 
-The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Attack, Weapon Def, Magic, Magic Def, Accuracy, Evasion, Crit. Rate, Crit. Damage, Speed, Jump, then time per attack and, for a Warrior, the weapon multiplier). INT, Magic, Magic Def, Crit., Speed and Jump are new: they are stored with your profile but not used in any calculation yet, and leaving one blank never blocks it. Attack and Weapon Def come from your equipment: Attack is your weapon's attack, plus your stars for a Thief. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
+The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Attack, Weapon Def, Magic, Magic Def, Accuracy, Evasion, Crit. Rate, Crit. Damage, Speed, Jump, then time per attack and, for a Warrior, the weapon multiplier). INT, Magic, Magic Def, Crit., Speed and Jump are new: you fill them in yourself (they start as "?"), they are stored with your profile but not used in any calculation yet, and leaving one blank never blocks it. Attack and Weapon Def come from your equipment: Attack is your weapon's attack, plus your stars for a Thief. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
 
 **Score:** 2
 

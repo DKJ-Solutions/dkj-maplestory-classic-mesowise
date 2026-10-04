@@ -129,13 +129,13 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   accuracy: '33',
   avoid: '23',
   wdef: '72',
-  // Alleen ter info, neutrale beginwaarden (geen spelgegevens): de berekening gebruikt ze niet.
-  magic: '0',
-  magicDef: '0',
-  critRate: '0',
-  critDamage: '0',
-  speed: '100',
-  jump: '100',
+  // Alleen ter info: leeg tot je ze zelf invult, zodat de app niets beweert wat jij niet invulde. De berekening gebruikt ze niet.
+  magic: '',
+  magicDef: '',
+  critRate: '',
+  critDamage: '',
+  speed: '',
+  jump: '',
   attackMs: String(ATTACK_MS.fast5),
   starWatk: String(SUBI.watk),
   starRecharge: String(SUBI.rechargePerStar),
@@ -182,7 +182,7 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
           ? `"${f.label}" moet een heel getal zijn.`
           : null
     if (error === null) out[f.key] = n
-    else if (f.informative) out[f.key] = Number(DEFAULT_PROFILE[f.key]) // staat niet in de berekening: leeg of fout blokkeert niets
+    else if (f.informative) out[f.key] = 0 // staat niet in de berekening: leeg of fout blokkeert niets, en telt als 0
     else return { error, key: f.key }
   }
   return { profile: out }
