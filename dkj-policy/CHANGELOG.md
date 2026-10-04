@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**31 / 68 minor entries** <!-- pending-tally -->
+**32 / 69 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equip-label · 20261004-134538Z
+
+The equipment card is now called "Equip" instead of "Je equipment": on the card head, in the popup title and in the line for a job the app does not compute yet. A shorter name that fits a phone screen better.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Players see the shorter "Equip" on the card and in its popup; nothing else changes.
+
+**Score:** 1
+
+#### Pull Request
+
+Rename the equipment card to Equip
+
+[PR #129](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/129)
+
+---
 
 ### DEPLOY: app/117-shield-cape-earrings · 20261004-134135Z
 
