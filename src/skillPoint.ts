@@ -1,17 +1,17 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes; de Bowman (issue #44) één: Arrow Blow; de Magician
-// (issue #43) twee: Energy Bolt en Magic Claw.
+// De Warrior (issue #42) heeft er drie: Power Strike, Precise Strikes en Improved HP Recovery; de Bowman (issue #44) één: Arrow Blow;
+// de Magician (issue #43) drie: Energy Bolt, Magic Claw en Improved MP Recovery (de twee Recovery-skills sinds issue #141).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { ALL_SKILLS, THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
-import { ENERGY_BOLT_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
+import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT } from './data/magician'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ARROW_BLOW_LEVELS } from './data/bowman'
-import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
 import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
@@ -20,7 +20,7 @@ import type { SpotDraft } from './spotDraft'
 const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'arrowBlow' | 'energyBolt' | 'magicClaw'>
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'improvedHpRecovery' | 'arrowBlow' | 'energyBolt' | 'magicClaw' | 'improvedMpRecovery'>
 
 interface Skill {
   id: SkillId
@@ -64,6 +64,7 @@ const preciseAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS[level 
  * De skills van de 1e job van een Warrior die het model kan doorrekenen. Power Strike telt als de aanval van
  * elke klap. Van Precise Strikes telt alleen de accuracy; de extra kans op een critical hit niet, want de
  * damage-gids noemt geen schade voor een crit (de voorzichtige keuze: het punt lijkt dan minder waard dan het is).
+ * Van Improved HP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
  */
 export const WARRIOR_MODELLED: readonly Skill[] = [
   {
@@ -85,11 +86,19 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
       accuracy: p.accuracy + preciseAccuracy(p.preciseStrikes + 1) - preciseAccuracy(p.preciseStrikes),
     }),
   },
+  {
+    id: 'improvedHpRecovery',
+    name: 'Improved HP Recovery',
+    max: IMPROVED_HP_RECOVERY.itemRecoveryPct.length,
+    level: (p) => p.improvedHpRecovery,
+    plusOne: (p) => ({ ...p, improvedHpRecovery: p.improvedHpRecovery + 1 }),
+  },
 ]
 
 /**
  * De skills van de 1e job van een Magician die het model kan doorrekenen: de twee spreuken. Elk punt verandert de schade (en de
  * spell mastery, de MP per cast) van die spreuk; het model kiest per monster de spreuk met de meeste EXP per meso (zie suggest.ts). Magic Claw vraagt Energy Bolt 1.
+ * Van Improved MP Recovery telt het extra herstel van potions (suggest.ts, potionFactorOf); het herstel per 10 seconden niet.
  */
 export const MAGICIAN_MODELLED: readonly Skill[] = [
   {
@@ -106,6 +115,13 @@ export const MAGICIAN_MODELLED: readonly Skill[] = [
     level: (p) => p.magicClaw,
     plusOne: (p) => ({ ...p, magicClaw: p.magicClaw + 1 }),
     learnable: (p) => p.magicClaw > 0 || p.energyBolt >= MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
+  },
+  {
+    id: 'improvedMpRecovery',
+    name: 'Improved MP Recovery',
+    max: IMPROVED_MP_RECOVERY.itemRecoveryPct.length,
+    level: (p) => p.improvedMpRecovery,
+    plusOne: (p) => ({ ...p, improvedMpRecovery: p.improvedMpRecovery + 1 }),
   },
 ]
 
@@ -136,17 +152,16 @@ export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job 
 /**
  * Wat het model van een Warrior niet kan doorrekenen, met de reden. Slash Blast raakt tot 4 monsters, en hoeveel
  * monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Power Strike en kost hij HP.
- * Improved HP Recovery, Max HP Increase en Iron Body werken op herstel, HP en WDEF van een buff die het profiel
- * niet kent.
+ * Max HP Increase en Iron Body werken op HP en WDEF van een buff die het profiel niet kent.
  */
-export const WARRIOR_NOT_MODELLED: readonly string[] = ['Improved HP Recovery', 'Max HP Increase', 'Iron Body', 'Slash Blast']
+export const WARRIOR_NOT_MODELLED: readonly string[] = ['Max HP Increase', 'Iron Body', 'Slash Blast']
 
 /**
  * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies en
- * Magic Armor geeft een buff met WDEF voor een tijd: het profiel kent geen buffs. Improved MP Recovery en Max MP Increase werken op
- * MP-herstel en Max MP, en het profiel kent geen Max MP (en het herstel per tijd hangt aan hoe lang je blijft).
+ * Magic Armor geeft een buff met WDEF voor een tijd: het profiel kent geen buffs. Max MP Increase werkt op Max MP, en het profiel
+ * kent geen Max MP.
  */
-export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Magic Armor', 'Improved MP Recovery', 'Max MP Increase']
+export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Magic Armor', 'Max MP Increase']
 
 /**
  * Wat het model van een Bowman niet kan doorrekenen, met de reden. Double Shot raakt tot 2 monsters met 1 klap per monster,
