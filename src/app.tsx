@@ -24,7 +24,7 @@ import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroun
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -248,6 +248,9 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
+/** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
+const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
+const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -433,15 +436,13 @@ function StatsCard(props: {
 
 /**
  * De Attack zoals het statvenster hem toont (issue #108): het schadebereik van een gewone aanval, dus met je ability
- * points erin. Een Magician toont alleen de weapon attack: zijn gewone wand-aanval staat niet in de gegevens. Leeg (dus "?") zolang het profiel
- * niet klopt.
+ * points erin. Leeg (dus "?") zolang het profiel niet klopt, en voor een Magician: zijn gewone wand-aanval staat niet
+ * in de gegevens; zijn W.ATT en M.ATT staan op hun eigen regels (#100).
  */
 function attackText(draft: ProfileDraft, job: Job): string {
   const parsed = parseProfile(draft, job)
   const range = 'profile' in parsed ? statWindowRange(parsed.profile) : null
-  if (range) return `${nfInt.format(range.min)} – ${nfInt.format(range.max)}`
-  const attack = job === 'magician' ? totalAttack(draft, job) : null
-  return attack === null ? '' : nfInt.format(attack)
+  return range ? `${nfInt.format(range.min)} – ${nfInt.format(range.max)}` : ''
 }
 
 type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
@@ -450,14 +451,21 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps) {
   return (
-    <StatsCard {...props} className="profile" icon="person" title={`Ability points (${jobLabel(props.job)})`} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+    <StatsCard {...props} className="profile" icon="person" title="Ability points" fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
   )
 }
 
-/** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
+/** De Total stats uit het statvenster: Attack (schadebereik), W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const { job } = props
-  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
+  const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
+  const lead = (
+    <>
+      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
+      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
+    </>
+  )
   const mdef = wornMdef(props.equipment)
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
@@ -1329,18 +1337,27 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 
 /** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ` in plaats van je huidige stuk (${STAT_NAME.armor} onbekend).`
-  // Een overall vervangt top en bottom samen, en een top of bottom een overall die je draagt.
-  const names = displacedSlots(equipment, win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
-  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.`
+  // Een losse top of bottom in plaats van een overall laat de andere helft leeg (#87), ook als de WDEF van die overall
+  // onbekend is (dan staat hij niet in WornWdef en zet het advies geen `bare`).
+  const slot = win.armor.slot
+  const half = win.bare ?? (!win.with && (slot === 'top' || slot === 'bottom') && displacedSlots(equipment, slot)[0] === 'overall' ? (slot === 'top' ? 'bottom' : 'top') : undefined)
+  const bare = half ? ` Je ${SLOT_NAME[half]} is dan leeg.` : ''
+  if (win.replaces === undefined) return ` in plaats van je huidige ${win.with ? 'stukken' : 'stuk'} (${STAT_NAME.armor} onbekend).${bare}`
+  // Een overall (of een paar top + bottom) vervangt top en bottom samen, en een top of bottom een overall die je draagt.
+  const names = displacedSlots(equipment, win.with ? 'overall' : win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
+  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.${bare}`
 }
+
+/** Wat je koopt: één stuk, of een top en een bottom samen (#87). */
+const buyText = (win: ArmorChoice) =>
+  `${win.armor.name} (${SLOT_NAME[win.armor.slot]})${win.with ? ` en ${win.with.name} (${SLOT_NAME[win.with.slot]})` : ''}`
 
 /** Wat het winnende stuk armor oplevert, in een zin. */
 function ArmorWinnerLine(props: { win: ArmorChoice }) {
   const { win } = props
   return (
     <p class="hint">
-      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.armor.price)} meso.
+      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.price)} meso{win.with && ' voor beide'}.
       {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
     </p>
   )
@@ -1381,14 +1398,16 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       </Question>
     )
   }
-  const win = a.choices.find((c) => c.armor === a.winner)
+  // De winnaar staat vooraan; een paar deelt zijn top met de losse top, dus niet zoeken op het stuk.
+  const win = a.winner ? a.choices[0] : undefined
   const unknown = !win && noArmorComputable(a)
   return (
     <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
       {win ? (
         <>
           <p class="verdict">
-            Koop {win.armor.name} ({SLOT_NAME[win.armor.slot]}){replaceClause(win, props.equipment)}
+            Koop {buyText(win)}
+            {replaceClause(win, props.equipment)}
           </p>
           <ArmorWinnerLine win={win} />
         </>
@@ -1826,9 +1845,9 @@ export function App() {
               </h1>
               <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
-              {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
+              {/* Bovenaan je huidige level met je job erachter; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
               <p class="current-level">
-                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
+                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong>{jobChosen && ` (${jobLabel(job)})`}</>}
               </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">

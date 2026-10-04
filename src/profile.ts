@@ -3,7 +3,7 @@
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
 import { arrowFor } from './bowmanGear'
 import type { Character } from './calc/mobModel'
-import { SPELL_CAST_MS } from './data/magician'
+import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
@@ -36,6 +36,7 @@ const STATS = [
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je ability points en je equipment (statWindowRange in suggest.ts).
+  // W.ATT en M.ATT ook niet: ze volgen uit je equipment (totalAttack, totalMagicAttack).
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
   { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },
@@ -256,18 +257,30 @@ const bowmanArrow = (d: ProfileDraft) => arrowFor(d.helpfulStranger.trim() === '
 /** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een Warrior gooit niets. */
 const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
 
+const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+
 /**
- * De weapon attack uit je equipment: dezelfde als de berekening gebruikt. Total stats toont ze alleen voor een Magician
- * (zijn gewone wand-aanval staat niet in de gegevens); anders je schadebereik (statWindowRange, issue #108). Null als het wapen (of bij een Thief
- * de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ * De W.ATT uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
+ * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ * Een Magician heeft 0: zijn wapen geeft M.ATT (totalMagicAttack); de kaart toont altijd beide (Dave, #100).
  */
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
-  const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+  if (job === 'magician') return 0
   const claw = whole(d.clawWatk)
-  if (job === 'magician') return null // zijn wapen geeft M.ATT, geen weapon attack
   // Een Bowman schiet zijn pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
   const stars = job === 'warrior' ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
   return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
+}
+
+/**
+ * De M.ATT uit het statvenster: bij een Magician MagicTotal = floor(INT / 2) + de M.ATT van zijn wapen, zoals de
+ * berekening die gebruikt; null als INT of het wapen niet is ingevuld. De andere jobs hebben 0 (Dave, #100).
+ */
+export function totalMagicAttack(d: ProfileDraft, job: Job): number | null {
+  if (job !== 'magician') return 0
+  const wand = whole(d.clawWatk)
+  const int = whole(d.int)
+  return wand === null || int === null ? null : Math.floor(int / MAGIC_DAMAGE.intPerMagicAttack) + wand
 }
 
 /**
