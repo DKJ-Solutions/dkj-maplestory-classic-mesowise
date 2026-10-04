@@ -69,7 +69,7 @@ never enter the upgrade advice.
 - [x] Tycho: tests for the catalog, the override and the new data (437 green)
 - [x] Victor (code) and Edith (UI text) on the second round: fixed a claw stat override resetting a hand-set attack speed, stored stats now saved as they count (clamped), Escape-then-arrow highlighting, own-item row offered unless the text is an exact name; "Ander item" renamed "eigen item" throughout (439 green)
 - [x] Dave, October 4, 2026: expected (database) and in-game stat side by side, in-game always overrules
-- [ ] Victor (code) and Edith (UI text) on the final layout: one row per slot, pencil to correct
+- [ ] Victor (code) and Edith (UI text) on the final layout: one row per slot, pencil opens a correction popup with Opslaan
 - [ ] Dave looks at the equipment card at phone width before the merge
 
 ### DEPLOY: app/equipment-always-worn
@@ -79,8 +79,9 @@ slot is now a search bar: type the name of what you wear and pick it from the li
 shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
 own item. Each slot is one row: the item name, the WATK or WDEF that counts, and a pencil. The value
-comes from the database until you correct it: the pencil opens − and + buttons (tap the number to type
-over it) and a "Terug naar" button back to the database value. A corrected value is outlined, with the
+comes from the database until you correct it: the pencil opens a popup (a sheet at the bottom of a
+phone) with the expected value, − and + buttons (tap the number to type over it) and "Terug naar" the
+database value; an "Opslaan" button appears once the value differs, and closing without it discards. A corrected value is outlined, with the
 expected value small and struck through beside it; the game value always overrules the expected one.
 A slot not filled in yet shows a search
 prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as

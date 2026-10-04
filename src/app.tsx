@@ -402,6 +402,39 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
 }
 
 /**
+ * De popup om een stat te corrigeren: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
+ * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan.
+ */
+function StatDialog(props: { title: string; onCancel: () => void; children: ComponentChildren }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const d = ref.current
+    d?.showModal()
+    return () => d?.close()
+  }, [])
+  return (
+    <dialog
+      ref={ref}
+      class="stat-dialog"
+      aria-label={props.title}
+      onCancel={(e) => {
+        e.preventDefault()
+        props.onCancel()
+      }}
+      onClick={(e) => e.target === ref.current && props.onCancel()}
+    >
+      <div class="stat-dialog-head">
+        <strong>{props.title}</strong>
+        <button type="button" class="stat-dialog-close" aria-label="Sluiten zonder opslaan" onClick={props.onCancel}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
+        </button>
+      </div>
+      {props.children}
+    </dialog>
+  )
+}
+
+/**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
  * WDEF aan (zie equipment.ts). `was` is de toestand van vóór de level-up; wat daarvan afwijkt krijgt een badge.
  */
@@ -418,6 +451,8 @@ function EquipmentCard(props: {
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het getalveld legt zich vast (blur of Enter). */
   onCommit: (slot: EquipSlot) => void
+  /** Het concept in het corrigeervak weggooien (sluiten zonder opslaan). */
+  onDiscard: (slot: EquipSlot) => void
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
   const uid = useId()
@@ -443,14 +478,18 @@ function EquipmentCard(props: {
             // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
             const value = wornStat(slot, entry)
             const isEditing = editing === slot
-            const reset = () => {
-              props.onStatInput(slot, '')
+            // Het corrigeervak werkt met een concept (pending): - en +, typen en "Terug naar" veranderen pas iets na Opslaan.
+            const reset = () => props.onStatInput(slot, String(db ?? ''))
+            const draft = props.pending[slot]
+            const saved = draft === undefined ? null : commitStat(slot, entry, draft)
+            const dirty = saved !== null && saved.stat !== entry.stat
+            const saveDraft = () => {
               props.onCommit(slot)
+              setEditing(null)
             }
             const step = (by: number) => {
               const n = Number(shown.trim())
               props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
-              props.onCommit(slot)
             }
             return (
               <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
@@ -468,40 +507,43 @@ function EquipmentCard(props: {
                         <strong>{value ?? '?'}</strong>
                       </span>
                     </div>
-                    <button type="button" class={isEditing ? 'equip-edit open' : 'equip-edit'} aria-expanded={isEditing} aria-controls={`${uid}-${slot}-edit`}
-                      aria-label={isEditing ? 'Klaar met corrigeren' : `${stat} corrigeren`}
-                      onClick={() => {
-                        if (isEditing) props.onCommit(slot)
-                        setEditing(isEditing ? null : slot)
-                      }}
-                    >
-                      {isEditing ? (
-                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                      )}
+                    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${stat} corrigeren`} onClick={() => setEditing(slot)}>
+                      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                     </button>
                     {isEditing && (
-                      // Corrigeren: - en + tellen meteen; tik je op het getal, dan is het geselecteerd en vervangt wat je typt het hele getal.
-                      <div class="equip-editor" id={`${uid}-${slot}-edit`}>
-                        <span id={`${uid}-${slot}-game`}>{stat} in game</span>
+                      // Corrigeren: - en + en typen maken een concept; Opslaan (of Enter) legt het vast. Tik je op het getal, dan is
+                      // het geselecteerd en vervangt wat je typt het hele getal.
+                      <StatDialog title={`${label}: ${wornName(entry) ?? ''}`} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
+                        {db !== undefined && <p class="stat-dialog-db">Verwacht volgens de database: <strong>{db}</strong></p>}
+                        <span class="stat-dialog-label" id={`${uid}-${slot}-game`}>{stat} in game</span>
                         <div class="equip-step">
                           <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
                           <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
                             value={shown}
                             onFocus={(e) => e.currentTarget.select()}
                             onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                            onChange={() => props.onCommit(slot)}
-                            onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                saveDraft()
+                              }
+                            }}
                           />
                           <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
                         </div>
-                        {own !== undefined && db !== undefined && (
-                          <button type="button" class="equip-reset" onClick={reset}>
-                            Terug naar {db}
-                          </button>
-                        )}
-                      </div>
+                        <div class="stat-dialog-actions">
+                          {db !== undefined && (saved ?? entry).stat !== '' && (
+                            <button type="button" class="equip-reset" onClick={reset}>
+                              Terug naar {db}
+                            </button>
+                          )}
+                          {dirty && (
+                            <button type="button" class="equip-save" onClick={saveDraft}>
+                              Opslaan
+                            </button>
+                          )}
+                        </div>
+                      </StatDialog>
                     )}
                   </div>
                 )}
@@ -1240,6 +1282,7 @@ export function App() {
               onPick={pickEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
+              onDiscard={(slot) => setPendingFor(slot, undefined)}
             />
 
             <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
@@ -1323,6 +1366,7 @@ export function App() {
               onPick={pickEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
+              onDiscard={(slot) => setPendingFor(slot, undefined)}
             />
             {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
             <button
