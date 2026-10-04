@@ -104,7 +104,10 @@ const statLine = (label: string) => {
 }
 /** De namen van de stat-regels in één kaart van het beginscherm. */
 const cardNames = (selector: string) => Array.from(panels()[0].querySelectorAll(`${selector} .stat-line-name`)).map((n) => n.textContent)
-const statShown = (label: string) => statLine(label).querySelector('.equip-value strong')?.textContent
+/** Het getal van een stat op de kaart; bij een ability point (STR, DEX, INT, LUK) de base AP. */
+const statShown = (label: string) => (statLine(label).querySelector('.ap-base strong') ?? statLine(label).querySelector('.equip-value strong'))?.textContent
+/** De extra AP van items van een ability point op de kaart. */
+const extraShown = (label: string) => statLine(label).querySelector('.ap-extra strong')?.textContent
 /** Opent de popup achter het potlood van een stat op de karakterkaart. */
 const openStat = (label: string) => {
   fireEvent.click(within(statLine(label)).getByRole('button', { name: `${label} wijzigen` }))
@@ -437,7 +440,8 @@ describe('bewaren na elke wijziging', () => {
     expect(profileFields()?.lukExtra ?? STARTER_PROFILE.lukExtra).toBe(STARTER_PROFILE.lukExtra)
     h.save()
     expect(profileFields().lukExtra).toBe('15')
-    expect(statShown('LUK')).toBe('52')
+    expect(extraShown('LUK')).toBe('15')
+    expect(statShown('LUK')).toBe('37')
   })
 
   it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
@@ -470,13 +474,13 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Base AP over')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
   })
 
-  it('toont op de kaart je totale stat, met (base+extra) erachter als je items iets geven', () => {
+  it('zet per stat twee kolommen op de kaart: links de extra AP van items, rechts de base AP, zonder totaal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(statShown('LUK')).toBe('40')
-    // Zoals het statvenster in het spel: eerst het totaal, dan de opbouw tussen haakjes.
-    expect(statLine('LUK').querySelector('.equip-value-num')?.textContent).toBe('40(37+3)')
-    expect(statLine('LUK').querySelector('.equip-value-db')?.textContent).toBe('(37+3)')
-    expect(statLine('DEX').querySelector('.equip-value-db')).toBeNull()
+    const head = panels()[0].querySelector('section.profile .ability-head')!
+    expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Extra', 'Base', ''])
+    const values = Array.from(statLine('LUK').querySelectorAll('.equip-value strong')).map((v) => v.textContent)
+    expect(values).toEqual(['3', '37'])
+    expect(statLine('LUK').textContent).not.toContain('40')
   })
 
   it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {
@@ -501,7 +505,8 @@ describe('bewaren na elke wijziging', () => {
     h.save()
     expect(profileFields().luk).toBe('37')
     expect(profileFields().lukExtra).toBe('100')
-    expect(statShown('LUK')).toBe('137')
+    expect(extraShown('LUK')).toBe('100')
+    expect(statShown('LUK')).toBe('37')
   })
 
   it('geeft base AP vrij die je uit een andere stat haalt', () => {
@@ -590,7 +595,7 @@ describe('bewaren na elke wijziging', () => {
     const h = openAbility('LUK')
     h.typeExtra('77')
     h.close()
-    expect(statShown('LUK')).toBe('40')
+    expect(extraShown('LUK')).toBe('3')
     expect(statLine('LUK').querySelector('dialog')).toBeNull()
   })
 

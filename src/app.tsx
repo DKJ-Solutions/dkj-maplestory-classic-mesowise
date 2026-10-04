@@ -27,7 +27,7 @@ import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, baseApSpent, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -468,6 +468,13 @@ function ProfileCard(props: StatsCardProps) {
   const lead = (
     <>
       <StatLine key="ap-left" field={{ ...AP_FIELD, label: left !== null && left < 0 ? 'Base AP te veel' : 'Base AP over' }} value={left === null ? '' : nfInt.format(Math.abs(left))} readOnly onSave={() => {}} />
+      {/* Twee kolommen per stat (Dave, 4 oktober 2026): links de extra AP van items, rechts de base AP; geen totaal. */}
+      <div class="stat-line ability-line ability-head" aria-hidden="true">
+        <span />
+        <span>Extra</span>
+        <span>Base</span>
+        <span />
+      </div>
       {shownStats(props.job)
         .filter((f) => ABILITY_KEYS.includes(f.key))
         .map((f) => (
@@ -479,8 +486,8 @@ function ProfileCard(props: StatsCardProps) {
 }
 
 /**
- * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart je totaal, in de popup twee manieren om AP toe te
- * voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
+ * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de extra AP van items en de base AP als twee
+ * kolommen naast elkaar, in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
  */
 function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: number | null; onSave: (patch: Partial<ProfileDraft>) => void }) {
   const { field: f, draft, cap } = props
@@ -488,8 +495,6 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   const extraKey = EXTRA_KEY[stat]
   const uid = useId()
   const [edit, setEdit] = useState<{ base: string; extra: string } | null>(null)
-  const total = draftStatTotal(draft, stat)
-  const extraNow = Number(draft[extraKey].trim()) || 0
   const baseNow = Number(draft[stat].trim()) || 0
   // De base kan tot wat je level nog over laat; staat er al meer, dan hoeft hij niet omlaag.
   const maxBase = cap === null ? f.max : Math.min(f.max, Math.max(baseNow, cap - (baseApSpent(draft) - baseNow)))
@@ -502,13 +507,16 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   }
   const dirty = edit !== null && (edit.base !== draft[stat] || edit.extra !== draft[extraKey])
   return (
-    <div class="stat-line">
+    <div class="stat-line ability-line">
       <span class="stat-line-name">{f.label}</span>
-      <div class="equip-value" aria-label={`${f.label} ${total === null ? 'onbekend' : total}${extraNow > 0 ? `, ${baseNow} base plus ${extraNow} van items` : ''}`}>
+      <div class="equip-value ap-extra" aria-label={`${f.label} extra ${draft[extraKey].trim() || 'onbekend'}`}>
         <span class="equip-value-num">
-          {/* Zoals het statvenster in het spel: het totaal, met de opbouw erachter tussen haakjes. */}
-          <strong>{total === null ? '?' : nfInt.format(total)}</strong>
-          {extraNow > 0 && total !== null && <small class="equip-value-db">({baseNow}+{extraNow})</small>}
+          <strong>{draft[extraKey].trim() || '?'}</strong>
+        </span>
+      </div>
+      <div class="equip-value ap-base" aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
+        <span class="equip-value-num">
+          <strong>{draft[stat].trim() || '?'}</strong>
         </span>
       </div>
       <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
