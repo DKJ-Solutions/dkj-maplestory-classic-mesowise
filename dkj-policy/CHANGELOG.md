@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-**22 / 58 minor entries** <!-- pending-tally -->
+**23 / 59 minor entries** <!-- pending-tally -->
 
 ### DEPLOY: app/111-close-button-fill · 20261004-125700Z
 
@@ -21,6 +21,26 @@ N/A
 Edit buttons with a fill instead of a border
 
 [PR #113](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/113)
+
+---
+
+### DEPLOY: data/107-bowman-able-armor-skirt · 20261004-125657Z
+
+The Bowman's shop data now carries the female-only Green Able Armor Skirt (1190), and its other colours sit in the worn list. The data comes from MeowDB, and no other Bowman top or bottom was left out because of gender.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A female Bowman now gets a level-15 bottom in the armor advice. Before this change, that level had nothing for her. A male Bowman, or one whose gender is not set yet, sees no change.
+
+**Score:** 3
+
+#### Pull Request
+
+Bowman: the female-only Able Armor Skirt in the advice
+
+[PR #112](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/112)
 
 ---
 
