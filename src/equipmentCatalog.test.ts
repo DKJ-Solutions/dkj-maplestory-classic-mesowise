@@ -1,4 +1,4 @@
-// De catalogus met items zonder prijs (src/data/wornItems.ts is nog leeg): hier met een nagemaakte lijst, zodat
+// De catalogus met items zonder prijs: hier met een nagemaakte lijst (los van de echte src/data/wornItems.ts), zodat
 // de samenvoeging, de claw-snelheid en het ontbreken van die items in het upgrade-advies vaststaan.
 import { describe, expect, it, vi } from 'vitest'
 

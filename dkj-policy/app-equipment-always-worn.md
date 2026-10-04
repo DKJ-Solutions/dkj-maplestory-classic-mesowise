@@ -57,8 +57,8 @@ never enter the upgrade advice.
 - [x] `equipment.ts`: drop `NONE`; a stored `none` loads as not filled in
 - [x] `app.tsx`: dropdown without both options, disabled placeholder while a slot is unfilled; armor-advice texts no longer name "Weet ik niet"
 - [x] "was" badge shows a shop item's own name (it fell through to "Ander item")
-- [ ] Rebecca: wearable Thief items lv 0-30 per slot, each with its MeowDB page
-- [ ] Vera: those items into `src/data/wornItems.ts`, each with source and date
+- [x] Rebecca: wearable Thief items lv 0-30 per slot, each with its MeowDB page
+- [x] Vera: those items into `src/data/wornItems.ts`, each with source and date (118 armor, 6 claws, read from the raw item pages; Rebecca's summaries disagreed in places)
 - [x] Cody: search bar per slot, own item when nothing matches, stat override with the database value beside it
 - [x] Gwen: the look at phone width (two-line rows, tinted active row, dashed own-item row, amber override note)
 
@@ -66,7 +66,7 @@ never enter the upgrade advice.
 
 - [x] `equipment.test.ts` updated; 404 tests green, typecheck green
 - [x] Victor (code): no findings; Edith (UI text): two shorter phrasings adopted
-- [ ] Tycho: tests for the catalog, the override and the new data
+- [x] Tycho: tests for the catalog, the override and the new data (437 green)
 - [ ] Victor (code) and Edith (UI text) on the second round
 - [ ] Dave looks at the equipment card at phone width before the merge
 

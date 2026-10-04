@@ -57,22 +57,42 @@ describe('defaultEquipment en catalogItems', () => {
 
   it('geeft per slot de catalogusitems met de juiste stat (WATK voor de claw, WDEF voor armor)', () => {
     expect(catalogItems('claw').find((i) => i.name === 'Meba')).toMatchObject({ level: 25, stat: 19, attackMs: 660 })
-    expect(catalogItems('shoes').map((i) => i.name)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
+    const shoes = catalogItems('shoes').map((i) => i.name)
+    expect(shoes.slice(0, 3)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
+    expect(shoes).toContain('Leather Sandals')
+    expect(catalogItems('shoes').find((i) => i.name === 'Bronze Aroa Boots')).toMatchObject({ level: 16, stat: 13 })
+    expect(catalogItems('claw').find((i) => i.name === 'Mithril Guards')).toMatchObject({ level: 30, stat: 23, attackMs: 720 })
     expect(catalogItems('hat').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
   })
 })
 
 describe('searchCatalog', () => {
+  const names = (slot: Parameters<typeof searchCatalog>[0], q: string) => searchCatalog(slot, q).map((i) => i.name)
+
   it('zoekt op een deel van de naam, zonder hoofdletters en met spaties eromheen', () => {
-    expect(searchCatalog('top', 'pao').map((i) => i.name)).toEqual(['Red Pao'])
-    expect(searchCatalog('top', '  RED  ').map((i) => i.name)).toEqual(['Red Cloth Vest', 'Red Pao'])
-    expect(searchCatalog('claw', 'gu').map((i) => i.name)).toEqual(['Steel Guards', 'Adamantium Guards'])
+    const pao = names('top', 'pao')
+    expect(pao[0]).toBe('Red Pao') // de NPC-regel staat voor de items zonder prijs
+    expect(pao).toEqual(expect.arrayContaining(['Blue Pao', 'Black Pao', 'Red Qi Pao', 'Pink Qi Pao', 'Blue Qi Pao']))
+    for (const n of pao) expect(n.toLowerCase(), n).toContain('pao')
+    expect(names('top', '  RED  ')).toEqual(names('top', 'red'))
+    expect(names('top', 'red').slice(0, 2)).toEqual(['Red Cloth Vest', 'Red Pao'])
+    expect(names('claw', 'gu')).toEqual(['Steel Guards', 'Adamantium Guards', 'Mithril Guards'])
   })
 
   it('zoekt alleen in het eigen slot, en een lege tekst geeft het hele slot', () => {
     expect(searchCatalog('hat', 'pao')).toEqual([])
-    expect(searchCatalog('shoes', '')).toHaveLength(3)
+    expect(searchCatalog('shoes', '')).toEqual(catalogItems('shoes'))
+    expect(catalogItems('shoes').length).toBeGreaterThan(3)
+    expect(names('bottom', 'qi pao skirt')).toEqual(['Red Qi Pao Skirt', 'Blue Qi Pao Skirt'])
     expect(searchCatalog('top', 'bestaat niet')).toEqual([])
+  })
+
+  it('geeft elke naam in een slot één keer, en de NPC-stat wint bij dezelfde naam', () => {
+    for (const { slot } of EQUIP_SLOTS) {
+      const all = catalogItems(slot).map((i) => i.name)
+      expect(new Set(all).size, slot).toBe(all.length)
+    }
+    expect(catalogItems('top').filter((i) => i.name === 'Red Pao')).toEqual([expect.objectContaining({ stat: 32 })])
   })
 })
 
