@@ -1,12 +1,13 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
-// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes.
+// De Warrior (issue #42) heeft er twee: Power Strike en Precise Strikes; de Bowman (issue #44) één: Arrow Blow.
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { ARROW_BLOW_LEVELS } from './data/bowman'
 import { POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import type { Job } from './job'
 import { mesoCostAt } from './mesoCostAt'
@@ -14,7 +15,7 @@ import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
 /** De skills die het mob-model kan doorrekenen. */
-export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes'>
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody' | 'powerStrike' | 'preciseStrikes' | 'arrowBlow'>
 
 interface Skill {
   id: SkillId
@@ -79,8 +80,24 @@ export const WARRIOR_MODELLED: readonly Skill[] = [
   },
 ]
 
+/**
+ * De skill van de 1e job van een Bowman die het model kan doorrekenen: Arrow Blow, de aanval van elk schot (1 klap, 1 pijl).
+ * De andere vier tellen niet mee, zie BOWMAN_NOT_MODELLED.
+ */
+export const BOWMAN_MODELLED: readonly Skill[] = [
+  {
+    id: 'arrowBlow',
+    name: 'Arrow Blow',
+    max: ARROW_BLOW_LEVELS.length,
+    level: (p) => p.arrowBlow,
+    plusOne: (p) => ({ ...p, arrowBlow: p.arrowBlow + 1 }),
+  },
+]
+
+const MODELLED: Partial<Record<Job, readonly Skill[]>> = { warrior: WARRIOR_MODELLED, bowman: BOWMAN_MODELLED }
+
 /** De skills die het model voor deze job kan doorrekenen. */
-export const skillsOf = (job: Job): readonly Skill[] => (job === 'warrior' ? WARRIOR_MODELLED : SKILLS)
+export const skillsOf = (job: Job): readonly Skill[] => MODELLED[job] ?? SKILLS
 
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
 export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
@@ -95,8 +112,18 @@ export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job 
  */
 export const WARRIOR_NOT_MODELLED: readonly string[] = ['Improved HP Recovery', 'Max HP Increase', 'Iron Body', 'Slash Blast']
 
+/**
+ * Wat het model van een Bowman niet kan doorrekenen, met de reden. Double Shot raakt tot 2 monsters met 1 klap per monster,
+ * en hoeveel monsters er bij je staan is nergens gemeten; op één monster is hij zwakker dan Arrow Blow en kost hij 2 pijlen
+ * en meer MP. Critical Shot geeft een kans op een critical en "extra critical-schade"; de damage-gids noemt geen schade
+ * voor een crit. The Eye of Amazon geeft alleen bereik en Focus is een buff (accuracy en evasion) met MP per cast.
+ */
+export const BOWMAN_NOT_MODELLED: readonly string[] = ['Double Shot', 'Critical Shot', 'The Eye of Amazon', 'Focus']
+
+const NOT_MODELLED_BY_JOB: Partial<Record<Job, readonly string[]>> = { warrior: WARRIOR_NOT_MODELLED, bowman: BOWMAN_NOT_MODELLED }
+
 /** De skills van deze job die het model niet doorrekent. */
-export const notModelled = (job: Job): readonly string[] => (job === 'warrior' ? WARRIOR_NOT_MODELLED : NOT_MODELLED)
+export const notModelled = (job: Job): readonly string[] => NOT_MODELLED_BY_JOB[job] ?? NOT_MODELLED
 
 /** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
 export interface SkillLevel extends SkillInfo {

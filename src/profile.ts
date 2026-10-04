@@ -1,8 +1,9 @@
-// Het karakterprofiel (Thief en Warrior): de invulvelden, het omzetten naar getallen en het
+// Het karakterprofiel (Thief, Warrior en Bowman): de invulvelden, het omzetten naar getallen en het
 // bewaren in localStorage. Alles uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op de
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
+import { PLAIN_ARROW } from './bowmanGear'
 import type { Character } from './calc/mobModel'
-import { isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
+import { BOWMAN_SKILLS, isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
 import { STAT_NAME } from './equipment'
 import type { Job } from './job'
@@ -36,7 +37,7 @@ const STATS = [
 
 /**
 /**
- * De weapon multiplier van je wapen, alleen voor een Warrior (de Thief heeft de vaste waarden van zijn aanval).
+ * De weapon multiplier van je wapen, alleen voor een Warrior (de Thief en de Bowman hebben de vaste waarden van hun aanval).
  * Een wapen uit de winkel vult hem in; kies je een ander wapen, dan staat hier wat je zelf invult.
  */
 const WEAPON_MULT_FIELD = { key: 'weaponMult', label: 'Weapon multiplier van je wapen', min: 1, max: 5, integer: false } as const
@@ -44,7 +45,8 @@ const WEAPON_MULT_FIELD = { key: 'weaponMult', label: 'Weapon multiplier van je 
 /**
  * Je stars (issue #65): hun weapon attack en wat het herladen per ster kost. Geen kaart toont ze; de star die je bij
  * je equipment kiest, vult ze (zie applyEquipChange). Zonder keuze rekent de app met Subi. Een Warrior gooit niets:
- * voor hem tellen ze niet mee (zie toCharacter en suggestMonsters).
+ * voor hem tellen ze niet mee (zie toCharacter en suggestMonsters). Een Bowman schiet pijlen: voor hem staan ze in deze
+ * velden vast op de gewone pijl (zie parseProfile), de weapon attack van de pijl en zijn prijs per stuk.
  */
 const AMMO = [
   // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
@@ -58,6 +60,8 @@ const skillFields = (skills: readonly SkillInfo[]): readonly ProfileField[] =>
   skills.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
 const SKILL_FIELDS = skillFields(THIEF_SKILLS)
 const WARRIOR_SKILL_FIELDS = skillFields(WARRIOR_SKILLS)
+const BOWMAN_SKILL_FIELDS = skillFields(BOWMAN_SKILLS)
+const BEGINNER_SKILL_FIELDS = skillFields(THIEF_SKILLS.filter((s) => s.job === 'Beginner'))
 
 export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
 
@@ -74,12 +78,15 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...AMMO_
 const WARRIOR_FIELDS: readonly ProfileField[] = [
   ...STAT_FIELDS,
   WEAPON_MULT_FIELD,
-  ...skillFields(THIEF_SKILLS.filter((s) => s.job === 'Beginner')),
+  ...BEGINNER_SKILL_FIELDS,
   ...WARRIOR_SKILL_FIELDS,
 ]
 
+/** De getalvelden van een Bowman: de stats (zonder weapon multiplier en zonder pijlen, die vastliggen) en de skills van zijn 1e job. */
+const BOWMAN_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...BEGINNER_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS]
+
 /** Elk veld dat een profiel bewaart, van elke job. */
-export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...WARRIOR_SKILL_FIELDS]
+export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /** Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent). */
@@ -87,7 +94,7 @@ export type Profile = Record<ProfileKey, number> & { job: Job }
 
 /**
  * De velden die een job invult: elke job heeft de skills van zijn eigen 1e job, de Beginner-skills heeft elke job.
- * Een Warrior heeft ook de weapon multiplier. De getypte waarden blijven in het concept staan, zodat een
+ * Een Warrior heeft ook de weapon multiplier; een Bowman heeft geen stars en geen multiplier. De getypte waarden blijven in het concept staan, zodat een
  * terugwissel niets kwijt is; parseProfile valideert een veld dat deze job niet invult niet en vult het met de
  * standaardwaarde. Een job zonder eigen skills (nog niet doorgerekend) ziet alleen de Beginner-skills.
  */
@@ -96,7 +103,9 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
     ? PROFILE_FIELDS
     : job === 'warrior'
       ? WARRIOR_FIELDS
-      : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
+      : job === 'bowman'
+        ? BOWMAN_FIELDS
+        : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
 
 /** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
 export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
@@ -131,6 +140,11 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   powerStrike: '0',
   slashBlast: '0',
   preciseStrikes: '0',
+  arrowBlow: '0',
+  doubleShot: '0',
+  criticalShot: '0',
+  eyeOfAmazon: '0',
+  focus: '0',
 }
 
 /**
@@ -155,10 +169,15 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
     if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.`, key: f.key }
     out[f.key] = n
   }
+  // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie AMMO).
+  if (job === 'bowman') {
+    out.starWatk = PLAIN_ARROW.watk
+    out.starRecharge = PLAIN_ARROW.pricePerArrow
+  }
   return { profile: out }
 }
 
-/** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw; een Warrior gooit niets. */
+/** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw, bij een Bowman die van zijn pijlen; een Warrior gooit niets. */
 export function toCharacter(p: Profile): Character {
   return {
     level: p.level,
@@ -206,5 +225,8 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
   }
 }
 
-/** De hoofdstat voor schade en wapen-eisen: STR voor een Warrior, LUK voor een Thief. */
-export const mainStatOf = (p: Profile): number => (p.job === 'warrior' ? p.str : p.luk)
+/**
+ * De stat waarin een wapen of stuk armor naast DEX een eis stelt: STR voor een Warrior en een Bowman, LUK voor een Thief.
+ * (De hoofdstat van de schade is dat niet altijd: bij een Bowman is dat DEX.)
+ */
+export const requirementStatOf = (p: Profile): number => (p.job === 'warrior' || p.job === 'bowman' ? p.str : p.luk)

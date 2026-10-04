@@ -17,10 +17,11 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey } from './data/skills'
+import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
-import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelUp, applySkillPoint, arrowBlowMp, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -334,6 +335,14 @@ function ProfileCard(props: {
               <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
             ))}
           {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+          {job === 'bowman' && (
+            <p class="hint">
+              De app rekent met Arrow Blow als je hem hebt geleerd, anders met je gewone schot. Een boog of kruisboog uit je
+              equipment vult je weapon attack en tijd per aanval in. Zet je geen wapen, dan rekent de app met 750 ms per aanval
+              (Fast (5), zoals de meeste wapens), tot je een wapen zet. Je schiet gewone pijlen: 1 meso per pijl, zonder extra ATT,
+              en elke aanval verbruikt er één.
+            </p>
+          )}
           {job === 'warrior' && (
             <>
               <p class="hint">
@@ -412,6 +421,7 @@ const SKILL_SOURCES = {
     { name: 'Power Strike', source: POWER_STRIKE_SOURCE },
     { name: 'Precise Strikes', source: PRECISE_STRIKES_SOURCE },
   ],
+  bowman: [{ name: 'Arrow Blow', source: ARROW_BLOW_SOURCE }],
 }
 
 /** Waar je skillpunt de meeste mesos bespaart (issue #26). */
@@ -453,7 +463,7 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
       )}
       {a.maxed.length > 0 && <p class="hint">Al op het maximum: {listFormat.format(a.maxed)}.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
-      {SKILL_SOURCES[props.job === 'warrior' ? 'warrior' : 'thief'].map((s) => (
+      {SKILL_SOURCES[computedJob(props.job)].map((s) => (
         <p class="source" key={s.name}>
           {s.name}:{' '}
           <a href={s.source.url} target="_blank" rel="noopener noreferrer">
@@ -469,7 +479,10 @@ function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
 /** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
 const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior een wapen (een ander lidwoord en een andere uitgang). */
+/** De jobs waarvoor de app rekent, als sleutel van de teksten per job; een andere job (Magician) valt terug op de Thief. */
+const computedJob = (job: Job): 'thief' | 'warrior' | 'bowman' => (job === 'warrior' || job === 'bowman' ? job : 'thief')
+
+/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior en de Bowman een wapen (een ander lidwoord en een andere uitgang). */
 const WEAPON_TEXT = {
   thief: {
     title: 'Loont een nieuwe claw?',
@@ -497,11 +510,24 @@ const WEAPON_TEXT = {
     prices: 'Wapenprijzen',
     noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
   },
+  bowman: {
+    title: 'Loont een nieuwe boog of kruisboog?',
+    noBetter: 'Geen boog of kruisboog die je kunt dragen en die beter is dan de jouwe.',
+    noBetterQuestion: 'Geen betere boog of kruisboog die je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de bogen en kruisbogen niet doorrekenen.',
+    notYet: 'Nog niet: geen boog of kruisboog verdient zich terug vóór je volgende upgrade.',
+    noPayback: 'Geen boog of kruisboog verdient zich terug vóór je volgende upgrade.',
+    toWear: 'dit wapen',
+    old: 'je oude wapen',
+    unpriced: 'Wapens zonder vaste winkelprijs, of waarvan de bron geen Bowman als job noemt, telt de app niet. Als beter telt een wapen waarmee je volgens de app meer EXP per meso haalt dan met je huidige; een kruisboog is trager dan een boog, en dat telt mee.',
+    prices: 'Wapenprijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
+  },
 } as const
-const weaponText = (job: Job) => WEAPON_TEXT[job === 'warrior' ? 'warrior' : 'thief']
+const weaponText = (job: Job) => WEAPON_TEXT[computedJob(job)]
 
-/** De hoofdstat waar een wapen of stuk armor een eis in stelt: LUK voor een Thief, STR voor een Warrior. */
-const mainStat = (job: Job) => (job === 'warrior' ? 'STR' : 'LUK')
+/** De stat waarin een wapen of stuk armor naast DEX een eis stelt: LUK voor een Thief, STR voor een Warrior of Bowman. */
+const mainStat = (job: Job) => (computedJob(job) === 'thief' ? 'LUK' : 'STR')
 
 const missingStats = (u: UnwearableClaw | UnwearableArmor, job: Job) =>
   [u.needLuk > 0 && `${u.needLuk} ${mainStat(job)}`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
@@ -848,6 +874,23 @@ function EquipmentCard(props: {
               , opgehaald op {formatDate(NPC_WARRIOR_ARMOR[0].source.retrieved)}.
             </p>
           )}
+          {props.job === 'bowman' && (
+            <p class="source">
+              Wapens:{' '}
+              <a href={NPC_BOWMAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_BOWMAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
+              <a href={NPC_BOWMAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_BOWMAN_ARMOR[0].source.retrieved)}. Pijlen:{' '}
+              <a href={NPC_ARROWS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
+            </p>
+          )}
           {props.job === 'thief' && (
             <p class="source">
               Claws:{' '}
@@ -874,6 +917,7 @@ function EquipmentCard(props: {
 
 const SKILL_GROUPS = [
   { job: 'Warrior', title: 'Warrior (1e job)' },
+  { job: 'Bowman', title: 'Bowman (1e job)' },
   { job: 'Thief', title: 'Thief (1e job)' },
   // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
   { job: 'Beginner', title: 'Beginner' },
@@ -1162,6 +1206,13 @@ function SpotCard(props: {
 type Step = 0 | 1 | 2
 const SLIDE_MS = 250
 
+/** De zin boven de controle na een level-up, per job: wat hij met zijn AP doet. */
+const LEVEL_UP_HINT = {
+  thief: 'Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.',
+  warrior: 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je avoid in het spel.',
+  bowman: 'Verdeel je AP zelf: DEX voor schade, accuracy en wapen-eisen, STR voor de wapens die dat vragen. Controleer je avoid in het spel.',
+} as const
+
 /** Kosten in meso, voor in een zin; de kosten van een level ronden naar boven af. */
 const formatCost = (meso: number) => (meso === 0 ? 'niets' : `± ${nfInt.format(Math.ceil(meso))} meso`)
 const placeName = (name: string) => name.trim() || 'Naamloze plek'
@@ -1340,6 +1391,13 @@ function noCostReason(c: LevelCost): string | null {
   return null
 }
 
+/** De skills die een aanval zijn: de MP per aanval op een skill-level, en hoe de speler één aanval noemt. */
+const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { mp: (level: number) => number; noun: string }>> = {
+  luckySeven: { mp: luckySevenMp, noun: 'worp' },
+  powerStrike: { mp: powerStrikeMp, noun: 'aanval' },
+  arrowBlow: { mp: arrowBlowMp, noun: 'schot' },
+}
+
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
@@ -1362,8 +1420,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       </Question>
     )
   }
-  const mpOf = props.job === 'warrior' ? powerStrikeMp : luckySevenMp
-  const mpFrom = winner ? mpOf(winner.to - 1) : 0
+  const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
+  const mpFrom = winner && attack ? attack.mp(winner.to - 1) : 0
   return (
     <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading}>
       {winner ? (
@@ -1372,11 +1430,11 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
             Zet je skillpunt in {winner.name} (→ {winner.to}).
           </p>
           <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
-          {(winner.id === 'luckySeven' || winner.id === 'powerStrike') && (
+          {attack && (
             <p class="hint">
               {mpFrom === 0
-                ? `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpOf(winner.to)} MP (nu 0).`
-                : `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpFrom} → ${mpOf(winner.to)} MP.`}{' '}
+                ? `Elke ${attack.noun} kost je dan ${attack.mp(winner.to)} MP (nu 0).`
+                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${attack.mp(winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
@@ -1491,7 +1549,7 @@ export function App() {
   const jobDirty = useRef(false)
   const parsed = useMemo(() => parseProfile(profileDraft, job), [profileDraft, job])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
-  // De berekening kent de Thief en de Warrior. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
+  // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   const profile = computed ? parsedProfile : null
   // De melding staat bij de kaart waar het foute veld staat.
@@ -1792,9 +1850,7 @@ export function App() {
             </h2>
             <p class="hint">
               {changes ? `${levelUpSummary(changes)} ` : ''}
-              {job === 'warrior'
-                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je avoid in het spel.'
-                : 'Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
+              {LEVEL_UP_HINT[computedJob(job)]}
             </p>
             <div class="card stats">
               {checkFieldsFor(job).map((f) => (

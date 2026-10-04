@@ -28,7 +28,7 @@ import {
   equipmentForJob,
 } from './equipment'
 import { NPC_ARMOR } from './data/armor'
-import { NPC_ARROWS } from './data/bowman'
+import { NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
@@ -581,8 +581,8 @@ describe('loadEquipment en saveEquipment', () => {
 })
 
 describe('equipment per job', () => {
-  // De Warrior heeft sinds issue #42 wapens, hats en shoes; deze twee jobs hebben nog niets.
-  const others: Job[] = ['magician', 'bowman']
+  // De Warrior (issue #42) en de Bowman (issue #44) hebben winkelitems; de Magician nog niets.
+  const others: Job[] = ['magician']
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const storedFor = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
   const thiefGear: Equipment = { claw: shop('Meba'), ammo: shop('Subi Throwing Stars'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, overall: unknown, shoes: shop('Blue Gidder Shoes') }
@@ -591,8 +591,6 @@ describe('equipment per job', () => {
     for (const s of slots) {
       expect(catalogItems(s, 'thief').length, s).toBeGreaterThan(0)
       for (const j of others) {
-        // Het ammo-slot van de Bowman heeft pijlen (zie de tests van het ammo-slot).
-        if (s === 'ammo' && j === 'bowman') continue
         expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
         expect(searchCatalog(s, j, ''), `${s} ${j}`).toEqual([])
       }
@@ -706,11 +704,8 @@ describe('equipment voor een Warrior', () => {
       expect(catalogItems('hat', 'thief').map((i) => i.name)).toContain('Red Thief Hood')
     })
 
-    it('geeft Magician en Bowman nog niets, behalve de pijlen van de Bowman (issue #65)', () => {
-      for (const s of slots) for (const j of ['magician', 'bowman'] as const) {
-        if (s === 'ammo' && j === 'bowman') continue
-        expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
-      }
+    it('geeft de Magician nog niets', () => {
+      for (const s of slots) expect(catalogItems(s, 'magician'), s).toEqual([])
     })
 
     it('heeft geen dubbele namen in een lijst en geen naam die bij de Thief en de Warrior een ander item is', () => {
@@ -899,7 +894,7 @@ describe('het ammo-slot (issue #65)', () => {
     expect(p.starRecharge).toBe(DEFAULT_PROFILE.starRecharge)
   })
 
-  it('verandert niets aan het profiel bij pijlen: de Bowman rekent de app nog niet door', () => {
+  it('verandert niets aan het profiel bij pijlen: de Bowman rekent altijd met de gewone pijl (zie parseProfile)', () => {
     expect(applyEquipChange(prof(), 'ammo', unknown, shop('Arrows for Bows'))).toEqual(prof())
   })
 
@@ -1099,5 +1094,89 @@ describe('overall (issue #50): randgevallen van de WDEF-rekensom en het laden', 
   it('wornWdef telt een overall mee als eigen slot', () => {
     expect(wornWdef(worn({ overall: robe, shoes: zero }))).toEqual({ overall: 75, shoes: 0 })
     expect(wornWdef(worn({ overall: other('', 'Robe') }))).toEqual({})
+  })
+})
+
+describe('equipment voor een Bowman', () => {
+  const slots = EQUIP_SLOTS.map((s) => s.slot)
+  const bowmanGear: Equipment = { claw: shop('Balanche'), ammo: shop('Arrows for Crossbows'), hat: shop('Hunter'), top: unknown, bottom: unknown, overall: unknown, shoes: shop('Hard Leather Boots') }
+
+  it('geeft bij Weapon alle 10 bogen en kruisbogen, op level, met weapon attack en tijd per aanval maar zonder multiplier', () => {
+    const items = catalogItems('claw', 'bowman')
+    expect(items).toHaveLength(NPC_BOWMAN_WEAPONS.length)
+    expect(items.map((i) => i.level)).toEqual([...items.map((i) => i.level!)].sort((a, b) => a - b))
+    expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810 })
+    expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750 })
+    expect(items.find((i) => i.name === 'Eagle Crow')).toEqual({ name: 'Eagle Crow', level: 30, stat: 52, attackMs: 870 })
+    // De Balanche heeft 840 ms, niet de 810 van de gedeelde tabel voor Normal (6) (issue #44).
+    expect(items.find((i) => i.name === 'Balanche')).toEqual({ name: 'Balanche', level: 20, stat: 39, attackMs: 840 })
+  })
+
+  it('geeft bij Hat, Top, Bottom en Shoes de Bowman-armor en de items zonder jobregel, met WDEF als stat', () => {
+    for (const slot of ['hat', 'top', 'bottom', 'shoes'] as const) {
+      const names = catalogItems(slot, 'bowman').map((i) => i.name)
+      for (const a of NPC_BOWMAN_ARMOR.filter((x) => x.slot === slot)) expect(names, a.name).toContain(a.name)
+    }
+    expect(catalogItems('hat', 'bowman').find((i) => i.name === 'Hunter')).toEqual({ name: 'Hunter', level: 25, stat: 24 })
+    expect(catalogItems('top', 'bowman').find((i) => i.name === "Hunter's Armor / Huntress Armor")).toEqual({ name: "Hunter's Armor / Huntress Armor", level: 30, stat: 40 })
+  })
+
+  it('heeft geen mannen-only items van de Warrior (#55)', () => {
+    const all = slots.flatMap((s) => catalogItems(s, 'bowman').map((i) => i.name))
+    for (const n of ['Brown Lolico Armor', 'Blue Sergeant', 'Red Hwarang Shirt']) expect(all).not.toContain(n)
+  })
+
+  it('heeft geen dubbele namen, en een naam die ook bij een andere job staat is hetzelfde item', () => {
+    for (const s of slots) {
+      const bowman = catalogItems(s, 'bowman')
+      expect(new Set(bowman.map((i) => i.name)).size, s).toBe(bowman.length)
+      for (const other of ['thief', 'warrior'] as const) {
+        for (const i of catalogItems(s, other)) {
+          const b = bowman.find((x) => x.name === i.name)
+          if (b) expect(b, `${s} ${i.name} (${other})`).toEqual(i)
+        }
+      }
+    }
+    const everything = slots.flatMap((s) => catalogItems(s, 'bowman').map((i) => i.name))
+    expect(new Set(everything).size).toBe(everything.length)
+  })
+
+  it('geeft de WATK en WDEF van een Bowman-winkelitem', () => {
+    expect(wornStat('claw', shop('Balanche'))).toBe(39)
+    expect(wornStat('hat', shop('Hunter'))).toBe(24)
+    expect(wornStat('shoes', shop('Hard Leather Boots'))).toBe(10)
+    expect(wornWdef(bowmanGear)).toEqual({ hat: 24, shoes: 10 })
+    expect(wornStat('ammo', shop('Arrows for Crossbows'))).toBe(0)
+  })
+
+  it('zet bij een boog weapon attack en tijd per aanval, en laat de weapon multiplier staan (die heeft een Bowman niet)', () => {
+    const p = prof({ clawWatk: '5', attackMs: '999', weaponMult: '1.8' })
+    expect(applyEquipChange(p, 'claw', unknown, shop('Balanche'))).toEqual({ ...p, clawWatk: '39', attackMs: '840' })
+    expect(applyEquipChange(p, 'claw', unknown, shop('War Bow'))).toEqual({ ...p, clawWatk: '30', attackMs: '810' })
+  })
+
+  it('verschuift de WDEF met het verschil tussen het oude en het nieuwe stuk (Hunter 24 voor Feather Hat 18)', () => {
+    const p = prof({ wdef: '100' })
+    expect(applyEquipChange(p, 'hat', shop('Feather Hat'), shop('Hunter')).wdef).toBe('106')
+  })
+
+  it('laat een Thief- of Warrior-keuze voor een Bowman "nog niet ingevuld" zijn, en een Bowman-keuze voor die jobs ook', () => {
+    const thief: Equipment = { ...defaultEquipment(), claw: shop('Meba'), ammo: shop('Subi Throwing Stars') }
+    const afterThief = equipmentForJob(thief, 'bowman')
+    expect(afterThief.claw).toEqual(unknown)
+    expect(afterThief.ammo).toEqual(unknown)
+    const afterBowman = equipmentForJob(bowmanGear, 'thief')
+    expect(afterBowman.claw).toEqual(unknown)
+    expect(afterBowman.ammo).toEqual(unknown)
+    expect(afterBowman.hat).toEqual(unknown)
+    expect(equipmentForJob(bowmanGear, 'bowman')).toEqual(bowmanGear)
+  })
+
+  it('laadt een bewaarde Bowman-keuze voor een Bowman en niet voor een Thief', () => {
+    const storage = fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: { claw: { pick: 'Balanche' }, ammo: { pick: 'Arrows for Bows' } } }) })
+    const eq = loadEquipment(storage, 'bowman')
+    expect(eq.claw).toEqual(shop('Balanche'))
+    expect(eq.ammo).toEqual(shop('Arrows for Bows'))
+    expect(loadEquipment(storage, 'thief').claw).toEqual(unknown)
   })
 })

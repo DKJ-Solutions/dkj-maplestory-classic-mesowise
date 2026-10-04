@@ -1,6 +1,7 @@
 // Loont een nieuwe claw nu? (Dave, 3 oktober 2026, issue #25) Per claw uit de NPC-winkel die je kunt dragen
 // en die meer weapon attack geeft: wat bespaart hij in mesos tot je volgende upgrade, min zijn prijs.
-// Voor een Warrior (issue #42) is het een wapen uit zijn winkel (warriorGear.ts). Meer weapon attack zegt daar
+// Voor een Warrior (issue #42) is het een wapen uit zijn winkel (warriorGear.ts), voor een Bowman (issue #44) een boog of
+// kruisboog uit de zijne (bowmanGear.ts). Meer weapon attack zegt daar
 // niets: een zwaarder wapen kan trager zijn of een lagere multiplier hebben. Een wapen telt dus als beter
 // als het model er meer EXP per meso mee haalt dan met je huidige wapen, en de horizon loopt tot het volgende
 // wapen dat meer schade per milliseconde geeft (weapon attack × multiplier ÷ aanvalstijd).
@@ -9,13 +10,14 @@
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
 // het scherm "Je equipment" vult die in als je een claw kiest.
 import { ASSUMPTION_VARIANTS } from './best'
+import { BOWMAN_WEAPONS } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { Claw } from './data/types'
 import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
-import { mainStatOf, type Profile } from './profile'
+import { requirementStatOf, type Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { WARRIOR_WEAPONS } from './warriorGear'
 
@@ -37,7 +39,7 @@ export interface ClawChoice {
 /** Een claw die je level wel toestaat, maar waar je stats nog tekortschieten. */
 export interface UnwearableClaw {
   claw: Claw
-  /** Hoeveel hoofdstat (LUK voor een Thief, STR voor een Warrior) en DEX je tekortkomt (0 = genoeg). */
+  /** Hoeveel van de eis naast DEX (LUK voor een Thief, STR voor een Warrior of Bowman) en DEX je tekortkomt (0 = genoeg). */
   needLuk: number
   needDex: number
 }
@@ -66,13 +68,16 @@ export const withClaw = (p: Profile, c: Claw): Profile => ({
   ...(c.mult !== undefined ? { weaponMult: c.mult } : {}),
 })
 
-/** De schade per milliseconde zonder stats: genoeg om te zeggen welk wapen "later" beter is (alleen voor de horizon van een Warrior). */
+/** De schade per milliseconde zonder stats: genoeg om te zeggen welk wapen "later" beter is (voor de horizon van een Warrior of Bowman). */
 const power = (c: Claw): number => (c.watk * (c.mult ?? 1)) / c.speed.attackMs
+
+/** Of het model een wapen boven een ander zet op meer dan weapon attack: bij wapens met een eigen snelheid (Warrior en Bowman), niet bij de claws. */
+const rankedByModel = (job: Profile['job']): boolean => job === 'warrior' || job === 'bowman'
 
 /** De winkellijst van de job, en of een wapen daarin "beter" is dan een ander (voor de horizon). */
 const shopOf = (job: Profile['job']) =>
-  job === 'warrior'
-    ? { weapons: WARRIOR_WEAPONS, better: (c: Claw, than: Claw) => power(c) > power(than) }
+  rankedByModel(job)
+    ? { weapons: job === 'warrior' ? WARRIOR_WEAPONS : BOWMAN_WEAPONS, better: (c: Claw, than: Claw) => power(c) > power(than) }
     : { weapons: NPC_CLAWS, better: (c: Claw, than: Claw) => c.watk > than.watk }
 
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
@@ -103,11 +108,11 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 
 /**
  * De winkelclaws die voor jou in aanmerking komen: je level volstaat, en ze zijn beter dan wat je nu hebt. Bij een
- * Thief is dat meer weapon attack; bij een Warrior meer EXP per meso volgens het model (zie de kop).
+ * Thief is dat meer weapon attack; bij een Warrior of Bowman meer EXP per meso volgens het model (zie de kop).
  */
 function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly Claw[] {
   const inLevel = shopOf(profile.job).weapons.filter((c) => c.level <= profile.level)
-  if (profile.job !== 'warrior') return inLevel.filter((c) => c.watk > profile.clawWatk)
+  if (!rankedByModel(profile.job)) return inLevel.filter((c) => c.watk > profile.clawWatk)
   const base = bestExpPerMeso(drafts, profile, ASSUMPTIONS)
   if (base === undefined) return inLevel
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)
@@ -116,8 +121,8 @@ function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly C
 export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null): ClawUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const better = betterClaws(drafts, profile)
-  const mainStat = mainStatOf(profile)
-  const needs = (c: Claw): UnwearableClaw => ({ claw: c, needLuk: Math.max(0, c.luk - mainStat), needDex: Math.max(0, c.dex - profile.dex) })
+  const reqStat = requirementStatOf(profile)
+  const needs = (c: Claw): UnwearableClaw => ({ claw: c, needLuk: Math.max(0, c.luk - reqStat), needDex: Math.max(0, c.dex - profile.dex) })
   const notWearable = better.map(needs).filter((u) => u.needLuk > 0 || u.needDex > 0)
   const wearable = better.filter((c) => !notWearable.some((u) => u.claw === c))
   const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS)

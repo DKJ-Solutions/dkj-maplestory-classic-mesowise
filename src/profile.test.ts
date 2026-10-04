@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, requirementStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -124,7 +124,7 @@ describe('profileFieldsFor', () => {
   it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
     const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
     expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['magician', 'bowman'] as const) {
+    for (const j of ['magician'] as const) {
       const keys = profileFieldsFor(j).map((f) => f.key)
       expect(profileFieldsFor(j), j).toEqual(expected)
       for (const k of hidden) expect(keys, j).not.toContain(k)
@@ -233,11 +233,11 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     expect('profile' in t && toCharacter(t.profile).watk).toBe(47 + 15)
   })
 
-  it('geeft mainStatOf STR voor een Warrior en LUK voor een Thief', () => {
+  it('geeft requirementStatOf STR voor een Warrior en LUK voor een Thief', () => {
     const w = parseW()
     const t = parseProfile(warriorDraft, 'thief')
     if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
-    expect(mainStatOf(w.profile)).toBe(132)
-    expect(mainStatOf(t.profile)).toBe(4)
+    expect(requirementStatOf(w.profile)).toBe(132)
+    expect(requirementStatOf(t.profile)).toBe(4)
   })
 })
