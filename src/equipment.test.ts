@@ -13,6 +13,7 @@ import {
   loadEquipment,
   saveEquipment,
   searchCatalog,
+  isOptionalSlot,
   slotLabel,
   slotsFor,
   statName,
@@ -665,10 +666,10 @@ describe('het ammo-slot (issue #65)', () => {
     expect(slotsFor('magician').map((s) => s.slot)).toEqual(['claw', 'hat', 'top', 'bottom', 'shoes'])
   })
 
-  it('heet bij een Bowman Arrows en bij de rest Stars', () => {
-    expect(slotLabel('ammo', 'bowman')).toBe('Arrows')
-    expect(slotLabel('ammo', 'thief')).toBe('Stars')
-    expect(slotLabel('claw', 'bowman')).toBe('Weapon')
+  it('heet voor elke job Ammo, en is als enige slot optioneel', () => {
+    expect(slotLabel('ammo')).toBe('Ammo')
+    expect(slotLabel('claw')).toBe('Weapon')
+    expect(EQUIP_SLOTS.filter((s) => isOptionalSlot(s.slot)).map((s) => s.slot)).toEqual(['ammo'])
   })
 
   it('zet bij een andere star zijn weapon attack en herlaadprijs in het profiel', () => {

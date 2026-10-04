@@ -1,5 +1,5 @@
-// De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je stars (of pijlen bij een Bowman, issue
-// #65), hoed, bovenstuk, broek of schoenen.
+// De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je ammo (stars, of pijlen bij een Bowman,
+// issue #65; optioneel), hoed, bovenstuk, broek of schoenen.
 // Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, je stars hun weapon attack en
 // herlaadprijs, armor past je WDEF aan, en
 // het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
@@ -28,7 +28,7 @@ export type EquipSlot = 'claw' | 'ammo' | ArmorSlot
 /** De slots in de volgorde waarin het scherm ze toont. */
 export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'claw', label: 'Weapon' },
-  { slot: 'ammo', label: 'Stars' },
+  { slot: 'ammo', label: 'Ammo' },
   { slot: 'hat', label: 'Hat' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
@@ -39,9 +39,14 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
 export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] =>
   job === 'thief' || job === 'bowman' ? EQUIP_SLOTS : EQUIP_SLOTS.filter((s) => s.slot !== 'ammo')
 
-/** Hoe het scherm een slot noemt: het ammo-slot heet bij een Bowman "Arrows", bij de rest "Stars". */
-export const slotLabel = (slot: EquipSlot, job: Job): string =>
-  slot === 'ammo' && job === 'bowman' ? 'Arrows' : (EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot)
+/** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
+export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+
+/**
+ * Of een slot optioneel is: je ammo (Dave, 4 oktober 2026). Leeg laten mag; de app rekent dan met Subi zolang je
+ * nooit een star koos. De andere slots zijn niet verplicht in te vullen, maar je draagt er altijd iets.
+ */
+export const isOptionalSlot = (slot: EquipSlot): boolean => slot === 'ammo'
 
 /** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'

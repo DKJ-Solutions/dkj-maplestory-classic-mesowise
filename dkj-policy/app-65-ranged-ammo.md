@@ -54,7 +54,7 @@ Bowman is not computed.
   Subi's existing values re-checked
 - [x] Profile: `starWatk` and `starRecharge` (`AMMO_FIELDS`), on no card; `toCharacter` adds `starWatk`, and
   `hourPlan` takes the recharge price from the suggestion instead of Subi
-- [x] Equipment: an `ammo` slot ("Stars", or "Arrows" for a Bowman) that only the Thief and the Bowman get,
+- [x] Equipment: an optional `ammo` slot, labelled "Ammo (optioneel)" for every job (Dave), that only the Thief and the Bowman get,
   stars for the Thief and the NPC arrows for the Bowman; picking a star sets its weapon attack and recharge price
   in the profile
 - [x] Screen: the slot under the Weapon, the stars' source in the card's source line, the character card's hint updated
@@ -63,7 +63,7 @@ Bowman is not computed.
 
 - [x] Tests for the slot, the catalogue per job, the profile update (star, corrected star, own item, arrows),
   loading old storage, the weapon attack in the mob model, the recharge cost per hour and the screen
-- [x] `npx vitest run` (714 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [x] `npx vitest run` (715 green), `npm run lint`, `scripts/lint/lint.ps1` clean
 - [x] Code review (Victor) and proofread (Edith): `starWatk` allows up to 999 like the claw, so an own star
   with a high ATT no longer blocks the calculation; no ammo slot for Warrior and Magician; the source line names
   items 294-300; the unused `npc` flag removed
@@ -71,8 +71,8 @@ Bowman is not computed.
 
 ### DEPLOY: app/65-ranged-ammo
 
-The equipment card gets a slot for your ranged ammo. A Thief picks their throwing stars (Subi, Wolbi, Mokbi,
-Kumbi, Tobi, Steely or Ilbi), and the advice counts their weapon attack and their recharge price. A Bowman picks
+The equipment card gets an optional Ammo slot. A Thief picks their throwing stars there (Subi, Wolbi, Mokbi,
+Kumbi, Tobi, Steely or Ilbi), and the advice counts their weapon attack and their recharge price. A Bowman sees only
 arrows there, which the app shows but does not count yet; a Warrior or Magician has no such slot. Without a choice the app still counts with Subi.
 
 **Score:** 3
