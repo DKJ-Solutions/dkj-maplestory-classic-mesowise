@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**22 / 57 minor entries** <!-- pending-tally -->
+**22 / 58 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/111-close-button-fill · 20261004-125700Z
+
+De bewerkknoppen (het potlood bij je stats, je equipment en je job) zijn nu gevuld in plaats van omrand: op het donkere thema wit met een donkerblauw icoon, op het lichte thema donker met een wit icoon.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Edit buttons with a fill instead of a border
+
+[PR #113](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/113)
+
+---
 
 ### DEPLOY: data/91-mdef-per-item · 20261004-125404Z
 
