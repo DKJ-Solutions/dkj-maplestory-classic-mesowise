@@ -39,9 +39,20 @@
 
 ### PLAN
 
+Issue #55, besluit 1 (Dave, 2026-10-04): een item zonder jobregel telt voor elke klas. Deze branch zet de
+NPC-items zonder jobregel die de datamodules nu uitsluiten erin, bij elke klas. Besluit 2 (het geslacht vragen,
+waarmee de tops en broeken alleen voor mannen bruikbaar worden) hangt aan de Warrior-schermen van #42 en het
+overall-slot van #50, die op andere machines in bewerking zijn; die stap blijft open op #55 (`-NoResolves`).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: de 11 wapens en de hoeden, de top en de Skullcap zonder jobregel opgezocht (eisen, stats,
+  snelheid, winkel en prijs).
+- [x] Vera: alle 14 ruwe pagina's zelf opgehaald en het eisen-, stat- en winkelblok letterlijk gelezen; elk getal
+  van Rebecca klopt, geen pagina toont een JOB-regel. De Blue One-lined T-Shirt (960) is alleen voor mannen en
+  blijft eruit (besluit 2); de Brown Skullcap (708) is level 5 en valt onder de grens van 10.
+- [x] Cody: Warrior +8 wapens, Magician +3 wands, en de White Bandana (719) en Red Baseball Cap (781) in de
+  armor van alle vier de klassen; de koppen van `armor.ts`, `warrior.ts`, `magician.ts` en `bowman.ts` bijgewerkt.
 
 ### TEST
 
