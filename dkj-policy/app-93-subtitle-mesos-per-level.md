@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave (#93): the subtitle becomes "Zo min mogelijk mesos per level in MapleStory Classic World." -- the app's
+central question since #24 is the meso cost of a level, not EXP per meso. The same tagline also sits in the
+web manifest's description and the README's first line; those follow, so the app does not say two things.
+
+Visible result: parked with a preview link, no PR until Dave has looked.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: subtitle in `src/app.tsx`, description in `public/manifest.webmanifest`, README first line.
 
 ### TEST
 
+- [x] Gates via `open-pr -GatesOnly` before parking.
+
 ### DEPLOY: app/93-subtitle-mesos-per-level
 
-**Score:**
+The subtitle under the app's title now reads "Zo min mogelijk mesos per level in MapleStory Classic World."
+instead of "Zo veel mogelijk EXP per meso"; the web manifest's description and the README say the same (#93).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
