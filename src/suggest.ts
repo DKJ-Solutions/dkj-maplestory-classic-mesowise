@@ -1,8 +1,9 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { ASSUMPTIONS, characterAttack, estimateMob, meleeAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, bowAttack, characterAttack, estimateMob, meleeAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
+import { ARROW_BLOW_LEVELS, BOWMAN_DAMAGE, BOWMAN_MASTERY_BASE } from './data/bowman'
 import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion } from './data/types'
@@ -22,15 +23,30 @@ export function powerStrikeAt(level: number): SkillStats | null {
   return POWER_STRIKE_LEVELS[Math.min(level, POWER_STRIKE_LEVELS.length) - 1] ?? null
 }
 
+/** Arrow Blow op dit skill-level, of null als hij nog niet geleerd is (level 0): dan telt het gewone schot. */
+export function arrowBlowAt(level: number): SkillStats | null {
+  if (level < 1) return null
+  return ARROW_BLOW_LEVELS[Math.min(level, ARROW_BLOW_LEVELS.length) - 1] ?? null
+}
+
+/** De weapon multiplier van een schot en de basis-mastery van een Bowman, uit de damage-gids (data/bowman.ts). */
+const BOW = { weaponMult: BOWMAN_DAMAGE.shootMultiplier, mastery: BOWMAN_MASTERY_BASE } as const
+
 /**
  * De aanval van dit profiel. Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
- * Power Strike op het gezette level, of zonder punten met de gewone aanval. Slash Blast is bewust niet
- * meegenomen: hij raakt tot 4 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
+ * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Bowman schiet Arrow Blow op het
+ * gezette level, of zonder punten het gewone schot. Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
+ * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
  */
 function attackOf(profile: Profile, character: Character): Attack {
-  return profile.job === 'warrior'
-    ? meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))
-    : characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
+  switch (profile.job) {
+    case 'warrior':
+      return meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))
+    case 'bowman':
+      return bowAttack(character, BOW, arrowBlowAt(profile.arrowBlow))
+    default:
+      return characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
+  }
 }
 
 /** De potion die per punt herstel het minst kost (Orange bij HP, Blue bij MP). */
@@ -47,7 +63,7 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één ster kost: die van je gekozen stars; een Warrior gooit niets, dus 0. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior gooit niets, dus 0. */
   rechargePerStar: number
 }
 
@@ -77,7 +93,7 @@ export interface HourPlan {
   mpPotionsPerHour: number
   /** Meso per uur aan potions. */
   potions: number
-  /** Meso per uur aan het herladen van stars (0 voor een Warrior). */
+  /** Meso per uur aan het herladen van stars of het kopen van pijlen (0 voor een Warrior). */
   ammo: number
 }
 

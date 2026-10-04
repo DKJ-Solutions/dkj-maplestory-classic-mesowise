@@ -900,7 +900,7 @@ describe('een Warrior in de app', () => {
     expect(panels()[0].textContent).not.toMatch(/Weapon multiplier/)
   })
 
-  for (const [job, label] of [['magician', 'Magician'], ['bowman', 'Bowman']] as const) {
+  for (const [job, label] of [['magician', 'Magician']] as const) {
     describe(`een ${label}`, () => {
       beforeEach(() => open(job))
 
@@ -925,6 +925,148 @@ describe('een Warrior in de app', () => {
       })
     })
   }
+})
+
+describe('een Bowman in de app', () => {
+  // Level 20 Bowman: DEX 80 voor schade, STR 20, een War Bow (30 ATT, 810 ms) en Arrow Blow 1.
+  const bowmanFields = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', arrowBlow: '1' }
+  const open = () => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'bowman' }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: bowmanFields }))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        spots: [
+          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+        ],
+      }),
+    )
+    render(<App />)
+  }
+  const toAdvice = () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+  }
+  const NOT_YET = /Nog niet doorgerekend/
+  const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
+  const costText = () => within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+
+  describe('het beginscherm', () => {
+    beforeEach(open)
+
+    it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
+      const home = panels()[0]
+      expect(home.textContent).toMatch(/Beste plek: .* · lv 20: kost /)
+      expect(costText()).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(home.textContent).not.toMatch(NOT_YET)
+      expect(home.querySelector('.debug')).toBeNull()
+    })
+
+    it('rekent met het Bowman-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
+      const bowmanCost = costText()
+      localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
+      cleanup()
+      render(<App />)
+      expect(bowmanCost).toBeTruthy()
+      expect(costText()).toBeTruthy()
+      expect(costText()).not.toBe(bowmanCost)
+    })
+
+    it('zoekt bij Weapon in de bogen en kruisbogen, bij Ammo in de pijlen, en niet in claws of Warrior-wapens', () => {
+      openHomeEquipment()
+      expect(found('Weapon', 'Balanche')).toContain('Balanche')
+      expect(found('Weapon', 'Meba')).not.toContain('Meba')
+      expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
+      expect(found('Ammo', 'Arrows')).toEqual(expect.arrayContaining(['Arrows for Bows', 'Arrows for Crossbows']))
+      expect(found('Hat', 'Hunter')).toContain('Hunter')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+    })
+
+    it('zet bij een gekozen boog weapon attack en aanvalssnelheid in het bewaarde profiel (Balanche: 39 en 840 ms) en laat de rest staan', () => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Balanche')
+      expect(profileFields().clawWatk).toBe('39')
+      expect(profileFields().attackMs).toBe('840')
+      expect(profileFields().weaponMult).toBe(DEFAULT_PROFILE.weaponMult)
+      expect(profileFields().dex).toBe('80')
+      expect(profileFields().wdef).toBe('60')
+    })
+
+    it('toont bij Ability points DEX en STR en bij Total stats de uitleg over Arrow Blow en pijlen, zonder weapon multiplier, Subi of stars', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      const home = panels()[0]
+      expect(statShown('DEX')).toBe('80')
+      expect(statShown('STR')).toBe('20')
+      expect(home.textContent).toMatch(/De app rekent met Arrow Blow als je hem hebt geleerd/)
+      expect(home.textContent).toMatch(/1 meso per pijl/)
+      expect(home.textContent).not.toMatch(/Weapon multiplier|Subi|stars/)
+    })
+
+    it('toont de verwachte Bowman-accuracy en -evasion doorgestreept als je getal afwijkt', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      // floor((1,2 x 80 + 2 x 20 + 0,6 x 4) / 4,8 + 20) = floor(138,4 / 4,8 + 20) = floor(48,83) = 48; avoid floor(4 / 3) + floor(80 / 6) + 5 = 1 + 13 + 5 = 19
+      expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('48')
+      expect(statLine('Evasion').querySelector('s')?.textContent).toBe('19')
+    })
+
+    it('toont bij Skillpoints de skills van de Bowman en niet die van de Warrior of de Thief', () => {
+      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      for (const name of ['Arrow Blow', 'Double Shot', 'Critical Shot', 'The Eye of Amazon', 'Focus']) expect(skills.textContent, name).toContain(name)
+      for (const name of ['Lucky Seven', 'Power Strike', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
+    })
+
+    it('toont het ammo-slot', () => {
+      openHomeEquipment()
+      expect(cards()[0].textContent).toMatch(/Ammo/)
+    })
+  })
+
+  describe('het adviesscherm na een level-up', () => {
+    beforeEach(() => {
+      open()
+      toAdvice()
+    })
+
+    it('verhoogt het level, geeft +22 HP en laat STR, DEX en LUK staan', () => {
+      expect(profileFields().level).toBe('21')
+      expect(profileFields().hp).toBe('822')
+      expect(profileFields().str).toBe('20')
+      expect(profileFields().dex).toBe('80')
+      expect(profileFields().luk).toBe('4')
+    })
+
+    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+      const advice = panels()[2]
+      expect(advice.textContent).not.toMatch(NOT_YET)
+      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
+      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+    })
+
+    it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
+      const text = panels()[2].textContent!
+      expect(text).toMatch(/Niet doorgerekend: Double Shot, Critical Shot, The Eye of Amazon en Focus/)
+      expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Slash Blast/)
+    })
+
+    it('rekent Arrow Blow als enige skill door en zegt eerlijk dat een extra punt niets bespaart', () => {
+      // Dit profiel (DEX 80, 30 ATT) heeft elke Rain Forest-kill in 2 schoten; 4% meer schade van Arrow Blow 1 → 2 verandert dat niet.
+      const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+      expect(section.querySelector('.verdict')!.textContent).toBe('Geen van de skills die de app kan doorrekenen bespaart iets.')
+      expect(screen.queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+    })
+
+    it('noemt wapens, geen claws', () => {
+      const weapon = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      expect(weapon.textContent).not.toMatch(/claw/i)
+      expect(weapon.textContent).toMatch(/wapen|boog/)
+    })
+  })
 })
 
 describe('de menubalk bovenin (issue #86)', () => {
