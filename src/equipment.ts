@@ -157,6 +157,9 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
  * rang kan hij ze niet kopen, dus de lijst biedt ze dan niet aan.
  */
 export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false): readonly CatalogItem[] {
+  // Een slot dat de job niet heeft, heeft voor hem geen items (#125): anders bleef bij een wissel van job een shield staan
+  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF.
+  if (!hasSlot(job, slot)) return []
   // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
     if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))

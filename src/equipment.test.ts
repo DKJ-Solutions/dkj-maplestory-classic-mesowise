@@ -1351,6 +1351,19 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     }
     expect(catalogItems('shield', 'magician').find((i) => i.name === 'Mystic Shield')).toEqual({ name: 'Mystic Shield', level: 22, stat: 20, mdef: 42 })
     expect(catalogItems('earrings', 'thief')[0]).toEqual({ name: 'Single Earring', level: 15, stat: 0, mdef: 19 })
+    // Een slot dat de job niet heeft, heeft geen items, ook niet die zonder jobregel of de wristguards (#133).
+    expect(catalogItems('shield', 'bowman')).toEqual([])
+    expect(catalogItems('shield', 'thief')).toEqual([])
+  })
+
+  it('laten geen shield achter in een slot dat de nieuwe job niet heeft (#125)', () => {
+    const eq: Equipment = { ...defaultEquipment(), shield: shop('Pan Lid') }
+    expect(wornWdef(eq)).toEqual({ shield: 44 })
+    const bowman = equipmentForJob(eq, 'bowman')
+    expect(bowman.shield).toEqual(unknown)
+    expect(wornWdef(bowman)).toEqual({})
+    expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(unknown)
+    expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'warrior').shield).toEqual(shop('Pan Lid'))
   })
 
   it('tellen mee in de WDEF: een eigen item verschuift het profiel met het verschil, en telt in wornWdef', () => {

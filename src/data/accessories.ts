@@ -10,8 +10,9 @@
 // `jobs` is de jobregel van de pagina; zonder `jobs` heeft de pagina er geen en draagt elke job het. Een "Mage" op
 // MeowDB is hier de Magician. Earrings geven alleen M.DEF: hun W.DEF is 0, want hun pagina toont geen W.DEF-regel.
 //
-// Het shield-slot toont de app alleen voor de Warrior en de Magician (zie equipment.ts). De Thief-wristguards (921 tot
-// 923) staan er toch in: MeowDB geeft ze als shield, en #133 vraagt het slot ook voor de Thief.
+// Het shield-slot heeft de app alleen voor de Warrior en de Magician (zie equipment.ts): een job zonder dat slot krijgt er
+// ook geen items voor, ook niet de shields zonder jobregel. De Thief-wristguards (921 tot 923) staan er toch in: MeowDB
+// geeft ze als shield, en #133 vraagt het slot ook voor de Thief.
 import type { Job } from '../job'
 import type { Source, WornArmor } from './types'
 
