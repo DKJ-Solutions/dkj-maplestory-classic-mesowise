@@ -506,8 +506,9 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       <span class="stat-line-name">{f.label}</span>
       <div class="equip-value" aria-label={`${f.label} ${total === null ? 'onbekend' : total}${extraNow > 0 ? `, ${baseNow} base plus ${extraNow} van items` : ''}`}>
         <span class="equip-value-num">
-          {extraNow > 0 && total !== null && <small class="equip-value-db">{baseNow} + {extraNow}</small>}
+          {/* Zoals het statvenster in het spel: het totaal, met de opbouw erachter tussen haakjes. */}
           <strong>{total === null ? '?' : nfInt.format(total)}</strong>
+          {extraNow > 0 && total !== null && <small class="equip-value-db">({baseNow}+{extraNow})</small>}
         </span>
       </div>
       <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>

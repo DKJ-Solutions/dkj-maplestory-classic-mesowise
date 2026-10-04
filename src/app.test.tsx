@@ -470,10 +470,12 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Base AP over')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
   })
 
-  it('toont op de kaart je totale stat, met base plus extra erbij als je items iets geven', () => {
+  it('toont op de kaart je totale stat, met (base+extra) erachter als je items iets geven', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     expect(statShown('LUK')).toBe('40')
-    expect(statLine('LUK').querySelector('.equip-value-db')?.textContent).toBe('37 + 3')
+    // Zoals het statvenster in het spel: eerst het totaal, dan de opbouw tussen haakjes.
+    expect(statLine('LUK').querySelector('.equip-value-num')?.textContent).toBe('40(37+3)')
+    expect(statLine('LUK').querySelector('.equip-value-db')?.textContent).toBe('(37+3)')
     expect(statLine('DEX').querySelector('.equip-value-db')).toBeNull()
   })
 
