@@ -73,6 +73,74 @@ export interface Armor {
   source: Source
 }
 
+/** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
+export type WarriorWeaponKind =
+  | '1h-sword'
+  | '2h-sword'
+  | '1h-axe'
+  | '2h-axe'
+  | '1h-blunt'
+  | '2h-blunt'
+  | 'spear'
+  | 'polearm'
+
+/**
+ * Een wapen uit een NPC-winkel dat een Warrior kan dragen: wat het vraagt (level, STR, DEX), wat het geeft
+ * en wat het kost. Een eis die de pagina niet noemt staat als 0.
+ */
+export interface WarriorWeapon {
+  name: string
+  kind: WarriorWeaponKind
+  /** Het level dat je nodig hebt om het te dragen. */
+  level: number
+  watk: number
+  str: number
+  dex: number
+  /**
+   * De aanvalssnelheid zoals het spel hem noemt en de "Attack cycle" van de pagina, zonder Booster.
+   * Zwaard, bijl en stomp hebben een cyclus voor alles (`attackMs`). Spear en polearm hebben er twee:
+   * `attackMs` is dan de cyclus van de zwaai (Swing) en `stabMs` die van de steek (Stab).
+   */
+  speed: { label: string; attackMs: number; stabMs?: number }
+  /** De weapon multipliers van de basisaanval (zwaaien en steken). */
+  mult: { swing: number; stab: number }
+  price: number
+  source: Source
+}
+
+/** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
+export interface WarriorArmor {
+  name: string
+  slot: ArmorSlot
+  /** Het level dat je nodig hebt om het te dragen. */
+  level: number
+  wdef: number
+  str: number
+  dex: number
+  price: number
+  source: Source
+}
+
+/** Slash Blast per skill-level: zoals Lucky Seven (MP en schade in procent), plus de HP die elke aanval kost. */
+export interface SlashBlastLevel extends SkillLevel {
+  hp: number
+}
+
+/** Iron Body per skill-level: de extra Weapon Defense in procent, wat de buff aan MP kost en hoe lang hij duurt. */
+export interface IronBodyLevel {
+  level: number
+  wdefPct: number
+  mp: number
+  seconds: number
+}
+
+/** Precise Strikes per skill-level: de extra accuracy en de extra kans op een critical hit, in procent. */
+export interface PreciseStrikesLevel {
+  level: number
+  accuracy: number
+  critPct: number
+}
+
 /** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
 export interface Claw {
   name: string
