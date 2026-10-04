@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**26 / 62 minor entries** <!-- pending-tally -->
+**27 / 63 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/job-behind-level · 20261004-131732Z
+
+The job you play now sits behind your level at the top of the start screen ("Level 10 (Magician)") instead of in the title of the Ability points card, which is now just "Ability points".
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player sees their level and job together at a glance, where they look first.
+
+**Score:** 2
+
+#### Pull Request
+
+Show the job behind the level instead of behind Ability points
+
+[PR #120](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/120)
+
+---
 
 ### DEPLOY: app/64-helpful-stranger-arrows · 20261004-131127Z
 
