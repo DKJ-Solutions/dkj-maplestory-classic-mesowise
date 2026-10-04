@@ -581,8 +581,8 @@ describe('loadEquipment en saveEquipment', () => {
 })
 
 describe('equipment per job', () => {
-  // De Warrior (issue #42) en de Bowman (issue #44) hebben winkelitems; de Magician nog niets.
-  const others: Job[] = ['magician']
+  // Alle vier de jobs hebben winkelitems (Warrior #42, Bowman #44, Magician #43): er is geen job meer zonder catalogus.
+  const others: Job[] = []
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const storedFor = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
   const thiefGear: Equipment = { claw: shop('Meba'), ammo: shop('Subi Throwing Stars'), hat: shop('Red Ghetto Beanie'), top: shop('Red Pao'), bottom: unknown, overall: unknown, shoes: shop('Blue Gidder Shoes') }
@@ -707,8 +707,9 @@ describe('equipment voor een Warrior', () => {
       expect(catalogItems('hat', 'thief').map((i) => i.name)).toContain('Red Thief Hood')
     })
 
-    it('geeft de Magician nog niets', () => {
-      for (const s of slots) expect(catalogItems(s, 'magician'), s).toEqual([])
+    it('geeft de Bowman geen Magician-wapens en andersom (elke job heeft zijn eigen winkel)', () => {
+      const mage = catalogItems('claw', 'magician').map((i) => i.name)
+      for (const n of catalogItems('claw', 'bowman').map((i) => i.name)) expect(mage, n).not.toContain(n)
     })
 
     it('heeft geen dubbele namen in een lijst en geen naam die bij de Thief en de Warrior een ander item is', () => {
@@ -931,7 +932,10 @@ describe('overall (issue #50)', () => {
     expect(warriorOveralls).toEqual(expect.arrayContaining(['Steel Fitted Mail', 'Blue Kendo Robe', 'Black Dragon Robe', 'Dark Engrit', 'Blue Sauna Robe']))
     expect(warriorOveralls.filter((n) => n === 'Blue Sauna Robe')).toHaveLength(1)
     expect(new Set(warriorOveralls).size).toBe(warriorOveralls.length)
-    expect(catalogItems('overall', 'magician')).toEqual([])
+    // Een Magician heeft sinds #43 de items zonder jobregel, en dus ook de Sauna Robe (#55).
+    // en sinds #76 ook zijn eigen robe uit de winkel.
+    expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
+    expect(catalogItems('overall', 'bowman').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
     expect(slotLabel('overall')).toBe('Overall')
     expect(slotsFor('thief').map((s) => s.slot)).toContain('overall')
   })
@@ -1010,8 +1014,10 @@ describe('overall (issue #50)', () => {
     expect(eq.top).toEqual(unknown)
   })
 
-  it('zet een overall op "nog niet ingevuld" bij een jobwissel naar een job zonder itemdata', () => {
-    expect(equipmentForJob(worn({ overall: robe }), 'magician').overall).toEqual(unknown)
+  it('houdt de Sauna Robe bij een jobwissel: elke job kent hem (een item zonder jobregel), en een robe van een job die hem niet kent verdwijnt', () => {
+    for (const j of ['thief', 'warrior', 'bowman', 'magician'] as const) expect(equipmentForJob(worn({ overall: robe }), j).overall, j).toEqual(robe)
+    expect(equipmentForJob(worn({ overall: shop('Doros Robe / Doroness Robe') }), 'warrior').overall).toEqual(unknown)
+    expect(equipmentForJob(worn({ overall: shop('Doros Robe / Doroness Robe') }), 'magician').overall).toEqual(shop('Doros Robe / Doroness Robe'))
   })
 })
 
@@ -1091,11 +1097,12 @@ describe('overall (issue #50): randgevallen van de WDEF-rekensom en het laden', 
     }
   })
 
-  it('laat een eigen overall naast een bottom de overall laten winnen, en laadt een Sauna Robe voor een magician als leeg', () => {
+  it('laat een eigen overall naast een bottom de overall laten winnen, en laadt een Sauna Robe voor een bowman en een magician', () => {
     const eq = loadEquipment(stored({ overall: { pick: 'other', name: 'Mijn Robe', stat: '50' }, bottom: { pick: 'Red Pao Bottoms' } }), 'thief')
     expect(eq.overall).toEqual(other('50', 'Mijn Robe'))
     expect(eq.bottom).toEqual(unknown)
-    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'magician').overall).toEqual(unknown)
+    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'bowman').overall).toEqual(robe)
+    expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'magician').overall).toEqual(robe)
   })
 
   it('wornWdef telt een overall mee als eigen slot', () => {

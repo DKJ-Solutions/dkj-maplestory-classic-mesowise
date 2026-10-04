@@ -17,6 +17,7 @@ import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
+import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -95,8 +96,11 @@ const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw' && s
 /** Hoe het scherm de stat van het wapen en van armor noemt, zoals het spel: overal dezelfde namen (#58). */
 export const STAT_NAME = { weapon: 'ATT', armor: 'DEF' } as const
 
-/** De naam van de stat van een slot: ATT voor het wapen en DEF voor armor. */
-export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? STAT_NAME.armor : STAT_NAME.weapon)
+/** De naam van de stat van het wapen: ATT, en bij een Magician M.ATT: voor hem telt zijn Magic Attack (zie magicianGear.ts). */
+export const weaponStatName = (job: Job): string => (job === 'magician' ? 'M.ATT' : STAT_NAME.weapon)
+
+/** De naam van de stat van een slot: ATT (M.ATT bij een Magician) voor het wapen en DEF voor armor. */
+export const statName = (slot: EquipSlot, job: Job = 'thief'): string => (isArmorSlot(slot) ? STAT_NAME.armor : weaponStatName(job))
 
 /** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw of stars, WDEF voor armor). */
 export interface CatalogItem {
@@ -116,15 +120,16 @@ export const MAX_RESULTS = 8
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
  * items), de Warrior (zijn wapens en armor uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
- * items zonder jobregel die ook de Thief draagt) en de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
- * zonder jobregel, zie bowmanGear.ts). Een naam mag bij beide jobs staan, maar dan is het hetzelfde
- * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
- * (issue #43, de Magician), want een item van een andere job aanbieden zou onwaar zijn.
+ * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
+ * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
+ * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde
+ * item (dezelfde stat en bron; een test bewaakt dat). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
   thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: WORN_BOWMAN_ARMOR },
+  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: WORN_MAGICIAN_ARMOR },
 }
 
 /**
