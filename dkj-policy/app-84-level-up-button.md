@@ -49,7 +49,7 @@ Issue #84 (Dave): move the Level up button all the way down, and show the curren
 ### TEST
 
 - [x] Two tests in `src/app.test.tsx`: the current level shows at the top (and follows a level-up), and the button sits after "Plek toevoegen"; `npx vitest run src/app.test.tsx` 84/84, `npm run lint` clean
-- [ ] Dave looks at it at phone width (visible result)
+- [x] Dave looked at it and approved ("ship it", October 4, 2026)
 
 ### DEPLOY: app/84-level-up-button
 
