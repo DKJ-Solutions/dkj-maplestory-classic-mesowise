@@ -166,7 +166,11 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
   return (
     <header class="topbar">
       <div class="topbar-inner">
-        <span class="topbar-name">Mesowise</span>
+        <div class="topbar-brand">
+          <span class="topbar-name">Mesowise</span>
+          {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
+          <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
+        </div>
         <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         </button>
@@ -1856,7 +1860,6 @@ export function App() {
                 </button>
               </div>
               {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
-              <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
               {computed && cost.kind === 'cost' && (
                 <p class="summary">

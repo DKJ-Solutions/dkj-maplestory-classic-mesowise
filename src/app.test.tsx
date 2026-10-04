@@ -1598,6 +1598,9 @@ describe('de menubalk bovenin (issue #86)', () => {
   it('staat boven de schermen, buiten main, met de naam van de app en een menuknop', () => {
     expect(bar().closest('main')).toBeNull()
     expect(bar().querySelector('.topbar-name')?.textContent).toBe('Mesowise')
+    // De ondertitel staat rechts van de naam, en niet meer op het beginscherm (#130).
+    expect(bar().querySelector('.topbar-name')?.nextElementSibling?.textContent).toMatch(/^Zo min mogelijk mesos/)
+    expect(within(panels()[0]).queryByText(/Zo min mogelijk mesos/)).toBeNull()
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
