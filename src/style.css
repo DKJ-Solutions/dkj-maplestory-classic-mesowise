@@ -375,6 +375,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-dialog .equip-step input { font-size: 1.25rem; font-weight: 700; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
 .stat-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0.5rem; margin-top: 1.5rem; min-height: 44px; }
 .stat-dialog-actions .equip-save { margin-left: 0; }
+/* Ability points: base AP en extra AP van items onder elkaar in één popup, met één Opslaan onderaan. De lege knoppenrij van elk vak
+   houdt hier geen ruimte vast, en het tweede vak staat dichter onder het eerste. */
+.ability-dialog .stat-dialog-actions:empty { display: none; }
+.ability-dialog .stat-dialog-label { margin-top: 1rem; }
 .equip-step { display: grid; grid-template-columns: 44px 3.5rem 44px; gap: 0.25rem; }
 .equip-step input { display: block; height: 44px; margin: 0; padding: 0 0.25rem; box-sizing: border-box; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums;
   -moz-appearance: textfield; appearance: textfield; }

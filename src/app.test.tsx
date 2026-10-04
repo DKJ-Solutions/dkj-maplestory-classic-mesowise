@@ -483,6 +483,10 @@ describe('bewaren na elke wijziging', () => {
     expect(h.base().value).toBe('37')
     expect(h.extra().value).toBe('3')
     expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
+    // De knoppenrij van elk vak is leeg zolang er niets gewijzigd is, zodat de CSS hem weg kan laten (geen gat tussen de vakken).
+    const dialog = statLine('LUK').querySelector('dialog')!
+    expect(dialog.classList.contains('ability-dialog')).toBe(true)
+    expect(Array.from(dialog.querySelectorAll('.stat-dialog-actions')).every((a) => a.childNodes.length === 0)).toBe(true)
   })
 
   it('laat de base AP niet hoger gaan dan je nog over hebt; de extra AP is vrij', () => {

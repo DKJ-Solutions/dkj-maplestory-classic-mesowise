@@ -55,7 +55,8 @@ by what the level still leaves, and the optional extra AP from items.
 
 - [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; base plus extra in `parseProfile`, `toCharacter`, `shortfall` and the level-up accuracy; the starter profile spends exactly 70; an old saved profile gets 0 extra; Extra outside 0 to 999 is refused
 - [x] Tycho: the popup shows both fields, base cannot go past what is left, freeing base AP in one stat makes it available in another, Back to level 9 shows 5 too many; existing card tests moved to the new popup
-- [x] Victor and Edith: review and Dutch copy read; lint and all 1329 tests green
+- [x] Gwen: the popup no longer keeps an empty button row under each field, so Extra AP sits right under Base AP (Dave: too much space between them)
+- [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 
 ### DEPLOY: app/ap-per-level
 

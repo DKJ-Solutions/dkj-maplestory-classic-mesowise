@@ -514,7 +514,7 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
       {edit !== null && (
-        <StatDialog title={f.label} onCancel={() => setEdit(null)}>
+        <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
           {cap !== null && <p class="stat-dialog-db">Base AP over: <strong>{Math.max(0, maxBase - (Number(edit.base.trim()) || 0))}</strong> van {cap}</p>}
           <StatEditor stat={`Base ${f.label}`} heading="Base AP" labelId={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} fallback={f.min} integer
             dirty={false} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
