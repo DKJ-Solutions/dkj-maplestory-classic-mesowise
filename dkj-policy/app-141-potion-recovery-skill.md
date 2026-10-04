@@ -57,7 +57,7 @@
 - [x] Tycho: the factor table by hand (levels 0, 1, 14, 15, above max, HP and MP apart), `hourPlan` with factor 1.2 (a sixth fewer potions, EXP and ammo unchanged), a Warrior with the skill on 15, a point in either skill saving mesos; the lists and choices in the existing tests updated; vitest 1272/1272 green, typecheck clean
 - [x] Victor: no blocking findings; his readability point taken (`itemRecoveryFactor` with an early return). Edith: the only UI text change is two names leaving the "Niet doorgerekend" list
 - [x] Lint gate clean
-- [ ] Dave looked at the skill advice and the "Niet doorgerekend" line
+- [x] Dave looked at the skill advice and the "Niet doorgerekend" line and said "approve" (October 4, 2026)
 
 ### DEPLOY: app/141-potion-recovery-skill
 
