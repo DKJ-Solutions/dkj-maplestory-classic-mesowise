@@ -2,15 +2,13 @@
 // alleen kunt laten maken (Mithril en Gold Titans, Bronze en Adamantium Igor, Mithril Guards) hebben op
 // MeowDB geen NPC-prijs, dus de app telt ze niet mee. Opgehaald bij NiaMeowDB (meowdb.com), per claw de
 // itempagina met de datum.
-import { ATTACK_MS } from './thief'
+import { SPEED } from './attackSpeed'
 import type { Claw, Source } from './types'
 
 const R = '2026-10-03'
 const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
 
-const FAST5 = { label: 'Fast (5)', attackMs: ATTACK_MS.fast5 }
-const FAST4 = { label: 'Fast (4)', attackMs: ATTACK_MS.fast4 }
-const FASTER3 = { label: 'Faster (3)', attackMs: ATTACK_MS.faster3 }
+const { fast5: FAST5, fast4: FAST4, faster3: FASTER3 } = SPEED
 
 /** De NPC-claws, van laag naar hoog level. */
 export const NPC_CLAWS: readonly Claw[] = [

@@ -60,18 +60,26 @@ export interface KnownSpot {
 /** Het deel van je lichaam waar een stuk armor hoort. Handschoenen, overalls en schilden zitten er niet in. */
 export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'shoes'
 
-/** Een stuk armor uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
-export interface Armor {
+/** Wat elk ding uit een NPC-winkel heeft: een naam, het level om het te dragen, de prijs in meso en de bron. */
+export interface ShopItem {
   name: string
-  slot: ArmorSlot
-  /** Het level dat je nodig hebt om hem te dragen. */
+  /** Het level dat je nodig hebt om het te dragen. */
   level: number
-  wdef: number
-  luk: number
-  dex: number
   price: number
   source: Source
 }
+
+/** De stat-eisen van een item: `Requires<'luk' | 'dex'>` is { luk: number; dex: number }. Een eis die de pagina niet noemt staat als 0. */
+export type Requires<Stat extends 'str' | 'dex' | 'int' | 'luk'> = Record<Stat, number>
+
+/** Een stuk armor uit een NPC-winkel zonder de stat-eisen (slot en WDEF); die komen per klas erbij. */
+export interface ShopArmor extends ShopItem {
+  slot: ArmorSlot
+  wdef: number
+}
+
+/** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
+export interface Armor extends ShopArmor, Requires<'luk' | 'dex'> {}
 
 /** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
 export type WarriorWeaponKind =
@@ -88,14 +96,9 @@ export type WarriorWeaponKind =
  * Een wapen uit een NPC-winkel dat een Warrior kan dragen: wat het vraagt (level, STR, DEX), wat het geeft
  * en wat het kost. Een eis die de pagina niet noemt staat als 0.
  */
-export interface WarriorWeapon {
-  name: string
+export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
   kind: WarriorWeaponKind
-  /** Het level dat je nodig hebt om het te dragen. */
-  level: number
   watk: number
-  str: number
-  dex: number
   /**
    * De aanvalssnelheid zoals het spel hem noemt en de "Attack cycle" van de pagina, zonder Booster.
    * Zwaard, bijl en stomp hebben een cyclus voor alles (`attackMs`). Spear en polearm hebben er twee:
@@ -104,22 +107,10 @@ export interface WarriorWeapon {
   speed: { label: string; attackMs: number; stabMs?: number }
   /** De weapon multipliers van de basisaanval (zwaaien en steken). */
   mult: { swing: number; stab: number }
-  price: number
-  source: Source
 }
 
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
-export interface WarriorArmor {
-  name: string
-  slot: ArmorSlot
-  /** Het level dat je nodig hebt om het te dragen. */
-  level: number
-  wdef: number
-  str: number
-  dex: number
-  price: number
-  source: Source
-}
+export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}
 
 /** Slash Blast per skill-level: zoals Lucky Seven (MP en schade in procent), plus de HP die elke aanval kost. */
 export interface SlashBlastLevel extends SkillLevel {
@@ -142,15 +133,8 @@ export interface PreciseStrikesLevel {
 }
 
 /** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
-export interface Claw {
-  name: string
-  /** Het level dat je nodig hebt om hem te dragen. */
-  level: number
+export interface Claw extends ShopItem, Requires<'luk' | 'dex'> {
   watk: number
   /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
   speed: { label: string; attackMs: number }
-  luk: number
-  dex: number
-  price: number
-  source: Source
 }
