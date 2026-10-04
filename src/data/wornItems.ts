@@ -13,9 +13,9 @@
 //
 // Niet opgenomen: de GM-hoeden (Dr. Lim Hat, Nemi Hat, Inkwell Hat, Wizet Invincible Hat, elk +200 WDEF),
 // Wizet Plain Suit en Wizet Plain Shoes (geen stat op de pagina), en Black Sneak (id 1009: de pagina toont
-// geen W.DEF). Overalls ook niet: de app heeft geen overall-slot. Heet een item hetzelfde als een ander
-// (de mannen- en vrouwenversie, of Beginner's Garnier 681 en 2545), dan staat het er één keer in: de stats zijn
-// gelijk.
+// geen W.DEF). Overalls: alleen wat een Thief draagt (de Sauna Robe, 1105 en 1111); die van de andere jobs komen
+// met hun eigen data. Heet een item hetzelfde als een ander (de mannen- en vrouwenversie, of Beginner's Garnier
+// 681 en 2545), dan staat het er één keer in: de stats zijn gelijk.
 import { SPEED } from './attackSpeed'
 import type { Source, WornArmor, WornClaw } from './types'
 
@@ -24,7 +24,7 @@ const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-d
 
 const { fast5: FAST5, fast4: FAST4 } = SPEED
 
-/** Niet-winkel armor, per slot (hat, top, bottom, shoes) van laag naar hoog level. */
+/** Niet-winkel armor, per slot (hat, top, bottom, overall, shoes) van laag naar hoog level. */
 export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Brown Skullcap', slot: 'hat', level: 5, wdef: 6, source: src(708) },
   { name: 'Green Skullcap', slot: 'hat', level: 5, wdef: 6, source: src(709) },
@@ -128,6 +128,8 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Blue Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1253) },
   { name: 'Purple Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1254) },
   { name: 'Black Steal Pants', slot: 'bottom', level: 30, wdef: 29, source: src(1255) },
+  // Overall: één stuk voor top en bottom samen (issue #50). De Red Sauna Robe (1111) is de vrouwenversie met dezelfde stats.
+  { name: 'Blue Sauna Robe', slot: 'overall', level: 30, wdef: 75, source: src(1105) },
   { name: 'Leather Sandals', slot: 'shoes', level: 0, wdef: 2, source: src(1305) },
   { name: 'Red Rubber Boots', slot: 'shoes', level: 0, wdef: 2, source: src(1306) },
   { name: 'Yellow Rubber Boots', slot: 'shoes', level: 0, wdef: 2, source: src(1307) },

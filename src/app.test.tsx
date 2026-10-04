@@ -40,7 +40,7 @@ const panels = () => Array.from(document.querySelectorAll<HTMLElement>('.panel')
 /** De equipment-kaarten: [0] op het beginscherm, [1] op het controlescherm van de level-up. */
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
 
-// Een slot heet in het scherm Weapon, Hat, Top, Bottom of Shoes; de zoekbalk heet "Zoek je <Slot>".
+// Een slot heet in het scherm Weapon, Hat, Top, Bottom, Overall of Shoes; de zoekbalk heet "Zoek je <Slot>".
 const searchBox = (card: HTMLElement, slot: string) => within(card).getByLabelText(`Zoek je ${slot}`) as HTMLInputElement
 const rowOf = (card: HTMLElement, slot: string) => searchBox(card, slot).closest<HTMLElement>('.equip-row')!
 const typeIn = (card: HTMLElement, slot: string, text: string) => {
@@ -206,6 +206,23 @@ describe('equipment: de claw past het profiel aan', () => {
     // van dit stuk naar een ander telt alleen het verschil
     pick(cards()[0], 'Hat', HAT_B.name)
     expect(profileFields().wdef).toBe(String(Number(DEFAULT_PROFILE.wdef) + HAT_B.stat - HAT_A.stat))
+  })
+
+  it('laat je een overall invullen die top en bottom leegt, en andersom (issue #50)', () => {
+    openHomeEquipment()
+    const card = cards()[0]
+    expect(rowOf(card, 'Overall').querySelector('.slot-name')?.textContent).toBe('Overall')
+    pick(card, 'Top', TOP_A.name)
+    expect(slots().top.pick).toBe(TOP_A.name)
+    pick(card, 'Overall', 'Blue Sauna Robe')
+    expect(slots().overall.pick).toBe('Blue Sauna Robe')
+    expect(slots().top.pick).toBe('unknown')
+    expect(slots().bottom.pick).toBe('unknown')
+    // Een top kiezen terwijl je de overall draagt, haalt de overall eraf: 75 eraf, de top erbij.
+    const wdef = Number(profileFields()?.wdef ?? DEFAULT_PROFILE.wdef)
+    pick(card, 'Top', TOP_A.name)
+    expect(slots().overall.pick).toBe('unknown')
+    expect(profileFields().wdef).toBe(String(wdef - 75 + TOP_A.stat))
   })
 })
 
@@ -536,7 +553,7 @@ describe('level-up en ongedaan maken', () => {
 describe('de "was"-badge per slot', () => {
   it('staat er niet zolang er niets gewijzigd is', () => {
     levelUp()
-    for (const slot of ['Weapon', 'Hat', 'Top', 'Bottom', 'Shoes']) expect(badge(cards()[1], slot)).toBeNull()
+    for (const slot of ['Weapon', 'Hat', 'Top', 'Bottom', 'Overall', 'Shoes']) expect(badge(cards()[1], slot)).toBeNull()
   })
 
   it('toont alleen bij het gewijzigde slot wat het was', () => {

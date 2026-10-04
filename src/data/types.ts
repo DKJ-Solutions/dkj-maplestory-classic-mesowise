@@ -58,8 +58,11 @@ export interface KnownSpot {
   monsters: readonly Monster[]
 }
 
-/** Het deel van je lichaam waar een stuk armor hoort. Handschoenen, overalls en schilden zitten er niet in. */
-export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'shoes'
+/**
+ * Het deel van je lichaam waar een stuk armor hoort. Een overall (issue #50) is één stuk voor top en bottom
+ * samen: wie er een draagt, heeft in top en bottom niets. Handschoenen en schilden zitten er niet in.
+ */
+export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'overall' | 'shoes'
 
 /** Wat elk ding uit een NPC-winkel heeft: een naam, het level om het te dragen, de prijs in meso en de bron. */
 export interface ShopItem {

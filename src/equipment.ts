@@ -1,5 +1,5 @@
 // De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je ammo (stars, of pijlen bij een Bowman,
-// issue #65; optioneel), hoed, bovenstuk, broek of schoenen.
+// issue #65; optioneel), hoed, top, bottom, overall (top en bottom in één stuk, issue #50) of schoenen.
 // Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, je stars hun weapon attack en
 // herlaadprijs, armor past je WDEF aan, en
 // het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
@@ -32,6 +32,7 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'hat', label: 'Hat' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
+  { slot: 'overall', label: 'Overall' },
   { slot: 'shoes', label: 'Shoes' },
 ]
 
@@ -51,6 +52,11 @@ export const isOptionalSlot = (slot: EquipSlot): boolean => slot === 'ammo'
 /** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'
 export const OTHER = 'other'
+/**
+ * Bekend leeg (issue #50, niet 'none': dat is het vervallen "niets" uit oude opslag): de helft van top en bottom die vrijkomt als je een overall inruilt voor een top of bottom.
+ * Anders dan UNKNOWN weet de app dat daar niets zit, dus 0 WDEF. Het scherm toont het als een leeg slot; je kiest het niet zelf.
+ */
+export const NONE = 'empty'
 
 /**
  * Wat je in één slot draagt, zoals ingevuld. `pick` is 'unknown' (nog niet ingevuld), 'other' (een ander
@@ -74,8 +80,12 @@ export const defaultEquipment = (): Equipment => ({
   hat: emptyEntry(),
   top: emptyEntry(),
   bottom: emptyEntry(),
+  overall: emptyEntry(),
   shoes: emptyEntry(),
 })
+
+/** Of het scherm dit slot als leeg toont: nog niet ingevuld, of bekend leeg. */
+export const isEmptyEntry = (e: EquipEntry): boolean => e.pick === UNKNOWN || e.pick === NONE
 
 const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw' && slot !== 'ammo'
 
@@ -149,6 +159,7 @@ export function statOverride(slot: EquipSlot, entry: EquipEntry): number | undef
 /** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij een eigen item zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
 export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined {
   if (entry.pick === UNKNOWN) return undefined
+  if (entry.pick === NONE) return 0
   if (entry.pick === OTHER) return parseStat(entry.stat)
   const db = databaseStat(slot, entry)
   return db === undefined ? undefined : (parseStat(entry.stat) ?? db)
@@ -167,7 +178,7 @@ export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
 
 /** De naam van wat je in dit slot draagt, voor een samenvatting; null als het slot nog niet is ingevuld. */
 export function wornName(entry: EquipEntry): string | null {
-  if (entry.pick === UNKNOWN) return null
+  if (isEmptyEntry(entry)) return null
   if (entry.pick === OTHER) return entry.name.trim() || 'eigen item'
   return entry.pick
 }
@@ -175,6 +186,7 @@ export function wornName(entry: EquipEntry): string | null {
 /** Hoe een keuze heet in de "was"-badge; een eigen stat bij een catalogusitem staat erbij. */
 export function entryLabel(slot: EquipSlot, entry: EquipEntry): string {
   if (entry.pick === UNKNOWN) return 'nog niet ingevuld'
+  if (entry.pick === NONE) return 'niets'
   if (entry.pick === OTHER) return entry.name.trim() || 'Eigen item'
   const own = statOverride(slot, entry)
   return own === undefined ? entry.pick : `${entry.pick} (aangepast: ${own})`
@@ -205,10 +217,59 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
     const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : knownItem('claw', after.pick)?.attackMs
     return { ...profile, clawWatk: String(next), ...(attackMs !== undefined ? { attackMs: String(attackMs) } : {}) }
   }
-  const prev = wornStat(slot, before)
+  return shiftWdef(profile, next, [wornStat(slot, before)])
+}
+
+/**
+ * Het profiel met de WDEF verschoven: `next` erbij en alles wat het vervangt (`replaced`) eraf. Is er iets onbekend
+ * (of de WDEF in het profiel ongeldig), dan blijft het profiel zoals het was.
+ */
+function shiftWdef(profile: ProfileDraft, next: number | undefined, replaced: readonly (number | undefined)[]): ProfileDraft {
   const wdef = profile.wdef.trim()
-  if (prev === undefined || next === undefined || !/^\d+$/.test(wdef)) return profile
+  if (next === undefined || replaced.some((v) => v === undefined) || !/^\d+$/.test(wdef)) return profile
+  const prev = replaced.reduce<number>((sum, v) => sum + (v ?? 0), 0)
   return { ...profile, wdef: String(Math.max(0, Number(wdef) + next - prev)) }
+}
+
+const isFilled = (e: EquipEntry): boolean => e.pick !== UNKNOWN
+
+/**
+ * Welke slots een nieuw stuk in `slot` vervangt (Dave, 4 oktober 2026, issue #50). Een overall beslaat top en bottom:
+ * een overall erin vervangt wat je op top en bottom droeg, en een top of bottom erin vervangt een overall die je droeg
+ * (de andere helft is dan leeg). Zonder overall in het spel is het gewoon het slot zelf.
+ */
+export function displacedSlots(eq: Equipment, slot: EquipSlot): readonly EquipSlot[] {
+  if (slot === 'overall') return isFilled(eq.overall) ? ['overall'] : ['top', 'bottom']
+  if (slot === 'top' || slot === 'bottom') return isFilled(eq.overall) ? ['overall'] : [slot]
+  return [slot]
+}
+
+/**
+ * De equipment en het profiel na een nieuwe invulling van één slot, met de overall-regel: kies je een overall, dan
+ * worden top en bottom "nog niet ingevuld" (de overall beslaat ze); kies je een top of bottom terwijl je een overall
+ * draagt, dan wordt de overall "nog niet ingevuld" en de andere helft "bekend leeg" (NONE, 0 WDEF). De WDEF in het
+ * profiel gaat met het verschil tussen alles wat je vervangt en het nieuwe stuk, en het stuk telt één keer.
+ * Bewust anders dan het advies: is van een vervangen slot de stat onbekend (nooit ingevuld, of een eigen item zonder
+ * getal), dan blijft de WDEF in het profiel staan, want je beschrijft wat je al droeg en de app weet niet wat eraf
+ * moet. Het advies telt een onbekende helft juist als leeg (zie armorUpgrade.ts), de grootste besparing die kan.
+ */
+export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: EquipSlot, after: EquipEntry): { equipment: Equipment; profile: ProfileDraft } {
+  const out: Equipment = { ...eq, [slot]: after }
+  const displaced = displacedSlots(eq, slot)
+  if (isFilled(after)) {
+    // Een overall naast een top of bottom kan niet: de overall beslaat ze.
+    if (slot === 'overall') {
+      out.top = emptyEntry()
+      out.bottom = emptyEntry()
+    } else if (slot === 'top' || slot === 'bottom') {
+      if (isFilled(eq.overall)) out[slot === 'top' ? 'bottom' : 'top'] = { ...emptyEntry(), pick: NONE }
+      out.overall = emptyEntry()
+    }
+  }
+  if (!isArmorSlot(slot) || (displaced.length === 1 && displaced[0] === slot)) {
+    return { equipment: out, profile: applyEquipChange(profile, slot, eq[slot], after) }
+  }
+  return { equipment: out, profile: shiftWdef(profile, wornStat(slot, after), displaced.map((s) => wornStat(s, eq[s]))) }
 }
 
 /**
@@ -245,7 +306,7 @@ export function equipmentForJob(eq: Equipment, job: Job): Equipment {
   const out = { ...eq }
   for (const { slot } of EQUIP_SLOTS) {
     const { pick } = eq[slot]
-    if (pick !== UNKNOWN && pick !== OTHER && !catalogItem(slot, pick, job)) out[slot] = emptyEntry()
+    if (pick !== UNKNOWN && pick !== OTHER && pick !== NONE && !catalogItem(slot, pick, job)) out[slot] = emptyEntry()
   }
   return out
 }
@@ -258,6 +319,7 @@ function loadEntry(slot: EquipSlot, v: unknown, job: Job): EquipEntry {
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
   if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
+  if (pick === NONE && (slot === 'top' || slot === 'bottom')) return { ...emptyEntry(), pick }
   if (pick !== UNKNOWN && catalogItem(slot, pick, job)) {
     const stat = str(raw.stat, MAX_STAT_LENGTH).trim()
     return { pick, name: '', stat: statOverride(slot, { pick, name: '', stat }) === undefined ? '' : stat }
@@ -276,6 +338,12 @@ export function loadEquipment(storage: Storage | null | undefined, job: Job): Eq
     const slots = (data as { slots?: unknown }).slots
     if (typeof slots !== 'object' || slots === null) return out
     for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job)
+    // Opslag van voor de overall (issue #50) heeft het slot niet: dat laadt als leeg. Staat er wel een overall naast
+    // een top of bottom (handmatig bewerkt), dan wint de overall, want die beslaat ze.
+    if (isFilled(out.overall)) {
+      out.top = emptyEntry()
+      out.bottom = emptyEntry()
+    }
     return out
   } catch {
     return out

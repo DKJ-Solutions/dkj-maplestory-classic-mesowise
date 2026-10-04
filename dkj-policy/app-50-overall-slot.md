@@ -39,19 +39,42 @@
 
 ### PLAN
 
+Dave decided on October 4, 2026 (#50): the equipment card gets an overall option that fills top and bottom at once.
+
+**In scope:** the slot itself, plus the Thief's Sauna Robe in the worn items. Its numbers were measured on the raw page in #50.
+
+**Out of scope:**
+- The Magician robes: their numbers were read only through a summarizer. They are filed as #76.
+- The Warrior overalls: they wait on #42 (held by another machine) and on #55. The stale `warrior.ts` line is noted on #42.
+
+#### Visible result: Dave looks before the merge
+
+The equipment card gets an Overall row. This branch is parked without a PR until Dave has looked at it at phone width.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `ArmorSlot` gains `'overall'`, and `EQUIP_SLOTS` gains the Overall row.
+- [x] Cody: `changeEquipment` handles the swaps, with the WDEF arithmetic shared through `shiftWdef`. An overall clears top and bottom. A top or bottom clears the overall, and the other half becomes known-empty (`empty`, 0 WDEF).
+- [x] Cody: in the upgrade advice, `replacedWdef` compares an overall with the worn overall, or with top + bottom.
+- [x] Cody: the Blue Sauna Robe (1105, lv 30, WDEF 75) is in `wornItems.ts`.
+- [x] Cody: stale "no overall slot" text is updated in `magician.ts`, `armor.ts` and `wornItems.ts`.
 
 ### TEST
 
+- [x] Tycho: 16 tests for edge cases: the swap chain 60 → 80 → 37 → 80, old stored profiles, and an overall injected into the advice. `npm test` passes 749 tests, and `npm run lint` is clean.
+- [x] Victor's review found nothing that blocks. The duplicate WDEF logic was merged into `shiftWdef`, and the unknown-vs-empty rule is documented. His two points for later went to #76.
+- [x] Edith found no spelling errors. Her stale-text findings are fixed.
+- [ ] Dave looks at the equipment card at phone width.
+
 ### DEPLOY: app/50-overall-slot
 
-**Score:**
+Players can now enter an overall (such as the Sauna Robe) on the equipment card. Their WDEF stays correct when they switch between an overall and a separate top and bottom.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+**Score:** N/A
 
 #### Pull Request
 

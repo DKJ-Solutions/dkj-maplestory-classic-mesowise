@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { armorUpgradeAdvice, withArmor, type ArmorUpgradeAdvice } from './armorUpgrade'
+import { armorUpgradeAdvice, replacedWdef, withArmor, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
@@ -775,5 +775,115 @@ describe('armorUpgradeAdvice: een lege worn is het oude gedrag', () => {
     const worn = Object.freeze({ shoes: 12 })
     expect(() => armorUpgradeAdvice(drafts, strong({ level: 25 }), worn)).not.toThrow()
     expect(worn).toEqual({ shoes: 12 })
+  })
+})
+
+describe('replacedWdef: wat een stuk vervangt, met de overall (issue #50)', () => {
+  it('geeft voor top, bottom, hat en shoes het gedragen stuk in dat slot', () => {
+    expect(replacedWdef('top', { top: 32, bottom: 23 })).toBe(32)
+    expect(replacedWdef('bottom', { top: 32, bottom: 23 })).toBe(23)
+    expect(replacedWdef('hat', { top: 32 })).toBeUndefined()
+    expect(replacedWdef('shoes', { shoes: 0 })).toBe(0)
+  })
+
+  it('geeft voor een overall top en bottom samen, of de gedragen overall', () => {
+    expect(replacedWdef('overall', { top: 32, bottom: 23 })).toBe(55)
+    expect(replacedWdef('overall', { overall: 75 })).toBe(75)
+  })
+
+  it('telt een onbekende helft als leeg, en is onbekend als van beide helften niets bekend is', () => {
+    expect(replacedWdef('overall', { top: 32 })).toBe(32)
+    expect(replacedWdef('overall', { bottom: 23, hat: 15 })).toBe(23)
+    expect(replacedWdef('overall', {})).toBeUndefined()
+    expect(replacedWdef('overall', { hat: 15, shoes: 10 })).toBeUndefined()
+  })
+
+  it('laat een top of bottom een gedragen overall vervangen (de andere helft is dan leeg)', () => {
+    expect(replacedWdef('top', { overall: 75 })).toBe(75)
+    expect(replacedWdef('bottom', { overall: 75 })).toBe(75)
+  })
+})
+
+describe('armorUpgradeAdvice met een gedragen overall', () => {
+  // De Thief-winkel verkoopt geen overall, dus hier gaat het om een top of bottom die een overall vervangt.
+  it('rekent een top of bottom als vervanging van de overall: geen keuze zonder meer WDEF dan de overall, anders replaces = de WDEF van de overall', () => {
+    const p = strong({ level: 30 })
+    const strongOverall = adviceW(p, { overall: 75 })
+    expect(strongOverall.choices.some((c) => c.armor.slot === 'top' || c.armor.slot === 'bottom')).toBe(false)
+    const weak = adviceW(p, { overall: 20 })
+    expect(weak.choices.find((c) => c.armor.slot === 'top')!.replaces).toBe(20)
+    expect(weak.choices.find((c) => c.armor.slot === 'bottom')!.replaces).toBe(20)
+  })
+
+  it('rekent hat en shoes ongewijzigd als je een overall draagt', () => {
+    const p = strong({ level: 25 })
+    const withOverall = adviceW(p, { overall: 75, shoes: 12 })
+    const without = adviceW(p, { shoes: 12 })
+    const pick = (a: Advice, slot: string) => a.choices.find((c) => c.armor.slot === slot)
+    expect(pick(withOverall, 'shoes')).toEqual(pick(without, 'shoes'))
+    expect(pick(withOverall, 'hat')).toEqual(pick(without, 'hat'))
+  })
+})
+
+describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de winkel verkoopt er nog geen)', () => {
+  // NPC_ARMOR is de enige bron van kandidaten; een test zet er tijdelijk een overall in en haalt hem weer weg.
+  const fakeOverall = (over: Partial<Armor> = {}): Armor => ({ name: 'Test Overall', slot: 'overall', level: 20, wdef: 60, luk: 0, dex: 0, price: 5_000, source: armor('Red Pao').source, ...over })
+  const withInjected = <T>(a: Armor, fn: () => T): T => {
+    const list = NPC_ARMOR as Armor[]
+    list.push(a)
+    try {
+      return fn()
+    } finally {
+      list.splice(list.indexOf(a), 1)
+    }
+  }
+  const p = strong({ level: 25 })
+
+  it('rekent een overall tegen top plus bottom: replaces = som, en het netto komt overeen met de WDEF wdef - 55 + 60 met de hand', () => {
+    const o = fakeOverall()
+    withInjected(o, () => {
+      const c = choice(adviceW(p, { top: 32, bottom: 23 }), o.name)
+      expect(c.replaces).toBe(55)
+      const exp = expSum(p.level, handTo(p.level, o))
+      expect(c.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: handWdef(p, o, 55) }) - o.price, 6)
+    })
+  })
+
+  it('biedt een overall alleen aan met meer WDEF dan top plus bottom samen: gelijk of minder is geen upgrade', () => {
+    const worn = { top: 32, bottom: 23 }
+    withInjected(fakeOverall({ wdef: 55 }), () => expect(names(adviceW(p, worn))).not.toContain('Test Overall'))
+    withInjected(fakeOverall({ wdef: 54 }), () => expect(names(adviceW(p, worn))).not.toContain('Test Overall'))
+    withInjected(fakeOverall({ wdef: 56 }), () => expect(names(adviceW(p, worn))).toContain('Test Overall'))
+  })
+
+  it('telt bij een deels bekende top en bottom alleen de bekende helft, en bij niets bekends als onbekend (gerekend als leeg)', () => {
+    const o = fakeOverall()
+    withInjected(o, () => {
+      expect(choice(adviceW(p, { top: 32 }), o.name).replaces).toBe(32)
+      expect(choice(adviceW(p, { bottom: 23 }), o.name).replaces).toBe(23)
+      const unk = choice(adviceW(p, { hat: 10 }), o.name)
+      expect(unk.replaces).toBeUndefined()
+      const exp = expSum(p.level, handTo(p.level, o))
+      expect(unk.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + o.wdef }) - o.price, 6)
+    })
+  })
+
+  it('vergelijkt een overall met een gedragen overall, niet met top en bottom die er in WornWdef naast staan', () => {
+    const worn = { overall: 70, top: 5, bottom: 5 }
+    withInjected(fakeOverall({ wdef: 60 }), () => expect(names(adviceW(p, worn))).not.toContain('Test Overall'))
+    withInjected(fakeOverall({ wdef: 80 }), () => expect(choice(adviceW(p, worn), 'Test Overall').replaces).toBe(70))
+  })
+
+  it('geeft een niet-draagbare overall door in notWearable', () => {
+    withInjected(fakeOverall({ luk: 500, wdef: 90 }), () => {
+      const a = adviceW(p, {})
+      expect(a.notWearable.map((u) => u.armor.name)).toContain('Test Overall')
+      expect(names(a)).not.toContain('Test Overall')
+    })
+  })
+
+  it('haalt de geinjecteerde overall weer uit de winkel', () => {
+    withInjected(fakeOverall(), () => undefined)
+    expect(NPC_ARMOR.some((a) => a.slot === 'overall')).toBe(false)
   })
 })

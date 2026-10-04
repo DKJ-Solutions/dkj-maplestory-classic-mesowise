@@ -1,5 +1,5 @@
 // Loont een nieuw stuk armor nu? (Dave, 3 oktober 2026, issue #36) Per slot (hoed, bovenstuk, broek,
-// schoenen) het stuk uit de NPC-winkel dat je kunt dragen en het meeste netto oplevert: wat bespaart het in
+// overall, schoenen) het stuk uit de NPC-winkel dat je kunt dragen en het meeste netto oplevert: wat bespaart het in
 // mesos tot je volgende upgrade in dat slot, min zijn prijs. Elk draagbaar stuk wordt doorgerekend, want een
 // goedkoper stuk met minder WDEF kan zich terugverdienen terwijl het topstuk dat niet doet. Puur, zonder UI-import.
 // Weet de app wat je in een slot draagt (het scherm "Je equipment"), dan telt alleen een stuk met meer WDEF
@@ -8,6 +8,13 @@
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:
 // je stats van nu blijven gelden over de hele horizon, de verkoopwaarde van je oude stuk telt niet mee en
 // het huidige level telt vol mee.
+//
+// De overall (issue #50) beslaat top en bottom. Wat een stuk in slot X vervangt: een overall vervangt wat je draagt
+// op top en bottom samen (of een overall die je al draagt); een top of bottom vervangt een overall die je draagt
+// (de andere helft is dan leeg), anders het stuk in dat slot. Dezelfde standaard als altijd: een slot waarvan de app
+// de WDEF niet weet telt als leeg, dus van top en bottom telt alleen de bekende helft mee, en weet de app van geen
+// van beide iets, dan is het "onbekend" (gerekend alsof het niets geeft). De horizon blijft per slot: tot het
+// volgende stuk met meer WDEF in hetzelfde slot (voor een overall de volgende overall).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
@@ -63,6 +70,18 @@ export type ArmorUpgradeAdvice =
       robust: boolean
     }
 
+/**
+ * De WDEF die een nieuw stuk in `slot` vervangt, of undefined als de app dat niet weet (zie de kop voor de overall-regel).
+ * Een overall zonder bekende top of bottom is onbekend; met alleen een bekende helft telt die helft.
+ */
+export function replacedWdef(slot: ArmorSlot, worn: WornWdef): number | undefined {
+  if (slot === 'overall') {
+    const halves = [worn.top, worn.bottom].filter((w): w is number => w !== undefined)
+    return worn.overall ?? (halves.length === 0 ? undefined : halves.reduce((a, b) => a + b, 0))
+  }
+  return slot === 'top' || slot === 'bottom' ? (worn.overall ?? worn[slot]) : worn[slot]
+}
+
 /** Het profiel met dit stuk erbij: het stuk dat je in dat slot droeg (`replaced`, standaard niets) gaat eraf. */
 export const withArmor = (p: Profile, a: Armor, replaced = 0): Profile => ({ ...p, wdef: Math.max(0, p.wdef - replaced) + a.wdef })
 
@@ -82,7 +101,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
   const all = candidates
     .map((armor): ArmorChoice => {
       const h = horizon(profile, armor)
-      const replaces = worn[armor.slot]
+      const replaces = replacedWdef(armor.slot, worn)
       const epm = bestExpPerMeso(drafts, withArmor(profile, armor, replaces), a)
       const without = horizonCost(h.from, h.to, baseEpm)
       const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
@@ -102,14 +121,14 @@ export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profil
   const canWear = (a: Armor) => profile.luk >= a.luk && profile.dex >= a.dex
   const available = NPC_ARMOR.filter((a) => a.level <= profile.level)
   // Een stuk dat niet meer WDEF geeft dan wat je in dat slot draagt, is geen upgrade.
-  const betterThanWorn = (a: Armor) => a.wdef > (worn[a.slot] ?? -Infinity)
+  const betterThanWorn = (a: Armor) => a.wdef > (replacedWdef(a.slot, worn) ?? -Infinity)
   const wearable = available.filter((a) => canWear(a) && betterThanWorn(a))
   const notWearable: UnwearableArmor[] = []
   for (const slot of new Set(available.map((a) => a.slot))) {
     const inSlot = available.filter((a) => a.slot === slot)
     const mine = bestOf(inSlot.filter(canWear))
     const blocked = bestOf(inSlot.filter((a) => !canWear(a)))
-    if (blocked && blocked.wdef > Math.max(mine?.wdef ?? -Infinity, worn[slot] ?? -Infinity)) {
+    if (blocked && blocked.wdef > Math.max(mine?.wdef ?? -Infinity, replacedWdef(slot, worn) ?? -Infinity)) {
       notWearable.push({ armor: blocked, needLuk: Math.max(0, blocked.luk - profile.luk), needDex: Math.max(0, blocked.dex - profile.dex) })
     }
   }

@@ -9,14 +9,14 @@ import { knownSpotPatch } from './spots'
 import { ATTACK_MS } from './thief'
 import { WORN_ARMOR, WORN_CLAWS } from './wornItems'
 
-const SLOTS = ['hat', 'top', 'bottom', 'shoes'] as const
+const SLOTS = ['hat', 'top', 'bottom', 'overall', 'shoes'] as const
 const SPEEDS: Record<string, number> = { 'Fast (5)': ATTACK_MS.fast5, 'Fast (4)': ATTACK_MS.fast4, 'Faster (3)': ATTACK_MS.faster3 }
 const idOf = (url: string) => Number(url.split('/').pop())
 const ALL = [...WORN_ARMOR, ...WORN_CLAWS]
 
 describe('WORN_ARMOR en WORN_CLAWS', () => {
-  it('bevat 117 stukken armor en 6 claws', () => {
-    expect(WORN_ARMOR).toHaveLength(117)
+  it('bevat 118 stukken armor en 6 claws', () => {
+    expect(WORN_ARMOR).toHaveLength(118)
     expect(WORN_CLAWS).toHaveLength(6)
   })
 
@@ -63,7 +63,7 @@ describe('WORN_ARMOR', () => {
     expect(new Set(WORN_ARMOR.map((a) => a.slot))).toEqual(new Set(SLOTS))
   })
 
-  it('staat gesorteerd op slot (hat, top, bottom, shoes), dan op level', () => {
+  it('staat gesorteerd op slot (hat, top, bottom, overall, shoes), dan op level', () => {
     const rank = (s: string) => SLOTS.indexOf(s as (typeof SLOTS)[number])
     for (let i = 1; i < WORN_ARMOR.length; i++) {
       const p = WORN_ARMOR[i - 1]
@@ -82,6 +82,9 @@ describe('WORN_ARMOR', () => {
     expect(pick('Red Ghetto Beanie')).toBeUndefined()
     expect(pick('Undershirt')).toEqual(['top', 0, 6, 935])
     expect(pick('Blue Qi Pao Skirt')).toEqual(['bottom', 22, 24, 1217])
+    // De Red Sauna Robe (1111) is de vrouwenversie met dezelfde stats: één rij (#50).
+    expect(pick('Blue Sauna Robe')).toEqual(['overall', 30, 75, 1105])
+    expect(pick('Red Sauna Robe')).toBeUndefined()
     expect(pick('Bronze Aroa Boots')).toEqual(['shoes', 16, 13, 1331])
   })
 })
