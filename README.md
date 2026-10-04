@@ -12,5 +12,8 @@ npm test         # Vitest, de tests van de rekenmodule (src/calc/)
 npm run build    # typecheck en productie-build in dist/
 ```
 
+Een wijziging laten zien: `scripts/preview/start-preview.ps1` start de devserver op de achtergrond en
+print de link waarop hij echt draait (`-Lan` ook voor je telefoon, `-Stop` om te stoppen).
+
 De rekenkern staat in `src/calc/` en importeert niets van de UI. Op `main` bouwt GitHub Actions de app
 en zet hem op GitHub Pages.

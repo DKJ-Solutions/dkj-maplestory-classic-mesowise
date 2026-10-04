@@ -25,23 +25,33 @@ import {
 } from './warrior'
 
 const DATE = /^2026-10-04$/
+/** De wapens zonder jobregel (voor elke klas, #55, 2026-10-04) en de armor zonder jobregel. */
+const NO_JOB_LINE_WEAPONS = ['Long Sword', 'Double Axe', 'Steel Pipe', 'Leather Purse', 'Red Brick', 'Hard Briefcase', 'Plunger', 'Sky Blue Umbrella']
+const NO_JOB_LINE_ARMOR = ['White Bandana', 'Red Baseball Cap']
+/** Van de wapens zonder jobregel vragen alleen deze twee geen STR: de pagina noemt geen eis. */
+const NO_STR_REQ = ['Steel Pipe', 'Sky Blue Umbrella']
 const ITEM_URL = /^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/
 
 describe('NPC_WARRIOR_WEAPONS', () => {
-  it('bevat precies de 31 NPC-wapens, van laag naar hoog level, zoals de bron ze geeft', () => {
+  it('bevat precies de 39 NPC-wapens (31 met jobregel, 8 zonder: #55), van laag naar hoog level, zoals de bron ze geeft', () => {
     const rows = NPC_WARRIOR_WEAPONS.map((w) => [w.name, w.level, w.watk, w.str, w.dex, w.speed.label, w.price])
     expect(rows).toEqual([
+      ['Long Sword', 10, 27, 20, 0, 'Fast (4)', 3_000],
+      ['Double Axe', 10, 27, 20, 0, 'Fast (4)', 3_000],
+      ['Steel Pipe', 10, 29, 0, 0, 'Fast (5)', 3_000],
       ['Wooden Sword', 10, 30, 25, 0, 'Fast (5)', 5_000],
       ['Metal Axe', 10, 30, 25, 0, 'Fast (5)', 5_000],
       ['Wooden Mallet', 10, 32, 25, 0, 'Normal (6)', 5_000],
       ['Spear', 10, 32, 25, 0, 'Slow (7)', 5_000],
       ['Pole Arm', 10, 35, 15, 0, 'Slow (8)', 5_000],
+      ['Leather Purse', 12, 31, 15, 0, 'Fast (5)', 3_800],
       ['Sabre', 15, 32, 30, 10, 'Fast (4)', 5_000],
       ['Battle Axe', 15, 32, 30, 10, 'Fast (4)', 5_000],
       ['Mace', 15, 34, 20, 0, 'Fast (5)', 5_000],
       ['Fork on a Stick', 15, 37, 25, 0, 'Slow (7)', 7_000],
       ['Iron Ball', 15, 40, 35, 15, 'Slow (8)', 7_000],
       ['Heavy Mace', 15, 40, 35, 15, 'Slow (7)', 16_500],
+      ['Red Brick', 15, 31, 10, 0, 'Fast (4)', 5_000],
       ['Square Shovel', 17, 36, 11, 11, 'Fast (5)', 6_200],
       ['Iron Mace', 20, 39, 30, 0, 'Fast (5)', 10_500],
       ['Viking Sword', 20, 37, 40, 15, 'Fast (4)', 10_500],
@@ -50,12 +60,15 @@ describe('NPC_WARRIOR_WEAPONS', () => {
       ['Iron Axe', 20, 35, 45, 20, 'Fast (5)', 13_500],
       ['Square Hammer', 20, 42, 45, 20, 'Slow (7)', 13_500],
       ['Studded Polearm', 20, 42, 45, 20, 'Slow (7)', 13_500],
+      ['Hard Briefcase', 20, 39, 30, 0, 'Fast (5)', 10_500],
       ['Pointed Shovel', 22, 41, 16, 16, 'Fast (5)', 11_700],
       ['Mithril Axe', 25, 45, 50, 20, 'Fast (5)', 13_500],
       ['Eloon', 25, 42, 50, 20, 'Fast (4)', 13_500],
       ['Fusion Mace', 25, 41, 40, 0, 'Fast (4)', 13_500],
       ['Broadsword', 25, 45, 55, 25, 'Fast (5)', 16_500],
       ['Two-Handed Axe', 25, 45, 55, 25, 'Fast (5)', 16_500],
+      ['Plunger', 25, 44, 40, 0, 'Fast (5)', 13_500],
+      ['Sky Blue Umbrella', 27, 33, 0, 0, 'Fast (4)', 14_700],
       ['War Hammer', 30, 49, 60, 25, 'Fast (5)', 22_000],
       ['Gladius', 30, 47, 65, 30, 'Fast (4)', 22_000],
       ["Fireman's Axe", 30, 47, 60, 25, 'Fast (4)', 22_000],
@@ -63,7 +76,7 @@ describe('NPC_WARRIOR_WEAPONS', () => {
       ['Blue Axe', 30, 50, 65, 30, 'Fast (5)', 26_000],
       ['Mithril Pole Arm', 30, 55, 65, 30, 'Slow (8)', 26_000],
     ])
-    expect(NPC_WARRIOR_WEAPONS).toHaveLength(31)
+    expect(NPC_WARRIOR_WEAPONS).toHaveLength(39)
   })
 
   it('geeft elke rij een MeowDB-itempagina als bron, met opgehaald op 2026-10-04', () => {
@@ -89,13 +102,28 @@ describe('NPC_WARRIOR_WEAPONS', () => {
     }
   })
 
-  it('heeft positieve watk, STR en prijs en niet-negatieve DEX, als hele getallen', () => {
+  it('heeft positieve watk en prijs en niet-negatieve DEX, als hele getallen, en positieve STR behalve bij de stukken zonder STR-eis', () => {
     for (const w of NPC_WARRIOR_WEAPONS) {
       expect(Number.isInteger(w.watk) && w.watk > 0, `${w.name} watk`).toBe(true)
-      expect(Number.isInteger(w.str) && w.str > 0, `${w.name} str`).toBe(true)
+      if (!NO_STR_REQ.includes(w.name)) expect(Number.isInteger(w.str) && w.str > 0, `${w.name} str`).toBe(true)
       expect(Number.isInteger(w.price) && w.price > 0, `${w.name} price`).toBe(true)
       expect(Number.isInteger(w.dex) && w.dex >= 0, `${w.name} dex`).toBe(true)
     }
+  })
+
+  it('pint de acht wapens zonder jobregel (#55) met level, STR, DEX en soort zoals op MeowDB gelezen, en geen ander wapen heeft STR 0', () => {
+    const by = (n: string) => NPC_WARRIOR_WEAPONS.find((w) => w.name === n)!
+    const pin = (n: string) => { const w = by(n); return [w.source.url.split('/').pop(), w.kind, w.level, w.str, w.dex, w.watk, w.speed.label, w.price] }
+    expect(pin('Long Sword')).toEqual(['543', '1h-sword', 10, 20, 0, 27, 'Fast (4)', 3_000])
+    expect(pin('Double Axe')).toEqual(['577', '1h-axe', 10, 20, 0, 27, 'Fast (4)', 3_000])
+    expect(pin('Steel Pipe')).toEqual(['588', '1h-blunt', 10, 0, 0, 29, 'Fast (5)', 3_000])
+    expect(pin('Leather Purse')).toEqual(['589', '1h-blunt', 12, 15, 0, 31, 'Fast (5)', 3_800])
+    expect(pin('Red Brick')).toEqual(['591', '1h-blunt', 15, 10, 0, 31, 'Fast (4)', 5_000])
+    expect(pin('Hard Briefcase')).toEqual(['594', '1h-blunt', 20, 30, 0, 39, 'Fast (5)', 10_500])
+    expect(pin('Plunger')).toEqual(['597', '1h-blunt', 25, 40, 0, 44, 'Fast (5)', 13_500])
+    expect(pin('Sky Blue Umbrella')).toEqual(['550', '1h-sword', 27, 0, 0, 33, 'Fast (4)', 14_700])
+    expect(NPC_WARRIOR_WEAPONS.filter((w) => NO_JOB_LINE_WEAPONS.includes(w.name))).toHaveLength(8)
+    expect(NPC_WARRIOR_WEAPONS.filter((w) => w.str === 0).map((w) => w.name)).toEqual(NO_STR_REQ)
   })
 
   it('geeft elk wapen de multiplier van zijn soort en alleen spear en polearm een steekcyclus', () => {
@@ -129,14 +157,16 @@ describe('NPC_WARRIOR_WEAPONS', () => {
 describe('NPC_WARRIOR_ARMOR', () => {
   const SLOTS = ['hat', 'shoes'] as const
 
-  it('bevat precies de 13 stukken, per slot van laag naar hoog level, zoals de bron ze geeft', () => {
+  it('bevat precies de 15 stukken (13 met jobregel, 2 zonder: #55), per slot van laag naar hoog level, zoals de bron ze geeft', () => {
     const rows = NPC_WARRIOR_ARMOR.map((a) => [a.name, a.slot, a.level, a.str, a.dex, a.wdef, a.price])
     expect(rows).toEqual([
       ['Bronze Koif', 'hat', 10, 10, 0, 22, 1_200],
+      ['White Bandana', 'hat', 10, 0, 0, 15, 1_200],
       ['Bronze Helmet', 'hat', 12, 15, 0, 24, 1_400],
       ['Bronze Full Helm', 'hat', 15, 20, 0, 26, 1_800],
       ['Bronze Football Helmet', 'hat', 20, 30, 10, 30, 3_600],
       ['Bronze Viking Helm', 'hat', 20, 30, 10, 30, 3_600],
+      ['Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900],
       ['Steel Sharp Helm', 'hat', 22, 34, 12, 32, 3_900],
       ['Iron Burgernet Helm', 'hat', 25, 40, 15, 34, 4_500],
       ['Jousting Helmet', 'hat', 30, 50, 20, 38, 7_200],
@@ -174,6 +204,12 @@ describe('NPC_WARRIOR_ARMOR', () => {
     }
   })
 
+  it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel precies zoals op MeowDB gelezen: geen STR- of DEX-eis', () => {
+    expect(NPC_WARRIOR_ARMOR.find((a) => a.name === 'White Bandana')).toMatchObject({ slot: 'hat', level: 10, str: 0, dex: 0, wdef: 15, price: 1_200, source: { url: 'https://meowdb.com/msclassic/item-db/719', retrieved: '2026-10-04' } })
+    expect(NPC_WARRIOR_ARMOR.find((a) => a.name === 'Red Baseball Cap')).toMatchObject({ slot: 'hat', level: 22, str: 0, dex: 0, wdef: 22, price: 3_900, source: { url: 'https://meowdb.com/msclassic/item-db/781', retrieved: '2026-10-04' } })
+    expect(NPC_WARRIOR_ARMOR.filter((a) => a.str === 0 && a.dex === 0).map((a) => a.name)).toEqual(NO_JOB_LINE_ARMOR)
+  })
+
   it('heeft positieve WDEF en prijs en niet-negatieve STR en DEX, als hele getallen', () => {
     for (const a of NPC_WARRIOR_ARMOR) {
       expect(Number.isInteger(a.wdef) && a.wdef > 0, `${a.name} wdef`).toBe(true)
@@ -183,9 +219,12 @@ describe('NPC_WARRIOR_ARMOR', () => {
     }
   })
 
-  it('geeft binnen een slot een hoger level nooit minder WDEF', () => {
+  // De White Bandana en de Red Baseball Cap hebben geen jobregel en dus een lagere WDEF dan de klasse-stukken
+  // van hetzelfde of een lager level (Bandana lv 10 met 15 na Bronze Koif met 22; Cap lv 22 met 22 na Football
+  // Helmet lv 20 met 30): voor hen geldt de regel niet, voor de rest wel.
+  it('geeft binnen een slot een hoger level nooit minder WDEF, voor de stukken met een jobregel', () => {
     for (const slot of SLOTS) {
-      const rows = NPC_WARRIOR_ARMOR.filter((a) => a.slot === slot)
+      const rows = NPC_WARRIOR_ARMOR.filter((a) => a.slot === slot && !NO_JOB_LINE_ARMOR.includes(a.name))
       for (let i = 1; i < rows.length; i++) {
         expect(rows[i].wdef, `${rows[i - 1].name} -> ${rows[i].name}`).toBeGreaterThanOrEqual(rows[i - 1].wdef)
       }

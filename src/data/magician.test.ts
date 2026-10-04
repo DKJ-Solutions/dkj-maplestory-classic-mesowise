@@ -27,28 +27,34 @@ import {
 const DATE = /^2026-10-04$/
 const ITEM_URL = /^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/
 const item = (id: number) => `https://meowdb.com/msclassic/item-db/${id}`
+/** De stukken zonder jobregel op MeowDB: voor elke klas (Dave, #55, 2026-10-04). */
+const NO_JOB_LINE_WANDS = ['Wooden Wand', 'Hardwood Wand', 'Metal Wand']
+const NO_JOB_LINE_ARMOR = ['White Bandana', 'Red Baseball Cap']
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1)
 
 describe('NPC_MAGICIAN_WEAPONS', () => {
-  it('bevat precies de 7 wands en staffs met een Mage-jobregel, zoals het onderzoek ze geeft', () => {
+  it('bevat precies de 10 wands en staffs: 7 met een Mage-jobregel en 3 wands zonder jobregel (#55), zoals het onderzoek ze geeft', () => {
     const rows = NPC_MAGICIAN_WEAPONS.map((w) => [
       w.name, w.kind, w.level, w.int, w.luk, w.watk, w.matk, w.speed.label, w.speed.attackMs, w.price,
     ])
     expect(rows).toEqual([
+      ['Wooden Wand', 'wand', 10, 20, 0, 18, 27, 'Normal (6)', 810, 3_000],
       ['Wooden Staff', 'staff', 10, 20, 0, 20, 24, 'Slow (7)', 810, 3_000],
+      ['Hardwood Wand', 'wand', 15, 30, 0, 23, 34, 'Normal (6)', 810, 5_000],
       ['Sapphire Staff', 'staff', 15, 30, 10, 25, 31, 'Slow (7)', 810, 5_000],
       ['Emerald Staff', 'staff', 15, 30, 10, 25, 31, 'Slow (7)', 810, 5_000],
+      ['Metal Wand', 'wand', 20, 40, 10, 21, 41, 'Normal (6)', 810, 10_500],
       ['Old Wooden Staff', 'staff', 20, 40, 15, 30, 38, 'Slow (7)', 810, 10_500],
       ['Ice Wand', 'wand', 25, 50, 15, 24, 48, 'Normal (6)', 810, 13_500],
       ['Wizard Staff', 'staff', 25, 50, 20, 35, 45, 'Slow (7)', 810, 13_500],
       ['Mithril Wand', 'wand', 30, 60, 20, 27, 55, 'Normal (6)', 810, 22_000],
     ])
-    expect(NPC_MAGICIAN_WEAPONS).toHaveLength(7)
+    expect(NPC_MAGICIAN_WEAPONS).toHaveLength(10)
   })
 
   it('verwijst per wapen naar de itempagina met het id uit het onderzoek, opgehaald op 2026-10-04', () => {
     const ids: Record<string, number> = {
-      'Wooden Staff': 657, 'Sapphire Staff': 658, 'Emerald Staff': 659, 'Old Wooden Staff': 660,
+      'Wooden Wand': 648, 'Hardwood Wand': 650, 'Metal Wand': 651, 'Wooden Staff': 657, 'Sapphire Staff': 658, 'Emerald Staff': 659, 'Old Wooden Staff': 660,
       'Ice Wand': 652, 'Wizard Staff': 661, 'Mithril Wand': 653,
     }
     for (const w of NPC_MAGICIAN_WEAPONS) {
@@ -56,15 +62,16 @@ describe('NPC_MAGICIAN_WEAPONS', () => {
       expect(w.source.url, w.name).toMatch(ITEM_URL)
       expect(w.source.retrieved, w.name).toMatch(DATE)
     }
-    expect(new Set(NPC_MAGICIAN_WEAPONS.map((w) => w.source.url)).size).toBe(7)
-    expect(new Set(NPC_MAGICIAN_WEAPONS.map((w) => w.name)).size).toBe(7)
+    expect(new Set(NPC_MAGICIAN_WEAPONS.map((w) => w.source.url)).size).toBe(10)
+    expect(new Set(NPC_MAGICIAN_WEAPONS.map((w) => w.name)).size).toBe(10)
   })
 
-  it('laat Wooden Wand (648), Hardwood Wand (650) en Metal Wand (651) weg: geen jobregel op de pagina', () => {
-    const urls = NPC_MAGICIAN_WEAPONS.map((w) => w.source.url)
-    for (const id of [648, 650, 651]) expect(urls).not.toContain(item(id))
-    const names = NPC_MAGICIAN_WEAPONS.map((w) => w.name)
-    for (const n of ['Wooden Wand', 'Hardwood Wand', 'Metal Wand']) expect(names).not.toContain(n)
+  it('heeft Wooden Wand (648), Hardwood Wand (650) en Metal Wand (651) erin: geen jobregel op de pagina, dus voor elke klas (#55)', () => {
+    const by = (n: string) => NPC_MAGICIAN_WEAPONS.find((w) => w.name === n)!
+    expect(by('Wooden Wand')).toEqual({ name: 'Wooden Wand', kind: 'wand', level: 10, int: 20, luk: 0, watk: 18, matk: 27, speed: SPEED.normal6, price: 3_000, source: { url: item(648), retrieved: '2026-10-04' } })
+    expect(by('Hardwood Wand')).toEqual({ name: 'Hardwood Wand', kind: 'wand', level: 15, int: 30, luk: 0, watk: 23, matk: 34, speed: SPEED.normal6, price: 5_000, source: { url: item(650), retrieved: '2026-10-04' } })
+    expect(by('Metal Wand')).toEqual({ name: 'Metal Wand', kind: 'wand', level: 20, int: 40, luk: 10, watk: 21, matk: 41, speed: SPEED.normal6, price: 10_500, source: { url: item(651), retrieved: '2026-10-04' } })
+    expect(NPC_MAGICIAN_WEAPONS.filter((w) => NO_JOB_LINE_WANDS.includes(w.name))).toHaveLength(3)
   })
 
   it("laat Beginner's Wooden Wand (649) weg: niet te koop", () => {
@@ -110,17 +117,19 @@ describe('NPC_MAGICIAN_WEAPONS', () => {
 
   it('komt met de M.ATT van de wands overeen met de voorbeelden uit de gids: 48 op level 25 en 55 op level 30', () => {
     const wands = NPC_MAGICIAN_WEAPONS.filter((w) => w.kind === 'wand')
-    expect(wands.map((w) => [w.level, w.matk])).toEqual([[25, 48], [30, 55]])
+    expect(wands.map((w) => [w.level, w.matk])).toEqual([[10, 27], [15, 34], [20, 41], [25, 48], [30, 55]])
   })
 })
 
 describe('NPC_MAGICIAN_ARMOR', () => {
-  it('bevat precies de 12 stukken, per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
+  it('bevat precies de 14 stukken (12 met jobregel, 2 zonder: #55), per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
     const rows = NPC_MAGICIAN_ARMOR.map((a) => [a.name, a.slot, a.level, a.int, a.luk, a.wdef, a.mdef, a.price])
     expect(rows).toEqual([
       ['Apprentice Hat', 'hat', 10, 10, 0, 8, 10, 1_200],
+      ['White Bandana', 'hat', 10, 0, 0, 15, 0, 1_200],
       ['Moon Conehat', 'hat', 15, 20, 0, 10, 12, 1_800],
       ['Wizardry Hat', 'hat', 20, 30, 10, 12, 14, 3_600],
+      ['Red Baseball Cap', 'hat', 22, 0, 0, 22, 0, 3_900],
       ['Jester', 'hat', 30, 50, 20, 16, 18, 7_200],
       ['Training Shirt / Armine', 'top', 10, 10, 0, 13, 18, 2_000],
       ['Split Piece / Split', 'top', 20, 30, 10, 19, 24, 6_000],
@@ -131,12 +140,12 @@ describe('NPC_MAGICIAN_ARMOR', () => {
       ['Jewelry Boots', 'shoes', 20, 30, 10, 7, 8, 3_600],
       ['Wind Shoes', 'shoes', 25, 40, 15, 8, 9, 4_500],
     ])
-    expect(NPC_MAGICIAN_ARMOR).toHaveLength(12)
+    expect(NPC_MAGICIAN_ARMOR).toHaveLength(14)
   })
 
   it('verwijst naar de pagina van het eerste id (bij de paren de mannenpagina), opgehaald op 2026-10-04', () => {
     const ids: Record<string, number> = {
-      'Apprentice Hat': 727, 'Moon Conehat': 746, 'Wizardry Hat': 768, Jester: 813,
+      'Apprentice Hat': 727, 'White Bandana': 719, 'Red Baseball Cap': 781, 'Moon Conehat': 746, 'Wizardry Hat': 768, Jester: 813,
       'Training Shirt / Armine': 944, 'Split Piece / Split': 981,
       'Training Pants / Armine Skirt': 1166, 'Split Pants / Split Skirt': 1199,
       'Basic Boots': 1310, Nitty: 1322, 'Jewelry Boots': 1337, 'Wind Shoes': 1354,
@@ -145,8 +154,8 @@ describe('NPC_MAGICIAN_ARMOR', () => {
       expect(a.source.url, a.name).toBe(item(ids[a.name]))
       expect(a.source.retrieved, a.name).toMatch(DATE)
     }
-    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.source.url)).size).toBe(12)
-    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.name)).size).toBe(12)
+    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.source.url)).size).toBe(14)
+    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.name)).size).toBe(14)
   })
 
   it('vouwt de vier man/vrouw-paren samen tot een regel met de mannenpagina als bron', () => {
@@ -195,15 +204,24 @@ describe('NPC_MAGICIAN_ARMOR', () => {
     }
   })
 
-  it('heeft positieve WDEF, MDEF, INT en prijs en niet-negatieve LUK, en elke MDEF is minstens de WDEF', () => {
+  it('heeft positieve WDEF en prijs en niet-negatieve LUK, als hele getallen, en bij de stukken met een jobregel positieve MDEF en INT en een MDEF van minstens de WDEF', () => {
     for (const a of NPC_MAGICIAN_ARMOR) {
       expect(Number.isInteger(a.wdef) && a.wdef > 0, `${a.name} wdef`).toBe(true)
-      expect(Number.isInteger(a.mdef) && a.mdef > 0, `${a.name} mdef`).toBe(true)
-      expect(Number.isInteger(a.int) && a.int > 0, `${a.name} int`).toBe(true)
       expect(Number.isInteger(a.price) && a.price > 0, `${a.name} price`).toBe(true)
       expect(Number.isInteger(a.luk) && a.luk >= 0, `${a.name} luk`).toBe(true)
+      if (NO_JOB_LINE_ARMOR.includes(a.name)) continue // zie de volgende test
+      expect(Number.isInteger(a.mdef) && a.mdef > 0, `${a.name} mdef`).toBe(true)
+      expect(Number.isInteger(a.int) && a.int > 0, `${a.name} int`).toBe(true)
       expect(a.mdef, a.name).toBeGreaterThanOrEqual(a.wdef)
     }
+  })
+
+  it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel met INT 0, LUK 0 en MDEF 0: de pagina noemt geen eis en toont geen MDEF', () => {
+    const by = (n: string) => NPC_MAGICIAN_ARMOR.find((a) => a.name === n)!
+    expect(by('White Bandana')).toEqual({ name: 'White Bandana', slot: 'hat', level: 10, int: 0, luk: 0, wdef: 15, mdef: 0, price: 1_200, source: { url: item(719), retrieved: '2026-10-04' } })
+    expect(by('Red Baseball Cap')).toEqual({ name: 'Red Baseball Cap', slot: 'hat', level: 22, int: 0, luk: 0, wdef: 22, mdef: 0, price: 3_900, source: { url: item(781), retrieved: '2026-10-04' } })
+    expect(NPC_MAGICIAN_ARMOR.filter((a) => a.int === 0).map((a) => a.name)).toEqual(NO_JOB_LINE_ARMOR)
+    expect(NPC_MAGICIAN_ARMOR.filter((a) => a.mdef === 0).map((a) => a.name)).toEqual(NO_JOB_LINE_ARMOR)
   })
 
   it('pint de Apprentice Hat op WDEF 8 (de pagina wint van het zoekresultaat met 5)', () => {

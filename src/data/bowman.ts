@@ -16,9 +16,11 @@
 // - Beginner's War Bow (664): niet verhandelbaar en niet te koop.
 // - 669, 670, 671 en 677 tot en met 679: boven level 30.
 //
+// Zonder jobregel, en dus voor elke klas (Dave, #55, 2026-10-04): de White Bandana (719, Don Hwang in Kerning City
+// en Natasha in Lith Harbor) en de Red Baseball Cap (781, Sam), zie armor.ts. Ze vragen geen DEX of STR.
+//
 // Niet opgenomen als armor, en waarom:
-// - Items zonder jobregel op de pagina: Brown Skullcap (708) en de Baseball caps (781 tot en met 785). Open
-//   besluit #55 is van Dave.
+// - Brown Skullcap (708): geen jobregel, maar level 5, onder de grens van 10.
 // - Items met fame-eis: Whitebottom Boots (1364 tot en met 1367, fame 20) en Old Wisconsin (761, fame 10).
 // - Level 15 bottom: alleen de Able Armor Skirt (1190 tot en met 1192), alleen voor vrouwen, zonder uniseks- of
 //   mannenversie met dezelfde stats. Een mannelijke Bowman heeft dus geen level-15 bottom in de winkel; de lijst
@@ -131,8 +133,10 @@ const armor = (
 /** De NPC-armor voor een Bowman, per slot (hat, top, bottom, shoes) van laag naar hoog level. Zie de kop voor wat ontbreekt. */
 export const NPC_BOWMAN_ARMOR: readonly BowmanArmor[] = [
   armor(730, 'Winter Hat', 'hat', 10, 0, 10, 15, 1_200),
+  armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 1_200),
   armor(751, 'Feather Hat', 'hat', 15, 0, 20, 18, 1_800),
   armor(771, 'Robin Hat', 'hat', 20, 10, 30, 21, 3_600),
+  armor(781, 'Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900),
   armor(798, 'Hunter', 'hat', 25, 15, 40, 24, 4_500),
   armor(818, 'Hawkeye', 'hat', 30, 20, 50, 27, 7_200),
   armor(946, 'Archer Top / Avelin', 'top', 10, 0, 10, 24, 2_000),
