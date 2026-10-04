@@ -118,7 +118,10 @@ export const MAGICIAN_MP_POTION = cheapest('mp', [...MAGICIAN_MP_POTIONS, ...POT
 export const mpPotionFor = (job: Job): Potion => (job === 'magician' ? MAGICIAN_MP_POTION : MP_POTION)
 
 /** Het herstel van items op dit skill-level als factor: 1 op level 0, 1,05 op level 1; boven het maximum telt het maximum. */
-const itemRecoveryFactor = (pct: readonly number[], level: number): number => 1 + (level < 1 ? 0 : (pct[Math.min(level, pct.length) - 1] ?? 0)) / 100
+function itemRecoveryFactor(pct: readonly number[], level: number): number {
+  if (level < 1) return 1
+  return 1 + (pct[Math.min(level, pct.length) - 1] ?? 0) / 100
+}
 
 /**
  * Hoeveel meer HP en MP een potion herstelt dan er op staat (issue #141): Improved HP Recovery van een Warrior en Improved MP
