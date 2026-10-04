@@ -59,7 +59,7 @@ needed a saving above 0. A point has to be spent anyway, so the advice must alwa
 ### TEST
 
 - [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; later rounds for every change above; 1405 tests green, typecheck clean
-- [ ] Dave looks at the skill question at phone width
+- [x] Dave looked at the result in the preview and approved it ("ship it")
 
 ### DEPLOY: app/skillpoint-always-placed
 
