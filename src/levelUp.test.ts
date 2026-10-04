@@ -269,10 +269,10 @@ describe('huntingGroundAdvice', () => {
 })
 
 describe('CHECK_FIELDS', () => {
-  it('bevat elke stat precies één keer, en geen skills of stars (die hebben hun eigen kaart)', () => {
+  it('bevat elke stat precies één keer, en geen skills, stars of velden die alleen ter info zijn (#82)', () => {
     const keys = CHECK_FIELDS.map((f) => f.key)
     const ammo = AMMO_FIELDS.map((f) => f.key)
-    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k) && !ammo.includes(k))
+    const stats = PROFILE_FIELDS.filter((f) => !f.informative).map((f) => f.key).filter((k) => !isSkillKey(k) && !ammo.includes(k))
     expect([...keys].sort()).toEqual([...stats].sort())
     expect(new Set(keys).size).toBe(keys.length)
   })
@@ -338,7 +338,7 @@ describe('checkFieldsFor', () => {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
-      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f)).length)
+      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f) && !f.informative).length)
     }
   })
 })
@@ -402,7 +402,8 @@ describe('een Warrior: checkFieldsFor', () => {
 
   it('heeft alle stats van een Warrior precies één keer, met de weapon multiplier, en geen skills', () => {
     expect(new Set(keys).size).toBe(keys.length)
-    expect([...keys].sort()).toEqual(statFieldsFor('warrior').map((f) => f.key).sort())
+    expect([...keys].sort()).toEqual(statFieldsFor('warrior').filter((f) => !f.informative).map((f) => f.key).sort())
+    for (const k of ['attack', 'magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(keys).not.toContain(k)
     expect(keys).toContain('weaponMult')
     expect(keys).toContain('luk')
     expect(keys.filter(isSkillKey)).toEqual([])

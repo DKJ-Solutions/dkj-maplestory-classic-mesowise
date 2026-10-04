@@ -185,9 +185,11 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
 
 /**
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
- * weapon attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
+ * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'wdef'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
+/** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
+const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
 const EQUIPMENT_STATS: ReadonlySet<string> = new Set<keyof ProfileDraft>(['clawWatk', 'wdef'])
 
@@ -203,7 +205,7 @@ function stepValue(text: string, by: number, min: number, max: number, fallback:
  * dat pas na Opslaan (of Enter) meetelt, net als bij equipment. Heeft de stat een verwachting (een formule) en wijkt
  * het getal daarvan af, dan staat de verwachting doorgestreept ernaast en zet Reset hem terug.
  */
-function StatLine(props: { field: ProfileField; value: string; expected?: number; onSave: (text: string) => void }) {
+function StatLine(props: { field: ProfileField; value: string; expected?: number; readOnly?: boolean; onSave: (text: string) => void }) {
   const { field: f, value, expected } = props
   const uid = useId()
   const [draft, setDraft] = useState<string | null>(null)
@@ -222,9 +224,13 @@ function StatLine(props: { field: ProfileField; value: string; expected?: number
           <strong>{shown}</strong>
         </span>
       </div>
-      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-      </button>
+      {props.readOnly ? (
+        <span />
+      ) : (
+        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      )}
       {draft !== null && (
         <StatDialog title={f.label} onCancel={() => setDraft(null)}>
           <StatEditor
@@ -340,8 +346,9 @@ function StatsCard(props: {
       <Collapse open={open}>
         <div class="spot-body">
           {props.fields.map((f) => (
-            <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
+            <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">Weapon Def komt uit je equipment; pas hem daar aan. Attack, Magic, Magic Def, Crit., Speed en Jump gebruikt de app niet; ze staan er voor het overzicht.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>

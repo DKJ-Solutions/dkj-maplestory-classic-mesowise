@@ -99,6 +99,22 @@ describe('loadProfile en saveProfile', () => {
     expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, str: '50', luk: '60', int: '4' })
   })
 
+  it('geeft een bewaard profiel van vóór de info-velden (#82) hun neutrale standaardwaarden', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', attack: '0', magic: '0', magicDef: '0', critRate: '0', critDamage: '0', speed: '100', jump: '100' })
+  })
+
+  it('laat een leeg of fout info-veld de berekening niet blokkeren (#82)', () => {
+    const base = parseProfile(DEFAULT_PROFILE)
+    const r = parseProfile({ ...DEFAULT_PROFILE, attack: '', speed: 'x', critRate: '500', jump: '300' })
+    expect('profile' in r).toBe(true)
+    if ('profile' in r && 'profile' in base) {
+      expect(r.profile).toEqual(base.profile)
+      expect(toCharacter(r.profile)).toEqual(toCharacter(base.profile))
+    }
+    expect('error' in parseProfile({ ...DEFAULT_PROFILE, accuracy: '' })).toBe(true)
+  })
+
   it('houdt een goed veld en geeft een fout veld de standaardwaarde', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60', dex: 7, geheim: 'x', level: '9'.repeat(50) } })
     const p = loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))

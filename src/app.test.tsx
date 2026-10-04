@@ -365,7 +365,7 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
     expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-    expect(cardNames('section.total-stats')).toEqual(['Accuracy', 'Evasion', 'Tijd per aanval (ms)'])
+    expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
@@ -781,7 +781,7 @@ describe('een Warrior in de app', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
       expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-      expect(cardNames('section.total-stats')).toEqual(['Accuracy', 'Evasion', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
+      expect(cardNames('section.total-stats')).toEqual(['Attack', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {

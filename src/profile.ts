@@ -18,6 +18,8 @@ export interface ProfileField {
   min: number
   max: number
   integer: boolean
+  /** Alleen ter info (het statvenster uit het spel): de berekening gebruikt het veld niet, dus een leeg of fout veld blokkeert haar niet. */
+  informative?: boolean
 }
 
 /** De stats van het profiel, met hun label en grenzen. */
@@ -29,9 +31,17 @@ const STATS = [
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
+  // Total stats, in de volgorde van het statvenster. Alleen ter info: attack, magic, magic def, crit, speed en jump.
+  { key: 'attack', label: 'Attack', min: 0, max: 9_999, integer: true, informative: true },
+  { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
+  { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
+  { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
   { key: 'avoid', label: 'Evasion', min: 0, max: 999, integer: true },
-  { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
+  { key: 'critRate', label: 'Crit. Rate (%)', min: 0, max: 100, integer: false, informative: true },
+  { key: 'critDamage', label: 'Crit. Damage (%)', min: 0, max: 999, integer: false, informative: true },
+  { key: 'speed', label: 'Speed (%)', min: 0, max: 200, integer: false, informative: true },
+  { key: 'jump', label: 'Jump (%)', min: 0, max: 200, integer: false, informative: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
@@ -120,6 +130,14 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   accuracy: '33',
   avoid: '23',
   wdef: '72',
+  // Alleen ter info, neutrale beginwaarden (geen spelgegevens): de berekening gebruikt ze niet.
+  attack: '0',
+  magic: '0',
+  magicDef: '0',
+  critRate: '0',
+  critDamage: '0',
+  speed: '100',
+  jump: '100',
   attackMs: String(ATTACK_MS.fast5),
   starWatk: String(SUBI.watk),
   starRecharge: String(SUBI.rechargePerStar),
@@ -158,10 +176,16 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
     const text = d[f.key].trim()
     const n = text === '' ? NaN : Number(text)
     const where = isSkillKey(f.key) ? 'Skillpoints' : 'je karakter'
-    if (!Number.isFinite(n)) return { error: `Vul bij ${where} "${f.label}" in.`, key: f.key }
-    if (n < f.min || n > f.max) return { error: `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`, key: f.key }
-    if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.`, key: f.key }
-    out[f.key] = n
+    const error = !Number.isFinite(n)
+      ? `Vul bij ${where} "${f.label}" in.`
+      : n < f.min || n > f.max
+        ? `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`
+        : f.integer && !Number.isInteger(n)
+          ? `"${f.label}" moet een heel getal zijn.`
+          : null
+    if (error === null) out[f.key] = n
+    else if (f.informative) out[f.key] = Number(DEFAULT_PROFILE[f.key]) // staat niet in de berekening: leeg of fout blokkeert niets
+    else return { error, key: f.key }
   }
   return { profile: out }
 }
