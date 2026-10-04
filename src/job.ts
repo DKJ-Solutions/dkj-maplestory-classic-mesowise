@@ -30,19 +30,35 @@ export const isComputed = (job: Job): boolean => job === 'thief'
 /** De ene zin die bij elk advies staat in plaats van een getal. */
 export const notComputedText = (job: Job): string => `Nog niet doorgerekend voor ${jobLabel(job)}.`
 
-/** De bewaarde job; alles wat niet klopt, wordt de Thief. */
-export function loadJob(storage: Storage | null | undefined): Job {
+/**
+ * De jobs waaruit je nog kunt kiezen (Dave, 4 oktober 2026): een job ligt vast zodra je hem kiest. Wie nog
+ * niets koos, kiest uit alle vijf; een Beginner kiest bij de job advancement uit de vier andere;
+ * elke andere job heeft geen keuze meer.
+ */
+export function jobChoices(job: Job, chosen: boolean): readonly Job[] {
+  if (!chosen) return JOBS.map((j) => j.job)
+  return job === 'beginner' ? JOBS.flatMap((j) => (j.job === 'beginner' ? [] : [j.job])) : []
+}
+
+/** De bewaarde job, of null als er geen geldige is. */
+function storedJob(storage: Storage | null | undefined): Job | null {
   try {
     const raw = storage?.getItem(JOB_KEY)
-    if (!raw) return DEFAULT_JOB
+    if (!raw) return null
     const data: unknown = JSON.parse(raw)
-    if (typeof data !== 'object' || data === null || (data as { version?: unknown }).version !== VERSION) return DEFAULT_JOB
+    if (typeof data !== 'object' || data === null || (data as { version?: unknown }).version !== VERSION) return null
     const job = (data as { job?: unknown }).job
-    return isJob(job) ? job : DEFAULT_JOB
+    return isJob(job) ? job : null
   } catch {
-    return DEFAULT_JOB
+    return null
   }
 }
+
+/** Of er een geldige job bewaard is, dus of de speler al gekozen heeft. */
+export const isJobStored = (storage: Storage | null | undefined): boolean => storedJob(storage) !== null
+
+/** De bewaarde job; alles wat niet klopt, wordt de Thief. */
+export const loadJob = (storage: Storage | null | undefined): Job => storedJob(storage) ?? DEFAULT_JOB
 
 /** Bewaar de job; true als het gelukt is. Mislukken breekt de app niet. */
 export function saveJob(storage: Storage | null | undefined, job: Job): boolean {

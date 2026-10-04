@@ -18,7 +18,7 @@ import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type Unwear
 import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
-import { isComputed, JOBS, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
+import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { isDefaultProfile, loadProfile, parseProfile, profileFieldsFor, saveProfile, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
@@ -82,26 +82,30 @@ function NotComputed(props: { job: Job }) {
   return <p class="hint">{notComputedText(props.job)}</p>
 }
 
-/** De job kiezen: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. */
-/** Eén vraag, altijd zichtbaar (Dave, 4 oktober 2026): de vijf jobs als knoppen naast elkaar. */
-function JobCard(props: { job: Job; onChange: (job: Job) => void }) {
-  const { job } = props
+/**
+ * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
+ * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
+ * job (Dave, 4 oktober 2026). Een Beginner ziet de vier jobs van de job advancement.
+ */
+function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
+  const { job, chosen } = props
+  const choices = jobChoices(job, chosen)
   return (
     <section class="card job">
-      <h2 id="job-title">Je job</h2>
-      <div class="job-choices" role="group" aria-labelledby="job-title">
-        {JOBS.map((j) => (
-          <button
-            key={j.job}
-            type="button"
-            class="btn job-choice"
-            aria-pressed={j.job === job}
-            onClick={() => j.job !== job && props.onChange(j.job)}
-          >
-            {j.label}
-          </button>
-        ))}
-      </div>
+      <h2 id="job-title">{chosen ? `Je job: ${jobLabel(job)}` : 'Welke job speel je?'}</h2>
+      {choices.length > 0 && (
+        <>
+          {chosen && <p class="hint">Job advancement: kies je nieuwe job.</p>}
+          <div class="job-choices" role="group" aria-labelledby="job-title">
+            {choices.map((j) => (
+              <button key={j} type="button" class="btn job-choice" onClick={() => props.onChange(j)}>
+                {jobLabel(j)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {!chosen && <p class="hint">Je kiest één keer: daarna ligt je job vast.</p>}
       <p class="hint">
         {isComputed(job)
           ? 'De app rekent nu alleen de Thief door. De winkelitems in je equipment passen bij je job.'
@@ -977,6 +981,7 @@ export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => loadProfile(storage))
   const [job, setJob] = useState<Job>(() => loadJob(storage))
+  const [jobChosen, setJobChosen] = useState(() => isJobStored(storage))
   const computed = isComputed(job)
   const jobDirty = useRef(false)
   const parsed = useMemo(() => parseProfile(profileDraft, job), [profileDraft, job])
@@ -1012,7 +1017,7 @@ export function App() {
   }, [equipment])
   useEffect(() => {
     if (jobDirty.current) saveJob(storage, job)
-  }, [job])
+  }, [job, jobChosen])
 
   const verdict = useMemo(() => bestVerdict(drafts, profile), [drafts, profile])
   const cost = useMemo(() => levelCost(profile, verdict), [profile, verdict])
@@ -1144,8 +1149,9 @@ export function App() {
   const commitAllEquipment = () => EQUIP_SLOTS.forEach(({ slot }) => commitEquipment(slot))
   // Een andere job: winkelitems die hij niet heeft, worden "weet ik niet". Het profiel blijft staan.
   const changeJob = (next: Job) => {
-    if (next === job) return
     jobDirty.current = true
+    setJobChosen(true)
+    if (next === job) return
     commitAllEquipment()
     clearPending()
     writeEquipment(equipmentForJob(equipmentRef.current, next))
@@ -1195,7 +1201,7 @@ export function App() {
               </p>
             )}
 
-            <JobCard job={job} onChange={changeJob} />
+            <JobCard job={job} chosen={jobChosen} onChange={changeJob} />
 
             <EquipmentCard
               job={job}

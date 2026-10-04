@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_JOB, isComputed, JOB_KEY, JOBS, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
+import { DEFAULT_JOB, isComputed, isJobStored, JOB_KEY, jobChoices, JOBS, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -102,5 +102,41 @@ describe('loadJob en saveJob', () => {
     expect(JOB_KEY).toBe('mesowise.job.v1')
     expect(JSON.parse(storage.data.get(JOB_KEY)!)).toEqual({ version: 1, job: 'magician' })
     expect(storage.data.get('mesowise.profile.v1')).toBe('x')
+  })
+})
+
+describe('jobChoices', () => {
+  it('wie nog niet koos, kiest uit alle vijf jobs', () => {
+    for (const job of ALL) expect(jobChoices(job, false)).toEqual(ALL)
+  })
+
+  it('een gekozen Beginner kiest bij de job advancement uit de vier andere', () => {
+    expect(jobChoices('beginner', true)).toEqual(['warrior', 'magician', 'bowman', 'thief'])
+  })
+
+  it('elke andere gekozen job ligt vast', () => {
+    for (const job of ALL.filter((j) => j !== 'beginner')) expect(jobChoices(job, true)).toEqual([])
+  })
+})
+
+describe('isJobStored', () => {
+  it('is waar voor elke geldig bewaarde job', () => {
+    for (const job of ALL) expect(isJobStored(stored(job))).toBe(true)
+  })
+
+  it('is onwaar zonder opslag, zonder sleutel, bij kapotte JSON, een verkeerde versie of een onbekende job', () => {
+    expect(isJobStored(null)).toBe(false)
+    expect(isJobStored(fakeStorage())).toBe(false)
+    expect(isJobStored(fakeStorage({ [JOB_KEY]: '{kapot' }))).toBe(false)
+    expect(isJobStored(fakeStorage({ [JOB_KEY]: 'null' }))).toBe(false)
+    expect(isJobStored(stored('thief', 2))).toBe(false)
+    expect(isJobStored(stored('pirate'))).toBe(false)
+    expect(isJobStored(throwing())).toBe(false)
+  })
+
+  it('wordt waar na saveJob', () => {
+    const s = fakeStorage()
+    saveJob(s, 'thief')
+    expect(isJobStored(s)).toBe(true)
   })
 })

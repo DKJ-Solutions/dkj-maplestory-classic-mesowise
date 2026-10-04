@@ -55,6 +55,9 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
   tekstpunten zijn verwerkt.
 - [x] Gwen: de job-kaart is niet inklapbaar en heeft geen keuzelijst. Het is één vraag, dus hij staat
   altijd open, met de vijf jobs als knoppen (Dave, 4 oktober 2026).
+- [x] Cody: de job ligt vast zodra je kiest (Dave, 4 oktober 2026). Daarna toont de kaart alleen je job.
+  Uitzondering uit het spel: een Beginner ziet de vier jobs van de job advancement. `jobChoices` en
+  `isJobStored` in `src/job.ts`, met tests van Tycho.
 
 #### Ontwerpkeuzes
 
