@@ -66,6 +66,9 @@ after the code and tests were written, and this was picked up from the working c
 - [x] `main` merged in again for #82 (Ability points / Total stats): the Bowman hint moves to the Total stats card,
   the level-up hints say evasion, and `totalAttack` counts the plain arrow for a Bowman rather than leftover stars
   (new test in `src/profile.test.ts`); 968 tests green
+- [x] `main` merged in a third time for #83 (MP per skill): Arrow Blow, Double Shot and Focus take their MP from
+  `src/data/bowman.ts`, Critical Shot and The Eye of Amazon are passive; `src/data/skills.test.ts` covers both; 973
+  tests green
 
 ### DEPLOY: app/44-bowman-model
 

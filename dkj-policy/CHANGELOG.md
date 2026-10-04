@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**22 / 46 minor entries** <!-- pending-tally -->
+**22 / 47 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
+
+The Skillpoints card now shows under every skill what it costs in MP per use at the level you have set, for
+example "12 MP per keer" under Slash Blast 20; a skill still at 0 shows the cost of level 1, and a passive skill
+says it costs nothing. The MP comes from the skill pages on MeowDB.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Show the mana cost per skill point
+
+[PR #95](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/95)
+
+---
 
 ### DEPLOY: app/82-split-ability-total-stats · 20261004-122003Z
 
