@@ -39,21 +39,42 @@
 
 ### PLAN
 
+#### Scope
+
+Issue #83 ("Toon bij elke skillpoint de mana cost"): under every skill in the Skillpoints card, the MP that skill
+costs per use at the level you have set. A visible result, so the branch parks for Dave's look and opens no PR.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Read the MP per level of the six skills the model does not calculate (Three Snails, Nimble Feet,
+  Recovery, Double Stab, Disorder, Dark Sight) from the table on each raw MeowDB skill page (October 4, 2026);
+  the WebFetch summaries disagreed on Double Stab and Disorder, the raw HTML settled both
+- [x] `src/data/skills.ts`: an `mp` array per active skill (the four the model calculates reuse its own
+  data), none for the five passives; `skillMpAt` reads it
+- [x] `src/app.tsx` + `src/style.css`: a small muted line under each skill name
 
 ### TEST
 
+- [x] `skills.test.ts`: every active skill has `max` MP values, every passive none, the six arrays match the
+  pages, the modelled four match the model data, `skillMpAt` at 0, mid, max and passive
+- [x] `app.test.tsx`: the card shows "12 MP per keer" for Slash Blast 20, "15 MP per keer op level 1" for Iron
+  Body 0 and "Passief, kost geen MP" for Precise Strikes, and no MP line for an empty field (Victor's review)
+- [x] `npm run lint` clean, 911 of 911 tests pass
+
 ### DEPLOY: app/83-skill-mana-cost
 
-**Score:**
+The Skillpoints card now shows under every skill what it costs in MP per use at the level you have set, for
+example "12 MP per keer" under Slash Blast 20; a skill still at 0 shows the cost of level 1, and a passive skill
+says it costs nothing. The MP comes from the skill pages on MeowDB.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Show the mana cost per skill point
-

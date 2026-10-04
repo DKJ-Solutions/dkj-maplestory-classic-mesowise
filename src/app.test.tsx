@@ -781,6 +781,21 @@ describe('een Warrior in de app', () => {
       for (const name of ['Power Strike', 'Slash Blast', 'Precise Strikes', 'Iron Body']) expect(skills.textContent, name).toContain(name)
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
+
+    it('toont bij elke skill de MP per keer op het gezette level, en bij een passieve skill dat hij niets kost (#83)', () => {
+      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      const row = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)).closest('.skill-row')!
+      const input = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)) as HTMLInputElement
+      fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
+      // Slash Blast 20 kost 12 MP (de skillpagina, data/warrior.ts).
+      expect(row('Slash Blast').querySelector('.skill-mp')?.textContent).toBe('12 MP per keer')
+      fireEvent.input(input('Iron Body'), { target: { value: '0' } })
+      expect(row('Iron Body').querySelector('.skill-mp')?.textContent).toBe('15 MP per keer op level 1')
+      expect(row('Precise Strikes').querySelector('.skill-mp')?.textContent).toBe('Passief, kost geen MP')
+      // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
+      fireEvent.input(input('Power Strike'), { target: { value: '' } })
+      expect(row('Power Strike').querySelector('.skill-mp')?.textContent).toBe('')
+    })
   })
 
   describe('het adviesscherm na een level-up', () => {

@@ -422,6 +422,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-group h3 { margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
 .skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+/* Onder de naam: de MP die de skill per keer kost op je level (issue #83) */
+.skill-mp { display: block; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* Een stepper: − en + als grote tikvlakken (44px), het getal ertussen kun je ook typen */
 .skill-input { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
 .skill-input input { width: 3rem; padding: 0.5rem 0.25rem; min-height: 44px; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
