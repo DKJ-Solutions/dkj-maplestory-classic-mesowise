@@ -53,7 +53,7 @@ const SLOW8_POLEARM = { ...SPEED.slow8, stabMs: SPEED.slow7.attackMs }
 
 // De weapon multipliers van de basisaanval per soort (zwaaien en steken), van de itempagina's en de
 // damage-gids (sectie "Weapon actions and multipliers").
-const MULT: Record<WarriorWeaponKind, { swing: number; stab: number }> = {
+export const MULT: Record<WarriorWeaponKind, { swing: number; stab: number }> = {
   '1h-sword': { swing: 1.8, stab: 1.8 },
   '2h-sword': { swing: 2.5, stab: 2.5 },
   '1h-axe': { swing: 2.4, stab: 1.2 },

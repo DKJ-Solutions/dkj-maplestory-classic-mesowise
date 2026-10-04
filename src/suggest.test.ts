@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { estimateMob, meleeAttack } from './calc/mobModel'
 import { rankSpots } from './calc/rankSpots'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS } from './data/thief'
-import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
+import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile } from './profile'
 import { newDraft, toSpot } from './spotDraft'
-import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, resolveSpot, suggestMonsters } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, powerStrikeAt, resolveSpot, suggestMonsters } from './suggest'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -147,5 +148,137 @@ describe('resolveSpot', () => {
     const ranked = rankSpots([b, a].map((d) => resolveSpot(d, subway, profile)))
     expect(ranked.map((r) => r.spot.id)).toEqual(['veel', 'weinig'])
     expect('expPerMeso' in ranked[0] && ranked[0].expPerMeso).toBeCloseTo((28 * 400) / 1000, 9)
+  })
+})
+
+describe('powerStrikeAt', () => {
+  it('geeft de waarden van de skillpagina, niet geïnterpoleerd', () => {
+    expect(powerStrikeAt(1)).toEqual({ level: 1, mp: 4, damagePct: 160 })
+    expect(powerStrikeAt(5)).toEqual({ level: 5, mp: 5, damagePct: 180 })
+    expect(powerStrikeAt(19)).toEqual({ level: 19, mp: 11, damagePct: 250 })
+    expect(powerStrikeAt(20)).toEqual({ level: 20, mp: 12, damagePct: 260 })
+  })
+
+  it('is null op level 0 (dan telt de gewone aanval), en klemt boven 20 op 20', () => {
+    expect(powerStrikeAt(0)).toBeNull()
+    expect(powerStrikeAt(25)).toEqual(powerStrikeAt(20))
+  })
+})
+
+describe('een Warrior: suggestMonsters en hourPlan', () => {
+  // Level 30, 47 weapon attack, STR 132, DEX 30 (het werkvoorbeeld van de damage-gids), 1H-sword (multiplier 1,8).
+  const warriorDraft = {
+    ...DEFAULT_PROFILE,
+    level: '30',
+    hp: '1000',
+    str: '132',
+    dex: '30',
+    luk: '4',
+    clawWatk: '47',
+    weaponMult: '1.8',
+    attackMs: '720',
+    accuracy: '80',
+    avoid: '20',
+    wdef: '100',
+    powerStrike: '20',
+  }
+  const wp = (over: Partial<typeof warriorDraft> = {}): Profile => {
+    const r = parseProfile({ ...warriorDraft, ...over }, 'warrior')
+    if (!('profile' in r)) throw new Error('Warrior-profiel ongeldig')
+    return r.profile
+  }
+
+  it('rekent met Power Strike op het gezette level: de aanval van meleeAttack, één klap, geen munitie', () => {
+    const p = wp()
+    const c = toCharacter(p)
+    expect(c.watk).toBe(47) // geen Subi
+    const attack = meleeAttack(c, 1.8, powerStrikeAt(20))
+    for (const s of suggestMonsters(p, perionEast)) {
+      const e = estimateMob(c, attack, s.monster)
+      expect(s.estimate).toEqual(e)
+      expect(s.estimate.starsPerKill).toBe(s.estimate.attacksToKill)
+      expect(s.rechargePerStar).toBe(0)
+    }
+  })
+
+  it('rekent zonder Power Strike (level 0) met de gewone aanval, en die kost geen MP', () => {
+    const p = wp({ powerStrike: '0' })
+    const c = toCharacter(p)
+    for (const s of suggestMonsters(p, perionEast)) {
+      expect(s.estimate).toEqual(estimateMob(c, meleeAttack(c, 1.8, null), s.monster))
+      expect(s.estimate.mpPerKill).toBe(0)
+    }
+  })
+
+  it('haalt met Power Strike lv 20 nooit meer klappen per kill dan met de gewone aanval, en meestal minder', () => {
+    const plain = suggestMonsters(wp({ powerStrike: '0' }), perionEast)
+    const ps = suggestMonsters(wp(), perionEast)
+    let fewer = 0
+    for (const m of perionEast.monsters) {
+      const a = plain.find((s) => s.monster.name === m.name)!.estimate.attacksToKill
+      const b = ps.find((s) => s.monster.name === m.name)!.estimate.attacksToKill
+      expect(b, m.name).toBeLessThanOrEqual(a)
+      if (b < a) fewer++
+    }
+    expect(fewer).toBeGreaterThan(0)
+  })
+
+  it('telt de MP van Power Strike mee: MP per kill = klappen · 12, en het kost potions', () => {
+    const p = wp()
+    const s = suggestMonsters(p, perionEast)[0]
+    expect(s.estimate.mpPerKill).toBe(s.estimate.attacksToKill * 12)
+    const plan = hourPlan(s, 100)
+    expect(plan.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 200, 9)
+    expect(plan.mpPotionsPerHour).toBeGreaterThan(0)
+    expect(plan.potions).toBeCloseTo(plan.hpPotionsPerHour * 150 + plan.mpPotionsPerHour * 220, 9)
+    // Zonder de skill geen MP-potions.
+    const free = hourPlan(suggestMonsters(wp({ powerStrike: '0' }), perionEast)[0], 100)
+    expect(free.mpPotionsPerHour).toBe(0)
+  })
+
+  it('heeft geen munitiekosten, hoeveel kills per uur ook', () => {
+    const s = suggestMonsters(wp(), perionEast)[0]
+    expect(hourPlan(s, 100).ammo).toBe(0)
+    expect(hourPlan(s, 12_345).ammo).toBe(0)
+  })
+
+  it('zet de Thief-munitie niet op nul: dezelfde plek met een Thief kost wel herlaad-meso', () => {
+    const t = suggestMonsters(profile, perionEast)[0]
+    expect(t.rechargePerStar).toBe(0.3)
+    expect(hourPlan(t, 100).ammo).toBeGreaterThan(0)
+  })
+
+  it('rekent Slash Blast niet mee: zijn level verandert niets aan de uitkomst', () => {
+    const a = suggestMonsters(wp({ slashBlast: '0' }), perionEast).map((s) => s.expPerHour)
+    const b = suggestMonsters(wp({ slashBlast: '20' }), perionEast).map((s) => s.expPerHour)
+    expect(b).toEqual(a)
+  })
+
+  it('gebruikt de weapon multiplier van het profiel', () => {
+    const low = suggestMonsters(wp({ weaponMult: '1' }), perionEast)
+    const high = suggestMonsters(wp({ weaponMult: '3' }), perionEast)
+    const sum = (l: typeof low) => l.reduce((n, s) => n + s.estimate.attacksToKill, 0)
+    expect(sum(high)).toBeLessThanOrEqual(sum(low))
+  })
+})
+
+describe('resolveSpot voor een Warrior', () => {
+  const r = parseProfile({ ...DEFAULT_PROFILE, level: '30', hp: '1000', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', accuracy: '80', powerStrike: '20' }, 'warrior')
+  if (!('profile' in r)) throw new Error('Warrior-profiel ongeldig')
+  const warrior = r.profile
+  const chosen = { ...newDraft('a'), ...knownSpotPatch(subway.id), travel: '100' }
+
+  it('vult de munitie met 0 en de potions met het voorstel, en laat de reiskosten staan', () => {
+    const s = pickMonster(suggestMonsters(warrior, subway), undefined)!
+    const plan = hourPlan(s, s.estimate.killsPerHour)
+    const spot = resolveSpot(chosen, subway, warrior)
+    expect(spot.cost).toEqual({ potions: plan.potions, ammo: 0, travel: 100 })
+    expect(spot.cost.potions).toBeGreaterThan(0)
+    // Dezelfde plek voor de Thief kost wel munitie.
+    expect(resolveSpot(chosen, subway, profile).cost.ammo).toBeGreaterThan(0)
+  })
+
+  it('laat een ingevulde munitie winnen, ook bij een Warrior', () => {
+    expect(resolveSpot({ ...chosen, ammo: '55' }, subway, warrior).cost.ammo).toBe(55)
   })
 })

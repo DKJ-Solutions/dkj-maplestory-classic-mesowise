@@ -1,9 +1,9 @@
 // De waarde die een stat volgens de formules zou moeten hebben, zoals de equipment-kaart de stat uit de database
 // toont. Puur, zonder UI-import. Wijkt je spel af (een item met accuracy, een buff), dan corrigeer je het getal en
 // toont de kaart de verwachting doorgestreept ernaast. Alleen voor een Thief: van andere jobs kent de app de
-// formules nog niet.
+// formules nog niet (ook de Warrior niet: zijn accuracy- en avoid-formule staan hier niet in).
 import { baseAccuracy, baseAvoid, NIMBLE_BODY } from './data/thief'
-import { isComputed, type Job } from './job'
+import type { Job } from './job'
 import type { ProfileDraft, ProfileKey } from './profile'
 
 /** Een invulveld als geheel getal, of null. */
@@ -20,7 +20,7 @@ const wholeOf = (text: string): number | null => {
  * Body, op dezelfde manier.
  */
 export function expectedStat(key: ProfileKey, draft: ProfileDraft, job: Job): number | undefined {
-  if (!isComputed(job)) return undefined
+  if (job !== 'thief') return undefined
   const level = wholeOf(draft.level)
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
