@@ -3,6 +3,7 @@
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
 import type { Character } from './calc/mobModel'
 import { ATTACK_MS, SUBI } from './data/thief'
+import { isComputed, type Job } from './job'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
 const VERSION = 1
@@ -15,7 +16,7 @@ export const PROFILE_FIELDS = [
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
-  { key: 'clawWatk', label: 'Weapon attack van je claw', min: 0, max: 999, integer: true },
+  { key: 'clawWatk', label: 'Weapon attack van je wapen', min: 0, max: 999, integer: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
   { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
   { key: 'wdef', label: 'WDEF', min: 0, max: 9_999, integer: true },
@@ -29,6 +30,14 @@ export type ProfileDraft = Record<ProfileKey, string>
 
 /** Een ingevuld profiel, als getallen. */
 export type Profile = Record<ProfileKey, number>
+
+/**
+ * De velden die een job invult: Lucky Seven en Nimble Body zijn Thief-skills, dus een andere job ziet ze niet.
+ * Hun getypte waarden blijven in het concept staan, zodat een terugwissel naar Thief niets kwijt is; parseProfile
+ * valideert ze voor een andere job niet en vult ze met de standaardwaarde.
+ */
+export const profileFieldsFor = (job: Job): readonly (typeof PROFILE_FIELDS)[number][] =>
+  isComputed(job) ? PROFILE_FIELDS : PROFILE_FIELDS.filter((f) => f.key !== 'luckySeven' && f.key !== 'nimbleBody')
 
 /** Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. */
 export const DEFAULT_PROFILE: ProfileDraft = {
@@ -51,10 +60,16 @@ export function isDefaultProfile(d: ProfileDraft): boolean {
   return PROFILE_FIELDS.every((f) => d[f.key] === DEFAULT_PROFILE[f.key])
 }
 
-/** Het profiel als getallen, of een melding in gewoon Nederlands bij het eerste veld dat niet klopt. */
-export function parseProfile(d: ProfileDraft): { profile: Profile } | { error: string } {
+/** Het profiel als getallen, of een melding in gewoon Nederlands bij het eerste veld dat niet klopt (alleen de velden die deze job invult). */
+export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Profile } | { error: string } {
   const out = {} as Profile
+  const shown = profileFieldsFor(job)
   for (const f of PROFILE_FIELDS) {
+    if (!shown.includes(f)) {
+      // Een veld dat deze job niet invult, telt niet mee: de standaardwaarde, en het concept zelf blijft zoals getypt.
+      out[f.key] = Number(DEFAULT_PROFILE[f.key])
+      continue
+    }
     const text = d[f.key].trim()
     const n = text === '' ? NaN : Number(text)
     if (!Number.isFinite(n)) return { error: `Vul bij je karakter "${f.label}" in.` }

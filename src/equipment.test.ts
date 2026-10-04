@@ -4,6 +4,7 @@ import {
   choosePick,
   defaultEquipment,
   entryChanged,
+  equipmentForJob,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
@@ -16,6 +17,7 @@ import {
   type EquipEntry,
   type Equipment,
 } from './equipment'
+import type { Job } from './job'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
@@ -50,9 +52,9 @@ describe('defaultEquipment en shopItems', () => {
   })
 
   it('geeft per slot de winkelitems met de juiste stat (WATK voor de claw, WDEF voor armor)', () => {
-    expect(shopItems('claw').find((i) => i.name === 'Meba')).toMatchObject({ level: 25, stat: 19 })
-    expect(shopItems('shoes').map((i) => i.name)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
-    expect(shopItems('hat').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
+    expect(shopItems('claw', 'thief').find((i) => i.name === 'Meba')).toMatchObject({ level: 25, stat: 19 })
+    expect(shopItems('shoes', 'thief').map((i) => i.name)).toEqual(['Blue Gidder Shoes', 'Red Ninja Sandals', 'Red Enamel Boots'])
+    expect(shopItems('hat', 'thief').find((i) => i.name === 'Red Thief Hood')?.stat).toBe(18)
   })
 })
 
@@ -304,38 +306,38 @@ describe('loadEquipment en saveEquipment', () => {
       shoes: shop('Red Ninja Sandals'),
     }
     expect(saveEquipment(storage, eq)).toBe(true)
-    expect(loadEquipment(storage)).toEqual(eq)
+    expect(loadEquipment(storage, 'thief')).toEqual(eq)
     expect(storage.data.has('mesowise.equipment.v1')).toBe(true)
   })
 
   it('geeft zonder of met kapotte opslag niets bekend', () => {
-    expect(loadEquipment(null)).toEqual(defaultEquipment())
-    expect(loadEquipment(undefined)).toEqual(defaultEquipment())
-    expect(loadEquipment(fakeStorage())).toEqual(defaultEquipment())
-    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '{kapot' }))).toEqual(defaultEquipment())
-    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '' }))).toEqual(defaultEquipment())
+    expect(loadEquipment(null, 'thief')).toEqual(defaultEquipment())
+    expect(loadEquipment(undefined, 'thief')).toEqual(defaultEquipment())
+    expect(loadEquipment(fakeStorage(), 'thief')).toEqual(defaultEquipment())
+    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '{kapot' }), 'thief')).toEqual(defaultEquipment())
+    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '' }), 'thief')).toEqual(defaultEquipment())
   })
 
   it('geeft niets bekend bij JSON van een verkeerde vorm', () => {
     const raws = ['null', '5', '"tekst"', '[]', 'true', '{}', JSON.stringify({ version: 1 }), JSON.stringify({ version: 1, slots: null }), JSON.stringify({ version: 1, slots: 'x' })]
-    for (const raw of raws) expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: raw })), raw).toEqual(defaultEquipment())
+    for (const raw of raws) expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: raw }), 'thief'), raw).toEqual(defaultEquipment())
   })
 
   it('geeft niets bekend bij een verkeerde of ontbrekende versie, ook als de slots goed zijn', () => {
     const slots = { top: { pick: 'none' } }
-    for (const v of [2, 0, '1', null]) expect(loadEquipment(stored(slots, v)), String(v)).toEqual(defaultEquipment())
-    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ slots }) }))).toEqual(defaultEquipment())
+    for (const v of [2, 0, '1', null]) expect(loadEquipment(stored(slots, v), 'thief'), String(v)).toEqual(defaultEquipment())
+    expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ slots }) }), 'thief')).toEqual(defaultEquipment())
   })
 
   it('houdt een goed slot en maakt een rommelig slot "weet ik niet"', () => {
-    const eq = loadEquipment(stored({ claw: { pick: 'Meba' }, hat: 'tekst', top: null, bottom: 7, shoes: { pick: 5 }, geheim: { pick: 'none' } }))
+    const eq = loadEquipment(stored({ claw: { pick: 'Meba' }, hat: 'tekst', top: null, bottom: 7, shoes: { pick: 5 }, geheim: { pick: 'none' } }), 'thief')
     expect(eq.claw).toEqual(shop('Meba'))
     for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(eq[s], s).toEqual(unknown)
     expect('geheim' in eq).toBe(false)
   })
 
   it('maakt een onbekende of verdwenen winkelkeuze "weet ik niet", ook als hij bij een ander slot hoort', () => {
-    const eq = loadEquipment(stored({ claw: { pick: 'Verdwenen Claw' }, hat: { pick: 'Red Pao' }, top: { pick: 'Red Pao' }, shoes: { pick: '__proto__' }, bottom: { pick: 'constructor' } }))
+    const eq = loadEquipment(stored({ claw: { pick: 'Verdwenen Claw' }, hat: { pick: 'Red Pao' }, top: { pick: 'Red Pao' }, shoes: { pick: '__proto__' }, bottom: { pick: 'constructor' } }), 'thief')
     expect(eq.claw).toEqual(unknown)
     expect(eq.hat).toEqual(unknown)
     expect(eq.top).toEqual(shop('Red Pao'))
@@ -344,14 +346,14 @@ describe('loadEquipment en saveEquipment', () => {
   })
 
   it('wist naam en stat van een slot dat geen Ander item is', () => {
-    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, hat: { pick: 'none', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }))
+    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, hat: { pick: 'none', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }), 'thief')
     expect(eq.claw).toEqual(shop('Meba'))
     expect(eq.hat).toEqual(none)
     expect(eq.top).toEqual(unknown)
   })
 
   it('kapt te lange naam (40) en stat (12) af bij het laden en bij het bewaren', () => {
-    const eq = loadEquipment(stored({ top: { pick: 'other', name: 'n'.repeat(100), stat: '9'.repeat(50) }, bottom: { pick: 'other', name: 5, stat: {} } }))
+    const eq = loadEquipment(stored({ top: { pick: 'other', name: 'n'.repeat(100), stat: '9'.repeat(50) }, bottom: { pick: 'other', name: 5, stat: {} } }), 'thief')
     expect(eq.top.name).toHaveLength(40)
     expect(eq.top.stat).toHaveLength(12)
     expect(eq.bottom).toEqual(other(''))
@@ -364,7 +366,7 @@ describe('loadEquipment en saveEquipment', () => {
   })
 
   it('geeft na een te lange stat uit de opslag nog steeds een stat binnen 0..999', () => {
-    const eq = loadEquipment(stored({ top: { pick: 'other', name: '', stat: '9'.repeat(50) } }))
+    const eq = loadEquipment(stored({ top: { pick: 'other', name: '', stat: '9'.repeat(50) } }), 'thief')
     expect(wornStat('top', eq.top)).toBe(999)
   })
 
@@ -380,7 +382,7 @@ describe('loadEquipment en saveEquipment', () => {
     broken.getItem = () => {
       throw new Error('geen toegang')
     }
-    expect(loadEquipment(broken)).toEqual(defaultEquipment())
+    expect(loadEquipment(broken, 'thief')).toEqual(defaultEquipment())
   })
 
   it('schrijft onder de eigen sleutel en raakt de profielsleutel niet', () => {
@@ -388,5 +390,77 @@ describe('loadEquipment en saveEquipment', () => {
     saveEquipment(storage, defaultEquipment())
     expect(storage.data.get('mesowise.profile.v1')).toBe('x')
     expect(EQUIPMENT_KEY).toBe('mesowise.equipment.v1')
+  })
+})
+
+describe('equipment per job', () => {
+  const others: Job[] = ['beginner', 'warrior', 'magician', 'bowman']
+  const slots = EQUIP_SLOTS.map((s) => s.slot)
+  const stored = (data: Record<string, unknown>) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version: 1, slots: data }) })
+  const thiefShop: Equipment = { claw: shop('Meba'), hat: shop('Red Thief Hood'), top: shop('Red Pao'), bottom: unknown, shoes: shop('Blue Gidder Shoes') }
+
+  it('toont voor de Thief in elk slot winkelitems en voor een andere job niets', () => {
+    for (const s of slots) {
+      expect(shopItems(s, 'thief').length, s).toBeGreaterThan(0)
+      for (const j of others) expect(shopItems(s, j), `${s} ${j}`).toEqual([])
+    }
+  })
+
+  it('laadt een bewaarde Thief-winkelkeuze voor de Thief', () => {
+    expect(loadEquipment(stored({ claw: { pick: 'Meba' }, hat: { pick: 'Red Thief Hood' } }), 'thief').claw).toEqual(shop('Meba'))
+  })
+
+  it('maakt een bewaarde Thief-winkelkeuze "weet ik niet" voor een andere job, en houdt geen/ander', () => {
+    const data = { claw: { pick: 'Meba' }, hat: { pick: 'Red Thief Hood' }, top: { pick: 'none' }, bottom: { pick: 'other', name: 'Mijn broek', stat: '7' }, shoes: { pick: 'unknown' } }
+    for (const j of others) {
+      const eq = loadEquipment(stored(data), j)
+      expect(eq.claw, j).toEqual(unknown)
+      expect(eq.hat, j).toEqual(unknown)
+      expect(eq.top, j).toEqual(none)
+      expect(eq.bottom, j).toEqual(other('7', 'Mijn broek'))
+      expect(eq.shoes, j).toEqual(unknown)
+    }
+  })
+
+  it('laat een kapotte opslag voor elke job niets bekend geven', () => {
+    for (const j of [...others, 'thief' as Job]) expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: '{kapot' }), j), j).toEqual(defaultEquipment())
+  })
+
+  it('zet bij een wissel naar een andere job elke winkelkeuze op "weet ik niet" en laat de rest staan', () => {
+    const eq: Equipment = { ...thiefShop, top: none, bottom: other('7', 'Mijn broek') }
+    for (const j of others) {
+      const out = equipmentForJob(eq, j)
+      expect(out.claw, j).toEqual(unknown)
+      expect(out.hat, j).toEqual(unknown)
+      expect(out.shoes, j).toEqual(unknown)
+      expect(out.top, j).toEqual(none)
+      expect(out.bottom, j).toEqual(other('7', 'Mijn broek'))
+    }
+  })
+
+  it('laat de equipment bij de Thief gelijk en past de invoer niet aan', () => {
+    const copy = structuredClone(thiefShop)
+    expect(equipmentForJob(thiefShop, 'thief')).toEqual(thiefShop)
+    expect(thiefShop).toEqual(copy)
+    expect(equipmentForJob(defaultEquipment(), 'warrior')).toEqual(defaultEquipment())
+  })
+
+  it('zet een winkelkeuze die niet bij het slot hoort ook op "weet ik niet" voor de Thief', () => {
+    expect(equipmentForJob({ ...defaultEquipment(), hat: shop('Red Pao') }, 'thief').hat).toEqual(unknown)
+  })
+
+  it('laat WDEF en WATK in het profiel staan als een jobwissel winkelitems op onbekend zet', () => {
+    const profile = prof({ wdef: '60', clawWatk: '19' })
+    const after = equipmentForJob(thiefShop, 'warrior')
+    let p = profile
+    for (const s of slots) p = applyEquipChange(p, s, thiefShop[s], after[s])
+    expect(p.wdef).toBe('60')
+    expect(p.clawWatk).toBe('19')
+  })
+
+  it('geeft na een jobwissel geen stat meer voor een winkelitem dat de job niet heeft', () => {
+    const after = equipmentForJob(thiefShop, 'bowman')
+    for (const s of slots) expect(wornStat(s, after[s]), s).toBeUndefined()
+    expect(wornWdef(after)).toEqual({})
   })
 })

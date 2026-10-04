@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, isDefaultProfile, loadProfile, parseProfile, PROFILE_KEY, saveProfile, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, toCharacter, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -89,5 +89,38 @@ describe('loadProfile en saveProfile', () => {
     }
     expect(saveProfile(storage, DEFAULT_PROFILE)).toBe(false)
     expect(saveProfile(null, DEFAULT_PROFILE)).toBe(false)
+  })
+})
+
+describe('profileFieldsFor', () => {
+  const hidden = ['luckySeven', 'nimbleBody']
+
+  it('toont voor de Thief elk veld, in dezelfde volgorde', () => {
+    expect(profileFieldsFor('thief')).toEqual(PROFILE_FIELDS)
+  })
+
+  it('verbergt voor een andere job alleen Lucky Seven en Nimble Body en houdt de volgorde', () => {
+    const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
+    expect(expected.length).toBe(PROFILE_FIELDS.length - 2)
+    for (const j of ['beginner', 'warrior', 'magician', 'bowman'] as const) {
+      expect(profileFieldsFor(j), j).toEqual(expected)
+      expect(profileFieldsFor(j).map((f) => f.key), j).not.toContain('luckySeven')
+      expect(profileFieldsFor(j).map((f) => f.key), j).not.toContain('nimbleBody')
+    }
+  })
+
+  it('valideert de Thief-skills alleen voor een Thief; voor een andere job staat de standaardwaarde in het profiel', () => {
+    const draft = { ...DEFAULT_PROFILE, luckySeven: '', nimbleBody: 'x' }
+    expect(parseProfile(draft, 'thief')).toHaveProperty('error')
+    const warrior = parseProfile(draft, 'warrior')
+    expect(warrior).toHaveProperty('profile')
+    expect('profile' in warrior && warrior.profile.luckySeven).toBe(Number(DEFAULT_PROFILE.luckySeven))
+    expect(draft.luckySeven).toBe('')
+  })
+
+  it('noemt het wapenveld niet meer een claw', () => {
+    const label = PROFILE_FIELDS.find((f) => f.key === 'clawWatk')!.label
+    expect(label).toBe('Weapon attack van je wapen')
+    expect(label).not.toMatch(/claw/i)
   })
 })
