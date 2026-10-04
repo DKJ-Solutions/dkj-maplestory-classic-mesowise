@@ -50,7 +50,7 @@ mob you kill most while levelling, picked on one card.
 - [x] `src/best.ts`: a single spot is the winner, even when dangerous; only an invalid one gives no number (`pickBest` needed two)
 - [x] `src/app.tsx`: the "Laatst gejaagd op" card replaces the spot list, the add button and the example spot; old saved maps and own spots are dropped on load
 - [x] `src/style.css`: the card's look; dead spot-list rules removed
-- [x] The mob's HP, EXP per kill and touch damage on the card and in the picker (Dave, October 4, 2026)
+- [x] The mob's HP, EXP per kill, touch damage and WDEF on the card and in the picker (Dave, October 4, 2026)
 
 ### TEST
 
@@ -61,7 +61,7 @@ mob you kill most while levelling, picked on one card.
 ### DEPLOY: app/hunted-mob-card
 
 The spot list is gone: no "Plek toevoegen" button, no example spot and no maps. One card, "Laatst gejaagd op", picks
-the mob you kill most, with its HP, EXP and damage shown on the card and in the picker; the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
+the mob you kill most, with its HP, EXP, damage and WDEF shown on the card and in the picker; the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
 also when it is dangerous (the warning stays on the card). Kills per hour can still be overridden in its popup. A
 saved list of maps or own spots from before is dropped on load. Follow-ups: #122 (the hunting-ground question),
 #123 (removing the now unused map data).

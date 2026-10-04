@@ -1218,8 +1218,8 @@ function Warnings(props: { s: MonsterSuggestion | undefined }) {
   )
 }
 
-/** Wat een mob heeft en geeft, in één regel (Dave, 4 oktober 2026): HP, EXP per kill en de schade als hij je raakt. */
-const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.expPerKill)} EXP · ${nfInt.format(m.touch.min)}–${nfInt.format(m.touch.max)} dmg`
+/** Wat een mob heeft en geeft, in één regel (Dave, 4 oktober 2026): HP, EXP per kill, de schade als hij je raakt en zijn WDEF (P.DEF op MeowDB). */
+const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.expPerKill)} EXP · ${nfInt.format(m.touch.min)}–${nfInt.format(m.touch.max)} dmg · ${nfInt.format(m.wdef)} WDEF`
 
 /**
  * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
