@@ -72,5 +72,5 @@ N/A
 
 #### Pull Request
 
-app: Expected accuracy and avoid for the Warrior on the character card
+Expected accuracy and avoid for the Warrior on the character card
 
