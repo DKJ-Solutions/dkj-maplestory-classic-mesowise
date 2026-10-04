@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**13 / 23 minor entries** <!-- pending-tally -->
+**14 / 24 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/41-job-keuze · 20261004-085129Z
+
+Je kiest nu je job (Warrior, Magician, Bowman of Thief) in een eigen kaart boven "Je equipment".
+Je kiest één keer; een vergissing herstel je met het potlood. De Thief werkt zoals altijd. Voor een andere job zegt de app eerlijk "Nog niet doorgerekend
+voor <job>" en geeft hij geen getal, want een Thief-formule op een Warrior geeft een fout getal. De wapen-
+en armorlijsten tonen alleen wat jouw job kan kopen. Voor de andere jobs zijn dat er nog geen, dus daar
+kies je "Ander item" of "Weet ik niet". Lucky Seven en Nimble Body staan alleen bij de Thief.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Vrienden die geen Thief spelen, krijgen geen Thief-advies meer dat op hen niet klopt. De Warrior,
+Magician en Bowman volgen in #42 tot #44.
+
+**Score:** 3
+
+#### Pull Request
+
+Job-keuze: wapens en equipment per job, eerlijk 'nog niet doorgerekend' buiten Thief
+
+[PR #48](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/48)
+
+---
 
 ### DEPLOY: app/equipment-section · 20261004-081637Z
 
