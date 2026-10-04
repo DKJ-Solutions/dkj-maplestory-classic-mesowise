@@ -1,5 +1,5 @@
 // Items die een Thief kan dragen maar die geen NPC verkoopt, of die als andere kleur of als mannen- of
-// vrouwenversie naast een NPC-item bestaan. Ze staan in de zoekbalk van "Je equip", zodat je kunt zoeken
+// vrouwenversie naast een NPC-item bestaan. Ze staan in de zoekbalk van "Equip", zodat je kunt zoeken
 // wat je draagt; ze hebben geen prijs en komen dus nooit in het upgrade-advies (dat gebruikt alleen NPC_ARMOR
 // en NPC_CLAWS). Staat de naam ook in de NPC-lijst, dan wint de NPC-regel.
 //

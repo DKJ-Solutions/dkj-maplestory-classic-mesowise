@@ -2,7 +2,7 @@
 // overall, schoenen) het stuk uit de NPC-winkel dat je kunt dragen en het meeste netto oplevert: wat bespaart het in
 // mesos tot je volgende upgrade in dat slot, min zijn prijs. Elk draagbaar stuk wordt doorgerekend, want een
 // goedkoper stuk met minder WDEF kan zich terugverdienen terwijl het topstuk dat niet doet. Puur, zonder UI-import.
-// Weet de app wat je in een slot draagt (het scherm "Je equip"), dan telt alleen een stuk met meer WDEF
+// Weet de app wat je in een slot draagt (het scherm "Equip"), dan telt alleen een stuk met meer WDEF
 // dan dat, en komt het erbij als `wdef - gedragen + stuk.wdef`. Weet de app het niet, dan is de standaard:
 // een stuk wordt gerekend als `wdef + stuk.wdef`, alsof dat slot nu leeg is. Dat is de grootst mogelijke
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:

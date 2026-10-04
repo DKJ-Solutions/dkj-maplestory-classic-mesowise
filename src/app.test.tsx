@@ -125,7 +125,7 @@ const openHomeSkills = () => {
   fireEvent.click(head)
   return head.closest('section')!
 }
-const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: /Je equip/ }))
+const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: /^Equip$/ }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 const undoLevelUp = () => fireEvent.click(screen.getByRole('button', { name: 'Level-up ongedaan maken' }))
 
@@ -207,11 +207,11 @@ describe('equipment: de claw past het profiel aan', () => {
   it('houdt in de kaartkop alleen de titel, ook als je iets draagt', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(within(cards()[0]).getByRole('button', { name: /Je equip/ }).textContent?.trim()).toBe('Je equip')
+    expect(within(cards()[0]).getByRole('button', { name: /^Equip$/ }).textContent?.trim()).toBe('Equip')
   })
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
-    const head = within(cards()[0]).getByRole('button', { name: /Je equip/ })
+    const head = within(cards()[0]).getByRole('button', { name: /^Equip$/ })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
     expect(head.querySelector('svg.card-eye')).not.toBeNull()
     // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
@@ -220,14 +220,14 @@ describe('equipment: de claw past het profiel aan', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
-    expect(dialog.getAttribute('aria-label')).toBe('Je equip')
+    expect(dialog.getAttribute('aria-label')).toBe('Equip')
     expect(within(dialog).getByLabelText('Zoek je Weapon')).toBeTruthy()
     expect(within(cards()[0]).queryByRole('button', { name: 'Inklappen' })).toBeNull()
   })
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
-    const head = within(cards()[0]).getByRole('button', { name: /Je equip/ })
+    const head = within(cards()[0]).getByRole('button', { name: /^Equip$/ })
     expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')
@@ -594,7 +594,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont de equipment op het controlescherm direct op de kaart, zonder popup (#106)', () => {
     levelUp()
-    expect(within(cards()[1]).queryByRole('button', { name: /Je equip/ })).toBeNull()
+    expect(within(cards()[1]).queryByRole('button', { name: /^Equip$/ })).toBeNull()
     expect(cards()[1].querySelector('dialog')).toBeNull()
     expect(within(cards()[1]).getByLabelText('Zoek je Weapon')).toBeTruthy()
   })

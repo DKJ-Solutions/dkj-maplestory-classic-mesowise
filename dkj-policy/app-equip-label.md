@@ -41,7 +41,7 @@
 
 ### CREATE
 
-- [x] Rename the visible label "Je equipment" to "Je equip": the card head, the popup title and the not-computed line (`src/app.tsx`); code comments that name the screen follow
+- [x] Rename the visible label "Je equipment" to "Equip" (Dave: without "Je"): the card head, the popup title and the not-computed line (`src/app.tsx`); code comments that name the screen follow
 - [x] Update the app tests that find the card by its name (`src/app.test.tsx`)
 
 ### TEST
@@ -51,13 +51,13 @@
 
 ### DEPLOY: app/equip-label
 
-The equipment card is now called "Je equip" instead of "Je equipment": on the card head, in the popup title and in the line for a job the app does not compute yet. A shorter name that fits a phone screen better.
+The equipment card is now called "Equip" instead of "Je equipment": on the card head, in the popup title and in the line for a job the app does not compute yet. A shorter name that fits a phone screen better.
 
 **Score:** 1
 
 #### What makes this deploy extra special
 
-Players see the shorter "Je equip" on the card and in its popup; nothing else changes.
+Players see the shorter "Equip" on the card and in its popup; nothing else changes.
 
 **Score:** 1
 

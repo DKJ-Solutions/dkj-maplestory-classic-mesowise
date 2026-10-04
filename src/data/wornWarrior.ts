@@ -1,6 +1,6 @@
 // Items die een Warrior kan dragen maar die geen NPC verkoopt, of die als andere kleur of als mannenversie naast
 // een NPC-item bestaan: het Warrior-equivalent van wornItems.ts, met dezelfde regels. Ze staan in de zoekbalk van
-// "Je equip", hebben geen prijs en komen dus nooit in het upgrade-advies. Staat de naam ook in NPC_WARRIOR_*,
+// "Equip", hebben geen prijs en komen dus nooit in het upgrade-advies. Staat de naam ook in NPC_WARRIOR_*,
 // dan wint de NPC-regel.
 //
 // Opgehaald bij NiaMeowDB (meowdb.com) op 2026-10-04: per item de eigen itempagina, gelezen uit de ruwe pagina
