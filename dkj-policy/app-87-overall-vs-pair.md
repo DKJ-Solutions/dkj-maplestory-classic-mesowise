@@ -39,19 +39,57 @@
 
 ### PLAN
 
+Issue #87. The armor advice treats the body as two alternatives: {overall} and {top + bottom}.
+
+- A **pair** (one wearable top with one wearable bottom) is a candidate of its own, but only when an overall
+  is in play (the shop has one for your level, or you wear one). So the Thief and Bowman advice stays as it was.
+- The **horizon** runs to the next upgrade of the body: a top or bottom also stops before a later overall
+  that beats it together with the best other half at that level, and an overall also stops before a later
+  top or bottom that beats it the same way.
+- A top or bottom alone that replaces a worn overall says that the other half is then **bare**.
+
+#### Visible result
+
+The verdict line can now read "Koop A (Top) en B (Bottom)", with the price "voor beide samen", and
+"Je Bottom is dan leeg." when a single half replaces an overall. Dave looks before the merge (CLAUDE.md
+lens: a visible result).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/armorUpgrade.ts`: `Candidate` with an optional `with`, `ArmorChoice.price`/`with`/`bare`, the
+  body horizon, pair candidates, `robust` compares the whole choice (a pair is not its own top)
+- [x] `src/app.tsx`: the verdict names both pieces of a pair, the total price, and the bare half; the
+  winner is `choices[0]` instead of a lookup by piece
 
 ### TEST
 
+- [x] `src/armorUpgrade.test.ts`: a new describe for #87, with the Magician at level 25 (the Doros Robe
+  and every top + bottom pair, recomputed by hand), pair `replaces`, no pair without an overall (Thief, every
+  level), the bare half, and both horizon directions (Magician level 20, male Warrior level 20)
+- [x] Changed by the new rule and recomputed by hand: the injected Thief overall now runs to 29 (on level 30
+  Dark Silver Stealer + Red Stealer Pants give 69 > 60), and the female Warrior's top on level 10 to 14 (Steel
+  Fitted Mail 75 > 35 + 25)
+- [x] `src/magicianModel.test.ts`: one choice per slot, plus the pair as a choice of its own
+- [x] `npx vitest run`: 1162 passed; `npm run lint`: clean
+
 ### DEPLOY: app/87-overall-vs-pair
 
-**Score:**
+The Defense advice now weighs an overall against a top and bottom bought together. When an overall is in
+play (the shop has one for your level, or you wear one), a pair of top + bottom is a candidate of its own,
+with both prices added up. "Until your next upgrade" now also sees an overall coming for a top or bottom,
+and a better top + bottom coming for an overall. If a single top or bottom wins over an overall you wear,
+the advice says that the other half is then empty. Thief and Bowman shops have no overall, so their advice
+does not change.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A Magician (from level 25) or a Warrior no longer gets an overall advice that only looks at one half. The
+advice can now say "buy this top and these pants together", and a top's payback no longer runs past the
+level where the robe would replace it.
+
+**Score:** 3
 
 #### Pull Request
 
