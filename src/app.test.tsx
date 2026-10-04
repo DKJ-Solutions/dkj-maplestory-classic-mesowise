@@ -442,14 +442,21 @@ describe('bewaren na elke wijziging', () => {
   it('zet de stats in twee kaarten zoals het statvenster: Ability points (STR, DEX, INT, LUK) en Total stats (#82)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-    expect(cardNames('section.profile')).toEqual([expect.stringMatching(/^AP op level \d+$/), 'Extra AP', 'Totaal AP', 'STR', 'DEX', 'INT', 'LUK'])
+    expect(cardNames('section.profile')).toEqual(['Base AP', 'Extra AP', 'Totaal AP', 'STR', 'DEX', 'INT', 'LUK'])
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
   it('toont bij Ability points hoeveel AP je op je level hebt, zonder equipment: 25 op level 1 en 5 per level erbij', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(statShown('AP op level 10')).toBe('70')
-    expect(within(statLine('AP op level 10')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
+    expect(statShown('Base AP')).toBe('70')
+    expect(within(statLine('Base AP')).queryByRole('button', { name: /wijzigen/ })).toBeNull()
+  })
+
+  it('zet Base AP en Extra AP als twee kolommen naast elkaar, en alleen Extra AP heeft een potlood', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const columns = panels()[0].querySelector('section.profile .ap-columns')!
+    expect(Array.from(columns.querySelectorAll('.stat-line-name')).map((n) => n.textContent)).toEqual(['Base AP', 'Extra AP'])
+    expect(within(columns as HTMLElement).getAllByRole('button', { name: /wijzigen/ }).map((b) => b.getAttribute('aria-label'))).toEqual(['Extra AP wijzigen'])
   })
 
   it('telt de Extra AP die je zelf invult op bij Totaal AP, en bewaart hem', () => {
@@ -460,7 +467,7 @@ describe('bewaren na elke wijziging', () => {
     h.type('12')
     h.save()
     expect(profileFields().extraAp).toBe('12')
-    expect(statShown('AP op level 10')).toBe('70')
+    expect(statShown('Base AP')).toBe('70')
     expect(statShown('Totaal AP')).toBe('82')
   })
 
@@ -476,7 +483,7 @@ describe('bewaren na elke wijziging', () => {
   it('past de AP aan als je level verandert', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
-    expect(statShown('AP op level 9')).toBe('65')
+    expect(statShown('Base AP')).toBe('65')
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
@@ -1016,7 +1023,7 @@ describe('een Warrior in de app', () => {
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
       fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
-      expect(cardNames('section.profile')).toEqual([expect.stringMatching(/^AP op level \d+$/), 'Extra AP', 'Totaal AP', 'STR', 'DEX', 'INT', 'LUK'])
+      expect(cardNames('section.profile')).toEqual(['Base AP', 'Extra AP', 'Totaal AP', 'STR', 'DEX', 'INT', 'LUK'])
       expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 

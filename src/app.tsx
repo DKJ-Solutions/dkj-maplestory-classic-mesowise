@@ -469,8 +469,11 @@ function ProfileCard(props: StatsCardProps) {
   const extraAp = extraText !== '' && Number.isInteger(extra) && extra >= EXTRA_AP_FIELD.min && extra <= EXTRA_AP_FIELD.max ? extra : 0
   const lead = (
     <>
-      <StatLine key="ap" field={{ ...AP_FIELD, label: known ? `AP op level ${level}` : 'AP op je level' }} value={known ? nfInt.format(apAtLevel(level)) : ''} readOnly onSave={() => {}} />
-      <StatLine key="extra-ap" field={EXTRA_AP_FIELD} value={props.draft.extraAp} onSave={(text) => props.onChange({ extraAp: text })} />
+      {/* Twee kolommen naast elkaar (Dave, 4 oktober 2026): de base AP ligt vast op wat je level geeft, de extra AP vul je vrij in. */}
+      <div class="ap-columns">
+        <StatLine key="ap" field={{ ...AP_FIELD, label: 'Base AP' }} value={known ? nfInt.format(apAtLevel(level)) : ''} readOnly onSave={() => {}} />
+        <StatLine key="extra-ap" field={EXTRA_AP_FIELD} value={props.draft.extraAp} onSave={(text) => props.onChange({ extraAp: text })} />
+      </div>
       <StatLine key="total-ap" field={{ ...AP_FIELD, label: 'Totaal AP' }} value={known ? nfInt.format(apAtLevel(level) + extraAp) : ''} readOnly onSave={() => {}} />
     </>
   )
