@@ -1750,7 +1750,8 @@ export function App() {
   // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.
   const canLevelUp = levelUpped !== profileDraft
   // Een level terug: alleen het level, zonder flow (#130).
-  const canLevelDown = applyLevelDown(profileDraft) !== profileDraft
+  const levelDowned = applyLevelDown(profileDraft)
+  const canLevelDown = levelDowned !== profileDraft
   const levelDown = () => writeProfile(applyLevelDown)
   const levelText = profileDraft.level.trim()
   // Wat de level-up zelf aanpaste (niet wat de speler daarna verschuift); zonder undo staan er geen cijfers.
@@ -1847,10 +1848,9 @@ export function App() {
             <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
               {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
               <div class="level-row">
-                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label="Naar het vorige level">
-                  <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-                    <path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                  </svg>
+                {/* De terugknop noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
+                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Terug naar LV. ${levelDowned.level}` : 'Geen vorig level'}>
+                  {canLevelDown ? `LV. ${levelDowned.level}` : 'LV. –'}
                 </button>
                 <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
                   {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
