@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**18 / 34 minor entries** <!-- pending-tally -->
+**19 / 35 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/65-ranged-ammo · 20261004-103041Z
+
+The equipment card gets an optional Ammo slot. A Thief picks their throwing stars there (Subi, Wolbi, Mokbi,
+Kumbi, Tobi, Steely or Ilbi), and the advice counts their weapon attack and their recharge price. A Bowman sees only
+arrows there, which the app shows but does not count yet; a Warrior or Magician has no such slot. Without a choice the app still counts with Subi.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Thief who uses better stars than Subi now sees advice that counts them: more damage per throw, and the
+recharge price of those stars in the cost per hour.
+
+**Score:** 4
+
+#### Pull Request
+
+Choose your ranged ammo on the equipment card: throwing stars (Thief) and arrows (Bowman)
+
+[PR #71](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/71)
+
+---
 
 ### DEPLOY: data/49-ghetto-beanie · 20261004-102513Z
 
