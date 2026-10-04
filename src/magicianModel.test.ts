@@ -132,7 +132,8 @@ describe('profiel: de velden van een Magician', () => {
     expect(keys.slice(0, 5)).toEqual(['level', 'hp', 'str', 'dex', 'int'])
     expect(keys).toContain('luk')
     for (const k of ['attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
-    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.filter((k) => !isSkillKey(k)))
+    // De extra AP van items staat niet als eigen stat op de kaart: die staat in de popup van zijn stat.
+    expect(statFieldsFor('magician').map((f) => f.key)).toEqual(keys.filter((k) => !isSkillKey(k) && !k.endsWith('Extra')))
   })
 
   it('noemt het wapenveld M.ATT en niet ATT', () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { BRONZE_ARROW, PLAIN_ARROW } from './bowmanGear'
 import { isSkillKey } from './data/skills'
-import { SUBI } from './data/thief'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, skillPointsLeft, skillPointsSpent, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft } from './profile'
+import { apAtLevel, SUBI } from './data/thief'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, skillPointsLeft, skillPointsSpent, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft, STARTER_PROFILE, baseApSpent, draftStatTotal } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -110,11 +110,23 @@ describe('loadProfile en saveProfile', () => {
     expect(loadProfile(storage)).toEqual(draft)
   })
 
-  it('geven zonder of met kapotte opslag het voorbeeldprofiel', () => {
-    expect(loadProfile(null)).toEqual(DEFAULT_PROFILE)
-    expect(loadProfile(fakeStorage())).toEqual(DEFAULT_PROFILE)
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: '{kapot' }))).toEqual(DEFAULT_PROFILE)
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 2, fields: { luk: '9' } }) }))).toEqual(DEFAULT_PROFILE)
+  it('geven zonder of met kapotte opslag het beginprofiel', () => {
+    expect(loadProfile(null)).toEqual(STARTER_PROFILE)
+    expect(loadProfile(fakeStorage())).toEqual(STARTER_PROFILE)
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: '{kapot' }))).toEqual(STARTER_PROFILE)
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 2, fields: { luk: '9' } }) }))).toEqual(STARTER_PROFILE)
+  })
+
+  it('verdeelt in het beginprofiel precies de base AP van level 10, met de rest van de LUK als extra AP van items', () => {
+    expect(baseApSpent(STARTER_PROFILE)).toBe(apAtLevel(10))
+    expect(draftStatTotal(STARTER_PROFILE, 'luk')).toBe(Number(DEFAULT_PROFILE.luk))
+    expect(STARTER_PROFILE.lukExtra).toBe('3')
+  })
+
+  it('geeft een bewaard profiel van vóór de extra AP geen extra AP van items: je stats blijven wat je invulde', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60' } })
+    const p = loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))
+    expect(p).toMatchObject({ luk: '60', strExtra: '0', dexExtra: '0', intExtra: '0', lukExtra: '0' })
   })
 
   it('geeft een bewaard profiel van vóór de nieuwe skills de standaardwaarde voor die skills', () => {
@@ -465,5 +477,36 @@ describe('skillPointsSpent en skillPointsLeft (issue #136)', () => {
 
   it('komt nooit onder 0, ook niet als er meer staat dan het level geeft', () => {
     expect(skillPointsLeft({ ...p({ level: '30' }), level: 10, luckySeven: 20 }, 'job')).toBe(0)
+  })
+})
+
+describe('base AP en extra AP van items (Dave, 4 oktober 2026)', () => {
+  const draft: ProfileDraft = { ...DEFAULT_PROFILE, str: '4', dex: '25', int: '4', luk: '37', strExtra: '2', dexExtra: '5', intExtra: '0', lukExtra: '3' }
+
+  it('telt in het profiel de extra AP op bij de base AP: daar rekent de app mee', () => {
+    const parsed = parseProfile(draft)
+    expect('profile' in parsed && parsed.profile).toMatchObject({ str: 6, dex: 30, int: 4, luk: 40 })
+    expect('profile' in parsed && toCharacter(parsed.profile)).toMatchObject({ str: 6, dex: 30, luk: 40 })
+  })
+
+  it('telt de extra AP mee voor de eisen van een item', () => {
+    const parsed = parseProfile(draft)
+    if (!('profile' in parsed)) throw new Error(parsed.error)
+    expect(shortfall({ dex: 30 }, parsed.profile)).toEqual([])
+    expect(shortfall({ dex: 31 }, parsed.profile)).toEqual([{ stat: 'dex', amount: 1 }])
+  })
+
+  it('geeft het totaal uit het concept, en leeg bij items telt als 0', () => {
+    expect(draftStatTotal(draft, 'dex')).toBe(30)
+    expect(draftStatTotal({ ...draft, dexExtra: '' }, 'dex')).toBe(25)
+    expect(draftStatTotal({ ...draft, dex: 'abc' }, 'dex')).toBeNull()
+  })
+
+  it('telt alleen de base AP bij wat je op je level hebt verdeeld', () => {
+    expect(baseApSpent(draft)).toBe(70)
+  })
+
+  it('weigert een extra AP buiten 0 tot 999, met de naam van de stat', () => {
+    expect(parseProfile({ ...draft, lukExtra: '1000' })).toEqual({ error: '"Extra LUK" moet tussen 0 en 999 liggen.', key: 'lukExtra' })
   })
 })

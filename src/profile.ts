@@ -36,8 +36,11 @@ const STATS = [
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
-  // De AP die je equipment je extra geeft, bovenop de AP van je level (apAtLevel). Alleen ter info: de berekening gebruikt het veld niet.
-  { key: 'extraAp', label: 'Extra AP', min: 0, max: 999, integer: true, informative: true },
+  // Wat je items per stat extra geven, bovenop je base AP in STR, DEX, INT en LUK (Dave, 4 oktober 2026). De berekening telt ze op (zie parseProfile).
+  { key: 'strExtra', label: 'Extra STR', min: 0, max: 999, integer: true },
+  { key: 'dexExtra', label: 'Extra DEX', min: 0, max: 999, integer: true },
+  { key: 'intExtra', label: 'Extra INT', min: 0, max: 999, integer: true },
+  { key: 'lukExtra', label: 'Extra LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je ability points en je equipment (statWindowRange in suggest.ts).
   // W.ATT en M.ATT ook niet: ze volgen uit je equipment (totalAttack, totalMagicAttack).
@@ -160,8 +163,24 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
  */
 export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'int', 'luk']
 
-/** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
-export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.some((a) => a.key === f.key))
+/** Per stat het veld met wat je items extra geven; het veld van de stat zelf is je base AP. */
+export const EXTRA_KEY = { str: 'strExtra', dex: 'dexExtra', int: 'intExtra', luk: 'lukExtra' } as const satisfies Record<Stat, ProfileKey>
+
+/** Je totale stat uit het concept: base AP plus wat je items geven (leeg telt als 0). Null als de base geen heel getal is. */
+export function draftStatTotal(d: ProfileDraft, stat: Stat): number | null {
+  const base = whole(d[stat])
+  return base === null ? null : base + (whole(d[EXTRA_KEY[stat]]) ?? 0)
+}
+
+/** De base AP die in STR, DEX, INT en LUK samen staat (een veld dat geen heel getal is, telt als 0). */
+export const baseApSpent = (d: ProfileDraft): number => (['str', 'dex', 'int', 'luk'] as const).reduce((sum, s) => sum + (whole(d[s]) ?? 0), 0)
+
+/**
+ * De stats (zonder skills, zonder je stars, die uit je equipment komen, en zonder de extra AP van items, die in de
+ * popup van hun stat staat) die een job invult, voor de kaart "Je karakter".
+ */
+export const statFieldsFor = (job: Job): readonly ProfileField[] =>
+  profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.some((a) => a.key === f.key) && !Object.values<ProfileKey>(EXTRA_KEY).includes(f.key))
 
 /** Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. */
 export const DEFAULT_PROFILE: ProfileDraft = {
@@ -171,7 +190,10 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   dex: '25',
   int: '4',
   luk: '40',
-  extraAp: '0',
+  strExtra: '0',
+  dexExtra: '0',
+  intExtra: '0',
+  lukExtra: '0',
   clawWatk: '10',
   accuracy: '33',
   avoid: '23',
@@ -247,6 +269,8 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
     else if (f.informative) out[f.key] = 0 // staat niet in de berekening: leeg of fout blokkeert niets, en telt als 0
     else return { error, key: f.key }
   }
+  // De stats die tellen, zijn je totale stats: je base AP plus wat je items geven.
+  for (const s of ['str', 'dex', 'int', 'luk'] as const) out[s] += out[EXTRA_KEY[s]]
   // Een Bowman schiet zijn pijl (de gewone, of de bronze met Helpful Stranger), ook als er in het concept stars van een andere job staan (zie AMMO).
   if (job === 'bowman') {
     const arrow = bowmanArrow(d)
@@ -300,7 +324,7 @@ export function totalAttack(d: ProfileDraft, job: Job): number | null {
 export function totalMagicAttack(d: ProfileDraft, job: Job): number | null {
   if (job !== 'magician') return 0
   const wand = whole(d.clawWatk)
-  const int = whole(d.int)
+  const int = draftStatTotal(d, 'int')
   return wand === null || int === null ? null : Math.floor(int / MAGIC_DAMAGE.intPerMagicAttack) + wand
 }
 
@@ -329,8 +353,14 @@ export function toCharacter(p: Profile): Character {
 }
 
 /** Het bewaarde profiel; een ontbrekend of onbruikbaar veld krijgt de standaardwaarde. */
+/**
+ * Het profiel waarmee een nieuwe speler begint: het voorbeeldprofiel, maar met de AP verdeeld zoals het spel ze geeft.
+ * Base AP 4 + 25 + 4 + 37 = 70, precies wat level 10 geeft (apAtLevel); de 3 LUK daarboven komen van items.
+ */
+export const STARTER_PROFILE: ProfileDraft = { ...DEFAULT_PROFILE, luk: '37', lukExtra: '3' }
+
 export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
-  const out = { ...DEFAULT_PROFILE }
+  const out = { ...STARTER_PROFILE }
   try {
     const raw = storage?.getItem(PROFILE_KEY)
     if (!raw) return out
@@ -340,7 +370,8 @@ export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
     if (typeof fields !== 'object' || fields === null) return out
     for (const f of DRAFT_FIELDS) {
       const v = (fields as Record<string, unknown>)[f.key]
-      if (typeof v === 'string') out[f.key] = v.slice(0, MAX_FIELD_LENGTH)
+      // Een veld dat een bewaard profiel niet heeft, krijgt de waarde van het voorbeeldprofiel (zonder extra AP van items).
+      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : DEFAULT_PROFILE[f.key]
     }
     return out
   } catch {

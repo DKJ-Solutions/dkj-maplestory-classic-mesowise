@@ -8,7 +8,7 @@ import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
-import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, skillPointsLeft, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
+import { DRAFT_FIELDS, draftStatTotal, parseProfile, PROFILE_FIELDS, profileFieldsFor, skillPointsLeft, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
 
 const LEVEL_FIELD = PROFILE_FIELDS.find((f) => f.key === 'level')!
@@ -56,13 +56,15 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const next: ProfileDraft = { ...draft, level: String(level + 1) }
   if (!isComputed(job)) return next
   const hp = wholeOf(draft.hp)
-  const dex = wholeOf(draft.dex)
-  const luk = wholeOf(draft.luk)
+  // De accuracy rekent met je totale stats (base AP plus items); de nieuwe AP gaan in je base.
+  const dex = draftStatTotal(draft, 'dex')
+  const luk = draftStatTotal(draft, 'luk')
+  const base = wholeOf(draft.luk)
   const accuracy = wholeOf(draft.accuracy)
   const own = OWN_AP[job]
   if (own) {
     // De AP laat de app aan de speler (de hoofdstat voor schade, de accuracy-stat en wapen-eisen); alleen het level telt in de accuracy.
-    const stat = wholeOf(draft[own.stat])
+    const stat = draftStatTotal(draft, own.stat)
     if (hp !== null) next.hp = String(hp + own.hpFrom(level))
     if (stat !== null && luk !== null && accuracy !== null) {
       next.accuracy = String(accuracy + own.accuracy(stat, level + 1, luk) - own.accuracy(stat, level, luk))
@@ -70,7 +72,7 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
     return next
   }
   if (hp !== null) next.hp = String(hp + hpPerLevelFrom(level))
-  if (luk !== null) next.luk = String(luk + AP_PER_LEVEL.amount)
+  if (base !== null) next.luk = String(base + AP_PER_LEVEL.amount)
   if (dex !== null && luk !== null && accuracy !== null) {
     next.accuracy = String(accuracy + baseAccuracy(dex, level + 1, luk + AP_PER_LEVEL.amount) - baseAccuracy(dex, level, luk))
   }

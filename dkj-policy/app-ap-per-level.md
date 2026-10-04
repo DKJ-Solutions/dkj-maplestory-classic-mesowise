@@ -39,33 +39,37 @@
 
 ### PLAN
 
-Dave asked (October 4, 2026) to show per level the minimum number of AP he has, apart from AP that equipment adds.
+Dave asked (October 4, 2026) to show per level how many AP he has, apart from AP that equipment adds; then, after two
+layouts, settled the shape: the pencil of each stat (STR, DEX, INT, LUK) opens two ways to add AP -- base AP, limited
+by what the level still leaves, and the optional extra AP from items.
 
 ### CREATE
 
 - [x] Cody: `apAtLevel` and `STARTING_AP` in `src/data/thief.ts`, from the MeowDB beginners guide (4 per stat, 9 at creation, 5 per level)
-- [x] Cody: a read-only base AP line at the top of the Ability points card
-- [x] Cody: an editable "Extra AP" field (stored in the profile as `extraAp`, informative only) and a read-only "Totaal AP" line that adds it to the level's AP, at Dave's request
-- [x] Gwen and Cody: "Base AP" (fixed to the level's AP) and "Extra AP" (free) as two columns side by side, at Dave's request; "Totaal AP" below them
+- [x] Cody: `strExtra`, `dexExtra`, `intExtra`, `lukExtra` in the profile; the stat fields themselves are now the base AP, and `parseProfile`, `expectedStat`, `totalMagicAttack` and the level-up accuracy count base plus extra
+- [x] Cody: the Ability points card opens with "Base AP over" (or "Base AP te veel"), each stat shows its total with "base + extra" beside it, and its pencil opens a popup with a Base AP field capped at what is left and a free "Extra AP van items" field, one Opslaan for both
+- [x] Cody: a new player starts from `STARTER_PROFILE` (37 base + 3 extra LUK, so exactly the 70 base AP of level 10); a saved profile from before this change gets 0 extra AP, so its stats stay what the player entered
+- [~] Gwen: the two-column layout of the second round, dropped when Dave clarified he wanted the two fields inside the popup
 
 ### TEST
 
-- [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; Base AP shows 70 at level 10 and 65 after Back to level 9; the two columns are Base AP and Extra AP and only Extra AP has a pencil; Extra AP adds up into Totaal AP and an invalid value counts as 0 without an error; two card-name tests updated
-- [x] Victor and Edith: review and Dutch copy read; lint and all 1320 tests green
+- [x] Tycho: `apAtLevel` pinned at levels 1, 2, 10, 30 and 200; base plus extra in `parseProfile`, `toCharacter`, `shortfall` and the level-up accuracy; the starter profile spends exactly 70; an old saved profile gets 0 extra; Extra outside 0 to 999 is refused
+- [x] Tycho: the popup shows both fields, base cannot go past what is left, freeing base AP in one stat makes it available in another, Back to level 9 shows 5 too many; existing card tests moved to the new popup
+- [x] Victor and Edith: review and Dutch copy read; lint and all 1329 tests green
 
 ### DEPLOY: app/ap-per-level
 
-The Ability points card now opens with two columns: "Base AP", fixed to the AP a character has at that level without equipment (25 at level 1 plus 5 per level, sourced from the MeowDB beginners guide), and "Extra AP", which the player fills in freely for what their equipment gives. "Totaal AP" below them adds the two.
+STR, DEX, INT and LUK are now split into base AP and extra AP from items. The stat field is the base AP; four new profile fields hold the extra, and every calculation (damage, accuracy and evasion formulas, item requirements, M.ATT, the level-up accuracy) counts the total. The base AP a level gives is 25 at level 1 plus 5 per level, sourced from the MeowDB beginners guide.
 
-**Score:** 2
+**Score:** 3
 
 #### What makes this deploy extra special
 
-A player sees at a glance how many AP their STR, DEX, INT and LUK should add up to at their level, so a missed or misplaced point stands out.
+On the Ability points card each stat's pencil now offers two ways to add AP: base AP, which cannot go past what your level still leaves ("Base AP over" at the top of the card says how many), and the extra AP your items give, which is free. The card shows each stat's total with "base + extra" beside it.
 
 **Score:** 3
 
 #### Pull Request
 
-Ability points card shows how many AP you have at your level, without equipment
+Ability points split into base AP, capped by your level, and extra AP from items
 

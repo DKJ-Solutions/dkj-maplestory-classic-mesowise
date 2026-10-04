@@ -349,12 +349,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
-/* Ability points: Base AP en Extra AP als twee kolommen naast elkaar, elk een vak met de naam boven het getal (en het potlood) */
-.ap-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; padding: 0.25rem 0 0.75rem; border-bottom: 1px solid var(--border); }
-.spot-body .ap-columns:first-child { margin-top: 0.875rem; }
-.ap-columns .stat-line { grid-template-columns: minmax(0, 1fr) 44px; row-gap: 0.375rem; padding: 0.625rem; border: 1px solid var(--border); border-radius: 0.75rem; }
-.spot-body .ap-columns .stat-line { margin-top: 0; }
-.ap-columns .stat-line-name { grid-column: 1 / -1; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
 /* De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): op een telefoon een paneel onderaan het scherm, breder gecentreerd */
 .stat-dialog {
   width: 100%; max-width: 26rem; margin: auto auto 0; padding: 0;

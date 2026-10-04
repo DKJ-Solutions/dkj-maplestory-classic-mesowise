@@ -8,7 +8,7 @@ import { magicianAccuracy } from './data/magician'
 import { baseAccuracy, baseAvoid, NIMBLE_BODY } from './data/thief'
 import { PRECISE_STRIKES_LEVELS, warriorAccuracy } from './data/warrior'
 import type { Job } from './job'
-import type { ProfileDraft, ProfileKey } from './profile'
+import { draftStatTotal, type ProfileDraft, type ProfileKey } from './profile'
 
 /** Een invulveld als geheel getal, of null. */
 const wholeOf = (text: string): number | null => {
@@ -28,11 +28,12 @@ const preciseStrikesAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS
  */
 export function expectedStat(key: ProfileKey, draft: ProfileDraft, job: Job): number | undefined {
   const level = wholeOf(draft.level)
-  const dex = wholeOf(draft.dex)
-  const luk = wholeOf(draft.luk)
+  // De formules rekenen met je totale stats: base AP plus wat je items geven.
+  const dex = draftStatTotal(draft, 'dex')
+  const luk = draftStatTotal(draft, 'luk')
   if (level === null || dex === null || luk === null) return undefined
   if (job === 'magician') {
-    const int = wholeOf(draft.int)
+    const int = draftStatTotal(draft, 'int')
     if (int === null) return undefined
     if (key === 'accuracy') return magicianAccuracy(int, level, luk)
     if (key === 'avoid') return baseAvoid(dex, luk)
