@@ -58,6 +58,7 @@ result).
 - [x] `npm run lint` (typecheck) clean; Vitest 696/696 green. The existing app tests already cover both popups
   (−/+ on both cards, the decimal attack time without −/+, the expected line, Reset, Opslaan only when changed,
   Enter saves), so no new test was added.
+- [x] Dave looked at the result and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/63-stat-editor
 
