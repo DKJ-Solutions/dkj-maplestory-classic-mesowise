@@ -41,11 +41,12 @@ export interface SkillLevel {
   damagePct: number
 }
 
-/** Throwing stars: de weapon attack en wat het herladen per ster kost. */
+/** Throwing stars: de weapon attack, wat het herladen per star kost en het level dat ze vragen. */
 export interface ThrowingStar {
   name: string
   watk: number
   rechargePerStar: number
+  level: number
   source: Source
 }
 

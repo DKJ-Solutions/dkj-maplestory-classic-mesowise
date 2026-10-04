@@ -10,14 +10,14 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, slotsFor, statName, statOverride, UNKNOWN, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
-import { NIMBLE_BODY } from './data/thief'
+import { NIMBLE_BODY, SUBI } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -286,7 +286,7 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => (
             <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
+          {thief && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
@@ -502,7 +502,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {
@@ -529,14 +529,14 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
     }
   }
   const picked = wornName(entry)
-  const slotLabel = EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
+  const label = slotLabel(slot)
   return (
     <div class="equip-search">
       {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
       {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
           de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
       {!open && picked !== null && (
-        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+        <button type="button" class="equip-picked" aria-label={`${label}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
           {picked}
         </button>
       )}
@@ -547,7 +547,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         aria-hidden={!open && picked !== null ? true : undefined}
         type="text"
         role="combobox"
-        aria-label={`Zoek je ${slotLabel}`}
+        aria-label={`Zoek je ${label}`}
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
@@ -557,7 +557,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         spellcheck={false}
         enterKeyHint="done"
         maxLength={MAX_EQUIP_NAME}
-        placeholder={wornName(entry) ?? 'Zoek wat je draagt'}
+        placeholder={wornName(entry) ?? (isOptionalSlot(slot) ? 'Optioneel: zoek je ammo' : 'Zoek wat je draagt')}
         value={text ?? wornName(entry) ?? ''}
         onFocus={() => {
           setText('')
@@ -668,7 +668,8 @@ function EquipmentCard(props: {
         <div class="spot-body">
           {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
           {thief ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {EQUIP_SLOTS.map(({ slot, label }) => {
+          {slotsFor(props.job).map(({ slot }) => {
+            const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
             const stat = statName(slot)
@@ -691,7 +692,10 @@ function EquipmentCard(props: {
             return (
               <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
-                  <span class="slot-name">{label}</span>
+                  <span class="slot-name">
+                    {label}
+                    {isOptionalSlot(slot) && <span class="slot-optional"> (optioneel)</span>}
+                  </span>
                   <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>
@@ -757,7 +761,11 @@ function EquipmentCard(props: {
               <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
-              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
+              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
+              <a href={SUBI.source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>{' '}
+              (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
             </p>
           )}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
