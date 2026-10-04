@@ -244,13 +244,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equipment .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint of meteen met het eerste slot */
 .equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .equipment .spot-body .source a { color: var(--accent); }
-/* Elk slot een eigen kader. Daarin: de slotnaam gecentreerd bovenaan, en daaronder op één rij de naam (zoekbalk),
+/* Per slot: de slotnaam gecentreerd bovenaan, en daaronder op één rij de naam (zoekbalk),
    de verwachte stat en de stat uit je game. De wrappers (equip-head, equip-search, equip-stats) doen niet mee
    aan de opmaak (display: contents), zodat hun delen rechtstreeks in dit raster staan: zo klapt de zoeklijst
    over de volle breedte open onder de rij, en staat het "was"-label (kan lang zijn) helemaal onderaan. */
 .equipment .equip-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; column-gap: 0.375rem; align-items: end;
-  padding: 0.375rem; margin-bottom: 0.5rem; border: 1px solid var(--border); border-radius: 0.75rem; background: var(--card);
+  padding: 0; margin-bottom: 0.75rem;
 }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row input { min-height: 44px; }
