@@ -1441,7 +1441,7 @@ function Panel(props: { active: boolean; collapsed: boolean; children: Component
 const QUESTION_TITLE = {
   claw: 'Moet ik mijn attack nu upgraden?',
   armor: 'Moet ik mijn defense nu upgraden?',
-  skill: 'Moet ik mijn skillpunt nu verhogen?',
+  skill: 'In welke skill zet ik mijn skillpunt?',
   mob: 'Moet ik van mob wisselen?',
 } as const
 /** Op het beginscherm staan wapen en armor samen onder één vraag (#126). */
@@ -1451,14 +1451,14 @@ type Chip = 'yes' | 'no' | 'todo' | 'unknown'
 const CHIP_TEXT: Record<Chip, string> = { yes: 'Ja', no: 'Nee', todo: 'Nog niet doorgerekend', unknown: 'Niet uit te rekenen' }
 
 /** Eén vraag van het advies: de vraag, het oordeel en het waarom. */
-function Question(props: { title: string; chip: Chip; headingRef?: Ref<HTMLHeadingElement>; part?: boolean; children?: ComponentChildren }) {
+function Question(props: { title: string; chip: Chip; chipText?: string; headingRef?: Ref<HTMLHeadingElement>; part?: boolean; children?: ComponentChildren }) {
   const body = (
     <>
       <h3 tabIndex={-1} ref={props.headingRef}>
         {props.title}
       </h3>
       <p class="chip-row">
-        <span class={`chip ${props.chip}`}>{CHIP_TEXT[props.chip]}</span>
+        <span class={`chip ${props.chip}`}>{props.chipText ?? CHIP_TEXT[props.chip]}</span>
       </p>
       {props.children}
     </>
@@ -1624,6 +1624,26 @@ const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   magicClaw: { noun: 'cast' },
 }
 
+/** De bevestiging na "Punt zetten": waarom dit de beste keuze was, naast de tweede keus, uit het advies van vóór het punt. */
+function placedText(choice: SkillChoice, advice: SkillPointAdvice): string {
+  const saving = choice.saving as number // de winnaar heeft altijd een besparing
+  const why =
+    saving > 0
+      ? ` De beste keuze: bespaart ${formatMeso(saving)} op dit level.`
+      : saving === 0
+        ? ' De beste keuze: geen skill bespaart hier meso, deze scheelt niets.'
+        : ` De beste keuze: geen skill bespaart hier meso, deze kost het minst extra (${formatMeso(-saving)}).`
+  const second = advice.kind === 'advice' ? advice.choices.find((c) => c.id !== choice.id) : undefined
+  const name = second && `${second.name} → ${second.to}`
+  const versus = !second
+    ? ''
+    : second.saving === saving
+      ? ` ${name} scheelt evenveel; de app koos de eerste.`
+      : ` De tweede keuze, ${name}, ${second.saving === null ? 'is ' : ''}${skillOptionText(second.saving)}.`
+  const caution = advice.kind === 'advice' && !advice.robust ? ' Let op: valt een aanname anders uit, dan was een andere skill misschien beter.' : ''
+  return `${choice.name} → ${choice.to} gezet.${why}${versus}${caution}`
+}
+
 /** Wat één skillpunt op dit level doet, in een korte regel voor de lijst met keuzes. */
 const skillOptionText = (saving: number | null) =>
   saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
@@ -1656,7 +1676,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
   const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
   return (
-    <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading} part={props.part}>
+    <Question title={title} chip={winner ? 'yes' : 'no'} chipText={winner ? `${winner.name} → ${winner.to}` : a.left === 0 ? 'Geen punt over' : 'Geen keuze'} headingRef={heading} part={props.part}>
       {winner ? (
         <>
           <p class="verdict">
@@ -1984,7 +2004,7 @@ export function App() {
   }
   const applyPoint = (choice: SkillChoice) => {
     writeProfile((p) => applySkillPoint(p, choice.id, job))
-    setPlaced(`${choice.name} → ${choice.to} gezet.`)
+    setPlaced(placedText(choice, skillAdvice))
   }
   const levelUpped = applyLevelUp(profileDraft, job)
   // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.

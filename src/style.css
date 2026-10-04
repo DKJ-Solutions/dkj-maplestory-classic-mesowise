@@ -462,7 +462,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .advice-cost strong { color: var(--accent); }
 .question h3 { margin: 0 0 0.5rem; font-size: 1rem; }
 .chip-row { margin: 0 0 0.5rem; }
-.chip { display: inline-block; padding: 0.125rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.875rem; font-weight: 700; }
+.chip { display: inline-block; padding: 0.125rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.875rem; font-weight: 700; max-width: 100%; overflow-wrap: anywhere; }
 .chip.yes { background: var(--accent); border-color: var(--accent); color: #fff; }
 .chip.no { background: var(--bg); }
 .chip.todo, .chip.unknown { color: var(--muted); border-style: dashed; }

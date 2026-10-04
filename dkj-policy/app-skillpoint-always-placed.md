@@ -47,10 +47,12 @@ needed a saving above 0. A point has to be spent anyway, so the advice must alwa
 - [x] `skillPoint.ts`: the best computable choice wins whenever a point is left, also at saving 0 or below; savings under 0.5 meso snap to 0; `robust` compares savings within 0.5 meso instead of winner ids
 - [x] `app.tsx`: chip "Ja" with any winner, hints for saving 0 and below 0, and a list of every option with its saving or extra cost
 - [x] Victor's review and Edith's text read applied
+- [x] The question is "In welke skill zet ik mijn skillpunt?" (a point is always spent at a level-up); its chip names the chosen skill instead of Ja/Nee
+- [x] After "Punt zetten" the confirmation says why it was the best choice and what the runner-up does
 
 ### TEST
 
-- [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; 1345 tests green, typecheck clean
+- [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; later rounds for the title, chip labels and confirmation; 1349 tests green, typecheck clean
 - [ ] Dave looks at the skill question at phone width
 
 ### DEPLOY: app/skillpoint-always-placed
@@ -58,7 +60,9 @@ needed a saving above 0. A point has to be spent anyway, so the advice must alwa
 The skill-point advice no longer answers "Nee" while a skill point is still free. A point has to be
 spent anyway, so it always names the best skill: the one that saves the most mesos, or when none saves
 anything, the one that costs the least extra (for example in MP potions). Every option is listed with
-what it saves or costs on this level.
+what it saves or costs on this level. The question now reads "In welke skill zet ik mijn skillpunt?",
+its chip names the chosen skill, and after placing the point the app confirms why it was the best
+choice and what the runner-up would have done.
 
 **Score:** 3
 
