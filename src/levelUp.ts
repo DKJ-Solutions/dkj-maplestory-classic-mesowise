@@ -11,7 +11,9 @@ import { isComputed, type Job } from './job'
 import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
 
-const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
+const LEVEL_FIELD = PROFILE_FIELDS.find((f) => f.key === 'level')!
+const LEVEL_MAX = LEVEL_FIELD.max
+const LEVEL_MIN = LEVEL_FIELD.min
 
 /** Of het level in het profiel al het hoogste is. */
 export const isMaxLevel = (draft: ProfileDraft): boolean => Number(draft.level.trim()) >= LEVEL_MAX
@@ -73,6 +75,17 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
     next.accuracy = String(accuracy + baseAccuracy(dex, level + 1, luk + AP_PER_LEVEL.amount) - baseAccuracy(dex, level, luk))
   }
   return next
+}
+
+/**
+ * Het profiel een level terug (issue #130): alleen level -1. Je stats blijven staan, want de app weet niet wat je sinds de
+ * level-up met je AP hebt gedaan; wie een level-up net heeft gedaan, maakt die ongedaan op het controlescherm. Is het level geen
+ * heel getal of al het laagste, dan blijft het profiel zoals het was.
+ */
+export function applyLevelDown(draft: ProfileDraft): ProfileDraft {
+  const level = numberOf(draft.level)
+  if (level === null || !Number.isInteger(level) || level <= LEVEL_MIN || level > LEVEL_MAX) return draft
+  return { ...draft, level: String(level - 1) }
 }
 
 /** Wat applyLevelUp werkelijk veranderde: de HP-stijging (null als HP gelijk bleef), en of LUK en accuracy zijn aangepast. */
