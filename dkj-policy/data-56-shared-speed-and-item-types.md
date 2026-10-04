@@ -39,21 +39,40 @@
 
 ### PLAN
 
+Issue #56 (uit Victors review van #42): vóór de Magician (#43) en Bowman (#44) dezelfde vorm kopiëren, één
+gedeelde tabel voor de aanvalssnelheden en één basistype voor winkelitems. Geen getal of bron verandert.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Ravi: `src/data/attackSpeed.ts` met `ATTACK_MS` (label → ms, 660 tot 900) en `SPEED` (label + ms);
+  `claws.ts` en `warrior.ts` gebruiken die, `thief.ts` exporteert `ATTACK_MS` door voor de bestaande importers.
+- [x] Ravi: `ShopItem`, `Requires<Stat>` en `ShopArmor` in `types.ts`; `Claw`, `Armor`, `WarriorWeapon` en
+  `WarriorArmor` bouwen daarop, met dezelfde velden.
+- [x] Victors review verwerkt: het commentaar zegt nu dat Normal (6) tot Slow (8) alleen van de itempagina's
+  komen, en de steekcycli komen uit `SPEED`.
 
 ### TEST
 
+- [x] Tycho: `src/data/attackSpeed.test.ts` pint de zes waarden en labels, de volgorde, dat `SPEED` en
+  `ATTACK_MS` overeenkomen, en dat elke claw en elk Warrior-wapen een snelheid uit de tabel draagt.
+- [x] Victor: geen bugs; alle waarden voor en na gelijk, geen importer gemist.
+
 ### DEPLOY: data/56-shared-speed-and-item-types
 
-**Score:**
+Intern opgeruimd: de aanvalssnelheden staan voor alle klassen in één tabel en de winkelitems delen één
+basistype, zodat de Magician en Bowman ze niet opnieuw kopiëren. In de app verandert niets; geen getal of
+bron is gewijzigd. Het voorkomt dat één snelheidslabel bij twee klassen een andere aanvalstijd krijgt, en
+daarmee een andere EXP per uur.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
-Data: one shared attack-speed table and item base type for all classes
+Eén tabel voor de aanvalssnelheden en één basistype voor winkelitems (#56)
 

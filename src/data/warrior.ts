@@ -29,6 +29,7 @@
 //
 // Bij de hoeden (762 en 765) en schoenen (1320 en 1321, 1334 tot en met 1336) hebben de varianten dezelfde
 // eisen, WDEF en prijs en verschilt alleen de bonusstat (STR, DEX, ACC, HP, Jump, Speed); die negeert de app.
+import { SPEED } from './attackSpeed'
 import type {
   IronBodyLevel,
   PreciseStrikesLevel,
@@ -45,13 +46,10 @@ const item = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-
 const skill = (name: string): Source => ({ url: `https://meowdb.com/msclassic/skills/warrior/${name}`, retrieved: R })
 
 // De aanvalssnelheden en hun "Attack cycle" zonder Booster, zoals de itempagina's ze geven.
-const FAST4 = { label: 'Fast (4)', attackMs: 720 }
-const FAST5 = { label: 'Fast (5)', attackMs: 750 }
-const NORMAL6 = { label: 'Normal (6)', attackMs: 810 }
-const SLOW7 = { label: 'Slow (7)', attackMs: 870 }
+const { fast4: FAST4, fast5: FAST5, normal6: NORMAL6, slow7: SLOW7 } = SPEED
 // Spear en polearm hebben twee cycli: `attackMs` is die van de zwaai (Swing), `stabMs` die van de steek (Stab).
-const SLOW7_TWO_CYCLE = { label: 'Slow (7)', attackMs: 870, stabMs: 810 }
-const SLOW8_POLEARM = { label: 'Slow (8)', attackMs: 900, stabMs: 870 }
+const SLOW7_TWO_CYCLE = { ...SPEED.slow7, stabMs: SPEED.normal6.attackMs }
+const SLOW8_POLEARM = { ...SPEED.slow8, stabMs: SPEED.slow7.attackMs }
 
 // De weapon multipliers van de basisaanval per soort (zwaaien en steken), van de itempagina's en de
 // damage-gids (sectie "Weapon actions and multipliers").
