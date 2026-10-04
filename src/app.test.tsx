@@ -134,6 +134,18 @@ describe('begin zonder opslag', () => {
     expect(screen.getByRole('button', { name: /Level up/ }).textContent).toContain('lv 10 → 11')
   })
 
+  it('toont bovenaan het huidige level en zet de level up-knop onder de plekken (#84)', () => {
+    expect(document.querySelector('.current-level')?.textContent).toBe('Level 10')
+    const add = screen.getByRole('button', { name: 'Plek toevoegen' })
+    const up = screen.getByRole('button', { name: /Level up/ })
+    expect(add.compareDocumentPosition(up) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('toont het nieuwe level bovenaan na een level-up', () => {
+    levelUp()
+    expect(document.querySelector('.current-level')?.textContent).toBe('Level 11')
+  })
+
   it('toont een slot dat nog niet is ingevuld als zoekbalk, zonder opties "Weet ik niet" of "Niets"', () => {
     openHomeEquipment()
     const box = searchBox(cards()[0], 'Weapon')

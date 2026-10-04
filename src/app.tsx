@@ -1842,14 +1842,10 @@ export function App() {
               </h1>
               <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
 
-              <div class="levelup-bar">
-                <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
-                  <span>Level up</span>
-                  <small>
-                    {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
-                  </small>
-                </button>
-              </div>
+              {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
+              <p class="current-level">
+                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
+              </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
                   Beste plek: <strong>{placeName(cost.spotName)}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
@@ -1927,6 +1923,15 @@ export function App() {
                   Weet je het beter, vul dan zelf je kills per uur in.
                 </p>
               )}
+
+              <div class="levelup-bar">
+                <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
+                  <span>Level up</span>
+                  <small>
+                    {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
+                  </small>
+                </button>
+              </div>
 
               <footer class="credit">
                 Spelgegevens:{' '}
