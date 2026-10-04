@@ -244,7 +244,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equipment .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint of meteen met het eerste slot */
 .equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .equipment .spot-body .source a { color: var(--accent); }
-.equipment .equip-row { padding-bottom: 0.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+/* Elk slot een eigen kader, zodat de slots duidelijk van elkaar af staan */
+.equipment .equip-row { padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid var(--border); border-radius: 0.75rem; background: var(--card); }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row input { min-height: 44px; }
 /* De lijst staat in de stroom, niet erboven: de kaart en het inklapvak knippen alles af wat uitsteekt */
