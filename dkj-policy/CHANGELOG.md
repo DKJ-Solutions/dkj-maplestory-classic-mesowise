@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**39 / 76 minor entries** <!-- pending-tally -->
+**40 / 77 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/139-skill-stat-effects · 20261004-182624Z
+
+Skills that change a total now count in the calculation. Iron Body, Magic Armor and Focus are buffs: the model
+assumes they are always on, adds their DEF, accuracy and evasion to the character, and charges the MP to keep them
+up to the MP potions. Max HP Increase counts as Max HP. The skill-point advice weighs all four, each behind the skill
+level it requires. The Skillpoints card shows what a skill gives next to its MP, now and at the next level, with the
+cost as a red − and the gain as a green +; an attack skill shows its damage per use, and Slash Blast's HP and Three
+Snails' shell show as costs. New module `src/skillEffects.ts`.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+The skill-point advice now weighs the defensive skills too, and the card shows what each point costs and what it
+gives back, in red and green, including an attack's damage.
+
+**Score:** 3
+
+#### Pull Request
+
+Skill points count a skill's effect on the stat totals
+
+[PR #143](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/143)
+
+---
 
 ### DEPLOY: app/141-potion-recovery-skill · 20261004-181159Z
 
