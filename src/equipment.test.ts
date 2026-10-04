@@ -1326,12 +1326,31 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     expect(slotsOf('bowman')).not.toContain('shield')
   })
 
-  it('heten zoals in het spel, tellen als armor (DEF) en hebben nog geen catalogus: je vult ze als eigen item', () => {
+  it('heten zoals in het spel en tellen als armor (DEF)', () => {
     for (const [slot, label] of [['shield', 'Shield'], ['gloves', 'Gloves'], ['cape', 'Cape'], ['earrings', 'Earrings']] as const) {
       expect(slotLabel(slot)).toBe(label)
       expect(statName(slot, 'warrior')).toBe('DEF')
-      for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) expect(catalogItems(slot, job), `${slot} ${job}`).toEqual([])
     }
+  })
+
+  it('hebben een catalogus per job (#125): alleen wat die job mag dragen, met WDEF als stat en de MDEF erbij', () => {
+    const names = (slot: 'shield' | 'gloves' | 'cape' | 'earrings', job: Job) => catalogItems(slot, job).map((i) => i.name)
+    // Shield: de Warrior zijn bucklers en schilden, de Magician de Mystic Shield, en beide de twee zonder jobregel.
+    expect(names('shield', 'warrior')).toEqual(['Stolen Fence', 'Wooden Buckler', 'Pan Lid', 'Steel Shield', 'Mithril Buckler', 'Red Triangular Shield', 'Red Cross Shield'])
+    expect(names('shield', 'magician')).toEqual(['Stolen Fence', 'Pan Lid', 'Mystic Shield'])
+    // Gloves: Work Gloves voor iedereen, dan per job de items met zijn jobregel (de Thief drie kleuren per level vanaf 15,
+    // de Bowman en Magician één op 15 en dan drie, de Warrior één per level tot 25 en drie op 30).
+    expect(names('gloves', 'thief')).toHaveLength(13)
+    for (const job of ['bowman', 'magician'] as const) expect(names('gloves', job), job).toHaveLength(11)
+    expect(names('gloves', 'warrior')).toHaveLength(8)
+    expect(names('gloves', 'thief')).not.toContain('Juno')
+    // Cape en earrings hebben geen jobregel: elke job dezelfde lijst.
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      expect(names('cape', job), job).toEqual(['Old Raggedy Cape'])
+      expect(names('earrings', job), job).toHaveLength(10)
+    }
+    expect(catalogItems('shield', 'magician').find((i) => i.name === 'Mystic Shield')).toEqual({ name: 'Mystic Shield', level: 22, stat: 20, mdef: 42 })
+    expect(catalogItems('earrings', 'thief')[0]).toEqual({ name: 'Single Earring', level: 15, stat: 0, mdef: 19 })
   })
 
   it('tellen mee in de WDEF: een eigen item verschuift het profiel met het verschil, en telt in wornWdef', () => {
@@ -1344,9 +1363,21 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     expect(wornWdef({ ...swap.equipment, shield: other('8', 'Schild'), gloves: other('2', 'Handschoenen'), earrings: other('0', 'Oorbellen') })).toEqual({ cape: 10, shield: 8, gloves: 2, earrings: 0 })
   })
 
-  it('laten de Magic Def staan: hun MDEF is als eigen item nooit bekend', () => {
+  it('laten de Magic Def staan als eigen item of leeg: hun MDEF is dan niet bekend, en ze mogen leeg blijven', () => {
     const eq: Equipment = { ...defaultEquipment(), hat: shop('Bronze Pride'), top: shop('Red Pao'), bottom: shop('Red Pao Bottoms'), shoes: shop('Red Enamel Boots') }
+    expect(wornMdef(eq)).not.toBeNull()
     expect(wornMdef({ ...eq, cape: other('3', 'Mijn cape'), gloves: other('2', 'Handschoenen'), earrings: other('1', 'Oorbellen') })).toBe(wornMdef(eq))
+  })
+
+  it('tellen hun MDEF mee in de Magic Def als je een item uit de catalogus draagt (#125)', () => {
+    const eq: Equipment = { ...defaultEquipment(), hat: shop('Bronze Pride'), top: shop('Red Pao'), bottom: shop('Red Pao Bottoms'), shoes: shop('Red Enamel Boots') }
+    const base = wornMdef(eq)!
+    const dressed = { ...eq, shield: shop('Mystic Shield'), gloves: shop('Lemona'), cape: shop('Old Raggedy Cape'), earrings: shop('Star Earrings') }
+    expect(wornMdef(dressed)).toBe(base + 42 + 5 + 5 + 27)
+    // Een eigen stat bij een catalogusitem is de WDEF; de MDEF blijft die van de pagina.
+    expect(wornMdef({ ...eq, cape: shop('Old Raggedy Cape', '20') })).toBe(base + 5)
+    // Nog steeds onbekend zolang hat, body of shoes niet bekend is, ook met earrings.
+    expect(wornMdef({ ...eq, shoes: unknown, earrings: shop('Star Earrings') })).toBeNull()
   })
 
   it('bewaren een eigen item, en laden een catalogusnaam in die slots als nog niet ingevuld', () => {

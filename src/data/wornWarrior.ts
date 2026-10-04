@@ -19,7 +19,7 @@
 //
 // De acht wapens zonder jobregel (Long Sword tot Sky Blue Umbrella) zijn sinds #55 NPC-wapens in warrior.ts.
 //
-// Niet opgenomen: handschoenen en schilden (niet gelezen).
+// Handschoenen en schilden staan niet hier maar in accessories.ts (#125), met de jobregel per item.
 import type { Source, WornArmor, WornWarriorWeapon } from './types'
 import { NPC_WARRIOR_ARMOR } from './warrior'
 import { COMMON_WORN_ARMOR } from './wornItems'
