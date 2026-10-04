@@ -1430,8 +1430,8 @@ describe('een Magician in de app', () => {
   describe('het beginscherm', () => {
     beforeEach(() => open())
 
-    it('zet de job achter het level en niet achter Ability points', () => {
-      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20Magician')
+    it('zet de job niet bij het level (Dave, 4 oktober 2026, #130) en niet achter Ability points', () => {
+      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20')
       expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
     })
 

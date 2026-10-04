@@ -1848,7 +1848,6 @@ export function App() {
                 </button>
                 <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
                   {levelText === '' ? 'Level ?' : `Level ${levelText}`}
-                  {jobChosen && <small>{jobLabel(job)}</small>}
                 </h1>
                 <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
                   Level up

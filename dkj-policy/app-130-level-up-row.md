@@ -48,7 +48,10 @@ undoing a fresh level-up stays on the check screen.
 - [x] `applyLevelDown` in `src/levelUp.ts` (pure, level -1, bounded by the level field's min/max)
 - [x] `.level-row` at the top of panel 0 in `src/app.tsx`: small back button, visible h1 (takes over the
       slide flow's focus ref from the sr-only "Mesowise" h1), green Level up; the bottom level-up bar goes
-- [x] Green `--levelup` / `--on-levelup` tokens, light and dark, in `src/style.css`
+- [x] Green gradient tokens (`--levelup-hi`, `--levelup-lo`, `--on-levelup`), light and dark, in `src/style.css`
+- [x] Dave's look, round 1: job removed from under the level; the level sits exactly mid-screen (grid with
+      two equal 6.5rem side columns); Level up keeps only a green gradient (a livelier version was tried
+      and dropped as overdone)
 
 ### TEST
 
