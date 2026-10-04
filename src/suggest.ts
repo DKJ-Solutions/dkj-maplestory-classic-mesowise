@@ -8,6 +8,7 @@ import { POTIONS } from './data/spots'
 import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion } from './data/types'
 import { POWER_STRIKE_LEVELS } from './data/warrior'
+import { isComputed } from './job'
 import { toCharacter, type Profile } from './profile'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
@@ -38,15 +39,27 @@ const BOW = { weaponMult: BOWMAN_DAMAGE.shootMultiplier, mastery: BOWMAN_MASTERY
  * gezette level, of zonder punten het gewone schot. Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
  * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
  */
-function attackOf(profile: Profile, character: Character): Attack {
+function attackOf(profile: Profile, character: Character, basic = false): Attack {
   switch (profile.job) {
     case 'warrior':
-      return meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))
+      return meleeAttack(character, profile.weaponMult, basic ? null : powerStrikeAt(profile.powerStrike))
     case 'bowman':
-      return bowAttack(character, BOW, arrowBlowAt(profile.arrowBlow))
+      return bowAttack(character, BOW, basic ? null : arrowBlowAt(profile.arrowBlow))
     default:
-      return characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
+      return characterAttack(character, basic ? null : luckySevenAt(profile.luckySeven), LUCKY_SEVEN)
   }
+}
+
+/**
+ * De Attack uit het statvenster (issue #108): de laagste en hoogste schade van één gewone aanval, uit je ability points
+ * en je weapon attack, zonder skill en vóór de verdediging van het monster. Bron: de damage-gids van MeowDB
+ * (meowdb.com/msclassic/guides/explaining-the-damage-formula, "Character-window damage range"), die beide afrondt
+ * naar beneden. Null voor een job die de app nog niet doorrekent: daar kent hij de formule niet.
+ */
+export function statWindowRange(profile: Profile): { min: number; max: number } | null {
+  if (!isComputed(profile.job)) return null
+  const a = attackOf(profile, toCharacter(profile), true)
+  return { min: Math.trunc(a.min), max: Math.trunc(a.max) }
 }
 
 /** De potion die per punt herstel het minst kost (Orange bij HP, Blue bij MP). */

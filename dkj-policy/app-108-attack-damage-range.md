@@ -39,19 +39,41 @@
 
 ### PLAN
 
+#### Reason verified
+
+Issue #108 says the total attack ignores the ability points. The calculation already used them (`damageRange` in
+`src/calc/mobModel.ts`); only the Attack line on the Total stats card showed bare weapon attack (`totalAttack`).
+MeowDB's damage guide states what the stat window shows: "the character stat window's damage range ... predicts the
+lowest and highest damage from one ordinary basic physical attack", with its own example of 60-172.
+
+- [x] Read the issue, verify the reason against the code and the source
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `statWindowRange` in `src/suggest.ts` -- the job's basic attack without a skill, truncated like the guide
+- [x] Cody: the Attack line on Total stats shows `min – max`; a Magician (not yet computed) keeps the weapon attack
 
 ### TEST
 
+- [x] Tycho: the guide's worked example (Warrior 132 STR, 30 DEX, 47 ATT, 1.8 -> 60 – 172), ability points move the range, a skill does not, Magician is null
+- [ ] Lint gate and the full suite green
+- [ ] Victor: code review of the diff
+- [ ] Edith: the Dutch hint text
+- [ ] Dave looks at the preview (visible result)
+
 ### DEPLOY: app/108-attack-damage-range
 
-**Score:**
+On the Total stats card, Attack now shows the damage range of one ordinary attack (min – max), just like the in-game
+stat window: your ability points count, not only the weapon attack from your equipment. Source: the MeowDB damage
+guide, whose own example (60 – 172) is pinned in a test.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Dave and his friends see the same Attack in the app as in their stat window, so they can check their profile at a glance.
+
+**Score:** 3
 
 #### Pull Request
 

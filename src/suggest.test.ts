@@ -5,7 +5,7 @@ import { findKnownSpot, knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS } from './data/thief'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile } from './profile'
 import { newDraft, toSpot } from './spotDraft'
-import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, powerStrikeAt, resolveSpot, suggestMonsters } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, luckySevenAt, MP_POTION, pickMonster, powerStrikeAt, resolveSpot, statWindowRange, suggestMonsters } from './suggest'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -280,5 +280,41 @@ describe('resolveSpot voor een Warrior', () => {
 
   it('laat een ingevulde munitie winnen, ook bij een Warrior', () => {
     expect(resolveSpot({ ...chosen, ammo: '55' }, subway, warrior).cost.ammo).toBe(55)
+  })
+})
+
+describe('statWindowRange: de Attack uit het statvenster (#108)', () => {
+  const as = (job: Profile['job'], over: Partial<Record<keyof typeof DEFAULT_PROFILE, string>> = {}): Profile => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, ...over }, job)
+    if (!('profile' in r)) throw new Error(r.error)
+    return r.profile
+  }
+
+  it('geeft het voorbeeld van de damage-gids: een Warrior met 132 STR, 30 DEX, 47 ATT en 1,8 heeft 60 – 172', () => {
+    // meowdb.com/msclassic/guides/explaining-the-damage-formula, "Character-window damage range: 60-172".
+    expect(statWindowRange(as('warrior', { str: '132', dex: '30', clawWatk: '47', weaponMult: '1.8' }))).toEqual({ min: 60, max: 172 })
+  })
+
+  it('telt je ability points mee, niet alleen de weapon attack', () => {
+    const base = statWindowRange(as('thief'))!
+    expect(statWindowRange(as('thief', { luk: '80' }))!.max).toBeGreaterThan(base.max)
+    expect(statWindowRange(as('warrior', { str: '60' }))!.max).toBeGreaterThan(statWindowRange(as('warrior'))!.max)
+    expect(statWindowRange(as('bowman', { dex: '60' }))!.max).toBeGreaterThan(statWindowRange(as('bowman'))!.max)
+  })
+
+  it('rekent zonder skill: een geleerde Lucky Seven, Power Strike of Arrow Blow verandert het bereik niet', () => {
+    expect(statWindowRange(as('thief', { luckySeven: '20' }))).toEqual(statWindowRange(as('thief', { luckySeven: '0' })))
+    expect(statWindowRange(as('warrior', { powerStrike: '20' }))).toEqual(statWindowRange(as('warrior')))
+    expect(statWindowRange(as('bowman', { arrowBlow: '20' }))).toEqual(statWindowRange(as('bowman')))
+  })
+
+  it('rondt min en max naar beneden af, zoals de gids', () => {
+    const r = statWindowRange(profile)!
+    expect(Number.isInteger(r.min) && Number.isInteger(r.max)).toBe(true)
+    expect(r.min).toBeLessThanOrEqual(r.max)
+  })
+
+  it('is null voor een job die de app nog niet doorrekent', () => {
+    expect(statWindowRange(as('magician'))).toBeNull()
   })
 })

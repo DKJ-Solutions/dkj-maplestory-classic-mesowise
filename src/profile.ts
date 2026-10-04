@@ -34,7 +34,7 @@ const STATS = [
   { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
-  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je equipment (totalAttack).
+  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je ability points en je equipment (statWindowRange in suggest.ts).
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
   { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },
@@ -216,8 +216,9 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
 const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
 
 /**
- * De Attack uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
- * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ * De weapon attack uit je equipment: dezelfde als de berekening gebruikt. Het statvenster toont ze alleen voor een job die
+ * de app nog niet doorrekent; anders je schadebereik (statWindowRange, issue #108). Null als het wapen (of bij een Thief
+ * de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
  */
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
   const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
