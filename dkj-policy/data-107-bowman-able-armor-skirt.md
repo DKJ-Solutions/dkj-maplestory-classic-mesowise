@@ -49,8 +49,8 @@
 
 ### TEST
 
-- [ ] Tycho: data tests, gender tests (`genderData.test.ts`) and the advice for a female, male and unchosen Bowman
-- [ ] Victor: code review
+- [x] Tycho: data tests, gender tests (`genderData.test.ts`) and the advice for a female, male and unchosen Bowman
+- [x] Victor: code review; nothing blocking, and the worn list is now sorted by slot and level like the Warrior's
 
 ### DEPLOY: data/107-bowman-able-armor-skirt
 
