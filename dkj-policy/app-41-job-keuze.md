@@ -65,6 +65,8 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
 - [x] Gwen: geen ontwikkelaarsuitleg meer voor de speler (Dave, 4 oktober 2026). De job-, equipment- en
   karakterkaart zeggen niet meer dat een job niet is doorgerekend. "Nog niet doorgerekend voor <job>" staat
   alleen nog waar anders een getal had gestaan.
+- [x] Gwen: de uitleg in de job-kaart staat er weer, als ontwikkelaarsinfo: rood en gestippeld omlijnd
+  (`.debug`), zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026).
 
 #### Ontwerpkeuzes
 

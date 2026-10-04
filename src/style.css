@@ -145,6 +145,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   font-weight: 700;
 }
 .error { margin: 0; padding: 0 1rem 0.75rem; color: #dc2626; font-size: 0.875rem; }
+/* Ontwikkelaarsinfo: rood en gestippeld omlijnd, zodat het niet leest als uitleg voor de speler. */
+.debug { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; border: 1px dashed #dc2626; border-radius: 0.5rem; color: #dc2626; font-size: 0.75rem; }
 .spot-body { padding: 0.25rem 1rem 1rem; border-top: 1px solid var(--border); }
 .spot-body .field:first-child { margin-top: 0.875rem; }
 .spot-body .btn { margin-top: 1rem; }
@@ -183,6 +185,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
+  .debug { color: #f87171; border-color: #f87171; }
   .spot.invalid, .profile.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }

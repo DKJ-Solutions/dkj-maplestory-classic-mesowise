@@ -129,6 +129,10 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         </div>
       )}
       {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
+      {/* Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */}
+      {!isComputed(job) && (
+        <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
+      )}
     </section>
   )
 }
