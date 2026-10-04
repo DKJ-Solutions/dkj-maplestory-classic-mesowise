@@ -39,19 +39,42 @@
 
 ### PLAN
 
+Issue #55, decision 2 (Dave, 2026-10-04): the app asks the character's gender, so gender-locked shop items count.
+Until a gender is chosen, only items both genders can wear count, which is the app's behaviour before this branch.
+Scope: the Thief and the Warrior, the two jobs the app calculates. The Magician and Bowman female-only rows follow
+with their models (#43, #44), which are held by other sessions.
+
+#### Visible result
+
+The job card gets a "Geslacht" row (Man / Vrouw). Dave looks before the merge, so the branch parks without a PR.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Vera: every Warrior top, bottom and overall Harry (Perion, npc 508) sells, plus the level-12 T-shirts and the
+  Red Qi Pao Skirt, read from the raw MeowDB item page on 2026-10-04 (requirements, gender, W.DEF, shop price).
+- [x] Cody: `gender.ts`, `gender` on shop armor and the profile, the advice filters by gender (candidates and
+  horizon), the Geslacht row on the job card. The equipment catalog stays unfiltered: you state what you wear.
+- [x] Data: Thief +3 rows, Warrior +23 rows (one colour per level and gender), the other colours in wornWarrior.ts.
 
 ### TEST
 
+- [ ] Tycho: existing tests updated to the new data, gender tests added, `vitest` and `lint` green.
+- [ ] Victor: code review of the diff.
+- [ ] Edith: the Dutch UI text and comments.
+
 ### DEPLOY: app/55-character-gender
 
-**Score:**
+The app now asks whether your character is a man or a woman. A Warrior then gets advice on tops, bottoms and
+overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
+you choose, the advice only counts armor both can wear.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
