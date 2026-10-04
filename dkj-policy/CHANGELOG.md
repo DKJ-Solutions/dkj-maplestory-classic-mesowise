@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**42 / 79 minor entries** <!-- pending-tally -->
+**43 / 80 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/146-exp-levels-1-9 · 20261004-210517Z
+
+The EXP table now starts at level 1 instead of level 10 (#146), so the level cost and the ATT, DEF, Skill and Mob advice work for a character below level 10 instead of saying "niet uit te rekenen". Levels 1-9 come from NiaMeowDB's EXP table and add up to the 3,347 EXP the page lists before level 10.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A friend opening the app at a level below 10 now gets an answer: Dave hit the empty weapon advice at level 9.
+
+**Score:** 3
+
+#### Pull Request
+
+EXP table: add levels 1-9
+
+[PR #148](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/148)
+
+---
 
 ### DEPLOY: app/skillpoint-always-placed · 20261004-204245Z
 
