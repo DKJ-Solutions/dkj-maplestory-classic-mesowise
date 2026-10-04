@@ -330,10 +330,6 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
       setActive(0)
     } else if (rows.length > 0) setActive((to + rows.length) % rows.length)
   }
-  // Na een tik op de naam staat de zoekbalk er pas na de render: dan pas focussen.
-  useEffect(() => {
-    if (open) input.current?.focus()
-  }, [open])
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -351,13 +347,18 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
   return (
     <div class="equip-search">
       {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
-      {!open && picked !== null ? (
-        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => { setText(''); setActive(0) }}>
+      {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
+          de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
+      {!open && picked !== null && (
+        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
           {picked}
         </button>
-      ) : (
+      )}
       <input
         ref={input}
+        class={!open && picked !== null ? 'under' : undefined}
+        tabIndex={!open && picked !== null ? -1 : undefined}
+        aria-hidden={!open && picked !== null ? true : undefined}
         type="text"
         role="combobox"
         aria-label={`Zoek je ${slotLabel}`}
@@ -383,7 +384,6 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
         }}
         onKeyDown={onKeyDown}
       />
-      )}
       {open && rows.length > 0 && (
         // mousedown niet laten blurren: anders sluit de lijst voordat de tik als keuze aankomt.
         <ul class="equip-list" id={`${id}-list`} role="listbox" onMouseDown={(e) => e.preventDefault()}>
@@ -410,6 +410,8 @@ function StatDialog(props: { title: string; onCancel: () => void; children: Comp
   useEffect(() => {
     const d = ref.current
     d?.showModal()
+    // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
+    if (window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
     return () => d?.close()
   }, [])
   return (
@@ -423,6 +425,7 @@ function StatDialog(props: { title: string; onCancel: () => void; children: Comp
       }}
       onClick={(e) => e.target === ref.current && props.onCancel()}
     >
+      <div class="stat-dialog-body">
       <div class="stat-dialog-head">
         <strong>{props.title}</strong>
         <button type="button" class="stat-dialog-close" aria-label="Sluiten zonder opslaan" onClick={props.onCancel}>
@@ -430,6 +433,7 @@ function StatDialog(props: { title: string; onCancel: () => void; children: Comp
         </button>
       </div>
       {props.children}
+      </div>
     </dialog>
   )
 }
@@ -441,7 +445,7 @@ function StatDialog(props: { title: string; onCancel: () => void; children: Comp
 function EquipmentCard(props: {
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
-  /** Wat in het getalveld staat maar nog niet is vastgelegd; telt nergens mee. */
+  /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
   hint?: string
@@ -449,7 +453,7 @@ function EquipmentCard(props: {
   defaultOpen: boolean
   onPick: (slot: EquipSlot, pick: string, name?: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
-  /** Het getalveld legt zich vast (blur of Enter). */
+  /** Het concept uit het corrigeervak wordt vastgelegd (Opslaan of Enter). */
   onCommit: (slot: EquipSlot) => void
   /** Het concept in het corrigeervak weggooien (sluiten zonder opslaan). */
   onDiscard: (slot: EquipSlot) => void
@@ -1155,7 +1159,7 @@ export function App() {
   }
 
   const levelUp = () => {
-    // Eerst wat nog in een getalveld staat, dan pas rekenen: alles uit de refs, niet uit deze render.
+    // Eerst een nog niet opgeslagen concept uit het corrigeervak, dan pas rekenen: alles uit de refs, niet uit deze render.
     commitAllEquipment()
     if (applyLevelUp(profileRef.current) === profileRef.current) return
     setPlaced(null)
@@ -1368,7 +1372,7 @@ export function App() {
               onCommit={commitEquipment}
               onDiscard={(slot) => setPendingFor(slot, undefined)}
             />
-            {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
+            {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
             <button
               type="button"
               class="btn primary"

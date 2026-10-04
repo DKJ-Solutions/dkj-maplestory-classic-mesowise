@@ -59,8 +59,8 @@ never enter the upgrade advice.
 - [x] "was" badge shows a shop item's own name (it fell through to "Ander item")
 - [x] Rebecca: wearable Thief items lv 0-30 per slot, each with its MeowDB page
 - [x] Vera: those items into `src/data/wornItems.ts`, each with source and date (118 armor, 6 claws, read from the raw item pages; Rebecca's summaries disagreed in places)
-- [x] Cody: search bar per slot, own item when nothing matches, stat override with the database value beside it
-- [x] Gwen: the look at phone width (two-line rows, tinted active row, dashed own-item row, amber override note)
+- [x] Cody: search bar per slot, own item when nothing matches, stat correction in a popup
+- [x] Gwen: the look at phone width (one row per slot, outlined corrected value, bottom-sheet popup)
 
 ### TEST
 
@@ -69,8 +69,8 @@ never enter the upgrade advice.
 - [x] Tycho: tests for the catalog, the override and the new data (437 green)
 - [x] Victor (code) and Edith (UI text) on the second round: fixed a claw stat override resetting a hand-set attack speed, stored stats now saved as they count (clamped), Escape-then-arrow highlighting, own-item row offered unless the text is an exact name; "Ander item" renamed "eigen item" throughout (439 green)
 - [x] Dave, October 4, 2026: expected (database) and in-game stat side by side, in-game always overrules
-- [ ] Victor (code) and Edith (UI text) on the final layout: one row per slot, pencil opens a correction popup with Opslaan
-- [ ] Dave looks at the equipment card at phone width before the merge
+- [x] Victor (code) and Edith (UI text) on the final layout: fixed a tap on empty popup space discarding the draft, the iOS keyboard not opening from the item name, and stale comments and DEPLOY text (440 green)
+- [x] Dave looked at the equipment card at phone width and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/equipment-always-worn
 
@@ -78,13 +78,14 @@ The equipment card no longer offers "Weet ik niet" or "Niets": a player always w
 slot is now a search bar: type the name of what you wear and pick it from the list, which covers the
 shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
-own item. Each slot is one row: the item name, the WATK or WDEF that counts, and a pencil. The value
-comes from the database until you correct it: the pencil opens a popup (a sheet at the bottom of a
-phone) with the expected value, − and + buttons (tap the number to type over it) and "Reset" to the
-database value; an "Opslaan" button appears once the value differs, and closing without it discards. A corrected value is outlined, with the
-expected value small and struck through beside it; the game value always overrules the expected one.
-A slot not filled in yet shows a search
-prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
+own item. Each slot is one row: the item name, the ATT (weapon) or DEF (armor) that counts, and a pencil,
+with a line between the slots. The value comes from the database until you correct it: the pencil opens a
+popup (a sheet at the bottom of a phone) that shows the expected value ("Verwacht volgens de database")
+and the value in your game ("ATT in game" or "DEF in game") with − and + buttons (tap the number to type
+over it). "Reset" puts the database value back, and an "Opslaan" button appears once the value differs;
+closing without it discards the change. A corrected value is outlined, with the expected value small and
+struck through beside it; the value from your game always overrules the expected one. A slot not filled
+in yet shows a search prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
 "Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
 
 **Score:** 3

@@ -4,7 +4,7 @@
 // geen keuze "weet ik niet" of "niets", alleen een slot dat nog niet is ingevuld. Puur, zonder UI-import. Alles
 // uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op "nog niet ingevuld". Je zoekt wat je draagt in
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
-// dan typ je de juiste in: die telt.
+// dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import type { ArmorSlot } from './data/types'
@@ -183,10 +183,10 @@ export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string, n
 }
 
 /**
- * Het getalveld legt zich vast: de entry met de getypte stat, of null als er niets te doen valt. Bij "Ander
- * item" geldt een leeg of onleesbaar getal niet (het veld valt terug). Bij een catalogusitem betekent leeg
- * "weer de database", en een getal gelijk aan de database wordt ook leeg bewaard: dat is geen aanpassing. Bewaard
- * wordt het getal zoals het meetelt (afgekapt en begrensd), zodat veld, opslag en notitie hetzelfde tonen.
+ * Een gecorrigeerde stat wordt vastgelegd (Opslaan of Enter): de entry met de getypte stat, of null als er niets
+ * te doen valt. Bij een eigen item geldt een leeg of onleesbaar getal niet. Bij een catalogusitem betekent leeg
+ * "weer de database", en een getal gelijk aan de database wordt ook leeg bewaard: dat is geen aanpassing.
+ * Bewaard wordt het getal zoals het meetelt (afgekapt en begrensd), zodat rij, popup en opslag hetzelfde tonen.
  */
 export function commitStat(slot: EquipSlot, entry: EquipEntry, text: string): EquipEntry | null {
   if (entry.pick === UNKNOWN) return null

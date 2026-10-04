@@ -245,7 +245,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .equipment .spot-body .source a { color: var(--accent); }
 /* Per slot: de slotnaam gecentreerd bovenaan, en daaronder op één rij de naam (zoekbalk),
-   de verwachte stat en de stat uit je game. De wrappers (equip-head, equip-search, equip-stats) doen niet mee
+   het getal dat telt (met ATT/DEF) en het potlood. De wrappers (equip-head, equip-search, equip-stats) doen niet mee
    aan de opmaak (display: contents), zodat hun delen rechtstreeks in dit raster staan: zo klapt de zoeklijst
    over de volle breedte open onder de rij, en staat het "was"-label (kan lang zijn) helemaal onderaan. */
 .equipment .equip-row {
@@ -257,10 +257,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row input { min-height: 44px; }
 .equip-head, .equip-search, .equip-stats { display: contents; }
-/* De slotnaam gecentreerd bovenaan; de stat (WATK of WDEF) staat in het waardevak, rechts van het getal */
+/* De slotnaam gecentreerd bovenaan; de stat (ATT of DEF) staat in het waardevak, rechts van het getal */
 .equip-head .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
 .equip-value-head { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
-/* De zoekbalk zakt mee met de onderrand van de statgroepen (hun padding plus rand), zodat alles op één lijn staat */
+/* De zoekbalk zakt mee met de onderrand van waardevak en potlood (marge plus rand), zodat alles op één lijn staat */
+/* De naam ligt als knop boven op de zoekbalk (zelfde cel); de zoekbalk eronder is onzichtbaar tot je tikt */
+.equip-picked { z-index: 1; }
+.equip-search input.under { opacity: 0; pointer-events: none; }
 .equip-search input, .equip-picked { grid-row: 2; grid-column: 1; margin-bottom: calc(0.25rem + 2px); }
 .equip-picked {
   min-height: 44px; min-width: 0; padding: 0.25rem 0.75rem; text-align: left; font: inherit; font-size: 0.9375rem; font-weight: 600;
@@ -305,9 +308,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* De popup om een stat te corrigeren: op een telefoon een paneel onderaan het scherm, breder gecentreerd */
 .stat-dialog {
-  width: 100%; max-width: 26rem; margin: auto auto 0; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  width: 100%; max-width: 26rem; margin: auto auto 0; padding: 0;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem 1rem 0 0;
 }
+/* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
+.stat-dialog-body { padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 @media (min-width: 600px) { .stat-dialog { margin: auto; border-radius: 1rem; } }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
@@ -320,7 +325,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-dialog-db { margin: -0.25rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .stat-dialog-db strong { color: var(--text); }
 /* De invoer krijgt ruimte: duidelijk los van de kop en van de knoppen eronder */
-/* "WATK in game" is een kop, net als de titel */
+/* "ATT in game" is een kop, net als de titel */
 .stat-dialog-label { display: block; margin: 1.5rem 0 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text); }
 .stat-dialog .equip-step { justify-content: start; grid-template-columns: 52px 5rem 52px; gap: 0.5rem; }
 .stat-dialog .equip-step button, .stat-dialog .equip-step input { height: 52px; }
