@@ -250,8 +250,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    over de volle breedte open onder de rij, en staat het "was"-label (kan lang zijn) helemaal onderaan. */
 .equipment .equip-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; column-gap: 0.375rem; align-items: end;
-  padding: 0; margin-bottom: 0.75rem;
+  padding: 0 0 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border);
 }
+/* Een lijn tussen de slots, niet onder het laatste */
+.equipment .equip-row:last-of-type { border-bottom: 0; padding-bottom: 0; }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row input { min-height: 44px; }
 .equip-head, .equip-search, .equip-stats { display: contents; }
