@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**17 / 30 minor entries** <!-- pending-tally -->
+**17 / 31 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/43-magician · 20261004-100326Z
+
+De Magician heeft nu eigen spelgegevens, elk met zijn bron: de staffen en wands en de armor uit de NPC-winkels
+voor level 10 tot 30, Energy Bolt en Magic Claw per level, Magic Guard, Magic Armor en de MP-passieven, HP en
+MP per level, de accuracy-formule en de Orange en Lemon als goedkoopste MP. In de app verandert nog niets: de
+Magician blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. De drie goedkoopste wands
+(geen jobregel) en de tops, broeken en robes voor één geslacht ontbreken nog (#55, #50).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician-gegevens met bronnen: wapens, armor, skills en HP/MP (stap 1 van #43)
+
+[PR #62](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/62)
+
+---
 
 ### DEPLOY: app/equipment-always-worn · 20261004-095327Z
 
