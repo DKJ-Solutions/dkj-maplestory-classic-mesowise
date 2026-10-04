@@ -59,7 +59,7 @@ lowest and highest damage from one ordinary basic physical attack", with its own
 - [x] Lint gate and the full suite green
 - [x] Victor: code review of the diff -- no bugs; Warrior approximation now commented, formatting made consistent
 - [x] Edith: the Dutch hint text -- no errors; Magician hint now says weapon attack, rounding test now proves truncation
-- [ ] Dave looks at the preview (visible result)
+- [x] Dave looks at the preview (visible result) -- "ship it", October 4, 2026
 
 ### DEPLOY: app/108-attack-damage-range
 
