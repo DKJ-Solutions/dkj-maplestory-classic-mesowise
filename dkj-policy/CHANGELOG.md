@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**34 / 71 minor entries** <!-- pending-tally -->
+**35 / 72 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/133-thief-shield-slot · 20261004-143530Z
+
+The equipment logic now gives the Thief a Shield slot, so `slotsFor` lists it and its WDEF counts like any other armor slot.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Thief can now fill in the wristguard he wears in the Shield slot, so its W.DEF counts in the calculation instead of being missing.
+
+**Score:** 3
+
+#### Pull Request
+
+Show the Shield slot for the Thief (wristguards)
+
+[PR #134](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/134)
+
+---
 
 ### DEPLOY: app/126-merge-home-cards · 20261004-142657Z
 
