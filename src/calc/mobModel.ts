@@ -1,5 +1,5 @@
-// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven) of een Warrior (melee-wapen met
-// Power Strike) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
+// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven), een Warrior (melee-wapen met
+// Power Strike) of een Bowman (boog of kruisboog met Arrow Blow) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
 // Overgenomen uit het mob-advies-model in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
 //
 // Een voorstel uit dit model is een SCHATTING. De formules komen uit de community voor het oude GMS
@@ -32,7 +32,11 @@ export interface SkillStats {
 export interface Attack {
   min: number
   max: number
-  /** Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen. */
+  /**
+   * Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen of een Arrow Blow. Het is ook het aantal
+   * stars of pijlen dat een aanval verbruikt, dus de munitiekosten; dat gaat goed zolang klappen en munitie gelijk zijn
+   * (Arrow Blow: 1 en 1). Een skill met meer pijlen dan klappen (Double Shot) heeft hier een eigen veld nodig.
+   */
   stars: number
   mpPerAttack: number
 }
@@ -109,6 +113,15 @@ function damageRange(skill: SkillStats | null, watk: number, primary: number, se
  */
 export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMult: number, skill: SkillStats | null): Attack {
   return { ...damageRange(skill, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
+}
+
+/**
+ * De aanval van een Bowman met een boog of kruisboog: dezelfde formule, met DEX als hoofdstat en STR als secundaire stat
+ * (de damage-gids, "Bow / Crossbow / Claw"). `bow` geeft de weapon multiplier van een schot en de basis-mastery (data/bowman.ts).
+ * `skill` is Arrow Blow op het gezette level, of null voor het gewone schot. Eén klap en één pijl per aanval.
+ */
+export function bowAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, bow: { weaponMult: number; mastery: number }, skill: SkillStats | null): Attack {
+  return { ...damageRange(skill, c.watk, c.dex, c.str, bow.weaponMult, bow.mastery), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**

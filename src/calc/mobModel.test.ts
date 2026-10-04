@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, characterAttack, DANGER_SHARE, dampedTouch, defended, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, bowAttack, characterAttack, DANGER_SHARE, dampedTouch, defended, estimateMob, hitChance, meleeAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -246,5 +246,53 @@ describe('meleeAttack', () => {
     // STR telt bij de Thief mee als secundaire stat, LUK als hoofdstat.
     expect(characterAttack(char({ str: 5 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25, 9)
     expect(characterAttack(char({ luk: 31 }), null, LS).max - characterAttack(char(), null, LS).max).toBeCloseTo(0.25 * 2.5, 9)
+  })
+})
+
+describe('bowAttack', () => {
+  // De formule en de constanten van een Bowman (issue #44): DEX is de hoofdstat, STR de secundaire, het schot heeft
+  // multiplier 2,5 en de basis-mastery is 0,08 (data/bowman.ts). Alles hieronder is met de hand uitgerekend.
+  const BOW = { weaponMult: 2.5, mastery: 0.08 }
+  // Level 30 Bowman: weapon attack 50 (de pijl telt 0), DEX 100, STR 20.
+  const bowman = { str: 20, dex: 100, watk: 50 }
+
+  it('geeft het gewone schot: max = 50 · (1 + (100 · 2,5 + 20)/100) = 185 en min = 50 · (0,8 + (100 · 0,08 · 2,5 + 20)/100) = 60', () => {
+    const a = bowAttack(bowman, BOW, null)
+    expect(a.max).toBeCloseTo(185, 9)
+    expect(a.min).toBeCloseTo(60, 9)
+  })
+
+  it('schaalt min en max met Arrow Blow lv 20 (240%): 444 en 144, en kost 14 MP', () => {
+    const a = bowAttack(bowman, BOW, { mp: 14, damagePct: 240 })
+    expect(a.max).toBeCloseTo(444, 9)
+    expect(a.min).toBeCloseTo(144, 9)
+    expect(a.mpPerAttack).toBe(14)
+  })
+
+  it('schiet één klap en één pijl per aanval, en het gewone schot kost geen MP', () => {
+    expect(bowAttack(bowman, BOW, null)).toMatchObject({ stars: 1, mpPerAttack: 0 })
+    expect(bowAttack(bowman, BOW, { mp: 6, damagePct: 160 })).toMatchObject({ stars: 1, mpPerAttack: 6 })
+  })
+
+  it('gebruikt DEX als hoofdstat en STR als secundaire stat, en kijkt niet naar LUK', () => {
+    const base = bowAttack(bowman, BOW, null).max
+    expect(bowAttack({ ...bowman, luk: 999 } as Parameters<typeof bowAttack>[0], BOW, null).max).toBe(base)
+    // Eén punt STR telt ongewogen (1/100 · watk), één punt DEX telt met de multiplier (2,5/100 · watk).
+    expect(bowAttack({ ...bowman, str: 21 }, BOW, null).max - base).toBeCloseTo(0.5, 9)
+    expect(bowAttack({ ...bowman, dex: 101 }, BOW, null).max - base).toBeCloseTo(0.5 * 2.5, 9)
+  })
+
+  it('rekent een Arrow Blow-kill uit: 5 aanvallen, 5 pijlen, 70 MP en 576 kills per uur', () => {
+    // Arrow Blow lv 20 geeft 444 en 144. Het monster heeft 1000 HP en WDEF 20, op hetzelfde level, zonder avoid.
+    // Na de verdedigingscurve (#89): maxHit = 444 · 100 / 120 = 370, minHit = 144 · 100 / 120 = 120, gemiddeld 245
+    // en de raakkans is 1. 1000 / 245 = 4,08, dus 5 aanvallen. Per kill: 5 · 14 = 70 MP en 5 pijlen.
+    // 5 · 750 ms / 0,6 = 6,25 s per kill, dus 576 per uur.
+    const attack = bowAttack(bowman, BOW, { mp: 14, damagePct: 240 })
+    const e = estimateMob(char({ level: 30, ...bowman }), attack, mob({ level: 30, hp: 1000, wdef: 20 }))
+    expect(e.hitChance).toBe(1)
+    expect(e.attacksToKill).toBe(5)
+    expect(e.starsPerKill).toBe(5)
+    expect(e.mpPerKill).toBe(70)
+    expect(e.killsPerHour).toBeCloseTo(576, 9)
   })
 })

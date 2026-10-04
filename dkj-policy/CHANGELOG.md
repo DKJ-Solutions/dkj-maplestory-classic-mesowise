@@ -2,7 +2,51 @@
 
 ## [Unreleased]
 
-**22 / 47 minor entries** <!-- pending-tally -->
+**22 / 49 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/44-bowman-model · 20261004-122755Z
+
+A player can now choose Bowman and get real advice: the best training spot, what a level costs in mesos, whether a
+new bow or crossbow or a piece of armor pays off, and where a skill point saves the most (Arrow Blow). The app counts
+the plain arrow as ammo, and lists the Bowman skills it does not compute yet.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bowman in the mob model and on the screen
+
+[PR #92](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/92)
+
+---
+
+### DEPLOY: app/86-top-menu-bar · 20261004-122513Z
+
+A white menu bar now runs across the top of the screen, with the app name and a menu button on the right.
+The menu holds your job: once you have picked one, the job card no longer takes up space on the home
+screen, and you change your job through the menu.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+White top menu bar with the app name and a settings menu
+
+[PR #97](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/97)
+
+---
 
 ### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
 

@@ -57,7 +57,8 @@ of the two had to go. The 1% per level damping in the same step stays an assumpt
 - [x] `mobModel.test.ts`: #89's own example (DEF 50, hit 100 → 66.7), DEF 0 leaves the hit whole, a full
   `estimateMob` on the curve, and the floor of 1 under an extreme WDEF (the old test relied on the subtraction
   going negative)
-- [x] `npm run lint` clean, 923 of 923 tests pass
+- [x] After merging main (the Bowman, #44): its Arrow Blow test recalculated by hand on the curve (4 → 5 attacks, 720 → 576 kills per hour)
+- [x] `npm run lint` clean, 977 of 977 tests pass
 
 ### DEPLOY: fix/89-physical-defense-curve
 
