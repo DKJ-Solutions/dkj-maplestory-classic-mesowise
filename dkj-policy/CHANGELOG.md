@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**15 / 26 minor entries** <!-- pending-tally -->
+**16 / 27 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/kaarten-zelfde-design · 20261004-092948Z
+
+Alle inklapbare kaarten zien er nu hetzelfde uit als Skillpoints: links van de titel een icoon (een zwaard
+bij Je equipment, een poppetje bij Je karakter, een boek bij Skillpoints, een kaartspeld bij elke plek), in
+de kop alleen de titel zonder regel eronder, en onderaan een open kaart een knop Inklappen, zodat je niet
+terug hoeft te scrollen naar het pijltje. Bij een plek staat het getal EXP per meso nog in de kop.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Een lange open kaart klap je op je telefoon in waar je duim al is, en de kaarten zijn in één oogopslag
+uit elkaar te houden.
+
+**Score:** 2
+
+#### Pull Request
+
+Alle inklapbare kaarten in het design van Skillpoints
+
+[PR #54](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/54)
+
+---
 
 ### DEPLOY: app/40-component-tests · 20261004-090844Z
 
