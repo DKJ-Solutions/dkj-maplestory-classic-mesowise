@@ -41,24 +41,30 @@
 
 Dave, October 4, 2026: the stats on the character card change only through the pencil, as on the equipment
 card; name and value share one row to save height; level, max HP, weapon attack and WDEF leave this card.
+Later the same day: accuracy and avoid get an expected value, struck through beside the number when it was
+corrected, as on the equipment card.
 
 ### CREATE
 
 - [x] ProfileCard: one row per stat (name, value, pencil), editing only in the StatDialog popup with a draft
 - [x] Level, Max HP, weapon attack and WDEF removed from the card (level and HP rise via Level up, the other two follow equipment)
 - [x] Styling for the stat row and the popup without -/+ for the decimal attack time
+- [x] `expectedStats.ts`: expected accuracy (stat part from the Thief guide + Nimble Body) and avoid (`baseAvoid`, floor(LUK/3) + floor(DEX/6) + 5 from the damage-formula guide, "Derived combat stats", checked against its own example) + Nimble Body
+- [x] Character card: the expectation struck through when the number differs, and in the popup the expectation and Reset
 
 ### TEST
 
 - [x] Component tests updated and added: save only after Opslaan/Enter, discard on close, + steps, no inputs outside the popup, the four stats absent
-- [x] `npx vitest run` (590 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [x] `npx vitest run` (602 green), `npm run lint`, `scripts/lint/lint.ps1` clean
 - [x] Code review (Victor) and proofread of the UI text (Edith): shared `stepValue` helper, typed hidden-stat set, an attackMs test and neutral popup comments taken in; merging the duplicated popup body filed as #63
+- [ ] Code review of the expected-value step (Victor)
 - [ ] Dave looks at the result at phone width before the merge
 
 ### DEPLOY: app/profile-stats-pencil
 
 The character card is now read-only at a glance: each stat sits on one row with its value and a pencil, and a
-change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Level, Max HP,
+change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Accuracy and avoid show the value the formulas expect, struck through beside the
+number when your game differs, with Reset in the popup. Level, Max HP,
 weapon attack and WDEF are no longer on this card.
 
 **Score:** 2

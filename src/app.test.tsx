@@ -351,6 +351,36 @@ describe('bewaren na elke wijziging', () => {
     expect(statShown('Tijd per aanval (ms)')).toBe('812.5')
   })
 
+  it('toont de verwachte accuracy pas doorgestreept als het getal ervan afwijkt', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    expect(statLine('Accuracy').querySelector('s')).toBeNull()
+    const h = openStat('Accuracy')
+    expect(h.d.getByText(/Verwacht volgens de formule/).textContent).toContain(DEFAULT_PROFILE.accuracy)
+    h.type('40')
+    h.save()
+    expect(statShown('Accuracy')).toBe('40')
+    expect(statLine('Accuracy').querySelector('s')?.textContent).toBe(DEFAULT_PROFILE.accuracy)
+    expect(statLine('Accuracy').querySelector('.equip-value.changed')).not.toBeNull()
+  })
+
+  it('toont bij het voorbeeldprofiel de verwachte avoid doorgestreept: 23 in het spel, 22 volgens de formule', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    expect(statShown('Avoid')).toBe(DEFAULT_PROFILE.avoid)
+    expect(statLine('Avoid').querySelector('s')?.textContent).toBe('22')
+  })
+
+  it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const first = openStat('Accuracy')
+    first.type('40')
+    first.save()
+    const h = openStat('Accuracy')
+    fireEvent.click(h.d.getByRole('button', { name: `Reset naar ${DEFAULT_PROFILE.accuracy}` }))
+    h.save()
+    expect(profileFields().accuracy).toBe(DEFAULT_PROFILE.accuracy)
+    expect(statLine('Accuracy').querySelector('s')).toBeNull()
+  })
+
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('LUK')

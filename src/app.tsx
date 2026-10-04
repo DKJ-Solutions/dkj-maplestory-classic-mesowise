@@ -20,6 +20,7 @@ import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
+import { expectedStat } from './expectedStats'
 import { loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
@@ -226,12 +227,16 @@ function ProfileCard(props: {
           {CHARACTER_STATS.map((f) => {
             const value = draft[f.key]
             const isEditing = editing?.key === f.key
+            // Zoals bij equipment: wijkt het getal af van wat de formule verwacht, dan staat de verwachting doorgestreept ernaast.
+            const expected = expectedStat(f.key, draft, job)
+            const corrected = expected !== undefined && value.trim() !== String(expected)
             const step = (by: number) => editing && setEditing({ key: f.key, text: stepValue(editing.text, by, f.min, f.max, f.min) })
             return (
               <div class="stat-line" key={f.key}>
                 <span class="stat-line-name">{f.label}</span>
-                <div class="equip-value">
+                <div class={corrected ? 'equip-value changed' : 'equip-value'} aria-label={`${f.label} ${value.trim() !== '' ? value : 'onbekend'}${corrected ? `, gecorrigeerd, verwacht ${expected}` : ''}`}>
                   <span class="equip-value-num">
+                    {corrected && <s class="equip-value-db">{expected}</s>}
                     <strong>{value.trim() !== '' ? value : '?'}</strong>
                   </span>
                 </div>
@@ -240,6 +245,7 @@ function ProfileCard(props: {
                 </button>
                 {isEditing && (
                   <StatDialog title={f.label} onCancel={() => setEditing(null)}>
+                    {expected !== undefined && <p class="stat-dialog-db">Verwacht volgens de formule: <strong>{expected}</strong></p>}
                     <span class="stat-dialog-label" id={`${uid}-${f.key}-game`}>{f.label} in game</span>
                     <div class={f.integer ? 'equip-step' : 'equip-step plain'}>
                       {f.integer && <button type="button" aria-label={`${f.label} min 1`} onClick={() => step(-1)}>−</button>}
@@ -257,6 +263,11 @@ function ProfileCard(props: {
                       {f.integer && <button type="button" aria-label={`${f.label} plus 1`} onClick={() => step(1)}>+</button>}
                     </div>
                     <div class="stat-dialog-actions">
+                      {expected !== undefined && editing.text.trim() !== String(expected) && (
+                        <button type="button" class="equip-reset" aria-label={`Reset naar ${expected}`} onClick={() => setEditing({ key: f.key, text: String(expected) })}>
+                          Reset
+                        </button>
+                      )}
                       {editing.text !== value && (
                         <button type="button" class="equip-save" onClick={save}>
                           Opslaan

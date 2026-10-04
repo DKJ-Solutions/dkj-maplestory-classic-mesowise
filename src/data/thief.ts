@@ -75,3 +75,10 @@ export const ACCURACY_SOURCE: Source = { url: 'https://meowdb.com/msclassic/guid
  */
 export const baseAccuracy = (dex: number, level: number, luk: number): number =>
   Math.floor((12 * dex + 20 * level + 6 * luk + 600) / 40)
+
+/**
+ * Het stat-deel van de avoid (EVA), voor elke job hetzelfde: floor(LUK / 3) + floor(DEX / 6) + 5, met de totale
+ * DEX en LUK en zonder level. Avoid uit skills (Nimble Body) en items komt er los bij. Bron: de damage-formule-gids,
+ * sectie "Derived combat stats" (DAMAGE_FORMULA_SOURCE); het voorbeeld daar: LUK 4 en DEX 30 geven 11.
+ */
+export const baseAvoid = (dex: number, luk: number): number => Math.floor(luk / 3) + Math.floor(dex / 6) + 5
