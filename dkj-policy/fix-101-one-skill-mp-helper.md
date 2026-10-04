@@ -39,21 +39,40 @@
 
 ### PLAN
 
+#### Scope
+
+Issue #101: a skill's MP per use lived in three places: `skillMpAt` (#83, `src/data/skills.ts`), and
+`luckySevenMp`, `powerStrikeMp`, `arrowBlowMp` in `src/levelUp.ts`, which the skill-point advice line in
+`src/app.tsx` used. Since the issue was filed, main dropped `MP_PER_USE` for `ATTACK_SKILLS`; `energyBoltMp` and
+`magicClawMp` exist only on #43's branch, and that branch picks this helper up when it merges main.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/skills.ts`: `mpPerUse(key, level)` with an explicit level 0: 0 while the skill is unlearned (or
+  passive), otherwise `skillMpAt`, so one array per skill feeds both the Skillpoints card and the advice
+- [x] `src/levelUp.ts`: the three copies removed; `src/app.tsx`: `ATTACK_SKILLS` keeps only the noun and the
+  advice line calls `mpPerUse`
 
 ### TEST
 
+- [x] The helper tests moved from `levelUp.test.ts` to `skills.test.ts` on `mpPerUse`: per-level values for
+  Lucky Seven, Power Strike and Arrow Blow, 0 at level 0 (next to `skillMpAt`'s level-1 value), the clamp above the
+  maximum, 0 for a passive
+- [x] `npm run lint` clean, 978 of 978 tests pass; the advice-line tests in `app.test.tsx` pass unchanged
+
 ### DEPLOY: fix/101-one-skill-mp-helper
 
-**Score:**
+Nothing changes on screen. The MP a skill costs per use now comes from one table per skill, the same one the
+Skillpoints card reads, so the advice line and the card can no longer disagree.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Skill MP cost comes from one helper
-
