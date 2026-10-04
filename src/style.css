@@ -57,7 +57,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .field:last-child { margin-bottom: 0; }
 .field span { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 0.25rem; }
 
-.field input, .field select {
+.field input, .field select, .skill-input input {
   width: 100%;
   font-size: 1rem; /* 16px: iOS zoomt dan niet in bij focus */
   padding: 0.625rem 0.75rem;
@@ -168,7 +168,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .known p { margin: 0; }
 .known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
 .profile { padding: 0; overflow: hidden; }
-.profile.invalid { border-color: #dc2626; }
+.profile.invalid, .skills.invalid { border-color: #dc2626; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
 .note { margin-top: 1.25rem; }
 .spot-notes { padding: 0 1rem; }
@@ -183,7 +183,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
-  .spot.invalid, .profile.invalid { border-color: #f87171; }
+  .spot.invalid, .profile.invalid, .skills.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }
 .error:empty { display: none; }
@@ -242,18 +242,22 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Je equipment: inklapbaar zoals je karakter; per slot een keuzelijst, bij "Ander item" een naam en een getal */
 .equipment, .skills { padding: 0; overflow: hidden; }
 .equipment .spot-body, .skills .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint, niet met een veld met eigen marge */
-.equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.equipment .spot-body .source a { color: var(--accent); }
+.equipment .spot-body .source, .skills .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.equipment .spot-body .source a, .skills .spot-body .source a { color: var(--accent); }
 .equipment .equip-row { padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
 .equipment .equip-row .field { margin-bottom: 0; }
 .equipment .equip-row select { min-height: 44px; }
 .equip-other { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0.75rem; margin-top: 0.5rem; }
 .equip-other input { min-height: 44px; }
 
-/* Je skillpunten (kaart en marges zoals je equipment): per skill een regel met het level en het maximum */
-.skill-list { list-style: none; margin: 0 0 0.75rem; padding: 0; }
-.skill-list li { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border); }
-.skill-list li span:last-child { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+/* Je skillpunten (kaart en marges zoals je equipment): per job een kopje, per skill een regel met een
+   smal getalveld en het maximum erachter */
+.skill-group { margin-bottom: 1rem; }
+.skill-group h3 { margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.375rem 0; border-bottom: 1px solid var(--border); }
+.skill-input { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.skill-input input { width: 4.5rem; padding: 0.5rem 0.625rem; min-height: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.skill-input small { width: 2rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }

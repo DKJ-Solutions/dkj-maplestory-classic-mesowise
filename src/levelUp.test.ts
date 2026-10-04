@@ -13,6 +13,7 @@ import {
   levelUpSummary,
   luckySevenMp,
 } from './levelUp'
+import { isSkillKey } from './data/skills'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, type Profile } from './profile'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
@@ -264,10 +265,10 @@ describe('huntingGroundAdvice', () => {
 })
 
 describe('CHECK_FIELDS', () => {
-  it('bevat elk profielveld precies één keer', () => {
+  it('bevat elke stat precies één keer, en geen skills (die hebben hun eigen kaart)', () => {
     const keys = CHECK_FIELDS.map((f) => f.key)
-    expect(keys).toHaveLength(PROFILE_FIELDS.length)
-    expect([...keys].sort()).toEqual(PROFILE_FIELDS.map((f) => f.key).sort())
+    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k))
+    expect([...keys].sort()).toEqual([...stats].sort())
     expect(new Set(keys).size).toBe(keys.length)
   })
 

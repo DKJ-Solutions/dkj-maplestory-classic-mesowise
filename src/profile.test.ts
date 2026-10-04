@@ -26,8 +26,8 @@ describe('parseProfile', () => {
   })
 
   it('meldt een leeg veld', () => {
-    expect(parse({ luk: '' })).toEqual({ error: 'Vul bij je karakter "LUK" in.' })
-    expect(parse({ luk: 'abc' })).toEqual({ error: 'Vul bij je karakter "LUK" in.' })
+    expect(parse({ luk: '' })).toEqual({ error: 'Vul bij je karakter "LUK" in.', key: 'luk' })
+    expect(parse({ luk: 'abc' })).toEqual({ error: 'Vul bij je karakter "LUK" in.', key: 'luk' })
   })
 
   it('meldt een getal buiten de grenzen', () => {
@@ -37,8 +37,14 @@ describe('parseProfile', () => {
     expect(parse({ luckySeven: '0' })).toHaveProperty('profile')
   })
 
+  it('meldt een fout skillveld bij je skillpunten, met de grens uit de spelgegevens', () => {
+    expect(parse({ keenEyes: '' })).toEqual({ error: 'Vul bij je skillpunten "Keen Eyes" in.', key: 'keenEyes' })
+    expect(parse({ threeSnails: '4' })).toEqual({ error: '"Three Snails" moet tussen 0 en 3 liggen.', key: 'threeSnails' })
+    expect(parse({ darkSight: '20', recovery: '3' })).toHaveProperty('profile')
+  })
+
   it('wil hele getallen waar het spel hele getallen heeft', () => {
-    expect(parse({ level: '10.5' })).toEqual({ error: '"Level" moet een heel getal zijn.' })
+    expect(parse({ level: '10.5' })).toEqual({ error: '"Level" moet een heel getal zijn.', key: 'level' })
     expect(parse({ attackMs: '712.5' })).toHaveProperty('profile')
   })
 })
@@ -71,6 +77,12 @@ describe('loadProfile en saveProfile', () => {
     expect(loadProfile(fakeStorage())).toEqual(DEFAULT_PROFILE)
     expect(loadProfile(fakeStorage({ [PROFILE_KEY]: '{kapot' }))).toEqual(DEFAULT_PROFILE)
     expect(loadProfile(fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 2, fields: { luk: '9' } }) }))).toEqual(DEFAULT_PROFILE)
+  })
+
+  it('geeft een bewaard profiel van vóór de nieuwe skills de standaardwaarde voor die skills', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60', luckySeven: '7', nimbleBody: '3' } })
+    const p = loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))
+    expect(p).toMatchObject({ luk: '60', luckySeven: '7', nimbleBody: '3', keenEyes: '0', threeSnails: '0' })
   })
 
   it('houdt een goed veld en geeft een fout veld de standaardwaarde', () => {

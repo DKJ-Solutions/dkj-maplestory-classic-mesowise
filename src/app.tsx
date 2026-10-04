@@ -15,7 +15,8 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, pointsPlaced, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, pointsPlaced, SKILLS, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { BEGINNER_CLASS_SOURCE, isSkillKey, THIEF_CLASS_SOURCE } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
@@ -30,6 +31,9 @@ const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'lo
 const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z`))
 
 const storage = browserStorage()
+
+/** De stats van je karakter; je skills hebben hun eigen kaart. */
+const STAT_FIELDS = PROFILE_FIELDS.filter((f) => !isSkillKey(f.key))
 
 function initialDrafts(): SpotDraft[] {
   const saved = loadSpots(storage)
@@ -98,7 +102,7 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {PROFILE_FIELDS.map((f) => (
+          {STAT_FIELDS.map((f) => (
             <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
           ))}
           <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>
@@ -394,38 +398,71 @@ function EquipmentCard(props: {
 /** "1 punt" of "3 punten". */
 const points = (n: number) => `${n} ${n === 1 ? 'punt' : 'punten'}`
 
+const JOBS = [
+  { job: 'Beginner', title: 'Beginner', source: BEGINNER_CLASS_SOURCE },
+  { job: 'Thief', title: 'Thief (1e job)', source: THIEF_CLASS_SOURCE },
+] as const
+
 /**
- * De skillpunten die je nu hebt gezet, per skill die de app kan doorrekenen. Alleen om te lezen: je vult
- * ze in bij je karakter, en "Punt zetten" in het advies telt hier meteen mee.
+ * De skillpunten die je nu hebt gezet: elke skill van een Thief tot de 2e job, met zijn maximum. Hier vul
+ * je ze in; "Punt zetten" in het advies telt hier meteen mee.
  */
-function SkillsCard(props: { draft: ProfileDraft }) {
+function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const [open, setOpen] = useState(false)
   const levels = skillLevels(props.draft)
-  const unknown = levels.some((s) => s.level === null)
-  const summary = levels.map((s) => `${s.name} ${s.level ?? '?'}`).join(', ')
+  const summary = JOBS.map(({ job }) => `${job} ${pointsPlaced(levels.filter((s) => s.job === job))}`).join(', ')
   return (
-    <section class="card skills">
+    <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name">Je skillpunten</span>
         <span class="spot-exp">
           {points(pointsPlaced(levels))} gezet: {summary}
         </span>
       </button>
+      <p class="error" aria-live="polite">
+        {props.error}
+      </p>
       <Collapse open={open}>
         <div class="spot-body">
-          <ul class="skill-list">
-            {levels.map((s) => (
-              <li key={s.id}>
-                <span>{s.name}</span>
-                <span>{s.level === null ? 'niet ingevuld' : `${s.level} / ${s.max}`}</span>
-              </li>
-            ))}
-          </ul>
+          {JOBS.map(({ job, title }) => (
+            <div class="skill-group" key={job}>
+              <h3>{title}</h3>
+              {levels
+                .filter((s) => s.job === job)
+                .map((s) => (
+                  <label class="skill-row" key={s.key}>
+                    <span>{s.name}</span>
+                    <span class="skill-input">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={s.max}
+                        value={props.draft[s.key]}
+                        onInput={(e) => props.onChange({ [s.key]: (e.currentTarget as HTMLInputElement).value })}
+                      />
+                      <small>/ {s.max}</small>
+                    </span>
+                  </label>
+                ))}
+            </div>
+          ))}
           <p class="hint">
-            {unknown && 'Een skill die niet is ingevuld, telt niet mee in het aantal punten. '}
-            Je vult je skills in bij je karakter. Zet je een punt via het advies, dan telt het hier meteen mee.
+            In het advies rekenen alleen {listFormat.format(SKILLS.map((s) => s.name))} mee. Zet je daar een punt, dan staat het hier
+            meteen.
           </p>
-          <p class="hint">Niet doorgerekend:{listFormat.format(NOT_MODELLED)}.</p>
+          <p class="source">
+            Skills:{' '}
+            {JOBS.map(({ job, source }, i) => (
+              <span key={job}>
+                {i > 0 && ', '}
+                <a href={source.url} target="_blank" rel="noopener noreferrer">
+                  NiaMeowDB ({job})
+                </a>
+              </span>
+            ))}
+            , opgehaald op {formatDate(THIEF_CLASS_SOURCE.retrieved)}.
+          </p>
         </div>
       </Collapse>
     </section>
@@ -947,6 +984,9 @@ export function App() {
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => loadProfile(storage))
   const parsed = useMemo(() => parseProfile(profileDraft), [profileDraft])
   const profile = 'profile' in parsed ? parsed.profile : null
+  // De melding staat bij de kaart waar het foute veld staat.
+  const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
+  const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   const [openId, setOpenId] = useState<string | null>(null)
   // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
   // openen, sluiten, toevoegen en verwijderen.
@@ -1157,8 +1197,8 @@ export function App() {
               onCommit={commitEquipment}
             />
 
-            <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
-            <SkillsCard draft={profileDraft} />
+            <ProfileCard draft={profileDraft} error={statError} onChange={updateProfile} />
+            <SkillsCard draft={profileDraft} error={skillError} onChange={updateProfile} />
 
             <LevelCostCard cost={cost} />
             <SkillPointCard advice={skillAdvice} />
@@ -1265,7 +1305,7 @@ export function App() {
             <AdviceHeader cost={cost} />
             <ClawQuestion advice={clawAdvice} cost={cost} />
             <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
-            <SkillsCard draft={profileDraft} />
+            <SkillsCard draft={profileDraft} error={skillError} onChange={updateProfile} />
             <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
             <button

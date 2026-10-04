@@ -6,6 +6,7 @@ import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
+import { isSkillKey } from './data/skills'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { expPerMesoOf } from './mesoCostAt'
 import { parseProfile, PROFILE_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
@@ -86,10 +87,10 @@ export function levelUpSummary(changes: LevelUpChanges): string {
 /** De velden die een speler na een level-up het vaakst moet bijwerken, bovenaan; daarna de rest. */
 const AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'luk', 'dex', 'str', 'accuracy', 'avoid']
 
-/** De profielvelden in de volgorde voor het controlescherm. */
+/** De stats in de volgorde voor het controlescherm; je skills staan in hun eigen kaart. */
 export const CHECK_FIELDS = [
   ...AFTER_LEVEL_UP.map((k) => PROFILE_FIELDS.find((f) => f.key === k)!),
-  ...PROFILE_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
+  ...PROFILE_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !isSkillKey(f.key)),
 ]
 
 /** Een profiel als invulvelden, zoals ProfileDraft ze bewaart. */

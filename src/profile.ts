@@ -2,14 +2,24 @@
 // bewaren in localStorage. Alles uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op de
 // standaardwaarde. Het voorbeeldprofiel is een lv-10-Thief volgens het levelplan.
 import type { Character } from './calc/mobModel'
+import { isSkillKey, THIEF_SKILLS, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
 const VERSION = 1
 const MAX_FIELD_LENGTH = 12
 
-/** De getalvelden van het profiel, met hun label en grenzen. */
-export const PROFILE_FIELDS = [
+/** Een getalveld van het profiel, met zijn label en grenzen. */
+export interface ProfileField {
+  key: ProfileKey
+  label: string
+  min: number
+  max: number
+  integer: boolean
+}
+
+/** De stats van het profiel, met hun label en grenzen. */
+const STAT_FIELDS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
@@ -19,12 +29,16 @@ export const PROFILE_FIELDS = [
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
   { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
   { key: 'wdef', label: 'WDEF', min: 0, max: 9_999, integer: true },
-  { key: 'luckySeven', label: 'Lucky Seven-level (0 = nog niet geleerd)', min: 0, max: 20, integer: true },
-  { key: 'nimbleBody', label: 'Nimble Body-level (0 = nog niet geleerd)', min: 0, max: 15, integer: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
-export type ProfileKey = (typeof PROFILE_FIELDS)[number]['key']
+/** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
+const SKILL_FIELDS: readonly ProfileField[] = THIEF_SKILLS.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
+
+export type ProfileKey = (typeof STAT_FIELDS)[number]['key'] | SkillKey
+
+/** Alle getalvelden: eerst de stats, dan de skills. */
+export const PROFILE_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /** Een ingevuld profiel, als getallen. */
@@ -41,9 +55,16 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   accuracy: '33',
   avoid: '23',
   wdef: '72',
-  luckySeven: '1',
-  nimbleBody: '0',
   attackMs: String(ATTACK_MS.fast5),
+  threeSnails: '0',
+  nimbleFeet: '0',
+  recovery: '0',
+  nimbleBody: '0',
+  keenEyes: '0',
+  doubleStab: '0',
+  disorder: '0',
+  darkSight: '0',
+  luckySeven: '1',
 }
 
 /** Of het profiel nog precies het voorbeeld is (de speler heeft niets ingevuld). */
@@ -51,15 +72,19 @@ export function isDefaultProfile(d: ProfileDraft): boolean {
   return PROFILE_FIELDS.every((f) => d[f.key] === DEFAULT_PROFILE[f.key])
 }
 
-/** Het profiel als getallen, of een melding in gewoon Nederlands bij het eerste veld dat niet klopt. */
-export function parseProfile(d: ProfileDraft): { profile: Profile } | { error: string } {
+/**
+ * Het profiel als getallen, of een melding in gewoon Nederlands bij het eerste veld dat niet klopt. `key`
+ * zegt welk veld, zodat het scherm de melding toont bij de kaart waar dat veld staat.
+ */
+export function parseProfile(d: ProfileDraft): { profile: Profile } | { error: string; key: ProfileKey } {
   const out = {} as Profile
   for (const f of PROFILE_FIELDS) {
     const text = d[f.key].trim()
     const n = text === '' ? NaN : Number(text)
-    if (!Number.isFinite(n)) return { error: `Vul bij je karakter "${f.label}" in.` }
-    if (n < f.min || n > f.max) return { error: `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.` }
-    if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.` }
+    const where = isSkillKey(f.key) ? 'je skillpunten' : 'je karakter'
+    if (!Number.isFinite(n)) return { error: `Vul bij ${where} "${f.label}" in.`, key: f.key }
+    if (n < f.min || n > f.max) return { error: `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`, key: f.key }
+    if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.`, key: f.key }
     out[f.key] = n
   }
   return { profile: out }
