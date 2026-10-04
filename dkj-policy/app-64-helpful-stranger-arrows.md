@@ -39,19 +39,43 @@
 
 ### PLAN
 
+Dave (October 4, 2026, #64): bronze arrows count behind a switch the player turns on ("I have Helpful
+Stranger"); with the switch off, only the plain arrows count. The data (`HELPFUL_STRANGER_ARROWS`) landed in
+#75; this branch adds the switch and wires it into the Bowman calculation.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: profile draft fields `helpfulStranger` and `bronzeArrows` ('0'/'1', default off, so an old saved
+  profile loads as off); `arrowFor` in `bowmanGear.ts` gives bronze only with the switch on and bronze picked,
+  and feeds `starWatk`/`starRecharge` in `parseProfile` and `totalAttack`
+- [x] Cody: `catalogItems`/`searchCatalog` offer the bronze arrows only with the switch on;
+  `setHelpfulStranger` swaps a worn bronze arrow back to the plain one of the same kind when the switch goes
+  off; `syncArrow` clears the flag when the bronze arrow leaves the ammo slot on a job change
+- [x] Cody: the checkbox "Ik heb Helpful Stranger" under the Ammo row of "Je equipment" (Bowman only), a
+  `.switch` style on the existing tokens, and the bronze sources in the card's source line while it is on
+- [x] Cody: tests for switch off (plain numbers unchanged), switch on with bronze (W.ATT +1, 2 mesos per
+  arrow), an old profile loading as off, the fallback for bow and crossbow, and the app flow
 
 ### TEST
 
+- [ ] `npm test` and `npm run lint` green
+- [ ] Victor (code) and Edith (Dutch) reviewed the diff
+
 ### DEPLOY: app/64-helpful-stranger-arrows
 
-**Score:**
+A Bowman who has the Helpful Stranger citizenship rank can turn on "Ik heb Helpful Stranger" under the Ammo
+row of the equipment card. The bronze arrows (+1 W.ATT, 2 mesos per arrow, Raymond's shop) then appear in the
+ammo list, and picking one makes the EXP per meso and the upgrade advice count with it. Switched off, the app
+counts with the plain arrow, as before.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Bowman with the rank can now see whether bronze arrows pay for themselves in mesos, which was the open
+question of #64.
+
+**Score:** 2
 
 #### Pull Request
 
