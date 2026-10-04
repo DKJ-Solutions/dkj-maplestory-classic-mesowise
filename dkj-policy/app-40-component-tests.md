@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Issue #40: het scherm (`src/app.tsx`) had geen componenttests. Gekozen harnas (Dave, 4 oktober 2026,
+"de issues wachten nergens meer op"): Vitest met happy-dom en @testing-library/preact.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Harnas: `test.include` pakt ook `*.test.tsx`; elk componenttestbestand kiest happy-dom met een docblock, de pure tests blijven in node (Tycho)
+- [x] `src/app.test.tsx`: equipment naar profiel, opslaan na elke wijziging, level-up ongedaan maken, de `was`-badge, het skillpunt na de level-up (Tycho)
+- [x] De gevonden bug (badge zegt "was Ander item" bij een winkelitem) gefiled als #52 en vastgelegd als `it.fails`
 
 ### TEST
 
+- [x] `npx vitest run src/app.test.tsx`: 26 geslaagd, 1 verwacht gefaald (#52)
+- [ ] Review door Victor
+
 ### DEPLOY: app/40-component-tests
 
-**Score:**
+Wat het scherm met de rekenmodules doet, heeft nu eigen tests: equipment kiezen, opslaan, een level-up
+ongedaan maken, de `was`-badge en het skillpunt zetten. Voor wie de app gebruikt verandert er niets.
+Het voorkomt dat een wijziging aan het scherm stilletjes je equipment of profiel verkeerd doorgeeft aan
+het advies; zo'n fout werd voorheen alleen met het oog gevonden (zo kwam #52 boven).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
