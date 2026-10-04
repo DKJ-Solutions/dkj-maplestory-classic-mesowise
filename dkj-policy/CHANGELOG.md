@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**36 / 73 minor entries** <!-- pending-tally -->
+**37 / 74 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/136-skillpoint-cap · 20261004-154955Z
+
+The total SP you can spend is now capped by your level, in two separate pools: Beginner skills get level − 1
+points up to 9, 1st-job skills get 1 at level 10 plus 3 per level after (61 at level 30), per NiaMeowDB.
+`parseProfile` refuses a profile over either cap, the Skillpoints card shows "used / cap SP" per group and
+disables + when a pool is full, and the skill-point advice says when no point is left. Advancement at
+level 10 is assumed; late advancement is not modelled.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player can no longer fill in more skill points than their level gives, so the skill-point advice and every
+cost are worked out for a character that can actually exist.
+
+**Score:** 3
+
+#### Pull Request
+
+Skillpoints: cap total SP at what your level allows
+
+[PR #137](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/137)
+
+---
 
 ### DEPLOY: data/125-shield-gloves-cape-earrings · 20261004-143757Z
 
