@@ -4,6 +4,7 @@
 import type { Character } from './calc/mobModel'
 import { isSkillKey, skillInfo, THIEF_SKILLS, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
+import { STAT_NAME } from './equipment'
 import { isComputed, type Job } from './job'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
@@ -26,10 +27,10 @@ const STATS = [
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
-  { key: 'clawWatk', label: 'Weapon attack van je wapen', min: 0, max: 999, integer: true },
+  { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
   { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
-  { key: 'wdef', label: 'WDEF', min: 0, max: 9_999, integer: true },
+  { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
@@ -40,7 +41,7 @@ const STATS = [
 const AMMO = [
   // Zo ruim als de claw: een eigen item in het star-slot kan elk getal tot 999 hebben, en een veld dat geen kaart
   // toont, mag de berekening niet blokkeren.
-  { key: 'starWatk', label: 'Weapon attack van je stars', min: 0, max: 999, integer: true },
+  { key: 'starWatk', label: `${STAT_NAME.weapon} van je stars`, min: 0, max: 999, integer: true },
   { key: 'starRecharge', label: 'Herladen per star (meso)', min: 0, max: 100, integer: false },
 ] as const
 

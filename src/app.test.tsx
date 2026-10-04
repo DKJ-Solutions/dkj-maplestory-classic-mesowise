@@ -331,13 +331,13 @@ describe('bewaren na elke wijziging', () => {
     expect(panels()[0].querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
-  it('toont geen level, Max HP, weapon attack en WDEF: die liggen elders vast', () => {
+  it('toont geen level, Max HP, ATT en DEF: die liggen elders vast', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const names = Array.from(panels()[0].querySelectorAll('section.profile .stat-line-name')).map((n) => n.textContent)
     expect(names).not.toContain('Level')
     expect(names).not.toContain('Max HP')
-    expect(names).not.toContain('Weapon attack van je wapen')
-    expect(names).not.toContain('WDEF')
+    expect(names).not.toContain('ATT van je wapen')
+    expect(names).not.toContain('DEF')
     expect(names).toContain('Tijd per aanval (ms)')
   })
 
