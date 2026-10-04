@@ -48,17 +48,47 @@ app al gebruikte niets ziet veranderen. De winkeldata is alleen Thief; andere jo
 
 ### CREATE
 
-- [ ] Cody: `src/job.ts`, de job-sectie, gefilterde lijsten, de "nog niet doorgerekend"-gate en het job-afhankelijke profiel
+- [x] Cody: `src/job.ts`, de job-sectie, gefilterde lijsten, de "nog niet doorgerekend"-gate en het job-afhankelijke profiel
+- [x] Cody: reviewronde. `parseProfile(d, job)` controleert alleen de getoonde velden (Victor: een verborgen,
+  leeg Lucky Seven-veld blokkeerde anders "Alles klopt, toon advies" voor een andere job), `applyLevelUp`
+  vraagt de job verplicht, de vraagtitels zijn gedeeld, de job-kaart staat vóór de equipment, en Ediths
+  tekstpunten zijn verwerkt.
+
+#### Ontwerpkeuzes
+
+- Eén gate in `App()`: voor een job die niet is doorgerekend krijgt de rekenkern geen profiel, dus er
+  draait geen Thief-formule en er verschijnt geen modelgetal. De EXP per meso die je zelf bij een plek
+  invult, blijft zichtbaar: die komt niet uit het model.
+- Een jobwissel zet een winkelitem dat de nieuwe job niet heeft op "Weet ik niet", en laat WDEF en WATK
+  in het profiel staan.
+- Bij een level-up krijgt een andere job alleen level +1: de HP- en AP-gegevens zijn van de Thief.
 
 ### TEST
 
+- [x] Tycho: `src/job.test.ts` (nieuw), en uitbreidingen in `equipment.test.ts`, `profile.test.ts` en
+  `levelUp.test.ts`. 435 tests groen, `tsc` schoon.
+- [x] Victor: code-review. Eén blokkerend punt (verborgen velden), opgelost. Geen modelgetal dat bij een
+  andere job op het scherm komt.
+- [x] Edith: de Nederlandse tekst. Vijf punten, verwerkt.
+- [~] Component-tests van `app.tsx`: die bestaan nog niet (#40). De render-paden zijn door Victor gelezen,
+  niet gedraaid.
+
 ### DEPLOY: app/41-job-keuze
 
-**Score:**
+Je kiest nu je job (Beginner, Warrior, Magician, Bowman of Thief) in een eigen kaart boven "Je
+equipment". De Thief werkt zoals altijd. Voor een andere job zegt de app eerlijk "Nog niet doorgerekend
+voor <job>" en geeft hij geen getal, want een Thief-formule op een Warrior geeft een fout getal. De wapen-
+en armorlijsten tonen alleen wat jouw job kan kopen. Voor de andere jobs zijn dat er nog geen, dus daar
+kies je "Ander item" of "Weet ik niet". Lucky Seven en Nimble Body staan alleen bij de Thief.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Vrienden die geen Thief spelen, krijgen geen Thief-advies meer dat op hen niet klopt. De Warrior,
+Magician, Bowman en Beginner volgen in #42 tot #45.
+
+**Score:** 3
 
 #### Pull Request
 
