@@ -69,6 +69,16 @@ export function skillLevels(draft: ProfileDraft): SkillLevel[] {
   })
 }
 
+/**
+ * Een skillveld na een tik op − of +: één level lager of hoger, binnen 0 en het maximum. Een veld dat geen
+ * heel getal is (leeg of half getypt), telt als 0; boven het maximum telt als het maximum.
+ */
+export function stepSkill(text: string, delta: -1 | 1, max: number): string {
+  const n = Number(text.trim())
+  const from = text.trim() !== '' && Number.isInteger(n) ? Math.min(Math.max(n, 0), max) : 0
+  return String(Math.min(Math.max(from + delta, 0), max))
+}
+
 /** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {
   const expToNext = expToNextLevel(profile.level)

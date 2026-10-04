@@ -287,10 +287,28 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-group:last-of-type { margin-bottom: 0; }
 .skill-group:last-of-type .skill-row:last-child { border-bottom: 0; }
 .skill-group h3 { margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.375rem 0; border-bottom: 1px solid var(--border); }
-.skill-input { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-.skill-input input { width: 4.5rem; padding: 0.5rem 0.625rem; min-height: 44px; text-align: right; font-variant-numeric: tabular-nums; }
-.skill-input small { width: 2rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+/* Een stepper: − en + als grote tikvlakken (44px), het getal ertussen kun je ook typen */
+.skill-input { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
+.skill-input input { width: 3rem; padding: 0.5rem 0.25rem; min-height: 44px; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+.skill-input input::-webkit-inner-spin-button, .skill-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.skill-input .step {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--accent);
+  font: inherit;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation; /* geen zoom bij snel twee keer tikken */
+}
+.skill-input .step:disabled { color: var(--muted); opacity: 0.4; cursor: not-allowed; }
+.skill-input small { width: 1.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }

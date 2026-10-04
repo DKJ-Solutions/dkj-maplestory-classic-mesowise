@@ -15,7 +15,7 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
@@ -441,20 +441,39 @@ function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange
               {levels
                 .filter((s) => s.job === job)
                 .map((s) => (
-                  <label class="skill-row" key={s.key}>
+                  <div class="skill-row" key={s.key}>
                     <span>{s.name}</span>
                     <span class="skill-input">
+                      <button
+                        type="button"
+                        class="step"
+                        aria-label={`${s.name} een level lager`}
+                        disabled={s.level === 0}
+                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], -1, s.max) })}
+                      >
+                        −
+                      </button>
                       <input
                         type="number"
                         inputMode="numeric"
                         min={0}
                         max={s.max}
+                        aria-label={`${s.name}, level van 0 tot ${s.max}`}
                         value={props.draft[s.key]}
                         onInput={(e) => props.onChange({ [s.key]: (e.currentTarget as HTMLInputElement).value })}
                       />
+                      <button
+                        type="button"
+                        class="step"
+                        aria-label={`${s.name} een level hoger`}
+                        disabled={s.level === s.max}
+                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], 1, s.max) })}
+                      >
+                        +
+                      </button>
                       <small>/ {s.max}</small>
                     </span>
-                  </label>
+                  </div>
                 ))}
             </div>
           ))}

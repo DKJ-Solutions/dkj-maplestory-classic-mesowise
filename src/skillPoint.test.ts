@@ -7,7 +7,7 @@ import { knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { THIEF_SKILLS, type SkillKey } from './data/skills'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
-import { NOT_MODELLED, SKILLS, skillLevels, skillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, SKILLS, skillLevels, skillPointAdvice, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
@@ -137,5 +137,29 @@ describe('skillLevels', () => {
 
   it('kijkt alleen naar de skillvelden: een ongeldig ander veld maakt niets uit', () => {
     expect(levelOf({ level: '', luckySeven: '5' }, 'luckySeven')).toBe(5)
+  })
+})
+
+describe('stepSkill', () => {
+  it('gaat één level omhoog of omlaag', () => {
+    expect(stepSkill('3', 1, 20)).toBe('4')
+    expect(stepSkill('3', -1, 20)).toBe('2')
+  })
+
+  it('blijft binnen 0 en het maximum', () => {
+    expect(stepSkill('0', -1, 20)).toBe('0')
+    expect(stepSkill('20', 1, 20)).toBe('20')
+    expect(stepSkill('25', -1, 20)).toBe('19')
+    expect(stepSkill('-4', 1, 3)).toBe('1')
+  })
+
+  it('telt een leeg of ongeldig veld als 0', () => {
+    expect(stepSkill('', 1, 15)).toBe('1')
+    expect(stepSkill('abc', 1, 15)).toBe('1')
+    expect(stepSkill('2.5', -1, 15)).toBe('0')
+  })
+
+  it('leest een veld met spaties eromheen', () => {
+    expect(stepSkill(' 7 ', 1, 15)).toBe('8')
   })
 })
