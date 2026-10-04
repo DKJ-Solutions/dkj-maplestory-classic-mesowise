@@ -7,6 +7,7 @@ import { BOWMAN_SKILLS, isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, typ
 import { ATTACK_MS, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
 import { STAT_NAME } from './equipment'
+import type { Gender } from './gender'
 import type { Job } from './job'
 
 export const PROFILE_KEY = 'mesowise.profile.v1'
@@ -100,8 +101,11 @@ const BOWMAN_FIELDS: readonly ProfileField[] = [...STAT_FIELDS, ...BEGINNER_SKIL
 export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
-/** Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent). */
-export type Profile = Record<ProfileKey, number> & { job: Job }
+/**
+ * Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent) en het geslacht
+ * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen).
+ */
+export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender }
 
 /**
  * De velden die een job invult: elke job heeft de skills van zijn eigen 1e job, de Beginner-skills heeft elke job.
@@ -177,8 +181,8 @@ export const DEFAULT_PROFILE: ProfileDraft = {
  * velden die deze job invult). `key` zegt welk veld, zodat het scherm de melding toont bij de kaart waar dat
  * veld staat.
  */
-export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Profile } | { error: string; key: ProfileKey } {
-  const out = { job } as Profile
+export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender | null = null): { profile: Profile } | { error: string; key: ProfileKey } {
+  const out = (gender ? { job, gender } : { job }) as Profile
   const shown = profileFieldsFor(job)
   for (const f of DRAFT_FIELDS) {
     if (!shown.includes(f)) {
