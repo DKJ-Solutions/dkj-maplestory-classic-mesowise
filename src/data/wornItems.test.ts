@@ -15,8 +15,8 @@ const idOf = (url: string) => Number(url.split('/').pop())
 const ALL = [...WORN_ARMOR, ...WORN_CLAWS]
 
 describe('WORN_ARMOR en WORN_CLAWS', () => {
-  it('bevat 118 stukken armor en 6 claws', () => {
-    expect(WORN_ARMOR).toHaveLength(118)
+  it('bevat 117 stukken armor en 6 claws', () => {
+    expect(WORN_ARMOR).toHaveLength(117)
     expect(WORN_CLAWS).toHaveLength(6)
   })
 
@@ -77,7 +77,9 @@ describe('WORN_ARMOR', () => {
       const a = WORN_ARMOR.find((x) => x.name === n)
       return a && [a.slot, a.level, a.wdef, idOf(a.source.url)]
     }
-    expect(pick('Red Ghetto Beanie')).toEqual(['hat', 10, 15, 732])
+    expect(pick('Blue Ghetto Beanie')).toEqual(['hat', 10, 15, 733])
+    // De rode kleur verkoopt Don Hwang voor mesos (#49): die staat in NPC_ARMOR, niet hier.
+    expect(pick('Red Ghetto Beanie')).toBeUndefined()
     expect(pick('Undershirt')).toEqual(['top', 0, 6, 935])
     expect(pick('Blue Qi Pao Skirt')).toEqual(['bottom', 22, 24, 1217])
     expect(pick('Bronze Aroa Boots')).toEqual(['shoes', 16, 13, 1331])
