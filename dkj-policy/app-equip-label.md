@@ -41,17 +41,25 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rename the visible label "Je equipment" to "Je equip": the card head, the popup title and the not-computed line (`src/app.tsx`); code comments that name the screen follow
+- [x] Update the app tests that find the card by its name (`src/app.test.tsx`)
 
 ### TEST
 
+- [x] `npm test` (1204 passed) and `npm run lint` green
+- [ ] Dave looks at the label on the phone before the merge (visible result)
+
 ### DEPLOY: app/equip-label
 
-**Score:**
+The equipment card is now called "Je equip" instead of "Je equipment": on the card head, in the popup title and in the line for a job the app does not compute yet. A shorter name that fits a phone screen better.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Players see the shorter "Je equip" on the card and in its popup; nothing else changes.
+
+**Score:** 1
 
 #### Pull Request
 

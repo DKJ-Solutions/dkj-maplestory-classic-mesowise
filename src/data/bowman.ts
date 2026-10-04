@@ -168,7 +168,7 @@ export const NPC_BOWMAN_ARMOR: readonly BowmanArmor[] = [
 
 /**
  * De andere kleuren van de level-15 Able-rok (#107): even sterk en even duur als de Green Able Armor Skirt in
- * NPC_BOWMAN_ARMOR, alleen een andere bonusstat (die negeert de app). Ze staan in de zoekbalk van "Je equipment",
+ * NPC_BOWMAN_ARMOR, alleen een andere bonusstat (die negeert de app). Ze staan in de zoekbalk van "Je equip",
  * zonder prijs, zoals de kleuren in wornWarrior.ts.
  */
 export const GENDERED_WORN_BOWMAN_ARMOR: readonly WornArmor[] = [
