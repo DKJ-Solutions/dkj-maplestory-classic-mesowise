@@ -39,19 +39,37 @@
 
 ### PLAN
 
+Issue #49: de Ghetto Beanie is een level-10 Thief-hoed met een vaste winkelprijs, en hoort dus in
+`NPC_ARMOR`, niet alleen als gedragen item in `wornItems.ts`. Eerst de verkoper en de prijs op de pagina
+zelf lezen; die waren in het issue nog afgeleid.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: op itempagina 732 (twee letterlijke lezingen) en de verkoperspagina (/npcs/409) gelezen:
+  REQ LEV 10, REQ LUK 10, JOB Thief, W.DEF +15, te koop bij Don Hwang (Kerning City Self-Defence Item Store)
+  voor 1.200 meso, in alle vijf kleuren.
+- [x] Vera: de rode Ghetto Beanie als eerste hoed in `NPC_ARMOR`, uit `WORN_ARMOR` gehaald (de andere vier
+  kleuren blijven daar, zoals bij de andere NPC-items) en de kopzin van `armor.ts` verbeterd.
 
 ### TEST
 
+- [x] Tycho: de 14 tests die door de nieuwe hoed veranderen, elk met de hand nagerekend en bijgewerkt; een test
+  die de rij vastpint.
+- [x] Victor: geen bugs; elke gewijzigde verwachting is een echt gevolg van de nieuwe hoed.
+
 ### DEPLOY: data/49-ghetto-beanie
 
-**Score:**
+Een Thief krijgt op level 10 nu ook een hoed in het armor-advies: de Ghetto Beanie (15 WDEF, 1.200 meso bij
+Don Hwang in Kerning City). Omdat hij goedkoop is, komt hij ook op hogere levels als hoed naar voren waar
+de Thief Hood duurder is dan wat hij extra bespaart.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
