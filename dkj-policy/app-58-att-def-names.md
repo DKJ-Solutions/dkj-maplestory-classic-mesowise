@@ -39,21 +39,35 @@
 
 ### PLAN
 
+Issue #58: the equipment card says ATT and DEF (Dave, October 4, 2026), the rest of the UI still said
+"Weapon attack" and WDEF. Rename every user-visible label and text; code identifiers stay.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `STAT_NAME` in `src/equipment.ts` is the one source of both names; `statName` reads it
+- [x] `src/profile.ts`: the field labels read "ATT van je wapen" and "DEF"
+- [x] `src/app.tsx`: the armor-advice texts say DEF instead of WDEF
 
 ### TEST
 
+- [x] `npm run lint` (typecheck) clean; vitest 696 of 696 green, the two label tests updated
+- [x] Victor (code) and Edith (UI text) reviewed the diff
+
 ### DEPLOY: app/58-att-def-names
 
-**Score:**
+The app now names the weapon stat ATT and the armor stat DEF everywhere, as the game does: in the
+character fields and in the armor advice, not only on the equipment card. Both names come from one
+constant, so they cannot drift apart again.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+One stat had two names on one screen (ATT on the equipment card, WDEF in the armor advice); a player
+no longer has to wonder whether they are the same number.
+
+**Score:** 2
 
 #### Pull Request
 
 ATT and DEF everywhere the UI names the weapon and armor stats
-
