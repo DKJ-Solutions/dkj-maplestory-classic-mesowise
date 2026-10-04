@@ -46,7 +46,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   margin-bottom: 1rem;
   transition: border-color 200ms ease-out;
 }
-/* Een open inklapbare kaart krijgt een fellere rand. :where houdt de regel zwak, zodat "Beste" (vol
+/* Een kaart waarvan de popup openstaat, krijgt een fellere rand. :where houdt de regel zwak, zodat "Beste" (vol
    accent met dubbele rand) en een fout (rood) altijd voorgaan. */
 .card:where(:has(> .spot-head[aria-expanded='true'])) {
   border-color: var(--muted);
@@ -111,27 +111,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
 .spot-name.with-icon { display: flex; align-items: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
-/* Een pijltje in een eigen kolom helemaal rechts: deze kaart klap je open en dicht met een tik. Omlaag = dicht, omhoog = open. */
-.spot-head::after {
-  content: '';
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: center;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin: 0 0.125rem 0.25rem 0.25rem;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: rotate(45deg);
-  transition: transform 200ms ease-out;
-}
-.spot-head[aria-expanded='true']::after { transform: translateY(0.25rem) rotate(-135deg); }
-/* De inhoud schuift open en dicht, in hetzelfde tempo als het pijltje draait */
-.collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; }
-.collapse.open { grid-template-rows: 1fr; }
-.collapse-inner { min-height: 0; overflow: hidden; }
-/* Ook in een browser zonder inert: dicht is de inhoud onbereikbaar, pas na het wegschuiven */
-.collapse:not(.open) .collapse-inner { visibility: hidden; transition: visibility 0s 200ms; }
+/* Een oog in een eigen kolom helemaal rechts: een tik op de kop toont de inhoud van deze kaart in een popup (#106). */
+.card-eye { grid-column: 3; grid-row: 1 / span 2; align-self: center; color: var(--muted); }
+/* Een kop die niets opent (de equipment op het controlescherm, waar de inhoud al op de kaart staat) */
+.spot-head.static { cursor: default; }
+/* De popup van een kaart: de inhoud zonder eigen rand, in elke kaart even ver onder de titel; de melding net onder de titel.
+   .card ervoor wint van de kaartregels verderop (zoals .equipment .spot-body), de popup zit in de kaart. */
+.card .card-dialog .spot-body { padding: 0.875rem 0 0; border-top: 0; }
+.card .card-dialog .spot-body > .field:first-child, .card .card-dialog .spot-body > .stat-line:first-child { margin-top: 0; }
+.card-dialog .error { padding: 0.5rem 0 0; }
 .spot-value { grid-column: 2; text-align: right; }
 .spot-value strong { display: block; font-size: 1.5rem; color: var(--accent); }
 .spot-value small { color: var(--muted); font-size: 0.875rem; }
@@ -181,7 +169,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .credit { margin-top: 1.5rem; font-size: 0.875rem; color: var(--muted); text-align: center; }
 
 .spot-head:focus-visible, .btn:focus-visible, .field input:focus-visible, .field select:focus-visible,
-.skill-input input:focus-visible, .skill-input .step:focus-visible, .collapse-foot:focus-visible {
+.skill-input input:focus-visible, .skill-input .step:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -268,7 +256,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stats .error { padding: 0.75rem 0 0.5rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Je equipment en je skills: inklapbaar zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
+/* Je equipment en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
 .equipment, .skills { padding: 0; overflow: hidden; }
 .equipment .spot-body, .skills .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint of meteen met het eerste veld */
 .equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
@@ -387,34 +375,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-step button:active, .equip-reset:active { background: color-mix(in srgb, var(--accent) 16%, var(--card)); border-color: var(--accent); }
 .equip-step button:focus-visible, .equip-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Onderaan een lange open kaart: ook daar klap je hem weer in, met hetzelfde pijltje als in de kop (omhoog) */
-.collapse-foot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 44px;
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.collapse-foot::after {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-top: 0.25rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-135deg);
-}
-
 /* Je skillpunten (kaart en marges zoals je equipment): per job een kopje, per skill een regel met een
    smal getalveld en het maximum erachter */
 .skill-group { margin-bottom: 1rem; }
@@ -458,7 +418,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .verdict { margin: 0 0 0.375rem; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .track, .spot-head::after, .collapse, .card { transition: none; }
+  .track, .card { transition: none; }
 }
 
 /* De menubalk (issue #86): in de kaartkleur (wit, in het donkere thema donker), over de hele breedte en altijd bovenin. De inhoud lijnt uit met main. */
