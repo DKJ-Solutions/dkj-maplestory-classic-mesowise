@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**20 / 38 minor entries** <!-- pending-tally -->
+**21 / 39 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/42-warrior-model · 20261004-104446Z
+
+Een Warrior krijgt nu echte getallen in plaats van "Nog niet doorgerekend": kills en EXP per uur,
+potionkosten, de beste plek, wat een level kost, of een nieuw wapen of een nieuwe hoed of schoenen loont,
+en welk skillpunt (Power Strike of Precise Strikes) het meeste spaart. Je kiest je wapen uit de NPC-winkel,
+en het vult je weapon attack, aanvalssnelheid en multiplier in. Voor Top en Bottom zijn er nog geen
+winkelitems (#55). Magician en Bowman blijven "Nog niet doorgerekend".
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Vrienden die een Warrior spelen kunnen de app nu echt gebruiken.
+
+**Score:** 3
+
+#### Pull Request
+
+De Warrior doorgerekend: mob-model en scherm
+
+[PR #66](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/66)
+
+---
 
 ### DEPLOY: data/64-bronze-arrows · 20261004-104154Z
 
