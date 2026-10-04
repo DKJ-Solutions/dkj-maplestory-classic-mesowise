@@ -1019,14 +1019,22 @@ describe('een Warrior in de app', () => {
       const lines = (name: string) => [...row(name).querySelectorAll('.skill-mp > span')].map((l) => l.textContent)
       // Slash Blast kost 4 MP op level 4 en 5 MP op level 5 (de skillpagina, data/warrior.ts).
       fireEvent.input(input('Slash Blast'), { target: { value: '4' } })
-      expect(lines('Slash Blast')).toEqual(['Nu: 4 MP per keer', 'Volgend level: 5 MP'])
+      expect(lines('Slash Blast')).toEqual(['Nu: −4 MP per keer', 'Volgend level: −5 MP'])
       // Op het maximum (20, 12 MP) is er geen volgend level.
       fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
-      expect(lines('Slash Blast')).toEqual(['Nu: 12 MP per keer'])
-      // Op level 0 is hij nog niet geleerd; level 1 kost 15 MP.
+      expect(lines('Slash Blast')).toEqual(['Nu: −12 MP per keer'])
+      // Op level 0 is hij nog niet geleerd; level 1 kost 15 MP en geeft 5% van de DEF uit het profiel (60): +3 (#139).
       fireEvent.input(input('Iron Body'), { target: { value: '0' } })
-      expect(lines('Iron Body')).toEqual(['Nu: niet geleerd', 'Volgend level: 15 MP'])
-      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP'])
+      expect(lines('Iron Body')).toEqual(['Nu: niet geleerd', 'Volgend level: −15 MP, +3 DEF (5%)'])
+      // Level 5 geeft 9% (floor(5,4) = +5), level 6 geeft 10% (+6).
+      fireEvent.input(input('Iron Body'), { target: { value: '5' } })
+      expect(lines('Iron Body')).toEqual(['Nu: −15 MP per keer, +5 DEF (9%)', 'Volgend level: −15 MP, +6 DEF (10%)'])
+      // Een passief met een effect: dat staat onder "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
+      fireEvent.input(input('Precise Strikes'), { target: { value: '2' } })
+      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])
+      // Op level 0 van een passief met effect: nog niet geleerd, en wat level 1 geeft.
+      fireEvent.input(input('Precise Strikes'), { target: { value: '0' } })
+      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: niet geleerd', 'Volgend level: +5 Accuracy, +1% Crit. Rate'])
       // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
       fireEvent.input(input('Power Strike'), { target: { value: '' } })
       expect(lines('Power Strike')).toEqual([])
@@ -1061,7 +1069,7 @@ describe('een Warrior in de app', () => {
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
       const text = panels()[2].textContent!
-      expect(text).toMatch(/Niet doorgerekend: Improved HP Recovery, Max HP Increase, Iron Body en Slash Blast/)
+      expect(text).toMatch(/Niet doorgerekend: Improved HP Recovery en Slash Blast/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven/)
     })
 
@@ -1404,7 +1412,7 @@ describe('een Bowman in de app', () => {
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
       const text = panels()[2].textContent!
-      expect(text).toMatch(/Niet doorgerekend: Double Shot, Critical Shot, The Eye of Amazon en Focus/)
+      expect(text).toMatch(/Niet doorgerekend: Double Shot, Critical Shot en The Eye of Amazon/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Slash Blast/)
     })
 
@@ -1572,7 +1580,7 @@ describe('een Magician in de app', () => {
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
       const text = panels()[2].textContent!
-      expect(text).toMatch(/Niet doorgerekend: Magic Guard, Magic Armor, Improved MP Recovery en Max MP Increase/)
+      expect(text).toMatch(/Niet doorgerekend: Magic Guard, Improved MP Recovery en Max MP Increase/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Power Strike|Slash Blast/)
     })
 

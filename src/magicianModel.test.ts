@@ -401,9 +401,9 @@ describe('Magician: de spreuken en het voorstel', () => {
 })
 
 describe('Magician: skillpunten', () => {
-  it('rekent Energy Bolt en Magic Claw door en geeft de Magician geen skill van een andere job', () => {
-    expect(skillsOf('magician').map((s) => s.id)).toEqual(['energyBolt', 'magicClaw'])
-    expect(skillsOf('magician').map((s) => s.max)).toEqual([20, 20])
+  it('rekent Energy Bolt, Magic Claw en Magic Armor door en geeft de Magician geen skill van een andere job', () => {
+    expect(skillsOf('magician').map((s) => s.id)).toEqual(['energyBolt', 'magicClaw', 'magicArmor'])
+    expect(skillsOf('magician').map((s) => s.max)).toEqual([20, 20, 20])
   })
 
   it('zet bij Energy Bolt één level erbij en laat de rest staan', () => {
@@ -412,8 +412,8 @@ describe('Magician: skillpunten', () => {
     expect(claw.plusOne(magician)).toEqual({ ...magician, magicClaw: 1 })
   })
 
-  it('noemt de vier andere skills van de 1e job onder "niet doorgerekend", en elke 1e-job-skill staat in precies één van de twee', () => {
-    expect(notModelled('magician')).toEqual(['Magic Guard', 'Magic Armor', 'Improved MP Recovery', 'Max MP Increase'])
+  it('noemt de drie andere skills van de 1e job onder "niet doorgerekend", en elke 1e-job-skill staat in precies één van de twee', () => {
+    expect(notModelled('magician')).toEqual(['Magic Guard', 'Improved MP Recovery', 'Max MP Increase'])
     expect(notModelled('thief')).toBe(NOT_MODELLED)
     const modelled = skillsOf('magician').map((s) => s.name)
     expect([...modelled, ...notModelled('magician')].sort()).toEqual(MAGICIAN_SKILLS.map((s) => s.name).sort())
