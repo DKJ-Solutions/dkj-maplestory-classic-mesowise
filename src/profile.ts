@@ -20,6 +20,8 @@ export interface ProfileField {
   min: number
   max: number
   integer: boolean
+  /** Alleen ter info (het statvenster uit het spel): de berekening gebruikt het veld niet, dus een leeg of fout veld blokkeert haar niet. */
+  informative?: boolean
 }
 
 /** De stats van het profiel, met hun label en grenzen. */
@@ -28,11 +30,19 @@ const STATS = [
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
   { key: 'str', label: 'STR', min: 0, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: 0, max: 999, integer: true },
+  { key: 'int', label: 'INT', min: 0, max: 999, integer: true },
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
-  { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
-  { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
+  // Total stats, in de volgorde van het statvenster. Alleen ter info: magic, magic def, crit, speed en jump. De Attack is geen veld: hij volgt uit je equipment (totalAttack).
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
+  { key: 'magic', label: 'Magic', min: 0, max: 9_999, integer: true, informative: true },
+  { key: 'magicDef', label: 'Magic Def', min: 0, max: 9_999, integer: true, informative: true },
+  { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
+  { key: 'avoid', label: 'Evasion', min: 0, max: 999, integer: true },
+  { key: 'critRate', label: 'Crit. Rate (%)', min: 0, max: 100, integer: false, informative: true },
+  { key: 'critDamage', label: 'Crit. Damage (%)', min: 0, max: 999, integer: false, informative: true },
+  { key: 'speed', label: 'Speed (%)', min: 0, max: 200, integer: false, informative: true },
+  { key: 'jump', label: 'Jump (%)', min: 0, max: 200, integer: false, informative: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
 
@@ -108,6 +118,12 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
         ? BOWMAN_FIELDS
         : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
 
+/**
+ * De velden onder "Ability points" op de kaart "Je karakter", zoals in het statvenster van het spel. Alle andere
+ * stats vallen onder "Total stats". INT staat er wel, maar de app rekent er niet mee.
+ */
+export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'int', 'luk']
+
 /** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
 export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
 
@@ -117,11 +133,19 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   hp: '444',
   str: '4',
   dex: '25',
+  int: '4',
   luk: '40',
   clawWatk: '10',
   accuracy: '33',
   avoid: '23',
   wdef: '72',
+  // Alleen ter info: leeg tot je ze zelf invult, zodat de app niets beweert wat jij niet invulde. De berekening gebruikt ze niet.
+  magic: '',
+  magicDef: '',
+  critRate: '',
+  critDamage: '',
+  speed: '',
+  jump: '',
   attackMs: String(ATTACK_MS.fast5),
   starWatk: String(SUBI.watk),
   starRecharge: String(SUBI.rechargePerStar),
@@ -165,10 +189,16 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
     const text = d[f.key].trim()
     const n = text === '' ? NaN : Number(text)
     const where = isSkillKey(f.key) ? 'Skillpoints' : 'je karakter'
-    if (!Number.isFinite(n)) return { error: `Vul bij ${where} "${f.label}" in.`, key: f.key }
-    if (n < f.min || n > f.max) return { error: `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`, key: f.key }
-    if (f.integer && !Number.isInteger(n)) return { error: `"${f.label}" moet een heel getal zijn.`, key: f.key }
-    out[f.key] = n
+    const error = !Number.isFinite(n)
+      ? `Vul bij ${where} "${f.label}" in.`
+      : n < f.min || n > f.max
+        ? `"${f.label}" moet tussen ${f.min} en ${f.max} liggen.`
+        : f.integer && !Number.isInteger(n)
+          ? `"${f.label}" moet een heel getal zijn.`
+          : null
+    if (error === null) out[f.key] = n
+    else if (f.informative) out[f.key] = 0 // staat niet in de berekening: leeg of fout blokkeert niets, en telt als 0
+    else return { error, key: f.key }
   }
   // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie AMMO).
   if (job === 'bowman') {
@@ -176,6 +206,21 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
     out.starRecharge = PLAIN_ARROW.pricePerArrow
   }
   return { profile: out }
+}
+
+/** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een Warrior gooit niets. */
+const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
+
+/**
+ * De Attack uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
+ * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
+ */
+export function totalAttack(d: ProfileDraft, job: Job): number | null {
+  const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+  const claw = whole(d.clawWatk)
+  // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
+  const stars = job === 'warrior' ? 0 : job === 'bowman' ? PLAIN_ARROW.watk : whole(d.starWatk)
+  return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
 }
 
 /** Het profiel in de vorm van het mob-model: bij een Thief telt de weapon attack van je stars mee bij die van je claw, bij een Bowman die van zijn pijlen; een Warrior gooit niets. */
@@ -186,7 +231,7 @@ export function toCharacter(p: Profile): Character {
     str: p.str,
     dex: p.dex,
     luk: p.luk,
-    watk: p.job === 'warrior' ? p.clawWatk : p.clawWatk + p.starWatk,
+    watk: weaponAttack(p.job, p.clawWatk, p.starWatk),
     accuracy: p.accuracy,
     avoid: p.avoid,
     wdef: p.wdef,
@@ -229,8 +274,8 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
 /** De hoofdstat voor schade: STR voor een Warrior, DEX voor een Bowman, LUK voor een Thief. */
 const mainStatKey = (job: Job): Stat => (job === 'warrior' ? 'str' : job === 'bowman' ? 'dex' : 'luk')
 
-/** Een stat van het profiel. Het profiel heeft nog geen INT (dat komt met de Magician, #43), dus die is 0. */
-const statOf = (p: Profile, s: Stat): number => (s === 'int' ? 0 : p[s])
+/** Een stat van het profiel; INT is het veld onder Ability points (#82). */
+const statOf = (p: Profile, s: Stat): number => p[s]
 
 /** De waarde van de hoofdstat van dit profiel (zie mainStatKey). */
 export const mainStatOf = (p: Profile): number => statOf(p, mainStatKey(p.job))

@@ -63,6 +63,9 @@ after the code and tests were written, and this was picked up from the working c
 - [x] `main` merged in after Dave's approval: #69 keeps each stat requirement in its own stat, so the Bowman gear
   carries `str` instead of `luk`, `requirementStatOf` is gone in favour of `shortfall`, and the Bowman's main stat
   is DEX (listed first in what he lacks); `src/bowmanUpgrade.test.ts` and `src/profile.test.ts` follow; 956 tests green
+- [x] `main` merged in again for #82 (Ability points / Total stats): the Bowman hint moves to the Total stats card,
+  the level-up hints say evasion, and `totalAttack` counts the plain arrow for a Bowman rather than leftover stars
+  (new test in `src/profile.test.ts`); 968 tests green
 
 ### DEPLOY: app/44-bowman-model
 
