@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Scope: every shield, glove, cape and earring up to level 30, the same bound as the other worn-item catalogs.
+The set comes from MeowDB's `/msclassic/item-db/all` overview (the per-subtype listings render client-side
+and could not be read), and every value from the item's own page.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: source the four slots from NiaMeowDB, item page by item page
+- [x] Vera: check completeness against `/item-db/all`, spot-check the doubtful rows, write `src/data/accessories.ts`
+- [x] Cody: give each job's catalog the items it may wear; count catalog MDEF of these slots in the Magic Def
+- [x] Filed #133: the Thief has a Shield slot (wristguards) that the app hides
 
 ### TEST
 
+- [x] Tycho: `src/data/accessories.test.ts`, and the #117 tests in `equipment.test.ts` and `app.test.tsx` updated
+- [x] Victor: code review of the diff
+- [x] Lint gate and the full suite green
+
 ### DEPLOY: data/125-shield-gloves-cape-earrings
 
-**Score:**
+The Shield, Gloves, Cape and Earrings slots now have sourced items: 62 items up to level 30 from NiaMeowDB
+(11 shields, 40 gloves, 1 cape, 10 earrings), each with its own item page and job line. A job only sees
+what it may wear. A catalog item in these slots adds its MDEF to the Magic Def; an empty slot or an own
+item still counts as nothing there.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Dave and his friends pick their gloves, shield, cape and earrings from the list instead of typing the DEF,
+and their earrings now show up in their Magic Def.
+
+**Score:** 3
 
 #### Pull Request
 
