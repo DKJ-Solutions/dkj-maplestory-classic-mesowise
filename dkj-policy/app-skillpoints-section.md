@@ -39,34 +39,44 @@
 
 ### PLAN
 
-Dave (4 oktober 2026): een sectie over skillpunten, met de punten die de speler op dat moment heeft gezet. Alleen-lezen kaart naar het model van de equipment-kaart; invullen blijft bij je karakter, zodat er geen tweede invoer komt die accuracy en avoid anders behandelt.
+Dave (4 oktober 2026): een sectie over skillpunten, met de punten die de speler op dat moment heeft gezet.
+Eerste versie toonde alleen Lucky Seven en Nimble Body, de twee die het model doorrekent; Dave: "thief heeft
+veel meer skills dan dit". Dus alle skills van een Thief tot de 2e job (3 Beginner, 6 van de 1e job), met
+hun maximum van NiaMeowDB, en de kaart is de plek waar je ze invult. Hoeveel SP je per level krijgt, staat
+niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten over".
 
 ### CREATE
 
 - [x] Cody: skillLevels en pointsPlaced in src/skillPoint.ts, puur en zonder UI-import
 - [x] Cody + Gwen: inklapbare kaart "Je skillpunten" op het beginscherm en boven de skillvraag in "Wat nu?"
-- [x] Tycho: tests voor skillLevels en pointsPlaced (415 groen), typecheck groen
-- [x] Victor en Edith: review van de diff; twee weggevallen spaties hersteld, "Niet doorgerekend:" zoals elders, de twee hints samengevoegd, CSS gedeeld met .equipment
+- [x] Tycho: tests voor skillLevels en pointsPlaced, typecheck groen
+- [x] Victor en Edith: review ronde 1; twee weggevallen spaties hersteld, "Niet doorgerekend:" zoals elders, hints samengevoegd, CSS gedeeld met .equipment
+- [x] Rebecca + Vera: de 9 skills en hun maxima op NiaMeowDB (skill-index en klassenpagina's geven dezelfde maxima)
+- [x] Cody: src/data/skills.ts; skillvelden in het profiel uit die data, verhuisd van Je karakter en het controlescherm naar de skillkaart, die nu invulbaar is; foutmelding bij de kaart van het foute veld
+- [x] Tycho: tests voor de data, de nieuwe skillvelden en een bewaard profiel van vóór de wijziging (424 groen)
+- [ ] Victor en Edith: review ronde 2
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
 
 ### DEPLOY: app/skillpoints-section
 
-Onder je karakter staat nu een inklapbare kaart "Je skillpunten". In de kop zie je hoeveel punten je hebt
-gezet en in welke skill; uitgeklapt staat per skill (Lucky Seven, Nimble Body) je level tegen het
-maximum. De kaart staat ook in "Wat nu?" boven de skillvraag, zodat een punt dat je met "Punt zetten"
-zet daar meteen te zien is. Je vult de levels nog steeds in bij je karakter.
+Onder je karakter staat nu een inklapbare kaart "Je skillpunten" met alle skills van een Thief tot de
+2e job: de drie van de Beginner (Three Snails, Nimble Feet, Recovery) en de zes van de 1e job (Nimble
+Body, Keen Eyes, Double Stab, Disorder, Dark Sight, Lucky Seven), elk met het maximum van NiaMeowDB. Hier
+vul je je skill-levels in; ze staan niet meer bij je karakter. In de kop zie je hoeveel punten je per
+job hebt gezet. De kaart staat ook in "Wat nu?" boven de skillvraag, zodat een punt dat je met
+"Punt zetten" zet daar meteen te zien is. In het advies rekenen nog steeds alleen Lucky Seven en Nimble
+Body mee.
 
-**Score:** 2
+**Score:** 3
 
 #### What makes this deploy extra special
 
-Je ziet in één oogopslag welke skillpunten je hebt gezet, zonder je karakter open te klappen.
+Al je skillpunten staan op één plek, ook de skills die het advies (nog) niet doorrekent.
 
-**Score:** 2
+**Score:** 3
 
 #### Pull Request
 
-Sectie Skillpunten: de skill-levels die de speler nu heeft gezet
-
+Sectie Skillpunten: alle skills van een Thief met de punten die je hebt gezet
