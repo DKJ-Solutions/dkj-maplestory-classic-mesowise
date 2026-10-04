@@ -527,10 +527,10 @@ const WEAPON_TEXT = {
 const weaponText = (job: Job) => WEAPON_TEXT[computedJob(job)]
 
 /** De stat waarin een wapen of stuk armor naast DEX een eis stelt: LUK voor een Thief, STR voor een Warrior of Bowman. */
-const mainStat = (job: Job) => (computedJob(job) === 'thief' ? 'LUK' : 'STR')
+const requirementStat = (job: Job) => (computedJob(job) === 'thief' ? 'LUK' : 'STR')
 
 const missingStats = (u: UnwearableClaw | UnwearableArmor, job: Job) =>
-  [u.needLuk > 0 && `${u.needLuk} ${mainStat(job)}`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+  [u.needLuk > 0 && `${u.needLuk} ${requirementStat(job)}`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
 
 /** Wat de winnende claw oplevert, in een zin; gedeeld door de kaart en het advies na een level-up. */
 function ClawWinnerLine(props: { win: ClawChoice }) {
@@ -925,7 +925,7 @@ const SKILL_GROUPS = [
 
 /**
  * De skillpunten die je nu hebt gezet: elke skill van je job tot de 2e job, met zijn maximum. Hier vul
- * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent ziet
+ * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent (de Magician) ziet
  * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
  */
 function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {

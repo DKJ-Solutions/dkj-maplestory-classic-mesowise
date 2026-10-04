@@ -39,19 +39,41 @@
 
 ### PLAN
 
+Issue #44: the Bowman becomes a computed job, like the Thief and the Warrior. The data (`src/data/bowman.ts`:
+weapons, armor, arrows, skills, accuracy, with MeowDB sources) is already on `main`; this branch puts it to work.
+The damage is the shared formula with DEX as the main stat and STR as the secondary one. Arrow Blow is the one
+skill the model computes; Double Shot, Critical Shot, The Eye of Amazon and Focus are listed as not computed, with
+the reason. The app uses the plain arrow (1 meso, 0 W.ATT); bronze arrows are #64. The session was interrupted
+after the code and tests were written, and this was picked up from the working copy on October 4, 2026.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `bowAttack` in the mob model: DEX main stat, STR secondary, one hit and one arrow per attack
+- [x] `src/bowmanGear.ts`: bows, crossbows and Bowman armor in the shared shop shapes, plus the plain arrow
+- [x] Bowman skills, profile fields and expected accuracy/avoid; `isComputed` includes the Bowman
+- [x] Skill-point, weapon and armor advice and the level-up question handle the Bowman
+- [x] Screen: Bowman texts, hints and sources on the profile, equipment and skill cards
 
 ### TEST
 
+- [x] `src/bowmanUpgrade.test.ts` and updates to the mob-model, equipment, profile, job, level-up, skill-point and
+  app tests; typecheck and 954 tests green
+- [x] Victor's code review and Edith's text read: no blocking findings; `mainStat` in `src/app.tsx` renamed to
+  `requirementStat` (Victor), the SkillsCard comment names the Magician (Edith)
+
 ### DEPLOY: app/44-bowman-model
 
-**Score:**
+A player can now choose Bowman and get real advice: the best training spot, what a level costs in mesos, whether a
+new bow or crossbow or a piece of armor pays off, and where a skill point saves the most (Arrow Blow). The app counts
+the plain arrow as ammo, and lists the Bowman skills it does not compute yet.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
