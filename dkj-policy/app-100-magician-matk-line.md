@@ -43,17 +43,17 @@ Stacked on app/43-magician-model (PR #96), per Dave's choice on #100: the PR tar
 
 ### CREATE
 
-- [x] `totalAttack` (src/profile.ts) gives a Magician MagicTotal: floor(INT / 2) + weapon M.ATT, the sum mobModel.ts uses
-- [x] The Total stats card names that line M.ATT for a Magician, and its hint says where the number comes from
+- [x] `totalMagicAttack` (src/profile.ts) gives a Magician MagicTotal: floor(INT / 2) + weapon M.ATT, the sum mobModel.ts uses; every other job 0. `totalAttack` gives a Magician 0
+- [x] The Total stats card always shows W.ATT and M.ATT, one of the two at 0 (Dave, follow-up on #100), and its hint says where the numbers come from
 
 ### TEST
 
-- [x] Tests: profile.test.ts pins MagicTotal (rounding, empty fields); app.test.tsx pins the M.ATT line (61) and no Attack line
+- [x] Tests: profile.test.ts pins MagicTotal (rounding, empty fields); app.test.tsx pins W.ATT and M.ATT for every job (Magician: 0 and 61)
 - [x] Review: Victor (code, no correctness findings) and Edith (UI text: the Magician hint rewritten so INT points to Ability points)
 
 ### DEPLOY: app/100-magician-matk-line
 
-On the Total stats card a Magician sees their M.ATT instead of an empty Attack line: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
+The Total stats card always shows W.ATT and M.ATT, as the game's stat window does; one of the two is 0. A Magician sees their M.ATT there instead of an empty Attack line: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
 
 **Score:** 2
 

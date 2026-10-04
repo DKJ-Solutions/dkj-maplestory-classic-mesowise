@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -121,10 +121,17 @@ describe('loadProfile en saveProfile', () => {
 
   it('geeft een Magician zijn M.ATT: floor(INT / 2) plus de M.ATT van zijn wapen, zoals de berekening (#100)', () => {
     const d = { ...DEFAULT_PROFILE, int: '101', clawWatk: '55', starWatk: '17' }
-    expect(totalAttack(d, 'magician')).toBe(105) // floor(50,5) + 55; stars tellen niet
-    expect(totalAttack({ ...d, int: '100' }, 'magician')).toBe(105)
-    expect(totalAttack({ ...d, clawWatk: '' }, 'magician')).toBeNull()
-    expect(totalAttack({ ...d, int: 'x' }, 'magician')).toBeNull()
+    expect(totalMagicAttack(d, 'magician')).toBe(105) // floor(50,5) + 55; stars tellen niet
+    expect(totalMagicAttack({ ...d, int: '100' }, 'magician')).toBe(105)
+    expect(totalMagicAttack({ ...d, clawWatk: '' }, 'magician')).toBeNull()
+    expect(totalMagicAttack({ ...d, int: 'x' }, 'magician')).toBeNull()
+  })
+
+  it('geeft de andere jobs M.ATT 0, en een Magician W.ATT 0: de kaart toont altijd beide (#100)', () => {
+    const d = { ...DEFAULT_PROFILE, int: '100', clawWatk: '30', starWatk: '17' }
+    for (const job of ['thief', 'warrior', 'bowman'] as const) expect(totalMagicAttack(d, job), job).toBe(0)
+    expect(totalAttack(d, 'magician')).toBe(0)
+    expect(totalAttack({ ...d, clawWatk: '' }, 'magician')).toBe(0)
   })
 
   it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {

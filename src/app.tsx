@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, weaponStatName, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS, SPELL_CAST_MS } from './data/magician'
@@ -25,7 +25,7 @@ import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, arrowBlowMp, bestSpotOf, checkFieldsFor, energyBoltMp, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, magicClawMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MAGICIAN_MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -222,10 +222,11 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
  */
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
 /**
- * De Attack uit het statvenster: geen opgeslagen veld, maar de weapon attack uit je equipment (totalAttack). Bij een
- * Magician heet de regel M.ATT en staat er zijn MagicTotal (Dave, #100).
+ * W.ATT en M.ATT uit het statvenster: geen opgeslagen velden, maar wat je equipment geeft (totalAttack en
+ * totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100).
  */
-const attackField = (job: Job): ProfileField => ({ key: 'clawWatk', label: job === 'magician' ? weaponStatName(job) : 'Attack', min: 0, max: 9_999, integer: true })
+const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
+const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -389,7 +390,7 @@ function StatsCard(props: {
           {props.fields.map((f) => (
             <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
           ))}
-          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">{job === 'magician' ? 'M.ATT is de M.ATT van je wapen plus de helft van je INT (naar beneden afgerond); pas het wapen aan bij je equipment en INT bij Ability points. Weapon Def komt uit je equipment; pas hem daar aan.' : 'Attack en Weapon Def komen uit je equipment; pas ze daar aan.'} Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
+          {props.fields.some((f) => READ_ONLY_STATS.has(f.key)) && <p class="hint">{job === 'magician' ? 'M.ATT is de M.ATT van je wapen plus de helft van je INT (naar beneden afgerond); pas het wapen aan bij je equipment en INT bij Ability points. W.ATT en Weapon Def komen uit je equipment; pas ze daar aan.' : 'W.ATT, M.ATT en Weapon Def komen uit je equipment; pas ze daar aan.'} Magic, Magic Def, Crit., Speed en Jump vul je zelf in; de app rekent er (nog) niet mee.</p>}
           {props.children}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
@@ -411,8 +412,13 @@ function ProfileCard(props: StatsCardProps) {
 /** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps) {
   const { job } = props
-  const attack = totalAttack(props.draft, job)
-  const lead = <StatLine key="attack" field={attackField(job)} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
+  const shown = (n: number | null) => (n === null ? '' : String(n))
+  const lead = (
+    <>
+      <StatLine key="attack" field={ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
+    </>
+  )
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))}>
       {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}

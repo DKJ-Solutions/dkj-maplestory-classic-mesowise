@@ -236,22 +236,30 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief'): { profile: Pr
 /** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een Warrior gooit niets. */
 const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
 
+const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+
 /**
- * De Attack uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
+ * De W.ATT uit het statvenster, uit je equipment: dezelfde weapon attack als de berekening gebruikt. Null als het
  * wapen (of bij een Thief de stars) niet is ingevuld. Andere gedragen items geven in het model geen attack.
- * Bij een Magician is het zijn M.ATT: MagicTotal = floor(INT / 2) + de M.ATT van zijn wapen, zoals de berekening
- * die gebruikt (Dave, #100); null als INT of het wapen niet is ingevuld.
+ * Een Magician heeft 0: zijn wapen geeft M.ATT (totalMagicAttack); de kaart toont altijd beide (Dave, #100).
  */
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
-  const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
+  if (job === 'magician') return 0
   const claw = whole(d.clawWatk)
-  if (job === 'magician') {
-    const int = whole(d.int)
-    return claw === null || int === null ? null : Math.floor(int / MAGIC_DAMAGE.intPerMagicAttack) + claw
-  }
   // Een Bowman schiet de gewone pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
   const stars = job === 'warrior' ? 0 : job === 'bowman' ? PLAIN_ARROW.watk : whole(d.starWatk)
   return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
+}
+
+/**
+ * De M.ATT uit het statvenster: bij een Magician MagicTotal = floor(INT / 2) + de M.ATT van zijn wapen, zoals de
+ * berekening die gebruikt; null als INT of het wapen niet is ingevuld. De andere jobs hebben 0 (Dave, #100).
+ */
+export function totalMagicAttack(d: ProfileDraft, job: Job): number | null {
+  if (job !== 'magician') return 0
+  const wand = whole(d.clawWatk)
+  const int = whole(d.int)
+  return wand === null || int === null ? null : Math.floor(int / MAGIC_DAMAGE.intPerMagicAttack) + wand
 }
 
 /**
