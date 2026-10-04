@@ -363,7 +363,7 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     expect(armor.saving).toBeCloseTo(costOf(drafts, m) - costOf(drafts, { ...m, magicArmor: 1 }), 6)
   })
 
-  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (ze winnen niet, negatieve besparing)', () => {
+  it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (negatieve besparing; ze winnen alleen als niets beters is)', () => {
     const drafts = [known('a', 'henesys-rain-forest-east')]
     const w = parse('warrior', { ...warriorDraft, improvedHpRecovery: '3', maxHpIncrease: '3' })
     const wAdvice = skillPointAdvice(drafts, w)
@@ -376,9 +376,18 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     expect(iron.meso).toBeCloseTo(costOf(drafts, { ...w, ironBody: 1 }), 6)
     expect(focus.saving!).toBeLessThan(0)
     expect(focus.meso).toBeCloseTo(costOf(drafts, { ...b, focus: 1 }), 6)
-    // Bij de Warrior wint Improved HP Recovery (#141); de Bowman heeft geen punt dat iets bespaart.
+    // Bij de Warrior wint Improved HP Recovery (#141). Bij de Bowman bespaart niets: Arrow Blow scheelt niets (0) en wint,
+    // want een vrij punt moet ergens heen en Focus kost extra.
     expect(wAdvice.winner).toBe('improvedHpRecovery')
-    expect(bAdvice.winner).toBeNull()
+    expect(bAdvice.winner).toBe('arrowBlow')
+    expect(bAdvice.choices.find((c) => c.id === 'arrowBlow')!.saving).toBe(0)
+    expect(bAdvice.choices[0].saving!).toBeGreaterThan(focus.saving!)
+    // Staat Arrow Blow op het maximum, dan is Focus het enige wat kan: het wint met zijn negatieve besparing.
+    const bMaxed = parse('bowman', { ...bowmanDraft, eyeOfAmazon: '3', arrowBlow: '20' })
+    const maxedAdvice = skillPointAdvice(drafts, bMaxed)
+    if (maxedAdvice.kind !== 'advice') throw new Error('geen advies')
+    expect(maxedAdvice.winner).toBe('focus')
+    expect(maxedAdvice.choices.find((c) => c.id === 'focus')!.saving!).toBeLessThan(0)
   })
 
   it('telt Max HP Increase als Max HP: op een plek waar niets gevaarlijk is, verandert het de kosten niet', () => {

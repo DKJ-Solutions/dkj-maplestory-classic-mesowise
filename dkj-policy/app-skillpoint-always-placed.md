@@ -39,19 +39,35 @@
 
 ### PLAN
 
+The skill question said "Nee" while the player still had a free skill point, because a winner
+needed a saving above 0. A point has to be spent anyway, so the advice must always name where it goes.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `skillPoint.ts`: the best computable choice wins whenever a point is left, also at saving 0 or below; savings under 0.5 meso snap to 0; `robust` compares savings within 0.5 meso instead of winner ids
+- [x] `app.tsx`: chip "Ja" with any winner, hints for saving 0 and below 0, and a list of every option with its saving or extra cost
+- [x] Victor's review and Edith's text read applied
 
 ### TEST
 
+- [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; 1345 tests green, typecheck clean
+- [ ] Dave looks at the skill question at phone width
+
 ### DEPLOY: app/skillpoint-always-placed
 
-**Score:**
+The skill-point advice no longer answers "Nee" while a skill point is still free. A point has to be
+spent anyway, so it always names the best skill: the one that saves the most mesos, or when none saves
+anything, the one that costs the least extra (for example in MP potions). Every option is listed with
+what it saves or costs on this level.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A player with a free skill point now gets a usable answer instead of "don't raise", and sees the
+mana-costing skill next to the others with its extra cost.
+
+**Score:** 4
 
 #### Pull Request
 

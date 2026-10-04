@@ -1,6 +1,7 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
 // met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
+// Staat er nog een punt open, dan is "niet zetten" geen antwoord: het punt moet ergens heen, ook als geen skill iets bespaart.
 // De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
 // Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
 // sinds issue #141, Max HP Increase en de buffs sinds issue #139).
@@ -301,11 +302,17 @@ export type SkillPointAdvice =
       left: number
       /** De namen van de skills die al op het maximum staan. */
       maxed: string[]
-      /** De skill met de grootste besparing boven 0, of null als geen punt iets bespaart. */
+      /**
+       * De skill met de grootste besparing, ook als die 0 of negatief is (het punt moet toch ergens heen: de skill met de
+       * minste extra kosten wint). Null alleen als er geen punt over is, geen skill om te kiezen, of geen skill uit te rekenen is.
+       */
       winner: SkillId | null
       /** False als een andere skill wint (of geen) zodra één aanname naar de rand gaat. */
       robust: boolean
     }
+
+/** Een verschil onder een halve meso is afrondruis: gelijke skills tonen dan allemaal 0 in plaats van "minder dan 1 meso". */
+const snapSaving = (x: number) => (Math.abs(x) < 0.5 ? 0 : x)
 
 const bySaving = (a: SkillChoice, b: SkillChoice) => (b.saving ?? -Infinity) - (a.saving ?? -Infinity)
 
@@ -319,11 +326,12 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
       const known = typeof meso === 'number'
-      return { id: s.id, name: s.name, to: s.level(profile) + 1, meso: known ? meso : null, saving: known ? base - meso : null }
+      return { id: s.id, name: s.name, to: s.level(profile) + 1, meso: known ? meso : null, saving: known ? snapSaving(base - meso) : null }
     })
     .sort(bySaving)
+  // Gesorteerd van meeste naar minste besparing, en niet-uit-te-rekenen skills staan achteraan: de eerste is de beste.
   const top = choices[0]
-  const winner = top && top.saving !== null && top.saving > 0 ? top.id : null
+  const winner = left > 0 && top && top.saving !== null ? top.id : null
   return { base, choices, winner, left }
 }
 
@@ -343,7 +351,14 @@ export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile 
   if (!profile) return { kind: 'none' }
   const main = adviseUnder(drafts, profile, ASSUMPTIONS)
   if (!main) return { kind: 'none' }
-  const robust = ASSUMPTION_VARIANTS.every((a) => (adviseUnder(drafts, profile, a)?.winner ?? null) === main.winner)
+  // Robuust: onder elke variant ligt de besparing van de hoofdwinnaar binnen een halve meso van de beste (gelijkspel telt mee).
+  const robust = ASSUMPTION_VARIANTS.every((a) => {
+    const v = adviseUnder(drafts, profile, a)
+    if (main.winner === null) return (v?.winner ?? null) === null
+    const mine = v?.choices.find((c) => c.id === main.winner)?.saving
+    const best = v?.choices[0]?.saving
+    return typeof mine === 'number' && typeof best === 'number' && best - mine <= 0.5
+  })
   const maxed = skillsOf(profile.job).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
   return { kind: 'advice', ...main, maxed, robust }
 }

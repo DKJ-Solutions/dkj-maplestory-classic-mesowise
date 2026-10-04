@@ -1561,11 +1561,16 @@ describe('een Bowman in de app', () => {
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Slash Blast/)
     })
 
-    it('rekent Arrow Blow als enige skill door en zegt eerlijk dat een extra punt niets bespaart', () => {
+    it('rekent Arrow Blow als enige skill door en zet het punt toch, met de eerlijke hint dat het niets scheelt', () => {
       // Dit profiel (DEX 80, 30 ATT) heeft elke Rain Forest-kill in 2 schoten; 4% meer schade van Arrow Blow 1 → 2 verandert dat niet.
+      // Een vrij punt moet ergens heen (Dave, 4 oktober 2026): Arrow Blow wint dus met besparing 0.
       const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
-      expect(section.querySelector('.verdict')!.textContent).toBe('Geen van de skills die de app kan doorrekenen bespaart iets.')
-      expect(screen.queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+      expect(section.querySelector('.chip')!.textContent).toBe('Ja')
+      expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
+      expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+      // Eén keuze: geen lijst met opties.
+      expect(section.querySelector('.skill-options')).toBeNull()
+      expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
     })
 
     it('noemt wapens, geen claws', () => {
@@ -1880,5 +1885,75 @@ describe('skillpunten per level (issue #136)', () => {
     fireEvent.input(within(panels()[2]).getByLabelText(/^Lucky Seven, level van 0 tot/), { target: { value: '4' } })
     expect(section.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
     expect(within(section).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+})
+
+describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart', () => {
+  // Level 20 Bowman op een plek waar Arrow Blow niets verandert; The Eye of Amazon 3 maakt Focus leerbaar, en Focus kost extra.
+  const bowman = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', eyeOfAmazon: '3' }
+  const skillSection = (job: string, fields: object, spot: string) => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(spot)] }))
+    render(<App />)
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    return within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+  }
+  const lines = (section: HTMLElement) => Array.from(section.querySelectorAll('.skill-options li')).map((li) => li.textContent)
+
+  it('noemt bij besparing 0 de hint "scheelt geen enkele skill meso", met Ja en de knop, en toont elke keuze met zijn eigen slot', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '1' }, 'Ribbon Pig')
+    expect(section.querySelector('.chip')!.textContent).toBe('Ja')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
+    expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+    expect(section.textContent).not.toContain('Bespaart ±')
+    // Gelijkspel op 0 is robuust: geen "Hangt af van de aannames".
+    expect(section.textContent).not.toContain('Hangt af van de aannames')
+    expect(lines(section)).toEqual(['Arrow Blow → 2: scheelt niets', expect.stringMatching(/^Focus → 1: kost ± [\d.]+ meso extra$/)])
+    expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
+  })
+
+  it('noemt bij een negatieve besparing de extra kosten van de skill die het minst kost, en laat de knop staan', () => {
+    // Arrow Blow op 20 is het maximum: alleen Focus is nog te leren, en die kost extra.
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
+    expect(section.querySelector('.chip')!.textContent).toBe('Ja')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
+    expect(section.textContent).toMatch(/Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
+    expect(section.textContent).not.toContain('Geen van de skills')
+    expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
+  })
+
+  it('kiest bij alleen negatieve besparingen de minst negatieve, en sorteert de lijst op die volgorde', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '15' }, 'Ribbon Pig')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
+    const l = lines(section)
+    expect(l).toHaveLength(2)
+    expect(l[0]).toMatch(/^Focus → 1: kost ± [\d.]+ meso extra$/)
+    expect(l[1]).toMatch(/^Arrow Blow → 16: kost ± [\d.]+ meso extra$/)
+    const num = (t: string) => Number(t.match(/± ([\d.]+) meso/)![1].replace(/\./g, ''))
+    expect(num(l[0]!)).toBeLessThan(num(l[1]!))
+  })
+
+  it('zet het punt met de knop in de winnaar, ook als die extra kost', () => {
+    const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
+    fireEvent.click(within(section).getByRole('button', { name: 'Punt zetten' }))
+    expect(profileFields().focus).toBe('1')
+  })
+
+  it('toont een regel per keuze met het juiste einde: bespaart, scheelt niets en kost extra', () => {
+    // Warrior op Snail: Improved HP Recovery bespaart, Power Strike en Max HP Increase doen niets, Iron Body kost extra.
+    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
+    const section = skillSection('warrior', w, 'Snail')
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Improved HP Recovery (→ 4).')
+    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso op dit level\./)
+    const l = lines(section)
+    expect(l).toHaveLength(5)
+    expect(l[0]).toMatch(/^Improved HP Recovery → 4: bespaart ± [\d.]+ meso$/)
+    expect(l).toContain('Power Strike → 2: scheelt niets')
+    expect(l).toContain('Precise Strikes → 1: scheelt niets')
+    expect(l).toContain('Max HP Increase → 4: scheelt niets')
+    expect(l[4]).toMatch(/^Iron Body → 1: kost ± [\d.]+ meso extra$/)
   })
 })

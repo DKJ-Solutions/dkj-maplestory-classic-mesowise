@@ -76,18 +76,72 @@ describe('skillPointAdvice', () => {
     }
   })
 
-  it('zet de grootste besparing eerst en kiest die als winnaar zolang hij boven 0 ligt', () => {
+  it('zet de grootste besparing eerst en kiest de eerste als winnaar, ook als die niet boven 0 ligt', () => {
     const advice = skillPointAdvice(drafts, profile)
     if (advice.kind !== 'advice') throw new Error('geen advies')
     const [first, second] = advice.choices
     expect(first.saving!).toBeGreaterThanOrEqual(second.saving!)
-    expect(advice.winner).toBe(first.saving! > 0 ? first.id : null)
+    expect(advice.left).toBeGreaterThan(0)
+    expect(advice.winner).toBe(first.id)
   })
 
-  it('heeft geen winnaar als het profiel de kosten niet raakt (alleen eigen plekken)', () => {
+  it('kiest bij besparing 0 toch een winnaar: een vrij punt moet ergens heen', () => {
     const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], profile)
-    expect(advice).toMatchObject({ kind: 'advice', base: 429, winner: null, robust: true })
-    if (advice.kind === 'advice') for (const c of advice.choices) expect(c.saving).toBe(0)
+    expect(advice).toMatchObject({ kind: 'advice', base: 429, robust: true })
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    expect(advice.left).toBeGreaterThan(0)
+    for (const c of advice.choices) expect(c.saving).toBe(0)
+    // Gelijke besparingen: de eerste van de lijst wint.
+    expect(advice.winner).toBe(advice.choices[0].id)
+    expect(advice.winner).not.toBeNull()
+  })
+
+  it('laat Nimble Body bij besparing 0 winnen van Lucky Seven als die extra kost, en toont beide', () => {
+    const advice = skillPointAdvice([known('a', 'henesys-rain-forest-east')], profile)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    const nimble = advice.choices.find((c) => c.id === 'nimbleBody')!
+    const lucky = advice.choices.find((c) => c.id === 'luckySeven')!
+    expect(nimble.saving).toBe(0)
+    expect(lucky.saving!).toBeLessThan(0)
+    expect(advice.choices.map((c) => c.id)).toEqual(['nimbleBody', 'luckySeven'])
+    expect(advice.winner).toBe('nimbleBody')
+  })
+
+  it('kiest bij alleen negatieve besparingen de minst negatieve als winnaar', () => {
+    // Nimble Body op het maximum: alleen Lucky Seven blijft over, en die kost op deze plek extra.
+    const only = { ...profile, level: 30, nimbleBody: NIMBLE_BODY.maxLevel }
+    const advice = skillPointAdvice([known('a', 'henesys-rain-forest-east')], only)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    expect(advice.left).toBeGreaterThan(0)
+    expect(advice.choices.map((c) => c.id)).toEqual(['luckySeven'])
+    expect(advice.choices[0].saving!).toBeLessThan(0)
+    expect(advice.winner).toBe('luckySeven')
+  })
+
+  it('rondt een besparing onder een halve meso af op precies 0, zodat gelijke skills allemaal "scheelt niets" zijn', () => {
+    const sets = [[own('a', 40_000, 10_000), own('b', 30_000, 10_000)], drafts, [known('a', 'henesys-rain-forest-east')]]
+    for (const d of sets) {
+      const advice = skillPointAdvice(d, profile)
+      if (advice.kind !== 'advice') throw new Error('geen advies')
+      for (const c of advice.choices) {
+        expect(c.saving).not.toBeNull()
+        // Nooit een rest als 1e-9 of -3e-12: ofwel precies 0 (en dan geen -0), ofwel een echt verschil van minstens een halve meso.
+        expect(c.saving === 0 ? Object.is(c.saving, 0) : Math.abs(c.saving!) >= 0.5).toBe(true)
+      }
+    }
+  })
+
+  it('is robuust bij gelijkspel op 0: geen enkele aanname maakt een andere skill beter', () => {
+    const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], profile)
+    expect(advice).toMatchObject({ kind: 'advice', robust: true })
+    const warriorAdvice = skillPointAdvice([own('a', 40_000, 10_000)], profile)
+    expect(warriorAdvice).toMatchObject({ kind: 'advice', robust: true })
+  })
+
+  it('heeft geen winnaar als er geen punt over is, ook al valt er nog iets te kiezen', () => {
+    // Level 10 geeft 1 punt van de 1e job: met Lucky Seven op 1 is die pot vol.
+    const full = { ...profile, luckySeven: 1 }
+    expect(skillPointAdvice(drafts, full)).toMatchObject({ kind: 'advice', left: 0, choices: [], winner: null })
   })
 
   it('slaat een skill op het maximum over en noemt hem', () => {
@@ -264,18 +318,22 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
     expect(hr.saving!).toBeGreaterThan(0)
   })
 
-  it('kiest als winnaar de skill met de grootste besparing boven 0', () => {
+  it('kiest als winnaar de skill met de grootste besparing', () => {
     const advice = skillPointAdvice(drafts, warrior)
     if (advice.kind !== 'advice') throw new Error('geen advies')
     const [first, second] = advice.choices
     expect(first.saving!).toBeGreaterThanOrEqual(second.saving!)
-    expect(advice.winner).toBe(first.saving! > 0 ? first.id : null)
+    expect(advice.winner).toBe(first.id)
   })
 
-  it('heeft bij alleen eigen plekken geen winnaar: het profiel raakt de kosten niet, dus elke besparing is 0', () => {
+  it('heeft bij alleen eigen plekken toch een winnaar: het profiel raakt de kosten niet, dus elke besparing is 0', () => {
     const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], warrior)
-    expect(advice).toMatchObject({ kind: 'advice', winner: null, robust: true })
-    if (advice.kind === 'advice') for (const c of advice.choices) expect(c.saving).toBe(0)
+    expect(advice).toMatchObject({ kind: 'advice', robust: true })
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    for (const c of advice.choices) expect(c.saving).toBe(0)
+    // Een vrij punt moet toch ergens heen: de eerste van de gelijke keuzes wint.
+    expect(advice.left).toBeGreaterThan(0)
+    expect(advice.winner).toBe(advice.choices[0].id)
   })
 })
 

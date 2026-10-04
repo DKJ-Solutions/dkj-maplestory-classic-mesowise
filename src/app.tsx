@@ -1624,6 +1624,10 @@ const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   magicClaw: { noun: 'cast' },
 }
 
+/** Wat één skillpunt op dit level doet, in een korte regel voor de lijst met keuzes. */
+const skillOptionText = (saving: number | null) =>
+  saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
+
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void; part?: boolean; children?: ComponentChildren }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
@@ -1647,6 +1651,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       </Question>
     )
   }
+  const saving = winner?.saving as number
+  const options = a.kind === 'advice' ? a.choices : []
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
   const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
   return (
@@ -1656,7 +1662,24 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
           <p class="verdict">
             Zet je skillpunt in {winner.name} (→ {winner.to}).
           </p>
-          <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
+          {saving > 0 ? (
+            <p class="hint">Bespaart {formatMeso(saving)} op dit level.</p>
+          ) : saving === 0 ? (
+            <p class="hint">Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.</p>
+          ) : (
+            <p class="hint">
+              Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen. Deze kost het minst extra: {formatMeso(-saving)}.
+            </p>
+          )}
+          {options.length > 1 && (
+            <ul class="skill-options hint">
+              {options.map((c) => (
+                <li key={c.id}>
+                  {c.name} → {c.to}: {skillOptionText(c.saving)}
+                </li>
+              ))}
+            </ul>
+          )}
           {attack && (
             <p class="hint">
               {mpFrom === 0
@@ -1669,7 +1692,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
         </>
       ) : (
         <>
-          <p class="verdict">{a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : 'Geen van de skills die de app kan doorrekenen bespaart iets.'}</p>
+          <p class="verdict">{a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : a.choices.length === 0 ? 'Er is geen skill meer om je punt in te zetten.' : 'De app kan niet doorrekenen wat je punt voor deze skills doet.'}</p>
           {a.left > 0 && a.choices.length === 0 && <p class="hint">Alle skills die de app kan doorrekenen, staan al op het maximum.</p>}
           {a.choices.length > 0 && a.base === 0 && <p class="hint">Dit level is al gratis.</p>}
         </>
