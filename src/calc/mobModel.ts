@@ -1,9 +1,11 @@
 // Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven), een Warrior (melee-wapen met
-// Power Strike) of een Bowman (boog of kruisboog met Arrow Blow) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
+// Power Strike), een Bowman (boog of kruisboog met Arrow Blow) of een Magician (een spreuk met een wand of staff) haalt op een
+// monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
 // Overgenomen uit het mob-advies-model in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
 //
 // Een voorstel uit dit model is een SCHATTING. De formules komen uit de community voor het oude GMS
 // (vóór de Big Bang) en zijn niet in MapleStory Classic World zelf nagemeten.
+import { MAGIC_DAMAGE } from '../data/magician'
 
 /** Het karakter, zoals de speler het invult. */
 export interface Character {
@@ -12,9 +14,12 @@ export interface Character {
   hp: number
   str: number
   dex: number
+  int: number
   luk: number
   /** Weapon attack van de claw plus die van de stars. */
   watk: number
+  /** Magic attack van het wapen (wand of staff), inclusief scrolls: het wapen-deel van MagicTotal. Alleen voor een Magician. */
+  matk: number
   accuracy: number
   avoid: number
   wdef: number
@@ -39,6 +44,11 @@ export interface Attack {
    */
   stars: number
   mpPerAttack: number
+}
+
+/** Een spreuk-level: MP per cast, schade in procent en de spell mastery (data/magician.ts, SpellLevel). */
+export interface SpellStats extends SkillStats {
+  mastery: number
 }
 
 /** Wat het model van een monster nodig heeft. */
@@ -122,6 +132,27 @@ export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMu
  */
 export function bowAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, bow: { weaponMult: number; mastery: number }, skill: SkillStats | null): Attack {
   return { ...damageRange(skill, c.watk, c.dex, c.str, bow.weaponMult, bow.mastery), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
+}
+
+/**
+ * De aanval van een Magician met een spreuk. Bron: de damage-gids van MeowDB, zie MAGIC_DAMAGE in data/magician.ts.
+ * Met S = schade% / 100 en MagicTotal = floor(INT / 2) + de M.ATT van het wapen (`matk`, scrolls erbij):
+ * max = S · MagicTotal · (1 + INT / 100) en min = S · MagicTotal · (1 + INT · m / 100), met m = (spell mastery / 10 + 0,1) · 0,8.
+ * W.ATT en de secundaire stats doen niet mee. `hits` is het aantal klappen per cast (Energy Bolt 1, Magic Claw 2); elke
+ * klap heeft deze min en max. De cast duurt vast 810 ms (SPELL_CAST_MS); die zit in `Character.attackMs`.
+ * De verdediging van het monster volgt in estimateMob, op dezelfde curve als bij een fysieke aanval (defended): een monster heeft
+ * geen aparte MDEF in de gegevens, dus telt zijn enige DEF.
+ */
+export function spellAttack(c: Pick<Character, 'int' | 'matk'>, spell: SpellStats, hits: number): Attack {
+  const s = spell.damagePct / 100
+  const magicTotal = Math.floor(c.int / MAGIC_DAMAGE.intPerMagicAttack) + c.matk
+  const m = (spell.mastery / 10 + MAGIC_DAMAGE.masteryBase) * MAGIC_DAMAGE.masteryScale
+  return {
+    max: s * magicTotal * (1 + c.int / 100),
+    min: s * magicTotal * (1 + (c.int * m) / 100),
+    stars: hits,
+    mpPerAttack: spell.mp,
+  }
 }
 
 /**

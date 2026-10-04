@@ -4,15 +4,10 @@
 // (meowdb.com), per item de itempagina met de datum; elke pagina is twee keer gecontroleerd op 2026-10-03.
 //
 // Niet opgenomen, en waarom:
-// - De Blue One-lined T-Shirt (960, level 12, WDEF 26): geen jobregel, maar alleen voor mannen, zonder
-//   vrouwenversie met dezelfde stats (de buren 961 tot 963 zijn even sterk maar ook voor één geslacht). Of
-//   de app het geslacht vraagt is het tweede deel van #55.
 // - Items met een fame-eis (Old Wisconsin, Aroa Boots, Ankle-strap Sandals, Whitebottom Boots): de app
 //   kent jouw fame niet.
 // - Items waarvan de eisen niet getoond worden (Metal Gear, Nightshift top, Grey Thick Sweat Pants,
 //   Warfare Pants).
-// - Red Qi Pao Skirt (id 1216, level 22, WDEF 24): een item alleen voor vrouwen met eigen stats. De app
-//   kent het geslacht van het personage niet en zou een rok aan een mannelijk personage kunnen adviseren.
 // - Handschoenen, overalls en schilden: er is geen NPC-item voor een Thief in level 10 tot 30 met een
 //   prijs op MeowDB. De Sauna Robe (overall, geen prijs) staat in wornItems.ts.
 //
@@ -25,6 +20,13 @@
 // en Bowman. Ze vragen geen stat, dus LUK en DEX staan op 0: de White Bandana (719, Don Hwang in Kerning City en
 // Natasha in Lith Harbor) en de Red Baseball Cap (781, Sam in Henesys). De andere kleuren (720 tot 723, 782 tot
 // 785) verschillen alleen in de bonusstat.
+//
+// Items voor één geslacht ("Male only" of "Female only") staan erin met `gender` sinds de app het geslacht vraagt
+// (Dave, #55, beslissing 2), gelezen uit de ruwe pagina op 2026-10-04: de Red Qi Pao Skirt (1216, alleen vrouwen,
+// Don Hwang in Kerning City), en de T-shirts van level 12 bij Natasha in Lith Harbor: de Blue One-lined T-Shirt
+// (960, mannen) en de Pink Starry Shirt (962, vrouwen), even sterk en even duur; de andere kleuren (961 en 963)
+// staan in wornItems.ts. De T-shirts hebben geen jobregel en staan ook bij de Warrior; bij de Magician en de Bowman
+// nog niet, want die rekent de app nog niet door (#43, #44).
 import type { Armor, Source } from './types'
 
 const R = '2026-10-03'
@@ -40,12 +42,15 @@ export const NPC_ARMOR: readonly Armor[] = [
   { name: 'Red Tiberian', slot: 'hat', level: 25, wdef: 24, luk: 40, dex: 15, price: 4_500, source: src(803) },
   { name: 'Red Guise', slot: 'hat', level: 30, wdef: 27, luk: 50, dex: 20, price: 7_200, source: src(823) },
   { name: 'Red Cloth Vest', slot: 'top', level: 10, wdef: 24, luk: 10, dex: 0, price: 2_000, source: src(948) },
+  { name: 'Blue One-lined T-Shirt', slot: 'top', level: 12, wdef: 26, luk: 0, dex: 0, price: 2_400, gender: 'male', source: src(960, '2026-10-04') },
+  { name: 'Pink Starry Shirt', slot: 'top', level: 12, wdef: 26, luk: 0, dex: 0, price: 2_400, gender: 'female', source: src(962, '2026-10-04') },
   { name: 'Red Pao', slot: 'top', level: 20, wdef: 32, luk: 30, dex: 10, price: 6_000, source: src(985) },
   { name: 'Brown Sneak', slot: 'top', level: 25, wdef: 36, luk: 40, dex: 15, price: 7_500, source: src(1007) },
   { name: 'Dark Silver Stealer', slot: 'top', level: 30, wdef: 40, luk: 50, dex: 20, price: 12_000, source: src(1028) },
   { name: 'Red Cloth Pants', slot: 'bottom', level: 10, wdef: 17, luk: 10, dex: 0, price: 1_600, source: src(1168) },
   { name: 'Blue Nightshift Pants', slot: 'bottom', level: 15, wdef: 20, luk: 20, dex: 0, price: 2_400, source: src(1184) },
   { name: 'Red Pao Bottoms', slot: 'bottom', level: 20, wdef: 23, luk: 30, dex: 10, price: 4_800, source: src(1201) },
+  { name: 'Red Qi Pao Skirt', slot: 'bottom', level: 22, wdef: 24, luk: 34, dex: 12, price: 5_280, gender: 'female', source: src(1216, '2026-10-04') },
   { name: 'Brown Sneak Pants', slot: 'bottom', level: 25, wdef: 26, luk: 40, dex: 15, price: 6_000, source: src(1222) },
   { name: 'Red Stealer Pants', slot: 'bottom', level: 30, wdef: 29, luk: 50, dex: 20, price: 9_600, source: src(1244) },
   { name: 'Blue Gidder Shoes', slot: 'shoes', level: 10, wdef: 10, luk: 10, dex: 0, price: 1_200, source: src(1315) },

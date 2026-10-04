@@ -7,8 +7,9 @@
 // een stuk wordt gerekend als `wdef + stuk.wdef`, alsof dat slot nu leeg is. Dat is de grootst mogelijke
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:
 // je stats van nu blijven gelden over de hele horizon, de verkoopwaarde van je oude stuk telt niet mee en
-// het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts (alleen hats
-// en shoes) en is de eis naast DEX zijn STR; voor een Bowman (issue #44) is het die van bowmanGear.ts, ook met STR.
+// het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts en is de eis naast DEX zijn STR; voor een Bowman (issue #44) is het die van bowmanGear.ts, ook met STR.
+// Voor een Magician (issue #43) is het die van magicianGear.ts, met INT en LUK als eisen.
+// Een stuk voor één geslacht (issue #55) telt alleen als je dat geslacht hebt gekozen.
 //
 // De overall (issue #50) beslaat top en bottom. Wat een stuk in slot X vervangt: een overall vervangt wat je draagt
 // op top en bottom samen (of een overall die je al draagt); een top of bottom vervangt een overall die je draagt
@@ -24,6 +25,8 @@ import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { ArmorPiece, ArmorSlot } from './data/types'
 import { byNet, horizonCost } from './horizonCost'
 import { bestExpPerMeso } from './mesoCostAt'
+import { MAGICIAN_ARMOR } from './magicianGear'
+import { fitsGender } from './gender'
 import { shortfall, type Profile, type StatNeed } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR } from './warriorGear'
@@ -90,9 +93,10 @@ export const withArmor = (p: Profile, a: ArmorPiece, replaced = 0): Profile => (
 /** Het stuk met de hoogste WDEF, bij gelijkspel het goedkoopste (voor het stuk dat je nog niet kunt dragen). */
 const bestOf = (list: readonly ArmorPiece[]): ArmorPiece | undefined => list.reduce<ArmorPiece | undefined>((best, a) => (!best || a.wdef > best.wdef || (a.wdef === best.wdef && a.price < best.price) ? a : best), undefined)
 
-/** De winkelarmor van de job van dit profiel. */
-const SHOP_BY_JOB: Partial<Record<Profile['job'], readonly ArmorPiece[]>> = { warrior: WARRIOR_ARMOR, bowman: BOWMAN_ARMOR }
-const shopOf = (profile: Profile): readonly ArmorPiece[] => SHOP_BY_JOB[profile.job] ?? NPC_ARMOR
+/** De winkelarmor van de job van dit profiel, voor zover hij past bij het geslacht (issue #55). */
+const SHOP_BY_JOB: Partial<Record<Profile['job'], readonly ArmorPiece[]>> = { warrior: WARRIOR_ARMOR, bowman: BOWMAN_ARMOR, magician: MAGICIAN_ARMOR }
+const shopOf = (profile: Profile): readonly ArmorPiece[] =>
+  (SHOP_BY_JOB[profile.job] ?? NPC_ARMOR).filter((a) => fitsGender(a, profile.gender ?? null))
 
 /** De horizon van een stuk: van je level tot net vóór het volgende stuk met meer WDEF in hetzelfde slot, hoogstens de hele tabel. */
 function horizon(profile: Profile, armor: ArmorPiece): { from: number; to: number; truncated: boolean } {

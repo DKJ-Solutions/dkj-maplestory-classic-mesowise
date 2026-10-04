@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ARROW_BLOW_LEVELS, DOUBLE_SHOT_LEVELS, FOCUS_LEVELS } from './bowman'
-import { ALL_SKILLS, isSkillKey, mpPerUse, SKILL_KEYS, skillInfo, skillMpAt, THIEF_SKILLS } from './skills'
+import { ENERGY_BOLT_LEVELS, ENERGY_BOLT_SOURCE, MAGIC_CLAW_LEVELS, MAGIC_CLAW_SOURCE } from './magician'
+import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, mpPerUse, SKILL_KEYS, skillInfo, skillMpAt, THIEF_SKILLS } from './skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './thief'
 import { IRON_BODY_LEVELS, POWER_STRIKE_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 
@@ -43,7 +44,7 @@ describe('THIEF_SKILLS', () => {
 
 describe('MP per skill-level (#83)', () => {
   it('heeft bij elke actieve skill een MP per level, en geen bij een passieve', () => {
-    const passive = ['nimbleBody', 'keenEyes', 'improvedHpRecovery', 'maxHpIncrease', 'preciseStrikes', 'criticalShot', 'eyeOfAmazon']
+    const passive = ['nimbleBody', 'keenEyes', 'improvedHpRecovery', 'maxHpIncrease', 'preciseStrikes', 'criticalShot', 'eyeOfAmazon', 'improvedMpRecovery', 'maxMpIncrease']
     for (const s of ALL_SKILLS) {
       if (passive.includes(s.key)) expect(s.mp, s.name).toBeUndefined()
       else expect(s.mp, s.name).toHaveLength(s.max)
@@ -107,5 +108,48 @@ describe('isSkillKey', () => {
   it('herkent een skill en geen stat', () => {
     expect(isSkillKey('darkSight')).toBe(true)
     expect(isSkillKey('luk')).toBe(false)
+  })
+})
+
+describe('MAGICIAN_SKILLS', () => {
+  it('heeft de zes skills van de 1e job van een Magician, met de maxima van de skillpagina\'s', () => {
+    const max = Object.fromEntries(MAGICIAN_SKILLS.map((s) => [s.name, s.max]))
+    expect(max).toEqual({
+      'Magic Guard': 15,
+      'Magic Armor': 20,
+      'Improved MP Recovery': 15,
+      'Max MP Increase': 15,
+      'Energy Bolt': 20,
+      'Magic Claw': 20,
+    })
+    expect(MAGICIAN_SKILLS.every((s) => s.job === 'Magician')).toBe(true)
+  })
+
+  it('heeft bij elke skill een MeowDB-pagina en een ophaaldatum, en geen sleutel die al bij een andere job staat', () => {
+    for (const s of MAGICIAN_SKILLS) {
+      expect(s.source.url).toMatch(/^https:\/\/meowdb\.com\/msclassic\/skills\/magician\/[a-z-]+$/)
+      expect(s.source.retrieved).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+    const keys = ALL_SKILLS.map((s) => s.key)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('zegt over Energy Bolt en Magic Claw hetzelfde als de gegevens waar het model mee rekent', () => {
+    expect(skillInfo('energyBolt').max).toBe(ENERGY_BOLT_LEVELS.length)
+    expect(skillInfo('magicClaw').max).toBe(MAGIC_CLAW_LEVELS.length)
+    expect(skillInfo('energyBolt').source.url).toBe(ENERGY_BOLT_SOURCE.url)
+    expect(skillInfo('magicClaw').source.url).toBe(MAGIC_CLAW_SOURCE.url)
+  })
+})
+
+describe('MP per skill-level van de Magician (#83)', () => {
+  it('geeft Energy Bolt, Magic Claw, Magic Guard en Magic Armor hun MP uit de gegevens, en de twee passieven geen', () => {
+    expect(skillMpAt(skillInfo('energyBolt'), 1)).toBe(8)
+    expect(skillMpAt(skillInfo('energyBolt'), 20)).toBe(16)
+    expect(skillMpAt(skillInfo('magicClaw'), 20)).toBe(20)
+    expect(skillMpAt(skillInfo('magicGuard'), 6)).toBe(10)
+    expect(skillMpAt(skillInfo('magicArmor'), 20)).toBe(16)
+    expect(skillMpAt(skillInfo('improvedMpRecovery'), 3)).toBeNull()
+    expect(skillMpAt(skillInfo('maxMpIncrease'), 3)).toBeNull()
   })
 })

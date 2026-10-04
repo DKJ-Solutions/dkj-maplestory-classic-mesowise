@@ -50,6 +50,33 @@ describe('parseProfile', () => {
   })
 })
 
+describe('parseProfile en het geslacht (issue #55)', () => {
+  it('zet het geslacht alleen in het profiel als het gegeven is', () => {
+    const none = parseProfile(DEFAULT_PROFILE)
+    const nul = parseProfile(DEFAULT_PROFILE, 'thief', null)
+    expect('profile' in none && 'gender' in none.profile).toBe(false)
+    expect('profile' in nul && 'gender' in nul.profile).toBe(false)
+    for (const g of ['male', 'female'] as const) {
+      for (const job of ['thief', 'warrior'] as const) {
+        const r = parseProfile(DEFAULT_PROFILE, job, g)
+        expect('profile' in r && r.profile.gender).toBe(g)
+        expect('profile' in r && r.profile.job).toBe(job)
+      }
+    }
+  })
+
+  it('laat de getallen ongemoeid door het geslacht', () => {
+    const a = parseProfile(DEFAULT_PROFILE)
+    const b = parseProfile(DEFAULT_PROFILE, 'thief', 'female')
+    if (!('profile' in a) || !('profile' in b)) throw new Error('profiel ongeldig')
+    expect({ ...b.profile, gender: undefined }).toEqual({ ...a.profile, gender: undefined })
+  })
+
+  it('geeft bij een fout nog steeds de melding, ook met een geslacht', () => {
+    expect(parseProfile({ ...DEFAULT_PROFILE, luk: '' }, 'thief', 'male')).toEqual({ error: 'Vul bij je karakter "LUK" in.', key: 'luk' })
+  })
+})
+
 describe('toCharacter', () => {
   it('telt de weapon attack van de Subi-stars (15) bij die van de claw', () => {
     const r = parseProfile(DEFAULT_PROFILE)
@@ -166,22 +193,8 @@ describe('loadProfile en saveProfile', () => {
 })
 
 describe('profileFieldsFor', () => {
-  // De zes skills van de 1e job van een Thief; de Beginner-skills heeft elke job.
-  const hidden = ['nimbleBody', 'keenEyes', 'doubleStab', 'disorder', 'darkSight', 'luckySeven']
-
   it('toont voor de Thief elk veld, in dezelfde volgorde', () => {
     expect(profileFieldsFor('thief')).toEqual(PROFILE_FIELDS)
-  })
-
-  it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
-    const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
-    expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['magician'] as const) {
-      const keys = profileFieldsFor(j).map((f) => f.key)
-      expect(profileFieldsFor(j), j).toEqual(expected)
-      for (const k of hidden) expect(keys, j).not.toContain(k)
-      for (const k of ['threeSnails', 'nimbleFeet', 'recovery']) expect(keys, j).toContain(k)
-    }
   })
 
   it('valideert de Thief-skills alleen voor een Thief; voor een andere job staat de standaardwaarde in het profiel', () => {

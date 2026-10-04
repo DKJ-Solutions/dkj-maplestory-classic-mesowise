@@ -8,7 +8,7 @@ import { BOWMAN_ARMOR, BOWMAN_WEAPONS, PLAIN_ARROW, WORN_BOWMAN_ARMOR } from './
 import { ASSUMPTIONS } from './calc/mobModel'
 import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
 import { NPC_ARMOR } from './data/armor'
-import { NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
+import { GENDERED_WORN_BOWMAN_ARMOR, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { knownSpotPatch } from './data/spots'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
@@ -73,9 +73,17 @@ describe('bowmanGear: de data van de Bowman in de vorm van de Thief-lijsten', ()
     const npc = new Set(BOWMAN_ARMOR.map((a) => a.name))
     for (const a of WORN_BOWMAN_ARMOR) {
       expect(npc.has(a.name), a.name).toBe(false)
-      expect(COMMON_WORN_ARMOR).toContain(a)
+      expect([...COMMON_WORN_ARMOR, ...GENDERED_WORN_BOWMAN_ARMOR]).toContain(a)
     }
     expect(WORN_BOWMAN_ARMOR.length).toBeGreaterThan(0)
+  })
+
+  it('geeft de Brown Able Skirt (1191) en Grey Able Skirt (1192) erbij, voor vrouwen, en houdt het geslacht op de Green Able Armor Skirt (#107)', () => {
+    for (const n of ['Brown Able Skirt', 'Grey Able Skirt']) {
+      expect(WORN_BOWMAN_ARMOR.find((a) => a.name === n), n).toMatchObject({ slot: 'bottom', level: 15, wdef: 20, gender: 'female' })
+    }
+    expect(GENDERED_WORN_BOWMAN_ARMOR.every((a) => WORN_BOWMAN_ARMOR.includes(a))).toBe(true)
+    expect(BOWMAN_ARMOR.filter((a) => a.gender !== undefined).map((a) => [a.name, a.gender])).toEqual([['Green Able Armor Skirt', 'female']])
   })
 
   it('rekent met één pijl: de gewone pijlen voor bogen en kruisbogen zijn gelijk (0 ATT en 1 meso), dus de keuze maakt niets uit', () => {
@@ -240,6 +248,37 @@ describe('Bowman-armor: de winkel', () => {
     // Eén STR of DEX minder, en de Robin Hat is niet meer te dragen.
     expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 9, dex: 30 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needs: [{ stat: 'str', amount: 1 }] })
     expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 10, dex: 29 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needs: [{ stat: 'dex', amount: 1 }] })
+  })
+
+  it('geeft alleen een vrouwelijke Bowman vanaf level 15 de Green Able Armor Skirt; een man of een Bowman zonder geslacht nooit (#107)', () => {
+    const SKIRT = 'Green Able Armor Skirt'
+    const shown = (a: Advice) => [...a.choices.map((c) => c.armor.name), ...a.notWearable.map((u) => u.armor.name)]
+    // Met DEX 0 is elk stuk met een DEX-eis niet-draagbaar, dus de rok staat dan zeker in de lijst als hij er voor je is.
+    const bare = (level: number, gender: 'male' | 'female' | null) => advice({ ...strong({ level, wdef: 0, gender: gender ?? undefined }), str: 0, dex: 0 })
+    // De niet-draagbare lijst heeft per slot het beste stuk, dus de rok staat er op level 15 in (op 20 wint de Hard Leather Pants).
+    expect(shown(bare(15, 'female'))).toContain(SKIRT)
+    for (const level of [15, 20, 30]) {
+      for (const g of ['male', null] as const) {
+        expect(shown(bare(level, g)), `${g} lv ${level}`).not.toContain(SKIRT)
+        expect(shown(advice(strong({ level, wdef: 0, gender: g ?? undefined }))), `${g} lv ${level}`).not.toContain(SKIRT)
+      }
+    }
+    // Onder level 15 is de rok er voor niemand, ook niet voor een vrouw.
+    expect(shown(bare(14, 'female'))).not.toContain(SKIRT)
+    // De rok vraagt DEX 20: met precies genoeg DEX is hij draagbaar, met één minder niet.
+    const skirt = (dex: number) => advice({ ...strong({ level: 15, wdef: 0, gender: 'female' }), str: 100, dex })
+    expect(skirt(19).notWearable.find((u) => u.armor.name === SKIRT)).toMatchObject({ needs: [{ stat: 'dex', amount: 1 }] })
+    expect(skirt(20).notWearable.map((u) => u.armor.name)).not.toContain(SKIRT)
+    // Draagt ze al een broek met 17 WDEF (de Archer Pants), dan is de rok het enige bottom-stuk dat nog een upgrade is; een man heeft er geen.
+    const worn = (g: 'male' | 'female' | null) => armorUpgradeAdvice(drafts, { ...strong({ level: 15, wdef: 0, gender: g ?? undefined }), str: 100, dex: 100 }, { bottom: 17 })
+    const bottomOf = (g: 'male' | 'female' | null) => {
+      const a = worn(g)
+      if (a.kind !== 'advice') throw new Error('advies verwacht')
+      return a.choices.find((c) => c.armor.slot === 'bottom')?.armor.name
+    }
+    expect(bottomOf('female')).toBe(SKIRT)
+    expect(bottomOf('male')).toBeUndefined()
+    expect(bottomOf(null)).toBeUndefined()
   })
 
   it('rekent de besparing met de hand: EXP-som over de horizon, kosten zonder min met het stuk (WDEF erbij), min de prijs', () => {

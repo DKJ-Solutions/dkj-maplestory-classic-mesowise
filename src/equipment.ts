@@ -17,6 +17,7 @@ import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
+import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -95,8 +96,11 @@ const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw' && s
 /** Hoe het scherm de stat van het wapen en van armor noemt, zoals het spel: overal dezelfde namen (#58). */
 export const STAT_NAME = { weapon: 'ATT', armor: 'DEF' } as const
 
-/** De naam van de stat van een slot: ATT voor het wapen en DEF voor armor. */
-export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? STAT_NAME.armor : STAT_NAME.weapon)
+/** De naam van de stat van het wapen: ATT, en bij een Magician M.ATT: voor hem telt zijn Magic Attack (zie magicianGear.ts). */
+export const weaponStatName = (job: Job): string => (job === 'magician' ? 'M.ATT' : STAT_NAME.weapon)
+
+/** De naam van de stat van een slot: ATT (M.ATT bij een Magician) voor het wapen en DEF voor armor. */
+export const statName = (slot: EquipSlot, job: Job = 'thief'): string => (isArmorSlot(slot) ? STAT_NAME.armor : weaponStatName(job))
 
 /** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw of stars, WDEF voor armor). */
 export interface CatalogItem {
@@ -108,6 +112,8 @@ export interface CatalogItem {
   attackMs?: number
   /** Alleen een Warrior-wapen: de verwachte weapon multiplier van een basisaanval, zodat die mee verandert. */
   mult?: number
+  /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
+  mdef?: number
 }
 
 /** Hoeveel zoekresultaten het scherm toont. */
@@ -115,16 +121,17 @@ export const MAX_RESULTS = 8
 
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
- * items), de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
- * items zonder jobregel die ook de Thief draagt) en de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
- * zonder jobregel, zie bowmanGear.ts). Een naam mag bij beide jobs staan, maar dan is het hetzelfde
- * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
- * (issue #43, de Magician), want een item van een andere job aanbieden zou onwaar zijn.
+ * items), de Warrior (zijn wapens en armor uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
+ * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
+ * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
+ * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde
+ * item (dezelfde stat en bron; een test bewaakt dat). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
   thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: WORN_BOWMAN_ARMOR },
+  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: WORN_MAGICIAN_ARMOR },
 }
 
 /**
@@ -141,7 +148,7 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
   const shop = SHOP[job]
   if (!shop) return []
   const items: CatalogItem[] = isArmorSlot(slot)
-    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
+    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef, mdef: a.mdef ?? 0 }))
     : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
         name: c.name,
         level: c.level,
@@ -202,6 +209,29 @@ export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
     if (w !== undefined) out[slot] = w
   }
   return out
+}
+
+/** De MDEF van wat je in één armorslot draagt; undefined = onbekend: nog niet ingevuld, of een eigen item (daarvan vraagt de app alleen de WDEF). */
+function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
+  if (entry.pick === NONE) return 0
+  if (entry.pick === UNKNOWN || entry.pick === OTHER) return undefined
+  return anyItem(slot, entry.pick)?.mdef
+}
+
+/**
+ * De Magic Def uit je equipment (#91): de MDEF van je hat, je body (een overall, of top en bottom samen) en je shoes.
+ * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Null zolang van één van die slots de MDEF onbekend is:
+ * een som met een gat erin zou een te laag getal tonen.
+ */
+export function wornMdef(eq: Equipment): number | null {
+  const body: readonly ArmorSlot[] = isEmptyEntry(eq.overall) ? ['top', 'bottom'] : ['overall']
+  let sum = 0
+  for (const slot of ['hat', ...body, 'shoes'] as const) {
+    const m = slotMdef(slot, eq[slot])
+    if (m === undefined) return null
+    sum += m
+  }
+  return sum
 }
 
 /** De naam van wat je in dit slot draagt, voor een samenvatting; null als het slot nog niet is ingevuld. */

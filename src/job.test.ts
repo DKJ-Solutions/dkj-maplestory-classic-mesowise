@@ -43,9 +43,9 @@ describe('JOBS, DEFAULT_JOB en jobLabel', () => {
 })
 
 describe('isComputed en notComputedText', () => {
-  it('rekent voor de Thief, de Warrior en de Bowman, en nog niet voor de Magician', () => {
-    for (const j of ['thief', 'warrior', 'bowman'] as const) expect(isComputed(j), j).toBe(true)
-    expect(ALL.filter((j) => !isComputed(j))).toEqual(['magician'])
+  it('rekent voor de Thief, de Warrior, de Bowman en de Magician', () => {
+    for (const j of ['thief', 'warrior', 'bowman', 'magician'] as const) expect(isComputed(j), j).toBe(true)
+    expect(ALL.filter((j) => !isComputed(j))).toEqual([])
   })
 
   it('noemt de job in de zin die het getal vervangt', () => {

@@ -23,11 +23,11 @@
 // Niet opgenomen als armor, en waarom:
 // - Tops en broeken alleen voor vrouwen, zonder mannenversie in de gelezen pagina's: Arianne (970 tot en met
 //   973, level 15), Fairy Top (1031 en 1032, level 30), Arianne Skirt (1186 tot en met 1189, level 15) en
-//   Fairy Skirt (1246 en 1247, level 30). Onder de regel van armor.ts (de app kent het geslacht niet) vallen
-//   ze er uit; zie ook #55.
+//   Fairy Skirt (1246 en 1247, level 30). Ze staan er nog niet in, omdat de app de
+//   Magician nog niet doorrekent (#43); met `gender` kunnen ze erbij zodra dat model er is (zie #55).
 // - Robes alleen voor mannen, zonder vrouwenversie bij Serabi (#76, ruwe pagina's gelezen op 2026-10-04): Plain
 //   Robe (1091 tot en met 1093: level 15, INT 20, WDEF 29, MDEF 38, 5.400 meso) en Wizard Robe (1107 en 1110:
-//   level 30, INT 50, LUK 20, WDEF 46, MDEF 55, 21.600 meso). Ze wachten op de vraag naar het geslacht (#55).
+//   level 30, INT 50, LUK 20, WDEF 46, MDEF 55, 21.600 meso). Ze kunnen erbij met `gender` (#55) zodra de Magician wordt doorgerekend (#43).
 // - Handschoenen, schilden, capes en de winkels in Orbis en Nuri: niet gelezen, dus niet in de data.
 //
 // Wel opgenomen, volgens armor.ts ("een mannen- en een vrouwenversie met dezelfde stats blijven"): vijf paren
@@ -160,6 +160,8 @@ export const MAGIC_CLAW_LEVELS: readonly SpellLevel[] = [
 ].map(([mp, damagePct], i) => ({ level: i + 1, mp, damagePct, mastery: MASTERY[i] }))
 export const MAGIC_CLAW_TARGETS = 1
 export const MAGIC_CLAW_HITS = 2
+/** Het Energy Bolt-level dat Magic Claw vraagt om te kunnen leren (de skillpagina: "Vraagt Energy Bolt 1"). */
+export const MAGIC_CLAW_REQUIRES_ENERGY_BOLT = 1
 
 /** De cast-animatie van een spreuk in ms, en met Spell Booster (de skillpagina's van de eerste job). */
 export const SPELL_CAST_MS = { normal: 810, withSpellBooster: 720 } as const
@@ -210,7 +212,7 @@ export const MAX_MP_INCREASE = {
  * MagicTotal = floor(totale INT / 2) + M.ATT van de uitrusting + scrolls + buffs.
  * MIN = S x MagicTotal x (1 + INT x m / 100), MAX = S x MagicTotal x (1 + INT / 100),
  * met m = (spell mastery / 10 + 0,1) x 0,8. W.ATT zit niet in de spreuk-formule. Verdediging verlaagt de schade
- * met Raw x 100 / (DEF + 100), voor fysiek en magisch; een monster heeft geen aparte MDEF in de data.
+ * tot Raw x 100 / (DEF + 100) (een factor, geen aftrek), voor fysiek en magisch; een monster heeft geen aparte MDEF in de data.
  * Spreuken kunnen missen: dezelfde hit-check als fysieke aanvallen.
  */
 export const MAGIC_DAMAGE = {

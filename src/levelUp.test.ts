@@ -16,7 +16,7 @@ import {
 } from './levelUp'
 import { isSkillKey } from './data/skills'
 import type { Job } from './job'
-import { AMMO_FIELDS, DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, profileFieldsFor, statFieldsFor, type Profile } from './profile'
+import { AMMO_FIELDS, DEFAULT_PROFILE, parseProfile, PROFILE_FIELDS, statFieldsFor, type Profile } from './profile'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -264,35 +264,13 @@ describe('CHECK_FIELDS', () => {
 })
 
 describe('applyLevelUp per job', () => {
-  // De Warrior (issue #42) en de Bowman (issue #44) rekenen en hebben hun eigen tests; de Magician rekent nog niet.
-  const others: Job[] = ['magician']
-
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', luk: '45', accuracy: '34' })
   })
 
-  it('verhoogt voor een andere job alleen het level en laat HP, LUK en accuracy staan', () => {
-    for (const j of others) {
-      expect(applyLevelUp(DEFAULT_PROFILE, j), j).toEqual({ ...DEFAULT_PROFILE, level: '11' })
-    }
-  })
-
-  it('geeft een andere job nooit een Thief-getal, op elk level', () => {
-    for (const j of others) {
-      for (const level of ['1', '10', '30', '100', '198']) {
-        const d = { ...DEFAULT_PROFILE, level }
-        const out = applyLevelUp(d, j)
-        expect(out.hp, `${j} ${level}`).toBe(d.hp)
-        expect(out.luk, `${j} ${level}`).toBe(d.luk)
-        expect(out.accuracy, `${j} ${level}`).toBe(d.accuracy)
-        expect(out.level).toBe(String(Number(level) + 1))
-      }
-    }
-  })
-
   it('houdt het hoogste level en een ongeldig level ongewijzigd, voor elke job', () => {
-    for (const j of [...others, 'warrior' as Job, 'bowman' as Job, 'thief' as Job]) {
+    for (const j of ['warrior', 'bowman', 'magician', 'thief'] as Job[]) {
       const max = { ...DEFAULT_PROFILE, level: '200' }
       expect(applyLevelUp(max, j), j).toEqual(max)
       for (const level of ['', 'x', '10.5']) {
@@ -314,14 +292,6 @@ describe('checkFieldsFor', () => {
     expect(checkFieldsFor('thief')).toEqual(CHECK_FIELDS)
   })
 
-  it('geeft voor een andere job dezelfde stats: skills staan niet op het controlescherm', () => {
-    for (const j of ['magician'] as const) {
-      const keys = checkFieldsFor(j).map((f) => f.key)
-      expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
-      expect(keys[0], j).toBe('level')
-      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f) && !f.informative).length)
-    }
-  })
 })
 
 describe('een Warrior: applyLevelUp', () => {

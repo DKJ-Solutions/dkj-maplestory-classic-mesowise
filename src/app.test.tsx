@@ -534,6 +534,22 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Attack')).queryByRole('button')).toBeNull()
   })
 
+  it('toont bij Total stats de Magic Def uit je equipment, alleen om te lezen; zolang een slot open is vul je hem zelf in (#91)', () => {
+    openHomeEquipment()
+    fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+    const h = openStat('Magic Def')
+    h.type('5')
+    h.save()
+    expect(statShown('Magic Def')).toBe('5')
+    pick(cards()[0], 'Hat', 'Bronze Pride')
+    pick(cards()[0], 'Top', 'Red Pao')
+    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
+    expect(statShown('Magic Def')).toBe('5')
+    pick(cards()[0], 'Shoes', 'Red Enamel Boots')
+    expect(statShown('Magic Def')).toBe('18')
+    expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
+  })
+
   it('toont het ammo-slot als optioneel: leeg blijft het advies gewoon rekenen', () => {
     openHomeEquipment()
     const row = rowOf(cards()[0], 'Ammo')
@@ -961,32 +977,177 @@ describe('een Warrior in de app', () => {
     expect(panels()[0].querySelector('dialog .hint')).toBeNull()
     expect(panels()[0].textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
+})
 
-  for (const [job, label] of [['magician', 'Magician']] as const) {
-    describe(`een ${label}`, () => {
-      beforeEach(() => open(job))
+describe('het geslacht (issue #55)', () => {
+  const GENDER_KEY = 'mesowise.gender.v1'
+  const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
+  const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
+  // De zichtbare jobkaart: in het menu als dat open staat, anders op het beginscherm (#86).
+  const card = () => (document.querySelector<HTMLElement>('dialog section.job') ?? document.querySelector<HTMLElement>('section.job'))!
+  const group = () => within(card()).getByRole('group', { name: 'Gender:' })
+  const button = (name: 'Male' | 'Female') => within(group()).getByRole('button', { name })
+  const pressed = (name: 'Male' | 'Female') => button(name).getAttribute('aria-pressed')
 
-      it('krijgt op het beginscherm nog steeds "Nog niet doorgerekend" en geen getal', () => {
-        const home = panels()[0]
-        expect(home.textContent).toContain(`Nog niet doorgerekend voor ${label}.`)
-        expect(home.querySelector('.summary')).toBeNull()
-        expect(home.querySelector('.level-cost-value')).toBeNull()
-      })
+  it('toont de groep Gender: met de knoppen Male en Female, allebei nog niet gekozen, en een hint', () => {
+    expect(within(group()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Male', 'Female'])
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
 
-      it('krijgt op het adviesscherm vier vragen met het label "Nog niet doorgerekend"', () => {
-        toAdvice()
-        const advice = panels()[2]
-        expect(advice.textContent).toContain(`Nog niet doorgerekend voor ${label}.`)
-        const chips = (advice.textContent!.match(/Nog niet doorgerekend(?! voor)/g) ?? []).length
-        expect(chips).toBe(4)
-      })
+  it('schrijft niets weg zolang de speler niets kiest', () => {
+    expect(localStorage.getItem(GENDER_KEY)).toBeNull()
+  })
 
-      it('toont geen Warrior-wapens in de equipment', () => {
-        openHomeEquipment()
-        expect(options(typeIn(cards()[0], 'Weapon', 'Gladius')).map((o) => o.querySelector('.equip-name')?.textContent)).not.toContain('Gladius')
-      })
-    })
+  const JOB_KEY = 'mesowise.job.v1'
+  const jobTitle = () => card().querySelector('h2')!.textContent
+  const withWarrior = (gender?: 'male' | 'female') => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
+    if (gender) localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender }))
+    render(<App />)
+    // Met job en geslacht gekozen staat de kaart alleen nog in het menu.
+    if (gender) fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
   }
+
+  it('bewaart bij een klik op Female meteen de keuze (de eerste keuze); de rij Gender: en de hint verdwijnen (Dave: scheelt hoogte)', () => {
+    fireEvent.click(button('Female'))
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+  })
+
+  it('toont de uitleg "Kies je job; daarna ligt hij vast" niet meer (Dave, 4 oktober 2026)', () => {
+    expect(screen.queryByText(/daarna ligt hij vast/)).toBeNull()
+  })
+
+  it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Gender:"', () => {
+    expect(jobTitle()).toBe('Job:')
+    const [job, gender] = Array.from(card().querySelectorAll('h2'))
+    expect(gender.tagName).toBe(job.tagName)
+    expect(gender.textContent).toBe('Gender:')
+  })
+
+  it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
+    withWarrior()
+    expect(jobTitle()).toBe('Warrior')
+    fireEvent.click(button('Female'))
+    // Job en geslacht gekozen: de kaart staat nu alleen nog in het menu.
+    fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
+    expect(jobTitle()).toBe('Warrior (f)')
+    withWarrior('male')
+    expect(jobTitle()).toBe('Warrior (m)')
+  })
+
+  const pencil = () => within(card()).getByRole('button', { name: /^Job en geslacht (niet )?wijzigen$/ })
+  const save = () => within(card()).queryByRole('button', { name: 'Opslaan' })
+  const jobButton = (name: string) => within(within(card()).getByRole('group', { name: 'Job:' })).getByRole('button', { name })
+
+  it('toont met het potlood de rij weer, met je keuze ingedrukt, en nog geen Opslaan', () => {
+    withWarrior('female')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(pressed('Male')).toBe('false')
+    expect(save()).toBeNull()
+  })
+
+  it('laat met het potlood open Opslaan verschijnen zodra je iets wijzigt, en weer verdwijnen als je terugkiest', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(button('Male'))
+    expect(pressed('Male')).toBe('true')
+    expect(save()).toBeTruthy()
+    // Nog niets vastgelegd: alleen een concept.
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    fireEvent.click(button('Female'))
+    expect(save()).toBeNull()
+  })
+
+  it('legt bij Opslaan job en geslacht samen vast en sluit de rijen', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(save()!)
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
+    expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'thief' })
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(save()).toBeNull()
+    expect(jobTitle()).toBe('Thief (m)')
+  })
+
+  it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
+    withWarrior('female')
+    const icon = () => pencil().querySelector('path')!.getAttribute('d')
+    const closed = icon()
+    fireEvent.click(pencil())
+    expect(icon()).toBe('M6 6l12 12M18 6L6 18')
+    fireEvent.click(pencil())
+    expect(icon()).toBe(closed)
+  })
+
+  it('gooit het concept weg als je het potlood weer dichtklikt', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(pencil())
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(jobTitle()).toBe('Warrior (f)')
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(save()).toBeNull()
+  })
+
+  it('leest een bewaarde keuze bij het starten: geen rij Gender: en geen hint', () => {
+    withWarrior('female')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+    expect(jobTitle()).toBe('Warrior (f)')
+  })
+
+  it('behandelt een onbruikbare bewaarde keuze als nog niet gekozen', () => {
+    cleanup()
+    localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'other' }))
+    render(<App />)
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
+
+  describe('op het adviesscherm', () => {
+    const toAdvice = () => {
+      cleanup()
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          spots: [
+            { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+            { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+          ],
+        }),
+      )
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+      render(<App />)
+      levelUp()
+      fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    }
+    const armorSection = () => screen.getByText('Moet ik mijn defense nu upgraden?').closest('section')!
+
+    it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
+      toAdvice()
+      expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
+    })
+
+    it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
+      localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
+      toAdvice()
+      expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
+    })
+  })
 })
 
 describe('een Bowman in de app', () => {
@@ -1130,6 +1291,182 @@ describe('een Bowman in de app', () => {
   })
 })
 
+describe('een Magician in de app', () => {
+  // Level 20, INT 60, LUK 10, een Sapphire Staff (M.ATT 31) en Energy Bolt 1.
+  const magicianFields = { ...DEFAULT_PROFILE, level: '20', hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', energyBolt: '1', magicClaw: '0' }
+  const open = (over: Partial<typeof magicianFields> = {}) => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...magicianFields, ...over } }))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        spots: [
+          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+        ],
+      }),
+    )
+    render(<App />)
+  }
+  const toAdvice = () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+  }
+  const NOT_YET = /Nog niet doorgerekend/
+
+  describe('het beginscherm', () => {
+    beforeEach(() => open())
+
+    it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
+      const home = panels()[0]
+      expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(home.textContent).not.toMatch(NOT_YET)
+      expect(home.querySelector('.debug')).toBeNull()
+    })
+
+    it('zoekt bij Weapon in de wands en staffs en niet in Thief-claws of Warrior-wapens, en bij Hat en Shoes in Magician-armor', () => {
+      openHomeEquipment()
+      const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
+      expect(found('Weapon', 'Mithril Wand')).toContain('Mithril Wand')
+      expect(found('Weapon', 'Meba')).not.toContain('Meba')
+      expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
+      expect(found('Hat', 'Wizardry Hat')).toContain('Wizardry Hat')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Shoes', 'Wind Shoes')).toContain('Wind Shoes')
+    })
+
+    it('toont geen Ammo-slot', () => {
+      openHomeEquipment()
+      expect(cards()[0].textContent).not.toMatch(/Ammo/)
+    })
+
+    it('noemt de stat van het wapen M.ATT, zet hem bij een gekozen wand in het profiel, met 810 ms, en laat de rest staan', () => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Mithril Wand')
+      expect(profileFields().clawWatk).toBe('55')
+      expect(profileFields().attackMs).toBe('810')
+      expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-value')!.getAttribute('aria-label')).toBe('M.ATT 55')
+      expect(profileFields().int).toBe('60')
+      expect(profileFields().wdef).toBe('40')
+    })
+
+    it('laat de M.ATT van het wapen via het potlood corrigeren', () => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Mithril Wand')
+      const row = rowOf(cards()[0], 'Weapon')
+      fireEvent.click(within(row).getByRole('button', { name: 'M.ATT corrigeren' }))
+      const dialog = row.querySelector('dialog') as HTMLDialogElement
+      expect(dialog).not.toBeNull()
+      expect(within(dialog).getByLabelText('M.ATT in game')).toBeTruthy()
+    })
+
+    it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en de Attack onbekend (?)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      const home = panels()[0]
+      expect(statShown('INT')).toBe('60')
+      expect(statShown('LUK')).toBe('10')
+      const names = Array.from(home.querySelectorAll('.stat-line-name')).map((e) => e.textContent)
+      expect(names).toEqual(expect.arrayContaining(['STR', 'DEX', 'INT', 'LUK', 'Accuracy', 'Evasion']))
+      for (const n of ['Tijd per aanval (ms)', 'Weapon multiplier van je wapen']) expect(names, n).not.toContain(n)
+      // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
+      expect(statShown('Attack')).toBe('?')
+      // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026, #106).
+      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier|Een cast duurt|Een Magician heeft geen munitie/)
+    })
+
+    it('toont de verwachte Magician-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Total stats/ }))
+      // Accuracy: (12 x 60 + 20 x 20 + 6 x 10 + 1020) / 51 = 2200 / 51 = 43,1, dus 43. Avoid: floor(10 / 3) + floor(20 / 6) + 5 = 11.
+      expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('43')
+      expect(statLine('Evasion').querySelector('s')?.textContent).toBe('11')
+    })
+
+    it('toont bij Skillpoints de skills van de Magician en niet die van de Thief of Warrior', () => {
+      const skills = openHomeSkills()
+      for (const name of ['Magic Guard', 'Magic Armor', 'Improved MP Recovery', 'Max MP Increase', 'Energy Bolt', 'Magic Claw']) expect(skills.textContent, name).toContain(name)
+      for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight', 'Power Strike', 'Slash Blast']) expect(skills.textContent, name).not.toContain(name)
+    })
+
+    it('noemt bij het wapenadvies wands en staffs, geen claws', () => {
+      const home = panels()[0]
+      expect(home.textContent).not.toContain('Loont een nieuwe claw?')
+      expect(home.textContent).toContain('Loont een nieuwe wand of staff?')
+    })
+  })
+
+  describe('het adviesscherm na een level-up', () => {
+    beforeEach(() => {
+      open()
+      toAdvice()
+    })
+
+    it('verhoogt het level, geeft +16 HP en laat INT en LUK staan', () => {
+      expect(profileFields().level).toBe('21')
+      expect(profileFields().hp).toBe('616')
+      expect(profileFields().int).toBe('60')
+      expect(profileFields().luk).toBe('10')
+    })
+
+    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+      const advice = panels()[2]
+      expect(advice.textContent).not.toMatch(NOT_YET)
+      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
+      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+    })
+
+    it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
+      const text = panels()[2].textContent!
+      expect(text).toMatch(/Niet doorgerekend: Magic Guard, Magic Armor, Improved MP Recovery en Max MP Increase/)
+      expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Power Strike|Slash Blast/)
+    })
+
+    it('noemt Magic Claw niet als punt zolang Energy Bolt op 0 staat', () => {
+      open({ energyBolt: '0' })
+      toAdvice()
+      const section = within(panels()[2]).getByText('Moet ik mijn skillpunt nu verhogen?').closest('section')!
+      expect(section.textContent).not.toContain('Magic Claw → 1')
+    })
+
+    it('noemt wands en staffs, geen claws', () => {
+      const claw = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      expect(claw.textContent).not.toMatch(/claw/i)
+      expect(claw.textContent).toMatch(/wand of staff|wapen/)
+    })
+  })
+
+  it('geeft als skillpunt Energy Bolt (→ 4), met zijn MP, en zet het punt in het bewaarde profiel', () => {
+    // Gemeten met skillPointAdvice voor dit profiel (INT 20, M.ATT 10, Energy Bolt 3): Energy Bolt wint; Magic Claw 1 geeft evenveel schade per cast en spaart niets.
+    open({ int: '20', clawWatk: '10', energyBolt: '3' })
+    toAdvice()
+    const button = screen.getByRole('button', { name: 'Punt zetten' })
+    const section = button.closest('section')!
+    expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Energy Bolt (→ 4).')
+    // Energy Bolt 3 en 4 kosten allebei 8 MP per cast (de skillpagina).
+    expect(section.textContent).toContain('Elke cast kost je dan 8 → 8 MP.')
+    expect(profileFields().energyBolt).toBe('3')
+    fireEvent.click(button)
+    expect(profileFields().energyBolt).toBe('4')
+    expect(profileFields().magicClaw).toBe('0')
+    expect(profileFields().level).toBe('21')
+    expect(screen.getByText('Energy Bolt → 4 gezet.')).toBeTruthy()
+  })
+
+  it('toont op het controlescherm INT bovenaan, met de zin over de AP', () => {
+    open()
+    levelUp()
+    const check = panels()[1]
+    expect(check.textContent).toContain('Verdeel je AP zelf: INT voor schade en accuracy, LUK voor wapen-eisen.')
+    const labels = Array.from(check.querySelectorAll('.stats .stat-row-name, .stats label, .stats span')).map((e) => e.textContent)
+    expect(labels).toContain('INT')
+  })
+})
+
 describe('de menubalk bovenin (issue #86)', () => {
   const bar = () => document.querySelector<HTMLElement>('header.topbar')!
   const openMenu = () => {
@@ -1144,25 +1481,29 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('toont de jobkaart op het beginscherm zolang er geen job is gekozen, en daarna alleen in het menu', () => {
+  it('toont de jobkaart op het beginscherm tot job en geslacht gekozen zijn (#55), en daarna alleen in het menu', () => {
     expect(homeJobCard()).not.toBeNull()
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    expect(homeJobCard()).not.toBeNull()
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     const menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Je job: Warrior' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Warrior (m)' })).toBeTruthy()
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     let menu = openMenu()
-    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht wijzigen' }))
     fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
+    fireEvent.click(menu.getByRole('button', { name: 'Opslaan' }))
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
     fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
     menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
   })
 })

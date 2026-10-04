@@ -2,7 +2,116 @@
 
 ## [Unreleased]
 
-**22 / 54 minor entries** <!-- pending-tally -->
+**23 / 59 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/111-close-button-fill · 20261004-125700Z
+
+De bewerkknoppen (het potlood bij je stats, je equipment en je job) zijn nu gevuld in plaats van omrand: op het donkere thema wit met een donkerblauw icoon, op het lichte thema donker met een wit icoon.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Edit buttons with a fill instead of a border
+
+[PR #113](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/113)
+
+---
+
+### DEPLOY: data/107-bowman-able-armor-skirt · 20261004-125657Z
+
+The Bowman's shop data now carries the female-only Green Able Armor Skirt (1190), and its other colours sit in the worn list. The data comes from MeowDB, and no other Bowman top or bottom was left out because of gender.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A female Bowman now gets a level-15 bottom in the armor advice. Before this change, that level had nothing for her. A male Bowman, or one whose gender is not set yet, sees no change.
+
+**Score:** 3
+
+#### Pull Request
+
+Bowman: the female-only Able Armor Skirt in the advice
+
+[PR #112](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/112)
+
+---
+
+### DEPLOY: data/91-mdef-per-item · 20261004-125404Z
+
+The Total stats card now fills in Magic Def itself from your equipment, as it already did for Attack and Weapon Def: the MDEF
+of your hat, top and bottom (or overall) and shoes, read-only once all of those are picked from the list; until then, or with
+a custom item, you still fill it in yourself. Every item
+page was checked: of the items the app knows outside the Magician's, only the Bronze Pride gives MDEF (18).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Source MDEF per item and derive Magic Def from the equipment
+
+[PR #109](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/109)
+
+---
+
+### DEPLOY: app/43-magician-model · 20261004-124937Z
+
+De Magician is nu te kiezen en wordt doorgerekend. De app kiest per monster de spreuk (Energy Bolt of Magic
+Claw) die de minste potions per EXP kost, rekent met 810 ms per cast en met Orange als MP-potion, en trekt de
+DEF van het monster van de spreukschade af volgens de damage-formule van NiaMeowDB. Wands, staffs en armor
+worden geadviseerd op INT en LUK, en de skillpoint-adviezen gaan over Energy Bolt en Magic Claw. De
+potionregel zegt voortaan bij elke job welke potion HP is en welke MP.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician in the mob model and on the screen
+
+[PR #96](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/96)
+
+---
+
+### DEPLOY: app/55-character-gender · 20261004-124443Z
+
+The app now asks whether your character is a man or a woman, and shows it as (m) or (f) behind the job. A Warrior then gets advice on tops, bottoms and
+overalls (Perion's armor shop), and a Thief on the level-12 T-shirts and, as a woman, the Red Qi Pao Skirt. Until
+you choose, the advice only counts armor both can wear.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ask the character's gender, so gender-locked shop items count
+
+[PR #103](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/103)
+
+---
 
 ### DEPLOY: fix/101-one-skill-mp-helper · 20261004-124227Z
 

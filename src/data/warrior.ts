@@ -15,22 +15,23 @@
 // de Sky Blue Umbrella (12) laat de app weg: een Warrior gebruikt hem niet. Bij armor zijn dat de White Bandana
 // (719) en de Red Baseball Cap (781), zie armor.ts.
 //
-// Niet opgenomen als armor, en waarom:
-// - Alle Warrior-tops en -broeken die ik heb gelezen zijn alleen voor mannen ("Male only"), en geen enkele
-//   pagina noemt een vrouwenversie. Onder de regel van armor.ts (de app kent het geslacht niet) vallen ze er
-//   dus uit. Tops: 942 en 943 (Lolico Armor, level 10), 964 en 965 (Corporal, 15), 979 en 980 (Sergeant, 20),
-//   1000 en 1001 (Master Sergeant, 25), 1021 en 1022 (Hwarang Shirt, 30). Broeken: 1164 en 1165 (Lolico Pants,
-//   10), 1182 en 1183 (Corporal Pants, 15), 1197 en 1198 (Sergeant Kilt, 20), 1219 en 1220 (Master Sergeant
-//   Kilt, 25), 1234 en 1235 (Martial Arts Pants, 30). Een vrouwenversie, als die bestaat, zit niet in de
-//   gelezen pagina's.
-// - Overalls: ArmorSlot kent ze sinds #50, maar er staat nog geen Warrior-overall in de data. 1094 Steel Fitted Mail (level 15, alleen vrouwen) en 1095, 1096 en 1097
-//   (Kendo Robe, level 20, alleen mannen).
-// - Handschoenen en schilden: niet gelezen, dus niet in de data.
+// Tops, broeken en overalls (Dave, #55, beslissing 2, 2026-10-04): elk is "Male only" of "Female only", en de app
+// vraagt nu het geslacht, dus ze staan erin met `gender`. Alle stukken die Harry (Perion Weapon Store,
+// https://meowdb.com/msclassic/npcs/508) verkoopt, gelezen uit de ruwe pagina. Per level en geslacht staat hier
+// één kleur; de andere kleuren hebben dezelfde eisen, WDEF en prijs en staan in wornWarrior.ts. Waar een man en
+// een vrouw allebei een stuk hebben, is het even sterk en even duur; alleen deze levels verschillen:
+// - Level 15: de man heeft een top en een broek (Corporal), de vrouw een overall (Steel Fitted Mail).
+// - Level 20: de man heeft ook een overall (Kendo Robe).
+// - Level 30: de man heeft een top en een broek (Hwarang, Martial Arts) en een overall (Black Dragon Robe), de vrouw
+//   alleen een overall (Engrit).
+//
+// Niet opgenomen als armor: handschoenen en schilden (niet gelezen, dus niet in de data).
 //
 // Bij de hoeden (762 en 765) en schoenen (1320 en 1321, 1334 tot en met 1336) hebben de varianten dezelfde
 // eisen, WDEF en prijs en verschilt alleen de bonusstat (STR, DEX, ACC, HP, Jump, Speed); die negeert de app.
 import { SPEED } from './attackSpeed'
 import type {
+  Gender,
   IronBodyLevel,
   PreciseStrikesLevel,
   SkillLevel,
@@ -128,9 +129,13 @@ const armor = (
   dex: number,
   wdef: number,
   price: number,
-): WarriorArmor => ({ name, slot, level, wdef, str, dex, price, source: item(id) })
+  gender?: Gender,
+): WarriorArmor => ({ name, slot, level, wdef, str, dex, price, source: item(id), ...(gender ? { gender } : {}) })
 
-/** De NPC-armor voor een Warrior, per slot (hat, shoes) van laag naar hoog level. Tops en broeken: zie de kop. */
+/**
+ * De NPC-armor voor een Warrior, per slot (hat, top, bottom, overall, shoes) van laag naar hoog level. Tops, broeken
+ * en overalls zijn voor één geslacht (zie de kop); de T-shirts van level 12 hebben geen jobregel en dus elke klas.
+ */
 export const NPC_WARRIOR_ARMOR: readonly WarriorArmor[] = [
   armor(724, 'Bronze Koif', 'hat', 10, 10, 0, 22, 1_200),
   armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 1_200),
@@ -142,6 +147,28 @@ export const NPC_WARRIOR_ARMOR: readonly WarriorArmor[] = [
   armor(786, 'Steel Sharp Helm', 'hat', 22, 34, 12, 32, 3_900),
   armor(795, 'Iron Burgernet Helm', 'hat', 25, 40, 15, 34, 4_500),
   armor(812, 'Jousting Helmet', 'hat', 30, 50, 20, 38, 7_200),
+  armor(942, 'Brown Lolico Armor', 'top', 10, 10, 0, 35, 2_000, 'male'),
+  armor(951, 'Orange Lolica Armor', 'top', 10, 10, 0, 35, 2_000, 'female'),
+  armor(960, 'Blue One-lined T-Shirt', 'top', 12, 0, 0, 26, 2_400, 'male'),
+  armor(962, 'Pink Starry Shirt', 'top', 12, 0, 0, 26, 2_400, 'female'),
+  armor(964, 'Brown Corporal', 'top', 15, 20, 0, 40, 3_000, 'male'),
+  armor(979, 'Blue Sergeant', 'top', 20, 30, 10, 45, 6_000, 'male'),
+  armor(988, 'Red Lamelle', 'top', 20, 30, 10, 45, 6_000, 'female'),
+  armor(1000, 'Silver Master Sergeant', 'top', 25, 40, 15, 50, 7_500, 'male'),
+  armor(1010, 'Blue Shark', 'top', 25, 40, 15, 50, 7_500, 'female'),
+  armor(1021, 'Red Hwarang Shirt', 'top', 30, 50, 20, 55, 12_000, 'male'),
+  armor(1164, 'Brown Lolico Pants', 'bottom', 10, 10, 0, 25, 1_600, 'male'),
+  armor(1171, 'Rookie Pants', 'bottom', 10, 10, 0, 25, 1_600, 'female'),
+  armor(1182, 'Brown Corporal Pants', 'bottom', 15, 20, 0, 29, 2_400, 'male'),
+  armor(1197, 'Steel Sergeant Kilt', 'bottom', 20, 30, 10, 33, 4_800, 'male'),
+  armor(1204, 'Red Ramel Skirt', 'bottom', 20, 30, 10, 33, 4_800, 'female'),
+  armor(1219, 'Silver Master Sergeant Kilt', 'bottom', 25, 40, 15, 37, 6_000, 'male'),
+  armor(1225, 'Blue Shark Skirt', 'bottom', 25, 40, 15, 37, 6_000, 'female'),
+  armor(1234, 'Red Martial Arts Pants', 'bottom', 30, 50, 20, 41, 9_600, 'male'),
+  armor(1094, 'Steel Fitted Mail', 'overall', 15, 20, 0, 75, 5_400, 'female'),
+  armor(1095, 'Blue Kendo Robe', 'overall', 20, 30, 10, 85, 10_800, 'male'),
+  armor(1106, 'Black Dragon Robe', 'overall', 30, 50, 20, 105, 21_600, 'male'),
+  armor(1112, 'Dark Engrit', 'overall', 30, 50, 20, 105, 21_600, 'female'),
   armor(1320, 'Bronze Grieves', 'shoes', 15, 20, 0, 18, 1_800),
   armor(1321, 'Steel Grieves', 'shoes', 15, 20, 0, 18, 1_800),
   armor(1334, 'Brown High Boots', 'shoes', 20, 30, 10, 21, 3_600),

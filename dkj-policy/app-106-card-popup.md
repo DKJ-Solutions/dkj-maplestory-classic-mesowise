@@ -56,7 +56,7 @@ it shows what the dropdown used to show, in a popup.
   popup, closing and focus return, a kept pick after reopening, a new spot opening in its popup, and the
   inline equipment on the check screen
 - [x] Cody: the explanation texts under the stats cards are gone (Dave, October 4, 2026: "Dit gaat de speler
-  toch niet lezen"): the Attack/Weapon Def line, and the Thief, Bowman and Warrior texts under Total stats,
+  toch niet lezen"): the Attack/Weapon Def line, and the Thief, Bowman, Magician and Warrior texts under Total stats,
   including the weapon multiplier per kind of weapon; `WEAPON_MULT_BY_KIND` went with them, unused
 - [x] Tycho: the tests on those texts now assert that they are gone
 
