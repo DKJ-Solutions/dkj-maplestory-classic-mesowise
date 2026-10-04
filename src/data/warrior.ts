@@ -249,6 +249,9 @@ export const IRON_BODY_LEVELS: readonly IronBodyLevel[] = Array.from({ length: 2
   mp: 15,
   seconds: i < 19 ? 300 + 15 * i : 600,
 }))
+/** Het Max HP Increase-level dat Iron Body vraagt, en het Improved HP Recovery-level dat Max HP Increase vraagt (de skillpagina's). */
+export const IRON_BODY_REQUIRES_MAX_HP_INCREASE = 3
+export const MAX_HP_INCREASE_REQUIRES_IMPROVED_HP_RECOVERY = 3
 
 /** Precise Strikes (passief, level 1 tot 15): extra accuracy en extra kans op een critical hit in procent. */
 export const PRECISE_STRIKES_SOURCE: Source = skill('precise-strikes')

@@ -11,6 +11,7 @@ import type { KnownSpot, Monster, Potion, SpellLevel } from './data/types'
 import { POWER_STRIKE_LEVELS } from './data/warrior'
 import type { Job } from './job'
 import { toCharacter, type Profile } from './profile'
+import { buffBonus } from './skillEffects'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
 /** Lucky Seven op dit skill-level, of null als hij nog niet geleerd is (level 0). */
@@ -126,6 +127,8 @@ export interface MonsterSuggestion {
   rechargePerStar: number
   /** De potion waarmee deze job zijn MP aanvult. */
   mpPotion: Potion
+  /** De MP per uur om je buffs aan te houden (buffBonus in skillEffects.ts); los van hoeveel je killt. */
+  buffMpPerHour: number
 }
 
 /** EXP per meso aan potions en munitie van een voorstel; zonder kosten oneindig, zodat het gratis voorstel wint. */
@@ -145,11 +148,12 @@ export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: 
   const attacks = attacksOf(profile, character)
   const rechargePerStar = profile.job === 'warrior' || profile.job === 'magician' ? 0 : profile.starRecharge
   const mpPotion = mpPotionFor(profile.job)
+  const buffMpPerHour = buffBonus(profile).mpPerHour
   return spot.monsters
     .flatMap((monster) => {
       const options = attacks.map((attack): MonsterSuggestion => {
         const estimate = estimateMob(character, attack, monster, assumptions)
-        return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar, mpPotion }
+        return { monster, estimate, expPerHour: expPerHour(monster.expPerKill, estimate.killsPerHour), rechargePerStar, mpPotion, buffMpPerHour }
       })
       const better = (a: MonsterSuggestion, b: MonsterSuggestion) => expPerMeso(b) > expPerMeso(a) || (expPerMeso(b) === expPerMeso(a) && b.expPerHour > a.expPerHour)
       const best = options.reduce<MonsterSuggestion | undefined>((top, o) => (top === undefined || better(top, o) ? o : top), undefined)
@@ -175,10 +179,10 @@ export interface HourPlan {
   ammo: number
 }
 
-/** Het uur uitgerekend; het verbruik per kill schaalt mee met de kills per uur. */
+/** Het uur uitgerekend; het verbruik per kill schaalt mee met de kills per uur, de MP voor je buffs niet. */
 export function hourPlan(s: MonsterSuggestion, killsPerHour: number): HourPlan {
   const hpPotionsPerHour = (killsPerHour * s.estimate.hpLossPerKill) / HP_POTION.hp
-  const mpPotionsPerHour = (killsPerHour * s.estimate.mpPerKill) / s.mpPotion.mp
+  const mpPotionsPerHour = (killsPerHour * s.estimate.mpPerKill + s.buffMpPerHour) / s.mpPotion.mp
   return {
     killsPerHour,
     expPerHour: expPerHour(s.monster.expPerKill, killsPerHour),

@@ -17,6 +17,7 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
+import { skillEffectText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
@@ -1059,14 +1060,21 @@ const SKILL_GROUPS = [
 
 /**
  * De MP die een skill per keer kost op het gezette level (issue #83), en daaronder die van het volgende level, zodat
- * je ziet wat een punt verandert (issue #138). Op level 0 is hij nog niet geleerd, op het maximum is er geen volgend
- * level. Leeg als het veld geen geldig level is: dat meldt het veld zelf al.
+ * je ziet wat een punt verandert (issue #138). Verandert de skill een total (DEF, accuracy, evasion, Max HP, crit), dan
+ * staat wat hij geeft ernaast (issue #139): wat je betaalt met een −, wat je ervoor terugkrijgt met een +. Op level 0 is hij nog niet geleerd, op het maximum is er geen volgend
+ * level. Leeg als het veld geen geldig level is: dat meldt het veld zelf al. `wdef` is de DEF uit je profiel (voor Iron Body).
  */
-function skillMpLines(s: SkillLevel): string[] {
+function skillMpLines(s: SkillLevel, wdef: number | null): string[] {
   if (s.level === null) return []
-  if (skillMpAt(s, 1) === null) return ['Passief, kost geen MP']
-  const now = s.level === 0 ? 'Nu: niet geleerd' : `Nu: ${skillMpAt(s, s.level)} MP per keer`
-  return s.level < s.max ? [now, `Volgend level: ${skillMpAt(s, s.level + 1)} MP`] : [now]
+  const level = s.level
+  const effect = (l: number) => skillEffectText(s.key, l, wdef)
+  const passive = skillMpAt(s, 1) === null
+  if (passive && effect(1) === null) return ['Passief, kost geen MP']
+  // Een passief: wat hij geeft. Een skill met MP: de MP, en wat hij geeft als hij een total verandert.
+  const line = (l: number, mp: string) => (passive ? effect(l)! : [mp, effect(l)].filter(Boolean).join(', '))
+  const now = level === 0 ? 'Nu: niet geleerd' : `Nu: ${line(level, `−${skillMpAt(s, level)} MP per keer`)}`
+  const lines = passive ? ['Passief, kost geen MP', now] : [now]
+  return level < s.max ? [...lines, `Volgend level: ${line(level + 1, `−${skillMpAt(s, level + 1)} MP`)}`] : lines
 }
 
 /**
@@ -1079,6 +1087,9 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   const head = useRef<HTMLButtonElement>(null)
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   const levels = skillLevels(props.draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  // De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de kaart alleen het procent.
+  const wdefNumber = Number(props.draft.wdef.trim())
+  const wdef = props.draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
   // Is de pot van deze groep vol (zonder geldig level: nooit), dan kan er geen punt meer bij.
   const full = (job: SkillLevel['job']) => {
     const { spent, cap } = skillPoolUsage(props.draft, props.job, skillPoolOf(job))
@@ -1110,7 +1121,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                     <span>
                       {s.name}
                       <small class="skill-mp">
-                        {skillMpLines(s).map((line) => (
+                        {skillMpLines(s, wdef).map((line) => (
                           <span key={line}>{line}</span>
                         ))}
                       </small>
