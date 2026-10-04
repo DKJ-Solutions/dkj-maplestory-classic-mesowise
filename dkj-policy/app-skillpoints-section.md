@@ -56,6 +56,7 @@ niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten ove
 - [x] Tycho: tests voor de data, de nieuwe skillvelden en een bewaard profiel van vóór de wijziging (424 groen)
 - [x] Victor en Edith: review ronde 2; skillkaart ook op het controlescherm (anders liep je vast op een fout skillveld), één geëxporteerde STAT_FIELDS, Lucky Seven uit de samenvatting van je karakter, "0 is nog niet geleerd", een datum per bron
 - [x] Dave: de Beginner-skills helemaal onderin de kaart
+- [x] Dave: de uitleg en de bronregel onder de skills weg; de naamsvermelding van NiaMeowDB staat onderaan de app, de bron per skill in src/data/skills.ts
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST

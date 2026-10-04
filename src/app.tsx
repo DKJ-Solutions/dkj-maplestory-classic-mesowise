@@ -15,8 +15,8 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, pointsPlaced, SKILLS, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
-import { BEGINNER_CLASS_SOURCE, isSkillKey, THIEF_CLASS_SOURCE } from './data/skills'
+import { NOT_MODELLED, pointsPlaced, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isDefaultProfile, loadProfile, parseProfile, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
@@ -396,9 +396,9 @@ function EquipmentCard(props: {
 const points = (n: number) => `${n} ${n === 1 ? 'punt' : 'punten'}`
 
 const JOBS = [
-  { job: 'Thief', title: 'Thief (1e job)', source: THIEF_CLASS_SOURCE },
+  { job: 'Thief', title: 'Thief (1e job)' },
   // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
-  { job: 'Beginner', title: 'Beginner', source: BEGINNER_CLASS_SOURCE },
+  { job: 'Beginner', title: 'Beginner' },
 ] as const
 
 /**
@@ -445,23 +445,6 @@ function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange
                 ))}
             </div>
           ))}
-          <p class="hint">
-            0 is nog niet geleerd. In het advies rekenen alleen {listFormat.format(SKILLS.map((s) => s.name))} mee. Zet je bij een
-            van die skills een punt via het advies, dan staat het hier meteen.
-          </p>
-          <p class="source">
-            Skills:{' '}
-            {JOBS.map(({ job, source }, i) => (
-              <span key={job}>
-                {i > 0 && ', '}
-                <a href={source.url} target="_blank" rel="noopener noreferrer">
-                  NiaMeowDB ({job})
-                </a>
-                , opgehaald op {formatDate(source.retrieved)}
-              </span>
-            ))}
-            .
-          </p>
         </div>
       </Collapse>
     </section>
