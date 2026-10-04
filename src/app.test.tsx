@@ -147,8 +147,8 @@ describe('begin zonder opslag', () => {
     const row = panels()[0].firstElementChild!
     expect(row.classList.contains('level-row')).toBe(true)
     const [down, heading, up] = Array.from(row.children)
-    expect(down).toBe(screen.getByRole('button', { name: 'Terug naar LV. 9' }))
-    expect(down.textContent).toBe('Terug')
+    expect(down).toBe(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    expect(down.textContent).toBe('Back')
     expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
     expect(heading.textContent).toBe('LV. 10')
     expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))
@@ -156,7 +156,7 @@ describe('begin zonder opslag', () => {
   })
 
   it('zet met de kleine knop alleen het level een terug, zonder de level-up-flow', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Terug naar LV. 9' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     expect(document.querySelector('.current-level')?.textContent).toBe('LV. 9')
     expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
   })
