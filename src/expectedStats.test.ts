@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { baseAccuracy, baseAvoid } from './data/thief'
+import { warriorAccuracy } from './data/warrior'
 import { expectedStat } from './expectedStats'
 import { DEFAULT_PROFILE } from './profile'
 
@@ -38,8 +39,34 @@ describe('expectedStat', () => {
     expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, luk: '4.5' }, 'thief')).toBeUndefined()
   })
 
+  it('rekent de Warrior-accuracy met zijn eigen formule', () => {
+    // floor((1,2 x 25 + 2 x 10 + 0,6 x 40) / 2,5 + 10) = floor(39,6) = 39, niet de Thief-waarde 33
+    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'warrior')).toBe(39)
+    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'warrior')).toBe(warriorAccuracy(25, 10, 40))
+  })
+
+  it('volgt bij de Warrior het voorbeeld uit de bron: DEX 30, level 30 en LUK 4 geven 49 accuracy', () => {
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, dex: '30', level: '30', luk: '4' }, 'warrior')).toBe(49)
+  })
+
+  it('telt Precise Strikes mee bij de Warrior-accuracy, en Nimble Body niet', () => {
+    const base = warriorAccuracy(25, 10, 40)
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, preciseStrikes: '1' }, 'warrior')).toBe(base + 5)
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, preciseStrikes: '15' }, 'warrior')).toBe(base + 20)
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, nimbleBody: '5' }, 'warrior')).toBe(base)
+  })
+
+  it('rekent de Warrior-avoid met dezelfde formule als elke job, zonder Nimble Body', () => {
+    expect(expectedStat('avoid', DEFAULT_PROFILE, 'warrior')).toBe(22)
+    expect(expectedStat('avoid', { ...DEFAULT_PROFILE, nimbleBody: '5' }, 'warrior')).toBe(22)
+  })
+
+  it('heeft voor de Warrior geen verwachting voor de weapon multiplier', () => {
+    expect(expectedStat('weaponMult', DEFAULT_PROFILE, 'warrior')).toBeUndefined()
+  })
+
   it('heeft geen verwachting voor een job zonder formules', () => {
-    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'warrior')).toBeUndefined()
+    expect(expectedStat('accuracy', DEFAULT_PROFILE, 'magician')).toBeUndefined()
   })
 
   it('heeft geen verwachting voor een stat zonder formule', () => {

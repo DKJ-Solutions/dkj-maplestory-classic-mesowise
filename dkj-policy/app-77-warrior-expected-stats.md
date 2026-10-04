@@ -1,4 +1,4 @@
-## app/77-warrior-expected-stats
+﻿## app/77-warrior-expected-stats
 
 > **How this file is read.** A step is `- [ ]` until it is resolved -- `- [x]` done, or
 > `- [~]` dropped with the reason, which exists so nobody ticks a box for work they did not do.
@@ -39,19 +39,36 @@
 
 ### PLAN
 
+Issue #77: the character card shows an expected accuracy and avoid for a Thief only. The Warrior gets the
+same, from the sources the code already carries. The issue says the Warrior has no avoid formula with a source;
+that does not hold: `baseAvoid` in `src/data/thief.ts` is documented from the damage-formula guide as the same
+for every job. The weapon multiplier stays without an expected value: it comes from the chosen weapon, and the
+card's hint already lists it per weapon type.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `expectedStat` covers the Warrior: `warriorAccuracy` plus Precise Strikes, and the shared `baseAvoid`
 
 ### TEST
 
+- [x] `src/expectedStats.test.ts`: the Warrior formula, the guide's example (49), Precise Strikes, avoid, and no
+  expectation for the weapon multiplier
+- [x] `src/app.test.tsx`: the Warrior card test that pinned "no expectation at accuracy" now asserts the struck-through
+  36 accuracy and 9 avoid (Victor's review)
+
 ### DEPLOY: app/77-warrior-expected-stats
 
-**Score:**
+Op de kaart "Je karakter" ziet een Warrior nu ook welke accuracy en avoid hij volgens de formules hoort te
+hebben, met Precise Strikes erbij. Wijkt je getal af, dan staat de verwachting doorgestreept ernaast, zoals bij
+de Thief.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
