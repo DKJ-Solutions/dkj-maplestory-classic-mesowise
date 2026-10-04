@@ -63,6 +63,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
   als bij "Je karakter"
 - [x] Dave (4 oktober 2026): de slots heten zoals in het spel (Weapon, Hat, Top, Bottom, Shoes), ook in
   het defense-advies; het wapenslot heet algemeen Weapon (de job-keuze in #41 bepaalt straks welk wapen)
+- [x] Dave (4 oktober 2026): een zichtbare aanwijzing dat een kaart inklapbaar is. Elke inklapbare kaart
+  (karakter, equipment, plekken) krijgt een pijltje achter de titel: omlaag = dicht, omhoog = open
 
 ### TEST
 

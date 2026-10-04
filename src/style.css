@@ -101,6 +101,20 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   cursor: pointer;
 }
 .spot-name { font-weight: 600; overflow-wrap: anywhere; }
+/* Een pijltje achter de titel: deze kaart klap je open en dicht met een tik. Omlaag = dicht, omhoog = open. */
+.spot-name::after {
+  content: '';
+  display: inline-block;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  margin: 0 0 0.1875rem 0.625rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 150ms ease-out;
+  vertical-align: middle;
+}
+.spot-head[aria-expanded='true'] .spot-name::after { transform: translateY(0.1875rem) rotate(-135deg); }
 .spot-value { text-align: right; }
 .spot-value strong { display: block; font-size: 1.5rem; color: var(--accent); }
 .spot-value small, .spot-exp { color: var(--muted); font-size: 0.875rem; }
@@ -234,5 +248,5 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .verdict { margin: 0 0 0.375rem; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .track { transition: none; }
+  .track, .spot-name::after { transition: none; }
 }
