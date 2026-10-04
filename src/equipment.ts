@@ -105,7 +105,7 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
         level: c.level,
         stat: c.watk,
         attackMs: c.speed.attackMs,
-        ...('mult' in c && c.mult !== undefined ? { mult: c.mult } : {}),
+        ...(c.mult !== undefined ? { mult: c.mult } : {}),
       }))
   return items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
 }

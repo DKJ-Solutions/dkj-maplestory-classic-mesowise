@@ -25,6 +25,7 @@ import {
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
+import { COMMON_WORN_ARMOR, WORN_ARMOR } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
@@ -675,8 +676,12 @@ describe('equipment voor een Warrior', () => {
     })
 
     it('deelt de items zonder jobregel met de Thief: dezelfde rijen, niet gekopieerd', () => {
-      expect(catalogItems('hat', 'warrior').find((i) => i.name === 'Brown Skullcap')).toEqual(catalogItems('hat', 'thief').find((i) => i.name === 'Brown Skullcap'))
-      expect(catalogItems('hat', 'warrior').find((i) => i.name === 'Brown Skullcap')).toBeDefined()
+      const skullcap = WORN_ARMOR.find((a) => a.name === 'Brown Skullcap')
+      expect(skullcap).toBeDefined()
+      expect(WORN_WARRIOR_ARMOR.find((a) => a.name === 'Brown Skullcap')).toBe(skullcap)
+      // Elk gedeeld id vindt zijn rij: een gewijzigde bron-URL laat een item anders stil uit de Warrior-lijst vallen.
+      expect(COMMON_WORN_ARMOR).toHaveLength(46)
+      for (const a of COMMON_WORN_ARMOR) expect(WORN_ARMOR).toContain(a)
     })
 
     it('laat de Thief-lijsten zoals main ze heeft (de NPC-items blijven erin)', () => {
