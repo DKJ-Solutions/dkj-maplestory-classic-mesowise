@@ -389,7 +389,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .ap-edit input::-webkit-inner-spin-button, .ap-edit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* Totaal is alleen om te lezen: geen invulvak, dus zonder achtergrond en met een gestippelde rand */
 .ap-edit-total { background: transparent; border-style: dashed; }
-.ap-edit .ap-edit-steps { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 0.375rem; }
+/* − en + even groot als in de andere stat-popups (52 x 52px), ook in deze smallere rij */
+.ap-edit .ap-edit-steps { grid-template-columns: 52px minmax(0, 1fr) 52px; gap: 0.375rem; }
 /* Ability points op de kaart: per stat de naam, de base AP, een plus, de extra AP van items (0 als je die niet hebt) en het potlood; de kopjes staan erboven */
 /* De laatste kolom is breder dan het potlood en het potlood staat rechts: zo zit er 1rem tussen het extra-vak en het potlood */
 .stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 3.5rem 0.75rem 3.5rem calc(44px + 0.625rem); }
