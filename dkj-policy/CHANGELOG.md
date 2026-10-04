@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**21 / 43 minor entries** <!-- pending-tally -->
+**21 / 44 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/69-stat-requirements · 20261004-115543Z
+
+Nothing changes on screen: the advice still says, for example, "je hebt nog 5 STR en 10 DEX nodig". Behind
+it, a Warrior weapon's STR requirement is now stored as STR instead of being filed under LUK, so the Magician
+and Bowman can use the same advice without another rename.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Upgrade advice reads each stat requirement in its own stat
+
+[PR #85](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/85)
+
+---
 
 ### DEPLOY: app/50-overall-slot · 20261004-114221Z
 
