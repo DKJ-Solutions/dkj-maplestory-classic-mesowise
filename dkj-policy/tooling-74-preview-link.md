@@ -39,19 +39,37 @@
 
 ### PLAN
 
+Dave (#74): once a subagent finishes a design, the handover always carries a live localhost link. Gwen has
+no shell, so the link is made at the handover in the main thread: a script prints the URL Vite actually
+serves on, and Chris's lens makes running it part of handing over a visible result.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `scripts/preview/start-preview.ps1` -- starts Vite for this checkout in the background,
+  reuses a live one it started, reads the link from Vite's own output; `-Lan` adds the phone link, `-Stop`
+  stops it.
+- [x] Tessa: the handover rule in Chris's lens; one line in the README.
 
 ### TEST
 
+- [x] Ran it on this machine: a cold start printed `localhost:5174` (5173 was taken by a hand-started
+  server, which is the case the script exists for), and the page answered 200 under the base path; a second
+  run reused the server; `-Lan` printed the network link too; `-Stop` took it down.
+
 ### DEPLOY: tooling/74-preview-link
 
-**Score:**
+When a design is finished, the handover now always ends with a link that works:
+`scripts/preview/start-preview.ps1` starts the dev server and prints the address it really runs on
+(with `-Lan`, also the address for a phone on the same network). A typed `localhost:5173` could point
+at a different server, because Vite moves to the next free port.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
