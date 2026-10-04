@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**16 / 28 minor entries** <!-- pending-tally -->
+**16 / 29 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/56-shared-speed-and-item-types · 20261004-094949Z
+
+Intern opgeruimd: de aanvalssnelheden staan voor alle klassen in één tabel en de winkelitems delen één
+basistype, zodat de Magician en Bowman ze niet opnieuw kopiëren. In de app verandert niets; geen getal of
+bron is gewijzigd. Het voorkomt dat één snelheidslabel bij twee klassen een andere aanvalstijd krijgt, en
+daarmee een andere EXP per uur.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Eén tabel voor de aanvalssnelheden en één basistype voor winkelitems (#56)
+
+[PR #60](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/60)
+
+---
 
 ### DEPLOY: data/42-warrior · 20261004-093317Z
 
