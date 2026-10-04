@@ -32,7 +32,7 @@ export const WORN_WARRIOR_CLAWS: readonly (WornClaw & { mult: number })[] = WORN
   source: w.source,
 }))
 
-/** De NPC-armor van een Warrior (alleen hats en shoes, zie data/warrior.ts) als Armor. */
+/** De NPC-armor van een Warrior (zie data/warrior.ts) als Armor; een stuk voor één geslacht houdt zijn `gender`. */
 export const WARRIOR_ARMOR: readonly Armor[] = NPC_WARRIOR_ARMOR.map((a) => ({
   name: a.name,
   slot: a.slot,
@@ -42,6 +42,7 @@ export const WARRIOR_ARMOR: readonly Armor[] = NPC_WARRIOR_ARMOR.map((a) => ({
   dex: a.dex,
   price: a.price,
   source: a.source,
+  ...(a.gender ? { gender: a.gender } : {}),
 }))
 
 /** Hoe een soort wapen heet op het scherm. */

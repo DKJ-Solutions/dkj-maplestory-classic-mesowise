@@ -41,7 +41,16 @@ describe('WORN_ARMOR en WORN_CLAWS', () => {
     const claws = WORN_CLAWS.map((c) => c.name)
     expect(new Set(armor).size).toBe(armor.length)
     expect(new Set(claws).size).toBe(claws.length)
-    for (const n of armor) expect(NPC_ARMOR.map((a) => a.name), n).not.toContain(n)
+    // Uitzondering (#55): de stukken voor één geslacht die de winkel sinds #55 verkoopt (960, 962, 1216) staan ook hier,
+    // met hetzelfde geslacht en dezelfde stat; de catalogus toont ze één keer, de NPC-regel wint.
+    const shadowed = WORN_ARMOR.filter((w) => NPC_ARMOR.some((n) => n.name === w.name))
+    expect(shadowed.map((w) => w.source.url.split('/').pop()).sort()).toEqual(['1216', '960', '962'])
+    for (const w of shadowed) {
+      const n = NPC_ARMOR.find((x) => x.name === w.name)!
+      expect([w.slot, w.level, w.wdef, w.gender, w.source.url], w.name).toEqual([n.slot, n.level, n.wdef, n.gender, n.source.url])
+      expect(w.gender, w.name).toBeDefined()
+    }
+    for (const n of armor.filter((x) => !shadowed.some((w) => w.name === x))) expect(NPC_ARMOR.map((a) => a.name), n).not.toContain(n)
     for (const n of claws) expect(NPC_CLAWS.map((c) => c.name), n).not.toContain(n)
   })
 

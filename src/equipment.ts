@@ -114,7 +114,7 @@ export const MAX_RESULTS = 8
 
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
- * items) en de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
+ * items) en de Warrior (zijn wapens en armor uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
  * items zonder jobregel die ook de Thief draagt). Een naam mag bij beide jobs staan, maar dan is het hetzelfde
  * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
  * (issues #43 tot #45), want een item van een andere job aanbieden zou onwaar zijn.

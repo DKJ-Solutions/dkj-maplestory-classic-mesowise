@@ -870,3 +870,90 @@ describe('een Warrior in de app', () => {
     })
   }
 })
+
+describe('het geslacht (issue #55)', () => {
+  const GENDER_KEY = 'mesowise.gender.v1'
+  const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
+  const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
+  const group = () => screen.getByRole('group', { name: 'Geslacht' })
+  const button = (name: 'Man' | 'Vrouw') => within(group()).getByRole('button', { name })
+  const pressed = (name: 'Man' | 'Vrouw') => button(name).getAttribute('aria-pressed')
+
+  it('toont de groep Geslacht met de knoppen Man en Vrouw, allebei nog niet gekozen, en een hint', () => {
+    expect(within(group()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Man', 'Vrouw'])
+    expect(pressed('Man')).toBe('false')
+    expect(pressed('Vrouw')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
+
+  it('schrijft niets weg zolang de speler niets kiest', () => {
+    expect(localStorage.getItem(GENDER_KEY)).toBeNull()
+  })
+
+  it('zet bij een klik op Vrouw aria-pressed, bewaart de keuze en laat de hint verdwijnen', () => {
+    fireEvent.click(button('Vrouw'))
+    expect(pressed('Vrouw')).toBe('true')
+    expect(pressed('Man')).toBe('false')
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+  })
+
+  it('laat de keuze wijzigen: Man na Vrouw, en de hint blijft weg', () => {
+    fireEvent.click(button('Vrouw'))
+    fireEvent.click(button('Man'))
+    expect(pressed('Man')).toBe('true')
+    expect(pressed('Vrouw')).toBe('false')
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+  })
+
+  it('leest een bewaarde keuze bij het starten: Vrouw staat ingedrukt en er is geen hint', () => {
+    cleanup()
+    localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'female' }))
+    render(<App />)
+    expect(pressed('Vrouw')).toBe('true')
+    expect(pressed('Man')).toBe('false')
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+  })
+
+  it('behandelt een onbruikbare bewaarde keuze als nog niet gekozen', () => {
+    cleanup()
+    localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'other' }))
+    render(<App />)
+    expect(pressed('Man')).toBe('false')
+    expect(pressed('Vrouw')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
+
+  describe('op het adviesscherm', () => {
+    const toAdvice = () => {
+      cleanup()
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          spots: [
+            { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+            { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+          ],
+        }),
+      )
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+      render(<App />)
+      levelUp()
+      fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    }
+    const armorSection = () => screen.getByText('Moet ik mijn defense nu upgraden?').closest('section')!
+
+    it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
+      toAdvice()
+      expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
+    })
+
+    it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
+      localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
+      toAdvice()
+      expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
+    })
+  })
+})

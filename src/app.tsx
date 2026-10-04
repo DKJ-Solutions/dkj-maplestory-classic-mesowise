@@ -21,6 +21,7 @@ import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -91,8 +92,8 @@ function NotComputed(props: { job: Job }) {
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
  * job (Dave, 4 oktober 2026). Het potlood rechts herstelt een vergissing: het toont weer alle jobs.
  */
-function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void }) {
-  const { job, chosen } = props
+function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
+  const { job, chosen, gender } = props
   const [editing, setEditing] = useState(false)
   const choices = jobChoices(chosen && !editing)
   const pick = (j: Job) => {
@@ -133,6 +134,18 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
         </div>
       )}
       {(!chosen || editing) && <p class="hint">Kies je job; daarna ligt hij vast. Een vergissing herstel je met het potlood.</p>}
+      {/* Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Altijd te wijzigen. */}
+      <div class="gender" role="group" aria-labelledby="gender-title">
+        <span id="gender-title" class="gender-title">Geslacht</span>
+        <div class="gender-choices">
+          {GENDERS.map((g) => (
+            <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === gender} onClick={() => props.onGender(g.gender)}>
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {gender === null && <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>}
       {/* Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */}
       {!isComputed(job) && (
         <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
@@ -1251,7 +1264,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
 }
 
 /** Defense: loont een nieuw stuk armor uit de winkel? Per slot het stuk dat het meeste netto oplevert. */
-function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job }) {
+function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job; gender: Gender | null }) {
   const a = props.advice
   const title = QUESTION_TITLE.armor
   if (a.kind === 'none') {
@@ -1287,6 +1300,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
         </p>
       ))}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
+      {props.gender === null && <p class="hint">Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.</p>}
       <ArmorNotes advice={a} />
     </Question>
   )
@@ -1489,7 +1503,8 @@ export function App() {
   const [jobChosen, setJobChosen] = useState(() => isJobStored(storage))
   const computed = isComputed(job)
   const jobDirty = useRef(false)
-  const parsed = useMemo(() => parseProfile(profileDraft, job), [profileDraft, job])
+  const [gender, setGender] = useState<Gender | null>(() => loadGender(storage))
+  const parsed = useMemo(() => parseProfile(profileDraft, job, gender), [profileDraft, job, gender])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
   // De berekening kent de Thief en de Warrior. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
@@ -1664,6 +1679,10 @@ export function App() {
     writeEquipment(equipmentForJob(equipmentRef.current, next))
     setJob(next)
   }
+  const changeGender = (next: Gender) => {
+    saveGender(storage, next)
+    setGender(next)
+  }
   const toggle = (id: string) => {
     setOrder(rankedIds(drafts, profile))
     setOpenId(openId === id ? null : id)
@@ -1708,7 +1727,7 @@ export function App() {
               </p>
             )}
 
-            <JobCard job={job} chosen={jobChosen} onChange={changeJob} />
+            <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
 
             <EquipmentCard
               job={job}
@@ -1850,7 +1869,7 @@ export function App() {
               <>
                 <AdviceHeader cost={cost} />
                 <ClawQuestion advice={clawAdvice} cost={cost} job={job} />
-                <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} />
+                <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} />
                 <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
                 <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} />
                 <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />

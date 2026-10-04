@@ -64,6 +64,9 @@ export interface KnownSpot {
  */
 export type ArmorSlot = 'hat' | 'top' | 'bottom' | 'overall' | 'shoes'
 
+/** Het geslacht van een karakter; sommige armor is alleen voor een van beide. */
+export type Gender = 'male' | 'female'
+
 /** Wat elk ding uit een NPC-winkel heeft: een naam, het level om het te dragen, de prijs in meso en de bron. */
 export interface ShopItem {
   name: string
@@ -80,13 +83,15 @@ export type Requires<Stat extends 'str' | 'dex' | 'int' | 'luk'> = Record<Stat, 
 export interface ShopArmor extends ShopItem {
   slot: ArmorSlot
   wdef: number
+  /** Alleen voor dit geslacht ("Male only" of "Female only" op de itempagina, issue #55); zonder: voor iedereen. */
+  gender?: Gender
 }
 
 /** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
 export interface Armor extends ShopArmor, Requires<'luk' | 'dex'> {}
 
 /** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
-export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
+export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source' | 'gender'>
 
 /** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
 export type WornClaw = Pick<Claw, 'name' | 'level' | 'watk' | 'speed' | 'source'>

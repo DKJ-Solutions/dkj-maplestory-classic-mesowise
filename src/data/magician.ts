@@ -23,8 +23,8 @@
 // Niet opgenomen als armor, en waarom:
 // - Tops en broeken alleen voor vrouwen, zonder mannenversie in de gelezen pagina's: Arianne (970 tot en met
 //   973, level 15), Fairy Top (1031 en 1032, level 30), Arianne Skirt (1186 tot en met 1189, level 15) en
-//   Fairy Skirt (1246 en 1247, level 30). Onder de regel van armor.ts (de app kent het geslacht niet) vallen
-//   ze er uit; zie ook #55.
+//   Fairy Skirt (1246 en 1247, level 30). Ze staan er nog niet in, omdat de app de
+//   Magician nog niet doorrekent (#43); met `gender` kunnen ze erbij zodra dat model er is (zie #55).
 // - Overalls: ArmorSlot kent ze sinds #50, maar de robes wachten op een controle van de ruwe pagina's (#76). Plain Robe (1091 tot en met 1093), Doros Robe (1098 tot en met 1101),
 //   Doroness Robe (1102 tot en met 1104) en Wizard Robe (1107 en 1110).
 // - Handschoenen, schilden, capes en de winkels in Orbis en Nuri: niet gelezen, dus niet in de data.

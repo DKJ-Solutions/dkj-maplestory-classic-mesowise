@@ -58,9 +58,11 @@ The job card gets a "Geslacht" row (Man / Vrouw). Dave looks before the merge, s
 
 ### TEST
 
-- [ ] Tycho: existing tests updated to the new data, gender tests added, `vitest` and `lint` green.
-- [ ] Victor: code review of the diff.
-- [ ] Edith: the Dutch UI text and comments.
+- [x] Tycho: existing tests updated to the new data, gender tests added (gender, profile, armor advice per gender,
+  data parity between male and female rows, the Geslacht row and the armor hint in the app); 940 tests and lint green.
+- [x] Victor: no bug. Applied: a hint at the armor answer while no gender is chosen, `gender` on the worn T-shirt
+  and skirt rows, the unused `genderLabel` removed.
+- [x] Edith: applied the stale Magician comment, the `gender.ts` sentence and the clearer hint wording.
 
 ### DEPLOY: app/55-character-gender
 
