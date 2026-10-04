@@ -54,6 +54,7 @@ mob you kill most while levelling, picked on one card.
 - [x] The card sits under Skillpoints; like the other cards its head shows only the title, the rest is in the popup
 - [x] Monster info can be corrected per field with the pencil, like a stat or equipment; the calculation uses the corrected numbers (`spotOf`), and picking another mob drops the corrections
 - [x] No EXP per meso on the card: that belongs in the calculator itself (Dave, October 4, 2026)
+- [x] No source line, kills suggestion or kills-per-hour input in the popup, and the picker shows only name and level (Dave, October 4, 2026); an old saved kills override is ignored on load
 
 ### TEST
 
@@ -66,7 +67,7 @@ mob you kill most while levelling, picked on one card.
 The spot list is gone: no "Plek toevoegen" button, no example spot and no maps. One card under Skillpoints, "Monster",
 picks the mob you kill most; its popup shows the mob's HP, EXP, damage and WDEF, each correctable with the pencil when the game says otherwise (the
 level cost and advice then use your numbers); the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
-also when it is dangerous (the warning stays on the card). Kills per hour can still be overridden in its popup. A
+also when it is dangerous (the warning stays on the card). Kills per hour are no longer typed in: the app computes them. A
 saved list of maps or own spots from before is dropped on load. Follow-ups: #122 (the hunting-ground question),
 #123 (removing the now unused map data).
 

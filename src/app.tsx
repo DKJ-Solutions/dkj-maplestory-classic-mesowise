@@ -4,10 +4,10 @@ import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid, type RankResult } from './calc/rankSpots'
 import { bestVerdict } from './best'
 import { browserStorage, loadSpots, saveSpots } from './storage/spots'
-import { MAX_NAME_LENGTH, type SpotDraft } from './spotDraft'
+import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot, Monster, Potion } from './data/types'
+import type { ArmorSlot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
@@ -25,7 +25,7 @@ import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gen
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { HP_POTION, hourPlan, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -37,37 +37,13 @@ const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z
 
 const storage = browserStorage()
 
-/** De bewaarde mob als enige plek; maps en eigen plekken van vroeger vallen weg (Dave, 4 oktober 2026). */
+/**
+ * De bewaarde mob als enige plek; maps en eigen plekken van vroeger vallen weg (Dave, 4 oktober 2026). Kills per uur
+ * vul je niet meer zelf in, dus een oud eigen getal telt niet stilletjes mee: de app rekent ze zelf uit.
+ */
 function initialDrafts(): SpotDraft[] {
   const saved = loadSpots(storage)?.find((d) => huntedMob(d) !== undefined)
-  return saved ? [saved] : []
-}
-
-function Field(props: {
-  label: string
-  value: string
-  onInput: (v: string) => void
-  text?: boolean
-  placeholder?: string
-}) {
-  const onInput = (e: Event) => props.onInput((e.currentTarget as HTMLInputElement).value)
-  return (
-    <label class="field">
-      <span>{props.label}</span>
-      {props.text ? (
-        <input type="text" maxLength={MAX_NAME_LENGTH} value={props.value} onInput={onInput} />
-      ) : (
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          value={props.value}
-          placeholder={props.placeholder}
-          onInput={onInput}
-        />
-      )}
-    </label>
-  )
+  return saved ? [{ ...saved, kills: '', expPerHour: '', potions: '', ammo: '' }] : []
 }
 
 /** De zin die bij een advies staat in plaats van een getal, voor een job die de app nog niet doorrekent. */
@@ -1212,9 +1188,6 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   )
 }
 
-/** De naam van een potion met wat hij herstelt, zodat de Orange (MP) van de Orange Potion (HP) te onderscheiden is. */
-const potionLabel = (p: Potion) => `${p.name} (${p.mp > 0 ? 'MP' : 'HP'})`
-
 function Warnings(props: { s: MonsterSuggestion | undefined }) {
   const e = props.s?.estimate
   if (!e || !(e.dangerous || e.missesOften)) return null
@@ -1226,9 +1199,6 @@ function Warnings(props: { s: MonsterSuggestion | undefined }) {
   )
 }
 
-/** Wat een mob heeft en geeft, in één regel (Dave, 4 oktober 2026): HP, EXP per kill, de schade als hij je raakt en zijn WDEF (P.DEF op MeowDB). */
-const mobStats = (m: Monster) => `${nfInt.format(m.hp)} HP · ${nfInt.format(m.expPerKill)} EXP · ${nfInt.format(m.touch.min)}–${nfInt.format(m.touch.max)} dmg · ${nfInt.format(m.wdef)} WDEF`
-
 /**
  * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
  * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in. Net als de andere kaarten toont de
@@ -1239,18 +1209,15 @@ function HuntedMobCard(props: {
   result: RankResult | undefined
   draft: SpotDraft | undefined
   profile: Profile | null
-  /** Of de app voor je job kan rekenen; zo niet, dan zijn er geen voorstellen. */
-  computed: boolean
   onPick: (name: string) => void
   onChange: (patch: Partial<SpotDraft>) => void
 }) {
-  const { result, draft, profile, computed } = props
+  const { result, draft, profile } = props
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
   const known = draft ? spotOf(draft) : undefined
   const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
-  const plan = picked ? hourPlan(picked, picked.estimate.killsPerHour) : undefined
   const invalid = result !== undefined && isInvalid(result)
   const title = 'Monster'
   const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
@@ -1273,7 +1240,7 @@ function HuntedMobCard(props: {
               {!mob && <option value="">Kies een mob</option>}
               {MOBS.map((m) => (
                 <option key={m.name} value={m.name}>
-                  {m.name} (lv {m.level}): {mobStats(m)}
+                  {m.name} (lv {m.level})
                 </option>
               ))}
             </select>
@@ -1296,31 +1263,7 @@ function HuntedMobCard(props: {
               ))}
             </>
           )}
-          {mob && (
-            <p class="hint">
-              Dmg is de schade als hij je raakt. Bron:{' '}
-              <a href={mob.source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(mob.source.retrieved)}.
-            </p>
-          )}
-          {picked && plan && (
-            <>
-              <p class="hint">
-                Voorstel: ± {nfInt.format(plan.killsPerHour)} kills per uur, raakkans {nfPct.format(picked.estimate.hitChance)},{' '}
-                {nf.format(plan.hpPotionsPerHour)} × {potionLabel(HP_POTION)} en {nf.format(plan.mpPotionsPerHour)} × {potionLabel(picked.mpPotion)} per uur.
-              </p>
-              <Warnings s={picked} />
-              <Field
-                label="Kills per uur (leeg = het voorstel)"
-                value={draft?.kills ?? ''}
-                placeholder={nfInt.format(plan.killsPerHour)}
-                onInput={(kills) => props.onChange({ kills })}
-              />
-            </>
-          )}
-          {computed && mob && !profile && <p class="warn">Vul je karakter volledig in, dan stelt de app kills per uur voor.</p>}
+          <Warnings s={picked} />
         </CardPopup>
       )}
     </section>
@@ -1916,7 +1859,6 @@ export function App() {
                 result={verdict.ranked[0]}
                 draft={drafts[0]}
                 profile={profile}
-                computed={computed}
                 onPick={pickMob}
                 onChange={(patch) => update(drafts[0].id, patch)}
               />
@@ -1939,7 +1881,7 @@ export function App() {
                   Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
                   oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
                   tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-                  Weet je het beter, vul dan zelf je kills per uur in.
+                  Zegt het spel iets anders over je monster, pas zijn info dan aan.
                 </p>
               )}
 

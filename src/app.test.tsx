@@ -525,17 +525,18 @@ describe('bewaren na elke wijziging', () => {
     expect(screen.getByRole('button', { name: /^Monster$/ }).textContent).toBe('Monster')
   })
 
-  it('toont de HP, EXP, schade en WDEF van de mob in de popup: in de keuzelijst en bij de gekozen mob', () => {
+  it('toont in de keuzelijst alleen naam en level, en de HP, EXP, schade en WDEF van de gekozen mob als regels', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Monster$/ }))
     const select = screen.getByLabelText('De mob die je het meest killt') as HTMLSelectElement
     // Pig op MeowDB: 128 HP, 13 EXP, Touch DMG 16–22, P.DEF 0 (src/data/spots.ts).
-    expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7): 128 HP · 13 EXP · 16–22 dmg · 0 WDEF')
+    expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7)')
+    expect(Array.from(select.options).filter((o) => o.value !== '').every((o) => /^[A-Za-z ]+ \(lv \d+\)$/.test(o.textContent ?? ''))).toBe(true)
     fireEvent.change(select, { target: { value: 'Pig' } })
     const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLElement
     const lines = Array.from(dialog.querySelectorAll('.stat-line .equip-value')).map((v) => v.getAttribute('aria-label'))
     expect(lines).toEqual(['HP 128', 'EXP 13', 'Dmg laag 16', 'Dmg hoog 22', 'WDEF 0'])
     // De EXP per meso hoort in de calculator zelf, niet op deze kaart (Dave, 4 oktober 2026).
-    expect(dialog.textContent).not.toMatch(/EXP per meso/)
+    expect(dialog.textContent).not.toMatch(/EXP per meso|kills per uur|Bron/i)
     expect(screen.getByRole('button', { name: /^Monster$/ }).textContent).toBe('Monster')
   })
 
@@ -557,6 +558,18 @@ describe('bewaren na elke wijziging', () => {
     back.save()
     expect(stored(STORAGE_KEY).spots[0].mobHp).toBeUndefined()
     expect(document.querySelector('.summary')?.textContent).toBe(before)
+  })
+
+  it('negeert een oud eigen aantal kills per uur uit de opslag: dat vul je niet meer in, de app rekent het zelf', () => {
+    const summary = (spot: object) => {
+      cleanup()
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [spot] }))
+      render(<App />)
+      return document.querySelector('.summary')?.textContent
+    }
+    const own = summary({ ...mobDraft('Pig'), kills: '1' })
+    expect(own).toMatch(/^Op Pig/)
+    expect(own).toBe(summary(mobDraft('Pig')!))
   })
 
   it('zet de aanpassingen terug als je een andere mob kiest', () => {
@@ -801,7 +814,7 @@ describe('de "was"-badge per slot', () => {
 })
 
 describe('adviesscherm na de level-up', () => {
-  // Een "Beste" vraagt minstens twee plekken: een bekende plek en een eigen plek met weinig EXP per uur.
+  // De app rekent met de mob waarop je jaagt.
   beforeEach(() => {
     cleanup()
     localStorage.setItem(
