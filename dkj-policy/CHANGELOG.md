@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**22 / 49 minor entries** <!-- pending-tally -->
+**22 / 50 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/84-level-up-button · 20261004-123108Z
+
+The home screen now shows your current level at the top ("Level 10") where the Level up button used to be; the Level up button itself has moved to the bottom of the screen, below the training spots and above the credit, and no longer sticks to the top while you scroll (#84).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Level-up button at the bottom; show the current level in its place
+
+[PR #99](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/99)
+
+---
 
 ### DEPLOY: app/44-bowman-model · 20261004-122755Z
 
