@@ -39,19 +39,36 @@
 
 ### PLAN
 
+Issue #91: source the MDEF of every item the app already contains, and make Magic Def on the Total stats card a
+read-only line derived from the chosen equipment. Visible result, so the branch is parked for Dave's look, with no PR.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca: every item page in the app read on MeowDB for an M.DEF line on 2026-10-04 (261 rows, four parallel
+  batches). Outside the Magician armor, which already had it, only the Bronze Pride (809) has one: M.DEF+18. No weapon has any.
+- [x] Vera: spot-checked the one positive (809) and the one weakly worded answer (War Bow, 663) again; both hold.
+  A reported level mismatch on three level-0 tops collapsed on re-reading (the pages show no REQ LEV), so it was not filed.
+- [x] Cody: optional `mdef` on `ShopArmor` (absent = 0), Bronze Pride row, `mdef` in the armor catalog,
+  `wornMdef` in `src/equipment.ts`, and the Magic Def line on the Total stats card as read-only via `derived`.
 
 ### TEST
 
+- [x] Tycho: `wornMdef` (sum, overall against top + bottom, the known-empty half, unknown and custom slots, a corrected
+  DEF), a data pin (only the Bronze Pride outside the Magician armor) and an app test on the card. Full suite 987/987, typecheck clean.
+
 ### DEPLOY: data/91-mdef-per-item
 
-**Score:**
+The Total stats card now fills in Magic Def itself from your equipment, as it already did for Attack and Weapon Def: the MDEF
+of your hat, top and bottom (or overall) and shoes, read-only, and empty until all of those are filled in. Every item
+page was checked: of the items the app knows outside the Magician's, only the Bronze Pride gives MDEF (18).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
