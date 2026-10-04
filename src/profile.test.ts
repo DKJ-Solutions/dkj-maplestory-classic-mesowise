@@ -127,7 +127,7 @@ describe('profileFieldsFor', () => {
 
   it('noemt het wapenveld niet meer een claw', () => {
     const label = PROFILE_FIELDS.find((f) => f.key === 'clawWatk')!.label
-    expect(label).toBe('Weapon attack van je wapen')
+    expect(label).toBe('ATT van je wapen')
     expect(label).not.toMatch(/claw/i)
   })
 })
