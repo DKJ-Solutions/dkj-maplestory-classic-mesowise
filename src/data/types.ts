@@ -73,8 +73,11 @@ export interface ShopItem {
   source: Source
 }
 
+/** De vier stats waar een item een eis in kan stellen. */
+export type Stat = 'str' | 'dex' | 'int' | 'luk'
+
 /** De stat-eisen van een item: `Requires<'luk' | 'dex'>` is { luk: number; dex: number }. Een eis die de pagina niet noemt staat als 0. */
-export type Requires<Stat extends 'str' | 'dex' | 'int' | 'luk'> = Record<Stat, number>
+export type Requires<S extends Stat> = Record<S, number>
 
 /** Een stuk armor uit een NPC-winkel zonder de stat-eisen (slot en WDEF); die komen per klas erbij. */
 export interface ShopArmor extends ShopItem {
@@ -82,14 +85,20 @@ export interface ShopArmor extends ShopItem {
   wdef: number
 }
 
+/**
+ * Een stuk armor van elke klas zoals het equipment-scherm en de upgrade-adviezen het lezen: elke eis staat in zijn
+ * eigen stat (issue #69), en een stat die er niet staat vraagt niets.
+ */
+export interface ArmorPiece extends ShopArmor, Partial<Requires<Stat>> {}
+
 /** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
-export interface Armor extends ShopArmor, Requires<'luk' | 'dex'> {}
+export type Armor = ArmorPiece & Requires<'luk' | 'dex'>
 
 /** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
 export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
 
 /** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
-export type WornClaw = Pick<Claw, 'name' | 'level' | 'watk' | 'speed' | 'source'>
+export type WornClaw = Pick<Weapon, 'name' | 'level' | 'watk' | 'speed' | 'source'>
 
 /** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
 export type WarriorWeaponKind =
@@ -218,13 +227,16 @@ export interface PreciseStrikesLevel {
 }
 
 /**
- * Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. De upgrade-adviezen
- * lezen ook een Warrior-wapen in deze vorm (zie warriorGear.ts): `luk` is dan de STR-eis en `mult` de weapon multiplier.
+ * Een wapen van elke klas zoals het equipment-scherm en de upgrade-adviezen het lezen (een claw, of een Warrior-wapen
+ * omgezet in warriorGear.ts): elke eis staat in zijn eigen stat (issue #69), en een stat die er niet staat vraagt niets.
  */
-export interface Claw extends ShopItem, Requires<'luk' | 'dex'> {
+export interface Weapon extends ShopItem, Partial<Requires<Stat>> {
   watk: number
-  /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
+  /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval (bij een claw met Lucky Seven). */
   speed: { label: string; attackMs: number }
   /** Alleen bij een Warrior-wapen: de verwachte weapon multiplier van een basisaanval (60% zwaai, 40% steek). */
   mult?: number
 }
+
+/** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
+export type Claw = Weapon & Requires<'luk' | 'dex'>

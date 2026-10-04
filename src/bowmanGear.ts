@@ -1,34 +1,33 @@
-// De Bowman-winkelgegevens (data/bowman.ts, eigen types met `str`) in de vorm van de Thief-lijsten (Claw en Armor,
-// op de gedeelde ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde manier kunnen
-// lezen, zoals warriorGear.ts dat voor de Warrior doet. Het veld `luk` van die vorm ("de eis naast DEX") staat hier
-// voor STR; de data zelf noemt hem `str`. Puur, zonder UI-import.
+// De Bowman-winkelgegevens (data/bowman.ts, eigen types met `str`) in de gedeelde vorm van wapens en armor (Weapon en
+// ArmorPiece, op de ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde manier kunnen
+// lezen, zoals warriorGear.ts dat voor de Warrior doet. De STR-eis blijft `str` (issue #69). Puur, zonder UI-import.
 import { NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import type { Armor, Claw, WornArmor } from './data/types'
+import type { ArmorPiece, Weapon, WornArmor } from './data/types'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
 
 /**
- * De bogen en kruisbogen als Claw, op level gesorteerd (de volgorde bepaalt in clawUpgrade.ts het einde van de
+ * De bogen en kruisbogen als Weapon, op level gesorteerd (de volgorde bepaalt in clawUpgrade.ts het einde van de
  * horizon). De aanvalstijd is die van de itempagina (de Balanche 840 ms) en er is geen `mult`: de multiplier van
  * een schot (2,5) staat vast in de damage-formule, niet bij het wapen.
  */
-export const BOWMAN_WEAPONS: readonly Claw[] = NPC_BOWMAN_WEAPONS.map((w) => ({
+export const BOWMAN_WEAPONS: readonly Weapon[] = NPC_BOWMAN_WEAPONS.map((w) => ({
   name: w.name,
   level: w.level,
   watk: w.watk,
   speed: w.speed,
-  luk: w.str,
+  str: w.str,
   dex: w.dex,
   price: w.price,
   source: w.source,
 })).sort((a, b) => a.level - b.level)
 
-/** De NPC-armor van een Bowman (hat, top, bottom, shoes, zie data/bowman.ts) als Armor. */
-export const BOWMAN_ARMOR: readonly Armor[] = NPC_BOWMAN_ARMOR.map((a) => ({
+/** De NPC-armor van een Bowman (hat, top, bottom, shoes, zie data/bowman.ts) als ArmorPiece. */
+export const BOWMAN_ARMOR: readonly ArmorPiece[] = NPC_BOWMAN_ARMOR.map((a) => ({
   name: a.name,
   slot: a.slot,
   level: a.level,
   wdef: a.wdef,
-  luk: a.str,
+  str: a.str,
   dex: a.dex,
   price: a.price,
   source: a.source,

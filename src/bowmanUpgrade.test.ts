@@ -1,7 +1,7 @@
 // De upgrade-adviezen (boog of kruisboog, en armor) voor een Bowman (issue #44, stap 2) en de winkel van bowmanGear.ts.
 // De Thief- en Warrior-uitkomsten staan in clawUpgrade.test.ts, armorUpgrade.test.ts en warriorUpgrade.test.ts en
 // blijven daar ongewijzigd; hier alleen wat de Bowman anders doet: de winkel is die van bowmanGear.ts, de eis is STR en
-// DEX (het veld `luk` van de gedeelde vorm staat voor STR), een wapen telt als "beter" volgens het model.
+// DEX (elke eis in zijn eigen stat, #69), een wapen telt als "beter" volgens het model.
 import { describe, expect, it } from 'vitest'
 import { armorUpgradeAdvice, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, PLAIN_ARROW, WORN_BOWMAN_ARMOR } from './bowmanGear'
@@ -47,15 +47,15 @@ const expSum = (from: number, to: number) => {
 }
 
 describe('bowmanGear: de data van de Bowman in de vorm van de Thief-lijsten', () => {
-  it('zet elke boog en kruisboog om met zijn STR in het veld luk, en houdt tijd, prijs en bron', () => {
+  it('zet elke boog en kruisboog om met zijn STR in het veld str, en houdt tijd, prijs en bron', () => {
     expect(BOWMAN_WEAPONS).toHaveLength(NPC_BOWMAN_WEAPONS.length)
     for (const w of NPC_BOWMAN_WEAPONS) {
       const c = BOWMAN_WEAPONS.find((x) => x.name === w.name)!
-      expect(c, w.name).toEqual({ name: w.name, level: w.level, watk: w.watk, speed: w.speed, luk: w.str, dex: w.dex, price: w.price, source: w.source })
+      expect(c, w.name).toEqual({ name: w.name, level: w.level, watk: w.watk, speed: w.speed, str: w.str, dex: w.dex, price: w.price, source: w.source })
       expect(c.mult, w.name).toBeUndefined()
     }
     // De Balanche heeft 840 ms (issue #44), niet de 810 van Normal (6) in de gedeelde tabel.
-    expect(BOWMAN_WEAPONS.find((w) => w.name === 'Balanche')).toMatchObject({ level: 20, watk: 39, luk: 10, dex: 45, speed: { attackMs: 840 } })
+    expect(BOWMAN_WEAPONS.find((w) => w.name === 'Balanche')).toMatchObject({ level: 20, watk: 39, str: 10, dex: 45, speed: { attackMs: 840 } })
   })
 
   it('zet de wapens op level, zodat de horizon het eerstvolgende level pakt', () => {
@@ -63,9 +63,9 @@ describe('bowmanGear: de data van de Bowman in de vorm van de Thief-lijsten', ()
     expect(levels).toEqual([...levels].sort((a, b) => a - b))
   })
 
-  it('zet elk stuk armor om met STR in het veld luk', () => {
+  it('zet elk stuk armor om met STR in het veld str', () => {
     expect(BOWMAN_ARMOR).toHaveLength(NPC_BOWMAN_ARMOR.length)
-    expect(BOWMAN_ARMOR.find((a) => a.name === 'Hunter')).toMatchObject({ slot: 'hat', level: 25, luk: 15, dex: 40, wdef: 24, price: 4_500 })
+    expect(BOWMAN_ARMOR.find((a) => a.name === 'Hunter')).toMatchObject({ slot: 'hat', level: 25, str: 15, dex: 40, wdef: 24, price: 4_500 })
     expect(BOWMAN_ARMOR.map((a) => a.slot)).not.toContain('overall')
   })
 
@@ -125,17 +125,17 @@ describe('Bowman-wapens: de winkel', () => {
     expect(withClaw(p, weapon('Balanche'))).toEqual({ ...p, clawWatk: 39, attackMs: 840 })
   })
 
-  it('zet een wapen zonder genoeg STR of DEX bij de niet-draagbare, met het tekort in STR', () => {
+  it('zet een wapen zonder genoeg STR of DEX bij de niet-draagbare, met het tekort per stat, DEX eerst', () => {
     // De Balanche (lv 20) vraagt STR 10 en DEX 45. Met STR 5 en DEX 40 ontbreken 5 STR en 5 DEX.
     const p = strong({ level: 20, str: 5, dex: 40, clawWatk: 5 })
     const a = advice(p)
-    expect(a.notWearable.find((u) => u.claw.name === 'Balanche')).toEqual({ claw: weapon('Balanche'), needLuk: 5, needDex: 5 })
+    expect(a.notWearable.find((u) => u.claw.name === 'Balanche')).toEqual({ claw: weapon('Balanche'), needs: [{ stat: 'dex', amount: 5 }, { stat: 'str', amount: 5 }] })
     expect(names(a)).not.toContain('Balanche')
   })
 
   it('kijkt bij een Bowman niet naar LUK, en een hoge DEX maakt een STR-tekort niet goed', () => {
     const a = advice(strong({ level: 20, str: 5, dex: 500, luk: 500, clawWatk: 5 }))
-    expect(a.notWearable.find((u) => u.claw.name === 'Balanche')).toMatchObject({ needLuk: 5, needDex: 0 })
+    expect(a.notWearable.find((u) => u.claw.name === 'Balanche')).toMatchObject({ needs: [{ stat: 'str', amount: 5 }] })
   })
 
   it('draagt een wapen bij precies genoeg STR en DEX (Balanche 10/45), en niet bij één STR of DEX te weinig', () => {
@@ -143,9 +143,9 @@ describe('Bowman-wapens: de winkel', () => {
     expect(epm(withClaw(exact, weapon('Balanche')))).toBeGreaterThan(epm(exact)) // voorwaarde: de Balanche is beter dan 5 ATT
     expect(advice(exact).notWearable.find((u) => u.claw.name === 'Balanche')).toBeUndefined()
     expect(names(advice(exact))).toContain('Balanche')
-    for (const [str, dex, needStr, needDex] of [[9, 45, 1, 0], [10, 44, 0, 1]] as const) {
+    for (const [str, dex, needs] of [[9, 45, [{ stat: 'str', amount: 1 }]], [10, 44, [{ stat: 'dex', amount: 1 }]]] as const) {
       const short = advice({ ...exact, str, dex })
-      expect(short.notWearable.find((u) => u.claw.name === 'Balanche'), `${str}/${dex}`).toEqual({ claw: weapon('Balanche'), needLuk: needStr, needDex })
+      expect(short.notWearable.find((u) => u.claw.name === 'Balanche'), `${str}/${dex}`).toEqual({ claw: weapon('Balanche'), needs })
       expect(names(short)).not.toContain('Balanche')
     }
   })
@@ -221,25 +221,25 @@ describe('Bowman-armor: de winkel', () => {
     expect(names(a)).toEqual(expect.arrayContaining(['Archer Top / Avelin', 'Archer Pants', 'Hard Leather Boots']))
   })
 
-  it('zet een stuk zonder genoeg STR of DEX bij de niet-draagbare, met het tekort in STR', () => {
+  it('zet een stuk zonder genoeg STR of DEX bij de niet-draagbare, met het tekort per stat, DEX eerst', () => {
     // De Robin Hat (lv 20) vraagt STR 10 en DEX 30; met STR 5 en DEX 20 ontbreken 5 STR en 10 DEX.
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 5, dex: 20 })
     const hat = a.notWearable.find((u) => u.armor.slot === 'hat')
-    expect(hat).toMatchObject({ needLuk: 5, needDex: 10 })
-    expect(hat!.armor).toMatchObject({ name: 'Robin Hat', luk: 10, dex: 30 })
+    expect(hat).toMatchObject({ needs: [{ stat: 'dex', amount: 10 }, { stat: 'str', amount: 5 }] })
+    expect(hat!.armor).toMatchObject({ name: 'Robin Hat', str: 10, dex: 30 })
   })
 
   it('kijkt niet naar LUK: een hoge LUK maakt een STR-tekort niet goed', () => {
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 5, dex: 100, luk: 500 })
-    expect(a.notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needLuk: 5, needDex: 0 })
+    expect(a.notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needs: [{ stat: 'str', amount: 5 }] })
   })
 
   it('draagt een stuk bij precies genoeg STR en DEX en toont het dan niet als niet-draagbaar', () => {
     const a = advice({ ...strong({ level: 20, wdef: 0 }), str: 10, dex: 30 })
     expect(a.notWearable.filter((u) => u.armor.slot === 'hat')).toEqual([])
     // Eén STR of DEX minder, en de Robin Hat is niet meer te dragen.
-    expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 9, dex: 30 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needLuk: 1, needDex: 0 })
-    expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 10, dex: 29 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needLuk: 0, needDex: 1 })
+    expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 9, dex: 30 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needs: [{ stat: 'str', amount: 1 }] })
+    expect(advice({ ...strong({ level: 20, wdef: 0 }), str: 10, dex: 29 }).notWearable.find((u) => u.armor.slot === 'hat')).toMatchObject({ needs: [{ stat: 'dex', amount: 1 }] })
   })
 
   it('rekent de besparing met de hand: EXP-som over de horizon, kosten zonder min met het stuk (WDEF erbij), min de prijs', () => {

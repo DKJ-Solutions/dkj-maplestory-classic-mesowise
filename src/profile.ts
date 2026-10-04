@@ -5,6 +5,7 @@ import { PLAIN_ARROW } from './bowmanGear'
 import type { Character } from './calc/mobModel'
 import { BOWMAN_SKILLS, isSkillKey, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { ATTACK_MS, SUBI } from './data/thief'
+import type { Requires, Stat } from './data/types'
 import { STAT_NAME } from './equipment'
 import type { Job } from './job'
 
@@ -225,8 +226,30 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
   }
 }
 
+/** De hoofdstat voor schade: STR voor een Warrior, DEX voor een Bowman, LUK voor een Thief. */
+const mainStatKey = (job: Job): Stat => (job === 'warrior' ? 'str' : job === 'bowman' ? 'dex' : 'luk')
+
+/** Een stat van het profiel. Het profiel heeft nog geen INT (dat komt met de Magician, #43), dus die is 0. */
+const statOf = (p: Profile, s: Stat): number => (s === 'int' ? 0 : p[s])
+
+/** De waarde van de hoofdstat van dit profiel (zie mainStatKey). */
+export const mainStatOf = (p: Profile): number => statOf(p, mainStatKey(p.job))
+
+/** Hoeveel je in één stat tekortkomt voor een item. */
+export interface StatNeed {
+  stat: Stat
+  amount: number
+}
+
+const REQUIREMENT_STATS: readonly Stat[] = ['str', 'dex', 'int', 'luk']
+
 /**
- * De stat waarin een wapen of stuk armor naast DEX een eis stelt: STR voor een Warrior en een Bowman, LUK voor een Thief.
- * (De hoofdstat van de schade is dat niet altijd: bij een Bowman is dat DEX.)
+ * Wat je tekortkomt voor de eisen van een item (issue #69): per stat waar je onder de eis zit, de hoofdstat van je
+ * job eerst. Leeg betekent dat je het kunt dragen; een stat die het item niet noemt, vraagt niets.
  */
-export const requirementStatOf = (p: Profile): number => (p.job === 'warrior' || p.job === 'bowman' ? p.str : p.luk)
+export function shortfall(reqs: Partial<Requires<Stat>>, p: Profile): StatNeed[] {
+  const main = mainStatKey(p.job)
+  return [main, ...REQUIREMENT_STATS.filter((s) => s !== main)]
+    .map((stat) => ({ stat, amount: Math.max(0, (reqs[stat] ?? 0) - statOf(p, stat)) }))
+    .filter((n) => n.amount > 0)
+}

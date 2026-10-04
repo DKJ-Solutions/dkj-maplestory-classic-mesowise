@@ -68,14 +68,14 @@ describe('clawUpgradeAdvice: wie een kandidaat is', () => {
 
   it('zet een claw zonder genoeg LUK of DEX bij de niet-draagbare en rekent hem niet door', () => {
     const a = advice(drafts, { ...base, level: 15, luk: 30, dex: 10 })
-    expect(a.notWearable).toEqual([{ claw: claw('Steel Titans'), needLuk: 5, needDex: 5 }])
+    expect(a.notWearable).toEqual([{ claw: claw('Steel Titans'), needs: [{ stat: 'luk', amount: 5 }, { stat: 'dex', amount: 5 }] }])
     expect(a.choices).toEqual([])
     expect(a.winner).toBeNull()
   })
 
-  it('noemt alleen het tekort dat er is: genoeg DEX geeft needDex 0', () => {
+  it('noemt alleen het tekort dat er is: genoeg DEX laat DEX weg', () => {
     const a = advice(drafts, { ...base, level: 15, luk: 30, dex: 25 })
-    expect(a.notWearable).toEqual([{ claw: claw('Steel Titans'), needLuk: 5, needDex: 0 }])
+    expect(a.notWearable).toEqual([{ claw: claw('Steel Titans'), needs: [{ stat: 'luk', amount: 5 }] }])
   })
 
   it('draagt een claw bij precies genoeg stats (LUK 35, DEX 15 voor Steel Titans)', () => {
@@ -87,7 +87,7 @@ describe('clawUpgradeAdvice: wie een kandidaat is', () => {
   it('splitst bij lv 20 in draagbaar en niet-draagbaar', () => {
     const a = advice(drafts, { ...base, level: 20, luk: 40, dex: 25 })
     expect(names(a)).toEqual(['Steel Titans'])
-    expect(a.notWearable).toEqual([{ claw: claw('Steel Igor'), needLuk: 5, needDex: 0 }])
+    expect(a.notWearable).toEqual([{ claw: claw('Steel Igor'), needs: [{ stat: 'luk', amount: 5 }] }])
   })
 })
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, requirementStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -233,11 +233,29 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     expect('profile' in t && toCharacter(t.profile).watk).toBe(47 + 15)
   })
 
-  it('geeft requirementStatOf STR voor een Warrior en LUK voor een Thief', () => {
+  it('geeft mainStatOf STR voor een Warrior, DEX voor een Bowman en LUK voor een Thief', () => {
+    const w = parseW()
+    const t = parseProfile(warriorDraft, 'thief')
+    const b = parseProfile(warriorDraft, 'bowman')
+    if (!('profile' in w) || !('profile' in t) || !('profile' in b)) throw new Error('profiel ongeldig')
+    expect(mainStatOf(w.profile)).toBe(132)
+    expect(mainStatOf(t.profile)).toBe(4)
+    expect(mainStatOf(b.profile)).toBe(b.profile.dex)
+    // Bij een Bowman staat DEX voorop in wat hij tekortkomt, STR erna.
+    expect(shortfall({ str: b.profile.str + 1, dex: b.profile.dex + 2 }, b.profile)).toEqual([{ stat: 'dex', amount: 2 }, { stat: 'str', amount: 1 }])
+  })
+
+  it('noemt met shortfall per stat wat je tekortkomt, de hoofdstat eerst, en laat een stat die je haalt weg (issue #69)', () => {
     const w = parseW()
     const t = parseProfile(warriorDraft, 'thief')
     if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
-    expect(requirementStatOf(w.profile)).toBe(132)
-    expect(requirementStatOf(t.profile)).toBe(4)
+    // Warrior: STR 132, DEX 30. Dezelfde eis geeft STR eerst; DEX haalt hij.
+    expect(shortfall({ dex: 140, str: 140 }, w.profile)).toEqual([{ stat: 'str', amount: 8 }, { stat: 'dex', amount: 110 }])
+    expect(shortfall({ str: 132, dex: 30 }, w.profile)).toEqual([])
+    // Thief: LUK 4 eerst, dan de rest in vaste volgorde.
+    expect(shortfall({ str: 140, luk: 10, dex: 31 }, t.profile)).toEqual([{ stat: 'luk', amount: 6 }, { stat: 'str', amount: 8 }, { stat: 'dex', amount: 1 }])
+    // Een stat die het item niet noemt, vraagt niets; het profiel heeft nog geen INT, dus een INT-eis is helemaal tekort.
+    expect(shortfall({}, t.profile)).toEqual([])
+    expect(shortfall({ int: 20 }, t.profile)).toEqual([{ stat: 'int', amount: 20 }])
   })
 })

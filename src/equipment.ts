@@ -12,7 +12,7 @@ import { BOWMAN_ARMOR, BOWMAN_WEAPONS, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
-import type { Armor, ArmorSlot, Claw, WornArmor, WornClaw } from './data/types'
+import type { ArmorPiece, ArmorSlot, Weapon, WornArmor, WornClaw } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
@@ -121,7 +121,7 @@ export const MAX_RESULTS = 8
  * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
  * (issue #43, de Magician), want een item van een andere job aanbieden zou onwaar zijn.
  */
-const SHOP: Partial<Record<Job, { weapons: readonly Claw[]; armor: readonly Armor[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
+const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
   thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: WORN_BOWMAN_ARMOR },
