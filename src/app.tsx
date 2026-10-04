@@ -414,10 +414,17 @@ const JOBS = [
  */
 function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const [open, setOpen] = useState(false)
+  const head = useRef<HTMLButtonElement>(null)
   const levels = skillLevels(props.draft)
+  // Inklappen vanaf onderaan: de focus (en daarmee het beeld) gaat terug naar de kop, anders sta je
+  // na het dichtklappen ergens verderop in de pagina.
+  const collapse = () => {
+    setOpen(false)
+    head.current?.focus()
+  }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name with-icon">
           <BookIcon />
           Skillpoints
@@ -451,6 +458,9 @@ function SkillsCard(props: { draft: ProfileDraft; error: string | null; onChange
                 ))}
             </div>
           ))}
+          <button type="button" class="collapse-foot" onClick={collapse}>
+            Inklappen
+          </button>
         </div>
       </Collapse>
     </section>

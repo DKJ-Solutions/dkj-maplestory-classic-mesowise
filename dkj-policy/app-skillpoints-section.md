@@ -58,6 +58,7 @@ niet eenduidig op MeowDB, dus de kaart toont wat je gezet hebt, geen "punten ove
 - [x] Dave: de Beginner-skills helemaal onderin de kaart
 - [x] Dave: de uitleg en de bronregel onder de skills weg; de naamsvermelding van NiaMeowDB staat onderaan de app, de bron per skill in src/data/skills.ts
 - [x] Dave: de kaart heet Skillpoints, zonder onderschrift (pointsPlaced viel daarmee weg), met een boek-icoon links van de kop
+- [x] Dave: onderaan de open kaart een knop Inklappen, want het pijltje in de kop is na het scrollen uit beeld; de focus gaat daarna terug naar de kop
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST
@@ -69,7 +70,8 @@ skills van een Thief tot de 2e job: eerst de zes van de 1e job (Nimble Body, Kee
 Disorder, Dark Sight, Lucky Seven), helemaal onderin de drie van de Beginner (Three Snails, Nimble Feet,
 Recovery), elk met het maximum van NiaMeowDB. Hier vul je je skill-levels in; ze staan niet meer bij je
 karakter. De kaart staat ook in het controlescherm na een level-up en in "Wat nu?" boven de skillvraag,
-zodat een punt dat je met "Punt zetten" zet daar meteen te zien is. In het advies rekenen nog steeds
+zodat een punt dat je met "Punt zetten" zet daar meteen te zien is. Onderaan de open kaart klap je hem
+weer in, zonder terug te scrollen naar de kop. In het advies rekenen nog steeds
 alleen Lucky Seven en Nimble Body mee.
 
 **Score:** 3
