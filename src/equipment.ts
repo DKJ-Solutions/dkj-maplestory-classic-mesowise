@@ -119,7 +119,7 @@ export const MAX_RESULTS = 8
 
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
- * items), de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
+ * items), de Warrior (zijn wapens en armor uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
  * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
  * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
  * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde

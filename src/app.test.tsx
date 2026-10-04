@@ -913,6 +913,177 @@ describe('een Warrior in de app', () => {
   })
 })
 
+describe('het geslacht (issue #55)', () => {
+  const GENDER_KEY = 'mesowise.gender.v1'
+  const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
+  const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
+  // De zichtbare jobkaart: in het menu als dat open staat, anders op het beginscherm (#86).
+  const card = () => (document.querySelector<HTMLElement>('dialog section.job') ?? document.querySelector<HTMLElement>('section.job'))!
+  const group = () => within(card()).getByRole('group', { name: 'Gender:' })
+  const button = (name: 'Male' | 'Female') => within(group()).getByRole('button', { name })
+  const pressed = (name: 'Male' | 'Female') => button(name).getAttribute('aria-pressed')
+
+  it('toont de groep Gender: met de knoppen Male en Female, allebei nog niet gekozen, en een hint', () => {
+    expect(within(group()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Male', 'Female'])
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
+
+  it('schrijft niets weg zolang de speler niets kiest', () => {
+    expect(localStorage.getItem(GENDER_KEY)).toBeNull()
+  })
+
+  const JOB_KEY = 'mesowise.job.v1'
+  const jobTitle = () => card().querySelector('h2')!.textContent
+  const withWarrior = (gender?: 'male' | 'female') => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
+    if (gender) localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender }))
+    render(<App />)
+    // Met job en geslacht gekozen staat de kaart alleen nog in het menu.
+    if (gender) fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
+  }
+
+  it('bewaart bij een klik op Female meteen de keuze (de eerste keuze); de rij Gender: en de hint verdwijnen (Dave: scheelt hoogte)', () => {
+    fireEvent.click(button('Female'))
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+  })
+
+  it('toont de uitleg "Kies je job; daarna ligt hij vast" niet meer (Dave, 4 oktober 2026)', () => {
+    expect(screen.queryByText(/daarna ligt hij vast/)).toBeNull()
+  })
+
+  it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Gender:"', () => {
+    expect(jobTitle()).toBe('Job:')
+    const [job, gender] = Array.from(card().querySelectorAll('h2'))
+    expect(gender.tagName).toBe(job.tagName)
+    expect(gender.textContent).toBe('Gender:')
+  })
+
+  it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
+    withWarrior()
+    expect(jobTitle()).toBe('Warrior')
+    fireEvent.click(button('Female'))
+    // Job en geslacht gekozen: de kaart staat nu alleen nog in het menu.
+    fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
+    expect(jobTitle()).toBe('Warrior (f)')
+    withWarrior('male')
+    expect(jobTitle()).toBe('Warrior (m)')
+  })
+
+  const pencil = () => within(card()).getByRole('button', { name: /^Job en geslacht (niet )?wijzigen$/ })
+  const save = () => within(card()).queryByRole('button', { name: 'Opslaan' })
+  const jobButton = (name: string) => within(within(card()).getByRole('group', { name: 'Job:' })).getByRole('button', { name })
+
+  it('toont met het potlood de rij weer, met je keuze ingedrukt, en nog geen Opslaan', () => {
+    withWarrior('female')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(pressed('Male')).toBe('false')
+    expect(save()).toBeNull()
+  })
+
+  it('laat met het potlood open Opslaan verschijnen zodra je iets wijzigt, en weer verdwijnen als je terugkiest', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(button('Male'))
+    expect(pressed('Male')).toBe('true')
+    expect(save()).toBeTruthy()
+    // Nog niets vastgelegd: alleen een concept.
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    fireEvent.click(button('Female'))
+    expect(save()).toBeNull()
+  })
+
+  it('legt bij Opslaan job en geslacht samen vast en sluit de rijen', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(save()!)
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
+    expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'thief' })
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(save()).toBeNull()
+    expect(jobTitle()).toBe('Thief (m)')
+  })
+
+  it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
+    withWarrior('female')
+    const icon = () => pencil().querySelector('path')!.getAttribute('d')
+    const closed = icon()
+    fireEvent.click(pencil())
+    expect(icon()).toBe('M6 6l12 12M18 6L6 18')
+    fireEvent.click(pencil())
+    expect(icon()).toBe(closed)
+  })
+
+  it('gooit het concept weg als je het potlood weer dichtklikt', () => {
+    withWarrior('female')
+    fireEvent.click(pencil())
+    fireEvent.click(jobButton('Thief'))
+    fireEvent.click(button('Male'))
+    fireEvent.click(pencil())
+    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
+    expect(jobTitle()).toBe('Warrior (f)')
+    fireEvent.click(pencil())
+    expect(pressed('Female')).toBe('true')
+    expect(save()).toBeNull()
+  })
+
+  it('leest een bewaarde keuze bij het starten: geen rij Gender: en geen hint', () => {
+    withWarrior('female')
+    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+    expect(screen.queryByText(JOB_HINT)).toBeNull()
+    expect(jobTitle()).toBe('Warrior (f)')
+  })
+
+  it('behandelt een onbruikbare bewaarde keuze als nog niet gekozen', () => {
+    cleanup()
+    localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'other' }))
+    render(<App />)
+    expect(pressed('Male')).toBe('false')
+    expect(pressed('Female')).toBe('false')
+    expect(screen.getByText(JOB_HINT)).toBeTruthy()
+  })
+
+  describe('op het adviesscherm', () => {
+    const toAdvice = () => {
+      cleanup()
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          spots: [
+            { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+            { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+          ],
+        }),
+      )
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+      render(<App />)
+      levelUp()
+      fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+    }
+    const armorSection = () => screen.getByText('Moet ik mijn defense nu upgraden?').closest('section')!
+
+    it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
+      toAdvice()
+      expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
+    })
+
+    it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
+      localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
+      toAdvice()
+      expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
+    })
+  })
+})
+
 describe('een Bowman in de app', () => {
   // Level 20 Bowman: DEX 80 voor schade, STR 20, een War Bow (30 ATT, 810 ms) en Arrow Blow 1.
   const bowmanFields = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', arrowBlow: '1' }
@@ -1246,25 +1417,29 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('toont de jobkaart op het beginscherm zolang er geen job is gekozen, en daarna alleen in het menu', () => {
+  it('toont de jobkaart op het beginscherm tot job en geslacht gekozen zijn (#55), en daarna alleen in het menu', () => {
     expect(homeJobCard()).not.toBeNull()
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    expect(homeJobCard()).not.toBeNull()
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     const menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Je job: Warrior' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Warrior (m)' })).toBeTruthy()
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     let menu = openMenu()
-    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht wijzigen' }))
     fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
+    fireEvent.click(menu.getByRole('button', { name: 'Opslaan' }))
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
     fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
     menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Je job: Thief' })).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
   })
 })

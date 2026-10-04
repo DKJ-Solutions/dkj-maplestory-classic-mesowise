@@ -681,11 +681,14 @@ describe('equipment voor een Warrior', () => {
       expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21 })
     })
 
-    it('geeft een Warrior tops en broeken: de items zonder prijs, zonder eisen', () => {
+    it('geeft een Warrior tops en broeken: eerst de winkelstukken, dan de items zonder prijs, elke naam één keer; niet op geslacht gefilterd', () => {
       for (const slot of ['top', 'bottom'] as const) {
-        expect(catalogItems(slot, 'warrior').map((i) => i.name), slot).toEqual(WORN_WARRIOR_ARMOR.filter((a) => a.slot === slot).map((a) => a.name))
+        const names = [...NPC_WARRIOR_ARMOR, ...WORN_WARRIOR_ARMOR].filter((a) => a.slot === slot).map((a) => a.name)
+        expect(catalogItems(slot, 'warrior').map((i) => i.name), slot).toEqual(names.filter((n, i) => names.indexOf(n) === i))
         expect(catalogItems(slot, 'warrior').length, slot).toBeGreaterThan(0)
       }
+      // De speler zegt zelf wat hij draagt: mannen- en vrouwenstukken staan er allebei in.
+      expect(catalogItems('top', 'warrior').map((i) => i.name)).toEqual(expect.arrayContaining(['Brown Lolico Armor', 'Orange Lolica Armor']))
     })
 
     it('deelt de items zonder jobregel met de Thief: dezelfde rijen, niet gekopieerd', () => {
@@ -924,7 +927,11 @@ describe('overall (issue #50)', () => {
   it('zoekt de Sauna Robe in het overall-slot, en nergens anders', () => {
     expect(searchCatalog('overall', 'thief', 'sauna').map((i) => [i.name, i.level, i.stat])).toEqual([['Blue Sauna Robe', 30, 75]])
     expect(catalogItems('top', 'thief').map((i) => i.name)).not.toContain('Blue Sauna Robe')
-    expect(catalogItems('overall', 'warrior').map((i) => i.name)).toEqual(['Blue Sauna Robe'])
+    // De Warrior heeft ook de winkel-overalls (Steel Fitted Mail, Kendo Robe, Dragon Robe, Dark Engrit) en de Sauna Robe één keer (#55).
+    const warriorOveralls = catalogItems('overall', 'warrior').map((i) => i.name)
+    expect(warriorOveralls).toEqual(expect.arrayContaining(['Steel Fitted Mail', 'Blue Kendo Robe', 'Black Dragon Robe', 'Dark Engrit', 'Blue Sauna Robe']))
+    expect(warriorOveralls.filter((n) => n === 'Blue Sauna Robe')).toHaveLength(1)
+    expect(new Set(warriorOveralls).size).toBe(warriorOveralls.length)
     // Een Magician heeft sinds #43 de items zonder jobregel, en dus ook de Sauna Robe (#55).
     // en sinds #76 ook zijn eigen robe uit de winkel.
     expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
