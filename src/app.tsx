@@ -1850,7 +1850,7 @@ export function App() {
               <div class="level-row">
                 {/* De terugknop noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
                 <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Terug naar LV. ${levelDowned.level}` : 'Geen vorig level'}>
-                  {canLevelDown ? `LV. ${levelDowned.level}` : 'LV. –'}
+                  ‹ {canLevelDown ? `LV. ${levelDowned.level}` : 'LV. –'}
                 </button>
                 <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
                   {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
