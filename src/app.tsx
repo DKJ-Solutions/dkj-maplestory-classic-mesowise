@@ -26,7 +26,7 @@ import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gen
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { HP_POTION, hourPlan, isEstimated, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { HP_POTION, hourPlan, isEstimated, pickMonster, resolveSpot, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -271,7 +271,7 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
  * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
-/** De Attack uit het statvenster: geen opgeslagen veld, maar de weapon attack uit je equipment (totalAttack). */
+/** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
@@ -448,6 +448,19 @@ function StatsCard(props: {
   )
 }
 
+/**
+ * De Attack zoals het statvenster hem toont (issue #108): het schadebereik van een gewone aanval, dus met je ability
+ * points erin. Een Magician toont alleen de weapon attack: zijn gewone wand-aanval staat niet in de gegevens. Leeg (dus "?") zolang het profiel
+ * niet klopt.
+ */
+function attackText(draft: ProfileDraft, job: Job): string {
+  const parsed = parseProfile(draft, job)
+  const range = 'profile' in parsed ? statWindowRange(parsed.profile) : null
+  if (range) return `${nfInt.format(range.min)} – ${nfInt.format(range.max)}`
+  const attack = job === 'magician' ? totalAttack(draft, job) : null
+  return attack === null ? '' : nfInt.format(attack)
+}
+
 type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
 const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
 
@@ -461,8 +474,7 @@ function ProfileCard(props: StatsCardProps) {
 /** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const { job } = props
-  const attack = totalAttack(props.draft, job)
-  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attack === null ? '' : String(attack)} readOnly onSave={() => {}} />
+  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
   const mdef = wornMdef(props.equipment)
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
