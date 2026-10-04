@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**18 / 33 minor entries** <!-- pending-tally -->
+**18 / 34 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/49-ghetto-beanie · 20261004-102513Z
+
+Een Thief krijgt op level 10 nu ook een hoed in het armor-advies: de Ghetto Beanie (15 WDEF, 1.200 meso bij
+Don Hwang in Kerning City). Omdat hij goedkoop is, komt hij ook op hogere levels als hoed naar voren waar
+de Thief Hood duurder is dan wat hij extra bespaart.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Ghetto Beanie als level-10 Thief-hoed in de NPC-armor (#49)
+
+[PR #70](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/70)
+
+---
 
 ### DEPLOY: app/profile-stats-pencil · 20261004-101708Z
 
