@@ -6,7 +6,7 @@ import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { mesoCostAt } from './mesoCostAt'
-import type { Profile } from './profile'
+import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
 export type SkillId = 'luckySeven' | 'nimbleBody'
@@ -46,6 +46,30 @@ export const SKILLS: readonly Skill[] = [
 
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
 export const NOT_MODELLED: readonly string[] = ['Keen Eyes', 'Disorder', 'Dark Sight', 'Double Stab']
+
+/** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
+export interface SkillLevel {
+  id: SkillId
+  name: string
+  level: number | null
+  max: number
+}
+
+/**
+ * De skillpunten die de speler nu heeft gezet, per skill die het model kent. Leest het profiel zoals
+ * ingevuld, zodat de sectie ook klopt als een ander veld van je karakter nog niet goed is.
+ */
+export function skillLevels(draft: ProfileDraft): SkillLevel[] {
+  return SKILLS.map((s) => {
+    const text = draft[s.id].trim()
+    const n = text === '' ? NaN : Number(text)
+    const valid = Number.isInteger(n) && n >= 0 && n <= s.max
+    return { id: s.id, name: s.name, level: valid ? n : null, max: s.max }
+  })
+}
+
+/** Het aantal gezette punten in de skills die het model kent; een ongeldig veld telt niet mee. */
+export const pointsPlaced = (levels: readonly SkillLevel[]): number => levels.reduce((sum, s) => sum + (s.level ?? 0), 0)
 
 /** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {

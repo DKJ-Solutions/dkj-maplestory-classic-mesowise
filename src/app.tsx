@@ -15,7 +15,7 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, pointsPlaced, skillLevels, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, CHECK_FIELDS, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isDefaultProfile, loadProfile, parseProfile, PROFILE_FIELDS, saveProfile, type Profile, type ProfileDraft } from './profile'
@@ -391,7 +391,46 @@ function EquipmentCard(props: {
   )
 }
 
-function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
+/** "1 punt" of "3 punten". */
+const points = (n: number) => `${n} ${n === 1 ? 'punt' : 'punten'}`
+
+/**
+ * De skillpunten die je nu hebt gezet, per skill die de app kan doorrekenen. Alleen om te lezen: je vult
+ * ze in bij je karakter, en "Punt zetten" in het advies telt hier meteen mee.
+ */
+function SkillsCard(props: { draft: ProfileDraft }) {
+  const [open, setOpen] = useState(false)
+  const levels = skillLevels(props.draft)
+  const unknown = levels.some((s) => s.level === null)
+  const summary = levels.map((s) => `${s.name} ${s.level ?? '?'}`).join(', ')
+  return (
+    <section class="card skills">
+      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name">Je skillpunten</span>
+        <span class="spot-exp">
+          {points(pointsPlaced(levels))} gezet: {summary}
+        </span>
+      </button>
+      <Collapse open={open}>
+        <div class="spot-body">
+          <ul class="skill-list">
+            {levels.map((s) => (
+              <li key={s.id}>
+                <span>{s.name}</span>
+                <span>{s.level === null ? 'niet ingevuld' : `${s.level} / ${s.max}`}</span>
+              </li>
+            ))}
+          </ul>
+          {unknown && <p class="hint">Een skill met "niet ingevuld" telt niet mee. Vul hem in bij je karakter.</p>}
+          <p class="hint">Pas je skill-levels aan bij je karakter. Zet je een punt via het advies, dan staat het hier meteen.</p>
+          <p class="hint">Niet bijgehouden: {listFormat.format(NOT_MODELLED)}.</p>
+        </div>
+      </Collapse>
+    </section>
+  )
+}
+
+function KnownSpotPicker(props:{ value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
   const onChange = (e: Event) => props.onChange(knownSpotPatch((e.currentTarget as HTMLSelectElement).value))
   return (
     <label class="field">
@@ -1117,6 +1156,7 @@ export function App() {
             />
 
             <ProfileCard draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
+            <SkillsCard draft={profileDraft} />
 
             <LevelCostCard cost={cost} />
             <SkillPointCard advice={skillAdvice} />
@@ -1223,7 +1263,8 @@ export function App() {
             <AdviceHeader cost={cost} />
             <ClawQuestion advice={clawAdvice} cost={cost} />
             <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
-            <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
+            <SkillsCard draft={profileDraft} />
+            <SkillQuestion advice={skillAdvice}cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
             <button
               type="button"

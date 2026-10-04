@@ -250,6 +250,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-other { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0.75rem; margin-top: 0.5rem; }
 .equip-other input { min-height: 44px; }
 
+/* Je skillpunten: inklapbaar zoals je equipment; per skill een regel met het level en het maximum */
+.skills { padding: 0; overflow: hidden; }
+.skills .spot-body { padding-top: 0.875rem; }
+.skill-list { list-style: none; margin: 0 0 0.75rem; padding: 0; }
+.skill-list li { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border); }
+.skill-list li span:last-child { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
 .advice-cost strong { color: var(--accent); }

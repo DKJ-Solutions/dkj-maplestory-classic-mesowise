@@ -6,7 +6,7 @@ import { expToNextLevel } from './data/expTable'
 import { knownSpotPatch } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
-import { NOT_MODELLED, SKILLS, skillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, pointsPlaced, SKILLS, skillLevels, skillPointAdvice } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
@@ -99,5 +99,47 @@ describe('skillPointAdvice', () => {
     expect(skillPointAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(skillPointAdvice(drafts, { ...profile, level: 31 })).toEqual({ kind: 'none' })
     expect(skillPointAdvice([own('a', 40_000, 10_000)], profile)).toEqual({ kind: 'none' })
+  })
+})
+
+describe('skillLevels', () => {
+  it('geeft per skill het gezette level en het maximum, in de volgorde van SKILLS', () => {
+    const levels = skillLevels({ ...DEFAULT_PROFILE, luckySeven: '3', nimbleBody: '2' })
+    expect(levels).toEqual([
+      { id: 'luckySeven', name: 'Lucky Seven', level: 3, max: LUCKY_SEVEN_LEVELS.length },
+      { id: 'nimbleBody', name: 'Nimble Body', level: 2, max: NIMBLE_BODY.maxLevel },
+    ])
+  })
+
+  it('leest een veld met spaties eromheen gewoon', () => {
+    expect(skillLevels({ ...DEFAULT_PROFILE, luckySeven: ' 4 ' })[0].level).toBe(4)
+  })
+
+  it('accepteert 0 en het maximum', () => {
+    const levels = skillLevels({ ...DEFAULT_PROFILE, luckySeven: '0', nimbleBody: String(NIMBLE_BODY.maxLevel) })
+    expect(levels.map((s) => s.level)).toEqual([0, NIMBLE_BODY.maxLevel])
+  })
+
+  it.each(['', 'abc', '-1', '1.5', String(LUCKY_SEVEN_LEVELS.length + 1)])('geeft null bij een ongeldig veld (%j)', (text) => {
+    expect(skillLevels({ ...DEFAULT_PROFILE, luckySeven: text })[0].level).toBeNull()
+  })
+
+  it('kijkt alleen naar de skillvelden: een ongeldig ander veld maakt niets uit', () => {
+    const levels = skillLevels({ ...DEFAULT_PROFILE, level: '', luckySeven: '5' })
+    expect(levels[0].level).toBe(5)
+  })
+})
+
+describe('pointsPlaced', () => {
+  it('telt de gezette punten van alle skills op', () => {
+    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, luckySeven: '3', nimbleBody: '2' }))).toBe(5)
+  })
+
+  it('telt een ongeldig veld niet mee', () => {
+    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, luckySeven: 'x', nimbleBody: '2' }))).toBe(2)
+  })
+
+  it('is 0 zonder punten', () => {
+    expect(pointsPlaced(skillLevels({ ...DEFAULT_PROFILE, luckySeven: '0', nimbleBody: '0' }))).toBe(0)
   })
 })
