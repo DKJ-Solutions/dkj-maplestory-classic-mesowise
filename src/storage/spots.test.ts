@@ -168,6 +168,14 @@ describe('de verwijzing naar een bekende plek (known)', () => {
     expect(loadSpots(stored([{ ...spot('b'), monster: 3, kills: '' }]))).toEqual([spot('b')])
   })
 
+  it('neemt de aanpassingen van een mob mee, en laat ze weg als ze leeg of geen tekst zijn', () => {
+    const storage = fakeStorage()
+    const drafts = [spot('a', { known: 'mob:Pig', monster: 'Pig', mobHp: '200', mobExp: '20', mobTouchMin: '1', mobTouchMax: '2', mobWdef: '5' })]
+    saveSpots(storage, drafts)
+    expect(loadSpots(storage)).toEqual(drafts)
+    expect(loadSpots(stored([{ ...spot('b'), mobHp: 200, mobWdef: '' }]))).toEqual([spot('b')])
+  })
+
   it('wordt begrensd in lengte', () => {
     const rows = loadSpots(stored([spot('a', { known: 'k'.repeat(MAX_KNOWN_LENGTH + 20) })]))
     expect(rows?.[0].known).toHaveLength(MAX_KNOWN_LENGTH)

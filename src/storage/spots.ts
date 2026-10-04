@@ -2,7 +2,7 @@
 // wordt elke rij gecontroleerd en wat ongeldig is valt weg. De Storage komt als parameter
 // binnen (test-seam); null betekent "geen opslag beschikbaar".
 import type { Spot } from '../calc/rankSpots'
-import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
+import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, MOB_KEYS, type SpotDraft } from '../spotDraft'
 
 export const STORAGE_KEY = 'mesowise.spots.v1'
 const VERSION = 1
@@ -25,7 +25,7 @@ export function isDraftRow(v: unknown): v is SpotDraft {
 }
 
 /** De optionele velden van een bekende plek: alleen een niet-lege tekst blijft staan. */
-const OPTIONAL = ['known', 'monster', 'kills'] as const
+const OPTIONAL = ['known', 'monster', 'kills', ...MOB_KEYS] as const
 
 /**
  * Alleen de bekende velden overnemen, met een begrensde naam. Een optioneel veld dat geen niet-lege

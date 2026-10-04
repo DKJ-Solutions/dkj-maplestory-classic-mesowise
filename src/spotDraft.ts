@@ -20,7 +20,17 @@ export interface SpotDraft {
   monster?: string
   /** Bij een bekende plek: kills per uur (leeg = het voorstel). */
   kills?: string
+  /** Bij een mob: je eigen getal voor een eigenschap, alleen als het afwijkt van de database (zie MOB_FIELDS). */
+  mobHp?: string
+  mobExp?: string
+  mobTouchMin?: string
+  mobTouchMax?: string
+  mobWdef?: string
 }
+
+/** De velden waarin je de eigenschappen van een mob corrigeert (Dave, 4 oktober 2026). */
+export const MOB_KEYS = ['mobHp', 'mobExp', 'mobTouchMin', 'mobTouchMax', 'mobWdef'] as const
+export type MobKey = (typeof MOB_KEYS)[number]
 
 /** Tekst naar getal; een leeg veld is NaN (Number('') zou stilletjes 0 geven). */
 export function parseAmount(text: string): number {

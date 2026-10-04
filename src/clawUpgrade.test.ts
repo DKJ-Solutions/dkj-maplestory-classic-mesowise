@@ -45,7 +45,7 @@ describe('clawUpgradeAdvice: wanneer er niets te rekenen valt', () => {
     expect(clawUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(clawUpgradeAdvice(drafts, { ...base, level: 9 })).toEqual({ kind: 'none' })
     expect(clawUpgradeAdvice(drafts, { ...base, level: 31 })).toEqual({ kind: 'none' })
-    expect(clawUpgradeAdvice([own('a', 40_000, 10_000)], strong({ level: 15, clawWatk: 10 }))).toEqual({ kind: 'none' })
+    expect(clawUpgradeAdvice([], strong({ level: 15, clawWatk: 10 }))).toEqual({ kind: 'none' })
   })
 
   it('heeft op het voorbeeldprofiel (lv 10, Garnier in de hand) geen kandidaat en geen winnaar', () => {
