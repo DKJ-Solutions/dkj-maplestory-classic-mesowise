@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**33 / 70 minor entries** <!-- pending-tally -->
+**34 / 71 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/126-merge-home-cards · 20261004-142657Z
+
+The home screen has one card instead of three. It answers "Wat kost dit level?" and then the three questions
+that make the level cheaper, each with a Ja/Nee chip: equipment (weapon and armor together), switching mob,
+and a skill point, with the extra MP of an attack skill named. The mob question compares the mob you hunt
+with every other mob in the data and never advises a dangerous one. It also replaces the hunting-ground
+question on the advice screen after a level-up, which could only ever answer "stay" since #124.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+At every level the player sees on one card whether to buy equipment, switch mob or place a skill point,
+instead of a level cost and two loose cards that disappeared when there was nothing to say.
+
+**Score:** 4
+
+#### Pull Request
+
+Merge the level cost and the equipment, mob and skill-point advice into one home card
+
+[PR #132](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/132)
+
+---
 
 ### DEPLOY: app/130-level-up-row · 20261004-142107Z
 
