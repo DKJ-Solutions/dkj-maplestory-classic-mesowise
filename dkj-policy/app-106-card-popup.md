@@ -55,6 +55,10 @@ it shows what the dropdown used to show, in a popup.
 - [x] Tycho: tests updated for content that only exists while the popup is open; new tests for the eye and
   popup, closing and focus return, a kept pick after reopening, a new spot opening in its popup, and the
   inline equipment on the check screen
+- [x] Cody: the explanation texts under the stats cards are gone (Dave, October 4, 2026: "Dit gaat de speler
+  toch niet lezen"): the Attack/Weapon Def line, and the Thief, Bowman and Warrior texts under Total stats,
+  including the weapon multiplier per kind of weapon; `WEAPON_MULT_BY_KIND` went with them, unused
+- [x] Tycho: the tests on those texts now assert that they are gone
 
 ### TEST
 
@@ -66,13 +70,14 @@ it shows what the dropdown used to show, in a popup.
 The cards no longer fold open. Each card head ends in an eye icon, and tapping it shows the card's content
 in a popup (a bottom sheet on a phone); the cross closes it and puts the focus back on the card. A new spot
 opens straight into its popup. On the level-up check screen the equipment stays directly on the card.
+The explanation texts under Ability points and Total stats are gone.
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
 Dave and his friends see the cards change: the content opens in a popup behind an eye icon instead of
-folding open under the card.
+folding open under the card, and the stats popups no longer end in a block of explanation.
 
 **Score:** 3
 
