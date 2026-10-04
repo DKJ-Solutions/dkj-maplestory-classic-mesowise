@@ -47,7 +47,7 @@
 ### TEST
 
 - [x] `npm test` (1204 passed) and `npm run lint` green
-- [ ] Dave looks at the label on the phone before the merge (visible result)
+- [x] Dave looked at the label in the preview and approved the merge
 
 ### DEPLOY: app/equip-label
 
