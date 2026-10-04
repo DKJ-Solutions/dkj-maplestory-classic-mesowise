@@ -1061,7 +1061,7 @@ describe('een Warrior in de app', () => {
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
       const text = panels()[2].textContent!
-      expect(text).toMatch(/Niet doorgerekend: Improved HP Recovery, Max HP Increase, Iron Body en Slash Blast/)
+      expect(text).toMatch(/Niet doorgerekend: Max HP Increase, Iron Body en Slash Blast/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven/)
     })
 
@@ -1572,7 +1572,7 @@ describe('een Magician in de app', () => {
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
       const text = panels()[2].textContent!
-      expect(text).toMatch(/Niet doorgerekend: Magic Guard, Magic Armor, Improved MP Recovery en Max MP Increase/)
+      expect(text).toMatch(/Niet doorgerekend: Magic Guard, Magic Armor en Max MP Increase/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Power Strike|Slash Blast/)
     })
 

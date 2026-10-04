@@ -39,19 +39,41 @@
 
 ### PLAN
 
+#### The issue's open questions, answered
+
+- **Does the bonus apply to every potion?** Both MeowDB skill pages say "HP/MP recovered from items", with no
+  potion named, so it is applied to every potion the app picks (Orange, Blue, the Magician's Orange and Lemon).
+  Because it is the same percentage on every potion, the cheapest potion per point stays the same.
+- **The per-10-seconds recovery** stays out: the HP page gives no number, and the MP one is a share of Max MP,
+  which the profile does not have.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `potionFactorOf` in `src/suggest.ts` turns the skill level into a factor (1 at level 0, 1.05 at 1, 1.2 at 15); `MonsterSuggestion.potionFactor` carries it and `hourPlan` divides HP and MP potions by heal x factor
+- [x] Cody: Improved HP Recovery joins `WARRIOR_MODELLED` and Improved MP Recovery joins `MAGICIAN_MODELLED` in `src/skillPoint.ts`, so the skill advice can recommend them; both leave the "Niet doorgerekend" lists
 
 ### TEST
 
+- [x] Tycho: the factor table by hand (levels 0, 1, 14, 15, above max, HP and MP apart), `hourPlan` with factor 1.2 (a sixth fewer potions, EXP and ammo unchanged), a Warrior with the skill on 15, a point in either skill saving mesos; the lists and choices in the existing tests updated; vitest 1272/1272 green, typecheck clean
+- [ ] Victor: code review
+- [x] Lint gate clean
+- [ ] Dave looked at the skill advice and the "Niet doorgerekend" line
+
 ### DEPLOY: app/141-potion-recovery-skill
 
-**Score:**
+A point in Improved HP Recovery (Warrior) or Improved MP Recovery (Magician) now counts in the potion cost:
+each potion heals 5% to 20% more, so the model needs that many fewer potions per hour. Both skills are now
+options in the skill advice and no longer listed under "Niet doorgerekend". The per-10-seconds recovery is
+still not counted.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A Warrior or Magician sees what a point in their recovery skill saves on potions, and the advice can now
+recommend it when it beats a damage skill.
+
+**Score:** 3
 
 #### Pull Request
 
