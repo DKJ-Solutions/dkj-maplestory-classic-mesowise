@@ -237,7 +237,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .level-row .btn { position: relative; width: 100%; height: 36px; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
 /* Kleiner in beeld, maar het tikvlak blijft 44px hoog. */
 .level-row .btn::after { content: ''; position: absolute; inset: -4px 0; }
-/* BACK: verder de knoppen Male en Female (.btn). */
+/* BACK: de rand van .btn maar zonder witte vulling, zodat hij niet lijkt op de kaartknoppen zoals Equip (Dave, 4 oktober 2026). */
+.btn.level-down { background: transparent; }
 .level-row .btn:disabled { opacity: 0.45; }
 /* Het level groot, en ook verticaal precies tussen de knoppen: text-box knipt de ruimte boven en onder de hoofdletters weg,
    zodat het midden van het vak het midden van de letters is (Dave, 4 oktober 2026). */
