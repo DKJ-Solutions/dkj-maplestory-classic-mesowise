@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statOverride, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statOverride, UNKNOWN, wornName, wornStat, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -330,6 +330,10 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
       setActive(0)
     } else if (rows.length > 0) setActive((to + rows.length) % rows.length)
   }
+  // Na een tik op de naam staat de zoekbalk er pas na de render: dan pas focussen.
+  useEffect(() => {
+    if (open) input.current?.focus()
+  }, [open])
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -342,13 +346,21 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
       setText(null)
     }
   }
+  const picked = wornName(entry)
+  const slotLabel = EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
   return (
     <div class="equip-search">
+      {/* Ingevuld en niet aan het zoeken: de naam als tekst die mag afbreken (de kolom is smal op een telefoon); een tik opent de zoekbalk */}
+      {!open && picked !== null ? (
+        <button type="button" class="equip-picked" aria-label={`${slotLabel}: ${picked}. Tik om te zoeken.`} onClick={() => { setText(''); setActive(0) }}>
+          {picked}
+        </button>
+      ) : (
       <input
         ref={input}
         type="text"
         role="combobox"
-        aria-label={`Zoek je ${EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot}`}
+        aria-label={`Zoek je ${slotLabel}`}
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
@@ -371,6 +383,7 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
         }}
         onKeyDown={onKeyDown}
       />
+      )}
       {open && rows.length > 0 && (
         // mousedown niet laten blurren: anders sluit de lijst voordat de tik als keuze aankomt.
         <ul class="equip-list" id={`${id}-list`} role="listbox" onMouseDown={(e) => e.preventDefault()}>
@@ -408,6 +421,8 @@ function EquipmentCard(props: {
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
   const uid = useId()
+  // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
+  const [editing, setEditing] = useState<EquipSlot | null>(null)
   const worn = wornSummary(props.equipment)
   return (
     <section class="card equipment">
@@ -425,43 +440,69 @@ function EquipmentCard(props: {
             const db = databaseStat(slot, entry)
             const own = statOverride(slot, entry)
             const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
-            // Welke van de twee de app gebruikt: de waarde uit je game zodra je die aanpast (of bij een eigen item), anders de verwachting.
-            const gameCounts = own !== undefined || db === undefined
+            // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
+            const value = wornStat(slot, entry)
+            const isEditing = editing === slot
+            const reset = () => {
+              props.onStatInput(slot, '')
+              props.onCommit(slot)
+            }
             const step = (by: number) => {
               const n = Number(shown.trim())
               props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
               props.onCommit(slot)
             }
             return (
-              <div class="equip-row" key={slot}>
+              <div class={entry.pick === UNKNOWN ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
                   <EquipSearch slot={slot} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                 </div>
                 {entry.pick !== UNKNOWN && (
-                  // Links wat de database verwacht, rechts wat je game zegt: dat telt. Bij een eigen item kent de app geen verwachting.
                   <div class="equip-stats">
-                    <div class={gameCounts ? 'field ignored' : 'field counts'}>
-                      <span>{stat} (verwacht)</span>
-                      <output class="equip-db" aria-label={`${stat} volgens de database${gameCounts ? ', telt niet' : ', telt'}`}>{db ?? '–'}</output>
+                    <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
+                      <span class="equip-value-label">{stat}</span>
+                      <span class="equip-value-num">
+                        {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
+                        <strong>{value ?? '?'}</strong>
+                      </span>
                     </div>
-                    <div class={gameCounts ? 'field counts' : 'field'}>
-                      <span id={`${uid}-${slot}-game`}>{stat} (in game)</span>
-                      {/* Op een telefoon: - en + passen met één tik aan en tellen meteen; tik je op het getal, dan is het
-                          geselecteerd en vervangt wat je typt het hele getal. */}
-                      <div class="equip-step">
-                        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
-                        <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`} aria-description={gameCounts ? 'telt' : 'telt niet'}
-                          value={shown}
-                          onFocus={(e) => e.currentTarget.select()}
-                          onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                          onChange={() => props.onCommit(slot)}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-                        />
-                        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+                    <button type="button" class={isEditing ? 'equip-edit open' : 'equip-edit'} aria-expanded={isEditing} aria-controls={`${uid}-${slot}-edit`}
+                      aria-label={isEditing ? 'Klaar met corrigeren' : `${stat} corrigeren`}
+                      onClick={() => {
+                        if (isEditing) props.onCommit(slot)
+                        setEditing(isEditing ? null : slot)
+                      }}
+                    >
+                      {isEditing ? (
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      )}
+                    </button>
+                    {isEditing && (
+                      // Corrigeren: - en + tellen meteen; tik je op het getal, dan is het geselecteerd en vervangt wat je typt het hele getal.
+                      <div class="equip-editor" id={`${uid}-${slot}-edit`}>
+                        <span id={`${uid}-${slot}-game`}>{stat} in game</span>
+                        <div class="equip-step">
+                          <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+                          <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
+                            value={shown}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                            onChange={() => props.onCommit(slot)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                          />
+                          <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+                        </div>
+                        {own !== undefined && db !== undefined && (
+                          <button type="button" class="equip-reset" onClick={reset}>
+                            Terug naar {db}
+                          </button>
+                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
