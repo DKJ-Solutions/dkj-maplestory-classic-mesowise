@@ -15,11 +15,12 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
-import { isDefaultProfile, loadProfile, parseProfile, profileFieldsFor, saveProfile, type Profile, type ProfileDraft } from './profile'
+import { isDefaultProfile, loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -156,7 +157,7 @@ function ProfileCard(props: {
               ? 'Een voorbeeld-Thief op lv 10. Vul je eigen karakter in voor betere voorstellen.'
               : 'Een voorbeeldkarakter op lv 10. Vul je eigen karakter in.'
             : thief
-              ? `lv ${draft.level || '?'}, LUK ${draft.luk || '?'}, Lucky Seven ${draft.luckySeven || '?'} · gebruikt voor de voorstellen`
+              ? `lv ${draft.level || '?'}, LUK ${draft.luk || '?'} · gebruikt voor de voorstellen`
               : `lv ${draft.level || '?'}, Max HP ${draft.hp || '?'}`}
         </span>
       </button>
@@ -165,7 +166,7 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {profileFieldsFor(job).map((f) => (
+          {STAT_FIELDS.map((f) => (
             <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
           ))}
           {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
@@ -456,6 +457,102 @@ function EquipmentCard(props: {
               , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
             </p>
           )}
+        </div>
+      </Collapse>
+    </section>
+  )
+}
+
+/** Een open boek, het icoon van Skillpoints. Eigen tekening, zodat er niets uit het spel in de repo komt. */
+function BookIcon() {
+  return (
+    <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5Z" />
+      <path d="M12 6v13.5" />
+    </svg>
+  )
+}
+
+const SKILL_GROUPS = [
+  { job: 'Thief', title: 'Thief (1e job)' },
+  // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
+  { job: 'Beginner', title: 'Beginner' },
+] as const
+
+/**
+ * De skillpunten die je nu hebt gezet: elke skill van een Thief tot de 2e job, met zijn maximum. Hier vul
+ * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een andere job dan Thief ziet alleen de
+ * Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
+ */
+function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
+  const [open, setOpen] = useState(false)
+  const head = useRef<HTMLButtonElement>(null)
+  const shown = profileFieldsFor(props.job).map((f) => f.key)
+  const levels = skillLevels(props.draft).filter((s) => shown.includes(s.key))
+  // Inklappen vanaf onderaan: de focus (en daarmee het beeld) gaat terug naar de kop, anders sta je
+  // na het dichtklappen ergens verderop in de pagina.
+  const collapse = () => {
+    setOpen(false)
+    head.current?.focus()
+  }
+  return (
+    <section class={`card skills${props.error ? ' invalid' : ''}`}>
+      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name with-icon">
+          <BookIcon />
+          Skillpoints
+        </span>
+      </button>
+      <p class="error" aria-live="polite">
+        {props.error}
+      </p>
+      <Collapse open={open}>
+        <div class="spot-body">
+          {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
+            <div class="skill-group" key={job}>
+              <h3>{title}</h3>
+              {levels
+                .filter((s) => s.job === job)
+                .map((s) => (
+                  <div class="skill-row" key={s.key}>
+                    <span>{s.name}</span>
+                    <span class="skill-input">
+                      <button
+                        type="button"
+                        class="step"
+                        aria-label={`${s.name} een level lager`}
+                        disabled={s.level === 0}
+                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], -1, s.max) })}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={s.max}
+                        aria-label={`${s.name}, level van 0 tot ${s.max}`}
+                        value={props.draft[s.key]}
+                        onInput={(e) => props.onChange({ [s.key]: (e.currentTarget as HTMLInputElement).value })}
+                      />
+                      <button
+                        type="button"
+                        class="step"
+                        aria-label={`${s.name} een level hoger`}
+                        disabled={s.level === s.max}
+                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], 1, s.max) })}
+                      >
+                        +
+                      </button>
+                      <small>/ {s.max}</small>
+                    </span>
+                  </div>
+                ))}
+            </div>
+          ))}
+          <button type="button" class="collapse-foot" onClick={collapse}>
+            Inklappen
+          </button>
         </div>
       </Collapse>
     </section>
@@ -1006,6 +1103,9 @@ export function App() {
   // De berekening is die van de Thief. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   const profile = computed ? parsedProfile : null
+  // De melding staat bij de kaart waar het foute veld staat.
+  const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
+  const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   const [openId, setOpenId] = useState<string | null>(null)
   // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
   // openen, sluiten, toevoegen en verwijderen.
@@ -1232,7 +1332,8 @@ export function App() {
               onCommit={commitEquipment}
             />
 
-            <ProfileCard job={job} draft={profileDraft} error={'error' in parsed ? parsed.error : null} onChange={updateProfile} />
+            <ProfileCard job={job} draft={profileDraft} error={statError} onChange={updateProfile} />
+            <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
 
             {computed ? (
               <>
@@ -1313,7 +1414,7 @@ export function App() {
                 />
               ))}
               <p class="error" aria-live="polite">
-                {'error' in parsed ? parsed.error : null}
+                {statError}
               </p>
             </div>
             <EquipmentCard
@@ -1328,6 +1429,7 @@ export function App() {
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
             />
+            <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
             {/* Een getal dat nog in een veld staat, telt mee: op iOS verliest het veld bij een tik op een knop vaak de focus niet. */}
             <button
               type="button"
@@ -1354,6 +1456,7 @@ export function App() {
                 <AdviceHeader cost={cost} />
                 <ClawQuestion advice={clawAdvice} cost={cost} />
                 <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
+                <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
                 <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
                 <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
               </>
