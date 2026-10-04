@@ -64,6 +64,18 @@ function Field(props: {
   )
 }
 
+/**
+ * De inhoud van een inklapbare kaart: schuift open en dicht in plaats van te verspringen. Dicht blijft de
+ * inhoud in de pagina staan (zodat hij kan wegschuiven), maar is dan niet bereikbaar met Tab of een schermlezer.
+ */
+function Collapse(props: { open: boolean; children: ComponentChildren }) {
+  return (
+    <div class={`collapse${props.open ? ' open' : ''}`} inert={!props.open} aria-hidden={!props.open}>
+      <div class="collapse-inner">{props.children}</div>
+    </div>
+  )
+}
+
 function ProfileCard(props: {
   draft: ProfileDraft
   error: string | null
@@ -84,14 +96,14 @@ function ProfileCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {open && (
+      <Collapse open={open}>
         <div class="spot-body">
           {PROFILE_FIELDS.map((f) => (
             <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
           ))}
           <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>
         </div>
-      )}
+      </Collapse>
     </section>
   )
 }
@@ -317,7 +329,7 @@ function EquipmentCard(props: {
         <span class="spot-name">Je equipment</span>
         <span class="spot-exp">{worn.length > 0 ? `Je draagt: ${listFormat.format(worn)}.` : 'Je hebt nog niets ingevuld.'}</span>
       </button>
-      {open && (
+      <Collapse open={open}>
         <div class="spot-body">
           <p class="hint">{props.hint}</p>
           <p class="hint">Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
@@ -374,7 +386,7 @@ function EquipmentCard(props: {
             , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
           </p>
         </div>
-      )}
+      </Collapse>
     </section>
   )
 }
@@ -546,7 +558,7 @@ function SpotCard(props: {
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
-      {open && (
+      <Collapse open={open}>
         <div class="spot-body">
           <KnownSpotPicker value={known?.id ?? ''} onChange={props.onChange} />
           {known && <KnownSpotInfo spot={known} />}
@@ -576,7 +588,7 @@ function SpotCard(props: {
             Verwijderen
           </button>
         </div>
-      )}
+      </Collapse>
     </li>
   )
 }

@@ -66,6 +66,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
 - [x] Dave (4 oktober 2026): een zichtbare aanwijzing dat een kaart inklapbaar is. Elke inklapbare kaart
   (karakter, equipment, plekken) krijgt een pijltje in een eigen kolom helemaal rechts in de kop:
   omlaag = dicht, omhoog = open
+- [x] Dave (4 oktober 2026): de inklapbare kaarten schuiven open en dicht (in het tempo van het pijltje),
+  en een open kaart krijgt een fellere rand; "Beste" en een fout gaan voor. Review: Victor, geen bug
 
 ### TEST
 

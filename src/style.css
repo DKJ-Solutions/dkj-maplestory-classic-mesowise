@@ -44,6 +44,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   border-radius: 0.75rem;
   padding: 1rem;
   margin-bottom: 1rem;
+  transition: border-color 200ms ease-out;
+}
+/* Een open inklapbare kaart krijgt een fellere rand. :where houdt de regel zwak, zodat "Beste" (vol
+   accent met dubbele rand) en een fout (rood) altijd voorgaan. */
+.card:where(:has(> .spot-head[aria-expanded='true'])) {
+  border-color: var(--muted);
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
 }
 
 .field { display: block; margin-bottom: 0.875rem; }
@@ -113,9 +120,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
   transform: rotate(45deg);
-  transition: transform 150ms ease-out;
+  transition: transform 200ms ease-out;
 }
 .spot-head[aria-expanded='true']::after { transform: translateY(0.25rem) rotate(-135deg); }
+/* De inhoud schuift open en dicht, in hetzelfde tempo als het pijltje draait */
+.collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; }
+.collapse.open { grid-template-rows: 1fr; }
+.collapse-inner { min-height: 0; overflow: hidden; }
+/* Ook in een browser zonder inert: dicht is de inhoud onbereikbaar, pas na het wegschuiven */
+.collapse:not(.open) .collapse-inner { visibility: hidden; transition: visibility 0s 200ms; }
 .spot-value { grid-column: 2; text-align: right; }
 .spot-value strong { display: block; font-size: 1.5rem; color: var(--accent); }
 .spot-value small, .spot-exp { color: var(--muted); font-size: 0.875rem; }
@@ -249,5 +262,5 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .verdict { margin: 0 0 0.375rem; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .track, .spot-head::after { transition: none; }
+  .track, .spot-head::after, .collapse, .card { transition: none; }
 }
