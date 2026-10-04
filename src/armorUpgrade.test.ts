@@ -851,6 +851,15 @@ describe('replacedWdef: wat een stuk vervangt, met de overall (issue #50)', () =
     expect(replacedWdef('top', { overall: 75 })).toBe(75)
     expect(replacedWdef('bottom', { overall: 75 })).toBe(75)
   })
+
+  it('is onbekend bij een gedragen overall met onbekende WDEF, ook als er top of bottom naast staan (issue #118)', () => {
+    for (const slot of ['top', 'bottom', 'overall'] as const) {
+      expect(replacedWdef(slot, { overallWorn: true }), slot).toBeUndefined()
+      expect(replacedWdef(slot, { overallWorn: true, top: 32, bottom: 23 }), slot).toBeUndefined()
+      expect(replacedWdef(slot, { overallWorn: true, overall: 75, top: 32 }), slot).toBe(75)
+    }
+    expect(replacedWdef('hat', { overallWorn: true, hat: 15 })).toBe(15)
+  })
 })
 
 describe('armorUpgradeAdvice met een gedragen overall', () => {
@@ -874,18 +883,19 @@ describe('armorUpgradeAdvice met een gedragen overall', () => {
   })
 })
 
-describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de winkel verkoopt er nog geen)', () => {
-  // NPC_ARMOR is de enige bron van kandidaten; een test zet er tijdelijk een overall in en haalt hem weer weg.
-  const fakeOverall = (over: Partial<ArmorPiece> = {}): ArmorPiece => ({ name: 'Test Overall', slot: 'overall', level: 20, wdef: 60, luk: 0, dex: 0, price: 5_000, source: armor('Red Pao').source, ...over })
-  const withInjected = <T>(a: ArmorPiece, fn: () => T): T => {
-    const list = NPC_ARMOR as ArmorPiece[]
-    list.push(a)
-    try {
-      return fn()
-    } finally {
-      list.splice(list.indexOf(a), 1)
-    }
+// NPC_ARMOR is de enige bron van kandidaten; een test zet er tijdelijk een overall in en haalt hem weer weg.
+const fakeOverall = (over: Partial<ArmorPiece> = {}): ArmorPiece => ({ name: 'Test Overall', slot: 'overall', level: 20, wdef: 60, luk: 0, dex: 0, price: 5_000, source: armor('Red Pao').source, ...over })
+const withInjected = <T>(a: ArmorPiece, fn: () => T): T => {
+  const list = NPC_ARMOR as ArmorPiece[]
+  list.push(a)
+  try {
+    return fn()
+  } finally {
+    list.splice(list.indexOf(a), 1)
   }
+}
+
+describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de winkel verkoopt er nog geen)', () => {
   const p = strong({ level: 25 })
   // De horizon van de overall (WDEF 60) met de hand (#87): op lv 30 geven Dark Silver Stealer (40) en Red Stealer
   // Pants (29) samen 69, meer dan 60, dus hij loopt tot 29 en niet tot de tabelrand.
@@ -1035,11 +1045,6 @@ describe('armorUpgradeAdvice: het lijf, overall tegen top + bottom (issue #87)',
   const splitTop = piece(MAGICIAN_ARMOR, 'Split Piece')
   const splitPants = piece(MAGICIAN_ARMOR, 'Split Pants')
   const pairOf = (a: Advice) => a.choices.find((c) => c.with !== undefined)
-  const adviceW = (p: Profile, worn: Partial<Record<ArmorPiece['slot'], number>>): Advice => {
-    const a = armorUpgradeAdvice(drafts, p, worn)
-    if (a.kind !== 'advice') throw new Error('advies verwacht')
-    return a
-  }
 
   it('weegt op lv 25 bij de Magician de Doros Robe tegen Split Piece + Split Pants, elk met de hand nagerekend', () => {
     // Met de hand: geen later lijfstuk in de Magician-winkel, dus beide lopen tot de tabelrand (lv 30, afgekapt).
@@ -1128,5 +1133,46 @@ describe('armorUpgradeAdvice: het lijf, overall tegen top + bottom (issue #87)',
       }
       for (const c of a.choices) if (c.net !== null && best.net !== null) expect(c.net).toBeLessThanOrEqual(best.net)
     }
+  })
+})
+
+describe('armorUpgradeAdvice: een gedragen overall met onbekende WDEF (issue #118)', () => {
+  const pairOf = (a: Advice) => a.choices.find((c) => c.with !== undefined)
+
+  it('biedt de Thief met die overall een paar aan, en meldt bij een losse top of bottom de lege helft', () => {
+    // De Thief-winkel heeft geen overall: alleen de gedragen overall zet het paar op tafel. Wat hij vervangt is onbekend.
+    const p = strong({ level: 25 })
+    const a = adviceW(p, { overallWorn: true })
+    const pair = pairOf(a)!
+    expect(pair).toMatchObject({ replaces: undefined, price: pair.armor.price + pair.with!.price })
+    expect(pair.bare).toBeUndefined()
+    expect(a.choices.find((c) => c.armor.slot === 'top' && !c.with)).toMatchObject({ replaces: undefined, bare: 'bottom' })
+    expect(a.choices.find((c) => c.armor.slot === 'bottom')).toMatchObject({ replaces: undefined, bare: 'top' })
+    // Zonder gedragen overall: geen paar en geen lege helft, zoals altijd.
+    const none = adviceW(p, {})
+    expect(pairOf(none)).toBeUndefined()
+    for (const c of none.choices) expect(c.bare, c.armor.name).toBeUndefined()
+  })
+
+  it('rekent met onbekende WDEF hetzelfde als zonder overall, op het paar en de lege helft na', () => {
+    // Onbekend telt als leeg (zie de kop), dus de losse stukken zijn dezelfde keuzes als met een lege worn.
+    for (const level of [15, 20, 25, 30]) {
+      const p = strong({ level })
+      const strip = ({ bare: _, ...c }: Advice['choices'][number]) => c
+      const solo = adviceW(p, { overallWorn: true }).choices.filter((c) => !c.with).map(strip)
+      expect(solo, `lv ${level}`).toEqual(adviceW(p, {}).choices.map(strip))
+    }
+  })
+
+  it('laat een losse top die de broek leeg laat, tegen een latere overall rekenen met de beste broek van dat level (de keuze bij punt 2)', () => {
+    // Met de hand: een overall van 45 op lv 27. Elke top tot lv 25 geeft met de beste broek van lv 27 (Brown Sneak Pants,
+    // 26) meer dan 45 (24 + 26 = 50), dus de overall beëindigt hem niet; de Dark Silver Stealer (40, lv 30) wel: tot 29.
+    // Telde de lege broek als 0, dan zou elke top (hoogstens 36) al op 26 stoppen.
+    const p = strong({ level: 25 })
+    withInjected(fakeOverall({ level: 27, wdef: 45 }), () => {
+      const tops = adviceW(p, { overallWorn: true }).choices.filter((c) => c.armor.slot === 'top' && !c.with)
+      expect(tops).toHaveLength(1)
+      expect(tops[0]).toMatchObject({ bare: 'bottom', from: 25, to: 29, truncated: false })
+    })
   })
 })
