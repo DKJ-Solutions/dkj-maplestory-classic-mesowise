@@ -59,6 +59,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
   dicht met in de kop wat je draagt; in het controlescherm na een level-up staat hij open
 - [x] Dave (4 oktober 2026): het pijltje van een keuzelijst zat tegen de rand. Alle keuzelijsten
   krijgen een eigen pijltje met ruimte tot de rand, in de gedempte tekstkleur
+- [x] Dave (4 oktober 2026): de eerste hint in de open kaart zat tegen de bovenrand; nu dezelfde ruimte
+  als bij "Je karakter"
 
 ### TEST
 
