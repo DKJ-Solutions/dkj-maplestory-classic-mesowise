@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**21 / 40 minor entries** <!-- pending-tally -->
+**21 / 41 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/55-no-job-line · 20261004-105758Z
+
+Shop items with no class on their page now count for every class, as Dave decided on #55. A Thief can be
+advised the White Bandana (level 10, 15 DEF, 1,200 mesos) and the Red Baseball Cap (level 22, 22 DEF, 3,900
+mesos). The Warrior data gains eight cheap weapons (Long Sword, Steel Pipe, Plunger and others), the Magician
+data three wands, and both hats are in every class's armor. The armor advice for a level-20 Thief now looks at
+the Baseball Cap two levels ahead, so the Ghetto Beanie's saving is counted until level 21 instead of 24.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Items with no job line count for every class (#55, decision 1)
+
+[PR #79](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/79)
+
+---
 
 ### DEPLOY: tooling/74-preview-link · 20261004-104728Z
 
