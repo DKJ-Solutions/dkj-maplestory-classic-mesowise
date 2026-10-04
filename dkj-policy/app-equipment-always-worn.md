@@ -79,7 +79,7 @@ shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear 
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
 own item. Under each item the expected WATK or WDEF from the database sits on the left and the value
 from your game on the right, aligned side by side; the game value always overrules the expected one.
-The value the app uses is highlighted and tagged "telt", the other is dimmed. On a phone, − and +
+The group of the value the app uses is outlined and tinted, the other is dimmed. On a phone, − and +
 buttons adjust the game value with one tap, and tapping the number selects it so typing replaces it. A slot not filled in yet shows a search
 prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
 "Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.

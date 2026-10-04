@@ -428,7 +428,6 @@ function EquipmentCard(props: {
             const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
             // Welke van de twee de app gebruikt: de waarde uit je game zodra je die aanpast (of bij een eigen item), anders de verwachting.
             const gameCounts = own !== undefined || db === undefined
-            const counts = <em class="counts-tag">telt</em>
             const step = (by: number) => {
               const n = Number(shown.trim())
               props.onStatInput(slot, String(Math.min(999, Math.max(0, (shown.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : (db ?? 0)) + by))))
@@ -447,16 +446,16 @@ function EquipmentCard(props: {
                   // Links wat de database verwacht, rechts wat je game zegt: dat telt. Bij een eigen item kent de app geen verwachting.
                   <div class="equip-stats">
                     <div class={gameCounts ? 'field ignored' : 'field counts'}>
-                      <span>{stat} verwacht{!gameCounts && counts}</span>
+                      <span>{stat} verwacht</span>
                       <output class="equip-db" aria-label={`${stat} volgens de database${gameCounts ? ', telt niet' : ', telt'}`}>{db ?? '–'}</output>
                     </div>
                     <div class={gameCounts ? 'field counts' : 'field'}>
-                      <span id={`${uid}-${slot}-game`}>{stat} in je game{gameCounts && counts}</span>
+                      <span id={`${uid}-${slot}-game`}>{stat} in je game</span>
                       {/* Op een telefoon: - en + passen met één tik aan en tellen meteen; tik je op het getal, dan is het
                           geselecteerd en vervangt wat je typt het hele getal. */}
                       <div class="equip-step">
                         <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
-                        <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`}
+                        <input type="number" inputMode="numeric" pattern="[0-9]*" min={0} max={999} enterKeyHint="done" aria-labelledby={`${uid}-${slot}-game`} aria-description={gameCounts ? 'telt' : 'telt niet'}
                           value={shown}
                           onFocus={(e) => e.currentTarget.select()}
                           onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
