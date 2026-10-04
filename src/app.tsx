@@ -1,4 +1,4 @@
-import type { ComponentChildren, Ref } from 'preact'
+import type { ComponentChildren, Ref, RefObject } from 'preact'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
 import type { NotBestReason } from './calc/pickBest'
@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, entryChanged, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, NONE, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, entryChanged, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, NONE, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -20,7 +20,7 @@ import { isSkillKey } from './data/skills'
 import { NIMBLE_BODY } from './data/thief'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
-import { isDefaultProfile, loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
+import { loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -138,6 +138,44 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   )
 }
 
+/** De iconen van de inklapbare kaarten. Eigen tekeningen, zodat er niets uit het spel in de repo komt. */
+const ICON_PATHS = {
+  // Een open boek: Skillpoints
+  book: ['M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5Z', 'M12 6v13.5'],
+  // Een zwaard: je equipment
+  sword: ['M14.5 17.5 3 6V3h3l11.5 11.5', 'M13 19l6-6', 'M16 16l4 4', 'M19 21l2-2'],
+  // Een poppetje: je karakter
+  person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
+  // Een kaartspeld: een plek
+  pin: ['M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21Z', 'M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
+} as const
+
+function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
+  return (
+    <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      {ICON_PATHS[props.name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
+
+/**
+ * Onderaan een open kaart: inklappen zonder terug te scrollen naar het pijltje in de kop. De focus (en
+ * daarmee het beeld) gaat daarna naar de kop, anders sta je na het dichtklappen ergens verderop.
+ */
+function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onCollapse: () => void }) {
+  const collapse = () => {
+    props.onCollapse()
+    props.head.current?.focus()
+  }
+  return (
+    <button type="button" class="collapse-foot" onClick={collapse}>
+      Inklappen
+    </button>
+  )
+}
+
 function ProfileCard(props: {
   job: Job
   draft: ProfileDraft
@@ -145,20 +183,15 @@ function ProfileCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
 }) {
   const [open, setOpen] = useState(false)
+  const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
   const thief = isComputed(job)
   return (
     <section class={`card profile${props.error ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span class="spot-name">Je karakter ({jobLabel(job)})</span>
-        <span class="spot-exp">
-          {isDefaultProfile(draft)
-            ? thief
-              ? 'Een voorbeeld-Thief op lv 10. Vul je eigen karakter in voor betere voorstellen.'
-              : 'Een voorbeeldkarakter op lv 10. Vul je eigen karakter in.'
-            : thief
-              ? `lv ${draft.level || '?'}, LUK ${draft.luk || '?'} · gebruikt voor de voorstellen`
-              : `lv ${draft.level || '?'}, Max HP ${draft.hp || '?'}`}
+      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name with-icon">
+          <CardIcon name="person" />
+          Je karakter ({jobLabel(job)})
         </span>
       </button>
       <p class="error" aria-live="polite">
@@ -170,6 +203,7 @@ function ProfileCard(props: {
             <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
           ))}
           {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
+          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
     </section>
@@ -391,13 +425,15 @@ function EquipmentCard(props: {
   onCommit: (slot: EquipSlot) => void
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
-  const worn = wornSummary(props.equipment)
+  const head = useRef<HTMLButtonElement>(null)
   const thief = isComputed(props.job)
   return (
     <section class="card equipment">
-      <button type="button" class="spot-head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span class="spot-name">Je equipment</span>
-        <span class="spot-exp">{worn.length > 0 ? `Je draagt: ${listFormat.format(worn)}.` : 'Je hebt nog niets ingevuld.'}</span>
+      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span class="spot-name with-icon">
+          <CardIcon name="sword" />
+          Je equipment
+        </span>
       </button>
       <Collapse open={open}>
         <div class="spot-body">
@@ -457,19 +493,10 @@ function EquipmentCard(props: {
               , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}.
             </p>
           )}
+          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
     </section>
-  )
-}
-
-/** Een open boek, het icoon van Skillpoints. Eigen tekening, zodat er niets uit het spel in de repo komt. */
-function BookIcon() {
-  return (
-    <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5Z" />
-      <path d="M12 6v13.5" />
-    </svg>
   )
 }
 
@@ -489,17 +516,11 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   const head = useRef<HTMLButtonElement>(null)
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   const levels = skillLevels(props.draft).filter((s) => shown.includes(s.key))
-  // Inklappen vanaf onderaan: de focus (en daarmee het beeld) gaat terug naar de kop, anders sta je
-  // na het dichtklappen ergens verderop in de pagina.
-  const collapse = () => {
-    setOpen(false)
-    head.current?.focus()
-  }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span class="spot-name with-icon">
-          <BookIcon />
+          <CardIcon name="book" />
           Skillpoints
         </span>
       </button>
@@ -550,9 +571,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
                 ))}
             </div>
           ))}
-          <button type="button" class="collapse-foot" onClick={collapse}>
-            Inklappen
-          </button>
+          <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
     </section>
@@ -667,6 +686,7 @@ function SpotCard(props: {
   onRemove: () => void
 }) {
   const { result, draft, profile, computed, best, robust, notBest, open } = props
+  const head = useRef<HTMLButtonElement>(null)
   const invalid = isInvalid(result)
   const title = placeName(draft.name)
   const known = findKnownSpot(draft.known)
@@ -690,19 +710,17 @@ function SpotCard(props: {
       : 'onbegrensd (kost niets)'
   return (
     <li class={`card spot${best ? ' best' : ''}${invalid ? ' invalid' : ''}`}>
-      <button type="button" class="spot-head" aria-expanded={open} onClick={props.onToggle}>
-        <span class="spot-name">
-          {best && <em class="badge">{badge}</em>}
-          {title}
+      <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={props.onToggle}>
+        <span class="spot-name with-icon">
+          <CardIcon name="pin" />
+          <span>
+            {best && <em class="badge">{badge}</em>}
+            {title}
+          </span>
         </span>
         <span class="spot-value">
           <strong>{value}</strong>
           <small>EXP per meso</small>
-        </span>
-        <span class="spot-exp">
-          {Number.isFinite(result.spot.expPerHour)
-            ? `${nfInt.format(result.spot.expPerHour)} EXP per uur${estimated ? ' (schatting)' : ''}`
-            : 'Nog niet ingevuld'}
         </span>
       </button>
       {(estimated || warn || notBest || travelMissing) && (
@@ -757,6 +775,7 @@ function SpotCard(props: {
           <button type="button" class="btn danger" onClick={props.onRemove}>
             Verwijderen
           </button>
+          <CollapseFoot head={head} onCollapse={props.onToggle} />
         </div>
       </Collapse>
     </li>

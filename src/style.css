@@ -134,8 +134,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .collapse:not(.open) .collapse-inner { visibility: hidden; transition: visibility 0s 200ms; }
 .spot-value { grid-column: 2; text-align: right; }
 .spot-value strong { display: block; font-size: 1.5rem; color: var(--accent); }
-.spot-value small, .spot-exp { color: var(--muted); font-size: 0.875rem; }
-.spot-exp { grid-column: 1 / 3; }
+.spot-value small { color: var(--muted); font-size: 0.875rem; }
 .badge {
   display: inline-block;
   margin-right: 0.5rem;

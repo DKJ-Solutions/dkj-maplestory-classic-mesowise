@@ -79,11 +79,6 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   luckySeven: '1',
 }
 
-/** Of het profiel nog precies het voorbeeld is (de speler heeft niets ingevuld). */
-export function isDefaultProfile(d: ProfileDraft): boolean {
-  return PROFILE_FIELDS.every((f) => d[f.key] === DEFAULT_PROFILE[f.key])
-}
-
 /**
  * Het profiel als getallen, of een melding in gewoon Nederlands bij het eerste veld dat niet klopt (alleen de
  * velden die deze job invult). `key` zegt welk veld, zodat het scherm de melding toont bij de kaart waar dat

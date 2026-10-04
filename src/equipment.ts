@@ -100,11 +100,6 @@ export function wornName(entry: EquipEntry): string | null {
   return entry.pick
 }
 
-/** De namen van wat je draagt, voor de kaartkop. */
-export function wornSummary(eq: Equipment): string[] {
-  return EQUIP_SLOTS.flatMap(({ slot }) => wornName(eq[slot]) ?? [])
-}
-
 /** Of dit slot anders is dan in `before` (voor de "was"-badge). */
 export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
   a.pick !== b.pick || (a.pick === OTHER && (a.name.trim() !== b.name.trim() || a.stat.trim() !== b.stat.trim()))
