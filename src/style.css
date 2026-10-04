@@ -274,7 +274,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-list li.more { min-height: 0; padding-top: 0.25rem; padding-bottom: 0.25rem; color: var(--muted); font-size: 0.875rem; cursor: default; }
 /* Twee velden naast elkaar: links de verwachting uit de database (alleen lezen), rechts de waarde uit je game */
 /* Beide kolommen precies gelijk: label op één regel, veld even hoog, zelfde padding en rand, getal rechts */
-.equip-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; align-items: end; margin-top: 0.625rem; }
+.equip-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: end; margin-top: 0.625rem; }
 .equip-stats .field { min-width: 0; }
 .equip-stats .field > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .equip-stats input, .equip-db {
@@ -300,13 +300,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   display: inline-block; margin-left: 0.375rem; padding: 0 0.375rem; font-size: 0.6875rem; font-style: normal; font-weight: 700;
   line-height: 1.4; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: 0.1em; color: #1c1917; background: var(--accent); border-radius: 999px;
 }
+/* De hele groep (label, getal en knoppen) krijgt de rand; beide kolommen houden dezelfde ruimte en randdikte,
+   zodat er niets verspringt als het accent van links naar rechts gaat. */
+.equip-stats > .field { padding: 0.5rem; border: 2px solid transparent; border-radius: 0.75rem; transition: border-color 0.15s, background-color 0.15s; }
+.equip-stats > .counts { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .equip-stats .counts > span { color: var(--text); font-weight: 600; }
-.equip-stats .counts .equip-db, .equip-stats .counts input {
-  color: var(--text); font-weight: 700; border: 2px solid var(--accent); border-style: solid;
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
-}
+.equip-stats .counts .equip-db, .equip-stats .counts input { color: var(--text); font-weight: 700; }
 .equip-stats .ignored .equip-db { text-decoration: line-through; opacity: 0.7; }
-.equip-stats .equip-db, .equip-stats input { transition: border-color 0.15s, background-color 0.15s; }
 
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
