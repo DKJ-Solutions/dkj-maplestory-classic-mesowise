@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
@@ -18,14 +18,14 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
-import { ARROW_BLOW_SOURCE, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
+import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, pickMonster, resolveSpot, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -273,6 +273,9 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
+/** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
+const WEAPON_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'W.ATT', min: 0, max: 9_999, integer: true }
+const MAGIC_ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'M.ATT', min: 0, max: 9_999, integer: true }
 /** Stats die op de kaart alleen om te lezen zijn: de DEF komt uit je equipment, daar pas je hem aan. */
 const READ_ONLY_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['wdef'])
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
@@ -450,15 +453,13 @@ function StatsCard(props: {
 
 /**
  * De Attack zoals het statvenster hem toont (issue #108): het schadebereik van een gewone aanval, dus met je ability
- * points erin. Een Magician toont alleen de weapon attack: zijn gewone wand-aanval staat niet in de gegevens. Leeg (dus "?") zolang het profiel
- * niet klopt.
+ * points erin. Leeg (dus "?") zolang het profiel niet klopt, en voor een Magician: zijn gewone wand-aanval staat niet
+ * in de gegevens; zijn W.ATT en M.ATT staan op hun eigen regels (#100).
  */
 function attackText(draft: ProfileDraft, job: Job): string {
   const parsed = parseProfile(draft, job)
   const range = 'profile' in parsed ? statWindowRange(parsed.profile) : null
-  if (range) return `${nfInt.format(range.min)} – ${nfInt.format(range.max)}`
-  const attack = job === 'magician' ? totalAttack(draft, job) : null
-  return attack === null ? '' : nfInt.format(attack)
+  return range ? `${nfInt.format(range.min)} – ${nfInt.format(range.max)}` : ''
 }
 
 type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
@@ -467,14 +468,21 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps) {
   return (
-    <StatsCard {...props} className="profile" icon="person" title={`Ability points (${jobLabel(props.job)})`} fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
+    <StatsCard {...props} className="profile" icon="person" title="Ability points" fields={shownStats(props.job).filter((f) => ABILITY_KEYS.includes(f.key))} />
   )
 }
 
-/** De Total stats uit het statvenster: Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
+/** De Total stats uit het statvenster: Attack (schadebereik), W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const { job } = props
-  const lead = <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
+  const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
+  const lead = (
+    <>
+      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
+      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
+    </>
+  )
   const mdef = wornMdef(props.equipment)
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
@@ -744,7 +752,7 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
  * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
  * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
  */
-function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPick: (pick: string, name?: string) => void }) {
+function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; helpfulStranger?: boolean; onPick: (pick: string, name?: string) => void }) {
   const { slot, entry } = props
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -753,7 +761,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
   const [active, setActive] = useState(0)
   const open = text !== null
   const typed = (text ?? '').trim()
-  const found = searchCatalog(slot, props.job, typed)
+  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger)
   const stat = statName(slot, props.job)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
@@ -902,6 +910,9 @@ function EquipmentCard(props: {
   /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
+  /** Alleen een Bowman: of hij Helpful Stranger heeft (#64); met de schakelaar aan biedt de ammo-lijst de bronze pijlen aan. */
+  helpfulStranger: boolean
+  onHelpfulStranger: (on: boolean) => void
   hint?: string
   /** De inhoud staat meteen op de kaart in plaats van in een popup: op het controlescherm na de level-up, waar je hem nakijkt. */
   inline?: boolean
@@ -976,8 +987,17 @@ function EquipmentCard(props: {
               <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
-                  <EquipSearch slot={slot} job={props.job} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  <EquipSearch slot={slot} job={props.job} entry={entry} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
+                  {slot === 'ammo' && props.job === 'bowman' && (
+                    <label class="switch">
+                      <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
+                      <span>
+                        Ik heb Helpful Stranger
+                        <small>Bronze pijlen (+1 W.ATT, 2 meso per stuk) koop je bij Raymond vanaf de citizenship-rang Helpful Stranger. Met deze schakelaar aan staan ze in de lijst.</small>
+                      </span>
+                    </label>
+                  )}
                 </div>
                 {!isEmptyEntry(entry) && (
                   <div class="equip-stats">
@@ -1043,6 +1063,25 @@ function EquipmentCard(props: {
                 NiaMeowDB
               </a>
               , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
+              {props.helpfulStranger && (
+                <>
+                  {' '}
+                  {([
+                    ['Bronze pijlen (bogen)', HELPFUL_STRANGER_ARROWS[0].source],
+                    ['Bronze pijlen (kruisbogen)', HELPFUL_STRANGER_ARROWS[1].source],
+                    ['Raymonds winkel', HELPFUL_STRANGER_SOURCES[0]],
+                    ['De rang Helpful Stranger', HELPFUL_STRANGER_SOURCES[1]],
+                  ] as const).map(([label, s]) => (
+                    <span key={s.url}>
+                      {label}:{' '}
+                      <a href={s.url} target="_blank" rel="noopener noreferrer">
+                        NiaMeowDB
+                      </a>
+                      , opgehaald op {formatDate(s.retrieved)}.{' '}
+                    </span>
+                  ))}
+                </>
+              )}
             </p>
           )}
           {props.job === 'magician' && (
@@ -1443,18 +1482,27 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 
 /** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ` in plaats van je huidige stuk (${STAT_NAME.armor} onbekend).`
-  // Een overall vervangt top en bottom samen, en een top of bottom een overall die je draagt.
-  const names = displacedSlots(equipment, win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
-  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.`
+  // Een losse top of bottom in plaats van een overall laat de andere helft leeg (#87), ook als de WDEF van die overall
+  // onbekend is (dan staat hij niet in WornWdef en zet het advies geen `bare`).
+  const slot = win.armor.slot
+  const half = win.bare ?? (!win.with && (slot === 'top' || slot === 'bottom') && displacedSlots(equipment, slot)[0] === 'overall' ? (slot === 'top' ? 'bottom' : 'top') : undefined)
+  const bare = half ? ` Je ${SLOT_NAME[half]} is dan leeg.` : ''
+  if (win.replaces === undefined) return ` in plaats van je huidige ${win.with ? 'stukken' : 'stuk'} (${STAT_NAME.armor} onbekend).${bare}`
+  // Een overall (of een paar top + bottom) vervangt top en bottom samen, en een top of bottom een overall die je draagt.
+  const names = displacedSlots(equipment, win.with ? 'overall' : win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
+  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.${bare}`
 }
+
+/** Wat je koopt: één stuk, of een top en een bottom samen (#87). */
+const buyText = (win: ArmorChoice) =>
+  `${win.armor.name} (${SLOT_NAME[win.armor.slot]})${win.with ? ` en ${win.with.name} (${SLOT_NAME[win.with.slot]})` : ''}`
 
 /** Wat het winnende stuk armor oplevert, in een zin. */
 function ArmorWinnerLine(props: { win: ArmorChoice }) {
   const { win } = props
   return (
     <p class="hint">
-      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.armor.price)} meso.
+      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.price)} meso{win.with && ' voor beide'}.
       {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
     </p>
   )
@@ -1495,14 +1543,16 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       </Question>
     )
   }
-  const win = a.choices.find((c) => c.armor === a.winner)
+  // De winnaar staat vooraan; een paar deelt zijn top met de losse top, dus niet zoeken op het stuk.
+  const win = a.winner ? a.choices[0] : undefined
   const unknown = !win && noArmorComputable(a)
   return (
     <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
       {win ? (
         <>
           <p class="verdict">
-            Koop {win.armor.name} ({SLOT_NAME[win.armor.slot]}){replaceClause(win, props.equipment)}
+            Koop {buyText(win)}
+            {replaceClause(win, props.equipment)}
           </p>
           <ArmorWinnerLine win={win} />
         </>
@@ -1728,7 +1778,11 @@ const rankedIds = (drafts: SpotDraft[], profile: Profile | null) =>
 
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => loadProfile(storage))
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
+    // De pijlkeuze volgt het ammo-slot: profiel en equipment staan in aparte opslag en kunnen uiteen lopen (#64).
+    const d = loadProfile(storage)
+    return syncArrow(d, loadEquipment(storage, loadJob(storage), d.helpfulStranger === '1'))
+  })
   const [job, setJob] = useState<Job>(() => loadJob(storage))
   const [jobChosen, setJobChosen] = useState(() => isJobStored(storage))
   const computed = isComputed(job)
@@ -1755,7 +1809,7 @@ export function App() {
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
-  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job))
+  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
   const equipmentDirty = useRef(false)
   // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
   // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
@@ -1909,8 +1963,18 @@ export function App() {
     if (next === job) return
     commitAllEquipment()
     clearPending()
-    writeEquipment(equipmentForJob(equipmentRef.current, next))
+    const kept = equipmentForJob(equipmentRef.current, next)
+    writeEquipment(kept)
+    // Verdwijnt de bronze pijl uit het ammo-slot (andere job), dan rekent een terugkeer niet stilletjes met bronze.
+    const synced = syncArrow(profileRef.current, kept)
+    if (synced.bronzeArrows !== profileRef.current.bronzeArrows) writeProfile(() => synced)
     setJob(next)
+  }
+  // De schakelaar van een Bowman (#64); uit valt een bronze pijl terug op de gewone (zie setHelpfulStranger).
+  const changeHelpfulStranger = (on: boolean) => {
+    const changed = setHelpfulStranger(profileRef.current, equipmentRef.current, on)
+    writeProfile(() => changed.profile)
+    writeEquipment(changed.equipment)
   }
   const changeGender = (next: Gender) => {
     saveGender(storage, next)
@@ -1948,9 +2012,9 @@ export function App() {
               </h1>
               <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
-              {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
+              {/* Bovenaan je huidige level met je job erachter; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
               <p class="current-level">
-                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong></>}
+                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong>{jobChosen && ` (${jobLabel(job)})`}</>}
               </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
@@ -1965,6 +2029,8 @@ export function App() {
                 job={job}
                 equipment={equipment}
                 pending={pending}
+                helpfulStranger={profileDraft.helpfulStranger === '1'}
+                onHelpfulStranger={changeHelpfulStranger}
                 onPick={pickEquipment}
                 onStatInput={(slot, text) => setPendingFor(slot, text)}
                 onCommit={commitEquipment}
@@ -2076,6 +2142,8 @@ export function App() {
                 inline
                 hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
                 pending={pending}
+                helpfulStranger={profileDraft.helpfulStranger === '1'}
+                onHelpfulStranger={changeHelpfulStranger}
                 onPick={pickEquipment}
                 onStatInput={(slot, text) => setPendingFor(slot, text)}
                 onCommit={commitEquipment}

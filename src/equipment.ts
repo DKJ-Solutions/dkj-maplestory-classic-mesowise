@@ -9,8 +9,8 @@
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import { NPC_ARMOR } from './data/armor'
-import { BOWMAN_ARMOR, BOWMAN_WEAPONS, WORN_BOWMAN_ARMOR } from './bowmanGear'
-import { NPC_ARROWS } from './data/bowman'
+import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
 import type { ArmorPiece, ArmorSlot, Weapon, WornArmor, WornClaw } from './data/types'
@@ -150,13 +150,14 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
 
 /**
  * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
- * dan wint de NPC-regel.
+ * dan wint de NPC-regel. De bronze pijlen van een Bowman staan er alleen in met `helpfulStranger` (#64): zonder die
+ * rang kan hij ze niet kopen, dus de lijst biedt ze dan niet aan.
  */
-export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] {
+export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false): readonly CatalogItem[] {
   // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
     if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))
-    if (job === 'bowman') return NPC_ARROWS.map((a) => ({ name: a.name, stat: a.watk }))
+    if (job === 'bowman') return [...NPC_ARROWS, ...(helpfulStranger ? HELPFUL_STRANGER_ARROWS : [])].map((a) => ({ name: a.name, stat: a.watk }))
     return []
   }
   const shop = SHOP[job]
@@ -173,7 +174,8 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
   return items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
 }
 
-const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job).find((i) => i.name === name)
+// Opzoeken kent ook de bronze pijlen: wat je draagt blijft bestaan, ook als de lijst het niet (meer) aanbiedt.
+const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job, true).find((i) => i.name === name)
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
 // zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
@@ -182,9 +184,9 @@ const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, job: Job, query: string): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  return catalogItems(slot, job).filter((i) => i.name.toLowerCase().includes(q))
+  return catalogItems(slot, job, helpfulStranger).filter((i) => i.name.toLowerCase().includes(q))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */
@@ -269,6 +271,29 @@ export function entryLabel(slot: EquipSlot, entry: EquipEntry): string {
 export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
   a.pick !== b.pick || (a.pick !== UNKNOWN && a.stat.trim() !== b.stat.trim()) || (a.pick === OTHER && a.name.trim() !== b.name.trim())
 
+const isArrow = (name: string): boolean => NPC_ARROWS.some((a) => a.name === name) || isBronzeArrow(name)
+
+/** Het profiel met de pijlkeuze zoals de equipment ze toont: bronze alleen als de bronze pijl in het ammo-slot staat. */
+export const syncArrow = (profile: ProfileDraft, eq: Equipment): ProfileDraft => ({ ...profile, bronzeArrows: isBronzeArrow(eq.ammo.pick) ? '1' : '0' })
+
+/**
+ * De schakelaar "Ik heb Helpful Stranger" (#64) om of uit. Uit terwijl je bronze pijlen droeg: het ammo-slot valt terug op
+ * de gewone pijl van dezelfde soort (boog of kruisboog), zodat het getal weer dat van de gewone pijl is.
+ */
+/** Het ammo-slot zonder bronze pijl: een bronze pijl wordt de gewone pijl van dezelfde soort (boog of kruisboog). */
+function withoutBronze(ammo: EquipEntry): EquipEntry {
+  const bronze = HELPFUL_STRANGER_ARROWS.find((a) => a.name === ammo.pick)
+  if (!bronze) return ammo
+  return { pick: (NPC_ARROWS.find((a) => a.for === bronze.for) ?? NPC_ARROWS[0]).name, name: '', stat: '' }
+}
+
+export function setHelpfulStranger(profile: ProfileDraft, eq: Equipment, on: boolean): { profile: ProfileDraft; equipment: Equipment } {
+  const withSwitch = { ...profile, helpfulStranger: on ? '1' : '0' }
+  if (on || !isBronzeArrow(eq.ammo.pick)) return { profile: withSwitch, equipment: eq }
+  const equipment = { ...eq, ammo: withoutBronze(eq.ammo) }
+  return { profile: syncArrow(withSwitch, equipment), equipment }
+}
+
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
  * ander wapen uit de catalogus ook je aanvalssnelheid (en bij een Warrior-wapen zijn weapon multiplier; pas je
@@ -279,11 +304,13 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
 export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before: EquipEntry, after: EquipEntry): ProfileDraft {
   const next = wornStat(slot, after)
   if (slot === 'ammo') {
-    // Pijlen laten het profiel staan: de Bowman rekent altijd met de gewone pijl (zie parseProfile); stars zetten hun weapon
-    // attack, en een andere star uit de lijst ook zijn herlaadprijs. Een eigen item laat de herlaadprijs staan: die weet de app niet.
-    if (next === undefined || NPC_ARROWS.some((a) => a.name === after.pick)) return profile
+    // Elke wissel zet of het de bronze pijl is (W.ATT en prijs van de pijl volgen daaruit, zie parseProfile), ook een leeg
+    // slot of een eigen item: dan telt de gewone pijl. Stars zetten hun weapon attack, en een andere star uit de lijst
+    // ook zijn herlaadprijs. Een eigen item laat de herlaadprijs staan: die weet de app niet.
+    const base = { ...profile, bronzeArrows: isBronzeArrow(after.pick) ? '1' : '0' }
+    if (isArrow(after.pick) || next === undefined) return base
     const star = after.pick === before.pick ? undefined : THROWING_STARS.find((t) => t.name === after.pick)
-    return { ...profile, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }
+    return { ...base, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }
   }
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
@@ -406,7 +433,7 @@ function loadEntry(slot: EquipSlot, v: unknown, job: Job): EquipEntry {
 }
 
 /** De bewaarde equipment; een ontbrekend of onbruikbaar slot is "nog niet ingevuld". */
-export function loadEquipment(storage: Storage | null | undefined, job: Job): Equipment {
+export function loadEquipment(storage: Storage | null | undefined, job: Job, helpfulStranger = false): Equipment {
   const out = defaultEquipment()
   try {
     const raw = storage?.getItem(EQUIPMENT_KEY)
@@ -422,6 +449,8 @@ export function loadEquipment(storage: Storage | null | undefined, job: Job): Eq
       out.top = emptyEntry()
       out.bottom = emptyEntry()
     }
+    // Profiel en equipment staan in aparte opslag: zonder Helpful Stranger in het profiel is een bewaarde bronze pijl de gewone (#64).
+    if (!helpfulStranger) out.ammo = withoutBronze(out.ammo)
     return out
   } catch {
     return out

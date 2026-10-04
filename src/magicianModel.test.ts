@@ -580,13 +580,14 @@ describe('Magician-armor: de winkel', () => {
   it('rekent met de armor van de Magician (hats, tops, bottoms, shoes) en nooit met Thief-armor', () => {
     const a = advice(strong({ level: 30 }))
     expect(a.choices.length).toBeGreaterThan(0)
-    for (const c of a.choices) expect(MAGICIAN_ARMOR, c.armor.name).toContain(c.armor)
+    for (const c of a.choices) for (const piece of [c.armor, c.with ?? c.armor]) expect(MAGICIAN_ARMOR, piece.name).toContain(piece)
     // Een Magician-stuk dat ook bij de Thief staat (White Bandana, Red Baseball Cap) is hetzelfde item.
     for (const m of MAGICIAN_ARMOR) {
       const t = NPC_ARMOR.find((x) => x.name === m.name)
       if (t) expect([t.slot, t.level, t.wdef, t.price], m.name).toEqual([m.slot, m.level, m.wdef, m.price])
     }
-    expect(new Set(a.choices.map((c) => c.armor.slot)).size).toBe(a.choices.length)
+    // Eén keuze per slot, en het paar top + bottom (#87, er is een overall) als eigen keuze.
+    expect(new Set(a.choices.map((c) => (c.with ? 'pair' : c.armor.slot))).size).toBe(a.choices.length)
   })
 
   it('geeft alleen stukken waar je level voor volstaat en die meer WDEF geven dan wat je draagt', () => {

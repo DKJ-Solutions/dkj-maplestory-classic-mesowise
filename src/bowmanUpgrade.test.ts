@@ -4,11 +4,11 @@
 // DEX (elke eis in zijn eigen stat, #69), een wapen telt als "beter" volgens het model.
 import { describe, expect, it } from 'vitest'
 import { armorUpgradeAdvice, type ArmorUpgradeAdvice } from './armorUpgrade'
-import { BOWMAN_ARMOR, BOWMAN_WEAPONS, PLAIN_ARROW, WORN_BOWMAN_ARMOR } from './bowmanGear'
+import { BOWMAN_ARMOR, BOWMAN_WEAPONS, BRONZE_ARROW, PLAIN_ARROW, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
 import { NPC_ARMOR } from './data/armor'
-import { GENDERED_WORN_BOWMAN_ARMOR, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
+import { GENDERED_WORN_BOWMAN_ARMOR, HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { knownSpotPatch } from './data/spots'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
@@ -90,6 +90,12 @@ describe('bowmanGear: de data van de Bowman in de vorm van de Thief-lijsten', ()
     expect(NPC_ARROWS).toHaveLength(2)
     for (const a of NPC_ARROWS) expect(a, a.name).toMatchObject({ watk: PLAIN_ARROW.watk, pricePerArrow: PLAIN_ARROW.pricePerArrow })
     expect(PLAIN_ARROW).toMatchObject({ watk: 0, pricePerArrow: 1 })
+  })
+
+  it('heeft bij Helpful Stranger twee bronze pijlen die voor bogen en kruisbogen gelijk zijn (+1 ATT en 2 meso)', () => {
+    expect(HELPFUL_STRANGER_ARROWS).toHaveLength(2)
+    for (const a of HELPFUL_STRANGER_ARROWS) expect(a, a.name).toMatchObject({ watk: BRONZE_ARROW.watk, pricePerArrow: BRONZE_ARROW.pricePerArrow })
+    expect(BRONZE_ARROW).toMatchObject({ watk: 1, pricePerArrow: 2 })
   })
 })
 

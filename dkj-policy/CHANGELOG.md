@@ -2,7 +2,98 @@
 
 ## [Unreleased]
 
-**25 / 61 minor entries** <!-- pending-tally -->
+**29 / 65 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/100-magician-matk-line · 20261004-133302Z
+
+Below the Attack range, the Total stats card always shows W.ATT and M.ATT; one of the two is 0. A Magician sees their M.ATT there, next to a W.ATT of 0: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Magician player sees a real number where the card was blank, the same one the advice uses.
+
+**Score:** 2
+
+#### Pull Request
+
+the Total stats card shows M.ATT for a Magician
+
+[PR #110](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/110)
+
+---
+
+### DEPLOY: app/87-overall-vs-pair · 20261004-131855Z
+
+The Defense advice now weighs an overall against a top and bottom bought together. When an overall is in
+play (the shop has one for your level, or you wear one), a pair of top + bottom is a candidate of its own,
+with both prices added up. "Until your next upgrade" now also sees an overall coming for a top or bottom,
+and a better top + bottom coming for an overall. If a single top or bottom wins over an overall you wear,
+the advice now says that the other half is left bare. Thief and Bowman shops have no overall, so their advice
+does not change.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A Magician (from level 25) or a Warrior no longer gets overall advice that only looks at one half. The
+advice can now say "buy this top and these pants together", and a top's payback no longer runs past the
+level where the robe would replace it.
+
+**Score:** 3
+
+#### Pull Request
+
+Armor advice: weigh an overall against a top+bottom pair
+
+[PR #121](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/121)
+
+---
+
+### DEPLOY: app/job-behind-level · 20261004-131732Z
+
+The job you play now sits behind your level at the top of the start screen ("Level 10 (Magician)") instead of in the title of the Ability points card, which is now just "Ability points".
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player sees their level and job together at a glance, where they look first.
+
+**Score:** 2
+
+#### Pull Request
+
+Show the job behind the level instead of behind Ability points
+
+[PR #120](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/120)
+
+---
+
+### DEPLOY: app/64-helpful-stranger-arrows · 20261004-131127Z
+
+A Bowman who has the Helpful Stranger citizenship rank can turn on "Ik heb Helpful Stranger" under the Ammo
+row of the equipment card. The bronze arrows (+1 W.ATT, 2 mesos per arrow, Raymond's shop) then appear in the
+ammo list, and picking one makes the EXP per meso and the upgrade advice count with it. Switched off, the app
+counts with the plain arrow, as before.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Bowman with the rank can now see whether bronze arrows pay for themselves in mesos, which was the open
+question of #64.
+
+**Score:** 2
+
+#### Pull Request
+
+Bowman: a Helpful Stranger switch that lets bronze arrows count
+
+[PR #119](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/119)
+
+---
 
 ### DEPLOY: app/108-attack-damage-range · 20261004-130241Z
 
