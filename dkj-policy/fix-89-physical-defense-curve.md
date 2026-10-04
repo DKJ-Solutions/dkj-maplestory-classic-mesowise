@@ -39,21 +39,40 @@
 
 ### PLAN
 
+#### Scope
+
+Issue #89: the mob model's step 2 subtracted a monster's WDEF from a physical hit (x 0.5 on the max, x 0.6 on
+the min, marked as an assumption), while the damage guide the Magician data cites divides by (DEF + 100). One
+of the two had to go. The 1% per level damping in the same step stays an assumption (#20).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Read the raw guide (meowdb.com/msclassic/guides/explaining-the-damage-formula, October 4, 2026), section
+  "Defense": "Normal defended hit = Raw × 100 / (EffectiveDEF + 100)" and "Physical and magic defense use the
+  same curve with different stats". So a physical hit uses that curve with the monster's WDEF
+- [x] `src/calc/mobModel.ts`: `defended(raw, def)` with that source, used for step 2's min and max hit
 
 ### TEST
 
+- [x] `mobModel.test.ts`: #89's own example (DEF 50, hit 100 → 66.7), DEF 0 leaves the hit whole, a full
+  `estimateMob` on the curve, and the floor of 1 under an extreme WDEF (the old test relied on the subtraction
+  going negative)
+- [x] `npm run lint` clean, 923 of 923 tests pass
+
 ### DEPLOY: fix/89-physical-defense-curve
 
-**Score:**
+The app now lowers your hits on a monster with the defence formula from MeowDB's damage guide (your hit × 100 /
+(the monster's WDEF + 100)) instead of an unsourced subtraction. Against a monster with 50 WDEF a 100-damage
+hit now counts as 67 instead of 70 to 75, so spots with tougher monsters can rank a little lower.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Physical damage uses the sourced defence curve, not a WDEF subtraction
-
