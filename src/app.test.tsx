@@ -7,8 +7,7 @@ import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
-import { knownSpotPatch } from './data/spots'
-import { newDraft } from './spotDraft'
+import { mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
 
 const claw = (name: string) => {
@@ -148,11 +147,19 @@ describe('begin zonder opslag', () => {
     expect(screen.getByRole('button', { name: /Level up/ }).textContent).toContain('lv 10 → 11')
   })
 
-  it('toont bovenaan het huidige level en zet de level up-knop onder de plekken (#84)', () => {
+  it('toont bovenaan het huidige level en zet de level up-knop onder de mob-kaart (#84)', () => {
     expect(document.querySelector('.current-level')?.textContent).toBe('Level 10')
-    const add = screen.getByRole('button', { name: 'Plek toevoegen' })
+    const mob = screen.getByRole('button', { name: /Laatst gejaagd op/ })
     const up = screen.getByRole('button', { name: /Level up/ })
-    expect(add.compareDocumentPosition(up) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(mob.compareDocumentPosition(up) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // Dave, 4 oktober 2026: geen plekken, geen knop om ze toe te voegen en geen voorbeeldplek meer.
+  it('heeft geen voorbeeldplek, geen lijst van plekken en geen knop Plek toevoegen', () => {
+    expect(screen.queryByRole('button', { name: 'Plek toevoegen' })).toBeNull()
+    expect(screen.queryByText(/Voorbeeldplek/)).toBeNull()
+    expect(document.querySelector('ol.spots')).toBeNull()
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('Kies een mob')
   })
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
@@ -497,20 +504,24 @@ describe('bewaren na elke wijziging', () => {
     expect(profileFields().luk).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
   })
 
-  it('bewaart een toegevoegde plek', () => {
+  it('bewaart de gekozen mob als enige plek, en een andere mob vervangt hem', () => {
     expect(stored(STORAGE_KEY)).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Plek toevoegen' }))
-    expect(stored(STORAGE_KEY).spots).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: /Laatst gejaagd op/ }))
+    const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLDialogElement
+    expect(dialog.open).toBe(true)
+    const select = within(dialog).getByLabelText('De mob die je het meest killt') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'Pig' } })
+    expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig', monster: 'Pig' }])
+    fireEvent.change(select, { target: { value: 'Slime' } })
+    expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime', monster: 'Slime' }])
+    expect(screen.getByRole('button', { name: /Laatst gejaagd op/ }).textContent).toContain('Slime (lv 6)')
   })
 
-  it('opent een nieuwe plek meteen in zijn popup, en Verwijderen sluit die (#106)', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Plek toevoegen' }))
-    const dialog = document.querySelector('li.spot dialog.card-dialog') as HTMLDialogElement
-    expect(dialog.open).toBe(true)
-    expect(dialog.getAttribute('aria-label')).toBe('Naamloze plek')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Verwijderen' }))
-    expect(document.querySelector('li.spot dialog')).toBeNull()
-    expect(stored(STORAGE_KEY).spots).toHaveLength(1)
+  it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
+    expect(document.querySelector('.summary')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Laatst gejaagd op/ }))
+    fireEvent.change(screen.getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
+    expect(document.querySelector('.summary')?.textContent).toMatch(/^Op Pig · lv 10: kost ± [\d.]+ meso$/)
   })
 
   it('toont de equipment op het controlescherm direct op de kaart, zonder popup (#106)', () => {
@@ -742,10 +753,7 @@ describe('adviesscherm na de level-up', () => {
       STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        spots: [
-          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
-          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
-        ],
+        spots: [mobDraft('Ribbon Pig')],
       }),
     )
     // Na de level-up wint Lucky Seven (van 2 naar 3) bij deze stats; gemeten met skillPointAdvice, niet afgeleid.
@@ -791,10 +799,7 @@ describe('een Warrior in de app', () => {
       STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        spots: [
-          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
-          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
-        ],
+        spots: [mobDraft('Pig')],
       }),
     )
     render(<App />)
@@ -810,7 +815,7 @@ describe('een Warrior in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
-      expect(home.textContent).toMatch(/Beste plek: .* · lv 20: kost /)
+      expect(home.textContent).toMatch(/Op .* · lv 20: kost /)
       expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
@@ -1134,10 +1139,7 @@ describe('het geslacht (issue #55)', () => {
         STORAGE_KEY,
         JSON.stringify({
           version: 1,
-          spots: [
-            { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
-            { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
-          ],
+          spots: [mobDraft('Ribbon Pig')],
         }),
       )
       localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
@@ -1171,10 +1173,7 @@ describe('een Bowman in de app', () => {
       STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        spots: [
-          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
-          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
-        ],
+        spots: [mobDraft('Ribbon Pig')],
       }),
     )
     render(<App />)
@@ -1192,7 +1191,7 @@ describe('een Bowman in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
-      expect(home.textContent).toMatch(/Beste plek: .* · lv 20: kost /)
+      expect(home.textContent).toMatch(/Op .* · lv 20: kost /)
       expect(costText()).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
@@ -1330,10 +1329,7 @@ describe('een Magician in de app', () => {
       STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        spots: [
-          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
-          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
-        ],
+        spots: [mobDraft('Ribbon Pig')],
       }),
     )
     render(<App />)

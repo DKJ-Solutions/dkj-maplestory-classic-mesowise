@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_SPOTS, POTIONS, findKnownSpot, knownSpotPatch, monsterLevels } from './spots'
+import { KNOWN_SPOTS, MOBS, POTIONS, findKnownSpot, huntedMob, knownSpotPatch, mobDraft, monsterLevels } from './spots'
 import type { Source } from './types'
 import { newDraft } from '../spotDraft'
 
@@ -132,5 +132,39 @@ describe('knownSpotPatch', () => {
     const terug = { ...gekozen, ...knownSpotPatch('') }
     expect(findKnownSpot(terug.known)).toBeUndefined()
     expect(terug.name).toBe(k.name)
+  })
+})
+
+describe('de mobs (Dave, 4 oktober 2026: geen maps meer, alleen de mob waarop je jaagt)', () => {
+  it('zijn elk monster één keer, van laag naar hoog level, met een geldige bron', () => {
+    const names = MOBS.map((m) => m.name)
+    expect(new Set(names).size).toBe(names.length)
+    const levels = MOBS.map((m) => m.level)
+    expect(levels).toEqual([...levels].sort((a, b) => a - b))
+    for (const m of MOBS) expectValidSource(m.source, m.name)
+  })
+
+  it('bevatten elk monster van de bekende plekken', () => {
+    for (const k of KNOWN_SPOTS) for (const m of k.monsters) expect(MOBS).toContain(m)
+  })
+
+  it('maken van een mob een plek met alleen dat monster, en de voorgestelde velden leeg', () => {
+    const d = mobDraft('Pig')!
+    expect(d).toEqual({ id: 'mob:Pig', name: 'Pig', known: 'mob:Pig', monster: 'Pig', kills: '', expPerHour: '', potions: '', ammo: '', travel: '0' })
+    const spot = findKnownSpot(d.known)!
+    expect(spot.monsters.map((m) => m.name)).toEqual(['Pig'])
+    expect(spot.source).toBe(spot.monsters[0].source)
+  })
+
+  it('geven bij een onbekende naam geen plek', () => {
+    expect(mobDraft('Bestaat Niet')).toBeUndefined()
+  })
+
+  it('leest de mob terug uit een plek, en niets uit een map of een eigen plek', () => {
+    expect(huntedMob(mobDraft('Slime'))?.name).toBe('Slime')
+    expect(huntedMob({ ...newDraft('a'), ...knownSpotPatch(KNOWN_SPOTS[0].id) })).toBeUndefined()
+    expect(huntedMob(newDraft('a'))).toBeUndefined()
+    expect(huntedMob(undefined)).toBeUndefined()
+    expect(huntedMob({ ...newDraft('a'), known: 'mob:Bestaat Niet' })).toBeUndefined()
   })
 })

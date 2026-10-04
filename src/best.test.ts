@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ASSUMPTION_VARIANTS, bestVerdict, isDangerousSpot, resolveAll } from './best'
 import { expPerMeso } from './calc/expPerMeso'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
-import { findKnownSpot, knownSpotPatch } from './data/spots'
+import { findKnownSpot, knownSpotPatch, mobDraft } from './data/spots'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { suggestMonsters } from './suggest'
@@ -106,8 +106,22 @@ describe('bestVerdict', () => {
     expect(v.excluded.get('eng')).toBe('dangerous')
   })
 
-  it('is robuust (en zonder winnaar) als er niets te kiezen valt', () => {
-    expect(bestVerdict([own('a', 1, 1)], profile)).toMatchObject({ bestId: null, robust: true })
+  it('is robuust en zonder winnaar zonder plek', () => {
     expect(bestVerdict([], profile)).toMatchObject({ bestId: null, robust: true })
+  })
+
+  // Eén plek is de mob waarop je jaagt (Dave, 4 oktober 2026): daar rekent de app mee, er valt niets te kiezen.
+  it('neemt de enige plek als winnaar, robuust en zonder uitsluitingen', () => {
+    expect(bestVerdict([own('a', 1, 1)], profile)).toMatchObject({ bestId: 'a', robust: true, excluded: new Map() })
+  })
+
+  it('neemt een enige plek ook als hij gevaarlijk is: je jaagt er toch', () => {
+    const d = mobDraft('Dark Axe Stump')!
+    expect(isDangerousSpot(d, profile)).toBe(true)
+    expect(bestVerdict([d], profile)).toMatchObject({ bestId: d.id, excluded: new Map() })
+  })
+
+  it('geeft geen winnaar als de enige plek ongeldig is', () => {
+    expect(bestVerdict([{ ...own('a', 1, 1), expPerHour: '' }], profile).bestId).toBeNull()
   })
 })

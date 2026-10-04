@@ -39,19 +39,40 @@
 
 ### PLAN
 
+Dave, October 4, 2026: remove the "Plek toevoegen" button and the example spot, and use no maps at all -- only the
+mob you kill most while levelling, picked on one card.
+
+- [x] Decide the model: one mob is the only spot; the calculation core keeps working on SpotDrafts
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/spots.ts`: `MOBS` (every monster once), a spot per mob (`mob:<name>`, that monster only, its own source), `mobDraft`, `huntedMob`
+- [x] `src/best.ts`: a single spot is the winner, even when dangerous; only an invalid one gives no number (`pickBest` needed two)
+- [x] `src/app.tsx`: the "Laatst gejaagd op" card replaces the spot list, the add button and the example spot; old saved maps and own spots are dropped on load
+- [x] `src/style.css`: the card's look; dead spot-list rules removed
 
 ### TEST
 
+- [x] Tests: mob data and helpers, single-spot verdict (valid, dangerous, invalid), no-mob cases in the advisors, the card in the app (pick, replace, cost appears, no button or example spot)
+- [x] `npm run lint` and `npx vitest run` green (1178 tests)
+- [~] Screenshot at phone width: the browser extension was not connected; Dave looks at the preview before the merge
+
 ### DEPLOY: app/hunted-mob-card
 
-**Score:**
+The spot list is gone: no "Plek toevoegen" button, no example spot and no maps. One card, "Laatst gejaagd op", picks
+the mob you kill most; the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
+also when it is dangerous (the warning stays on the card). Kills per hour can still be overridden in its popup. A
+saved list of maps or own spots from before is dropped on load. Follow-ups: #122 (the hunting-ground question),
+#123 (removing the now unused map data).
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+A player no longer builds a list of spots: they pick the mob they hunt and get the cost of their level at once.
+Their old spots are gone after updating.
+
+**Score:** 4
 
 #### Pull Request
 

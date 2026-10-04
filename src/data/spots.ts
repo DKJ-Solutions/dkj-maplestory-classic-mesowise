@@ -89,7 +89,16 @@ export const POTIONS: readonly Potion[] = [
   { name: 'Blue Potion', hp: 0, mp: 200, price: 220, source: { url: 'https://meowdb.com/msclassic/item-db/273', retrieved: R } },
 ]
 
-const byId = new Map(KNOWN_SPOTS.map((k) => [k.id, k]))
+/** De mobs om uit te kiezen, van laag naar hoog level. */
+export const MOBS: readonly Monster[] = Object.values(MONSTERS)
+
+/**
+ * Eén mob als plek met alleen dat monster (Dave, 4 oktober 2026): de app rekent met de mob waarop je het meest jaagt,
+ * niet meer met maps. De bron is de pagina van het monster.
+ */
+const MOB_SPOTS: readonly KnownSpot[] = MOBS.map((m) => ({ id: `mob:${m.name}`, name: m.name, source: m.source, monsters: [m] }))
+
+const byId = new Map([...KNOWN_SPOTS, ...MOB_SPOTS].map((k) => [k.id, k]))
 
 /** Het laagste en hoogste level van de monsters op een plek. */
 export function monsterLevels(spot: KnownSpot): { min: number; max: number } {
@@ -111,4 +120,17 @@ export function knownSpotPatch(id: string): Partial<SpotDraft> {
   const spot = findKnownSpot(id)
   if (!spot) return { known: undefined, monster: undefined, kills: undefined }
   return { known: spot.id, name: spot.name, monster: undefined, kills: '', expPerHour: '', potions: '', ammo: '' }
+}
+
+/** De plek voor een mob: alleen dat monster, en de velden die de app zelf voorstelt leeg. Undefined bij een onbekende naam. */
+export function mobDraft(name: string): SpotDraft | undefined {
+  const spot = findKnownSpot(`mob:${name}`)
+  if (!spot) return undefined
+  return { id: spot.id, name: spot.name, known: spot.id, monster: name, kills: '', expPerHour: '', potions: '', ammo: '', travel: '0' }
+}
+
+/** De mob waarop je jaagt, uit een bewaarde plek; undefined als het geen mob is (een map of een eigen plek van vroeger). */
+export function huntedMob(d: SpotDraft | undefined): Monster | undefined {
+  const spot = d?.known?.startsWith('mob:') ? findKnownSpot(d.known) : undefined
+  return spot?.monsters[0]
 }

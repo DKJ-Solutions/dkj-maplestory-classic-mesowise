@@ -94,10 +94,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .result { display: flex; justify-content: space-between; align-items: baseline; }
 .result strong { font-size: 2rem; color: var(--accent); }
 
-/* Plekkenlijst */
-.spots { list-style: none; margin: 0 0 1rem; padding: 0; }
-.spots .card { margin-bottom: 0.75rem; padding: 0; overflow: hidden; }
-.spot.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+/* De mob waarop je jaagt (Dave, 4 oktober 2026): één kaart, de mob onder de titel. */
+.hunted { padding: 0; overflow: hidden; }
+.hunted-mob { display: block; color: var(--muted); font-size: 0.875rem; font-weight: 400; }
+.hunted .hint a { color: var(--accent); }
 .spot.invalid { border-color: #dc2626; }
 
 .spot-head {
@@ -131,17 +131,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .spot-value { grid-column: 2; text-align: right; }
 .spot-value strong { display: block; font-size: 1.5rem; color: var(--accent); }
 .spot-value small { color: var(--muted); font-size: 0.875rem; }
-.badge {
-  display: inline-block;
-  margin-right: 0.5rem;
-  padding: 0.0625rem 0.5rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.75rem;
-  font-style: normal;
-  font-weight: 700;
-}
 .error { margin: 0; padding: 0 1rem 0.75rem; color: #dc2626; font-size: 0.875rem; }
 /* Ontwikkelaarsinfo: rood en gestippeld omlijnd, zodat het niet leest als uitleg voor de speler. */
 .debug { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; border: 1px dashed #dc2626; border-radius: 0.5rem; color: #dc2626; font-size: 0.75rem; }
@@ -162,11 +151,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   cursor: pointer;
 }
 .btn.primary { width: 100%; background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.danger { color: #dc2626; }
-.known { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
-.known ul { margin: 0 0 0.375rem; padding-left: 1.25rem; }
-.known p { margin: 0; }
-.known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
+.credit a { color: var(--accent); overflow-wrap: anywhere; }
 .profile, .total-stats { padding: 0; overflow: hidden; }
 .profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }

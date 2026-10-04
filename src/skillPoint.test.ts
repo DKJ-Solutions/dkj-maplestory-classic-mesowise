@@ -104,7 +104,7 @@ describe('skillPointAdvice', () => {
   it('geeft geen advies zonder profiel, buiten de EXP-tabel of zonder "Beste"', () => {
     expect(skillPointAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(skillPointAdvice(drafts, { ...profile, level: 31 })).toEqual({ kind: 'none' })
-    expect(skillPointAdvice([own('a', 40_000, 10_000)], profile)).toEqual({ kind: 'none' })
+    expect(skillPointAdvice([], profile)).toEqual({ kind: 'none' })
   })
 })
 

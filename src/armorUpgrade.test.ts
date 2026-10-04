@@ -90,7 +90,7 @@ describe('armorUpgradeAdvice: wanneer er niets te rekenen valt', () => {
     expect(armorUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(armorUpgradeAdvice(drafts, strong({ level: 9 }))).toEqual({ kind: 'none' })
     expect(armorUpgradeAdvice(drafts, strong({ level: 31 }))).toEqual({ kind: 'none' })
-    expect(armorUpgradeAdvice([own('a', 40_000, 10_000)], strong({ level: 15 }))).toEqual({ kind: 'none' })
+    expect(armorUpgradeAdvice([], strong({ level: 15 }))).toEqual({ kind: 'none' })
   })
 
   it('rekent op de randen van de tabel wel: lv 10 en lv 30', () => {

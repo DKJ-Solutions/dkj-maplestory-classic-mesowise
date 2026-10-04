@@ -1,14 +1,13 @@
 import type { ComponentChildren, Ref, RefObject } from 'preact'
 import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
-import type { NotBestReason } from './calc/pickBest'
-import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
-import { bestVerdict, resolveAll } from './best'
-import { browserStorage, exampleSpot, loadSpots, saveSpots } from './storage/spots'
-import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, newId, toDraft, type SpotDraft } from './spotDraft'
+import { isInvalid, type RankResult } from './calc/rankSpots'
+import { bestVerdict } from './best'
+import { browserStorage, loadSpots, saveSpots } from './storage/spots'
+import { MAX_NAME_LENGTH, type SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
-import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
-import type { ArmorSlot, KnownSpot, Potion } from './data/types'
+import { MOBS, findKnownSpot, huntedMob, mobDraft } from './data/spots'
+import type { ArmorSlot, Potion } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
@@ -26,7 +25,7 @@ import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gen
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, loadProfile, totalAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { HP_POTION, hourPlan, isEstimated, pickMonster, resolveSpot, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { HP_POTION, hourPlan, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -38,10 +37,10 @@ const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z
 
 const storage = browserStorage()
 
+/** De bewaarde mob als enige plek; maps en eigen plekken van vroeger vallen weg (Dave, 4 oktober 2026). */
 function initialDrafts(): SpotDraft[] {
-  const saved = loadSpots(storage)
-  // null = nog nooit bewaard (of onbruikbaar): voorbeeldplek; [] = bewust leeg gelaten.
-  return saved ?? [toDraft(exampleSpot(newId()))]
+  const saved = loadSpots(storage)?.find((d) => huntedMob(d) !== undefined)
+  return saved ? [saved] : []
 }
 
 function Field(props: {
@@ -217,8 +216,8 @@ const ICON_PATHS = {
   person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
   // Een staafdiagram: Total stats
   chart: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
-  // Een kaartspeld: een plek
-  pin: ['M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21Z', 'M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
+  // Een vizier: de mob waarop je jaagt
+  target: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 1v4', 'M12 19v4', 'M1 12h4', 'M19 12h4'],
 } as const
 
 function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
@@ -497,7 +496,7 @@ function LevelCostCard(props: { cost: LevelCost }) {
         </p>
       )}
       {c.kind === 'noBest' && (
-        <p class="hint">{step} Zodra een plek het label "Beste" heeft, staat hier wat dat level in mesos kost.</p>
+        <p class="hint">{step} Kies de mob waarop je jaagt, dan staat hier wat dat level in mesos kost.</p>
       )}
       {c.kind === 'cost' && (
         <>
@@ -505,11 +504,10 @@ function LevelCostCard(props: { cost: LevelCost }) {
             {c.meso === null ? <strong>Niet haalbaar</strong> : c.meso === 0 ? <strong>Gratis</strong> : <strong>± {nfInt.format(Math.ceil(c.meso))} meso</strong>}
           </p>
           <p class="hint">
-            {step} Beste plek: {placeName(c.spotName)}.
-            {c.meso === null && ' Die plek levert geen EXP op.'}
-            {c.meso === 0 && ' Die plek kost niets.'}
+            {step} Op {c.spotName}.
+            {c.meso === null && ' Die mob levert geen EXP op.'}
+            {c.meso === 0 && ' Die mob kost niets.'}
           </p>
-          {!c.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere plek misschien goedkoper.</p>}
         </>
       )}
       <p class="source">
@@ -1206,65 +1204,8 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   )
 }
 
-function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
-  const onChange = (e: Event) => props.onChange(knownSpotPatch((e.currentTarget as HTMLSelectElement).value))
-  return (
-    <label class="field">
-      <span>Bekende plek</span>
-      <select value={props.value} onChange={onChange}>
-        <option value="">Eigen plek</option>
-        {KNOWN_SPOTS.map((k) => {
-          const lv = monsterLevels(k)
-          return (
-            <option key={k.id} value={k.id}>
-              {k.name} (monsters lv {lv.min}–{lv.max})
-            </option>
-          )
-        })}
-      </select>
-    </label>
-  )
-}
-
 /** De naam van een potion met wat hij herstelt, zodat de Orange (MP) van de Orange Potion (HP) te onderscheiden is. */
 const potionLabel = (p: Potion) => `${p.name} (${p.mp > 0 ? 'MP' : 'HP'})`
-
-/** Het monster kiezen, met het voorstel van het model en de waarschuwingen. */
-function MonsterSuggestionBlock(props: {
-  suggestions: readonly MonsterSuggestion[]
-  picked: MonsterSuggestion
-  draft: SpotDraft
-  onChange: (patch: Partial<SpotDraft>) => void
-}) {
-  const { suggestions, picked: s } = props
-  const plan = hourPlan(s, s.estimate.killsPerHour)
-  const onMonster = (e: Event) => props.onChange({ monster: (e.currentTarget as HTMLSelectElement).value })
-  return (
-    <div class="suggest">
-      <label class="field">
-        <span>Monster waarop je traint</span>
-        <select value={s.monster.name} onChange={onMonster}>
-          {suggestions.map((o) => (
-            <option key={o.monster.name} value={o.monster.name}>
-              {o.monster.name} (lv {o.monster.level}): ± {nfInt.format(o.expPerHour)} EXP per uur
-            </option>
-          ))}
-        </select>
-      </label>
-      <p class="hint">
-        Voorstel: ± {nfInt.format(plan.killsPerHour)} kills per uur, raakkans {nfPct.format(s.estimate.hitChance)},{' '}
-        {nf.format(plan.hpPotionsPerHour)} × {potionLabel(HP_POTION)} en {nf.format(plan.mpPotionsPerHour)} × {potionLabel(s.mpPotion)} per uur.
-      </p>
-      <Warnings s={s} />
-      <Field
-        label="Kills per uur (leeg = het voorstel)"
-        value={props.draft.kills ?? ''}
-        placeholder={nfInt.format(plan.killsPerHour)}
-        onInput={(kills) => props.onChange({ kills })}
-      />
-    </div>
-  )
-}
 
 function Warnings(props: { s: MonsterSuggestion | undefined }) {
   const e = props.s?.estimate
@@ -1277,141 +1218,96 @@ function Warnings(props: { s: MonsterSuggestion | undefined }) {
   )
 }
 
-function KnownSpotInfo(props: { spot: KnownSpot }) {
-  const { spot } = props
-  return (
-    <div class="known">
-      <ul>
-        {spot.monsters.map((m) => (
-          <li key={m.name}>
-            <a href={m.source.url} target="_blank" rel="noopener noreferrer">
-              {m.name}
-            </a>
-            : lv {m.level}, {nfInt.format(m.hp)} HP, {nfInt.format(m.expPerKill)} EXP per monster
-          </li>
-        ))}
-      </ul>
-      <p>
-        <a href={spot.source.url} target="_blank" rel="noopener noreferrer">
-          {spot.name}
-        </a>{' '}
-        op NiaMeowDB, opgehaald op {formatDate(spot.source.retrieved)}.
-      </p>
-    </div>
-  )
-}
-
-function SpotCard(props: {
-  result: RankResult
-  draft: SpotDraft
+/**
+ * De mob waarop je het meest jaagt (Dave, 4 oktober 2026): geen maps en geen lijst van plekken meer. De app rekent met
+ * deze mob; kills per uur stelt hij zelf voor, en wie het beter weet vult ze zelf in.
+ */
+function HuntedMobCard(props: {
+  result: RankResult | undefined
+  draft: SpotDraft | undefined
   profile: Profile | null
-  /** Of de app voor je job kan rekenen; zo niet, dan zijn er geen voorstellen en is er geen "Beste". */
+  /** Of de app voor je job kan rekenen; zo niet, dan zijn er geen voorstellen. */
   computed: boolean
-  job: Job
-  best: boolean
-  /** False als de winnaar wisselt zodra een aanname anders uitvalt. */
-  robust: boolean
-  notBest: NotBestReason | undefined
-  open: boolean
-  onToggle: () => void
+  onPick: (name: string) => void
   onChange: (patch: Partial<SpotDraft>) => void
-  onRemove: () => void
 }) {
-  const { result, draft, profile, computed, best, robust, notBest, open } = props
+  const { result, draft, profile, computed } = props
+  const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
-  const invalid = isInvalid(result)
-  const title = placeName(draft.name)
-  const known = findKnownSpot(draft.known)
-  const suggestions = useMemo(() => (known && profile ? suggestMonsters(profile, known) : []), [known, profile])
-  const picked = pickMonster(suggestions, draft.monster)
-  // Bij een bekende plek met een geldig profiel: wat de app voorstelt, als placeholder in de lege velden.
-  const auto = useMemo(
-    () => (known && profile ? resolveSpot({ ...draft, expPerHour: '', potions: '', ammo: '' }, known, profile) : null),
-    [draft, known, profile],
-  )
-  const estimated = isEstimated(draft, known, profile)
-  const travelMissing = Boolean(known) && result.spot.cost.travel === 0
-  const warn = Boolean(picked && (picked.estimate.dangerous || picked.estimate.missesOften))
-  const badge = !robust ? 'Hangt af van de aannames' : estimated ? 'Beste (schatting)' : 'Beste'
-  const hint = (v: number | undefined) => (v !== undefined && Number.isFinite(v) ? nfInt.format(v) : undefined)
-  const leeg = known && profile ? ' (leeg = het voorstel)' : ''
-  const value = invalid
-    ? '–'
-    : Number.isFinite(result.expPerMeso)
-      ? nf.format(result.expPerMeso)
-      : 'onbegrensd (kost niets)'
+  const mob = huntedMob(draft)
+  const known = findKnownSpot(draft?.known)
+  const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
+  const plan = picked ? hourPlan(picked, picked.estimate.killsPerHour) : undefined
+  const invalid = result !== undefined && isInvalid(result)
+  const value = !result || invalid ? '–' : Number.isFinite(result.expPerMeso) ? nf.format(result.expPerMeso) : 'onbegrensd (kost niets)'
+  const title = 'Laatst gejaagd op'
+  const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
   return (
-    <li class={`card spot${best ? ' best' : ''}${invalid ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={props.onToggle}>
+    <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
+      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
         <span class="spot-name with-icon">
-          <CardIcon name="pin" />
+          <CardIcon name="target" />
           <span>
-            {best && <em class="badge">{badge}</em>}
             {title}
+            <small class="hunted-mob">{mob ? `${mob.name} (lv ${mob.level})` : 'Kies een mob'}</small>
           </span>
         </span>
-        <span class="spot-value">
-          <strong>{value}</strong>
-          <small>EXP per meso</small>
-        </span>
+        {mob && (
+          <span class="spot-value">
+            <strong>{value}</strong>
+            <small>EXP per meso</small>
+          </span>
+        )}
       </CardHead>
-      {(estimated || warn || notBest || travelMissing) && (
+      {picked && (picked.estimate.dangerous || picked.estimate.missesOften) && (
         <div class="spot-notes">
           <Warnings s={picked} />
-          {notBest === 'dangerous' && <p class="hint">Geen "Beste": een gevaarlijke plek telt daarvoor niet mee.</p>}
-          {notBest === 'lowExp' && <p class="hint">Geen "Beste": deze plek levert minder dan de helft van de EXP per uur van de veilige plek die het meeste oplevert.</p>}
-          {best && !robust && (
-            <p class="hint">
-              Valt een aanname anders uit (hoeveel van de tijd je echt aanvalt, hoe vaak je geraakt wordt), dan wint
-              een andere plek of geen.
-            </p>
-          )}
-          {estimated && (
-            <p class="hint">
-              Schatting voor één monster ({picked?.monster.name}, gekozen op de meeste EXP per uur), zonder reistijd en
-              spawnsnelheid.
-            </p>
-          )}
-          {travelMissing && <p class="hint">Reiskosten zijn niet meegerekend. Vul ze zelf in als je ze kent.</p>}
         </div>
       )}
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
       {open && (
-        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={props.onToggle}>
-          <KnownSpotPicker value={known?.id ?? ''} onChange={props.onChange} />
-          {known && <KnownSpotInfo spot={known} />}
-          {picked && <MonsterSuggestionBlock suggestions={suggestions} picked={picked} draft={draft} onChange={props.onChange} />}
-          {computed && known && !profile && <p class="warn">Vul je karakter volledig in, dan stelt de app kills per uur voor.</p>}
-          <Field text label="Naam van de plek" value={draft.name} onInput={(name) => props.onChange({ name })} />
-          <Field
-            label={`EXP per uur${leeg}`}
-            value={draft.expPerHour}
-            placeholder={hint(auto?.expPerHour)}
-            onInput={(expPerHour) => props.onChange({ expPerHour })}
-          />
-          <Field
-            label={`Potionkosten (meso per uur)${leeg}`}
-            value={draft.potions}
-            placeholder={hint(auto?.cost.potions)}
-            onInput={(potions) => props.onChange({ potions })}
-          />
-          {props.job !== 'warrior' && props.job !== 'magician' && (
-            <Field
-              label={`Ammokosten (meso per uur)${leeg}`}
-              value={draft.ammo}
-              placeholder={hint(auto?.cost.ammo)}
-              onInput={(ammo) => props.onChange({ ammo })}
-            />
+        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={() => setOpen(false)}>
+          <label class="field">
+            <span>De mob die je het meest killt</span>
+            <select value={mob?.name ?? ''} onChange={onMob}>
+              {!mob && <option value="">Kies een mob</option>}
+              {MOBS.map((m) => (
+                <option key={m.name} value={m.name}>
+                  {m.name} (lv {m.level})
+                </option>
+              ))}
+            </select>
+          </label>
+          {mob && (
+            <p class="hint">
+              {nfInt.format(mob.hp)} HP, {nfInt.format(mob.expPerKill)} EXP per kill. Bron:{' '}
+              <a href={mob.source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(mob.source.retrieved)}.
+            </p>
           )}
-          <Field label="Reiskosten (meso per uur)" value={draft.travel} onInput={(travel) => props.onChange({ travel })} />
-          <button type="button" class="btn danger" onClick={props.onRemove}>
-            Verwijderen
-          </button>
+          {picked && plan && (
+            <>
+              <p class="hint">
+                Voorstel: ± {nfInt.format(plan.killsPerHour)} kills per uur, raakkans {nfPct.format(picked.estimate.hitChance)},{' '}
+                {nf.format(plan.hpPotionsPerHour)} × {potionLabel(HP_POTION)} en {nf.format(plan.mpPotionsPerHour)} × {potionLabel(picked.mpPotion)} per uur.
+              </p>
+              <Warnings s={picked} />
+              <Field
+                label="Kills per uur (leeg = het voorstel)"
+                value={draft?.kills ?? ''}
+                placeholder={nfInt.format(plan.killsPerHour)}
+                onInput={(kills) => props.onChange({ kills })}
+              />
+            </>
+          )}
+          {computed && mob && !profile && <p class="warn">Vul je karakter volledig in, dan stelt de app kills per uur voor.</p>}
         </CardPopup>
       )}
-    </li>
+    </section>
   )
 }
 
@@ -1601,7 +1497,7 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; job: 
 function noCostReason(c: LevelCost): string | null {
   if (c.kind === 'noProfile') return 'Je karakter is niet volledig ingevuld.'
   if (c.kind === 'noTable') return `Voor lv ${c.level} kent de app de EXP nog niet.`
-  if (c.kind === 'noBest') return 'Er is nog geen plek met het label "Beste".'
+  if (c.kind === 'noBest') return 'Je hebt nog geen mob gekozen.'
   if (c.meso === null) return `${placeName(c.spotName)} levert geen EXP op.`
   return null
 }
@@ -1753,10 +1649,6 @@ function StatRow(props: { label: string; value: string; was: string | undefined;
   )
 }
 
-/** De ids van de plekken, van beste naar slechtste. */
-const rankedIds = (drafts: SpotDraft[], profile: Profile | null) =>
-  rankSpots(resolveAll(drafts, profile)).map((r) => r.spot.id)
-
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
@@ -1783,10 +1675,6 @@ export function App() {
   const totalError = equipError === null && totalKey ? statError : null
   const characterError = equipError === null && !totalKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
-  const [openId, setOpenId] = useState<string | null>(null)
-  // De getoonde volgorde staat vast tijdens het typen; hij wordt alleen opnieuw bepaald bij
-  // openen, sluiten, toevoegen en verwijderen.
-  const [order, setOrder] = useState<string[]>(() => rankedIds(drafts, profile))
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
@@ -1818,8 +1706,6 @@ export function App() {
   const skillAdvice = useMemo(() => skillPointAdvice(drafts, profile), [drafts, profile])
   const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment)), [drafts, profile, equipment])
-  const resultById = useMemo(() => new Map(verdict.ranked.map((r) => [r.spot.id, r])), [verdict])
-  const byId = useMemo(() => new Map(drafts.map((d) => [d.id, d])), [drafts])
 
   // De level-up-flow. De stap staat niet in de opslag (bij herladen begin je thuis); de ongedaan-
   // maak-gegevens blijven in het geheugen: het profiel van voor de level-up en de beste plek van toen.
@@ -1961,24 +1847,12 @@ export function App() {
     saveGender(storage, next)
     setGender(next)
   }
-  const toggle = (id: string) => {
-    setOrder(rankedIds(drafts, profile))
-    setOpenId(openId === id ? null : id)
-  }
-  const remove = (id: string) => {
+  // Een andere mob vervangt de vorige; je eigen kills per uur horen bij die vorige en vallen weg.
+  const pickMob = (name: string) => {
+    const next = mobDraft(name)
+    if (!next) return
     dirty.current = true
-    const rest = drafts.filter((d) => d.id !== id)
-    setDrafts(rest)
-    setOrder(rankedIds(rest, profile))
-    setOpenId((cur) => (cur === id ? null : cur))
-  }
-  const add = () => {
-    if (drafts.length >= MAX_SPOTS) return
-    dirty.current = true
-    const id = newId()
-    setDrafts([...drafts, newDraft(id)])
-    setOrder([id, ...rankedIds(drafts, profile)])
-    setOpenId(id)
+    setDrafts([next])
   }
 
   return (
@@ -1999,7 +1873,7 @@ export function App() {
               </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
-                  Beste plek: <strong>{placeName(cost.spotName)}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
+                  Op <strong>{cost.spotName}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
                 </p>
               )}
 
@@ -2036,40 +1910,18 @@ export function App() {
                 </section>
               )}
 
-              {drafts.length === 0 && <p class="empty">Nog geen plekken. Voeg er een toe om te vergelijken.</p>}
-
-              <ol class="spots">
-                {order.map((id) => {
-                  const draft = byId.get(id)
-                  const result = resultById.get(id)
-                  if (!draft || !result) return null
-                  return (
-                    <SpotCard
-                      key={id}
-                      result={result}
-                      draft={draft}
-                      profile={profile}
-                      computed={computed}
-                      job={job}
-                      best={computed && id === verdict.bestId}
-                      robust={verdict.robust}
-                      notBest={computed ? verdict.excluded.get(id) : undefined}
-                      open={openId === id}
-                      onToggle={() => toggle(id)}
-                      onChange={(patch) => update(id, patch)}
-                      onRemove={() => remove(id)}
-                    />
-                  )
-                })}
-              </ol>
-
-              <button type="button" class="btn primary" onClick={add} disabled={drafts.length >= MAX_SPOTS}>
-                Plek toevoegen
-              </button>
+              <HuntedMobCard
+                result={verdict.ranked[0]}
+                draft={drafts[0]}
+                profile={profile}
+                computed={computed}
+                onPick={pickMob}
+                onChange={(patch) => update(drafts[0].id, patch)}
+              />
 
               {computed && (
                 <p class="note">
-                  Een voorstel bij een bekende plek is een schatting. Het rekent met formules uit de community voor het
+                  Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
                   oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
                   tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
                   Weet je het beter, vul dan zelf je kills per uur in.
