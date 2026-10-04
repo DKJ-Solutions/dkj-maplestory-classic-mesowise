@@ -289,8 +289,11 @@ describe('Warrior-armor: de winkel', () => {
 
   it('geeft none zonder profiel of buiten de EXP-tabel', () => {
     expect(armorUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
-    expect(armorUpgradeAdvice(drafts, strong({ level: 9 }))).toEqual({ kind: 'none' })
     expect(armorUpgradeAdvice(drafts, strong({ level: 31 }))).toEqual({ kind: 'none' })
+  })
+
+  it('rekent ook onder lv 10, nu de EXP-tabel bij lv 1 begint (issue #146)', () => {
+    expect(armorUpgradeAdvice(drafts, strong({ level: 9 }))).toMatchObject({ kind: 'advice', level: 9 })
   })
 
   it('verandert niets voor de Thief: dezelfde winkel en de eis in LUK', () => {

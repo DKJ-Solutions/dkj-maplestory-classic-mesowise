@@ -47,7 +47,6 @@ const epm = (p: Profile) => {
 describe('clawUpgradeAdvice: wanneer er niets te rekenen valt', () => {
   it('geeft none zonder profiel, buiten de EXP-tabel of zonder "Beste"', () => {
     expect(clawUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
-    expect(clawUpgradeAdvice(drafts, { ...base, level: 9 })).toEqual({ kind: 'none' })
     expect(clawUpgradeAdvice(drafts, { ...base, level: 31 })).toEqual({ kind: 'none' })
     expect(clawUpgradeAdvice([], strong({ level: 15, clawWatk: 10 }))).toEqual({ kind: 'none' })
   })
@@ -317,8 +316,8 @@ describe('clawUpgradeAdvice: het eerstvolgende betere wapen (next)', () => {
 })
 
 describe('nextBetterWeapon (rechtstreeks, uit het profiel alleen)', () => {
-  it('noemt voor een Thief op lv 9 met een zwak wapen de Garnier vanaf lv 10, ook al valt er op lv 9 niets door te rekenen', () => {
-    expect(clawUpgradeAdvice(drafts, strong({ level: 9, clawWatk: 5 }))).toEqual({ kind: 'none' })
+  it('noemt voor een Thief op lv 9 met een zwak wapen de Garnier vanaf lv 10, en rekent op lv 9 nu ook het advies uit (issue #146)', () => {
+    expect(clawUpgradeAdvice(drafts, strong({ level: 9, clawWatk: 5 }))).toMatchObject({ kind: 'advice', level: 9 })
     expect(nextBetterWeapon(strong({ level: 9, clawWatk: 5 }))).toMatchObject({ name: 'Garnier', level: 10 })
   })
 

@@ -20,10 +20,10 @@ describe('NPC_ARMOR', () => {
     expect(new Set(NPC_ARMOR.map((a) => a.name)).size).toBe(NPC_ARMOR.length)
   })
 
-  it('heeft alleen bekende slots en levels binnen 10 tot 30 (de EXP-tabel)', () => {
+  it('heeft alleen bekende slots en levels binnen 10 tot 30 (binnen de EXP-tabel)', () => {
     const first = EXP_TABLE_LEVELS[0]
     const last = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
-    expect([first, last]).toEqual([10, 30])
+    expect([first, last]).toEqual([1, 30])
     for (const a of NPC_ARMOR) {
       expect(SLOTS, a.name).toContain(a.slot)
       expect(a.level, a.name).toBeGreaterThanOrEqual(10)
