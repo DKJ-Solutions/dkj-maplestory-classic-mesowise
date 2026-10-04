@@ -307,8 +307,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 @media (min-width: 600px) { .stat-dialog { margin: auto; border-radius: 1rem; } }
-.stat-dialog-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
-.stat-dialog-head strong { flex: 1; min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
+/* Alles gecentreerd behalve het kruisje: links een leeg vak even breed als het kruisje, zodat de titel echt in het midden staat */
+.stat-dialog { text-align: center; }
+.stat-dialog-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.stat-dialog-head::before { content: ''; }
+.stat-dialog-head strong { min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
 .stat-dialog-close { flex: none; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; }
 .stat-dialog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -318,7 +321,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-dialog .equip-step { justify-content: center; grid-template-columns: 52px 5rem 52px; gap: 0.5rem; }
 .stat-dialog .equip-step button, .stat-dialog .equip-step input { height: 52px; }
 .stat-dialog .equip-step input { font-size: 1.25rem; font-weight: 700; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
-.stat-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; min-height: 44px; }
+.stat-dialog-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 1rem; min-height: 44px; }
 .stat-dialog-actions .equip-save { margin-left: 0; }
 .equip-step { display: grid; grid-template-columns: 44px 3.5rem 44px; gap: 0.25rem; }
 .equip-step input { display: block; height: 44px; margin: 0; padding: 0 0.25rem; box-sizing: border-box; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums;
