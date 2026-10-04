@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-**18 / 32 minor entries** <!-- pending-tally -->
+**18 / 33 minor entries** <!-- pending-tally -->
 
 ### DEPLOY: app/profile-stats-pencil · 20261004-101708Z
 
@@ -25,6 +25,30 @@ phone; level, max HP, weapon attack and WDEF are set where they belong (Level up
 Character stats editable only via the pencil, like equipment
 
 [PR #67](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/67)
+
+---
+
+### DEPLOY: data/44-bowman · 20261004-101706Z
+
+De Bowman heeft nu eigen spelgegevens, elk met zijn bron: de bogen, kruisbogen en armor uit de NPC-winkels voor
+level 10 tot 30, de gewone pijlen (1 meso per pijl), Arrow Blow en Double Shot per level, Critical Shot, The Eye
+of Amazon en Focus, HP en MP per level, de accuracy-formule en de constanten van de projectiel-schade. In de app
+verandert nog niets: de Bowman blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Bronze
+arrows ontbreken nog (#64), en een mannelijke Bowman heeft in de winkel geen broek op level 15.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bowman-gegevens met bronnen: bogen, kruisbogen, pijlen, armor, skills en HP/MP (stap 1 van #44)
+
+[PR #68](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/68)
 
 ---
 
