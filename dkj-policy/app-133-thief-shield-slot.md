@@ -50,7 +50,7 @@
 
 - [x] Vitest 1218/1218 green, `tsc --noEmit` clean
 - [x] Victor: no other code or text assumed the Thief has no shield (grep on "beide handen")
-- [ ] Dave looks at the equipment card for a Thief (visible result)
+- [x] Dave looks at the equipment card for a Thief (visible result): approved ("take it live")
 
 ### DEPLOY: app/133-thief-shield-slot
 
