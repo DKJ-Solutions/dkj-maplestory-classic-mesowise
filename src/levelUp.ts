@@ -7,8 +7,9 @@ import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
+import { isComputed, type Job } from './job'
 import { expPerMesoOf } from './mesoCostAt'
-import { parseProfile, PROFILE_FIELDS, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
+import { parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { SKILLS, type SkillId } from './skillPoint'
 import { luckySevenAt } from './suggest'
 
@@ -35,12 +36,14 @@ const wholeOf = (text: string): number | null => {
  * accuracy die daarbij hoort (alleen het verschil van het stat-deel, want de accuracy in het profiel is
  * het totaal uit het statvenster). Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
  * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van
- * parseProfile).
+ * parseProfile). HP per level en AP in LUK zijn van de Thief: een andere job krijgt alleen level +1 en de
+ * speler vult de rest zelf in.
  */
-export function applyLevelUp(draft: ProfileDraft): ProfileDraft {
+export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const level = numberOf(draft.level)
   if (level === null || !Number.isInteger(level) || level >= LEVEL_MAX) return draft
   const next: ProfileDraft = { ...draft, level: String(level + 1) }
+  if (!isComputed(job)) return next
   const hp = wholeOf(draft.hp)
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
@@ -92,6 +95,12 @@ export const CHECK_FIELDS = [
   ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
 ]
 
+/** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */
+export const checkFieldsFor = (job: Job) => {
+  const shown = profileFieldsFor(job)
+  return CHECK_FIELDS.filter((f) => shown.includes(f))
+}
+
 /** Een profiel als invulvelden, zoals ProfileDraft ze bewaart. */
 const toDraftStrings = (p: Profile): ProfileDraft =>
   Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, String(p[f.key])])) as ProfileDraft
@@ -101,7 +110,7 @@ const toDraftStrings = (p: Profile): ProfileDraft =>
  * profiel niet volledig, of staat de skill al op het maximum, dan blijft het zoals het was.
  */
 export function applySkillPoint(draft: ProfileDraft, id: SkillId): ProfileDraft {
-  const parsed = parseProfile(draft)
+  const parsed = parseProfile(draft, 'thief')
   const skill = SKILLS.find((s) => s.id === id)
   if (!('profile' in parsed) || !skill || skill.level(parsed.profile) >= skill.max) return draft
   return toDraftStrings(skill.plusOne(parsed.profile))

@@ -148,6 +148,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   font-weight: 700;
 }
 .error { margin: 0; padding: 0 1rem 0.75rem; color: #dc2626; font-size: 0.875rem; }
+/* Ontwikkelaarsinfo: rood en gestippeld omlijnd, zodat het niet leest als uitleg voor de speler. */
+.debug { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; border: 1px dashed #dc2626; border-radius: 0.5rem; color: #dc2626; font-size: 0.75rem; }
 .spot-body { padding: 0.25rem 1rem 1rem; border-top: 1px solid var(--border); }
 .spot-body .field:first-child { margin-top: 0.875rem; }
 .spot-body .btn { margin-top: 1rem; }
@@ -187,6 +189,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
+  .debug { color: #f87171; border-color: #f87171; }
   .spot.invalid, .profile.invalid, .skills.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }
@@ -194,6 +197,28 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* Je volgende level (issue #24) */
 .level-cost h2 { margin: 0 0 0.375rem; font-size: 1rem; }
+.job h2 { margin: 0; font-size: 1rem; }
+.job-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; margin: -0.5rem 0 0.375rem; }
+.job-head:last-child { margin-bottom: -0.5rem; }
+.job-edit {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.job-edit[aria-pressed='true'] { color: var(--accent); }
+.job-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Vier jobs naast elkaar, ook op een telefoon van 360px: de letters schalen mee met de breedte. */
+.job-choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.25rem; margin-bottom: 0.75rem; }
+.job-choice { min-width: 0; padding: 0.5rem 0.125rem; font-size: clamp(0.6875rem, 3.2vw, 0.875rem); white-space: nowrap; }
+.job-choice[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
+.job .hint:last-child { margin-bottom: 0; }
 .level-cost-value { margin: 0 0 0.25rem; }
 .level-cost-value strong { font-size: 2rem; color: var(--accent); }
 .level-cost .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
