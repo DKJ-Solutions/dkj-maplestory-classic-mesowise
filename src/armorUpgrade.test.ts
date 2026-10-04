@@ -508,3 +508,252 @@ describe('armorUpgradeAdvice: wat de standaardwaarden geven (Cody, luk/dex 100)'
     expect(a.robust).toBe(false)
   })
 })
+
+// ---- Het worn-pad: je weet wat je in een slot draagt ----
+type Worn = NonNullable<Parameters<typeof armorUpgradeAdvice>[2]>
+const adviceW = (p: Profile | null, worn: Worn): Advice => {
+  const a = armorUpgradeAdvice(drafts, p, worn)
+  if (a.kind !== 'advice') throw new Error('advies verwacht')
+  return a
+}
+/** De WDEF in het profiel met dit stuk erbij, met de hand: het gedragen stuk (w) eraf (niet onder 0), het nieuwe erbij. */
+const handWdef = (p: Profile, a: Armor, w: number) => Math.max(0, p.wdef - w) + a.wdef
+/** Netto met vervanging, met de hand: EXP-som over de horizon gedeeld door EXP per meso zonder en met het stuk, min de prijs. */
+const handNetW = (p: Profile, a: Armor, w: number, v: Assumptions = ASSUMPTIONS) => {
+  const exp = expSum(p.level, handTo(p.level, a))
+  return exp / epm(p, v) - exp / epm({ ...p, wdef: handWdef(p, a, w) }, v) - a.price
+}
+/** De kandidaten met worn, brute force over heel NPC_ARMOR: draagbaar, level genoeg en meer WDEF dan wat je draagt. */
+const wornNets = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS) =>
+  NPC_ARMOR.filter((a) => a.level <= p.level && p.luk >= a.luk && p.dex >= a.dex && a.wdef > (worn[a.slot] ?? -Infinity)).map((a) => ({
+    armor: a,
+    net: handNetW(p, a, worn[a.slot] ?? 0, v),
+  }))
+const bruteWinnerW = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS): Armor | null => {
+  const best = wornNets(p, worn, v).reduce<{ armor: Armor; net: number } | null>((m, x) => (!m || x.net > m.net ? x : m), null)
+  return best && best.net > 0 ? best.armor : null
+}
+
+describe('armorUpgradeAdvice met worn: kandidaatfilter', () => {
+  it('neemt alleen stukken met meer WDEF dan wat je draagt (lv 25 schoenen: draag je Sandals 12, dan alleen Enamel Boots 14)', () => {
+    const a = adviceW(strong({ level: 25 }), { shoes: 12 })
+    expect(choice(a, 'Red Enamel Boots').armor.wdef).toBe(14)
+    expect(names(a)).not.toContain('Blue Gidder Shoes')
+    expect(names(a)).not.toContain('Red Ninja Sandals')
+  })
+
+  it('neemt een stuk met gelijke WDEF niet mee (strikt meer): draag je de Boots 14, dan geen schoenkeuze', () => {
+    expect(adviceW(strong({ level: 25 }), { shoes: 14 }).choices.filter((c) => c.armor.slot === 'shoes')).toEqual([])
+    expect(adviceW(strong({ level: 25 }), { shoes: 13 }).choices.some((c) => c.armor.slot === 'shoes')).toBe(true)
+  })
+
+  it('geeft geen keuze voor een slot waar je het beste stuk al draagt, en laat andere slots ongemoeid', () => {
+    const p = strong({ level: 30 })
+    const a = adviceW(p, { top: 40 })
+    expect(a.choices.some((c) => c.armor.slot === 'top')).toBe(false)
+    const without = advice(drafts, p)
+    for (const slot of ['hat', 'bottom', 'shoes'] as const) {
+      expect(a.choices.find((c) => c.armor.slot === slot)?.armor, slot).toBe(without.choices.find((c) => c.armor.slot === slot)?.armor)
+    }
+  })
+
+  it('geeft bij worn 0 (niets aan) dezelfde kandidaten als zonder worn, met replaces 0 in plaats van undefined', () => {
+    const p = strong({ level: 25 })
+    const plain = advice(drafts, p)
+    const zero = adviceW(p, { hat: 0, top: 0, bottom: 0, shoes: 0 })
+    expect(zero.choices.map((c) => [c.armor.name, c.net, c.saving])).toEqual(plain.choices.map((c) => [c.armor.name, c.net, c.saving]))
+    expect(zero.choices.every((c) => c.replaces === 0)).toBe(true)
+    expect(zero.winner).toBe(plain.winner)
+  })
+
+  it('laat LUK/DEX bepalen wat draagbaar is, ook met worn (lv 25, LUK 35, DEX 10, hoed 21 aan: geen hoedkeuze)', () => {
+    const a = adviceW({ ...base, level: 25, luk: 35, dex: 10 }, { hat: 21 })
+    expect(a.choices.some((c) => c.armor.slot === 'hat')).toBe(false)
+  })
+
+  it('neemt de hoed lv 15 (WDEF 18) mee bij gedragen 17, en niet bij gedragen 18', () => {
+    const p = strong({ level: 15 })
+    expect(names(adviceW(p, { hat: 17 }))).toContain('Red Thief Hood')
+    expect(names(adviceW(p, { hat: 18 }))).not.toContain('Red Thief Hood')
+  })
+})
+
+describe('armorUpgradeAdvice met worn: replaces', () => {
+  it('zet replaces op de gedragen WDEF van het slot, en undefined bij een onbekend slot', () => {
+    const a = adviceW(strong({ level: 25 }), { shoes: 12, top: 24 })
+    expect(a.choices.find((c) => c.armor.slot === 'shoes')!.replaces).toBe(12)
+    expect(a.choices.find((c) => c.armor.slot === 'top')!.replaces).toBe(24)
+    expect(a.choices.find((c) => c.armor.slot === 'hat')!.replaces).toBeUndefined()
+    expect(a.choices.find((c) => c.armor.slot === 'bottom')!.replaces).toBeUndefined()
+  })
+
+  it('heeft zonder worn overal replaces undefined', () => {
+    for (const c of advice(drafts, strong({ level: 25 })).choices) expect(c.replaces).toBeUndefined()
+  })
+})
+
+describe('armorUpgradeAdvice met worn: netto met vervanging, met de hand', () => {
+  it('lv 20, Red Ninja Sandals (12) aan, Enamel Boots (14, 3.600): WDEF 72 - 12 + 14 = 74, horizon 20 t/m 30', () => {
+    const p = strong({ level: 20 })
+    const c = choice(adviceW(p, { shoes: 12 }), 'Red Enamel Boots')
+    expect(handWdef(p, armor('Red Enamel Boots'), 12)).toBe(74)
+    const saving = EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: 74 })
+    expect(c).toMatchObject({ from: 20, to: 30, truncated: true, replaces: 12 })
+    expect(c.saving).toBeCloseTo(saving, 6)
+    expect(c.net).toBeCloseTo(saving - 3_600, 6)
+  })
+
+  it('geeft een kleinere netto dan zonder worn (lv 20, Red Pao bovenop een Red Cloth Vest van 24: +8 WDEF in plaats van +32)', () => {
+    const p = strong({ level: 20 })
+    const w = choice(adviceW(p, { top: 24 }), 'Red Pao')
+    expect(w.net!).toBeLessThan(handNet(p, armor('Red Pao')))
+    expect(w.net!).toBeCloseTo(handNetW(p, armor('Red Pao'), 24), 6)
+    expect(w.net!).toBeCloseTo(EXP_20_24 / epm(p) - EXP_20_24 / epm({ ...p, wdef: 72 + 8 }) - 6_000, 6)
+  })
+
+  it('komt voor elke keuze op elk level, bij elke gedragen set, overeen met de hand', () => {
+    const sets: Worn[] = [{ top: 24 }, { shoes: 10, bottom: 17 }, { hat: 0, top: 0 }, { hat: 18, top: 32, bottom: 23, shoes: 12 }, { bottom: 5 }]
+    for (const level of LEVELS) {
+      const p = strong({ level })
+      for (const worn of sets) {
+        const a = adviceW(p, worn)
+        for (const c of a.choices) {
+          expect(c.net, `${c.armor.name} lv ${level} ${JSON.stringify(worn)}`).toBeCloseTo(handNetW(p, c.armor, worn[c.armor.slot] ?? 0), 6)
+        }
+        // En per slot is de gekozen netto de hoogste onder de kandidaten.
+        for (const slot of ['hat', 'top', 'bottom', 'shoes'] as const) {
+          const inSlot = wornNets(p, worn).filter((x) => x.armor.slot === slot)
+          const got = a.choices.find((c) => c.armor.slot === slot)
+          if (inSlot.length === 0) expect(got, `${slot} lv ${level}`).toBeUndefined()
+          else expect(got!.net, `${slot} lv ${level} ${JSON.stringify(worn)}`).toBeCloseTo(Math.max(...inSlot.map((x) => x.net)), 6)
+        }
+      }
+    }
+  })
+
+  it('trekt niet meer af dan er is: gedragen WDEF boven de profiel-WDEF geeft de WDEF van alleen het nieuwe stuk', () => {
+    // Profiel-WDEF 5, gedragen 12: WDEF wordt max(0, 5 - 12) + 14 = 14, niet 5 - 12 + 14 = 7.
+    const p = strong({ level: 20, wdef: 5 })
+    expect(handWdef(p, armor('Red Enamel Boots'), 12)).toBe(14)
+    const c = choice(adviceW(p, { shoes: 12 }), 'Red Enamel Boots')
+    expect(c.net!).toBeCloseTo(EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: 14 }) - 3_600, 6)
+  })
+
+  it('geeft withArmor met replaced de WDEF max(0, wdef - gedragen) + stuk', () => {
+    expect(withArmor(base, armor('Red Pao'), 24).wdef).toBe(72 - 24 + 32)
+    expect(withArmor({ ...base, wdef: 5 }, armor('Red Pao'), 24).wdef).toBe(32)
+    expect(withArmor(base, armor('Red Pao')).wdef).toBe(72 + 32)
+  })
+
+  it('laat een stuk dat je al draagt niet meer winnen (lv 20: zonder worn wint Red Ninja Sandals)', () => {
+    const p = strong({ level: 20 })
+    expect(advice(drafts, p).winner).toBe(armor('Red Ninja Sandals'))
+    const a = adviceW(p, { shoes: 12 })
+    expect(a.winner).not.toBe(armor('Red Ninja Sandals'))
+    expect(a.winner).toBe(bruteWinnerW(p, { shoes: 12 }))
+  })
+
+  it('kiest de winnaar zoals brute force, op elk level en bij verschillende gedragen sets', () => {
+    const sets: Worn[] = [{ shoes: 12 }, { top: 32 }, { hat: 18, top: 24, bottom: 17, shoes: 10 }, {}]
+    for (const level of LEVELS) {
+      const p = strong({ level })
+      for (const worn of sets) expect(adviceW(p, worn).winner, `lv ${level} ${JSON.stringify(worn)}`).toBe(bruteWinnerW(p, worn))
+    }
+  })
+})
+
+describe('armorUpgradeAdvice met worn: niet draagbaar', () => {
+  // Lv 25, LUK 35, DEX 10: Tiberian (hat 24), Brown Sneak (top 36) en Brown Sneak Pants (bottom 26) kunnen nog niet.
+  // Het beste draagbare stuk: Loosecap 21, Red Pao 32, Pao Bottoms 23.
+  const p = { ...base, level: 25, luk: 35, dex: 10 }
+  const slotsOf = (a: Advice) => a.notWearable.map((u) => u.armor.slot).sort()
+
+  it('noemt zonder worn alle drie de slots', () => {
+    expect(slotsOf(adviceW(p, {}))).toEqual(['bottom', 'hat', 'top'])
+  })
+
+  it('noemt een slot niet als je al evenveel WDEF draagt als het geblokkeerde stuk (gelijk is geen verbetering)', () => {
+    expect(slotsOf(adviceW(p, { hat: 24 }))).toEqual(['bottom', 'top'])
+    expect(slotsOf(adviceW(p, { top: 36 }))).toEqual(['bottom', 'hat'])
+    expect(slotsOf(adviceW(p, { bottom: 26 }))).toEqual(['hat', 'top'])
+  })
+
+  it('noemt een slot wel als je net minder draagt dan het geblokkeerde stuk', () => {
+    expect(slotsOf(adviceW(p, { hat: 23 }))).toContain('hat')
+    expect(slotsOf(adviceW(p, { top: 35 }))).toContain('top')
+    expect(slotsOf(adviceW(p, { bottom: 25 }))).toContain('bottom')
+  })
+
+  it('noemt een slot niet als je meer draagt dan het geblokkeerde stuk', () => {
+    expect(slotsOf(adviceW(p, { hat: 30, top: 50, bottom: 40 }))).toEqual([])
+  })
+
+  it('blijft het beste draagbare stuk als drempel gebruiken als je minder draagt (top 20 < 32: Brown Sneak 36 wordt genoemd)', () => {
+    expect(slotsOf(adviceW(p, { top: 20 }))).toContain('top')
+    // Zonder worn is niets aan (WDEF 0) gelijk aan niets ingevuld.
+    expect(adviceW(p, { hat: 0, top: 0, bottom: 0, shoes: 0 }).notWearable).toEqual(adviceW(p, {}).notWearable)
+  })
+
+  it('geeft het tekort ongewijzigd door, ook als worn is ingevuld', () => {
+    const u = adviceW(p, { hat: 23 }).notWearable.find((x) => x.armor.slot === 'hat')
+    expect(u).toEqual({ armor: armor('Red Tiberian'), needLuk: 5, needDex: 5 })
+  })
+})
+
+describe('armorUpgradeAdvice met worn: robuustheid', () => {
+  it('past worn ook toe onder elke aannamevariant: robust is precies "elke variant dezelfde winnaar" (brute force)', () => {
+    let trues = 0
+    let falses = 0
+    const sets: Worn[] = [{ shoes: 12 }, { top: 32, hat: 18 }, { bottom: 0 }]
+    for (const level of LEVELS) {
+      const p = strong({ level })
+      for (const worn of sets) {
+        const main = bruteWinnerW(p, worn)
+        const want = ASSUMPTION_VARIANTS.every((v) => bruteWinnerW(p, worn, v) === main)
+        const a = adviceW(p, worn)
+        expect(a.winner, `lv ${level} ${JSON.stringify(worn)}`).toBe(main)
+        expect(a.robust, `lv ${level} ${JSON.stringify(worn)}`).toBe(want)
+        if (want) trues++
+        else falses++
+      }
+    }
+    expect(trues).toBeGreaterThan(0)
+    expect(falses).toBeGreaterThan(0)
+  })
+})
+
+describe('armorUpgradeAdvice: een lege worn is het oude gedrag', () => {
+  it('geeft met {} exact hetzelfde als zonder derde argument, op elk level en voor elk profiel', () => {
+    const profiles = [...LEVELS.map((level) => strong({ level })), ...LEVELS.map((level) => ({ ...base, level, luk: 35, dex: 10 })), ...LEVELS.map((level) => ({ ...base, level, luk: 0, dex: 0 }))]
+    for (const p of profiles) {
+      expect(armorUpgradeAdvice(drafts, p, {}), `lv ${p.level} luk ${p.luk}`).toEqual(armorUpgradeAdvice(drafts, p))
+    }
+    expect(armorUpgradeAdvice(drafts, null, {})).toEqual({ kind: 'none' })
+    expect(armorUpgradeAdvice(drafts, strong({ level: 31 }), { top: 5 })).toEqual({ kind: 'none' })
+  })
+
+  it('geeft met {} dezelfde nettos als de oude handberekening (wdef + stuk.wdef)', () => {
+    for (const level of LEVELS) {
+      const p = strong({ level })
+      for (const c of adviceW(p, {}).choices) expect(c.net, `${c.armor.name} lv ${level}`).toBeCloseTo(handNet(p, c.armor), 6)
+    }
+  })
+
+  it('geeft een worn voor één slot geen invloed op de andere slots', () => {
+    const p = strong({ level: 25 })
+    const plain = advice(drafts, p)
+    const a = adviceW(p, { shoes: 12 })
+    for (const slot of ['hat', 'top', 'bottom'] as const) {
+      const x = a.choices.find((c) => c.armor.slot === slot)!
+      const y = plain.choices.find((c) => c.armor.slot === slot)!
+      expect(x.armor, slot).toBe(y.armor)
+      expect(x.net, slot).toBeCloseTo(y.net!, 9)
+    }
+  })
+
+  it('verandert de invoer niet', () => {
+    const worn = Object.freeze({ shoes: 12 })
+    expect(() => armorUpgradeAdvice(drafts, strong({ level: 25 }), worn)).not.toThrow()
+    expect(worn).toEqual({ shoes: 12 })
+  })
+})

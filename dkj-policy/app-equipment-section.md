@@ -39,21 +39,49 @@
 
 ### PLAN
 
+Dave (4 oktober 2026): onder de Level up-knop een sectie met alle equipment die je na een level-up nog
+draagt. Wat in het vorige level veranderde (bijvoorbeeld iets geloot), werk je in het volgende level
+meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bijgehouden.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/equipment.ts`: per slot (claw, hoed, bovenstuk, broek, schoenen) "Weet ik niet", "Niets",
+  een winkelitem of "Ander item" met eigen WATK/WDEF, bewaard in localStorage
+- [x] Een keuze past het profiel aan: de claw zet je weapon attack (en bij een winkelclaw je
+  aanvalssnelheid), armor past je totale WDEF aan met het verschil tussen het oude en het nieuwe stuk
+- [x] `armorUpgradeAdvice` rekent met wat je in een slot draagt; alleen bij "Weet ik niet" nog alsof
+  het slot leeg is
+- [x] Scherm: kaart "Je equipment" onder de Level up-knop, en dezelfde kaart in stap 1 van de
+  level-up-flow met een "was"-badge; ongedaan maken zet ook de equipment terug
+- [x] Na review (Victor): het getal bij "Ander item" wordt pas bij vastleggen toegepast, tegen de
+  laatst toegepaste stand; bewaard en meegerekend wordt alleen de toegepaste stand
 
 ### TEST
 
+- [x] `src/equipment.test.ts` (nieuw) en het worn-pad in `src/armorUpgrade.test.ts`, met
+  handberekeningen; `npm test` 403 groen, lint en build groen
+- [x] Review: Victor (drie rondes), Sebastian (geen bevindingen), Edith (zes tekstpunten verwerkt)
+- [x] Bevinding: het scherm zelf heeft geen component-tests. Apart gemeld in #40.
+- [ ] Dave heeft het scherm bekeken en akkoord gegeven
+
 ### DEPLOY: app/equipment-section
 
-**Score:**
+Onder de **Level up**-knop staat nu een kaart "Je equipment". Per slot (claw, hoed, bovenstuk, broek,
+schoenen) kies je wat je draagt: een winkelitem, "Niets", "Ander item" met eigen WATK of WDEF, of "Weet
+ik niet". De keuze rekent mee. Een claw vult je weapon attack in (en bij een winkelclaw je
+aanvalssnelheid), armor past je WDEF aan, en het defense-advies rekent met wat je in dat slot al draagt
+in plaats van alsof het leeg is. Na een level-up staat dezelfde kaart in het controlescherm, zodat je
+iets wat je in je vorige level hebt geloot of gekocht meteen bijwerkt.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Het defense-advies weet nu wat je draagt. Een "Koop" geldt daardoor niet meer alleen "als dat slot leeg
+is", en je hoeft na een loot je WDEF en weapon attack niet meer zelf uit te rekenen.
+
+**Score:** 3
 
 #### Pull Request
 
 equipment-sectie onder de Level up-knop, die meerekent
-
