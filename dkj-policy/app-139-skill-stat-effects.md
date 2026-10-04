@@ -70,7 +70,7 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
 
 ### TEST
 
-- [x] Tycho: 8 tests updated, 38 added (1263 to 1301); lint gate and vitest green
+- [x] Tycho: 8 tests updated, 36 added (1263 to 1299); lint gate and vitest green
 - [x] Victor: no blockers; max-level guard on `maxHpAfterPoint` and the HP assumption written down, taken along
 - [x] Edith: no blockers; five comment wordings taken along
 - [ ] Dave looks at the card at phone width (visible result)
