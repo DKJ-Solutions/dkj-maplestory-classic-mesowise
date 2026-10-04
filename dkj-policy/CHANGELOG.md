@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**32 / 69 minor entries** <!-- pending-tally -->
+**33 / 70 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/130-level-up-row · 20261004-142107Z
+
+The home screen opens with a level row: a small button back to the previous level, the current level as a
+big heading, and a green Level up button. The Level up button moved up from the bottom of the page. The job is no longer shown under the level, and the tagline moved into the top bar.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends see their level and the Level up button right at the top, and can step a level back
+after a mis-tap.
+
+**Score:** 3
+
+#### Pull Request
+
+Level-up row at the top: previous level, current level, level up
+
+[PR #131](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/131)
+
+---
 
 ### DEPLOY: app/equip-label · 20261004-134538Z
 
