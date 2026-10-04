@@ -39,19 +39,29 @@
 
 ### PLAN
 
+Issue #84 (Dave): move the Level up button all the way down, and show the current level where it was.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Home screen: the sticky Level up bar at the top becomes a plain "Level 10" line; the button moves below "Plek toevoegen" and the note, just above the credit (`src/app.tsx`, `src/style.css`)
+- [x] Not sticky: #86 (mobile top menu) is reworking the top of the screen
 
 ### TEST
 
+- [x] Two tests in `src/app.test.tsx`: the current level shows at the top (and follows a level-up), and the button sits after "Plek toevoegen"; `npx vitest run src/app.test.tsx` 84/84, `npm run lint` clean
+- [ ] Dave looks at it at phone width (visible result)
+
 ### DEPLOY: app/84-level-up-button
 
-**Score:**
+The home screen now shows your current level at the top ("Level 10") where the Level up button used to be; the Level up button itself has moved to the bottom of the screen, below the training spots and above the credit, and no longer sticks to the top while you scroll (#84).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
