@@ -580,10 +580,10 @@ describe('een Warrior in de app', () => {
       expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves')
     })
 
-    it('kent bij Top en Bottom nog geen Warrior-items (#55): alleen "als eigen item", met de uitleg in de kaart', () => {
+    it('toont geen uitleg boven de slots (net als de Thief) en laat bij Top en Bottom zoeken', () => {
       openHomeEquipment()
-      expect(cards()[0].textContent).toMatch(/Voor Top en Bottom kent de app nog geen items/)
-      for (const slot of ['Top', 'Bottom']) expect(options(typeIn(cards()[0], slot, 'Bronze')).map((o) => o.textContent)).toEqual(['Gebruik "Bronze" als eigen item'])
+      expect(cards()[0].querySelector('.hint')).toBeNull()
+      for (const slot of ['Top', 'Bottom']) expect(options(typeIn(cards()[0], slot, '')).length).toBeGreaterThan(0)
     })
 
     it('zet bij een gekozen wapen weapon attack, aanvalssnelheid en weapon multiplier in het bewaarde profiel', () => {

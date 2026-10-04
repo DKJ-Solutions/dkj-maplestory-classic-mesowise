@@ -7,11 +7,12 @@
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
-import type { Armor, ArmorSlot, Claw } from './data/types'
+import type { Armor, ArmorSlot, Claw, WornArmor, WornClaw } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
+import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
-import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
+import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
 const VERSION = 1
@@ -80,13 +81,14 @@ export const MAX_RESULTS = 8
 
 /**
  * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
- * items) en de Warrior (zijn wapens, hats en shoes; tops en broeken volgen in #55, en zonder prijs is er nog niets
- * van een Warrior). Voor een andere job is de lijst leeg tot die data er is (issues #43 tot #45), want een item van
- * een andere job aanbieden zou onwaar zijn.
+ * items) en de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
+ * items zonder jobregel die ook de Thief draagt). Een naam mag bij beide jobs staan, maar dan is het hetzelfde
+ * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
+ * (issues #43 tot #45), want een item van een andere job aanbieden zou onwaar zijn.
  */
-const SHOP: Partial<Record<Job, { weapons: readonly Claw[]; armor: readonly Armor[]; wornWeapons: typeof WORN_CLAWS; wornArmor: typeof WORN_ARMOR }>> = {
+const SHOP: Partial<Record<Job, { weapons: readonly Claw[]; armor: readonly Armor[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
   thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
-  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: [], wornArmor: [] },
+  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
 }
 
 /**
@@ -111,7 +113,7 @@ export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] 
 const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job).find((i) => i.name === name)
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
-// zorgen daarvoor), en de namen overlappen niet tussen de jobs (een test bewaakt dat): bij het rekenen zoeken
+// zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
 // we dus in de lijsten van alle jobs.
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)

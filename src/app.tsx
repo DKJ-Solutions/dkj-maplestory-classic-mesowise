@@ -1588,11 +1588,6 @@ export function App() {
               job={job}
               equipment={equipment}
               defaultOpen={false}
-              hint={
-                job === 'warrior'
-                  ? 'Je weapon vult ook je weapon multiplier in. Voor Top en Bottom kent de app nog geen items: typ de naam, kies "als eigen item" en vul de stat in.'
-                  : undefined
-              }
               pending={pending}
               onPick={pickEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}

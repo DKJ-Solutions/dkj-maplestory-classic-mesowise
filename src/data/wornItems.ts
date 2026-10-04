@@ -146,6 +146,28 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Blue Ankle-strap Sandals', slot: 'shoes', level: 21, wdef: 15, source: src(1347) },
 ]
 
+/**
+ * De ids (MeowDB-itempagina) van de rijen in WORN_ARMOR waarvan de pagina geen jobregel heeft, zodat elke job ze
+ * kan dragen: de beginnerskleding op level 0 (tops 932 tot 940, broeken 1156, 1157 en 1160, schoenen 1305 tot
+ * 1308) en de items die armor.ts en deze kop met naam als "zonder jobregel" noemen: Bandana (719 tot 723),
+ * Baseball Cap (782), One-lined T-Shirt (960) en Gomushin (1317 tot 1319), en de op 2026-10-04 op de ruwe
+ * itempagina gecontroleerde Skullcaps, Headbands en andere items (708 tot 718, 740 tot 742, 961 tot 963, 1163, 1181
+ * en 1233). De Warrior leest ze via
+ * COMMON_WORN_ARMOR (zie wornWarrior.ts); de rijen staan maar op één plek.
+ * Alleen wat met zekerheid zonder jobregel is staat hier; de overige rijen (o.a. 732 tot 736, 949, 950, 1169, 1170
+ * en 1316, die een Thief-jobregel hebben) zijn niet opnieuw op hun pagina gecontroleerd en blijven Thief-only.
+ */
+const COMMON_WORN_IDS: ReadonlySet<number> = new Set([
+  719, 720, 721, 722, 723, 782, 960, 1317, 1318, 1319,
+  932, 933, 934, 935, 936, 937, 938, 939, 940, 1156, 1157, 1160, 1305, 1306, 1307, 1308,
+  708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 740, 741, 742, 961, 962, 963, 1163, 1181, 1233,
+])
+
+/** De rijen uit WORN_ARMOR die geen jobregel hebben (zie COMMON_WORN_IDS); dezelfde objecten, niet gekopieerd. */
+export const COMMON_WORN_ARMOR: readonly WornArmor[] = WORN_ARMOR.filter((a) =>
+  COMMON_WORN_IDS.has(Number(a.source.url.split('/').pop())),
+)
+
 /** Niet-winkel claws, van laag naar hoog level. */
 export const WORN_CLAWS: readonly WornClaw[] = [
   { name: "Beginner's Garnier", level: 10, watk: 10, speed: FAST5, source: src(681) },

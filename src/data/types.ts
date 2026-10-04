@@ -115,6 +115,13 @@ export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
   mult: { swing: number; stab: number }
 }
 
+/**
+ * Een Warrior-wapen dat je kunt dragen maar niet in een winkel koopt (of dat de pagina zonder jobregel geeft):
+ * zoals WarriorWeapon, maar zonder eisen en prijs. De soort, snelheid en multipliers zijn dezelfde als bij de
+ * winkelwapens, zodat warriorGear.ts ze op dezelfde manier kan omzetten.
+ */
+export type WornWarriorWeapon = Pick<WarriorWeapon, 'name' | 'kind' | 'level' | 'watk' | 'speed' | 'mult' | 'source'>
+
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
 export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}
 

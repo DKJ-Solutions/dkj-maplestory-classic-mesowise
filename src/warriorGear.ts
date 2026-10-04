@@ -2,8 +2,9 @@
 // Armor, op de gedeelde ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde manier
 // kunnen lezen. Alleen hier, aan de rand van die adviezen, staat de STR-eis nog in het veld `luk` ("hoofdstat");
 // de data zelf noemt hem `str`. Puur, zonder UI-import.
-import type { Armor, Claw, WarriorWeaponKind } from './data/types'
+import type { Armor, Claw, WarriorWeaponKind, WornClaw } from './data/types'
 import { averageAttackMs, effectiveMultiplier, MULT, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
+import { WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 
 /**
  * De NPC-wapens van een Warrior als Claw. De aanvalstijd is het gemiddelde van zwaaien en steken en de
@@ -18,6 +19,16 @@ export const WARRIOR_WEAPONS: readonly Claw[] = NPC_WARRIOR_WEAPONS.map((w) => (
   luk: w.str,
   dex: w.dex,
   price: w.price,
+  source: w.source,
+}))
+
+/** De Warrior-wapens zonder prijs, op dezelfde manier omgezet: de claw-vorm met aanvalstijd en multiplier, zonder eisen en prijs. */
+export const WORN_WARRIOR_CLAWS: readonly (WornClaw & { mult: number })[] = WORN_WARRIOR_WEAPONS.map((w) => ({
+  name: w.name,
+  level: w.level,
+  watk: w.watk,
+  speed: { label: w.speed.label, attackMs: averageAttackMs(w.speed) },
+  mult: effectiveMultiplier(w.mult),
   source: w.source,
 }))
 

@@ -25,6 +25,7 @@ import {
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
+import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 
@@ -648,10 +649,10 @@ describe('equipment voor een Warrior', () => {
   const warriorShop: Equipment = { claw: shop('Gladius'), hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, shoes: shop('Bronze Grieves') }
 
   describe('catalogItems voor een Warrior', () => {
-    it('geeft bij Weapon de NPC-wapens van de Warrior, met naam, level en weapon attack', () => {
+    it('geeft bij Weapon de NPC-wapens van de Warrior, dan de wapens zonder prijs, met naam, level en weapon attack', () => {
       const items = catalogItems('claw', 'warrior')
-      expect(items).toHaveLength(NPC_WARRIOR_WEAPONS.length)
-      expect(items.map((i) => i.name)).toEqual(NPC_WARRIOR_WEAPONS.map((w) => w.name))
+      expect(items.map((i) => i.name)).toEqual([...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS].map((w) => w.name))
+      expect(items.find((i) => i.name === 'Long Sword')).toMatchObject({ level: 10, stat: 27, mult: expect.any(Number), attackMs: expect.any(Number) })
       expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8 })
       expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5 })
     })
@@ -659,15 +660,23 @@ describe('equipment voor een Warrior', () => {
     it('geeft bij Hat en Shoes de Warrior-armor, met WDEF als stat', () => {
       const hats = catalogItems('hat', 'warrior')
       const shoes = catalogItems('shoes', 'warrior')
-      expect(hats.map((i) => i.name)).toEqual(NPC_WARRIOR_ARMOR.filter((a) => a.slot === 'hat').map((a) => a.name))
-      expect(shoes.map((i) => i.name)).toEqual(NPC_WARRIOR_ARMOR.filter((a) => a.slot === 'shoes').map((a) => a.name))
+      const names = (slot: 'hat' | 'shoes') => [...NPC_WARRIOR_ARMOR, ...WORN_WARRIOR_ARMOR].filter((a) => a.slot === slot).map((a) => a.name)
+      expect(hats.map((i) => i.name)).toEqual(names('hat'))
+      expect(shoes.map((i) => i.name)).toEqual(names('shoes'))
       expect(hats.find((i) => i.name === 'Bronze Full Helm')).toEqual({ name: 'Bronze Full Helm', level: 15, stat: 26 })
       expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21 })
     })
 
-    it('heeft voor een Warrior nog geen tops en broeken (#55): die lijsten zijn leeg', () => {
-      expect(catalogItems('top', 'warrior')).toEqual([])
-      expect(catalogItems('bottom', 'warrior')).toEqual([])
+    it('geeft een Warrior tops en broeken: de items zonder prijs, zonder eisen', () => {
+      for (const slot of ['top', 'bottom'] as const) {
+        expect(catalogItems(slot, 'warrior').map((i) => i.name), slot).toEqual(WORN_WARRIOR_ARMOR.filter((a) => a.slot === slot).map((a) => a.name))
+        expect(catalogItems(slot, 'warrior').length, slot).toBeGreaterThan(0)
+      }
+    })
+
+    it('deelt de items zonder jobregel met de Thief: dezelfde rijen, niet gekopieerd', () => {
+      expect(catalogItems('hat', 'warrior').find((i) => i.name === 'Brown Skullcap')).toEqual(catalogItems('hat', 'thief').find((i) => i.name === 'Brown Skullcap'))
+      expect(catalogItems('hat', 'warrior').find((i) => i.name === 'Brown Skullcap')).toBeDefined()
     })
 
     it('laat de Thief-lijsten zoals main ze heeft (de NPC-items blijven erin)', () => {
@@ -680,14 +689,19 @@ describe('equipment voor een Warrior', () => {
       for (const s of slots) for (const j of ['magician', 'bowman'] as const) expect(catalogItems(s, j), `${s} ${j}`).toEqual([])
     })
 
-    it('heeft geen dubbele namen in een lijst en geen naam die in de Thief- en de Warrior-lijst van hetzelfde slot staat', () => {
+    it('heeft geen dubbele namen in een lijst en geen naam die bij de Thief en de Warrior een ander item is', () => {
       // De keuze in het scherm wordt bewaard op naam, dus een dubbele naam zou het verkeerde item geven.
       for (const s of slots) {
         const warrior = catalogItems(s, 'warrior').map((i) => i.name)
         const thief = catalogItems(s, 'thief').map((i) => i.name)
         expect(new Set(warrior).size, `warrior ${s}`).toBe(warrior.length)
         expect(new Set(thief).size, `thief ${s}`).toBe(thief.length)
-        expect(warrior.filter((n) => thief.includes(n)), s).toEqual([])
+        // Een gedeelde naam mag alleen als het hetzelfde item is: dezelfde stat, level en snelheid.
+        const thiefItems = catalogItems(s, 'thief')
+        for (const w of catalogItems(s, 'warrior')) {
+          const t = thiefItems.find((i) => i.name === w.name)
+          if (t) expect(t, `${s} ${w.name}`).toEqual(w)
+        }
       }
       // Ook over de slots heen: wornStat zoekt per slot, maar een naam in twee slots zou verwarren.
       const allWarrior = slots.flatMap((s) => catalogItems(s, 'warrior').map((i) => i.name))
