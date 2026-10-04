@@ -39,21 +39,32 @@
 
 ### PLAN
 
+#### Status
+
+Issue #111 as Dave edited it: the edit buttons (pencil) get a fill instead of a border. A visible result, parked for Dave's look.
+
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Gwen: `.equip-edit` and `.job-edit` filled via new tokens `--edit-bg`/`--edit-fg` (dark: white with the navy #111827 icon; light: #1f2937 with a white icon); the close buttons unchanged
 
 ### TEST
 
+- [x] `npm test` and `npm run lint` green
+
 ### DEPLOY: app/111-close-button-fill
 
-**Score:**
+De bewerkknoppen (het potlood bij je stats, je equipment en je job) zijn nu gevuld in plaats van omrand: op het donkere thema wit met een donkerblauw icoon, op het lichte thema donker met een wit icoon.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
-Close buttons with a fill instead of a border
+Edit buttons with a fill instead of a border
 
