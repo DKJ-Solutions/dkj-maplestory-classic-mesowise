@@ -5,6 +5,7 @@
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import type { ArmorSlot } from './data/types'
+import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -54,14 +55,19 @@ export const defaultEquipment = (): Equipment => ({
 
 const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw'
 
-/** De winkelitems van een slot: naam, level en de stat die telt (WATK voor een claw, WDEF voor armor). */
-export function shopItems(slot: EquipSlot): readonly { name: string; level: number; stat: number }[] {
+/**
+ * De winkelitems van een slot voor een job: naam, level en de stat die telt (WATK voor een wapen, WDEF voor
+ * armor). Alle winkeldata is nu van de Thief (claws, Thief-armor); voor een andere job is de lijst leeg tot
+ * die data er is (issues #42 tot #45), want een Thief-item aanbieden aan een Warrior zou onwaar zijn.
+ */
+export function shopItems(slot: EquipSlot, job: Job): readonly { name: string; level: number; stat: number }[] {
+  if (job !== 'thief') return []
   return isArmorSlot(slot)
     ? NPC_ARMOR.filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
     : NPC_CLAWS.map((c) => ({ name: c.name, level: c.level, stat: c.watk }))
 }
 
-const shopItem = (slot: EquipSlot, name: string) => shopItems(slot).find((i) => i.name === name)
+const shopItem = (slot: EquipSlot, name: string, job: Job) => shopItems(slot, job).find((i) => i.name === name)
 
 /** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij "Ander item" zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
 export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined {
@@ -71,7 +77,9 @@ export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined
     const n = Number(entry.stat.trim())
     return entry.stat.trim() !== '' && Number.isFinite(n) ? Math.min(MAX_STAT, Math.max(0, Math.trunc(n))) : undefined
   }
-  return shopItem(slot, entry.pick)?.stat
+  // Een winkelkeuze bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob zorgen
+  // daarvoor), dus hier zoeken we in de Thief-lijst: een andere job heeft nooit een winkelkeuze.
+  return shopItem(slot, entry.pick, 'thief')?.stat
 }
 
 /** De WDEF per armorslot waarvan de app weet wat je draagt. */
@@ -129,21 +137,34 @@ export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string): 
   return { pick, name: '', stat: known === undefined ? '' : String(known) }
 }
 
+/**
+ * De equipment na een wissel van job: een slot met een winkelitem dat de nieuwe job niet heeft, wordt "weet ik
+ * niet". Het profiel blijft zoals het was (van bekend naar onbekend laat WATK en WDEF staan, zie applyEquipChange).
+ */
+export function equipmentForJob(eq: Equipment, job: Job): Equipment {
+  const out = { ...eq }
+  for (const { slot } of EQUIP_SLOTS) {
+    const { pick } = eq[slot]
+    if (pick !== UNKNOWN && pick !== NONE && pick !== OTHER && !shopItem(slot, pick, job)) out[slot] = emptyEntry()
+  }
+  return out
+}
+
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
 
 /** Eén bewaard slot; een onbekende of verdwenen keuze wordt "weet ik niet". */
-function loadEntry(slot: EquipSlot, v: unknown): EquipEntry {
+function loadEntry(slot: EquipSlot, v: unknown, job: Job): EquipEntry {
   if (typeof v !== 'object' || v === null) return emptyEntry()
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
   if (pick === NONE) return { pick, name: '', stat: '' }
   if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
-  if (pick !== UNKNOWN && shopItem(slot, pick)) return { pick, name: '', stat: '' }
+  if (pick !== UNKNOWN && shopItem(slot, pick, job)) return { pick, name: '', stat: '' }
   return emptyEntry()
 }
 
-/** De bewaarde equipment; een ontbrekend of onbruikbaar slot is "weet ik niet". */
-export function loadEquipment(storage: Storage | null | undefined): Equipment {
+/** De bewaarde equipment voor deze job; een ontbrekend of onbruikbaar slot (ook een winkelitem dat deze job niet heeft) is "weet ik niet". */
+export function loadEquipment(storage: Storage | null | undefined, job: Job): Equipment {
   const out = defaultEquipment()
   try {
     const raw = storage?.getItem(EQUIPMENT_KEY)
@@ -152,7 +173,7 @@ export function loadEquipment(storage: Storage | null | undefined): Equipment {
     if (typeof data !== 'object' || data === null || (data as { version?: unknown }).version !== VERSION) return out
     const slots = (data as { slots?: unknown }).slots
     if (typeof slots !== 'object' || slots === null) return out
-    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot])
+    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job)
     return out
   } catch {
     return out
