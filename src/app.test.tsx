@@ -89,6 +89,27 @@ const correct = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF', value: st
   h.save()
 }
 
+/** De rij van een stat op de karakterkaart (beginscherm). */
+const statLine = (label: string) => {
+  const line = Array.from(panels()[0].querySelectorAll<HTMLElement>('.stat-line')).find((l) => l.querySelector('.stat-line-name')?.textContent === label)
+  if (!line) throw new Error(`geen stat ${label}`)
+  return line
+}
+const statShown = (label: string) => statLine(label).querySelector('.equip-value strong')?.textContent
+/** Opent de popup achter het potlood van een stat op de karakterkaart. */
+const openStat = (label: string) => {
+  fireEvent.click(within(statLine(label)).getByRole('button', { name: `${label} wijzigen` }))
+  const d = within(statLine(label).querySelector('dialog') as HTMLDialogElement)
+  const input = () => d.getByLabelText(`${label} in game`) as HTMLInputElement
+  return {
+    input,
+    type: (v: string) => fireEvent.input(input(), { target: { value: v } }),
+    save: () => fireEvent.click(d.getByRole('button', { name: 'Opslaan' })),
+    close: () => fireEvent.click(d.getByRole('button', { name: 'Sluiten zonder opslaan' })),
+    d,
+  }
+}
+
 const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: /Je equipment/ }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 const undoLevelUp = () => fireEvent.click(screen.getByRole('button', { name: 'Level-up ongedaan maken' }))
@@ -134,12 +155,11 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(profileFields().wdef).toBe(DEFAULT_PROFILE.wdef)
   })
 
-  it('toont de nieuwe weapon attack en aanvalstijd in het karakterveld', () => {
+  it('toont de nieuwe aanvalstijd in het karakterveld', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    expect((within(panels()[0]).getByLabelText('Weapon attack van je wapen') as HTMLInputElement).value).toBe(String(IGOR.watk))
-    expect((within(panels()[0]).getByLabelText('Tijd per aanval (ms)') as HTMLInputElement).value).toBe(String(IGOR.speed.attackMs))
+    expect(statShown('Tijd per aanval (ms)')).toBe(String(IGOR.speed.attackMs))
   })
 
   it('houdt in de kaartkop alleen de titel, ook als je iets draagt', () => {
@@ -296,10 +316,46 @@ describe('bewaren na elke wijziging', () => {
     expect(profileFields().attackMs).toBe(String(MEBA.speed.attackMs))
   })
 
-  it('bewaart een getypt profielveld', () => {
+  it('bewaart een profielveld pas na Opslaan in de popup van het potlood', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    fireEvent.input(within(panels()[0]).getByLabelText('LUK'), { target: { value: '55' } })
+    const h = openStat('LUK')
+    h.type('55')
+    expect(profileFields()?.luk ?? DEFAULT_PROFILE.luk).toBe(DEFAULT_PROFILE.luk)
+    h.save()
     expect(profileFields().luk).toBe('55')
+    expect(statShown('LUK')).toBe('55')
+  })
+
+  it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    expect(panels()[0].querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
+  })
+
+  it('toont geen level, weapon attack en WDEF: die liggen elders vast', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const names = Array.from(panels()[0].querySelectorAll('.stat-line-name')).map((n) => n.textContent)
+    expect(names).not.toContain('Level')
+    expect(names).not.toContain('Weapon attack van je wapen')
+    expect(names).not.toContain('WDEF')
+    expect(names).toContain('Tijd per aanval (ms)')
+  })
+
+  it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const h = openStat('LUK')
+    h.type('77')
+    h.close()
+    expect(statShown('LUK')).toBe(DEFAULT_PROFILE.luk)
+    expect(statLine('LUK').querySelector('dialog')).toBeNull()
+  })
+
+  it('verhoogt een stat met + en slaat op met Enter', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const h = openStat('LUK')
+    fireEvent.click(h.d.getByRole('button', { name: 'LUK plus 1' }))
+    expect(h.input().value).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
+    fireEvent.keyDown(h.input(), { key: 'Enter' })
+    expect(profileFields().luk).toBe(String(Number(DEFAULT_PROFILE.luk) + 1))
   })
 
   it('bewaart een toegevoegde plek', () => {

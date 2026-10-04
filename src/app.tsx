@@ -178,6 +178,12 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
   )
 }
 
+/**
+ * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level gaat omhoog met Level up, weapon
+ * attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
+ */
+const CHARACTER_STATS = STAT_FIELDS.filter((f) => !['level', 'clawWatk', 'wdef'].includes(f.key))
+
 function ProfileCard(props: {
   job: Job
   draft: ProfileDraft
@@ -188,6 +194,13 @@ function ProfileCard(props: {
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
   const thief = isComputed(job)
+  const uid = useId()
+  // De stat die je wijzigt (het potlood), met het concept uit de popup; telt pas mee na Opslaan, net als bij equipment.
+  const [editing, setEditing] = useState<{ key: keyof ProfileDraft; text: string } | null>(null)
+  const save = () => {
+    if (editing && editing.text !== draft[editing.key]) props.onChange({ [editing.key]: editing.text })
+    setEditing(null)
+  }
   return (
     <section class={`card profile${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -201,9 +214,57 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {STAT_FIELDS.map((f) => (
-            <Field key={f.key} label={f.label} value={draft[f.key]} onInput={(v) => props.onChange({ [f.key]: v })} />
-          ))}
+          {/* Per stat één rij: de naam, het getal dat telt en het potlood; wijzigen gaat alleen via de popup. */}
+          {CHARACTER_STATS.map((f) => {
+            const value = draft[f.key]
+            const isEditing = editing?.key === f.key
+            const step = (by: number) => {
+              if (!editing) return
+              const n = Number(editing.text.trim())
+              const base = editing.text.trim() !== '' && Number.isFinite(n) ? Math.trunc(n) : f.min
+              setEditing({ key: f.key, text: String(Math.min(f.max, Math.max(f.min, base + by))) })
+            }
+            return (
+              <div class="stat-line" key={f.key}>
+                <span class="stat-line-name">{f.label}</span>
+                <div class="equip-value">
+                  <span class="equip-value-num">
+                    <strong>{value.trim() !== '' ? value : '?'}</strong>
+                  </span>
+                </div>
+                <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEditing({ key: f.key, text: value })}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </button>
+                {isEditing && (
+                  <StatDialog title={f.label} onCancel={() => setEditing(null)}>
+                    <span class="stat-dialog-label" id={`${uid}-${f.key}-game`}>{f.label} in game</span>
+                    <div class={f.integer ? 'equip-step' : 'equip-step plain'}>
+                      {f.integer && <button type="button" aria-label={`${f.label} min 1`} onClick={() => step(-1)}>−</button>}
+                      <input type="number" inputMode={f.integer ? 'numeric' : 'decimal'} min={f.min} max={f.max} enterKeyHint="done" aria-labelledby={`${uid}-${f.key}-game`}
+                        value={editing.text}
+                        onFocus={(e) => e.currentTarget.select()}
+                        onInput={(e) => setEditing({ key: f.key, text: (e.currentTarget as HTMLInputElement).value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            save()
+                          }
+                        }}
+                      />
+                      {f.integer && <button type="button" aria-label={`${f.label} plus 1`} onClick={() => step(1)}>+</button>}
+                    </div>
+                    <div class="stat-dialog-actions">
+                      {editing.text !== value && (
+                        <button type="button" class="equip-save" onClick={save}>
+                          Opslaan
+                        </button>
+                      )}
+                    </div>
+                  </StatDialog>
+                )}
+              </div>
+            )
+          })}
           {thief && <p class="hint">De app rekent met Subi Throwing Stars die je laat herladen.</p>}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
