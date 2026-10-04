@@ -113,15 +113,15 @@ describe('wornStat', () => {
     expect(wornStat('hat', shop('Bestaat Niet'))).toBeUndefined()
   })
 
-  it('telt een Ander item met lege of ongeldige stat als onbekend', () => {
+  it('telt een eigen item met lege of ongeldige stat als onbekend', () => {
     for (const s of ['', '   ', 'abc', '12abc', 'NaN', 'Infinity', '-Infinity', '1e999']) expect(wornStat('top', other(s)), s).toBeUndefined()
   })
 
-  it('begrenst een negatief getal bij Ander item op 0', () => {
+  it('begrenst een negatief getal bij een eigen item op 0', () => {
     for (const s of ['-5', '-0']) expect(wornStat('top', other(s)), s).toBe(0)
   })
 
-  it('kapt een Ander item af op een geheel getal en begrenst op 0..999', () => {
+  it('kapt een eigen item af op een geheel getal en begrenst op 0..999', () => {
     expect(wornStat('top', other('12'))).toBe(12)
     expect(wornStat('top', other(' 12 '))).toBe(12)
     expect(wornStat('top', other('12.9'))).toBe(12)
@@ -186,7 +186,7 @@ describe('commitStat', () => {
     for (const t of ['abc', '12abc', 'Infinity']) expect(commitStat('top', shop('Red Pao', '35'), t), t).toBeNull()
   })
 
-  it('legt bij Ander item alleen een leesbaar getal vast, zoals vroeger', () => {
+  it('legt bij een eigen item alleen een leesbaar getal vast, zoals vroeger', () => {
     expect(commitStat('top', other('5', 'x'), '9')).toEqual(other('9', 'x'))
     expect(commitStat('top', other('5', 'x'), '')).toBeNull()
     expect(commitStat('top', other('5', 'x'), 'abc')).toBeNull()
@@ -195,6 +195,13 @@ describe('commitStat', () => {
   it('doet niets bij een slot dat nog niet is ingevuld of een naam die niet bestaat', () => {
     expect(commitStat('top', unknown, '9')).toBeNull()
     expect(commitStat('top', shop('Bestaat Niet'), '9')).toBeNull()
+  })
+
+  it('bewaart het getal zoals het meetelt, zodat veld, opslag en notitie hetzelfde tonen', () => {
+    expect(commitStat('top', shop('Red Pao'), '5000')).toEqual(shop('Red Pao', '999'))
+    expect(commitStat('top', shop('Red Pao'), ' 35.9 ')).toEqual(shop('Red Pao', '35'))
+    expect(commitStat('top', shop('Red Pao'), '-5')).toEqual(shop('Red Pao', '0'))
+    expect(commitStat('top', other('5', 'x'), '1e2')).toEqual(other('100', 'x'))
   })
 })
 
@@ -205,7 +212,7 @@ describe('entryLabel', () => {
     expect(entryLabel('top', shop('Red Pao', '32'))).toBe('Red Pao')
     expect(entryLabel('top', shop('Red Pao', '35'))).toBe('Red Pao (aangepast: 35)')
     expect(entryLabel('top', other('5', ' Muts '))).toBe('Muts')
-    expect(entryLabel('top', other('5'))).toBe('Ander item')
+    expect(entryLabel('top', other('5'))).toBe('Eigen item')
   })
 })
 
@@ -226,7 +233,7 @@ describe('wornWdef, wornName en wornSummary', () => {
     expect(wornName(unknown)).toBeNull()
     expect(wornName(shop('Red Pao'))).toBe('Red Pao')
     expect(wornName(other('7', '  Mijn laarzen  '))).toBe('Mijn laarzen')
-    expect(wornName(other('7', '   '))).toBe('ander item')
+    expect(wornName(other('7', '   '))).toBe('eigen item')
   })
 
   it('maakt de samenvatting in schermvolgorde zonder de slots die nog niet zijn ingevuld', () => {
@@ -241,14 +248,14 @@ describe('entryChanged', () => {
     expect(entryChanged(shop('Meba'), shop('Meba'))).toBe(false)
   })
 
-  it('ziet bij Ander item een andere naam of stat, maar negeert spaties rond de tekst', () => {
+  it('ziet bij een eigen item een andere naam of stat, maar negeert spaties rond de tekst', () => {
     expect(entryChanged(other('5', 'x'), other('5', 'x'))).toBe(false)
     expect(entryChanged(other(' 5 ', ' x '), other('5', 'x'))).toBe(false)
     expect(entryChanged(other('5', 'x'), other('6', 'x'))).toBe(true)
     expect(entryChanged(other('5', 'x'), other('5', 'y'))).toBe(true)
   })
 
-  it('negeert een achtergebleven naam als de keuze geen Ander item is, maar ziet een eigen stat', () => {
+  it('negeert een achtergebleven naam als de keuze geen eigen item is, maar ziet een eigen stat', () => {
     expect(entryChanged({ pick: 'Meba', name: 'a', stat: '' }, shop('Meba'))).toBe(false)
     expect(entryChanged(shop('Meba'), shop('Meba', '21'))).toBe(true)
     expect(entryChanged(shop('Meba', ' 21 '), shop('Meba', '21'))).toBe(false)
@@ -269,7 +276,7 @@ describe('applyEquipChange: claw', () => {
     expect(a).toMatchObject({ clawWatk: '13', attackMs: '720' })
   })
 
-  it('laat bij Ander item de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
+  it('laat bij een eigen item de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
     expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), other('21'))).toMatchObject({ clawWatk: '21', attackMs: '800' })
     expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), zero)).toMatchObject({ clawWatk: '0', attackMs: '800' })
     const p = prof({ clawWatk: '7', attackMs: '800' })
@@ -280,6 +287,12 @@ describe('applyEquipChange: claw', () => {
   it('raakt niets als het slot op "nog niet ingevuld" komt', () => {
     const p = prof({ clawWatk: '7' })
     expect(applyEquipChange(p, 'claw', shop('Meba'), unknown)).toBe(p)
+  })
+
+  it('laat een zelf ingevulde aanvalssnelheid staan als je alleen de WATK van dezelfde claw aanpast', () => {
+    const p = applyEquipChange(prof({ clawWatk: '19', attackMs: '600' }), 'claw', shop('Meba'), shop('Meba', '21'))
+    expect(p).toMatchObject({ clawWatk: '21', attackMs: '600' })
+    expect(applyEquipChange(prof({ attackMs: '600' }), 'claw', shop('Garnier'), shop('Meba')).attackMs).toBe('660')
   })
 
   it('raakt de armor-velden niet aan', () => {
@@ -399,7 +412,7 @@ describe('choosePick', () => {
     expect(choosePick('top', zero, 'other')).toEqual(other('0'))
   })
 
-  it('vult voor met de afgekapte waarde van een ander item', () => {
+  it('vult voor met de afgekapte waarde van een eigen item', () => {
     expect(choosePick('top', other('12.9'), 'other')).toEqual(other('12'))
     expect(choosePick('top', other('5000'), 'other')).toEqual(other('999'))
   })

@@ -67,26 +67,30 @@ never enter the upgrade advice.
 - [x] `equipment.test.ts` updated; 404 tests green, typecheck green
 - [x] Victor (code): no findings; Edith (UI text): two shorter phrasings adopted
 - [x] Tycho: tests for the catalog, the override and the new data (437 green)
-- [ ] Victor (code) and Edith (UI text) on the second round
+- [x] Victor (code) and Edith (UI text) on the second round: fixed a claw stat override resetting a hand-set attack speed, stored stats now saved as they count (clamped), Escape-then-arrow highlighting, own-item row offered unless the text is an exact name; "Ander item" renamed "eigen item" throughout (439 green)
 - [ ] Dave looks at the equipment card at phone width before the merge
 
 ### DEPLOY: app/equipment-always-worn
 
-The equipment card no longer offers "Weet ik niet" or "Niets": every slot is either a shop item or
-"Ander item". A slot that has not been filled in yet shows a disabled "Kies wat je draagt" until you
-pick, and filling it in for the first time still leaves your WDEF as it was. A slot saved earlier as
-"Niets" comes back as not filled in. The "was" badge now names the shop item you wore instead of
-"Ander item".
+The equipment card no longer offers "Weet ik niet" or "Niets": a player always wears something. Each
+slot is now a search bar: type the name of what you wear and pick it from the list, which covers the
+shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
+items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
+own item. If the database value differs from your game, type the right one in the stat field: that
+value counts, and the card notes "aangepast, database: N". A slot not filled in yet shows a search
+prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
+"Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
 
-**Score:** 2
+**Score:** 3
 
 #### What makes this deploy extra special
 
-A player picks what they actually wear and is never offered a choice that cannot be true.
+A player finds what they wear by searching, among far more items than the shop sells, and can correct
+the value when the database is off.
 
-**Score:** 2
+**Score:** 3
 
 #### Pull Request
 
-Equipment: no 'Weet ik niet' or 'Niets' choice, a player always wears something
+Equipment: search for what you wear, with a correctable stat and the Thief items up to level 30
 

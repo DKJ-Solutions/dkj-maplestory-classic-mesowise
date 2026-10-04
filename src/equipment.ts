@@ -13,7 +13,7 @@ import type { ProfileDraft } from './profile'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
 const VERSION = 1
-/** De maximale lengte van de naam bij "Ander item". */
+/** De maximale lengte van de naam bij een eigen item. */
 export const MAX_NAME_LENGTH = 40
 const MAX_STAT_LENGTH = 12
 const MAX_STAT = 999
@@ -94,7 +94,7 @@ function parseStat(text: string): number | undefined {
   return t !== '' && Number.isFinite(n) ? Math.min(MAX_STAT, Math.max(0, Math.trunc(n))) : undefined
 }
 
-/** De waarde uit de database van wat je draagt; undefined bij nog niet ingevuld, "Ander item" of een naam die niet (meer) bestaat. */
+/** De waarde uit de database van wat je draagt; undefined bij nog niet ingevuld, een eigen item of een naam die niet (meer) bestaat. */
 export const databaseStat = (slot: EquipSlot, entry: EquipEntry): number | undefined =>
   entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : catalogItem(slot, entry.pick)?.stat
 
@@ -105,7 +105,7 @@ export function statOverride(slot: EquipSlot, entry: EquipEntry): number | undef
   return db !== undefined && own !== undefined && own !== db ? own : undefined
 }
 
-/** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij "Ander item" zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
+/** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij een eigen item zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
 export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined {
   if (entry.pick === UNKNOWN) return undefined
   if (entry.pick === OTHER) return parseStat(entry.stat)
@@ -127,14 +127,14 @@ export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
 /** De naam van wat je in dit slot draagt, voor een samenvatting; null als het slot nog niet is ingevuld. */
 export function wornName(entry: EquipEntry): string | null {
   if (entry.pick === UNKNOWN) return null
-  if (entry.pick === OTHER) return entry.name.trim() || 'ander item'
+  if (entry.pick === OTHER) return entry.name.trim() || 'eigen item'
   return entry.pick
 }
 
 /** Hoe een keuze heet in de "was"-badge; een eigen stat bij een catalogusitem staat erbij. */
 export function entryLabel(slot: EquipSlot, entry: EquipEntry): string {
   if (entry.pick === UNKNOWN) return 'nog niet ingevuld'
-  if (entry.pick === OTHER) return entry.name.trim() || 'Ander item'
+  if (entry.pick === OTHER) return entry.name.trim() || 'Eigen item'
   const own = statOverride(slot, entry)
   return own === undefined ? entry.pick : `${entry.pick} (aangepast: ${own})`
 }
@@ -144,13 +144,14 @@ export function wornSummary(eq: Equipment): string[] {
   return EQUIP_SLOTS.flatMap(({ slot }) => wornName(eq[slot]) ?? [])
 }
 
-/** Of dit slot anders is dan in `before` (voor de "was"-badge). Bij elke keuze telt een andere stat; de naam alleen bij "Ander item". */
+/** Of dit slot anders is dan in `before` (voor de "was"-badge). Bij elke keuze telt een andere stat; de naam alleen bij een eigen item. */
 export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
   a.pick !== b.pick || (a.pick !== UNKNOWN && a.stat.trim() !== b.stat.trim()) || (a.pick === OTHER && a.name.trim() !== b.name.trim())
 
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
- * claw uit de winkel ook je aanvalssnelheid. Armor: de WDEF in het profiel is het totaal uit je statvenster,
+ * andere claw uit de catalogus ook je aanvalssnelheid (pas je alleen de WATK van dezelfde claw aan, dan blijft
+ * een zelf ingevulde aanvalssnelheid staan). Armor: de WDEF in het profiel is het totaal uit je statvenster,
  * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Vul je een slot voor het eerst in,
  * dan blijft de WDEF staan: dat stuk zat er al in.
  */
@@ -158,7 +159,7 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
   const next = wornStat(slot, after)
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const attackMs = after.pick === OTHER ? undefined : catalogItem('claw', after.pick)?.attackMs
+    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : catalogItem('claw', after.pick)?.attackMs
     return { ...profile, clawWatk: String(next), ...(attackMs !== undefined ? { attackMs: String(attackMs) } : {}) }
   }
   const prev = wornStat(slot, before)
@@ -169,7 +170,7 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
 
 /**
  * De nieuwe invulling na een keuze in de zoekbalk. Een catalogusitem begint met de waarde uit de database.
- * Kies je "Ander item" (met de getypte naam) terwijl de app wist wat je droeg, dan begint de stat op die
+ * Kies je een eigen item (met de getypte naam) terwijl de app wist wat je droeg, dan begint de stat op die
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.
  */
 export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string, name = ''): EquipEntry {
@@ -181,15 +182,16 @@ export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string, n
 /**
  * Het getalveld legt zich vast: de entry met de getypte stat, of null als er niets te doen valt. Bij "Ander
  * item" geldt een leeg of onleesbaar getal niet (het veld valt terug). Bij een catalogusitem betekent leeg
- * "weer de database", en een getal gelijk aan de database wordt ook leeg bewaard: dat is geen aanpassing.
+ * "weer de database", en een getal gelijk aan de database wordt ook leeg bewaard: dat is geen aanpassing. Bewaard
+ * wordt het getal zoals het meetelt (afgekapt en begrensd), zodat veld, opslag en notitie hetzelfde tonen.
  */
 export function commitStat(slot: EquipSlot, entry: EquipEntry, text: string): EquipEntry | null {
   if (entry.pick === UNKNOWN) return null
   const n = parseStat(text)
-  if (entry.pick === OTHER) return n === undefined ? null : { ...entry, stat: text }
+  if (entry.pick === OTHER) return n === undefined ? null : { ...entry, stat: String(n) }
   const db = databaseStat(slot, entry)
   if (db === undefined || (text.trim() !== '' && n === undefined)) return null
-  return { ...entry, stat: n === undefined || n === db ? '' : text }
+  return { ...entry, stat: n === undefined || n === db ? '' : String(n) }
 }
 
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')

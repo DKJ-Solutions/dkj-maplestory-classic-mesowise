@@ -313,20 +313,22 @@ function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick:
   const typed = (text ?? '').trim()
   const found = searchCatalog(slot, typed)
   const stat = slot === 'claw' ? 'WATK' : 'WDEF'
-  const rows: { pick: string; name?: string; label: string; meta?: string }[] =
-    found.length > 0
-      ? found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` }))
-      : typed !== ''
-        ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }]
-        : []
+  // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
+  const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
+  const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
+  ]
   const choose = (row: { pick: string; name?: string }) => {
     props.onPick(row.pick, row.name)
     setText(null)
     input.current?.blur()
   }
   const move = (to: number) => {
-    if (!open) setText('')
-    else if (rows.length > 0) setActive((to + rows.length) % rows.length)
+    if (!open) {
+      setText('')
+      setActive(0)
+    } else if (rows.length > 0) setActive((to + rows.length) % rows.length)
   }
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -732,7 +734,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
     <>
       <p class="hint">
         {a.choices.some((c) => c.replaces === undefined) &&
-          'Waar de app niet weet hoeveel WDEF je huidige stuk geeft (nog niet ingevuld, of "Ander item" zonder WDEF), is gerekend alsof het geen WDEF geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel WDEF, dan is de winst kleiner. '}
+          'Waar de app niet weet hoeveel WDEF je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder WDEF), is gerekend alsof het geen WDEF geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel WDEF, dan is de winst kleiner. '}
         Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
       </p>
       {first && (
@@ -986,7 +988,7 @@ export function App() {
   const equipmentDirty = useRef(false)
   // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
   // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
-  // render verliezen zo niets. Een getal dat nog getypt wordt bij "Ander item" staat apart in `pending`.
+  // render verliezen zo niets. Een getal dat nog getypt wordt bij een eigen item staat apart in `pending`.
   const profileRef = useRef(profileDraft)
   const equipmentRef = useRef(equipment)
   const pendingRef = useRef<Partial<Record<EquipSlot, string>>>({})
