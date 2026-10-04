@@ -1,16 +1,16 @@
 // Wat een skill aan je totalen verandert (Dave, 4 oktober 2026, issue #139): DEF, accuracy, evasion, Max HP en crit,
-// per skill-level. Puur, zonder UI-import. Alle getallen komen uit de data van elke job, met hun bron daar.
+// per skill-level, en bij een aanval de schade per keer. Puur, zonder UI-import. Alle getallen komen uit de data van elke job, met hun bron daar.
 //
 // Twee soorten, en het verschil telt:
 // - Een passief (Nimble Body, Precise Strikes, Max HP Increase) zit al in je statvenster, dus al in de totalen van
 //   je profiel. Het advies telt een punt erbij op (plusOne in skillPoint.ts); hier telt hij niet nog een keer.
 // - Een buff (Iron Body, Magic Armor, Focus) staat niet in het profiel: dat vul je in zonder buff. Het model neemt
 //   aan dat je hem de hele tijd aanhoudt (Dave, #139) en telt dus zijn stat erbij én de MP om hem aan te houden.
-import { FOCUS_LEVELS, CRITICAL_SHOT } from './data/bowman'
-import { MAGIC_ARMOR_LEVELS, MAX_MP_INCREASE } from './data/magician'
-import type { SkillKey } from './data/skills'
-import { NIMBLE_BODY } from './data/thief'
-import { IRON_BODY_LEVELS, MAX_HP_INCREASE, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import { ARROW_BLOW_LEVELS, CRITICAL_SHOT, DOUBLE_SHOT_LEVELS, DOUBLE_SHOT_TARGETS, FOCUS_LEVELS } from './data/bowman'
+import { ENERGY_BOLT_LEVELS, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAX_MP_INCREASE } from './data/magician'
+import { THREE_SNAILS_DAMAGE, THREE_SNAILS_SHELL, type SkillKey } from './data/skills'
+import { DOUBLE_STAB_HITS, DOUBLE_STAB_LEVELS, LUCKY_SEVEN, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS, SLASH_BLAST_TARGETS } from './data/warrior'
 import type { Profile } from './profile'
 
 /** De rij van de tabel voor dit level; undefined op level 0 (niet geleerd) of buiten de tabel. */
@@ -48,8 +48,19 @@ export function buffBonus(p: Profile): BuffBonus {
 }
 
 /**
- * Wat een skill op dit level aan je totalen geeft, als tekst voor de sectie "Skillpoints"; null als de skill geen
- * total verandert (een aanval, of een effect dat geen stat is) of het level 0 is. `wdef` is de DEF uit je profiel: Iron
+ * De schade per keer van een aanval: het procent van je schade, maal het aantal klappen; met het aantal monsters als hij
+ * er meer dan één raakt. Null buiten de tabel.
+ */
+const damageText = (levels: readonly { damagePct: number }[], level: number, hits = 1, targets = 1): string | null => {
+  const l = at(levels, level)
+  if (!l) return null
+  const hit = hits > 1 ? `+${hits} × ${l.damagePct}% schade` : `+${l.damagePct}% schade`
+  return targets > 1 ? `${hit}, tot ${targets} monsters` : hit
+}
+
+/**
+ * Wat een skill op dit level aan je totalen geeft, en bij een aanval zijn schade per keer, als tekst voor de sectie
+ * "Skillpoints"; null als de skill geen van beide verandert (een effect dat geen stat is) of het level 0 is. `wdef` is de DEF uit je profiel: Iron
  * Body geeft een procent ervan, dus zonder geldige DEF noemt de tekst alleen het procent.
  */
 export function skillEffectText(key: SkillKey, level: number, wdef: number | null): string | null {
@@ -86,9 +97,42 @@ export function skillEffectText(key: SkillKey, level: number, wdef: number | nul
       const pct = at(MAX_MP_INCREASE.maxMpPct, level)
       return pct === undefined ? null : `+${pct}% Max MP`
     }
+    case 'threeSnails': {
+      const damage = at(THREE_SNAILS_DAMAGE, level)
+      return damage === undefined ? null : `+${damage} schade`
+    }
+    case 'luckySeven':
+      return damageText(LUCKY_SEVEN_LEVELS, level, LUCKY_SEVEN.stars)
+    case 'doubleStab':
+      return damageText(DOUBLE_STAB_LEVELS, level, DOUBLE_STAB_HITS)
+    case 'powerStrike':
+      return damageText(POWER_STRIKE_LEVELS, level)
+    case 'slashBlast':
+      return damageText(SLASH_BLAST_LEVELS, level, 1, SLASH_BLAST_TARGETS)
+    case 'arrowBlow':
+      return damageText(ARROW_BLOW_LEVELS, level)
+    case 'doubleShot':
+      return damageText(DOUBLE_SHOT_LEVELS, level, 1, DOUBLE_SHOT_TARGETS)
+    case 'energyBolt':
+      return damageText(ENERGY_BOLT_LEVELS, level)
+    case 'magicClaw':
+      return damageText(MAGIC_CLAW_LEVELS, level, MAGIC_CLAW_HITS)
     default:
       return null
   }
+}
+
+/** Wat een skill naast MP per keer kost, als tekst; null als hij niets anders kost. Three Snails gooit een schelp, Slash Blast kost HP. */
+export function skillExtraCostText(key: SkillKey, level: number): string | null {
+  if (key === 'threeSnails') {
+    const shell = at(THREE_SNAILS_SHELL, level)
+    return shell === undefined ? null : `−1 ${shell}`
+  }
+  if (key === 'slashBlast') {
+    const l = at(SLASH_BLAST_LEVELS, level)
+    return l ? `−${l.hp} HP` : null
+  }
+  return null
 }
 
 /**

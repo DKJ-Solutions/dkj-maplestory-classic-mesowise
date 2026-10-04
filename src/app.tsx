@@ -17,7 +17,7 @@ import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type Unw
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
-import { skillEffectText } from './skillEffects'
+import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
@@ -1074,7 +1074,8 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
   // Een passief: wat hij geeft. Een skill met MP: de MP, en wat hij geeft als hij een total verandert.
   const line = (label: string, l: number, mp: string): SkillLinePart[] => {
     const gain = effect(l)
-    const parts: SkillLinePart[] = passive ? [] : [{ text: mp, tone: 'cost' }]
+    const cost = [mp, skillExtraCostText(s.key, l)].filter(Boolean).join(', ')
+    const parts: SkillLinePart[] = passive ? [] : [{ text: cost, tone: 'cost' }]
     if (gain !== null) parts.push(...(parts.length ? [{ text: ', ' }] : []), { text: gain, tone: 'gain' })
     return [{ text: label }, ...parts]
   }

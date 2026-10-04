@@ -57,6 +57,11 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
   New tokens `--cost` and `--gain`, light and dark.
 - **Max HP Increase scales the whole stat-window Max HP** (equipment and AP included); the page does not say of what.
   It only reaches the "dangerous" check, so an overstatement there is small (Victor).
+- **Attack skills show their damage per use as the gain** (the requester, after the first look: "Double Stab only
+  shows the MP"): "+2 × 80% schade", with "tot N monsters" for Slash Blast and Double Shot. Double Stab's damage
+  was added to `data/thief.ts` from its skill page; Three Snails' flat damage and shell, and Slash Blast's HP, show
+  too (the shell and the HP in red, as costs). Double Stab stays out of the advice: it needs a dagger, and the model
+  knows the Thief with a claw. Disorder weakens the monster rather than giving you a stat, so it shows nothing.
 - **Out of scope:** crit (Precise Strikes, Critical Shot): there is no crit damage in the damage guide, so it is only
   shown. Improved HP/MP Recovery's potion bonus is not a total: filed as #141.
 
@@ -67,10 +72,11 @@ Stacked on PR #140 (app/138-skill-next-level-mp, merged in, not rebased): the ca
 - [x] Advice weighs Max HP Increase, Iron Body, Magic Armor and Focus, each behind its prerequisite level
 - [x] Prerequisite levels in the data files, checked against the four skill pages (Vera, October 4, 2026)
 - [x] Skillpoints card shows the effect now and at the next level, cost with − in red and gain with + in green
+- [x] Attack skills show their damage per use; Double Stab and Three Snails damage added from their skill pages
 
 ### TEST
 
-- [x] Tycho: 8 tests updated, 36 added (1263 to 1299); lint gate and vitest green
+- [x] Tycho: 10 tests updated, 38 added (1263 to 1301); lint gate and vitest green
 - [x] Victor: no blockers; max-level guard on `maxHpAfterPoint` and the HP assumption written down, taken along
 - [x] Edith: no blockers; five comment wordings taken along
 - [ ] Dave looks at the card at phone width (visible result)
@@ -81,7 +87,8 @@ Skills that change a total now count in the calculation. Iron Body, Magic Armor 
 assumes they are always on, adds their DEF, accuracy and evasion to the character, and charges the MP to keep them
 up to the MP potions. Max HP Increase counts as Max HP. The skill-point advice weighs all four, each behind the skill
 level it requires. The Skillpoints card shows what a skill gives next to its MP, now and at the next level, with the
-cost as a red − and the gain as a green +. New module `src/skillEffects.ts`.
+cost as a red − and the gain as a green +; an attack skill shows its damage per use, and Slash Blast's HP and Three
+Snails' shell show as costs. New module `src/skillEffects.ts`.
 
 **Score:** 3
 

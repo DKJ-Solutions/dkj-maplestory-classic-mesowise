@@ -4,7 +4,7 @@
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
 // als op de skillpagina's, de MP per level in de tabel op elke skillpagina (daar als "MP -8").
 import { ARROW_BLOW_LEVELS, CRITICAL_SHOT, DOUBLE_SHOT_LEVELS, EYE_OF_AMAZON, FOCUS_LEVELS } from './bowman'
-import { LUCKY_SEVEN_LEVELS } from './thief'
+import { DOUBLE_STAB_LEVELS, LUCKY_SEVEN_LEVELS } from './thief'
 import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_ARMOR_LEVELS, MAGIC_CLAW_LEVELS, MAGIC_GUARD, MAX_MP_INCREASE } from './magician'
 import type { Source } from './types'
@@ -65,9 +65,11 @@ const skill = (key: SkillKey, name: string, job: SkillInfo['job'], max: number, 
 
 // De MP per level van de skills die het model niet doorrekent, uit de tabel op hun skillpagina.
 const THREE_SNAILS_MP = [3, 4, 5]
+/** Three Snails per level: de vaste schade en de schelp die elke worp kost (de skillpagina, opgehaald op 4 oktober 2026, #139). */
+export const THREE_SNAILS_DAMAGE = [15, 25, 40] as const
+export const THREE_SNAILS_SHELL = ['Snail Shell', 'Blue Snail Shell', 'Red Snail Shell'] as const
 const NIMBLE_FEET_MP = [4, 7, 10]
 const RECOVERY_MP = [5, 10, 15]
-const DOUBLE_STAB_MP = [8, 8, 8, 8, 9, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16]
 const DISORDER_MP = [5, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10]
 // Level 19 kost 32 en level 20 kost 30 (geen vaste stap): zo staat het op de pagina.
 const DARK_SIGHT_MP = [50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 30]
@@ -81,7 +83,7 @@ export const THIEF_SKILLS: readonly SkillInfo[] = [
   skill('recovery', 'Recovery', 'Beginner', 3, 'beginner/recovery', RECOVERY_MP),
   skill('nimbleBody', 'Nimble Body', 'Thief', 15, 'thief/nimble-body'),
   skill('keenEyes', 'Keen Eyes', 'Thief', 15, 'thief/keen-eyes'),
-  skill('doubleStab', 'Double Stab', 'Thief', 20, 'thief/double-stab', DOUBLE_STAB_MP),
+  skill('doubleStab', 'Double Stab', 'Thief', 20, 'thief/double-stab', mpOf(DOUBLE_STAB_LEVELS)),
   skill('disorder', 'Disorder', 'Thief', 20, 'thief/disorder', DISORDER_MP),
   skill('darkSight', 'Dark Sight', 'Thief', 20, 'thief/dark-sight', DARK_SIGHT_MP),
   skill('luckySeven', 'Lucky Seven', 'Thief', 20, 'thief/lucky-seven', mpOf(LUCKY_SEVEN_LEVELS)),

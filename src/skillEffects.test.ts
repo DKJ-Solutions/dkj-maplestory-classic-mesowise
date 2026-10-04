@@ -7,10 +7,11 @@ import { estimateMob, meleeAttack, type MobStats } from './calc/mobModel'
 import { isInvalid } from './calc/rankSpots'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { expToNextLevel } from './data/expTable'
+import { MAGIC_CLAW_LEVELS } from './data/magician'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileDraft } from './profile'
-import { buffBonus, ironBodyDef, maxHpAfterPoint, skillEffectText } from './skillEffects'
+import { buffBonus, ironBodyDef, maxHpAfterPoint, skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { hourPlan, MP_POTION, suggestMonsters, type MonsterSuggestion } from './suggest'
@@ -227,10 +228,33 @@ describe('skillEffectText', () => {
     expect(skillEffectText('maxMpIncrease', 2, null)).toBe('+11% Max MP')
   })
 
-  it('geeft niets voor een aanval of een skill zonder stat', () => {
-    for (const key of ['powerStrike', 'luckySeven', 'energyBolt', 'slashBlast', 'magicGuard', 'eyeOfAmazon'] as const) {
+  it('geeft niets voor een skill zonder stat of schade', () => {
+    for (const key of ['magicGuard', 'eyeOfAmazon', 'disorder', 'darkSight', 'keenEyes'] as const) {
       expect(skillEffectText(key, 5, 72), key).toBeNull()
     }
+  })
+
+  it("geeft bij een aanval de schade per keer, met de klappen en de monsters (de skillpagina's, #139)", () => {
+    expect(skillEffectText('doubleStab', 1, null)).toBe('+2 × 80% schade')
+    expect(skillEffectText('doubleStab', 20, null)).toBe('+2 × 160% schade')
+    expect(skillEffectText('luckySeven', 1, null)).toBe('+2 × 60% schade')
+    expect(skillEffectText('powerStrike', 20, null)).toBe('+260% schade')
+    expect(skillEffectText('slashBlast', 4, null)).toBe('+79% schade, tot 4 monsters')
+    expect(skillEffectText('arrowBlow', 1, null)).toBe('+160% schade')
+    expect(skillEffectText('doubleShot', 20, null)).toBe('+120% schade, tot 2 monsters')
+    expect(skillEffectText('energyBolt', 1, null)).toBe('+90% schade')
+    expect(skillEffectText('magicClaw', 1, null)).toBe(`+2 × ${MAGIC_CLAW_LEVELS[0].damagePct}% schade`)
+    expect(skillEffectText('threeSnails', 3, null)).toBe('+40 schade')
+    expect(skillEffectText('doubleStab', 21, null)).toBeNull()
+  })
+
+  it('noemt wat een skill naast MP kost: de schelp van Three Snails en de HP van Slash Blast', () => {
+    expect(skillExtraCostText('threeSnails', 1)).toBe('−1 Snail Shell')
+    expect(skillExtraCostText('threeSnails', 3)).toBe('−1 Red Snail Shell')
+    expect(skillExtraCostText('slashBlast', 1)).toBe('−3 HP')
+    expect(skillExtraCostText('slashBlast', 20)).toBe('−8 HP')
+    expect(skillExtraCostText('doubleStab', 5)).toBeNull()
+    expect(skillExtraCostText('threeSnails', 0)).toBeNull()
   })
 })
 
