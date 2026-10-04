@@ -39,21 +39,36 @@
 
 ### PLAN
 
+Issue #64, decided by Dave on October 4, 2026: bronze arrows count behind a switch the player turns on ("I have
+Helpful Stranger"); with the switch off only the plain arrows count. This branch is step 1, the data. The switch
+itself belongs on the screen once the Bowman is computed (#44, parked with `awaiting-pull`), so #64 stays open.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rebecca checked the raw pages: items 210 and 214 (W.ATK+1, 2 mesos, only Raymond), Raymond's shop
+  (npcs/232, "(Helpful Stranger+)" on both rows) and the Bowman class guide (level 22, 2,000 contribution)
+- [x] `HELPFUL_STRANGER_ARROWS` and `HELPFUL_STRANGER_SOURCES` in `src/data/bowman.ts`, apart from
+  `NPC_ARROWS`, which stays the switched-off list; the header says why
 
 ### TEST
 
+- [x] Tycho: two tests pin the bronze rows and the rank's sources; the test that keeps bronze out of
+  `NPC_ARROWS` stays; typecheck clean, vitest 718 of 718 green
+
 ### DEPLOY: data/64-bronze-arrows
 
-**Score:**
+The Bowman data now holds the bronze arrows (+1 W.ATT for 2 mesos an arrow), each with its source, in a list of
+their own: Raymond sells them only from the "Helpful Stranger" citizenship rank, so they count only once the
+player says they have it. Nothing changes in the app yet; the switch comes with the Bowman calculation (#44).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Bronze arrows in the Bowman data, behind the Helpful Stranger rank
-
