@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**41 / 78 minor entries** <!-- pending-tally -->
+**42 / 79 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/skillpoint-always-placed · 20261004-204245Z
+
+The advice card is now "Report", with four parts: ATT, DEF, Skill and Mob. Each part says in one line
+what it weighs, and its chip says whether you still have to act ("Upgraden", "Upgrade complete",
+"Blijven", the skill to raise, "Goed gezet"). The skill advice always names where a free point goes,
+even when no skill saves mesos. It explains a placed point, and once all points are spent it checks
+whether one point would have been cheaper in another skill. ATT names the weapon you carry and the
+next better one with its level. Ability points and Total stats move into their own "Stats" block,
+and the headings follow a clear size scale.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player now reads at a glance, per part, whether anything needs doing after a level-up. Where a
+skill point goes is always answered and explained, and so is the weapon you carry.
+
+**Score:** 4
+
+#### Pull Request
+
+The skill advice always names where a free skill point goes
+
+[PR #147](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/147)
+
+---
 
 ### DEPLOY: app/ap-per-level · 20261004-192753Z
 
