@@ -67,7 +67,7 @@ Bowman is not computed.
 - [x] Code review (Victor) and proofread (Edith): `starWatk` allows up to 999 like the claw, so an own star
   with a high ATT no longer blocks the calculation; no ammo slot for Warrior and Magician; the source line names
   items 294-300; the unused `npc` flag removed
-- [ ] Dave looks at the result at phone width before the merge
+- [x] Dave looked at the result and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/65-ranged-ammo
 
