@@ -1,7 +1,7 @@
 // De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
+// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
 // zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'

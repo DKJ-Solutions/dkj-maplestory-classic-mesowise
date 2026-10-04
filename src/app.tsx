@@ -23,7 +23,7 @@ import { WEAPON_MULT_BY_KIND } from './warriorGear'
 import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { ABILITY_KEYS, loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -315,6 +315,7 @@ function ProfileCard(props: {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
+  const shown = statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
   return (
     <section class={`card profile${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -328,11 +329,17 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {statFieldsFor(job)
-            .filter((f) => !HIDDEN_STATS.has(f.key))
-            .map((f) => (
-              <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
-            ))}
+          {[
+            { title: 'Ability points', fields: shown.filter((f) => ABILITY_KEYS.includes(f.key)) },
+            { title: 'Total stats', fields: shown.filter((f) => !ABILITY_KEYS.includes(f.key)) },
+          ].map((g) => (
+            <div class="stat-group" key={g.title}>
+              <h3 class="stat-group-title">{g.title}</h3>
+              {g.fields.map((f) => (
+                <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
+              ))}
+            </div>
+          ))}
           {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
           {job === 'warrior' && (
             <>
@@ -1793,8 +1800,8 @@ export function App() {
             <p class="hint">
               {changes ? `${levelUpSummary(changes)} ` : ''}
               {job === 'warrior'
-                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je avoid in het spel.'
-                : 'Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
+                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.'
+                : 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
             </p>
             <div class="card stats">
               {checkFieldsFor(job).map((f) => (

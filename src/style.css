@@ -339,7 +339,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Je karakter: per stat op één rij de naam, het getal en het potlood (zelfde vakken als bij equipment); scheelt hoogte */
 .stat-line { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; column-gap: 0.375rem; align-items: center;
   padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
-.spot-body .stat-line:first-child { margin-top: 0.875rem; }
+/* De twee groepen van het statvenster in het spel: Ability points en Total stats */
+.stat-group-title { margin: 0.875rem 0 0.125rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.stat-group + .stat-group .stat-group-title { margin-top: 1rem; }
 .stat-line:last-of-type { border-bottom: 0; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }

@@ -43,17 +43,25 @@ Dave chose: regroup only, no new fields. Ability points: STR, DEX, LUK. Total st
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `ProfileCard` renders two groups, Ability points (`ABILITY_KEYS` in `src/profile.ts`) and Total stats; the "Avoid" label and hints say "Evasion"
+- [x] CSS for the group subheadings in `src/style.css`
 
 ### TEST
 
+- [x] Tycho: grouping tests for Thief and Warrior in `src/app.test.tsx`; `npm test` 906/906, `npm run lint` clean
+- [x] Victor (code review) and Edith (UI text): no findings
+
 ### DEPLOY: app/82-split-ability-total-stats
 
-**Score:**
+The "Je karakter" card is split into the two blocks of the in-game stat window: **Ability points** (STR, DEX, LUK) and **Total stats** (Accuracy, Evasion, time per attack and, for a Warrior, the weapon multiplier). "Avoid" is now called "Evasion", as in the game. No new fields and no change to the calculation or the stored profile (#82).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+The character card reads like the stat window in the game, so filling in your stats means copying block by block.
+
+**Score:** 2
 
 #### Pull Request
 

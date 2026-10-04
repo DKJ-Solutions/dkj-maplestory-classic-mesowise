@@ -358,6 +358,18 @@ describe('bewaren na elke wijziging', () => {
     expect(names).toContain('Tijd per aanval (ms)')
   })
 
+  it('zet de stats in twee groepen zoals het statvenster: Ability points (STR, DEX, LUK) en Total stats (#82)', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    const groups = Array.from(panels()[0].querySelectorAll('section.profile .stat-group')).map((g) => ({
+      title: g.querySelector('.stat-group-title')?.textContent,
+      names: Array.from(g.querySelectorAll('.stat-line-name')).map((n) => n.textContent),
+    }))
+    expect(groups).toEqual([
+      { title: 'Ability points', names: ['STR', 'DEX', 'LUK'] },
+      { title: 'Total stats', names: ['Accuracy', 'Evasion', 'Tijd per aanval (ms)'] },
+    ])
+  })
+
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const h = openStat('Tijd per aanval (ms)')
@@ -380,10 +392,10 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Accuracy').querySelector('.equip-value.changed')).not.toBeNull()
   })
 
-  it('toont bij het voorbeeldprofiel de verwachte avoid doorgestreept: 23 in het spel, 22 volgens de formule', () => {
+  it('toont bij het voorbeeldprofiel de verwachte evasion doorgestreept: 23 in het spel, 22 volgens de formule', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
-    expect(statShown('Avoid')).toBe(DEFAULT_PROFILE.avoid)
-    expect(statLine('Avoid').querySelector('s')?.textContent).toBe('22')
+    expect(statShown('Evasion')).toBe(DEFAULT_PROFILE.avoid)
+    expect(statLine('Evasion').querySelector('s')?.textContent).toBe('22')
   })
 
   it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
@@ -757,6 +769,18 @@ describe('een Warrior in de app', () => {
       expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
     })
 
+    it('zet bij je karakter de stats in twee groepen, met de weapon multiplier als laatste onder Total stats (#82)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      const groups = Array.from(panels()[0].querySelectorAll('section.profile .stat-group')).map((g) => ({
+        title: g.querySelector('.stat-group-title')?.textContent,
+        names: Array.from(g.querySelectorAll('.stat-line-name')).map((n) => n.textContent),
+      }))
+      expect(groups).toEqual([
+        { title: 'Ability points', names: ['STR', 'DEX', 'LUK'] },
+        { title: 'Total stats', names: ['Accuracy', 'Evasion', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'] },
+      ])
+    })
+
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
       fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
       const editor = openStat('Weapon multiplier van je wapen')
@@ -769,11 +793,11 @@ describe('een Warrior in de app', () => {
       expect(cards()[0].textContent).not.toMatch(/Ammo/)
     })
 
-    it('toont de verwachte Warrior-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
+    it('toont de verwachte Warrior-accuracy en -evasion doorgestreept als je getal afwijkt (#77)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
       // floor((1,2 x 20 + 2 x 20 + 0,6 x 4) / 2,5 + 10) = floor(36,56) = 36; avoid floor(4 / 3) + floor(20 / 6) + 5 = 9
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('36')
-      expect(statLine('Avoid').querySelector('s')?.textContent).toBe('9')
+      expect(statLine('Evasion').querySelector('s')?.textContent).toBe('9')
     })
 
     it('toont bij Skillpoints de skills van de Warrior en niet die van de Thief', () => {

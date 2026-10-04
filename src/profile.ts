@@ -29,7 +29,7 @@ const STATS = [
   { key: 'luk', label: 'LUK', min: 0, max: 999, integer: true },
   { key: 'clawWatk', label: `${STAT_NAME.weapon} van je wapen`, min: 0, max: 999, integer: true },
   { key: 'accuracy', label: 'Accuracy', min: 0, max: 999, integer: true },
-  { key: 'avoid', label: 'Avoid', min: 0, max: 999, integer: true },
+  { key: 'avoid', label: 'Evasion', min: 0, max: 999, integer: true },
   { key: 'wdef', label: STAT_NAME.armor, min: 0, max: 9_999, integer: true },
   { key: 'attackMs', label: 'Tijd per aanval (ms)', min: 100, max: 5_000, integer: false },
 ] as const
@@ -97,6 +97,12 @@ export const profileFieldsFor = (job: Job): readonly ProfileField[] =>
     : job === 'warrior'
       ? WARRIOR_FIELDS
       : PROFILE_FIELDS.filter((f) => !isSkillKey(f.key) || skillInfo(f.key).job !== 'Thief')
+
+/**
+ * De velden onder "Ability points" op de kaart "Je karakter", zoals in het statvenster van het spel. Alle andere
+ * stats vallen onder "Total stats". INT staat er niet: de app rekent er niet mee.
+ */
+export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'luk']
 
 /** De stats (zonder skills en zonder je stars, die uit je equipment komen) die een job invult, voor de kaart "Je karakter". */
 export const statFieldsFor = (job: Job): readonly ProfileField[] => profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f))
