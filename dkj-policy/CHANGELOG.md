@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**22 / 56 minor entries** <!-- pending-tally -->
+**22 / 57 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/91-mdef-per-item · 20261004-125404Z
+
+The Total stats card now fills in Magic Def itself from your equipment, as it already did for Attack and Weapon Def: the MDEF
+of your hat, top and bottom (or overall) and shoes, read-only once all of those are picked from the list; until then, or with
+a custom item, you still fill it in yourself. Every item
+page was checked: of the items the app knows outside the Magician's, only the Bronze Pride gives MDEF (18).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Source MDEF per item and derive Magic Def from the equipment
+
+[PR #109](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/109)
+
+---
 
 ### DEPLOY: app/43-magician-model · 20261004-124937Z
 
