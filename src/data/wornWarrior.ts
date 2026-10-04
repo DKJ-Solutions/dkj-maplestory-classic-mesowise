@@ -1,6 +1,6 @@
 // Items die een Warrior kan dragen maar die geen NPC verkoopt, of die als andere kleur of als mannenversie naast
 // een NPC-item bestaan: het Warrior-equivalent van wornItems.ts, met dezelfde regels. Ze staan in de zoekbalk van
-// "Je equipment", hebben geen prijs en komen dus nooit in het upgrade-advies. Staat de naam ook in NPC_WARRIOR_*,
+// "Equip", hebben geen prijs en komen dus nooit in het upgrade-advies. Staat de naam ook in NPC_WARRIOR_*,
 // dan wint de NPC-regel.
 //
 // Opgehaald bij NiaMeowDB (meowdb.com) op 2026-10-04: per item de eigen itempagina, gelezen uit de ruwe pagina
@@ -27,7 +27,7 @@ import { COMMON_WORN_ARMOR } from './wornItems'
 const R = '2026-10-04'
 const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
 
-const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4 } as const
+const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4, shield: 5, gloves: 6, cape: 7, earrings: 8 } as const
 
 const GENDERED_WARRIOR_ARMOR: readonly WornArmor[] = [
   { name: 'Brown Lolico Armor', slot: 'top', level: 10, wdef: 35, gender: 'male', source: src(942) },

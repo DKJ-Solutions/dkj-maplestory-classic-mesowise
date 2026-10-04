@@ -183,7 +183,7 @@ describe('Warrior-wapens: de winkel', () => {
   it('geeft none zonder profiel, buiten de EXP-tabel of zonder "Beste"', () => {
     expect(clawUpgradeAdvice(drafts, null)).toEqual({ kind: 'none' })
     expect(clawUpgradeAdvice(drafts, strong({ level: 31 }))).toEqual({ kind: 'none' })
-    expect(clawUpgradeAdvice([own('a', 40_000, 10_000)], strong({ level: 20 }))).toEqual({ kind: 'none' })
+    expect(clawUpgradeAdvice([], strong({ level: 20 }))).toEqual({ kind: 'none' })
   })
 
   it('geeft geen betere wapens als het beste wapen al in je hand is', () => {

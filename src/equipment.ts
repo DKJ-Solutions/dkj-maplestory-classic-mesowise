@@ -1,5 +1,6 @@
 // De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, je ammo (stars, of pijlen bij een Bowman,
-// issue #65; optioneel), hoed, top, bottom, overall (top en bottom in één stuk, issue #50) of schoenen.
+// issue #65), hoed, top, bottom, overall (top en bottom in één stuk, issue #50), schoenen, en een shield, gloves, cape
+// en earrings (issue #117). Elk slot mag leeg blijven.
 // Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, je stars hun weapon attack en
 // herlaadprijs, armor past je WDEF aan, en
 // het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
@@ -7,6 +8,7 @@
 // uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op "nog niet ingevuld". Je zoekt wat je draagt in
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
+import type { WornWdef } from './armorUpgrade'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -33,25 +35,34 @@ export type EquipSlot = 'claw' | 'ammo' | ArmorSlot
 export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'claw', label: 'Weapon' },
   { slot: 'ammo', label: 'Ammo' },
+  { slot: 'shield', label: 'Shield' },
   { slot: 'hat', label: 'Hat' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
   { slot: 'overall', label: 'Overall' },
   { slot: 'shoes', label: 'Shoes' },
+  { slot: 'gloves', label: 'Gloves' },
+  { slot: 'cape', label: 'Cape' },
+  { slot: 'earrings', label: 'Earrings' },
 ]
 
-/** De slots die een job heeft: ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets. */
-export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] =>
-  job === 'thief' || job === 'bowman' ? EQUIP_SLOTS : EQUIP_SLOTS.filter((s) => s.slot !== 'ammo')
+/** Of een job het slot heeft. */
+const hasSlot = (job: Job, slot: EquipSlot): boolean => {
+  // Ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets.
+  if (slot === 'ammo') return job === 'thief' || job === 'bowman'
+  // Een shield (issue #117) alleen naast een wapen voor één hand: een claw, boog of kruisboog vraagt beide handen.
+  if (slot === 'shield') return job === 'warrior' || job === 'magician'
+  return true
+}
+
+/** De slots die een job heeft, in de volgorde van het scherm. */
+export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot))
 
 /** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
 export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
 
-/**
- * Of een slot optioneel is: je ammo (Dave, 4 oktober 2026). Leeg laten mag; de app rekent dan met Subi zolang je
- * nooit een star koos. De andere slots zijn niet verplicht in te vullen, maar je draagt er altijd iets.
- */
-export const isOptionalSlot = (slot: EquipSlot): boolean => slot === 'ammo'
+// Elk slot mag leeg blijven (Dave, 4 oktober 2026, #117): het scherm noemt er geen apart "optioneel". Een leeg ammo-slot
+// rekent met Subi zolang je nooit een star koos.
 
 /** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'
@@ -86,6 +97,10 @@ export const defaultEquipment = (): Equipment => ({
   bottom: emptyEntry(),
   overall: emptyEntry(),
   shoes: emptyEntry(),
+  shield: emptyEntry(),
+  gloves: emptyEntry(),
+  cape: emptyEntry(),
+  earrings: emptyEntry(),
 })
 
 /** Of het scherm dit slot als leeg toont: nog niet ingevuld, of bekend leeg. */
@@ -202,14 +217,15 @@ export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined
   return db === undefined ? undefined : (parseStat(entry.stat) ?? db)
 }
 
-/** De WDEF per armorslot waarvan de app weet wat je draagt. */
-export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
-  const out: Partial<Record<ArmorSlot, number>> = {}
+/** De WDEF per armorslot waarvan de app weet wat je draagt, en of je een overall draagt, ook met onbekende WDEF (#118). */
+export function wornWdef(eq: Equipment): WornWdef {
+  const out: WornWdef = {}
   for (const { slot } of EQUIP_SLOTS) {
     if (!isArmorSlot(slot)) continue
     const w = wornStat(slot, eq[slot])
     if (w !== undefined) out[slot] = w
   }
+  if (isFilled(eq.overall)) out.overallWorn = true
   return out
 }
 
@@ -222,7 +238,8 @@ function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
 
 /**
  * De Magic Def uit je equipment (#91): de MDEF van je hat, je body (een overall, of top en bottom samen) en je shoes.
- * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Null zolang van één van die slots de MDEF onbekend is:
+ * Geen wapen van de app heeft MDEF, dus het wapen telt niet. Shield, gloves, cape en earrings (issue #117) tellen ook niet: die
+ * vul je als eigen item, waarvan de app alleen de WDEF vraagt, dus hun MDEF is nooit bekend. Null zolang van één van die slots de MDEF onbekend is:
  * een som met een gat erin zou een te laag getal tonen.
  */
 export function wornMdef(eq: Equipment): number | null {

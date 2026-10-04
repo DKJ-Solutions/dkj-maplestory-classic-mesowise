@@ -2,7 +2,97 @@
 
 ## [Unreleased]
 
-**29 / 65 minor entries** <!-- pending-tally -->
+**32 / 69 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equip-label · 20261004-134538Z
+
+The equipment card is now called "Equip" instead of "Je equipment": on the card head, in the popup title and in the line for a job the app does not compute yet. A shorter name that fits a phone screen better.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Players see the shorter "Equip" on the card and in its popup; nothing else changes.
+
+**Score:** 1
+
+#### Pull Request
+
+Rename the equipment card to Equip
+
+[PR #129](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/129)
+
+---
+
+### DEPLOY: app/117-shield-cape-earrings · 20261004-134135Z
+
+The equipment card has four new slots: Shield (Warrior and Magician only), Gloves, Cape and Earrings, and no slot is labelled "(optioneel)" any more, because every slot may stay empty. What you
+wear there counts toward your WDEF like the other armor. The app has no items for them yet, so a tap on the search box says to type the name, and you
+fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, because a custom item carries no MDEF.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+You can now describe your full gear; a shield, gloves, cape or earrings with DEF no longer goes missing from the card.
+
+**Score:** 3
+
+#### Pull Request
+
+Shield, Gloves, Cape and Earrings slots on the equipment card
+
+[PR #127](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/127)
+
+---
+
+### DEPLOY: app/118-overall-unknown-wdef-pair · 20261004-134012Z
+
+The Defense advice now also offers a top and bottom bought together when you wear an overall whose DEF the app
+does not know (an item of your own without a number). A single top or bottom then says that the other half is
+left bare, as it already did for an overall with a known DEF.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Armor advice: an overall with unknown DEF opens the top + bottom pair
+
+[PR #128](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/128)
+
+---
+
+### DEPLOY: app/hunted-mob-card · 20261004-133843Z
+
+The spot list is gone: no "Plek toevoegen" button, no example spot and no maps. One card under Skillpoints, "Monster",
+picks the mob you kill most; its popup shows the mob's HP, EXP, damage and WDEF, each correctable with the pencil when the game says otherwise (the
+level cost and advice then use your numbers); the level cost, the skill-point advice and the upgrade advice are all computed at that mob,
+also when it is dangerous (the warning stays on the card). Kills per hour are no longer typed in: the app computes them. A
+saved list of maps or own spots from before is dropped on load. Follow-ups: #122 (the hunting-ground question),
+#123 (removing the now unused map data).
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+A player no longer builds a list of spots: they pick the mob they hunt and get the cost of their level at once.
+Their old spots are gone after updating.
+
+**Score:** 4
+
+#### Pull Request
+
+Hunted-mob card replaces the spot list, the add-spot button and the example spot
+
+[PR #124](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/124)
+
+---
 
 ### DEPLOY: app/100-magician-matk-line · 20261004-133302Z
 

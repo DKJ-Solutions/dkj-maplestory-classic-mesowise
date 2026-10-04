@@ -36,7 +36,7 @@ export const BOWMAN_ARMOR: readonly ArmorPiece[] = NPC_BOWMAN_ARMOR.map((a) => (
 
 const npcArmorNames = new Set(NPC_BOWMAN_ARMOR.map((a) => a.name))
 
-const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4 } as const
+const SLOT_RANK = { hat: 0, top: 1, bottom: 2, overall: 3, shoes: 4, shield: 5, gloves: 6, cape: 7, earrings: 8 } as const
 
 /**
  * Armor zonder prijs die een Bowman kan dragen: de items zonder jobregel (voor elke klas, zie wornItems.ts) en de
