@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**22 / 55 minor entries** <!-- pending-tally -->
+**22 / 56 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/43-magician-model · 20261004-124937Z
+
+De Magician is nu te kiezen en wordt doorgerekend. De app kiest per monster de spreuk (Energy Bolt of Magic
+Claw) die de minste potions per EXP kost, rekent met 810 ms per cast en met Orange als MP-potion, en trekt de
+DEF van het monster van de spreukschade af volgens de damage-formule van NiaMeowDB. Wands, staffs en armor
+worden geadviseerd op INT en LUK, en de skillpoint-adviezen gaan over Energy Bolt en Magic Claw. De
+potionregel zegt voortaan bij elke job welke potion HP is en welke MP.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician in the mob model and on the screen
+
+[PR #96](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/96)
+
+---
 
 ### DEPLOY: app/55-character-gender · 20261004-124443Z
 
