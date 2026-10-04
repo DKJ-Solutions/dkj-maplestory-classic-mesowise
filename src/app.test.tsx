@@ -161,6 +161,13 @@ describe('begin zonder opslag', () => {
     expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
   })
 
+  it('zet BACK op lv 1 uit, met een naam die zegt dat er geen vorig level is', () => {
+    for (let lv = 10; lv > 1; lv--) fireEvent.click(screen.getByRole('button', { name: `Back (naar LV. ${lv - 1})` }))
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 1')
+    const back = screen.getByRole('button', { name: 'Back (er is geen vorig level)' }) as HTMLButtonElement
+    expect(back.disabled).toBe(true)
+  })
+
   // Dave, 4 oktober 2026: geen plekken, geen knop om ze toe te voegen en geen voorbeeldplek meer.
   it('heeft geen voorbeeldplek, geen lijst van plekken en geen knop Plek toevoegen', () => {
     expect(screen.queryByRole('button', { name: 'Plek toevoegen' })).toBeNull()

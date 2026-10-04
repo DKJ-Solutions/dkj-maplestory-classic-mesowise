@@ -1752,7 +1752,11 @@ export function App() {
   // Een level terug: alleen het level, zonder flow (#130).
   const levelDowned = applyLevelDown(profileDraft)
   const canLevelDown = levelDowned !== profileDraft
-  const levelDown = () => writeProfile(applyLevelDown)
+  const levelDown = () => {
+    // Net als Level up: eerst een open concept uit het corrigeervak vastleggen.
+    commitAllEquipment()
+    writeProfile(applyLevelDown)
+  }
   const levelText = profileDraft.level.trim()
   // Wat de level-up zelf aanpaste (niet wat de speler daarna verschuift); zonder undo staan er geen cijfers.
   const changes = undo ? levelUpChanges(undo.draft, applyLevelUp(undo.draft, job)) : null
