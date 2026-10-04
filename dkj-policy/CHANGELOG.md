@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**35 / 72 minor entries** <!-- pending-tally -->
+**36 / 73 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/125-shield-gloves-cape-earrings · 20261004-143757Z
+
+The Shield, Gloves, Cape and Earrings slots now have sourced items: 62 items up to level 30 from NiaMeowDB
+(11 shields, 40 gloves, 1 cape, 10 earrings), each with its own item page and job line. A job only sees
+what it may wear. A catalog item in these slots adds its MDEF to the Magic Def; an empty slot or an own
+item still counts as nothing there.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends pick their gloves, shield, cape and earrings from the list instead of typing the DEF,
+and their earrings now show up in their Magic Def.
+
+**Score:** 3
+
+#### Pull Request
+
+Sourced items for the Shield, Gloves, Cape and Earrings slots
+
+[PR #135](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/135)
+
+---
 
 ### DEPLOY: app/133-thief-shield-slot · 20261004-143530Z
 
