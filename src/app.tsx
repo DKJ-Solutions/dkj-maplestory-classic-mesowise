@@ -500,8 +500,9 @@ function EquipmentCard(props: {
                 </div>
                 {entry.pick !== UNKNOWN && (
                   <div class="equip-stats">
+                    {/* Kop boven de waarde, net als de slotnaam boven de naam */}
+                    <span class="equip-value-head" aria-hidden="true">{stat}</span>
                     <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
-                      <span class="equip-value-label">{stat}</span>
                       <span class="equip-value-num">
                         {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
                         <strong>{value ?? '?'}</strong>
