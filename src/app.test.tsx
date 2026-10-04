@@ -148,7 +148,7 @@ describe('begin zonder opslag', () => {
     expect(row.classList.contains('level-row')).toBe(true)
     const [down, heading, up] = Array.from(row.children)
     expect(down).toBe(screen.getByRole('button', { name: 'Terug naar LV. 9' }))
-    expect(down.textContent).toBe('‹ LV. 9')
+    expect(down.textContent).toBe('Terug')
     expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
     expect(heading.textContent).toBe('LV. 10')
     expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))

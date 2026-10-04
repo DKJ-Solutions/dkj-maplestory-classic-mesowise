@@ -1848,9 +1848,9 @@ export function App() {
             <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
               {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
               <div class="level-row">
-                {/* De terugknop noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
-                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Terug naar LV. ${levelDowned.level}` : 'Geen vorig level'}>
-                  ‹ {canLevelDown ? `LV. ${levelDowned.level}` : 'LV. –'}
+                {/* De terugknop heet TERUG; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
+                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Terug naar LV. ${levelDowned.level}` : 'Terug (er is geen vorig level)'}>
+                  Terug
                 </button>
                 <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
                   {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
