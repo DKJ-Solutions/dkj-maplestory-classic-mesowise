@@ -6,14 +6,14 @@
 //
 // Dezelfde regels als armor.ts, en voor wapens ook:
 // - Level 10 tot 30, met een jobregel op de pagina die Warrior noemt (ook "Warrior/Mage", "Warrior/Thief",
-//   "Warrior/Bowman/Thief") en een vaste winkelprijs.
+//   "Warrior/Bowman/Thief") of zonder jobregel, en een vaste winkelprijs.
 // - Eén regel per item. Wat de pagina niet als eis noemt (meestal DEX) staat als 0.
 //
-// Niet opgenomen als wapen, en waarom:
-// - Items zonder jobregel op de pagina: of een Warrior ze kan dragen staat niet op de pagina. Long Sword (543),
-//   Double Axe (577), Steel Pipe (588), Leather Purse (589), Red Brick (591), Hard Briefcase (594),
-//   Plunger (597) en Sky Blue Umbrella (550). Alle acht zijn verder gewone NPC-wapens met eisen en prijs; als
-//   Dave besluit dat "geen jobregel" ook "elke klas" mag betekenen, zijn ze snel toe te voegen.
+// Zonder jobregel, en dus voor elke klas (Dave, #55, 2026-10-04): Long Sword (543), Double Axe (577), Steel Pipe
+// (588), Leather Purse (589), Red Brick (591), Hard Briefcase (594), Plunger (597) en Sky Blue Umbrella (550),
+// gelezen uit de ruwe pagina. Steel Pipe en Sky Blue Umbrella vragen geen STR, dus die staat op 0. De M.ATK van
+// de Sky Blue Umbrella (12) laat de app weg: een Warrior gebruikt hem niet. Bij armor zijn dat de White Bandana
+// (719) en de Red Baseball Cap (781), zie armor.ts.
 //
 // Niet opgenomen als armor, en waarom:
 // - Alle Warrior-tops en -broeken die ik heb gelezen zijn alleen voor mannen ("Male only"), en geen enkele
@@ -78,17 +78,22 @@ const weapon = (
 
 /** De NPC-wapens voor een Warrior, van laag naar hoog level. */
 export const NPC_WARRIOR_WEAPONS: readonly WarriorWeapon[] = [
+  weapon(543, 'Long Sword', '1h-sword', 10, 20, 0, 27, FAST4, 3_000),
+  weapon(577, 'Double Axe', '1h-axe', 10, 20, 0, 27, FAST4, 3_000),
+  weapon(588, 'Steel Pipe', '1h-blunt', 10, 0, 0, 29, FAST5, 3_000),
   weapon(608, 'Wooden Sword', '2h-sword', 10, 25, 0, 30, FAST5, 5_000),
   weapon(617, 'Metal Axe', '2h-axe', 10, 25, 0, 30, FAST5, 5_000),
   weapon(625, 'Wooden Mallet', '2h-blunt', 10, 25, 0, 32, NORMAL6, 5_000),
   weapon(633, 'Spear', 'spear', 10, 25, 0, 32, SLOW7_TWO_CYCLE, 5_000),
   weapon(640, 'Pole Arm', 'polearm', 10, 15, 0, 35, SLOW8_POLEARM, 5_000),
+  weapon(589, 'Leather Purse', '1h-blunt', 12, 15, 0, 31, FAST5, 3_800),
   weapon(545, 'Sabre', '1h-sword', 15, 30, 10, 32, FAST4, 5_000),
   weapon(578, 'Battle Axe', '1h-axe', 15, 30, 10, 32, FAST4, 5_000),
   weapon(590, 'Mace', '1h-blunt', 15, 20, 0, 34, FAST5, 5_000),
   weapon(634, 'Fork on a Stick', 'spear', 15, 25, 0, 37, SLOW7_TWO_CYCLE, 7_000),
   weapon(641, 'Iron Ball', 'polearm', 15, 35, 15, 40, SLOW8_POLEARM, 7_000),
   weapon(626, 'Heavy Mace', '2h-blunt', 15, 35, 15, 40, SLOW7, 16_500),
+  weapon(591, 'Red Brick', '1h-blunt', 15, 10, 0, 31, FAST4, 5_000),
   weapon(593, 'Square Shovel', '1h-blunt', 17, 11, 11, 36, FAST5, 6_200),
   weapon(595, 'Iron Mace', '1h-blunt', 20, 30, 0, 39, FAST5, 10_500),
   weapon(547, 'Viking Sword', '1h-sword', 20, 40, 15, 37, FAST4, 10_500),
@@ -97,12 +102,15 @@ export const NPC_WARRIOR_WEAPONS: readonly WarriorWeapon[] = [
   weapon(618, 'Iron Axe', '2h-axe', 20, 45, 20, 35, FAST5, 13_500),
   weapon(627, 'Square Hammer', '2h-blunt', 20, 45, 20, 42, SLOW7, 13_500),
   weapon(642, 'Studded Polearm', 'polearm', 20, 45, 20, 42, SLOW7_TWO_CYCLE, 13_500),
+  weapon(594, 'Hard Briefcase', '1h-blunt', 20, 30, 0, 39, FAST5, 10_500),
   weapon(596, 'Pointed Shovel', '1h-blunt', 22, 16, 16, 41, FAST5, 11_700),
   weapon(580, 'Mithril Axe', '1h-axe', 25, 50, 20, 45, FAST5, 13_500),
   weapon(549, 'Eloon', '1h-sword', 25, 50, 20, 42, FAST4, 13_500),
   weapon(598, 'Fusion Mace', '1h-blunt', 25, 40, 0, 41, FAST4, 13_500),
   weapon(611, 'Broadsword', '2h-sword', 25, 55, 25, 45, FAST5, 16_500),
   weapon(620, 'Two-Handed Axe', '2h-axe', 25, 55, 25, 45, FAST5, 16_500),
+  weapon(597, 'Plunger', '1h-blunt', 25, 40, 0, 44, FAST5, 13_500),
+  weapon(550, 'Sky Blue Umbrella', '1h-sword', 27, 0, 0, 33, FAST4, 14_700),
   weapon(602, 'War Hammer', '1h-blunt', 30, 60, 25, 49, FAST5, 22_000),
   weapon(551, 'Gladius', '1h-sword', 30, 65, 30, 47, FAST4, 22_000),
   weapon(581, "Fireman's Axe", '1h-axe', 30, 60, 25, 47, FAST4, 22_000),
@@ -125,10 +133,12 @@ const armor = (
 /** De NPC-armor voor een Warrior, per slot (hat, shoes) van laag naar hoog level. Tops en broeken: zie de kop. */
 export const NPC_WARRIOR_ARMOR: readonly WarriorArmor[] = [
   armor(724, 'Bronze Koif', 'hat', 10, 10, 0, 22, 1_200),
+  armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 1_200),
   armor(737, 'Bronze Helmet', 'hat', 12, 15, 0, 24, 1_400),
   armor(743, 'Bronze Full Helm', 'hat', 15, 20, 0, 26, 1_800),
   armor(762, 'Bronze Football Helmet', 'hat', 20, 30, 10, 30, 3_600),
   armor(765, 'Bronze Viking Helm', 'hat', 20, 30, 10, 30, 3_600),
+  armor(781, 'Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900),
   armor(786, 'Steel Sharp Helm', 'hat', 22, 34, 12, 32, 3_900),
   armor(795, 'Iron Burgernet Helm', 'hat', 25, 40, 15, 34, 4_500),
   armor(812, 'Jousting Helmet', 'hat', 30, 50, 20, 38, 7_200),

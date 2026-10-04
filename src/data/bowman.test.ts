@@ -31,6 +31,8 @@ const DATE = /^2026-10-04$/
 const ITEM_URL = /^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/
 const item = (id: number) => `https://meowdb.com/msclassic/item-db/${id}`
 const skillUrl = (slug: string) => `https://meowdb.com/msclassic/skills/bowman/${slug}`
+/** De stukken zonder jobregel op MeowDB: voor elke klas, dus zonder DEX- of STR-eis (Dave, #55, 2026-10-04). */
+const NO_JOB_LINE_ARMOR = ['White Bandana', 'Red Baseball Cap']
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1)
 
 describe('NPC_BOWMAN_WEAPONS', () => {
@@ -129,12 +131,14 @@ describe('NPC_ARROWS', () => {
 })
 
 describe('NPC_BOWMAN_ARMOR', () => {
-  it('bevat precies de 17 stukken, per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
+  it('bevat precies de 19 stukken (17 met jobregel, 2 zonder: #55), per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
     const rows = NPC_BOWMAN_ARMOR.map((a) => [a.name, a.slot, a.level, a.str, a.dex, a.wdef, a.price])
     expect(rows).toEqual([
       ['Winter Hat', 'hat', 10, 0, 10, 15, 1_200],
+      ['White Bandana', 'hat', 10, 0, 0, 15, 1_200],
       ['Feather Hat', 'hat', 15, 0, 20, 18, 1_800],
       ['Robin Hat', 'hat', 20, 10, 30, 21, 3_600],
+      ['Red Baseball Cap', 'hat', 22, 0, 0, 22, 3_900],
       ['Hunter', 'hat', 25, 15, 40, 24, 4_500],
       ['Hawkeye', 'hat', 30, 20, 50, 27, 7_200],
       ['Archer Top / Avelin', 'top', 10, 0, 10, 24, 2_000],
@@ -150,12 +154,12 @@ describe('NPC_BOWMAN_ARMOR', () => {
       ['Woodsman Boots', 'shoes', 15, 0, 20, 12, 1_800],
       ['Huntertop', 'shoes', 20, 10, 30, 14, 3_600],
     ])
-    expect(NPC_BOWMAN_ARMOR).toHaveLength(17)
+    expect(NPC_BOWMAN_ARMOR).toHaveLength(19)
   })
 
   it('verwijst naar de pagina van het eerste id (bij de paren de mannenpagina), opgehaald op 2026-10-04', () => {
     const ids: Record<string, number> = {
-      'Winter Hat': 730, 'Feather Hat': 751, 'Robin Hat': 771, Hunter: 798, Hawkeye: 818,
+      'Winter Hat': 730, 'White Bandana': 719, 'Red Baseball Cap': 781, 'Feather Hat': 751, 'Robin Hat': 771, Hunter: 798, Hawkeye: 818,
       'Archer Top / Avelin': 946, 'Leather Hoodwear / Able Armor': 966, 'Hard Leather Top / Shivermail': 984,
       'Bennis Chainmail / Yellow Bennis Chainmail': 1003, "Hunter's Armor / Huntress Armor": 1023,
       'Archer Pants': 1180, 'Hard Leather Pants': 1215, 'Bennis Chain Pants': 1232,
@@ -166,8 +170,8 @@ describe('NPC_BOWMAN_ARMOR', () => {
       expect(a.source.url, a.name).toBe(item(ids[a.name]))
       expect(a.source.retrieved, a.name).toMatch(DATE)
     }
-    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.source.url)).size).toBe(17)
-    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.name)).size).toBe(17)
+    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.source.url)).size).toBe(19)
+    expect(new Set(NPC_BOWMAN_ARMOR.map((a) => a.name)).size).toBe(19)
   })
 
   it('vouwt de vijf top-paren en het level-30 bottom-paar samen tot een regel met de mannenpagina als bron', () => {
@@ -193,14 +197,23 @@ describe('NPC_BOWMAN_ARMOR', () => {
     for (const id of [1190, 1191, 1192]) expect(urls).not.toContain(item(id))
   })
 
-  it('laat de stukken zonder jobregel of met fame-eis weg: 664-reeks, Skullcap, Baseball caps, Old Wisconsin, Whitebottom', () => {
+  it('heeft de White Bandana (719) en de Red Baseball Cap (781) zonder jobregel erin, en laat Brown Skullcap (708, level 5), Old Wisconsin (761) en Whitebottom (1364 tot 1367, fame) weg', () => {
     const urls = NPC_BOWMAN_ARMOR.map((a) => a.source.url)
-    for (const id of [708, 761, 781, 782, 783, 784, 785, 1364, 1365, 1366, 1367]) {
+    for (const id of [719, 781]) expect(urls, String(id)).toContain(item(id))
+    // De andere kleuren (720 tot 723, 782 tot 785) verschillen alleen in de bonusstat en staan er niet in.
+    for (const id of [708, 761, 720, 721, 722, 723, 782, 783, 784, 785, 1364, 1365, 1366, 1367]) {
       expect(urls, String(id)).not.toContain(item(id))
     }
-    for (const n of ['Brown Skullcap', 'Baseball', 'Old Wisconsin', 'Whitebottom']) {
+    for (const n of ['Brown Skullcap', 'Old Wisconsin', 'Whitebottom']) {
       expect(NPC_BOWMAN_ARMOR.some((a) => a.name.includes(n)), n).toBe(false)
     }
+  })
+
+  it('heeft de White Bandana en de Red Baseball Cap precies zoals op MeowDB gelezen: DEX 0 en STR 0, en alleen zij', () => {
+    const by = (n: string) => NPC_BOWMAN_ARMOR.find((a) => a.name === n)!
+    expect(by('White Bandana')).toEqual({ name: 'White Bandana', slot: 'hat', level: 10, str: 0, dex: 0, wdef: 15, price: 1_200, source: { url: item(719), retrieved: '2026-10-04' } })
+    expect(by('Red Baseball Cap')).toEqual({ name: 'Red Baseball Cap', slot: 'hat', level: 22, str: 0, dex: 0, wdef: 22, price: 3_900, source: { url: item(781), retrieved: '2026-10-04' } })
+    expect(NPC_BOWMAN_ARMOR.filter((a) => a.dex === 0).map((a) => a.name)).toEqual(NO_JOB_LINE_ARMOR)
   })
 
   it('heeft geen overalls en geen schoenen op level 25 of 30', () => {
@@ -222,10 +235,10 @@ describe('NPC_BOWMAN_ARMOR', () => {
     }
   })
 
-  it('heeft positieve WDEF, DEX en prijs en niet-negatieve STR, als hele getallen', () => {
+  it('heeft positieve WDEF en prijs en niet-negatieve STR, als hele getallen, en positieve DEX behalve bij de stukken zonder jobregel', () => {
     for (const a of NPC_BOWMAN_ARMOR) {
       expect(Number.isInteger(a.wdef) && a.wdef > 0, `${a.name} wdef`).toBe(true)
-      expect(Number.isInteger(a.dex) && a.dex > 0, `${a.name} dex`).toBe(true)
+      if (!NO_JOB_LINE_ARMOR.includes(a.name)) expect(Number.isInteger(a.dex) && a.dex > 0, `${a.name} dex`).toBe(true)
       expect(Number.isInteger(a.price) && a.price > 0, `${a.name} price`).toBe(true)
       expect(Number.isInteger(a.str) && a.str >= 0, `${a.name} str`).toBe(true)
     }

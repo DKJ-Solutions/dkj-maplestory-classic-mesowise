@@ -8,7 +8,7 @@
 // Alleen items die een Thief tot level 30 echt draagt, nooit een hele tabel (zie .claude/rules/this-repo.md).
 //
 // Wat erin staat, en waarom ruimer dan armor.ts: hier zegt de speler zelf wat hij draagt, dus de vraag of hij
-// het kan dragen speelt niet. Daarom staan ook items zonder jobregel (beginnerskleding, Bandana, Gomushin),
+// het kan dragen speelt niet. Daarom staan ook items zonder jobregel (beginnerskleding, Bandana, Gomushin; de White Bandana (719) niet, die staat als NPC-item in armor.ts),
 // items met een fame-eis en de Qi Pao Skirts erin. Items voor een andere job (Warrior, Mage, Bowman) niet.
 //
 // Niet opgenomen: de GM-hoeden (Dr. Lim Hat, Nemi Hat, Inkwell Hat, Wizet Invincible Hat, elk +200 WDEF),
@@ -37,7 +37,6 @@ export const WORN_ARMOR: readonly WornArmor[] = [
   { name: 'Black Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(716) },
   { name: 'Blue Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(717) },
   { name: 'Red Swimming Cap', slot: 'hat', level: 8, wdef: 8, source: src(718) },
-  { name: 'White Bandana', slot: 'hat', level: 10, wdef: 15, source: src(719) },
   { name: 'Red Bandana', slot: 'hat', level: 10, wdef: 15, source: src(720) },
   { name: 'Blue Bandana', slot: 'hat', level: 10, wdef: 15, source: src(721) },
   { name: 'Yellow Bandana', slot: 'hat', level: 10, wdef: 15, source: src(722) },

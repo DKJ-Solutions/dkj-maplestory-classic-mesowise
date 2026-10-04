@@ -56,13 +56,30 @@ overall-slot van #50, die op andere machines in bewerking zijn; die stap blijft 
 
 ### TEST
 
+- [x] Tycho: de tellingen en pins van de vier klasmodules bijgewerkt, elke nieuwe rij exact vastgepind; de
+  invarianten die alleen voor items met jobregel gelden (positieve stat-eis, MDEF minstens WDEF, WDEF stijgt per
+  slot) blijven voor die items en sluiten de rijen zonder jobregel bij naam uit. De White Bandana uit
+  `WORN_ARMOR` (de NPC-regel wint). De 5 armor-advies-tests met de hand nagerekend: de horizon van de Ghetto
+  Beanie op level 20 loopt nu tot 21 (de Baseball Cap op 22 heeft meer WDEF), en de tests van het LUK/DEX-filter
+  en "geen kandidaten" houden hun bedoeling met een aangepast profiel. 726 tests groen, typecheck schoon.
+- [x] Victor: geen bevindingen die de merge tegenhouden; elke gewijzigde verwachting is een echt gevolg van de
+  nieuwe items.
+
 ### DEPLOY: data/55-no-job-line
 
-**Score:**
+Shop items with no class on their page now count for every class, as Dave decided on #55. A Thief can be
+advised the White Bandana (level 10, 15 DEF, 1,200 mesos) and the Red Baseball Cap (level 22, 22 DEF, 3,900
+mesos). The Warrior data gains eight cheap weapons (Long Sword, Steel Pipe, Plunger and others), the Magician
+data three wands, and both hats are in every class's armor. The armor advice for a level-20 Thief now looks at
+the Baseball Cap two levels ahead, so the Ghetto Beanie's saving is counted until level 21 instead of 24.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
