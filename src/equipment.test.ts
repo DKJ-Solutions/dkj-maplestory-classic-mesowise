@@ -1076,7 +1076,7 @@ describe('overall (issue #50)', () => {
     expect(r.equipment.bottom).toEqual(unknown)
     expect(r.equipment.hat).toEqual(eq.hat)
     expect(r.profile.wdef).toBe('80')
-    expect(wornWdef(r.equipment)).toEqual({ hat: 15, overall: 75 })
+    expect(wornWdef(r.equipment)).toEqual({ hat: 15, overall: 75, overallWorn: true })
   })
 
   it('een top of bottom kiezen terwijl je een overall draagt, leegt de overall: 100 - 75 + 32', () => {
@@ -1225,9 +1225,10 @@ describe('overall (issue #50): randgevallen van de WDEF-rekensom en het laden', 
     expect(loadEquipment(stored({ overall: { pick: 'Blue Sauna Robe' } }), 'magician').overall).toEqual(robe)
   })
 
-  it('wornWdef telt een overall mee als eigen slot', () => {
-    expect(wornWdef(worn({ overall: robe, shoes: zero }))).toEqual({ overall: 75, shoes: 0 })
-    expect(wornWdef(worn({ overall: other('', 'Robe') }))).toEqual({})
+  it('wornWdef telt een overall mee als eigen slot, en meldt hem ook met onbekende WDEF (#118)', () => {
+    expect(wornWdef(worn({ overall: robe, shoes: zero }))).toEqual({ overall: 75, shoes: 0, overallWorn: true })
+    expect(wornWdef(worn({ overall: other('', 'Robe') }))).toEqual({ overallWorn: true })
+    expect(wornWdef(worn({ overall: unknown }))).toEqual({})
   })
 })
 

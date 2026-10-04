@@ -8,6 +8,7 @@
 // uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op "nog niet ingevuld". Je zoekt wat je draagt in
 // een catalogus per slot (NPC-items plus items zonder prijs); klopt de stat in het spel niet met de database,
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
+import type { WornWdef } from './armorUpgrade'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -216,14 +217,15 @@ export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined
   return db === undefined ? undefined : (parseStat(entry.stat) ?? db)
 }
 
-/** De WDEF per armorslot waarvan de app weet wat je draagt. */
-export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
-  const out: Partial<Record<ArmorSlot, number>> = {}
+/** De WDEF per armorslot waarvan de app weet wat je draagt, en of je een overall draagt, ook met onbekende WDEF (#118). */
+export function wornWdef(eq: Equipment): WornWdef {
+  const out: WornWdef = {}
   for (const { slot } of EQUIP_SLOTS) {
     if (!isArmorSlot(slot)) continue
     const w = wornStat(slot, eq[slot])
     if (w !== undefined) out[slot] = w
   }
+  if (isFilled(eq.overall)) out.overallWorn = true
   return out
 }
 
