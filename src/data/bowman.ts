@@ -42,8 +42,8 @@
 //
 // Niet opgenomen als pijl, en waarom:
 // - Bronze Arrows for Bows (210) en for Crossbows (214): 2 meso per pijl, +1 W.ATT, maar alleen te koop bij
-//   Raymond met het citizenship-rang "Helpful Stranger" of hoger. Of de app die rang mag aannemen is een besluit
-//   van Dave, niet van de data.
+//   Raymond met de citizenship-rang "Helpful Stranger" of hoger. Ze staan apart, in HELPFUL_STRANGER_ARROWS: de
+//   speler zet ze aan als hij die rang heeft (Dave, 4 oktober 2026, #64).
 // - Iron (211, 215), Adamantium en Mithril (212, 216): alleen te maken, niet te koop.
 import { SPEED } from './attackSpeed'
 import type {
@@ -60,6 +60,7 @@ const R = '2026-10-04'
 const item = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
 const skill = (name: string): Source => ({ url: `https://meowdb.com/msclassic/skills/bowman/${name}`, retrieved: R })
 const guide = (name: string): Source => ({ url: `https://meowdb.com/msclassic/guides/${name}`, retrieved: R })
+const npc = (id: number): Source => ({ url: `https://meowdb.com/msclassic/npcs/${id}`, retrieved: R })
 
 // De Balanche (674) staat als "Normal (6)" met een cyclus van 840 ms, op de itempagina en op de Arrow
 // Blow-pagina ("Crossbow Normal (6): 840 ms"). De gedeelde tabel heeft normal6 = 810, en dat is de waarde van een
@@ -101,6 +102,20 @@ export const NPC_ARROWS: readonly Arrow[] = [
   { name: 'Arrows for Bows', watk: 0, pricePerArrow: 1, for: 'bow', source: item(209) },
   { name: 'Arrows for Crossbows', watk: 0, pricePerArrow: 1, for: 'crossbow', source: item(213) },
 ]
+
+/**
+ * De bronze pijlen: +1 W.ATT voor 2 meso per pijl. Alleen Raymond (Henesys Town Hall) verkoopt ze, en zijn winkel
+ * zet "(Helpful Stranger+)" achter beide; de itempagina's noemen die eis niet. Volgens de klasgids is Helpful
+ * Stranger grade 3, "which needs level 22 and 2,000 citizenship contribution". De app kent de rang van een speler
+ * niet, dus ze tellen pas mee als hij ze aanzet (#64); uit staan alleen NPC_ARROWS.
+ */
+export const HELPFUL_STRANGER_ARROWS: readonly Arrow[] = [
+  { name: 'Bronze Arrows for Bows', watk: 1, pricePerArrow: 2, for: 'bow', source: item(210) },
+  { name: 'Bronze Arrows for Crossbows', watk: 1, pricePerArrow: 2, for: 'crossbow', source: item(214) },
+]
+
+/** Waar de rang-eis van de bronze pijlen staat: Raymonds winkel ("Helpful Stranger+"), en de klasgids voor wat die rang vraagt. */
+export const HELPFUL_STRANGER_SOURCES: readonly Source[] = [npc(232), guide('bowman-class-guide')]
 
 const armor = (
   id: number,

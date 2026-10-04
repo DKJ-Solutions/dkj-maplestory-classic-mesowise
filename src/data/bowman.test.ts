@@ -22,6 +22,8 @@ import {
   EYE_OF_AMAZON,
   FOCUS_LEVELS,
   FOCUS_SOURCE,
+  HELPFUL_STRANGER_ARROWS,
+  HELPFUL_STRANGER_SOURCES,
   NPC_ARROWS,
   NPC_BOWMAN_ARMOR,
   NPC_BOWMAN_WEAPONS,
@@ -125,6 +127,24 @@ describe('NPC_ARROWS', () => {
     for (const id of [210, 214, 211, 212, 215, 216]) expect(urls).not.toContain(item(id))
     expect(NPC_ARROWS.some((a) => /Bronze|Iron|Adamantium|Mithril/.test(a.name))).toBe(false)
     expect(NPC_ARROWS.some((a) => a.pricePerArrow === 2 || a.watk === 1)).toBe(false)
+  })
+})
+
+describe('HELPFUL_STRANGER_ARROWS', () => {
+  it('bevat de bronze pijlen 210 en 214: +1 W.ATT voor 2 meso per pijl, een voor elke soort wapen', () => {
+    expect(HELPFUL_STRANGER_ARROWS.map((a) => [a.name, a.for, a.watk, a.pricePerArrow, a.source.url])).toEqual([
+      ['Bronze Arrows for Bows', 'bow', 1, 2, item(210)],
+      ['Bronze Arrows for Crossbows', 'crossbow', 1, 2, item(214)],
+    ])
+    for (const a of HELPFUL_STRANGER_ARROWS) expect(a.source.retrieved, a.name).toMatch(DATE)
+  })
+
+  it('noemt Raymonds winkel en de klasgids als bron van de rang-eis', () => {
+    expect(HELPFUL_STRANGER_SOURCES.map((s) => s.url)).toEqual([
+      'https://meowdb.com/msclassic/npcs/232',
+      'https://meowdb.com/msclassic/guides/bowman-class-guide',
+    ])
+    for (const s of HELPFUL_STRANGER_SOURCES) expect(s.retrieved).toMatch(DATE)
   })
 })
 
