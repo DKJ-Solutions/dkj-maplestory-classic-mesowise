@@ -58,8 +58,11 @@ Stranger"); with the switch off, only the plain arrows count. The data (`HELPFUL
 
 ### TEST
 
-- [ ] `npm test` and `npm run lint` green
-- [ ] Victor (code) and Edith (Dutch) reviewed the diff
+- [x] `npm test`: 1164 green; `npm run lint` clean
+- [x] Victor (code) and Edith (Dutch) reviewed the diff; their findings are fixed: the bronze flag follows the
+  ammo slot on every change (cleared or "eigen item" falls back to plain), a stored bronze pick loads as plain
+  while the switch is off, the hint says "+1 W.ATT" and what the switch does, and the source line credits both
+  bronze item pages, Raymond's shop and the class guide separately
 
 ### DEPLOY: app/64-helpful-stranger-arrows
 
