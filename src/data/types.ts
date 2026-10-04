@@ -73,6 +73,12 @@ export interface Armor {
   source: Source
 }
 
+/** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
+export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'source'>
+
+/** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
+export type WornClaw = Pick<Claw, 'name' | 'level' | 'watk' | 'speed' | 'source'>
+
 /** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
 export interface Claw {
   name: string

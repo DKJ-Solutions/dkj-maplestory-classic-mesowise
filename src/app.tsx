@@ -1,5 +1,5 @@
 import type { ComponentChildren, Ref } from 'preact'
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
 import type { NotBestReason } from './calc/pickBest'
 import { isInvalid, rankSpots, type RankResult } from './calc/rankSpots'
@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, entryChanged, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, commitStat, databaseStat, entryChanged, entryLabel, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, statOverride, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -298,9 +298,93 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
   )
 }
 
-/** Hoe een keuze in een slot heet: voor in de "was"-badge. */
-const entryLabel = (e: EquipEntry): string =>
-  e.pick === UNKNOWN ? 'nog niet ingevuld' : e.pick === OTHER ? (e.name.trim() || 'Ander item') : e.pick
+/**
+ * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
+ * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
+ */
+function EquipSearch(props: { slot: EquipSlot; entry: EquipEntry; onPick: (pick: string, name?: string) => void }) {
+  const { slot, entry } = props
+  const id = useId()
+  const input = useRef<HTMLInputElement>(null)
+  // null: je typt niet, de balk is dicht; anders de tekst in de balk en staat de lijst open.
+  const [text, setText] = useState<string | null>(null)
+  const [active, setActive] = useState(0)
+  const open = text !== null
+  const typed = (text ?? '').trim()
+  const found = searchCatalog(slot, typed)
+  const stat = slot === 'claw' ? 'WATK' : 'WDEF'
+  const rows: { pick: string; name?: string; label: string; meta?: string }[] =
+    found.length > 0
+      ? found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: `(lv ${i.level}, ${stat} ${i.stat})` }))
+      : typed !== ''
+        ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }]
+        : []
+  const choose = (row: { pick: string; name?: string }) => {
+    props.onPick(row.pick, row.name)
+    setText(null)
+    input.current?.blur()
+  }
+  const move = (to: number) => {
+    if (!open) setText('')
+    else if (rows.length > 0) setActive((to + rows.length) % rows.length)
+  }
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      move(active + (e.key === 'ArrowDown' ? 1 : -1))
+    } else if (e.key === 'Enter' && open && rows[active]) {
+      e.preventDefault()
+      choose(rows[active])
+    } else if (e.key === 'Escape' && open) {
+      e.preventDefault()
+      setText(null)
+    }
+  }
+  return (
+    <div class="equip-search">
+      <input
+        ref={input}
+        type="text"
+        role="combobox"
+        aria-label={`Zoek je ${EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot}`}
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && rows[active] ? `${id}-${active}` : undefined}
+        autoComplete="off"
+        autoCapitalize="off"
+        spellcheck={false}
+        enterKeyHint="done"
+        maxLength={MAX_EQUIP_NAME}
+        placeholder={wornName(entry) ?? 'Zoek wat je draagt'}
+        value={text ?? wornName(entry) ?? ''}
+        onFocus={() => {
+          setText('')
+          setActive(0)
+        }}
+        onBlur={() => setText(null)}
+        onInput={(e) => {
+          setText((e.currentTarget as HTMLInputElement).value)
+          setActive(0)
+        }}
+        onKeyDown={onKeyDown}
+      />
+      {open && rows.length > 0 && (
+        // mousedown niet laten blurren: anders sluit de lijst voordat de tik als keuze aankomt.
+        <ul class="equip-list" id={`${id}-list`} role="listbox" onMouseDown={(e) => e.preventDefault()}>
+          {rows.map((r, n) => (
+            <li key={r.pick + (r.name ?? '')} id={`${id}-${n}`} role="option" aria-selected={n === active} class={[n === active ? 'active' : '', r.pick === OTHER ? 'own' : ''].join(' ').trim() || undefined} onClick={() => choose(r)}>
+              <span class="equip-name">{r.label}</span>
+              {r.meta && ' '}
+              {r.meta && <span class="equip-meta">{r.meta}</span>}
+            </li>
+          ))}
+          {found.length > MAX_RESULTS && <li role="presentation" class="more">Typ meer om te zoeken.</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 /**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
@@ -309,14 +393,13 @@ const entryLabel = (e: EquipEntry): string =>
 function EquipmentCard(props: {
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
-  /** Wat in het getalveld van "Ander item" staat maar nog niet is vastgelegd; telt nergens mee. */
+  /** Wat in het getalveld staat maar nog niet is vastgelegd; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   was?: Equipment
   hint: string
   /** Of de kaart bij het tonen openstaat; daarna klapt de speler hem zelf in en uit. */
   defaultOpen: boolean
-  onPick: (slot: EquipSlot, pick: string) => void
-  onName: (slot: EquipSlot, name: string) => void
+  onPick: (slot: EquipSlot, pick: string, name?: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het getalveld legt zich vast (blur of Enter). */
   onCommit: (slot: EquipSlot) => void
@@ -332,47 +415,31 @@ function EquipmentCard(props: {
       <Collapse open={open}>
         <div class="spot-body">
           <p class="hint">{props.hint}</p>
-          <p class="hint">Kies je bij Weapon "Ander item", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          <p class="hint">Zoek wat je draagt. Klopt de waarde niet met je spel, typ dan de juiste in: die telt. Kies je bij Weapon een eigen item, dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
             const stat = slot === 'claw' ? 'WATK' : 'WDEF'
-            const onPick = (e: Event) => props.onPick(slot, (e.currentTarget as HTMLSelectElement).value)
+            const db = databaseStat(slot, entry)
+            const own = statOverride(slot, entry)
             return (
               <div class="equip-row" key={slot}>
-                <label class="field">
+                <div class="field">
                   <span>
                     {label}
-                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
+                    {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                   </span>
-                  <select value={entry.pick} onChange={onPick}>
-                    {entry.pick === UNKNOWN && (
-                      <option value={UNKNOWN} disabled>
-                        Kies wat je draagt
-                      </option>
-                    )}
-                    {shopItems(slot).map((i) => (
-                      <option key={i.name} value={i.name}>
-                        {i.name} (lv {i.level}, {stat} {i.stat})
-                      </option>
-                    ))}
-                    <option value={OTHER}>Ander item</option>
-                  </select>
-                </label>
-                {entry.pick === OTHER && (
-                  <div class="equip-other">
-                    <label class="field">
-                      <span>Naam (mag leeg)</span>
-                      <input type="text" maxLength={MAX_EQUIP_NAME} value={entry.name} onInput={(e) => props.onName(slot, (e.currentTarget as HTMLInputElement).value)} />
-                    </label>
-                    <label class="field">
-                      <span>{stat}</span>
-                      <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? entry.stat}
-                        onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
-                        onChange={() => props.onCommit(slot)}
-                      />
-                    </label>
-                  </div>
+                  <EquipSearch slot={slot} entry={entry} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                </div>
+                {entry.pick !== UNKNOWN && (
+                  <label class="field equip-stat">
+                    <span>{stat}</span>
+                    <input type="number" inputMode="numeric" min={0} value={props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))}
+                      onInput={(e) => props.onStatInput(slot, (e.currentTarget as HTMLInputElement).value)}
+                      onChange={() => props.onCommit(slot)}
+                    />
+                    {own !== undefined && <small class="equip-note">aangepast, database: {db}</small>}
+                  </label>
                 )}
               </div>
             )
@@ -1045,22 +1112,17 @@ export function App() {
     writeProfile((p) => applyEquipChange(p, slot, before, after))
     writeEquipment({ ...equipmentRef.current, [slot]: after })
   }
-  const pickEquipment = (slot: EquipSlot, pick: string) => {
+  const pickEquipment = (slot: EquipSlot, pick: string, name?: string) => {
     setPendingFor(slot, undefined)
-    applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick))
+    applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick, name))
   }
-  // De naam raakt het profiel niet.
-  const nameEquipment = (slot: EquipSlot, name: string) => {
-    writeEquipment({ ...equipmentRef.current, [slot]: { ...equipmentRef.current[slot], name } })
-  }
-  // Een leeg of ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde.
+  // Een ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde (zie commitStat).
   const commitEquipment = (slot: EquipSlot) => {
     const text = pendingRef.current[slot]
     if (text === undefined) return
     setPendingFor(slot, undefined)
-    const cur = equipmentRef.current[slot]
-    if (cur.pick !== OTHER || text.trim() === '' || !Number.isFinite(Number(text))) return
-    applyEntry(slot, { ...cur, stat: text })
+    const next = commitStat(slot, equipmentRef.current[slot], text)
+    if (next) applyEntry(slot, next)
   }
   const commitAllEquipment = () => EQUIP_SLOTS.forEach(({ slot }) => commitEquipment(slot))
   const toggle = (id: string) => {
@@ -1113,7 +1175,6 @@ export function App() {
               hint="Wat je hier zet, rekent mee in het advies. Je weapon vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
               pending={pending}
               onPick={pickEquipment}
-              onName={nameEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
             />
@@ -1197,7 +1258,6 @@ export function App() {
               hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
               pending={pending}
               onPick={pickEquipment}
-              onName={nameEquipment}
               onStatInput={(slot, text) => setPendingFor(slot, text)}
               onCommit={commitEquipment}
             />

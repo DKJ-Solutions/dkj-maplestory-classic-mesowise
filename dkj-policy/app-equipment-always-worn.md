@@ -59,8 +59,8 @@ never enter the upgrade advice.
 - [x] "was" badge shows a shop item's own name (it fell through to "Ander item")
 - [ ] Rebecca: wearable Thief items lv 0-30 per slot, each with its MeowDB page
 - [ ] Vera: those items into `src/data/wornItems.ts`, each with source and date
-- [ ] Cody: search bar per slot, own item when nothing matches, stat override with the database value beside it
-- [ ] Gwen: the look at phone width
+- [x] Cody: search bar per slot, own item when nothing matches, stat override with the database value beside it
+- [x] Gwen: the look at phone width (two-line rows, tinted active row, dashed own-item row, amber override note)
 
 ### TEST
 
