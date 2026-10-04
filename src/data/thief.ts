@@ -17,11 +17,8 @@ export const LUCKY_SEVEN_LEVELS: readonly SkillLevel[] = [
 /** Lucky Seven gooit 2 stars, met een vaste multiplier van 3.0 en een vaste mastery van 50%. */
 export const LUCKY_SEVEN = { stars: 2, weaponMult: 3.0, mastery: 0.5 } as const
 
-/**
- * Milliseconden per aanval met Lucky Seven, zonder Claw Booster, per claw-snelheid (de skillpagina).
- * Welke snelheid jouw claw heeft, staat in het spel; het profiel begint bij "Fast (5)".
- */
-export const ATTACK_MS = { faster3: 660, fast4: 720, fast5: 750 } as const
+// De aanvalstijd per claw-snelheid (de Lucky Seven-pagina, zonder Claw Booster) staat in de gedeelde tabel.
+export { ATTACK_MS } from './attackSpeed'
 
 /**
  * Nimble Body (passief): +1 accuracy en +1 avoid per skill-level, tot en met level 15. De skillpagina

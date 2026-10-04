@@ -16,14 +16,13 @@
 // geen W.DEF). Overalls ook niet: de app heeft geen overall-slot. Heet een item hetzelfde als een ander
 // (de mannen- en vrouwenversie, of Beginner's Garnier 681 en 2545), dan staat het er één keer in: de stats zijn
 // gelijk.
-import { ATTACK_MS } from './thief'
+import { SPEED } from './attackSpeed'
 import type { Source, WornArmor, WornClaw } from './types'
 
 const R = '2026-10-04'
 const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
 
-const FAST5 = { label: 'Fast (5)', attackMs: ATTACK_MS.fast5 }
-const FAST4 = { label: 'Fast (4)', attackMs: ATTACK_MS.fast4 }
+const { fast5: FAST5, fast4: FAST4 } = SPEED
 
 /** Niet-winkel armor, per slot (hat, top, bottom, shoes) van laag naar hoog level. */
 export const WORN_ARMOR: readonly WornArmor[] = [
