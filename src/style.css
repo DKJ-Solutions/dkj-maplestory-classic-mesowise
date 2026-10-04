@@ -179,7 +179,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .warn { margin: 0 0 0.875rem; font-size: 0.875rem; color: #b45309; font-weight: 600; }
 .credit { margin-top: 1.5rem; font-size: 0.875rem; color: var(--muted); text-align: center; }
 
-.spot-head:focus-visible, .btn:focus-visible, .field input:focus-visible, .field select:focus-visible {
+.spot-head:focus-visible, .btn:focus-visible, .field input:focus-visible, .field select:focus-visible,
+.skill-input input:focus-visible, .skill-input .step:focus-visible, .collapse-foot:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
