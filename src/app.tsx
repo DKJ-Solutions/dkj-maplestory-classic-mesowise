@@ -1474,18 +1474,27 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 
 /** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ` in plaats van je huidige stuk (${STAT_NAME.armor} onbekend).`
-  // Een overall vervangt top en bottom samen, en een top of bottom een overall die je draagt.
-  const names = displacedSlots(equipment, win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
-  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.`
+  // Een losse top of bottom in plaats van een overall laat de andere helft leeg (#87), ook als de WDEF van die overall
+  // onbekend is (dan staat hij niet in WornWdef en zet het advies geen `bare`).
+  const slot = win.armor.slot
+  const half = win.bare ?? (!win.with && (slot === 'top' || slot === 'bottom') && displacedSlots(equipment, slot)[0] === 'overall' ? (slot === 'top' ? 'bottom' : 'top') : undefined)
+  const bare = half ? ` Je ${SLOT_NAME[half]} is dan leeg.` : ''
+  if (win.replaces === undefined) return ` in plaats van je huidige ${win.with ? 'stukken' : 'stuk'} (${STAT_NAME.armor} onbekend).${bare}`
+  // Een overall (of een paar top + bottom) vervangt top en bottom samen, en een top of bottom een overall die je draagt.
+  const names = displacedSlots(equipment, win.with ? 'overall' : win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
+  return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.${bare}`
 }
+
+/** Wat je koopt: één stuk, of een top en een bottom samen (#87). */
+const buyText = (win: ArmorChoice) =>
+  `${win.armor.name} (${SLOT_NAME[win.armor.slot]})${win.with ? ` en ${win.with.name} (${SLOT_NAME[win.with.slot]})` : ''}`
 
 /** Wat het winnende stuk armor oplevert, in een zin. */
 function ArmorWinnerLine(props: { win: ArmorChoice }) {
   const { win } = props
   return (
     <p class="hint">
-      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.armor.price)} meso.
+      Levert hooguit {formatMeso(win.net!)} op van lv {win.from} tot en met lv {win.to}, na de prijs van {nfInt.format(win.price)} meso{win.with && ' voor beide'}.
       {win.truncated && ` De EXP-tabel loopt tot lv ${EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]}, dus verder rekent de app niet.`}
     </p>
   )
@@ -1526,14 +1535,16 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
       </Question>
     )
   }
-  const win = a.choices.find((c) => c.armor === a.winner)
+  // De winnaar staat vooraan; een paar deelt zijn top met de losse top, dus niet zoeken op het stuk.
+  const win = a.winner ? a.choices[0] : undefined
   const unknown = !win && noArmorComputable(a)
   return (
     <Question title={title} chip={win ? 'yes' : unknown ? 'unknown' : 'no'}>
       {win ? (
         <>
           <p class="verdict">
-            Koop {win.armor.name} ({SLOT_NAME[win.armor.slot]}){replaceClause(win, props.equipment)}
+            Koop {buyText(win)}
+            {replaceClause(win, props.equipment)}
           </p>
           <ArmorWinnerLine win={win} />
         </>
