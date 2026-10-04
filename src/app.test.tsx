@@ -527,7 +527,7 @@ describe('bewaren na elke wijziging', () => {
     expect(h.base().value).toBe('37')
     expect(h.extra().value).toBe('3')
     expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
-    // Base, Extra en Totaal staan naast elkaar, met één Opslaan eronder.
+    // Links Base en Extra onder elkaar, rechts het Totaal, met één Opslaan eronder.
     const dialog = statLine('LUK').querySelector('dialog')!
     expect(Array.from(dialog.querySelectorAll('.ap-edit > .ap-edit-col > .stat-dialog-label')).map((l) => l.textContent)).toEqual(['Base AP', 'Extra AP', 'Totaal'])
     expect(Array.from(dialog.querySelectorAll('.stat-dialog-actions')).map((a) => a.textContent)).toEqual(['Opslaan'])

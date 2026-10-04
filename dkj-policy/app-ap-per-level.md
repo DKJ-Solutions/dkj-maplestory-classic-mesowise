@@ -64,6 +64,7 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Gwen: 1rem between the Extra field and the pencil on the card instead of 0.375rem (Dave)
 - [x] Gwen and Cody: the popup puts Base AP, Extra AP and Totaal (base plus extra, as typed) side by side, with − and + under each number so the three fit at phone width (Dave)
 - [x] Gwen: hierarchy in the popup: the stat title (DEX) larger and bold, the column labels small, muted capitals (Dave: both looked the same)
+- [x] Gwen: the popup in two columns instead of three: Base AP and Extra AP stacked on the left, each with − and + beside the number again, and Totaal on the right across both rows (Dave)
 - [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 

@@ -397,8 +397,8 @@ function StatEditor(props: {
 }
 
 /**
- * Eén getal in de popup van een ability point: het label erboven, het vak, en − en + eronder (in plaats van ernaast,
- * zodat Base, Extra en Totaal naast elkaar passen). Tik je op het getal, dan is het geselecteerd; Enter slaat op.
+ * Eén getal in de popup van een ability point: het label erboven en daaronder −, het vak en +. Tik je op het getal, dan
+ * is het geselecteerd; Enter slaat op.
  */
 function ApInput(props: { stat: string; label: string; id: string; value: string; min: number; max: number; onInput: (text: string) => void; onSave: () => void }) {
   const { stat, value, min, max } = props
@@ -406,19 +406,19 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
   return (
     <div class="ap-edit-col">
       <span class="stat-dialog-label" id={props.id}>{props.label}</span>
-      <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
-        value={value}
-        onFocus={(e) => e.currentTarget.select()}
-        onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            props.onSave()
-          }
-        }}
-      />
       <div class="equip-step ap-edit-steps">
         <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+        <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
+          value={value}
+          onFocus={(e) => e.currentTarget.select()}
+          onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              props.onSave()
+            }
+          }}
+        />
         <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
       </div>
     </div>
@@ -565,11 +565,11 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       {edit !== null && (
         <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
           {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
-          {/* Base, Extra en Totaal naast elkaar (Dave, 4 oktober 2026); −/+ staan onder het getal, zodat het op een telefoon past. */}
+          {/* Twee kolommen (Dave, 4 oktober 2026): links Base AP en Extra AP onder elkaar, rechts het totaal over de hele hoogte. */}
           <div class="ap-edit">
             <ApInput stat={`Base ${f.label}`} label="Base AP" id={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
             <ApInput stat={`Extra ${f.label}`} label="Extra AP" id={`${uid}-extra`} value={edit.extra} min={0} max={f.max} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
-            <div class="ap-edit-col">
+            <div class="ap-edit-col ap-edit-total-col">
               <span class="stat-dialog-label" id={`${uid}-total`}>Totaal</span>
               <output class="ap-edit-total" aria-labelledby={`${uid}-total`}>{totalInEdit === null ? '?' : nfInt.format(totalInEdit)}</output>
             </div>
