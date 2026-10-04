@@ -2,7 +2,200 @@
 
 ## [Unreleased]
 
-**21 / 43 minor entries** <!-- pending-tally -->
+**22 / 52 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
+
+Nothing changes on screen. Magic Claw's damage was already counted per hit, two hits per cast; MeowDB's skill
+page turns out to say so in so many words, so the data now cites that sentence instead of calling it a guess.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magic Claw's damage is per hit, as its skill page states
+
+[PR #102](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/102)
+
+---
+
+### DEPLOY: app/84-level-up-button · 20261004-123108Z
+
+The home screen now shows your current level at the top ("Level 10") where the Level up button used to be; the Level up button itself has moved to the bottom of the screen, below the training spots and above the credit, and no longer sticks to the top while you scroll (#84).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Level-up button at the bottom; show the current level in its place
+
+[PR #99](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/99)
+
+---
+
+### DEPLOY: fix/89-physical-defense-curve · 20261004-123106Z
+
+The app now lowers your hits on a monster with the defence formula from MeowDB's damage guide (your hit × 100 /
+(the monster's WDEF + 100)) instead of an unsourced subtraction. Against a monster with 50 WDEF a 100-damage
+hit now counts as 67 instead of 70 to 75, so spots with tougher monsters can rank a little lower.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Physical damage uses the sourced defence curve, not a WDEF subtraction
+
+[PR #98](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/98)
+
+---
+
+### DEPLOY: app/44-bowman-model · 20261004-122755Z
+
+A player can now choose Bowman and get real advice: the best training spot, what a level costs in mesos, whether a
+new bow or crossbow or a piece of armor pays off, and where a skill point saves the most (Arrow Blow). The app counts
+the plain arrow as ammo, and lists the Bowman skills it does not compute yet.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bowman in the mob model and on the screen
+
+[PR #92](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/92)
+
+---
+
+### DEPLOY: app/86-top-menu-bar · 20261004-122513Z
+
+A white menu bar now runs across the top of the screen, with the app name and a menu button on the right.
+The menu holds your job: once you have picked one, the job card no longer takes up space on the home
+screen, and you change your job through the menu.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+White top menu bar with the app name and a settings menu
+
+[PR #97](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/97)
+
+---
+
+### DEPLOY: app/83-skill-mana-cost · 20261004-122055Z
+
+The Skillpoints card now shows under every skill what it costs in MP per use at the level you have set, for
+example "12 MP per keer" under Slash Blast 20; a skill still at 0 shows the cost of level 1, and a passive skill
+says it costs nothing. The MP comes from the skill pages on MeowDB.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Show the mana cost per skill point
+
+[PR #95](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/95)
+
+---
+
+### DEPLOY: app/82-split-ability-total-stats · 20261004-122003Z
+
+The "Je karakter" card is split into the two blocks of the in-game stat window, each its own collapsible card: **Ability points** (STR, DEX, INT, LUK) and **Total stats** (Attack, Weapon Def, Magic, Magic Def, Accuracy, Evasion, Crit. Rate, Crit. Damage, Speed, Jump, then time per attack and, for a Warrior, the weapon multiplier). INT, Magic, Magic Def, Crit., Speed and Jump are new: you fill them in yourself (they start as "?"), they are stored with your profile but not used in any calculation yet, and leaving one blank never blocks it. Attack and Weapon Def come from your equipment: Attack is your weapon's attack, plus your stars for a Thief. An item's INT requirement is now checked against your INT. "Avoid" is now called "Evasion", as in the game. An error now shows on the card that holds the field (#82).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The character cards read like the stat window in the game, so filling in your stats means copying block by block.
+
+**Score:** 2
+
+#### Pull Request
+
+Split the character card into Ability points and Total stats
+
+[PR #94](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/94)
+
+---
+
+### DEPLOY: data/76-magician-robes · 20261004-120114Z
+
+The Magician data gains its first robe: the Doros Robe (for women, the Doroness Robe) from Serabi in Ellinia,
+level 25, 40 DEF and 49 magic DEF for 13,500 mesos, read from the raw MeowDB pages. The app does not
+calculate with the Magician's gear yet, so nothing changes on screen until #43 wires it in.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Magician robes from Serabi's shop (Doros and Doroness)
+
+[PR #88](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/88)
+
+---
+
+### DEPLOY: fix/69-stat-requirements · 20261004-115543Z
+
+Nothing changes on screen: the advice still says, for example, "je hebt nog 5 STR en 10 DEX nodig". Behind
+it, a Warrior weapon's STR requirement is now stored as STR instead of being filed under LUK, so the Magician
+and Bowman can use the same advice without another rename.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Upgrade advice reads each stat requirement in its own stat
+
+[PR #85](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/85)
+
+---
 
 ### DEPLOY: app/50-overall-slot · 20261004-114221Z
 

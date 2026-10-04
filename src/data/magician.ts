@@ -25,14 +25,17 @@
 //   973, level 15), Fairy Top (1031 en 1032, level 30), Arianne Skirt (1186 tot en met 1189, level 15) en
 //   Fairy Skirt (1246 en 1247, level 30). Ze staan er nog niet in, omdat de app de
 //   Magician nog niet doorrekent (#43); met `gender` kunnen ze erbij zodra dat model er is (zie #55).
-// - Overalls: ArmorSlot kent ze sinds #50, maar de robes wachten op een controle van de ruwe pagina's (#76). Plain Robe (1091 tot en met 1093), Doros Robe (1098 tot en met 1101),
-//   Doroness Robe (1102 tot en met 1104) en Wizard Robe (1107 en 1110).
+// - Robes alleen voor mannen, zonder vrouwenversie bij Serabi (#76, ruwe pagina's gelezen op 2026-10-04): Plain
+//   Robe (1091 tot en met 1093: level 15, INT 20, WDEF 29, MDEF 38, 5.400 meso) en Wizard Robe (1107 en 1110:
+//   level 30, INT 50, LUK 20, WDEF 46, MDEF 55, 21.600 meso). Ze kunnen erbij met `gender` (#55) zodra de Magician wordt doorgerekend (#43).
 // - Handschoenen, schilden, capes en de winkels in Orbis en Nuri: niet gelezen, dus niet in de data.
 //
-// Wel opgenomen, volgens armor.ts ("een mannen- en een vrouwenversie met dezelfde stats blijven"): vier paren
+// Wel opgenomen, volgens armor.ts ("een mannen- en een vrouwenversie met dezelfde stats blijven"): vijf paren
 // met identieke eisen, WDEF, MDEF en prijs. Eén regel per paar, met de mannenpagina als bron. Training Shirt
 // (944 en 945) en Armine (953 en 954); Split Piece (981 tot en met 983) en Split (991 tot en met 993); Training
-// Pants (1166 en 1167) en Armine Skirt (1173 en 1174); Split Pants (1199 en 1200) en Split Skirt (1207 en 1208).
+// Pants (1166 en 1167) en Armine Skirt (1173 en 1174); Split Pants (1199 en 1200) en Split Skirt (1207 en 1208);
+// en de overall Doros Robe (1098 tot en met 1101) en Doroness Robe (1102 tot en met 1104), level 25, INT 40,
+// LUK 15, WDEF 40, MDEF 49, 13.500 meso bij Serabi (#76). Alle zeven robe-pagina's zijn ruw gelezen.
 //
 // Bij de hoeden (727 tot en met 729, 746 tot en met 750, 768 tot en met 770, 813 en 817) en schoenen (1310 tot
 // en met 1312, 1322 en 1323, 1337 tot en met 1339, 1354 tot en met 1356) hebben de varianten dezelfde eisen,
@@ -101,7 +104,7 @@ const armor = (
   price: number,
 ): MagicianArmor => ({ name, slot, level, wdef, mdef, int, luk, price, source: item(id) })
 
-/** De NPC-armor voor een Magician, per slot (hat, top, bottom, shoes) van laag naar hoog level. Zie de kop voor wat ontbreekt. */
+/** De NPC-armor voor een Magician, per slot (hat, top, bottom, overall, shoes) van laag naar hoog level. Zie de kop voor wat ontbreekt. */
 export const NPC_MAGICIAN_ARMOR: readonly MagicianArmor[] = [
   armor(727, 'Apprentice Hat', 'hat', 10, 10, 0, 8, 10, 1_200),
   armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 0, 1_200),
@@ -113,6 +116,7 @@ export const NPC_MAGICIAN_ARMOR: readonly MagicianArmor[] = [
   armor(981, 'Split Piece / Split', 'top', 20, 30, 10, 19, 24, 6_000),
   armor(1166, 'Training Pants / Armine Skirt', 'bottom', 10, 10, 0, 9, 12, 1_600),
   armor(1199, 'Split Pants / Split Skirt', 'bottom', 20, 30, 10, 13, 16, 4_800),
+  armor(1098, 'Doros Robe / Doroness Robe', 'overall', 25, 40, 15, 40, 49, 13_500),
   armor(1310, 'Basic Boots', 'shoes', 10, 10, 0, 5, 6, 1_200),
   armor(1322, 'Nitty', 'shoes', 15, 20, 0, 6, 7, 1_800),
   armor(1337, 'Jewelry Boots', 'shoes', 20, 30, 10, 7, 8, 3_600),
@@ -144,9 +148,10 @@ export const ENERGY_BOLT_TARGETS = 1
 
 /**
  * Magic Claw: MP, schade per hit en spell mastery per skill-level (1 tot 20). Raakt 1 mob, 2 hits per mob.
- * Vraagt Energy Bolt 1. Per hit is AFGELEID, niet gelezen: de pagina zegt "attack an enemy twice" en "2 hits per
- * target" en toont alleen "Basic Attack 45 tot 65", zonder te zeggen of dat per hit of per cast is. Per hit
- * past: 2 x 65 = 130 is de Energy Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
+ * Vraagt Energy Bolt 1. De schade is per hit, en zo staat het op de pagina (sectie "How output is calculated",
+ * gelezen in de ruwe HTML, issue #90): "Magic Claw creates 2 magic hits using skill power 45 to 65. Each hit scales
+ * with INT, Magic Attack, and spell mastery", en "Hits Per Cast: 2". Het klopt ook met 2 x 65 = 130, de Energy
+ * Bolt op level 20. De mastery is dezelfde als bij Energy Bolt.
  */
 export const MAGIC_CLAW_SOURCE: Source = skill('magic-claw')
 export const MAGIC_CLAW_LEVELS: readonly SpellLevel[] = [

@@ -174,8 +174,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .known ul { margin: 0 0 0.375rem; padding-left: 1.25rem; }
 .known p { margin: 0; }
 .known a, .credit a { color: var(--accent); overflow-wrap: anywhere; }
-.profile { padding: 0; overflow: hidden; }
-.profile.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
+.profile, .total-stats { padding: 0; overflow: hidden; }
+.profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
 .note { margin-top: 1.25rem; }
 .spot-notes { padding: 0 1rem; }
@@ -192,7 +192,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 @media (prefers-color-scheme: dark) {
   .error, .btn.danger { color: #f87171; }
   .debug { color: #f87171; border-color: #f87171; }
-  .spot.invalid, .profile.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
+  .spot.invalid, .profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #f87171; }
   .warn { color: #fbbf24; }
 }
 .error:empty { display: none; }
@@ -246,7 +246,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .panel > .btn { margin-bottom: 0.75rem; }
 
 /* De Level up-knop blijft bovenaan in beeld terwijl je scrolt */
-.levelup-bar { position: sticky; top: 0; z-index: 1; margin: 0 -0.25rem 0.75rem; padding: 0.375rem 0.25rem; background: var(--bg); }
+.current-level { margin: 0 0 0.75rem; font-size: 1.25rem; }
+.levelup-bar { margin: 1.5rem 0 0.75rem; }
 .btn.levelup { display: flex; flex-direction: column; align-items: center; min-height: 64px; font-size: 1.25rem; }
 .btn.levelup small { font-size: 0.875rem; font-weight: 400; opacity: 0.9; }
 .summary { margin: 0 0 1rem; color: var(--muted); }
@@ -426,6 +427,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-group h3 { margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
 .skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+/* Onder de naam: de MP die de skill per keer kost op je level (issue #83) */
+.skill-mp { display: block; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* Een stepper: − en + als grote tikvlakken (44px), het getal ertussen kun je ook typen */
 .skill-input { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
 .skill-input input { width: 3rem; padding: 0.5rem 0.25rem; min-height: 44px; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
@@ -461,6 +464,21 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 @media (prefers-reduced-motion: reduce) {
   .track, .spot-head::after, .collapse, .card { transition: none; }
 }
+
+/* De menubalk (issue #86): in de kaartkleur (wit, in het donkere thema donker), over de hele breedte en altijd bovenin. De inhoud lijnt uit met main. */
+:root { --topbar-h: 3.5rem; }
+/* Een veld dat in beeld schuift, blijft onder de menubalk en de Level-up-balk. */
+html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
+.topbar { position: sticky; top: 0; z-index: 2; background: var(--card); box-shadow: 0 1px 0 var(--border); }
+.topbar-inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+.topbar-name { font-size: 1.125rem; font-weight: 700; }
+.topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); cursor: pointer; }
+.topbar-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stat-dialog .card.job { margin: 1rem 0 0; }
+
+/* Alleen voor schermlezers: de kop van het beginscherm (de naam staat al in de menubalk). */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
 /* Opslaan op de jobkaart: verschijnt pas als je met het potlood open iets wijzigt (Dave, 4 oktober 2026). */
 .job-actions { display: flex; margin: 1.25rem 0 0.75rem; }
 .job-actions .equip-save { margin-left: 0; }

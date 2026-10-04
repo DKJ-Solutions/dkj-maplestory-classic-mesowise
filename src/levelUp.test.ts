@@ -269,10 +269,10 @@ describe('huntingGroundAdvice', () => {
 })
 
 describe('CHECK_FIELDS', () => {
-  it('bevat elke stat precies één keer, en geen skills of stars (die hebben hun eigen kaart)', () => {
+  it('bevat elke stat precies één keer, en geen skills, stars of velden die alleen ter info zijn (#82)', () => {
     const keys = CHECK_FIELDS.map((f) => f.key)
     const ammo = AMMO_FIELDS.map((f) => f.key)
-    const stats = PROFILE_FIELDS.map((f) => f.key).filter((k) => !isSkillKey(k) && !ammo.includes(k))
+    const stats = PROFILE_FIELDS.filter((f) => !f.informative).map((f) => f.key).filter((k) => !isSkillKey(k) && !ammo.includes(k))
     expect([...keys].sort()).toEqual([...stats].sort())
     expect(new Set(keys).size).toBe(keys.length)
   })
@@ -283,8 +283,8 @@ describe('CHECK_FIELDS', () => {
 })
 
 describe('applyLevelUp per job', () => {
-  // De Warrior rekent sinds issue #42 en heeft zijn eigen tests; deze twee jobs rekenen nog niet.
-  const others: Job[] = ['magician', 'bowman']
+  // De Warrior (issue #42) en de Bowman (issue #44) rekenen en hebben hun eigen tests; de Magician rekent nog niet.
+  const others: Job[] = ['magician']
 
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
@@ -311,7 +311,7 @@ describe('applyLevelUp per job', () => {
   })
 
   it('houdt het hoogste level en een ongeldig level ongewijzigd, voor elke job', () => {
-    for (const j of [...others, 'warrior' as Job, 'thief' as Job]) {
+    for (const j of [...others, 'warrior' as Job, 'bowman' as Job, 'thief' as Job]) {
       const max = { ...DEFAULT_PROFILE, level: '200' }
       expect(applyLevelUp(max, j), j).toEqual(max)
       for (const level of ['', 'x', '10.5']) {
@@ -334,11 +334,11 @@ describe('checkFieldsFor', () => {
   })
 
   it('geeft voor een andere job dezelfde stats: skills staan niet op het controlescherm', () => {
-    for (const j of ['magician', 'bowman'] as const) {
+    for (const j of ['magician'] as const) {
       const keys = checkFieldsFor(j).map((f) => f.key)
       expect(keys, j).toEqual(CHECK_FIELDS.map((f) => f.key))
       expect(keys[0], j).toBe('level')
-      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f)).length)
+      expect(keys.length, j).toBe(profileFieldsFor(j).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.includes(f) && !f.informative).length)
     }
   })
 })
@@ -402,7 +402,8 @@ describe('een Warrior: checkFieldsFor', () => {
 
   it('heeft alle stats van een Warrior precies één keer, met de weapon multiplier, en geen skills', () => {
     expect(new Set(keys).size).toBe(keys.length)
-    expect([...keys].sort()).toEqual(statFieldsFor('warrior').map((f) => f.key).sort())
+    expect([...keys].sort()).toEqual(statFieldsFor('warrior').filter((f) => !f.informative).map((f) => f.key).sort())
+    for (const k of ['magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(keys).not.toContain(k)
     expect(keys).toContain('weaponMult')
     expect(keys).toContain('luk')
     expect(keys.filter(isSkillKey)).toEqual([])

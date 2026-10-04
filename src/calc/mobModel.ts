@@ -1,5 +1,5 @@
-// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven) of een Warrior (melee-wapen met
-// Power Strike) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
+// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven), een Warrior (melee-wapen met
+// Power Strike) of een Bowman (boog of kruisboog met Arrow Blow) haalt op een monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
 // Overgenomen uit het mob-advies-model in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
 //
 // Een voorstel uit dit model is een SCHATTING. De formules komen uit de community voor het oude GMS
@@ -32,7 +32,11 @@ export interface SkillStats {
 export interface Attack {
   min: number
   max: number
-  /** Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen. */
+  /**
+   * Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen of een Arrow Blow. Het is ook het aantal
+   * stars of pijlen dat een aanval verbruikt, dus de munitiekosten; dat gaat goed zolang klappen en munitie gelijk zijn
+   * (Arrow Blow: 1 en 1). Een skill met meer pijlen dan klappen (Double Shot) heeft hier een eigen veld nodig.
+   */
   stars: number
   mpPerAttack: number
 }
@@ -112,6 +116,15 @@ export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMu
 }
 
 /**
+ * De aanval van een Bowman met een boog of kruisboog: dezelfde formule, met DEX als hoofdstat en STR als secundaire stat
+ * (de damage-gids, "Bow / Crossbow / Claw"). `bow` geeft de weapon multiplier van een schot en de basis-mastery (data/bowman.ts).
+ * `skill` is Arrow Blow op het gezette level, of null voor het gewone schot. Eén klap en één pijl per aanval.
+ */
+export function bowAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, bow: { weaponMult: number; mastery: number }, skill: SkillStats | null): Attack {
+  return { ...damageRange(skill, c.watk, c.dex, c.str, bow.weaponMult, bow.mastery), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
+}
+
+/**
  * Stap 3 (AANNAME, de "Spadow"-formule voor het oude GMS, geen bron voor Classic): de kans dat een
  * aanval raakt, met `levelDiff` = hoeveel levels de verdediger boven de aanvaller staat (≥ 0).
  * Zonder avoid raakt alles.
@@ -120,6 +133,14 @@ export function hitChance(accuracy: number, avoid: number, levelDiff: number): n
   if (avoid === 0) return 1
   return Math.min(1, accuracy / ((1.84 + 0.07 * Math.max(0, levelDiff)) * avoid))
 }
+
+/**
+ * Stap 2: je schade na de verdediging van het monster (issue #89). Bron: de damage-formule van MeowDB
+ * (sectie "Defense"): Raw x 100 / (DEF + 100), en "physical and magic defense use the same curve with
+ * different stats". Een fysieke klap gebruikt dus de WDEF van het monster; een spreuk hoort dezelfde curve te
+ * gebruiken (MAGIC_DAMAGE in data/magician.ts noemt hem ook).
+ */
+export const defended = (raw: number, def: number): number => (raw * 100) / (Math.max(0, def) + 100)
 
 /** AANNAME: schade zakt 1% per level dat de ontvanger boven de aanvaller staat, nooit onder 1. */
 export function dampedTouch(value: number, levelDiff: number): number {
@@ -159,10 +180,11 @@ export function estimateMob(
   mob: MobStats,
   assumptions: Assumptions = ASSUMPTIONS,
 ): MobEstimate {
-  // Stap 2 (AANNAME): het monster dempt je schade per level dat het hoger is, en trekt zijn WDEF af.
+  // Stap 2: het monster dempt je schade per level dat het hoger is (AANNAME), en zijn WDEF met de
+  // verdedigingscurve van de bron (defended).
   const up = Math.max(0, mob.level - c.level)
-  const maxHit = Math.max(1, attack.max * (1 - 0.01 * up) - mob.wdef * 0.5)
-  const minHit = Math.max(1, attack.min * (1 - 0.01 * up) - mob.wdef * 0.6)
+  const maxHit = Math.max(1, defended(attack.max * (1 - 0.01 * up), mob.wdef))
+  const minHit = Math.max(1, defended(attack.min * (1 - 0.01 * up), mob.wdef))
   const avgHit = (minHit + maxHit) / 2
 
   // Stap 3 en 4: raakkans, aanvallen per kill en kills per uur.

@@ -1,19 +1,20 @@
 // De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
 // het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
 // level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Avoid en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior krijgt level +1,
-// zijn Max HP (data/warrior.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
+// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior of Bowman krijgt level +1,
+// zijn Max HP (data/warrior.ts, data/bowman.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
 import type { BestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
+import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
 import { expPerMesoOf } from './mesoCostAt'
 import { DRAFT_FIELDS, parseProfile, PROFILE_FIELDS, profileFieldsFor, STAT_FIELDS, statFieldsFor, type Profile, type ProfileDraft, type ProfileKey } from './profile'
 import { skillsOf, type SkillId } from './skillPoint'
-import { luckySevenAt, powerStrikeAt } from './suggest'
+import { arrowBlowAt, luckySevenAt, powerStrikeAt } from './suggest'
 
 const LEVEL_MAX = PROFILE_FIELDS.find((f) => f.key === 'level')!.max
 
@@ -34,11 +35,20 @@ const wholeOf = (text: string): number | null => {
 }
 
 /**
+ * Wat een level-up bijwerkt voor een job die zijn AP zelf verdeelt (Warrior en Bowman): zijn eigen Max HP per level en het
+ * stat-deel van zijn accuracy (dat van het level afhangt). De Thief heeft zijn eigen regels in applyLevelUp.
+ */
+const OWN_AP = {
+  warrior: { hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
+  bowman: { hpFrom: bowmanHpPerLevelFrom, accuracy: bowmanAccuracy },
+} as const
+
+/**
  * Het profiel na een level-up: level +1, Max HP + de vaste waarde van die job, de 5 AP in LUK en de
  * accuracy die daarbij hoort (alleen het verschil van het stat-deel, want de accuracy in het profiel is
  * het totaal uit het statvenster). Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
  * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van
- * parseProfile). HP per level en AP in LUK zijn van de Thief: een Warrior krijgt zijn eigen HP per level en geen AP,
+ * parseProfile). HP per level en AP in LUK zijn van de Thief: een Warrior of Bowman krijgt zijn eigen HP per level en geen AP,
  * een andere job krijgt alleen level +1 en de speler vult de rest zelf in.
  */
 export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
@@ -50,11 +60,12 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const dex = wholeOf(draft.dex)
   const luk = wholeOf(draft.luk)
   const accuracy = wholeOf(draft.accuracy)
-  if (job === 'warrior') {
-    // De AP laat de app aan de speler (STR voor schade, DEX voor accuracy en wapen-eisen); alleen het level telt in de accuracy.
-    if (hp !== null) next.hp = String(hp + warriorHpPerLevelFrom(level))
+  if (job === 'warrior' || job === 'bowman') {
+    // De AP laat de app aan de speler (de hoofdstat voor schade, DEX voor accuracy en wapen-eisen); alleen het level telt in de accuracy.
+    const own = OWN_AP[job]
+    if (hp !== null) next.hp = String(hp + own.hpFrom(level))
     if (dex !== null && luk !== null && accuracy !== null) {
-      next.accuracy = String(accuracy + warriorAccuracy(dex, level + 1, luk) - warriorAccuracy(dex, level, luk))
+      next.accuracy = String(accuracy + own.accuracy(dex, level + 1, luk) - own.accuracy(dex, level, luk))
     }
     return next
   }
@@ -99,20 +110,24 @@ export function levelUpSummary(changes: LevelUpChanges): string {
 /** De velden die een speler na een level-up het vaakst moet bijwerken, bovenaan; daarna de rest. */
 const AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'luk', 'dex', 'str', 'accuracy', 'avoid']
 
-/** De stats in de volgorde voor het controlescherm; je skills staan in hun eigen kaart. */
+/** De stats in de volgorde voor het controlescherm (de velden die alleen ter info zijn, staan er niet in); je skills staan in hun eigen kaart. */
 export const CHECK_FIELDS = [
   ...AFTER_LEVEL_UP.map((k) => PROFILE_FIELDS.find((f) => f.key === k)!),
-  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key)),
+  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !f.informative),
 ]
 
-/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest. */
-const WARRIOR_AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid']
+/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest; bij een Bowman staat DEX (zijn hoofdstat) voor STR. */
+const OWN_AFTER_LEVEL_UP: Partial<Record<Job, readonly ProfileKey[]>> = {
+  warrior: ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid'],
+  bowman: ['level', 'hp', 'dex', 'str', 'accuracy', 'avoid'],
+}
 
 /** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */
 export const checkFieldsFor = (job: Job) => {
-  if (job === 'warrior') {
-    const first = WARRIOR_AFTER_LEVEL_UP.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
-    return [...first, ...statFieldsFor(job).filter((f) => !WARRIOR_AFTER_LEVEL_UP.includes(f.key))]
+  const order = OWN_AFTER_LEVEL_UP[job]
+  if (order) {
+    const first = order.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
+    return [...first, ...statFieldsFor(job).filter((f) => !order.includes(f.key) && !f.informative)]
   }
   const shown = profileFieldsFor(job)
   return CHECK_FIELDS.filter((f) => shown.includes(f))
@@ -138,6 +153,9 @@ export const luckySevenMp = (level: number): number => luckySevenAt(level)?.mp ?
 
 /** De MP per aanval van Power Strike op dit skill-level (0 als hij nog niet geleerd is). */
 export const powerStrikeMp = (level: number): number => powerStrikeAt(level)?.mp ?? 0
+
+/** De MP per schot van Arrow Blow op dit skill-level (0 als hij nog niet geleerd is). */
+export const arrowBlowMp = (level: number): number => arrowBlowAt(level)?.mp ?? 0
 
 /** De beste plek, zoals de speler hem zag: genoeg om hem later terug te vinden. */
 export interface BestSpot {

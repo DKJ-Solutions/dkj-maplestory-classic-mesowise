@@ -122,7 +122,7 @@ describe('NPC_MAGICIAN_WEAPONS', () => {
 })
 
 describe('NPC_MAGICIAN_ARMOR', () => {
-  it('bevat precies de 14 stukken (12 met jobregel, 2 zonder: #55), per slot (hat, top, bottom, shoes) van laag naar hoog level', () => {
+  it('bevat precies de 15 stukken (13 met jobregel, 2 zonder: #55), per slot (hat, top, bottom, overall, shoes) van laag naar hoog level', () => {
     const rows = NPC_MAGICIAN_ARMOR.map((a) => [a.name, a.slot, a.level, a.int, a.luk, a.wdef, a.mdef, a.price])
     expect(rows).toEqual([
       ['Apprentice Hat', 'hat', 10, 10, 0, 8, 10, 1_200],
@@ -135,41 +135,43 @@ describe('NPC_MAGICIAN_ARMOR', () => {
       ['Split Piece / Split', 'top', 20, 30, 10, 19, 24, 6_000],
       ['Training Pants / Armine Skirt', 'bottom', 10, 10, 0, 9, 12, 1_600],
       ['Split Pants / Split Skirt', 'bottom', 20, 30, 10, 13, 16, 4_800],
+      ['Doros Robe / Doroness Robe', 'overall', 25, 40, 15, 40, 49, 13_500],
       ['Basic Boots', 'shoes', 10, 10, 0, 5, 6, 1_200],
       ['Nitty', 'shoes', 15, 20, 0, 6, 7, 1_800],
       ['Jewelry Boots', 'shoes', 20, 30, 10, 7, 8, 3_600],
       ['Wind Shoes', 'shoes', 25, 40, 15, 8, 9, 4_500],
     ])
-    expect(NPC_MAGICIAN_ARMOR).toHaveLength(14)
+    expect(NPC_MAGICIAN_ARMOR).toHaveLength(15)
   })
 
   it('verwijst naar de pagina van het eerste id (bij de paren de mannenpagina), opgehaald op 2026-10-04', () => {
     const ids: Record<string, number> = {
       'Apprentice Hat': 727, 'White Bandana': 719, 'Red Baseball Cap': 781, 'Moon Conehat': 746, 'Wizardry Hat': 768, Jester: 813,
       'Training Shirt / Armine': 944, 'Split Piece / Split': 981,
-      'Training Pants / Armine Skirt': 1166, 'Split Pants / Split Skirt': 1199,
+      'Training Pants / Armine Skirt': 1166, 'Split Pants / Split Skirt': 1199, 'Doros Robe / Doroness Robe': 1098,
       'Basic Boots': 1310, Nitty: 1322, 'Jewelry Boots': 1337, 'Wind Shoes': 1354,
     }
     for (const a of NPC_MAGICIAN_ARMOR) {
       expect(a.source.url, a.name).toBe(item(ids[a.name]))
       expect(a.source.retrieved, a.name).toMatch(DATE)
     }
-    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.source.url)).size).toBe(14)
-    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.name)).size).toBe(14)
+    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.source.url)).size).toBe(15)
+    expect(new Set(NPC_MAGICIAN_ARMOR.map((a) => a.name)).size).toBe(15)
   })
 
-  it('vouwt de vier man/vrouw-paren samen tot een regel met de mannenpagina als bron', () => {
+  it('vouwt de vijf man/vrouw-paren samen tot een regel met de mannenpagina als bron', () => {
     const by = (n: string) => NPC_MAGICIAN_ARMOR.find((a) => a.name === n)!
     // Training Shirt 944 / Armine 953, Split Piece 981 / Split 991, Training Pants 1166 / Armine Skirt 1173,
-    // Split Pants 1199 / Split Skirt 1207: identieke eisen, WDEF, MDEF en prijs.
+    // Split Pants 1199 / Split Skirt 1207, Doros Robe 1098 / Doroness Robe 1102: identieke eisen, WDEF, MDEF en prijs.
     expect(by('Training Shirt / Armine').source.url).toBe(item(944))
     expect(by('Split Piece / Split').source.url).toBe(item(981))
     expect(by('Training Pants / Armine Skirt').source.url).toBe(item(1166))
     expect(by('Split Pants / Split Skirt').source.url).toBe(item(1199))
+    expect(by('Doros Robe / Doroness Robe').source.url).toBe(item(1098))
     const pairs = NPC_MAGICIAN_ARMOR.filter((a) => a.name.includes(' / '))
-    expect(pairs).toHaveLength(4)
+    expect(pairs).toHaveLength(5)
     const urls = NPC_MAGICIAN_ARMOR.map((a) => a.source.url)
-    for (const id of [953, 991, 1173, 1207]) expect(urls).not.toContain(item(id))
+    for (const id of [953, 991, 1173, 1207, 1099, 1100, 1101, 1102, 1103, 1104]) expect(urls).not.toContain(item(id))
   })
 
   it('laat de alleen-vrouwen-stukken zonder mannenversie weg: Arianne, Arianne Skirt, Fairy Top en Fairy Skirt', () => {
@@ -183,16 +185,15 @@ describe('NPC_MAGICIAN_ARMOR', () => {
     }
   })
 
-  it('heeft geen overalls (Plain Robe, Doros Robe, Doroness Robe, Wizard Robe)', () => {
-    const slots = new Set<string>(NPC_MAGICIAN_ARMOR.map((a) => a.slot))
-    expect(slots).toEqual(new Set(['hat', 'top', 'bottom', 'shoes']))
-    expect(NPC_MAGICIAN_ARMOR.some((a) => /Robe/.test(a.name))).toBe(false)
+  it('heeft als enige overall de Doros/Doroness Robe, en laat de robes alleen voor mannen weg (Plain Robe, Wizard Robe: #55)', () => {
+    expect(NPC_MAGICIAN_ARMOR.filter((a) => a.slot === 'overall').map((a) => a.name)).toEqual(['Doros Robe / Doroness Robe'])
+    expect(NPC_MAGICIAN_ARMOR.some((a) => /Plain Robe|Wizard Robe/.test(a.name))).toBe(false)
     const urls = NPC_MAGICIAN_ARMOR.map((a) => a.source.url)
-    for (const id of [1091, 1098, 1102, 1107, 1110]) expect(urls).not.toContain(item(id))
+    for (const id of [1091, 1092, 1093, 1107, 1110]) expect(urls).not.toContain(item(id))
   })
 
-  it('staat gesorteerd op slot (hat, top, bottom, shoes), dan op level, met levels binnen 10 tot 30', () => {
-    const SLOTS = ['hat', 'top', 'bottom', 'shoes']
+  it('staat gesorteerd op slot (hat, top, bottom, overall, shoes), dan op level, met levels binnen 10 tot 30', () => {
+    const SLOTS = ['hat', 'top', 'bottom', 'overall', 'shoes']
     for (let i = 1; i < NPC_MAGICIAN_ARMOR.length; i++) {
       const [p, c] = [NPC_MAGICIAN_ARMOR[i - 1], NPC_MAGICIAN_ARMOR[i]]
       const order = SLOTS.indexOf(c.slot) - SLOTS.indexOf(p.slot) || c.level - p.level

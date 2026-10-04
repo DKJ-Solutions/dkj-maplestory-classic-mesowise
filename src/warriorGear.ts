@@ -1,22 +1,21 @@
-// De Warrior-winkelgegevens (data/warrior.ts, eigen types met `str`) in de vorm van de Thief-lijsten (Claw en
-// Armor, op de gedeelde ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde manier
-// kunnen lezen. Alleen hier, aan de rand van die adviezen, staat de STR-eis nog in het veld `luk` ("hoofdstat");
-// de data zelf noemt hem `str`. Puur, zonder UI-import.
-import type { Armor, Claw, WarriorWeaponKind, WornClaw } from './data/types'
+// De Warrior-winkelgegevens (data/warrior.ts, eigen types met `str`) in de gedeelde vorm van wapens en armor
+// (Weapon en ArmorPiece, op de ShopItem-basis), zodat het equipment-scherm en de upgrade-adviezen ze op dezelfde
+// manier kunnen lezen als de Thief-lijsten. De STR-eis blijft `str` (issue #69). Puur, zonder UI-import.
+import type { ArmorPiece, WarriorWeaponKind, Weapon, WornClaw } from './data/types'
 import { averageAttackMs, effectiveMultiplier, MULT, NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 
 /**
- * De NPC-wapens van een Warrior als Claw. De aanvalstijd is het gemiddelde van zwaaien en steken en de
+ * De NPC-wapens van een Warrior als Weapon. De aanvalstijd is het gemiddelde van zwaaien en steken en de
  * multiplier die van de 60/40-regel (zie data/warrior.ts).
  */
-export const WARRIOR_WEAPONS: readonly Claw[] = NPC_WARRIOR_WEAPONS.map((w) => ({
+export const WARRIOR_WEAPONS: readonly Weapon[] = NPC_WARRIOR_WEAPONS.map((w) => ({
   name: w.name,
   level: w.level,
   watk: w.watk,
   speed: { label: w.speed.label, attackMs: averageAttackMs(w.speed) },
   mult: effectiveMultiplier(w.mult),
-  luk: w.str,
+  str: w.str,
   dex: w.dex,
   price: w.price,
   source: w.source,
@@ -32,13 +31,13 @@ export const WORN_WARRIOR_CLAWS: readonly (WornClaw & { mult: number })[] = WORN
   source: w.source,
 }))
 
-/** De NPC-armor van een Warrior (zie data/warrior.ts) als Armor; een stuk voor één geslacht houdt zijn `gender`. */
-export const WARRIOR_ARMOR: readonly Armor[] = NPC_WARRIOR_ARMOR.map((a) => ({
+/** De NPC-armor van een Warrior (zie data/warrior.ts) als ArmorPiece; een stuk voor één geslacht houdt zijn `gender`. */
+export const WARRIOR_ARMOR: readonly ArmorPiece[] = NPC_WARRIOR_ARMOR.map((a) => ({
   name: a.name,
   slot: a.slot,
   level: a.level,
   wdef: a.wdef,
-  luk: a.str,
+  str: a.str,
   dex: a.dex,
   price: a.price,
   source: a.source,

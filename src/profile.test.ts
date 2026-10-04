@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSkillKey } from './data/skills'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, type ProfileDraft } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -121,6 +121,58 @@ describe('loadProfile en saveProfile', () => {
     expect(p).toMatchObject({ luk: '60', luckySeven: '7', nimbleBody: '3', keenEyes: '0', threeSnails: '0' })
   })
 
+  it('geeft een bewaard profiel van vóór INT (#82) INT 4, zonder dat de rest verandert', () => {
+    const raw = JSON.stringify({ version: 1, fields: { str: '50', luk: '60' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, str: '50', luk: '60', int: '4' })
+  })
+
+  it('rekent de Attack uit je equipment: bij een Thief claw plus stars, bij een Warrior alleen het wapen (#82)', () => {
+    const d = { ...DEFAULT_PROFILE, clawWatk: '30', starWatk: '17' }
+    expect(totalAttack(d, 'thief')).toBe(47)
+    expect(totalAttack(d, 'warrior')).toBe(30)
+    const r = parseProfile(d)
+    if ('profile' in r) expect(totalAttack(d, 'thief')).toBe(toCharacter(r.profile).watk)
+    expect(totalAttack({ ...d, clawWatk: '' }, 'thief')).toBeNull()
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'thief')).toBeNull()
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'warrior')).toBe(30)
+  })
+
+  it('rekent de Attack van een Bowman met de gewone pijl, ook als er stars van een Thief in het concept staan', () => {
+    const d = { ...DEFAULT_PROFILE, clawWatk: '39', starWatk: '17' }
+    expect(totalAttack(d, 'bowman')).toBe(39)
+    const r = parseProfile(d, 'bowman')
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    expect(totalAttack(d, 'bowman')).toBe(toCharacter(r.profile).watk)
+    expect(totalAttack({ ...d, starWatk: 'x' }, 'bowman')).toBe(39)
+  })
+
+  it('negeert een oude bewaarde attack: die is geen veld meer (#82)', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60', attack: '99' } })
+    expect('attack' in loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toBe(false)
+  })
+
+  it('geeft een bewaard profiel van vóór de info-velden (#82) blanco: niets beweert wat de speler niet invulde', () => {
+    const raw = JSON.stringify({ version: 1, fields: { luk: '60' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ luk: '60', magic: '', magicDef: '', critRate: '', critDamage: '', speed: '', jump: '' })
+  })
+
+  it('houdt een bewaarde 0 bij een info-veld (#82)', () => {
+    const raw = JSON.stringify({ version: 1, fields: { magicDef: '0', jump: '100' } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toMatchObject({ magicDef: '0', jump: '100', magic: '' })
+  })
+
+  it('laat een leeg of fout info-veld de berekening niet blokkeren (#82)', () => {
+    const base = parseProfile(DEFAULT_PROFILE)
+    const r = parseProfile({ ...DEFAULT_PROFILE, speed: 'x', critRate: '500', jump: '300', magic: '', magicDef: '  ' })
+    expect('profile' in r).toBe(true)
+    if ('profile' in r && 'profile' in base) {
+      expect(r.profile).toEqual(base.profile)
+      for (const k of ['magic', 'magicDef', 'critRate', 'critDamage', 'speed', 'jump'] as const) expect(Number.isFinite(r.profile[k]), k).toBe(true)
+      expect(toCharacter(r.profile)).toEqual(toCharacter(base.profile))
+    }
+    expect('error' in parseProfile({ ...DEFAULT_PROFILE, accuracy: '' })).toBe(true)
+  })
+
   it('houdt een goed veld en geeft een fout veld de standaardwaarde', () => {
     const raw = JSON.stringify({ version: 1, fields: { luk: '60', dex: 7, geheim: 'x', level: '9'.repeat(50) } })
     const p = loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))
@@ -151,7 +203,7 @@ describe('profileFieldsFor', () => {
   it('verbergt voor een andere job de Thief-skills van de 1e job, houdt de Beginner-skills en de volgorde', () => {
     const expected = PROFILE_FIELDS.filter((f) => !hidden.includes(f.key))
     expect(expected.length).toBe(PROFILE_FIELDS.length - hidden.length)
-    for (const j of ['magician', 'bowman'] as const) {
+    for (const j of ['magician'] as const) {
       const keys = profileFieldsFor(j).map((f) => f.key)
       expect(profileFieldsFor(j), j).toEqual(expected)
       for (const k of hidden) expect(keys, j).not.toContain(k)
@@ -260,11 +312,30 @@ describe('Warrior-profiel: job, weaponMult en skills', () => {
     expect('profile' in t && toCharacter(t.profile).watk).toBe(47 + 15)
   })
 
-  it('geeft mainStatOf STR voor een Warrior en LUK voor een Thief', () => {
+  it('geeft mainStatOf STR voor een Warrior, DEX voor een Bowman en LUK voor een Thief', () => {
+    const w = parseW()
+    const t = parseProfile(warriorDraft, 'thief')
+    const b = parseProfile(warriorDraft, 'bowman')
+    if (!('profile' in w) || !('profile' in t) || !('profile' in b)) throw new Error('profiel ongeldig')
+    expect(mainStatOf(w.profile)).toBe(132)
+    expect(mainStatOf(t.profile)).toBe(4)
+    expect(mainStatOf(b.profile)).toBe(b.profile.dex)
+    // Bij een Bowman staat DEX voorop in wat hij tekortkomt, STR erna.
+    expect(shortfall({ str: b.profile.str + 1, dex: b.profile.dex + 2 }, b.profile)).toEqual([{ stat: 'dex', amount: 2 }, { stat: 'str', amount: 1 }])
+  })
+
+  it('noemt met shortfall per stat wat je tekortkomt, de hoofdstat eerst, en laat een stat die je haalt weg (issue #69)', () => {
     const w = parseW()
     const t = parseProfile(warriorDraft, 'thief')
     if (!('profile' in w) || !('profile' in t)) throw new Error('profiel ongeldig')
-    expect(mainStatOf(w.profile)).toBe(132)
-    expect(mainStatOf(t.profile)).toBe(4)
+    // Warrior: STR 132, DEX 30. Dezelfde eis geeft STR eerst; DEX haalt hij.
+    expect(shortfall({ dex: 140, str: 140 }, w.profile)).toEqual([{ stat: 'str', amount: 8 }, { stat: 'dex', amount: 110 }])
+    expect(shortfall({ str: 132, dex: 30 }, w.profile)).toEqual([])
+    // Thief: LUK 4 eerst, dan de rest in vaste volgorde.
+    expect(shortfall({ str: 140, luk: 10, dex: 31 }, t.profile)).toEqual([{ stat: 'luk', amount: 6 }, { stat: 'str', amount: 8 }, { stat: 'dex', amount: 1 }])
+    // Een stat die het item niet noemt, vraagt niets; een INT-eis leest je INT (standaard 4, #82).
+    expect(shortfall({}, t.profile)).toEqual([])
+    expect(shortfall({ int: 20 }, t.profile)).toEqual([{ stat: 'int', amount: 16 }])
+    expect(shortfall({ int: 20 }, { ...t.profile, int: 20 })).toEqual([])
   })
 })
