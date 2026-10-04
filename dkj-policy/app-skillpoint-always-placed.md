@@ -49,27 +49,34 @@ needed a saving above 0. A point has to be spent anyway, so the advice must alwa
 - [x] Victor's review and Edith's text read applied
 - [x] The question is "In welke skill zet ik mijn skillpunt?" (a point is always spent at a level-up); its chip names the chosen skill instead of Ja/Nee
 - [x] After "Punt zetten" the confirmation says why it was the best choice and what the runner-up does
+- [x] The advice card is "Report" (h2) with four parts ATT, DEF, Skill, Mob (h3), each with a lead line; ATT and DEF are separate again
+- [x] Ability points and Total stats sit in their own "Stats" block
+- [x] ATT always names the weapon you carry and the next better one with its level, also below lv 10 where the cost is unknown; fixed the Bowman weapon multiplier in that lookup
+- [x] Chips say what to do: Upgraden / Niet upgraden / Upgrade complete, Wisselen / Blijven, the skill name, and with no point left Goed gezet / Beter in {skill}, with the closest alternative as the reason
+- [x] Gwen: the chip sits right of its h3; type scale h2 1.5rem > h3 1.125rem > h4 0.9375rem; verdicts are h4
+- [x] Victor and Edith read every round; their findings applied
 
 ### TEST
 
-- [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; later rounds for the title, chip labels and confirmation; 1349 tests green, typecheck clean
+- [x] Tycho: 5 tests updated to the new rule, new tests for saving 0, negative saving, no point left, snapping and robustness; later rounds for every change above; 1405 tests green, typecheck clean
 - [ ] Dave looks at the skill question at phone width
 
 ### DEPLOY: app/skillpoint-always-placed
 
-The skill-point advice no longer answers "Nee" while a skill point is still free. A point has to be
-spent anyway, so it always names the best skill: the one that saves the most mesos, or when none saves
-anything, the one that costs the least extra (for example in MP potions). Every option is listed with
-what it saves or costs on this level. The question now reads "In welke skill zet ik mijn skillpunt?",
-its chip names the chosen skill, and after placing the point the app confirms why it was the best
-choice and what the runner-up would have done.
+The advice card is now "Report", with four parts: ATT, DEF, Skill and Mob. Each part says in one line
+what it weighs, and its chip says whether you still have to act ("Upgraden", "Upgrade complete",
+"Blijven", the skill to raise, "Goed gezet"). The skill advice always names where a free point goes,
+even when no skill saves mesos. It explains a placed point, and once all points are spent it checks
+whether one point would have been cheaper in another skill. ATT names the weapon you carry and the
+next better one with its level. Ability points and Total stats move into their own "Stats" block,
+and the headings follow a clear size scale.
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
-A player with a free skill point now gets a usable answer instead of "don't raise", and sees the
-mana-costing skill next to the others with its extra cost.
+A player now reads at a glance, per part, whether anything needs doing after a level-up. Where a
+skill point goes is always answered and explained, and so is the weapon you carry.
 
 **Score:** 4
 

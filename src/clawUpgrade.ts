@@ -85,12 +85,27 @@ const shopOf = (job: Profile['job']) =>
     ? { weapons: WEAPONS_BY_JOB[job] ?? [], better: (c: Weapon, than: Weapon) => power(c) > power(than) }
     : { weapons: WEAPONS_BY_JOB[job] ?? NPC_CLAWS, better: (c: Weapon, than: Weapon) => c.watk > than.watk }
 
+/** Het eerste wapen van de winkel waar je level nog niet voor volstaat en dat `better` beter vindt; null als er geen meer komt. */
+const firstBetterAbove = (profile: Profile, better: (c: Weapon) => boolean): Weapon | null =>
+  shopOf(profile.job).weapons.find((c) => c.level > profile.level && better(c)) ?? null
+
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
 function horizon(profile: Profile, claw: Weapon): { from: number; to: number; truncated: boolean } {
-  const shop = shopOf(profile.job)
-  const next = shop.weapons.find((c) => c.level > profile.level && shop.better(c, claw))
+  const next = firstBetterAbove(profile, (c) => shopOf(profile.job).better(c, claw))
   const end = next ? next.level - 1 : Infinity
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
+}
+
+/**
+ * Het eerstvolgende betere wapen waar je level nog niet voor volstaat. Wat je draagt komt uit het profiel: weapon attack,
+ * aanvalstijd en (alleen bij een job waarvan de wapens een multiplier hebben, de Warrior) de multiplier.
+ * Zo kan het advies ook op een level zonder keuze zeggen wanneer er een upgrade komt.
+ */
+export function nextBetterWeapon(profile: Profile): Weapon | null {
+  if (!rankedByModel(profile.job)) return firstBetterAbove(profile, (c) => c.watk > profile.clawWatk)
+  const hasMult = shopOf(profile.job).weapons.some((c) => c.mult !== undefined)
+  const wornPower = (profile.clawWatk * (hasMult ? profile.weaponMult : 1)) / profile.attackMs
+  return firstBetterAbove(profile, (c) => power(c) > wornPower)
 }
 
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions) {

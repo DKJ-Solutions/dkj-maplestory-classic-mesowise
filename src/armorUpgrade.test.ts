@@ -1176,3 +1176,19 @@ describe('armorUpgradeAdvice: een gedragen overall met onbekende WDEF (issue #11
     })
   })
 })
+
+describe('armorUpgradeAdvice: niets beters meer (de basis van "Upgrade complete")', () => {
+  it('heeft geen keuzes en geen geblokkeerd stuk als je in elk slot meer WDEF draagt dan de winkel biedt', () => {
+    const worn = { hat: 999, top: 999, bottom: 999, overall: 999, shoes: 999, shield: 999, gloves: 999, cape: 999, earrings: 999 }
+    const a = armorUpgradeAdvice(drafts, strong({ level: 30 }), worn)
+    if (a.kind !== 'advice') throw new Error('advies verwacht')
+    expect(a.choices).toEqual([])
+    expect(a.notWearable).toEqual([])
+    expect(a.winner).toBeNull()
+  })
+
+  it('heeft wel keuzes als je niets draagt, dus is de upgrade niet af', () => {
+    const a = advice(drafts, strong({ level: 30 }))
+    expect(a.choices.length + a.notWearable.length).toBeGreaterThan(0)
+  })
+})

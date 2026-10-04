@@ -11,7 +11,7 @@ import { MAGIC_CLAW_LEVELS } from './data/magician'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileDraft } from './profile'
-import { buffBonus, ironBodyDef, maxHpAfterPoint, skillEffectText, skillExtraCostText } from './skillEffects'
+import { buffBonus, ironBodyDef, maxHpAfterPoint, maxHpBeforePoint, skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { hourPlan, MP_POTION, suggestMonsters, type MonsterSuggestion } from './suggest'
@@ -398,5 +398,24 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
     const hp = advice.choices.find((c) => c.id === 'maxHpIncrease')!
     expect(hp.saving).toBe(0)
     expect(hp.meso).toBe(advice.base)
+  })
+})
+
+describe('maxHpBeforePoint', () => {
+  it('geeft hetzelfde terug zonder punt in de skill om af te halen', () => {
+    expect(maxHpBeforePoint(1000, 0)).toBe(1000)
+  })
+
+  it('haalt het procent van het level af: 1100 met Max HP Increase 1 is 1000 zonder', () => {
+    expect(maxHpBeforePoint(1100, 1)).toBe(1000)
+  })
+
+  it('is het omgekeerde van maxHpAfterPoint, op hoogstens 1 HP na (gemeten: precies 1 HP het grootst, door het afronden naar beneden)', () => {
+    // Gemeten over HP 50 t/m 6000 en elk level 1 t/m 15: de afwijking is nooit meer dan 1 HP, en komt voor.
+    let max = 0
+    for (let n = 1; n <= 15; n++) {
+      for (let hp = 50; hp <= 6000; hp++) max = Math.max(max, Math.abs(hp - maxHpBeforePoint(maxHpAfterPoint(hp, n - 1), n)))
+    }
+    expect(max).toBe(1)
   })
 })

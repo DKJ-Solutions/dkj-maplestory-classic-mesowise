@@ -3,7 +3,7 @@ import { pickUnder } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
-import { knownSpotPatch } from './data/spots'
+import { knownSpotPatch, mobDraft } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
@@ -395,5 +395,197 @@ describe('skillPointAdvice: punten over (issue #136)', () => {
   it('geeft bij een Warrior zonder punt over ook geen keuzes', () => {
     const warrior = { ...profile, job: 'warrior' as const, level: 10, powerStrike: 1, luckySeven: 0 }
     expect(skillPointAdvice(drafts, warrior)).toMatchObject({ kind: 'advice', left: 0, choices: [], winner: null })
+  })
+})
+
+describe('minusOne en plusOne', () => {
+  const warriorBase = (() => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60' }, 'warrior')
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    return r.profile
+  })()
+
+  it('draait bij Nimble Body plusOne exact terug, ook voor accuracy en avoid', () => {
+    const nimble = SKILLS.find((s) => s.id === 'nimbleBody')!
+    for (const lvl of [0, 1, 3, nimble.max - 1]) {
+      const p = { ...profile, nimbleBody: lvl, accuracy: profile.accuracy + lvl, avoid: profile.avoid + lvl }
+      expect(nimble.minusOne(nimble.plusOne(p))).toEqual(p)
+    }
+    const down = nimble.minusOne({ ...profile, nimbleBody: 2 })
+    expect(down).toMatchObject({ nimbleBody: 1, accuracy: profile.accuracy - NIMBLE_BODY.accuracyPerLevel, avoid: profile.avoid - NIMBLE_BODY.avoidPerLevel })
+  })
+
+  it('draait bij Precise Strikes plusOne exact terug op elk level, ook voor accuracy', () => {
+    const precise = skillsOf('warrior').find((s) => s.id === 'preciseStrikes')!
+    for (let lvl = 0; lvl < precise.max; lvl++) {
+      const p = { ...warriorBase, preciseStrikes: lvl }
+      expect(precise.minusOne(precise.plusOne(p))).toEqual(p)
+    }
+  })
+
+  it('draait de skills die alleen hun level zetten ook exact terug', () => {
+    for (const s of skillsOf('warrior').filter((x) => ['powerStrike', 'improvedHpRecovery', 'ironBody'].includes(x.id))) {
+      const p = { ...warriorBase, improvedHpRecovery: 3, maxHpIncrease: 3 }
+      expect(s.minusOne(s.plusOne(p))).toEqual(p)
+    }
+  })
+
+  it('draait Max HP Increase terug op hoogstens 1 HP na, en laat de rest staan', () => {
+    const mhi = skillsOf('warrior').find((s) => s.id === 'maxHpIncrease')!
+    for (const lvl of [0, 1, 3, 10]) {
+      const p = { ...warriorBase, maxHpIncrease: lvl, hp: 1200 }
+      const back = mhi.minusOne(mhi.plusOne(p))
+      expect(back.maxHpIncrease).toBe(lvl)
+      expect(Math.abs(back.hp - p.hp)).toBeLessThanOrEqual(1)
+      expect({ ...back, hp: 0 }).toEqual({ ...p, hp: 0 })
+    }
+  })
+})
+
+describe('skillPointAdvice: de plaatsingscheck zonder punt over', () => {
+  const magRaw = { ...DEFAULT_PROFILE, hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
+  const warRaw = { ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0' }
+  const advise = (job: 'magician' | 'warrior' | 'thief', raw: object, mob: string) => {
+    const r = parseProfile(raw as ProfileDraft, job)
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    const a = skillPointAdvice([mobDraft(mob)!], r.profile)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    expect(a.left).toBe(0)
+    return a
+  }
+  const MOBS_TO_TRY = ['Ribbon Pig', 'Snail', 'Pig', 'Orange Mushroom', 'Stump']
+
+  it('geeft geen plaatsing zolang er nog een punt over is', () => {
+    const a = skillPointAdvice(drafts, profile)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    expect(a.left).toBeGreaterThan(0)
+    expect(a.placement).toBeNull()
+  })
+
+  it('geeft "better" met de besparing als een punt van A naar B de kosten verlaagt: Lucky Seven 1 naar Nimble Body', () => {
+    const a = advise('thief', { ...DEFAULT_PROFILE, level: '10' }, 'Ribbon Pig')
+    expect(a.placement).toMatchObject({ kind: 'better', from: 'Lucky Seven', to: 'Nimble Body' })
+    // De besparing is de huidige kosten min die van de verdeling met het punt in Nimble Body.
+    const alt = advise('thief', { ...DEFAULT_PROFILE, level: '10', luckySeven: '0', nimbleBody: '1' }, 'Ribbon Pig')
+    const saving = a.placement && a.placement.kind === 'better' ? a.placement.saving : 0
+    expect(saving).toBeCloseTo(a.base - alt.base, 6)
+    expect(saving).toBeGreaterThanOrEqual(0.5)
+  })
+
+  it('geeft "good" als geen verplaatsing goedkoper is: het punt staat al in Nimble Body', () => {
+    const a = advise('thief', { ...DEFAULT_PROFILE, level: '10', luckySeven: '0', nimbleBody: '1' }, 'Ribbon Pig')
+    expect(a.placement).toMatchObject({ kind: 'good' })
+  })
+
+  it('geeft null als geen punt te verplaatsen valt omdat het in een skill staat die het model niet kent', () => {
+    const a = advise('thief', { ...DEFAULT_PROFILE, level: '10', luckySeven: '0', nimbleBody: '0', keenEyes: '1' }, 'Ribbon Pig')
+    expect(a.placement).toBeNull()
+    expect(a.winner).toBeNull()
+  })
+
+  it('haalt bij een Magician met Magic Claw nooit het punt uit Energy Bolt 1, want dan is Magic Claw niet meer te leren', () => {
+    for (const mob of MOBS_TO_TRY) {
+      const a = advise('magician', { ...magRaw, level: '11', energyBolt: '1', magicClaw: '1', improvedMpRecovery: '2' }, mob)
+      expect(a.placement).toMatchObject({ kind: 'better', from: 'Magic Claw', to: 'Improved MP Recovery' })
+    }
+  })
+
+  it('haalt bij een Magician wel een punt uit Energy Bolt als Magic Claw geldig blijft (Energy Bolt 2 naar 1)', () => {
+    for (const mob of MOBS_TO_TRY) {
+      const a = advise('magician', { ...magRaw, level: '11', energyBolt: '2', magicClaw: '2', improvedMpRecovery: '0' }, mob)
+      expect(a.placement).toMatchObject({ kind: 'better', from: 'Energy Bolt', to: 'Improved MP Recovery' })
+    }
+  })
+
+  it('haalt bij een Warrior geen punt uit Improved HP Recovery 3 zolang Max HP Increase erop rust, en niet uit Max HP Increase 3 zolang Iron Body erop rust', () => {
+    for (const mob of MOBS_TO_TRY) {
+      const a = advise('warrior', { ...warRaw, level: '11', improvedHpRecovery: '3', maxHpIncrease: '1', powerStrike: '0', preciseStrikes: '0' }, mob)
+      expect(a.placement).toMatchObject({ kind: 'better', from: 'Max HP Increase', to: 'Improved HP Recovery' })
+      const b = advise('warrior', { ...warRaw, level: '12', improvedHpRecovery: '3', maxHpIncrease: '3', ironBody: '1', powerStrike: '0', preciseStrikes: '0' }, mob)
+      expect(b.placement).toMatchObject({ kind: 'better', from: 'Iron Body', to: 'Improved HP Recovery' })
+    }
+  })
+
+  it('haalt bij een Warrior zonder Iron Body het punt wel uit een vrije skill (Power Strike) naar Improved HP Recovery', () => {
+    const a = advise('warrior', { ...warRaw, level: '12', improvedHpRecovery: '3', maxHpIncrease: '3', powerStrike: '1', preciseStrikes: '0' }, 'Snail')
+    expect(a.placement).toMatchObject({ kind: 'better', from: 'Power Strike', to: 'Improved HP Recovery' })
+  })
+})
+
+describe('skillPointAdvice: placement.closest bij "good"', () => {
+  const adviseW = (raw: object, job: 'thief' | 'warrior', mob: string) => {
+    const r = parseProfile(raw as ProfileDraft, job)
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    const a = skillPointAdvice([mobDraft(mob)!], r.profile)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    expect(a.left).toBe(0)
+    return a
+  }
+  const closestOf = (a: ReturnType<typeof adviseW>) => {
+    if (!a.placement || a.placement.kind !== 'good') throw new Error('good verwacht')
+    return a.placement.closest
+  }
+
+  it('geeft bij Nimble Body 1 de verplaatsing naar Lucky Seven met precies de extra kosten, en die is negatief', () => {
+    const base = { ...DEFAULT_PROFILE, level: '10' }
+    const a = adviseW({ ...base, luckySeven: '0', nimbleBody: '1' }, 'thief', 'Ribbon Pig')
+    const c = closestOf(a)
+    expect(c).toMatchObject({ from: 'Nimble Body', to: 'Lucky Seven' })
+    // Rechtstreeks nagerekend: de kosten met het punt in Lucky Seven, via een eigen profiel.
+    const alt = adviseW({ ...base, luckySeven: '1', nimbleBody: '0' }, 'thief', 'Ribbon Pig')
+    expect(c!.saving).toBeCloseTo(a.base - alt.base, 6)
+    expect(c!.saving).toBeLessThan(0)
+  })
+
+  it('kiest als closest de verplaatsing met de hoogste (minst negatieve) besparing, en nooit een positieve', () => {
+    // Warrior met het punt in Improved HP Recovery: Power Strike en Precise Strikes zijn de alternatieven.
+    const raw = { ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0', level: '10', powerStrike: '0', preciseStrikes: '0' }
+    const a = adviseW({ ...raw, improvedHpRecovery: '1' }, 'warrior', 'Ribbon Pig')
+    const c = closestOf(a)!
+    const viaPrecise = adviseW({ ...raw, preciseStrikes: '1' }, 'warrior', 'Ribbon Pig')
+    const viaPower = adviseW({ ...raw, powerStrike: '1' }, 'warrior', 'Ribbon Pig')
+    const savings = { 'Precise Strikes': a.base - viaPrecise.base, 'Power Strike': a.base - viaPower.base }
+    for (const s of Object.values(savings)) expect(s).toBeLessThanOrEqual(0)
+    const best = Object.entries(savings).reduce((x, y) => (y[1] > x[1] ? y : x))
+    expect(c.from).toBe('Improved HP Recovery')
+    expect(c.to).toBe(best[0])
+    expect(c.saving).toBeCloseTo(best[1], 6)
+    expect(c.saving).toBeLessThanOrEqual(0)
+  })
+
+  it('heeft bij "better" geen closest: dan telt alleen de beste verplaatsing', () => {
+    const a = adviseW({ ...DEFAULT_PROFILE, level: '10' }, 'thief', 'Ribbon Pig')
+    expect(a.placement).toMatchObject({ kind: 'better' })
+    expect(a.placement).not.toHaveProperty('closest')
+  })
+})
+
+describe('skillPointAdvice: robust bij de plaatsingscheck', () => {
+  const magRaw = { ...DEFAULT_PROFILE, hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
+  const adviseR = (job: 'thief' | 'magician', raw: object, mob: string) => {
+    const r = parseProfile(raw as ProfileDraft, job)
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    const a = skillPointAdvice([mobDraft(mob)!], r.profile)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    expect(a.left).toBe(0)
+    return a
+  }
+
+  it('is robuust bij een stabiele "better": Lucky Seven 1 naar Nimble Body, onder elke aanname', () => {
+    const a = adviseR('thief', { ...DEFAULT_PROFILE, level: '10' }, 'Ribbon Pig')
+    expect(a.placement).toMatchObject({ kind: 'better' })
+    expect(a.robust).toBe(true)
+  })
+
+  it('is robuust bij een stabiele "good": het punt staat al in Nimble Body', () => {
+    const a = adviseR('thief', { ...DEFAULT_PROFILE, level: '10', luckySeven: '0', nimbleBody: '1' }, 'Ribbon Pig')
+    expect(a.placement).toMatchObject({ kind: 'good' })
+    expect(a.robust).toBe(true)
+  })
+
+  it('is niet robuust als een aanname de plaatsing laat kantelen (gevonden door te zoeken, vastgezet): Magician lv 12, Energy Bolt 2, Magic Claw 5 op Bubbling', () => {
+    const a = adviseR('magician', { ...magRaw, level: '12', energyBolt: '2', magicClaw: '5', improvedMpRecovery: '0' }, 'Bubbling')
+    expect(a.placement).toMatchObject({ kind: 'better', from: 'Magic Claw', to: 'Improved MP Recovery' })
+    expect(a.robust).toBe(false)
   })
 })

@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { pickUnder } from './best'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid } from './calc/rankSpots'
-import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
+import { clawUpgradeAdvice, nextBetterWeapon, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
 import { NPC_CLAWS } from './data/claws'
+import { EXP_TABLE_LEVELS } from './data/expTable'
 import { knownSpotPatch } from './data/spots'
+import { BOWMAN_WEAPONS } from './bowmanGear'
+import { WARRIOR_WEAPONS } from './warriorGear'
+import type { Weapon } from './data/types'
 import { ATTACK_MS } from './data/thief'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
@@ -253,5 +257,99 @@ describe('clawUpgradeAdvice: winnaar en robuustheid', () => {
     const a = advice(drafts, strong({ level: 30, clawWatk: 10 }))
     expect(a.winner).toBe(claw('Steel Titans'))
     expect(a.robust).toBe(false)
+  })
+})
+
+describe('clawUpgradeAdvice: het eerstvolgende betere wapen (next)', () => {
+  const adv = (_d: readonly SpotDraft[], p: Profile) => nextBetterWeapon(p)
+  const lastLevel = Math.max(...EXP_TABLE_LEVELS)
+
+  it('noemt bij een Thief op lv 10 met een Garnier-aanval (10) de Steel Titans vanaf lv 15, niet de Garnier zelf', () => {
+    // Garnier is lv 10: wie op lv 10 staat kan hem al dragen, dus "volgende" begint bij een hoger level.
+    expect(adv(drafts, strong({ level: 10, clawWatk: 10 }))?.name).toBe('Steel Titans')
+    expect(adv(drafts, strong({ level: 10, clawWatk: 10 }))?.level).toBe(15)
+  })
+
+  it('slaat bij een Thief wapens over die niet meer weapon attack geven dan wat je draagt', () => {
+    // Met 17 ATT is Steel Igor (17) niet beter: de volgende betere is Meba (19) op lv 25.
+    expect(adv(drafts, strong({ level: 12, clawWatk: 17 }))?.name).toBe('Meba')
+    // De Thief-regel is alleen watk: een tragere claw met hogere watk telt.
+    expect(adv(drafts, strong({ level: 10, clawWatk: 0 }))?.name).toBe('Steel Titans')
+  })
+
+  it('geeft niets meer als er geen betere claw boven je level of je aanval komt', () => {
+    // Op lv 30 zijn alle claws te dragen (level <= 30), dus er is geen "volgende" meer.
+    expect(adv(drafts, strong({ level: lastLevel, clawWatk: 10 }))).toBeNull()
+    // Op lv 25 met de beste claw (Adamantium Guards, 23): Steel Guards (22) is niet beter, Adamantium (23) is gelijk.
+    expect(adv(drafts, strong({ level: 25, clawWatk: 23 }))).toBeNull()
+  })
+
+  it('kiest bij een Thief op lv 25 met 19 ATT de eerste betere: Steel Guards (22) vóór Adamantium Guards (23)', () => {
+    expect(adv(drafts, strong({ level: 25, clawWatk: 19 }))?.name).toBe('Steel Guards')
+  })
+
+  // De Warrior en de Bowman rekenen "beter" als meer schade per ms (watk x mult / aanvalstijd), niet alleen watk.
+  const power = (w: Weapon) => (w.watk * (w.mult ?? 1)) / w.speed.attackMs
+  const wearing = (base: Profile, w: Weapon, level: number): Profile => ({ ...base, level, clawWatk: w.watk, attackMs: w.speed.attackMs, ...(w.mult !== undefined ? { weaponMult: w.mult } : {}) })
+  const expectedNext = (shop: readonly Weapon[], worn: Weapon, level: number) => shop.find((c) => c.level > level && power(c) > power(worn)) ?? null
+
+  for (const [job, shop] of [['warrior', WARRIOR_WEAPONS], ['bowman', BOWMAN_WEAPONS]] as const) {
+    it(`volgt bij een ${job} de regel meer schade per ms: het eerste duurdere wapen boven je level dat meer power geeft`, () => {
+      const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
+      if (!('profile' in r)) throw new Error('profiel ongeldig')
+      const lowest = shop[0]
+      const level = lowest.level
+      const p = wearing(r.profile, lowest, level)
+      const got = adv(drafts, p)
+      expect(got).toEqual(expectedNext(shop, lowest, level))
+      expect(got).not.toBeNull()
+      expect(got!.level).toBeGreaterThan(level)
+      expect(power(got!)).toBeGreaterThan(power(lowest))
+    })
+
+    it(`geeft bij een ${job} met het sterkste wapen van de winkel op het hoogste level geen volgend wapen`, () => {
+      const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
+      if (!('profile' in r)) throw new Error('profiel ongeldig')
+      const strongest = shop.reduce((a, b) => (power(b) > power(a) ? b : a))
+      expect(adv(drafts, wearing(r.profile, strongest, lastLevel))).toBeNull()
+    })
+  }
+})
+
+describe('nextBetterWeapon (rechtstreeks, uit het profiel alleen)', () => {
+  it('noemt voor een Thief op lv 9 met een zwak wapen de Garnier vanaf lv 10, ook al valt er op lv 9 niets door te rekenen', () => {
+    expect(clawUpgradeAdvice(drafts, strong({ level: 9, clawWatk: 5 }))).toEqual({ kind: 'none' })
+    expect(nextBetterWeapon(strong({ level: 9, clawWatk: 5 }))).toMatchObject({ name: 'Garnier', level: 10 })
+  })
+
+  it('geeft op lv 10 niet meer de Garnier maar de eerste claw boven je level die meer ATT geeft', () => {
+    expect(nextBetterWeapon(strong({ level: 10, clawWatk: 5 }))?.name).toBe('Steel Titans')
+    expect(nextBetterWeapon(strong({ level: 10, clawWatk: 13 }))?.name).toBe('Steel Igor')
+  })
+
+  it('geeft null als je niets beters boven je level meer kunt krijgen', () => {
+    expect(nextBetterWeapon(strong({ level: 9, clawWatk: 23 }))).toBeNull()
+    expect(nextBetterWeapon(strong({ level: 30, clawWatk: 1 }))).toBeNull()
+  })
+
+  it('laat het weaponMult-veld van een Bowman buiten beschouwing: zijn bogen hebben geen multiplier', () => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'bowman')
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    const first = BOWMAN_WEAPONS[0]
+    const worn: Profile = { ...r.profile, level: first.level, clawWatk: first.watk, attackMs: first.speed.attackMs, weaponMult: 1.8 }
+    const next = nextBetterWeapon(worn)
+    expect(next).not.toBeNull()
+    expect(next).toEqual(nextBetterWeapon({ ...worn, weaponMult: 1 }))
+    expect(next!.level).toBeGreaterThan(first.level)
+  })
+
+  it('telt bij een Warrior wel de multiplier uit het profiel mee', () => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'warrior')
+    if (!('profile' in r)) throw new Error('profiel ongeldig')
+    const first = WARRIOR_WEAPONS[0]
+    const worn: Profile = { ...r.profile, level: first.level, clawWatk: first.watk, attackMs: first.speed.attackMs, weaponMult: first.mult ?? 1 }
+    const huge: Profile = { ...worn, weaponMult: 5 }
+    // Een enorme multiplier maakt wat je draagt onovertroffen: er komt geen beter wapen meer.
+    expect(nextBetterWeapon(huge)).toBeNull()
   })
 })

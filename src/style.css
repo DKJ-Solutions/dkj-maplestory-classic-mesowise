@@ -188,8 +188,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .error:empty { display: none; }
 
 /* Je volgende level (issue #24) */
-.level-cost h2 { margin: 0 0 0.375rem; font-size: 1rem; }
-.job h2 { margin: 0; font-size: 1rem; }
+/* Kopschaal: h2 (paneel en kaart) 1.5rem > h3 (deel van het advies) 1.125rem > h4-niveau (label in een popup) 0.9375rem; elk niveau verschilt in grootte, niet alleen in gewicht of kleur */
+:root { --fs-h2: 1.5rem; --fs-h3: 1.125rem; --fs-h4: 0.9375rem; }
+.level-cost h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); line-height: 1.2; }
+.job h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 .job h2.with-icon { display: flex; align-items: center; gap: 0.5rem; }
 .job-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; margin: -0.5rem 0 0.375rem; }
 .job-head:last-child { margin-bottom: -0.5rem; }
@@ -232,7 +234,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .panel { flex: 0 0 100%; min-width: 0; }
 /* Een scherm dat buiten beeld is en klaar is met schuiven, telt niet meer mee voor de hoogte van de pagina. */
 .panel.collapsed { height: 0; overflow: hidden; }
-.panel > h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+.panel > h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); }
 .panel > h2:focus, .level-row > h1:focus { outline: none; }
 .panel > .btn { margin-bottom: 0.75rem; }
 
@@ -425,7 +427,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-group { margin-bottom: 1rem; }
 .skill-group:last-of-type { margin-bottom: 0; }
 .skill-group:last-of-type .skill-row:last-child { border-bottom: 0; }
-.skill-group h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.skill-group h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin: 0 0 0.25rem; font-size: var(--fs-h4); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 /* Hoeveel punten van de pot je hebt gezet (issue #136); boven het maximum in de foutkleur */
 .skill-sp { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; white-space: nowrap; }
 .skill-sp.over { color: #dc2626; }
@@ -460,13 +462,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
 .advice-cost strong { color: var(--accent); }
-.question h3 { margin: 0 0 0.5rem; font-size: 1rem; }
-.chip-row { margin: 0 0 0.5rem; }
+.stats-group > h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); line-height: 1.2; }
+/* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
+.question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
+.question-head h3 { margin: 0; font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }
+.question-head .chip { min-width: 0; margin-left: auto; text-align: right; }
 .chip { display: inline-block; padding: 0.125rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.875rem; font-weight: 700; max-width: 100%; overflow-wrap: anywhere; }
 .chip.yes { background: var(--accent); border-color: var(--accent); color: #fff; }
 .chip.no { background: var(--bg); }
 .chip.todo, .chip.unknown { color: var(--muted); border-style: dashed; }
-.verdict { margin: 0 0 0.375rem; font-weight: 600; }
+/* h4-niveau: het oordeel van een deel, kleiner dan de h3-kop en groter dan de hint-tekst (0.875rem) eronder */
+.verdict { margin: 0 0 0.375rem; font-size: var(--fs-h4); font-weight: 600; line-height: 1.35; }
 
 @media (prefers-reduced-motion: reduce) {
   .track, .card { transition: none; }
