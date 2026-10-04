@@ -1844,7 +1844,9 @@ export function App() {
               {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
               <div class="level-row">
                 <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label="Naar het vorige level">
-                  <span aria-hidden="true">‹</span>
+                  <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+                    <path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                  </svg>
                 </button>
                 <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
                   {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
