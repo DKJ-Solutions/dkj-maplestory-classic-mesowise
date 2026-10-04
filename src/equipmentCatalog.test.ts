@@ -22,13 +22,13 @@ const entry = (pick: string) => ({ pick, name: '', stat: '' })
 
 describe('catalogus met items zonder prijs', () => {
   it('voegt ze achter de NPC-items van hun slot', () => {
-    expect(catalogItems('hat').map((i) => i.name)).toEqual(['Red Thief Hood', 'Red Loosecap', 'Red Tiberian', 'Red Guise', 'Testhoed'])
-    expect(catalogItems('claw').at(-1)).toMatchObject({ name: 'Testclaw', stat: 30, attackMs: 540 })
-    expect(searchCatalog('shoes', 'test')).toEqual([])
+    expect(catalogItems('hat', 'thief').map((i) => i.name)).toEqual(['Red Thief Hood', 'Red Loosecap', 'Red Tiberian', 'Red Guise', 'Testhoed'])
+    expect(catalogItems('claw', 'thief').at(-1)).toMatchObject({ name: 'Testclaw', stat: 30, attackMs: 540 })
+    expect(searchCatalog('shoes', 'thief', 'test')).toEqual([])
   })
 
   it('laat bij dezelfde naam de NPC-regel winnen', () => {
-    expect(catalogItems('top').filter((i) => i.name === 'Red Pao')).toEqual([expect.objectContaining({ stat: 32 })])
+    expect(catalogItems('top', 'thief').filter((i) => i.name === 'Red Pao')).toEqual([expect.objectContaining({ stat: 32 })])
     expect(wornStat('top', entry('Red Pao'))).toBe(32)
   })
 

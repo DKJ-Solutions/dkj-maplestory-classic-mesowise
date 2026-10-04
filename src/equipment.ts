@@ -9,6 +9,7 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import type { ArmorSlot } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
+import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -74,20 +75,30 @@ export interface CatalogItem {
 /** Hoeveel zoekresultaten het scherm toont. */
 export const MAX_RESULTS = 8
 
-/** De catalogus van een slot: de NPC-items, dan de items zonder prijs; staat een naam twee keer in, dan wint de NPC-regel. */
-export function catalogItems(slot: EquipSlot): readonly CatalogItem[] {
+/**
+ * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
+ * dan wint de NPC-regel. Alle itemdata is nu van de Thief (claws, Thief-armor, de draagbare items); voor een
+ * andere job is de lijst leeg tot die data er is (issues #42 tot #45), want een Thief-item aanbieden aan een
+ * Warrior zou onwaar zijn.
+ */
+export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] {
+  if (job !== 'thief') return []
   const items: CatalogItem[] = isArmorSlot(slot)
     ? [...NPC_ARMOR, ...WORN_ARMOR].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
     : [...NPC_CLAWS, ...WORN_CLAWS].map((c) => ({ name: c.name, level: c.level, stat: c.watk, attackMs: c.speed.attackMs }))
   return items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
 }
 
-const catalogItem = (slot: EquipSlot, name: string) => catalogItems(slot).find((i) => i.name === name)
+const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job).find((i) => i.name === name)
+
+// Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
+// zorgen daarvoor), dus bij het rekenen zoeken we in de Thief-lijst: een andere job heeft nooit een catalogusitem.
+const thiefItem = (slot: EquipSlot, name: string) => catalogItem(slot, name, 'thief')
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, query: string): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  return catalogItems(slot).filter((i) => i.name.toLowerCase().includes(q))
+  return catalogItems(slot, job).filter((i) => i.name.toLowerCase().includes(q))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */
@@ -99,7 +110,7 @@ function parseStat(text: string): number | undefined {
 
 /** De waarde uit de database van wat je draagt; undefined bij nog niet ingevuld, een eigen item of een naam die niet (meer) bestaat. */
 export const databaseStat = (slot: EquipSlot, entry: EquipEntry): number | undefined =>
-  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : catalogItem(slot, entry.pick)?.stat
+  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : thiefItem(slot, entry.pick)?.stat
 
 /** De eigen waarde bij een catalogusitem als die geldig is en afwijkt van de database; anders undefined. */
 export function statOverride(slot: EquipSlot, entry: EquipEntry): number | undefined {
@@ -142,11 +153,6 @@ export function entryLabel(slot: EquipSlot, entry: EquipEntry): string {
   return own === undefined ? entry.pick : `${entry.pick} (aangepast: ${own})`
 }
 
-/** De namen van wat je draagt, voor de kaartkop. */
-export function wornSummary(eq: Equipment): string[] {
-  return EQUIP_SLOTS.flatMap(({ slot }) => wornName(eq[slot]) ?? [])
-}
-
 /** Of dit slot anders is dan in `before` (voor de "was"-badge). Bij elke keuze telt een andere stat; de naam alleen bij een eigen item. */
 export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
   a.pick !== b.pick || (a.pick !== UNKNOWN && a.stat.trim() !== b.stat.trim()) || (a.pick === OTHER && a.name.trim() !== b.name.trim())
@@ -162,7 +168,7 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
   const next = wornStat(slot, after)
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : catalogItem('claw', after.pick)?.attackMs
+    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : thiefItem('claw', after.pick)?.attackMs
     return { ...profile, clawWatk: String(next), ...(attackMs !== undefined ? { attackMs: String(attackMs) } : {}) }
   }
   const prev = wornStat(slot, before)
@@ -197,15 +203,28 @@ export function commitStat(slot: EquipSlot, entry: EquipEntry, text: string): Eq
   return { ...entry, stat: n === undefined || n === db ? '' : String(n) }
 }
 
+/**
+ * De equipment na een wissel van job: een slot met een catalogusitem dat de nieuwe job niet heeft, wordt "nog niet
+ * ingevuld". Het profiel blijft zoals het was (van bekend naar onbekend laat WATK en WDEF staan, zie applyEquipChange).
+ */
+export function equipmentForJob(eq: Equipment, job: Job): Equipment {
+  const out = { ...eq }
+  for (const { slot } of EQUIP_SLOTS) {
+    const { pick } = eq[slot]
+    if (pick !== UNKNOWN && pick !== OTHER && !catalogItem(slot, pick, job)) out[slot] = emptyEntry()
+  }
+  return out
+}
+
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
 
 /** Eén bewaard slot; een onbekende of verdwenen keuze (ook het oude "niets") wordt "nog niet ingevuld". Een eigen stat bij een catalogusitem blijft alleen als hij geldig is en afwijkt van de database. */
-function loadEntry(slot: EquipSlot, v: unknown): EquipEntry {
+function loadEntry(slot: EquipSlot, v: unknown, job: Job): EquipEntry {
   if (typeof v !== 'object' || v === null) return emptyEntry()
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
   if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
-  if (pick !== UNKNOWN && catalogItem(slot, pick)) {
+  if (pick !== UNKNOWN && catalogItem(slot, pick, job)) {
     const stat = str(raw.stat, MAX_STAT_LENGTH).trim()
     return { pick, name: '', stat: statOverride(slot, { pick, name: '', stat }) === undefined ? '' : stat }
   }
@@ -213,7 +232,7 @@ function loadEntry(slot: EquipSlot, v: unknown): EquipEntry {
 }
 
 /** De bewaarde equipment; een ontbrekend of onbruikbaar slot is "nog niet ingevuld". */
-export function loadEquipment(storage: Storage | null | undefined): Equipment {
+export function loadEquipment(storage: Storage | null | undefined, job: Job): Equipment {
   const out = defaultEquipment()
   try {
     const raw = storage?.getItem(EQUIPMENT_KEY)
@@ -222,7 +241,7 @@ export function loadEquipment(storage: Storage | null | undefined): Equipment {
     if (typeof data !== 'object' || data === null || (data as { version?: unknown }).version !== VERSION) return out
     const slots = (data as { slots?: unknown }).slots
     if (typeof slots !== 'object' || slots === null) return out
-    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot])
+    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job)
     return out
   } catch {
     return out

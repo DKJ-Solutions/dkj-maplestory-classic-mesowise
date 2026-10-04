@@ -4,12 +4,14 @@
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { expToNextLevel } from './data/expTable'
+import { THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { mesoCostAt } from './mesoCostAt'
-import type { Profile } from './profile'
+import type { Profile, ProfileDraft } from './profile'
 import type { SpotDraft } from './spotDraft'
 
-export type SkillId = 'luckySeven' | 'nimbleBody'
+/** De skills die het mob-model kan doorrekenen. */
+export type SkillId = Extract<SkillKey, 'luckySeven' | 'nimbleBody'>
 
 interface Skill {
   id: SkillId
@@ -45,7 +47,37 @@ export const SKILLS: readonly Skill[] = [
 ]
 
 /** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
-export const NOT_MODELLED: readonly string[] = ['Keen Eyes', 'Disorder', 'Dark Sight', 'Double Stab']
+export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
+  (s) => s.name,
+)
+
+/** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
+export interface SkillLevel extends SkillInfo {
+  level: number | null
+}
+
+/**
+ * De skillpunten die de speler nu heeft gezet, voor elke skill van een Thief tot de 2e job. Leest het
+ * profiel zoals ingevuld, zodat de sectie ook klopt als een ander veld nog niet goed is.
+ */
+export function skillLevels(draft: ProfileDraft): SkillLevel[] {
+  return THIEF_SKILLS.map((s) => {
+    const text = draft[s.key].trim()
+    const n = text === '' ? NaN : Number(text)
+    const valid = Number.isInteger(n) && n >= 0 && n <= s.max
+    return { ...s, level: valid ? n : null }
+  })
+}
+
+/**
+ * Een skillveld na een tik op − of +: één level lager of hoger, binnen 0 en het maximum. Een veld dat geen
+ * heel getal is (leeg of half getypt), telt als 0; boven het maximum telt als het maximum.
+ */
+export function stepSkill(text: string, delta: -1 | 1, max: number): string {
+  const n = Number(text.trim())
+  const from = text.trim() !== '' && Number.isInteger(n) ? Math.min(Math.max(n, 0), max) : 0
+  return String(Math.min(Math.max(from + delta, 0), max))
+}
 
 /** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {

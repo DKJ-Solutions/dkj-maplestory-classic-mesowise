@@ -2,7 +2,130 @@
 
 ## [Unreleased]
 
-**13 / 23 minor entries** <!-- pending-tally -->
+**16 / 28 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/42-warrior · 20261004-093317Z
+
+De Warrior heeft nu eigen spelgegevens, elk met zijn bron: de wapens en armor uit de NPC-winkels voor level
+10 tot 30, Power Strike en Slash Blast per level, de passieve skills, HP en MP per level, de accuracy-formule
+en de regel dat een gewone aanval voor 60% zwaait en voor 40% steekt. In de app verandert nog niets: de
+Warrior blijft "Nog niet doorgerekend" tot het mob-model deze gegevens gebruikt. Tops en bottoms ontbreken
+nog, want die zijn in de winkel alleen voor mannen (#55).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Warrior-gegevens met bronnen: wapens, armor, skills, HP/MP en accuracy (stap 1 van #42)
+
+[PR #57](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/57)
+
+---
+
+### DEPLOY: app/kaarten-zelfde-design · 20261004-092948Z
+
+Alle inklapbare kaarten zien er nu hetzelfde uit als Skillpoints: links van de titel een icoon (een zwaard
+bij Je equipment, een poppetje bij Je karakter, een boek bij Skillpoints, een kaartspeld bij elke plek), in
+de kop alleen de titel zonder regel eronder, en onderaan een open kaart een knop Inklappen, zodat je niet
+terug hoeft te scrollen naar het pijltje. Bij een plek staat het getal EXP per meso nog in de kop.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Een lange open kaart klap je op je telefoon in waar je duim al is, en de kaarten zijn in één oogopslag
+uit elkaar te houden.
+
+**Score:** 2
+
+#### Pull Request
+
+Alle inklapbare kaarten in het design van Skillpoints
+
+[PR #54](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/54)
+
+---
+
+### DEPLOY: app/40-component-tests · 20261004-090844Z
+
+Wat het scherm met de rekenmodules doet, heeft nu eigen tests: equipment kiezen, opslaan, een level-up
+ongedaan maken, de `was`-badge en het skillpunt zetten. Voor wie de app gebruikt verandert er niets.
+Het voorkomt dat een wijziging aan het scherm stilletjes je equipment of profiel verkeerd doorgeeft aan
+het advies; zo'n fout werd voorheen alleen met het oog gevonden (zo kwam #52 boven).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Component tests for the screen (app.tsx)
+
+[PR #53](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/53)
+
+---
+
+### DEPLOY: app/skillpoints-section · 20261004-090757Z
+
+Onder je karakter staat nu een inklapbare kaart "Skillpoints", met een boekje in de kop. Daarin staan alle
+skills van een Thief tot de 2e job: eerst de zes van de 1e job (Nimble Body, Keen Eyes, Double Stab,
+Disorder, Dark Sight, Lucky Seven), helemaal onderin de drie van de Beginner (Three Snails, Nimble Feet,
+Recovery), elk met het maximum van NiaMeowDB. Met grote − en + per skill zet je een level lager of hoger, of je typt het getal; ze staan niet meer bij je
+karakter. De kaart staat ook in het controlescherm na een level-up en in "Wat nu?" boven de skillvraag,
+zodat een punt dat je met "Punt zetten" zet daar meteen te zien is. Onderaan de open kaart klap je hem
+weer in, zonder terug te scrollen naar de kop. In het advies rekenen nog steeds
+alleen Lucky Seven en Nimble Body mee.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Al je skillpunten staan op één plek, ook de skills die het advies (nog) niet doorrekent.
+
+**Score:** 3
+
+#### Pull Request
+
+Sectie Skillpoints: alle skills van een Thief met de punten die je hebt gezet
+
+[PR #51](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/51)
+
+---
+
+### DEPLOY: app/41-job-keuze · 20261004-085129Z
+
+Je kiest nu je job (Warrior, Magician, Bowman of Thief) in een eigen kaart boven "Je equipment".
+Je kiest één keer; een vergissing herstel je met het potlood. De Thief werkt zoals altijd. Voor een andere job zegt de app eerlijk "Nog niet doorgerekend
+voor <job>" en geeft hij geen getal, want een Thief-formule op een Warrior geeft een fout getal. De wapen-
+en armorlijsten tonen alleen wat jouw job kan kopen. Voor de andere jobs zijn dat er nog geen, dus daar
+kies je "Ander item" of "Weet ik niet". Lucky Seven en Nimble Body staan alleen bij de Thief.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Vrienden die geen Thief spelen, krijgen geen Thief-advies meer dat op hen niet klopt. De Warrior,
+Magician en Bowman volgen in #42 tot #44.
+
+**Score:** 3
+
+#### Pull Request
+
+Job-keuze: wapens en equipment per job, eerlijk 'nog niet doorgerekend' buiten Thief
+
+[PR #48](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/48)
+
+---
 
 ### DEPLOY: app/equipment-section · 20261004-081637Z
 

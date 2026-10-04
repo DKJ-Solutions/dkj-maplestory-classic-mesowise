@@ -7,6 +7,8 @@ export default defineConfig({
   base: '/dkj-maplestory-classic-mesowise/',
   plugins: [preact()],
   test: {
-    include: ['src/**/*.test.ts'],
+    // .test.ts = pure rekenmodules, in node. .test.tsx = componenttests; die kiezen zelf happy-dom met een
+    // `// @vitest-environment happy-dom`-docblock bovenaan.
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })

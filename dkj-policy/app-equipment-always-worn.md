@@ -70,6 +70,7 @@ never enter the upgrade advice.
 - [x] Victor (code) and Edith (UI text) on the second round: fixed a claw stat override resetting a hand-set attack speed, stored stats now saved as they count (clamped), Escape-then-arrow highlighting, own-item row offered unless the text is an exact name; "Ander item" renamed "eigen item" throughout (439 green)
 - [x] Dave, October 4, 2026: expected (database) and in-game stat side by side, in-game always overrules
 - [x] Victor (code) and Edith (UI text) on the final layout: fixed a tap on empty popup space discarding the draft, the iOS keyboard not opening from the item name, and stale comments and DEPLOY text (440 green)
+- [x] Merged main (55 commits: job selection #41, Warrior data, one card design, component tests #40): the catalog follows the job (empty outside Thief, like shopItems did), equipmentForJob and loading per job kept without "Niets"; Tycho rewrote the equipment component tests for the search bar and the popup (577 green); the "was" badge naming a shop item fixes #52
 - [x] Dave looked at the equipment card at phone width and approved the merge (October 4, 2026)
 
 ### DEPLOY: app/equipment-always-worn
