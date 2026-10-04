@@ -2,7 +2,145 @@
 
 ## [Unreleased]
 
-**19 / 36 minor entries** <!-- pending-tally -->
+**21 / 42 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/77-warrior-expected-stats · 20261004-113850Z
+
+Op de kaart "Je karakter" ziet een Warrior nu ook welke accuracy en avoid hij volgens de formules hoort te
+hebben, met Precise Strikes erbij. Wijkt je getal af, dan staat de verwachting doorgestreept ernaast, zoals bij
+de Thief.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Expected accuracy and avoid for the Warrior on the character card
+
+[PR #80](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/80)
+
+---
+
+### DEPLOY: data/55-no-job-line · 20261004-105758Z
+
+Shop items with no class on their page now count for every class, as Dave decided on #55. A Thief can be
+advised the White Bandana (level 10, 15 DEF, 1,200 mesos) and the Red Baseball Cap (level 22, 22 DEF, 3,900
+mesos). The Warrior data gains eight cheap weapons (Long Sword, Steel Pipe, Plunger and others), the Magician
+data three wands, and both hats are in every class's armor. The armor advice for a level-20 Thief now looks at
+the Baseball Cap two levels ahead, so the Ghetto Beanie's saving is counted until level 21 instead of 24.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Items with no job line count for every class (#55, decision 1)
+
+[PR #79](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/79)
+
+---
+
+### DEPLOY: tooling/74-preview-link · 20261004-104728Z
+
+When a design is finished, the handover now always ends with a link that works:
+`scripts/preview/start-preview.ps1` starts the dev server and prints the address it really runs on
+(with `-Lan`, also the address for a phone on the same network). A typed `localhost:5173` could point
+at a different server, because Vite moves to the next free port.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+A live localhost link at every design handover
+
+[PR #78](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/78)
+
+---
+
+### DEPLOY: app/42-warrior-model · 20261004-104446Z
+
+Een Warrior krijgt nu echte getallen in plaats van "Nog niet doorgerekend": kills en EXP per uur,
+potionkosten, de beste plek, wat een level kost, of een nieuw wapen of een nieuwe hoed of schoenen loont,
+en welk skillpunt (Power Strike of Precise Strikes) het meeste spaart. Je kiest je wapen uit de NPC-winkel,
+en het vult je weapon attack, aanvalssnelheid en multiplier in. Voor Top en Bottom zijn er nog geen
+winkelitems (#55). Magician en Bowman blijven "Nog niet doorgerekend".
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+Vrienden die een Warrior spelen kunnen de app nu echt gebruiken.
+
+**Score:** 3
+
+#### Pull Request
+
+De Warrior doorgerekend: mob-model en scherm
+
+[PR #66](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/66)
+
+---
+
+### DEPLOY: data/64-bronze-arrows · 20261004-104154Z
+
+The Bowman data now holds the bronze arrows (+1 W.ATT for 2 mesos an arrow), each with its source, in a list of
+their own: Raymond sells them only from the "Helpful Stranger" citizenship rank, so they count only once the
+player says they have it. Nothing changes in the app yet; the switch comes with the Bowman calculation (#44).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Bronze arrows in the Bowman data, behind the Helpful Stranger rank
+
+[PR #75](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/75)
+
+---
+
+### DEPLOY: app/58-att-def-names · 20261004-103805Z
+
+The app now names the weapon stat ATT and the armor stat DEF everywhere, as the game does: in the
+character fields and in the armor advice, not only on the equipment card. Both names come from one
+constant, so they cannot drift apart again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+One stat had two names on one screen (ATT on the equipment card, WDEF in the armor advice); a player
+no longer has to wonder whether they are the same number.
+
+**Score:** 2
+
+#### Pull Request
+
+ATT and DEF everywhere the UI names the weapon and armor stats
+
+[PR #73](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/73)
+
+---
 
 ### DEPLOY: app/63-stat-editor · 20261004-103333Z
 

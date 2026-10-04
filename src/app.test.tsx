@@ -348,13 +348,13 @@ describe('bewaren na elke wijziging', () => {
     expect(panels()[0].querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
-  it('toont geen level, Max HP, weapon attack en WDEF: die liggen elders vast', () => {
+  it('toont geen level, Max HP, ATT en DEF: die liggen elders vast', () => {
     fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
     const names = Array.from(panels()[0].querySelectorAll('section.profile .stat-line-name')).map((n) => n.textContent)
     expect(names).not.toContain('Level')
     expect(names).not.toContain('Max HP')
-    expect(names).not.toContain('Weapon attack van je wapen')
-    expect(names).not.toContain('WDEF')
+    expect(names).not.toContain('ATT van je wapen')
+    expect(names).not.toContain('DEF')
     expect(names).toContain('Tijd per aanval (ms)')
   })
 
@@ -665,4 +665,208 @@ describe('adviesscherm na de level-up', () => {
     expect(profileFields().level).toBe('11')
     expect(screen.getByRole('button', { name: /Level up/ })).toBeTruthy()
   })
+})
+
+describe('een Warrior in de app', () => {
+  const warriorFields = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0' }
+  const open = (job: string) => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: warriorFields }))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        spots: [
+          { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+          { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+        ],
+      }),
+    )
+    render(<App />)
+  }
+  const toAdvice = () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
+  }
+  const NOT_YET = /Nog niet doorgerekend/
+
+  describe('het beginscherm', () => {
+    beforeEach(() => open('warrior'))
+
+    it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
+      const home = panels()[0]
+      expect(home.textContent).toMatch(/Beste plek: .* · lv 20: kost /)
+      expect(within(home).getByText('Wat kost dit level?').closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(home.textContent).not.toMatch(NOT_YET)
+      expect(home.querySelector('.debug')).toBeNull()
+    })
+
+    it('noemt op het beginscherm geen claws, en toont de skillkaart en (zodra er een wapen beter is) de wapenkaart', () => {
+      const home = panels()[0]
+      expect(home.textContent).not.toMatch(/claw/i)
+      expect(home.textContent).toContain('Wat kost dit level?')
+      // Het wapenadvies heet bij een Warrior "nieuw wapen", nooit "nieuwe claw".
+      expect(home.textContent).not.toContain('Loont een nieuwe claw?')
+    })
+
+    it('rekent het level met het Warrior-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
+      const warriorCost = within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+      open('thief')
+      const thiefCost = within(panels()[0]).getByText('Wat kost dit level?').closest('section')!.querySelector('.level-cost-value')!.textContent
+      expect(warriorCost).toBeTruthy()
+      expect(thiefCost).toBeTruthy()
+      expect(warriorCost).not.toBe(thiefCost)
+    })
+
+    it('zoekt bij Weapon in de Warrior-wapens en niet in Thief-claws, en bij Hat en Shoes in Warrior-armor', () => {
+      openHomeEquipment()
+      const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
+      expect(found('Weapon', 'Gladius')).toContain('Gladius')
+      expect(found('Weapon', 'Meba')).not.toContain('Meba')
+      expect(found('Hat', 'Bronze Full Helm')).toContain('Bronze Full Helm')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves')
+    })
+
+    it('toont geen uitleg boven de slots (net als de Thief) en laat bij Top en Bottom zoeken', () => {
+      openHomeEquipment()
+      expect(cards()[0].querySelector('.hint')).toBeNull()
+      for (const slot of ['Top', 'Bottom']) expect(options(typeIn(cards()[0], slot, '')).length).toBeGreaterThan(0)
+    })
+
+    it('zet bij een gekozen wapen weapon attack, aanvalssnelheid en weapon multiplier in het bewaarde profiel', () => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Gladius')
+      expect(profileFields().clawWatk).toBe('47')
+      expect(profileFields().attackMs).toBe('720')
+      expect(profileFields().weaponMult).toBe('1.8')
+      pick(cards()[0], 'Weapon', "Fireman's Axe")
+      expect(profileFields().weaponMult).toBe('1.92')
+      // De rest van het profiel is onaangeroerd.
+      expect(profileFields().str).toBe('90')
+      expect(profileFields().wdef).toBe('60')
+    })
+
+    it('toont bij je karakter de weapon multiplier en STR, en niet de Subi-zin van de Thief', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      const home = panels()[0]
+      expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
+      expect(statShown('STR')).toBe('90')
+      expect(home.textContent).not.toMatch(/Subi|stars/)
+      expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
+    })
+
+    it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      const editor = openStat('Weapon multiplier van je wapen')
+      editor.type('2.4')
+      editor.save()
+      expect(profileFields().weaponMult).toBe('2.4')
+      expect(statShown('Weapon multiplier van je wapen')).toBe('2.4')
+      expect(statLine('Weapon multiplier van je wapen').querySelector('s')).toBeNull()
+      openHomeEquipment()
+      expect(cards()[0].textContent).not.toMatch(/Ammo/)
+    })
+
+    it('toont de verwachte Warrior-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      // floor((1,2 x 20 + 2 x 20 + 0,6 x 4) / 2,5 + 10) = floor(36,56) = 36; avoid floor(4 / 3) + floor(20 / 6) + 5 = 9
+      expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('36')
+      expect(statLine('Avoid').querySelector('s')?.textContent).toBe('9')
+    })
+
+    it('toont bij Skillpoints de skills van de Warrior en niet die van de Thief', () => {
+      const skills = within(panels()[0]).getByRole('button', { name: /Skillpoints/ }).closest('section')!
+      for (const name of ['Power Strike', 'Slash Blast', 'Precise Strikes', 'Iron Body']) expect(skills.textContent, name).toContain(name)
+      for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
+    })
+  })
+
+  describe('het adviesscherm na een level-up', () => {
+    beforeEach(() => {
+      open('warrior')
+      toAdvice()
+    })
+
+    it('verhoogt het level, geeft +28 HP en laat LUK en STR staan', () => {
+      expect(profileFields().level).toBe('21')
+      expect(profileFields().hp).toBe('828')
+      expect(profileFields().str).toBe('90')
+      expect(profileFields().luk).toBe('4')
+    })
+
+    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+      const advice = panels()[2]
+      expect(advice.textContent).not.toMatch(NOT_YET)
+      expect(advice.textContent).toContain('Moet ik mijn attack nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn defense nu upgraden?')
+      expect(advice.textContent).toContain('Moet ik mijn skillpunt')
+      expect(advice.textContent).toContain('Moet ik mijn hunting ground nu upgraden?')
+    })
+
+    it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
+      const text = panels()[2].textContent!
+      expect(text).toMatch(/Niet doorgerekend: Improved HP Recovery, Max HP Increase, Iron Body en Slash Blast/)
+      expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven/)
+    })
+
+    it('geeft als skillpunt Power Strike (→ 2), met zijn MP, en zet het punt in het bewaarde profiel', () => {
+      // Gemeten met skillPointAdvice voor dit profiel (STR 90, WATK 40, Power Strike 1): Power Strike wint, Precise Strikes spaart niets.
+      const button = screen.getByRole('button', { name: 'Punt zetten' })
+      const section = button.closest('section')!
+      expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Power Strike (→ 2).')
+      // Power Strike 1 en 2 kosten allebei 4 MP per aanval (de skillpagina).
+      expect(section.textContent).toContain('Elke aanval kost je dan 4 → 4 MP.')
+      expect(profileFields().powerStrike).toBe('1')
+      fireEvent.click(button)
+      expect(profileFields().powerStrike).toBe('2')
+      expect(profileFields().preciseStrikes).toBe('0')
+      expect(profileFields().level).toBe('21')
+      expect(screen.getByText('Power Strike → 2 gezet.')).toBeTruthy()
+    })
+
+    it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
+      const claw = within(panels()[2]).getByText('Moet ik mijn attack nu upgraden?').closest('section')!
+      expect(claw.textContent).not.toMatch(/claw/i)
+      expect(claw.textContent).toMatch(/wapen/)
+    })
+  })
+
+  it('toont voor een Thief nog steeds de Thief-teksten (claw, Subi, Lucky Seven)', () => {
+    open('thief')
+    toAdvice()
+    expect(panels()[2].textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
+    expect(panels()[2].textContent).not.toMatch(NOT_YET)
+    fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
+    fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+    expect(panels()[0].textContent).toMatch(/De app rekent met de stars die je bij je equipment kiest/)
+    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier/)
+  })
+
+  for (const [job, label] of [['magician', 'Magician'], ['bowman', 'Bowman']] as const) {
+    describe(`een ${label}`, () => {
+      beforeEach(() => open(job))
+
+      it('krijgt op het beginscherm nog steeds "Nog niet doorgerekend" en geen getal', () => {
+        const home = panels()[0]
+        expect(home.textContent).toContain(`Nog niet doorgerekend voor ${label}.`)
+        expect(home.querySelector('.summary')).toBeNull()
+        expect(home.querySelector('.level-cost-value')).toBeNull()
+      })
+
+      it('krijgt op het adviesscherm vier vragen met het label "Nog niet doorgerekend"', () => {
+        toAdvice()
+        const advice = panels()[2]
+        expect(advice.textContent).toContain(`Nog niet doorgerekend voor ${label}.`)
+        const chips = (advice.textContent!.match(/Nog niet doorgerekend(?! voor)/g) ?? []).length
+        expect(chips).toBe(4)
+      })
+
+      it('toont geen Warrior-wapens in de equipment', () => {
+        openHomeEquipment()
+        expect(options(typeIn(cards()[0], 'Weapon', 'Gladius')).map((o) => o.querySelector('.equip-name')?.textContent)).not.toContain('Gladius')
+      })
+    })
+  }
 })

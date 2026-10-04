@@ -11,10 +11,12 @@ import { NPC_ARMOR } from './data/armor'
 import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
-import type { ArmorSlot } from './data/types'
+import type { Armor, ArmorSlot, Claw, WornArmor, WornClaw } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
+import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
+import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
 const VERSION = 1
@@ -89,8 +91,11 @@ export const isEmptyEntry = (e: EquipEntry): boolean => e.pick === UNKNOWN || e.
 
 const isArmorSlot = (slot: EquipSlot): slot is ArmorSlot => slot !== 'claw' && slot !== 'ammo'
 
-/** Hoe het scherm de stat van een slot noemt: ATT voor het wapen en DEF voor armor, zoals het spel. */
-export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? 'DEF' : 'ATT')
+/** Hoe het scherm de stat van het wapen en van armor noemt, zoals het spel: overal dezelfde namen (#58). */
+export const STAT_NAME = { weapon: 'ATT', armor: 'DEF' } as const
+
+/** De naam van de stat van een slot: ATT voor het wapen en DEF voor armor. */
+export const statName = (slot: EquipSlot): string => (isArmorSlot(slot) ? STAT_NAME.armor : STAT_NAME.weapon)
 
 /** Een item in de catalogus van een slot: naam, level en de stat die telt (WATK voor een claw of stars, WDEF voor armor). */
 export interface CatalogItem {
@@ -100,37 +105,57 @@ export interface CatalogItem {
   stat: number
   /** Alleen een claw: de tijd per aanval met Lucky Seven, zodat de aanvalssnelheid mee verandert. */
   attackMs?: number
+  /** Alleen een Warrior-wapen: de verwachte weapon multiplier van een basisaanval, zodat die mee verandert. */
+  mult?: number
 }
 
 /** Hoeveel zoekresultaten het scherm toont. */
 export const MAX_RESULTS = 8
 
 /**
+ * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
+ * items) en de Warrior (zijn wapens, hats en shoes uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
+ * items zonder jobregel die ook de Thief draagt). Een naam mag bij beide jobs staan, maar dan is het hetzelfde
+ * item (dezelfde stat en bron; een test bewaakt dat). Voor een andere job is de lijst leeg tot die data er is
+ * (issues #43 tot #45), want een item van een andere job aanbieden zou onwaar zijn.
+ */
+const SHOP: Partial<Record<Job, { weapons: readonly Claw[]; armor: readonly Armor[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
+  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: WORN_ARMOR },
+  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: WORN_WARRIOR_ARMOR },
+}
+
+/**
  * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
- * dan wint de NPC-regel. Alle itemdata is nu van de Thief (claws, Thief-armor, de draagbare items); voor een
- * andere job is de lijst leeg tot die data er is (issues #42 tot #45), want een Thief-item aanbieden aan een
- * Warrior zou onwaar zijn.
+ * dan wint de NPC-regel.
  */
 export function catalogItems(slot: EquipSlot, job: Job): readonly CatalogItem[] {
-  // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44).
+  // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
     if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))
     if (job === 'bowman') return NPC_ARROWS.map((a) => ({ name: a.name, stat: a.watk }))
     return []
   }
-  if (job !== 'thief') return []
+  const shop = SHOP[job]
+  if (!shop) return []
   const items: CatalogItem[] = isArmorSlot(slot)
-    ? [...NPC_ARMOR, ...WORN_ARMOR].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
-    : [...NPC_CLAWS, ...WORN_CLAWS].map((c) => ({ name: c.name, level: c.level, stat: c.watk, attackMs: c.speed.attackMs }))
+    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef }))
+    : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
+        name: c.name,
+        level: c.level,
+        stat: c.watk,
+        attackMs: c.speed.attackMs,
+        ...(c.mult !== undefined ? { mult: c.mult } : {}),
+      }))
   return items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
 }
 
 const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job).find((i) => i.name === name)
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
-// zorgen daarvoor), dus bij het rekenen zoeken we in de lijsten van de jobs die er een hebben: de Thief, en voor
-// het ammo-slot ook de Bowman.
-const knownItem = (slot: EquipSlot, name: string) => catalogItem(slot, name, 'thief') ?? catalogItem(slot, name, 'bowman')
+// zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
+// we dus in de lijsten van alle jobs, en voor het ammo-slot ook die van de Bowman.
+const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
+  [...(Object.keys(SHOP) as Job[]), 'bowman' as Job].map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
 export function searchCatalog(slot: EquipSlot, job: Job, query: string): readonly CatalogItem[] {
@@ -147,7 +172,7 @@ function parseStat(text: string): number | undefined {
 
 /** De waarde uit de database van wat je draagt; undefined bij nog niet ingevuld, een eigen item of een naam die niet (meer) bestaat. */
 export const databaseStat = (slot: EquipSlot, entry: EquipEntry): number | undefined =>
-  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : knownItem(slot, entry.pick)?.stat
+  entry.pick === UNKNOWN || entry.pick === OTHER ? undefined : anyItem(slot, entry.pick)?.stat
 
 /** De eigen waarde bij een catalogusitem als die geldig is en afwijkt van de database; anders undefined. */
 export function statOverride(slot: EquipSlot, entry: EquipEntry): number | undefined {
@@ -198,8 +223,8 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
 
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
- * andere claw uit de catalogus ook je aanvalssnelheid (pas je alleen de WATK van dezelfde claw aan, dan blijft
- * een zelf ingevulde aanvalssnelheid staan). Armor: de WDEF in het profiel is het totaal uit je statvenster,
+ * ander wapen uit de catalogus ook je aanvalssnelheid (en bij een Warrior-wapen zijn weapon multiplier; pas je
+ * alleen de WATK van hetzelfde wapen aan, dan blijven een zelf ingevulde aanvalssnelheid en multiplier staan). Armor: de WDEF in het profiel is het totaal uit je statvenster,
  * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Vul je een slot voor het eerst in,
  * dan blijft de WDEF staan: dat stuk zat er al in.
  */
@@ -214,8 +239,13 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
   }
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const attackMs = after.pick === OTHER || after.pick === before.pick ? undefined : knownItem('claw', after.pick)?.attackMs
-    return { ...profile, clawWatk: String(next), ...(attackMs !== undefined ? { attackMs: String(attackMs) } : {}) }
+    const item = after.pick === OTHER || after.pick === before.pick ? undefined : anyItem('claw', after.pick)
+    return {
+      ...profile,
+      clawWatk: String(next),
+      ...(item?.attackMs !== undefined ? { attackMs: String(item.attackMs) } : {}),
+      ...(item?.mult !== undefined ? { weaponMult: String(item.mult) } : {}),
+    }
   }
   return shiftWdef(profile, next, [wornStat(slot, before)])
 }

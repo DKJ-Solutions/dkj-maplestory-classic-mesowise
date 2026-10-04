@@ -6,16 +6,18 @@
 // "NPC Sell-back" (die is hier niet de helft: tussen 1/2 en 1/4).
 //
 // Dezelfde regels als warrior.ts en armor.ts, en voor wapens ook:
-// - Level 10 tot 30, met een jobregel op de pagina die Mage noemt en een vaste winkelprijs.
+// - Level 10 tot 30, met een jobregel op de pagina die Mage noemt of zonder jobregel, en een vaste winkelprijs.
 // - Eén regel per item. Wat de pagina niet als eis noemt (STR, DEX) staat niet in de data; INT of LUK die niet
 //   genoemd wordt staat als 0.
 // - Wands en staffs komen van Flora the Fairy, armor van Serabi the Fairy (beide Ellinia); de Magician-job
 //   begint op level 10 (Grendel, geen stat-eis).
 //
+// Zonder jobregel, en dus voor elke klas (Dave, #55, 2026-10-04): Wooden Wand (648), Hardwood Wand (650) en
+// Metal Wand (651), ook van Flora, gelezen uit de ruwe pagina. Bij armor de White Bandana (719, Don Hwang in
+// Kerning City en Natasha in Lith Harbor) en de Red Baseball Cap (781, Sam in Henesys), zie armor.ts: ze vragen
+// geen INT of LUK en hun pagina toont geen MDEF, dus die staan op 0.
+//
 // Niet opgenomen als wapen, en waarom:
-// - Items zonder jobregel op de pagina: of een Magician ze kan dragen staat niet op de pagina. Wooden Wand (648),
-//   Hardwood Wand (650) en Metal Wand (651). Open besluit #55 is van Dave; als "geen jobregel" ook "elke klas"
-//   mag betekenen, zijn ze snel toe te voegen.
 // - Beginner's Wooden Wand (649): niet verhandelbaar en niet te koop. Geen staff op level 30.
 //
 // Niet opgenomen als armor, en waarom:
@@ -73,11 +75,14 @@ const weapon = (
   price: number,
 ): MagicianWeapon => ({ name, kind, level, int, luk, watk, matk, speed, price, source: item(id) })
 
-/** De NPC-wands en -staffs voor een Magician, van laag naar hoog level. Wands zonder jobregel: zie de kop. */
+/** De NPC-wands en -staffs voor een Magician, van laag naar hoog level. */
 export const NPC_MAGICIAN_WEAPONS: readonly MagicianWeapon[] = [
+  weapon(648, 'Wooden Wand', 'wand', 10, 20, 0, 18, 27, SPEED.normal6, 3_000),
   weapon(657, 'Wooden Staff', 'staff', 10, 20, 0, 20, 24, STAFF_SPEED, 3_000),
+  weapon(650, 'Hardwood Wand', 'wand', 15, 30, 0, 23, 34, SPEED.normal6, 5_000),
   weapon(658, 'Sapphire Staff', 'staff', 15, 30, 10, 25, 31, STAFF_SPEED, 5_000),
   weapon(659, 'Emerald Staff', 'staff', 15, 30, 10, 25, 31, STAFF_SPEED, 5_000),
+  weapon(651, 'Metal Wand', 'wand', 20, 40, 10, 21, 41, SPEED.normal6, 10_500),
   weapon(660, 'Old Wooden Staff', 'staff', 20, 40, 15, 30, 38, STAFF_SPEED, 10_500),
   weapon(652, 'Ice Wand', 'wand', 25, 50, 15, 24, 48, SPEED.normal6, 13_500),
   weapon(661, 'Wizard Staff', 'staff', 25, 50, 20, 35, 45, STAFF_SPEED, 13_500),
@@ -99,8 +104,10 @@ const armor = (
 /** De NPC-armor voor een Magician, per slot (hat, top, bottom, shoes) van laag naar hoog level. Zie de kop voor wat ontbreekt. */
 export const NPC_MAGICIAN_ARMOR: readonly MagicianArmor[] = [
   armor(727, 'Apprentice Hat', 'hat', 10, 10, 0, 8, 10, 1_200),
+  armor(719, 'White Bandana', 'hat', 10, 0, 0, 15, 0, 1_200),
   armor(746, 'Moon Conehat', 'hat', 15, 20, 0, 10, 12, 1_800),
   armor(768, 'Wizardry Hat', 'hat', 20, 30, 10, 12, 14, 3_600),
+  armor(781, 'Red Baseball Cap', 'hat', 22, 0, 0, 22, 0, 3_900),
   armor(813, 'Jester', 'hat', 30, 50, 20, 16, 18, 7_200),
   armor(944, 'Training Shirt / Armine', 'top', 10, 10, 0, 13, 18, 2_000),
   armor(981, 'Split Piece / Split', 'top', 20, 30, 10, 19, 24, 6_000),

@@ -15,8 +15,8 @@ const idOf = (url: string) => Number(url.split('/').pop())
 const ALL = [...WORN_ARMOR, ...WORN_CLAWS]
 
 describe('WORN_ARMOR en WORN_CLAWS', () => {
-  it('bevat 118 stukken armor en 6 claws', () => {
-    expect(WORN_ARMOR).toHaveLength(118)
+  it('bevat 117 stukken armor (de White Bandana staat sinds #55 in NPC_ARMOR) en 6 claws', () => {
+    expect(WORN_ARMOR).toHaveLength(117)
     expect(WORN_CLAWS).toHaveLength(6)
   })
 

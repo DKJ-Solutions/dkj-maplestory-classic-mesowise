@@ -4,8 +4,9 @@
 // (meowdb.com), per item de itempagina met de datum; elke pagina is twee keer gecontroleerd op 2026-10-03.
 //
 // Niet opgenomen, en waarom:
-// - Items zonder jobregel op de pagina (Bandana, Baseball Cap, One-lined T-Shirt): of een Thief ze kan
-//   dragen staat niet op de pagina.
+// - De Blue One-lined T-Shirt (960, level 12, WDEF 26): geen jobregel, maar alleen voor mannen, zonder
+//   vrouwenversie met dezelfde stats (de buren 961 tot 963 zijn even sterk maar ook voor één geslacht). Of
+//   de app het geslacht vraagt is het tweede deel van #55.
 // - Items met een fame-eis (Old Wisconsin, Aroa Boots, Ankle-strap Sandals, Whitebottom Boots): de app
 //   kent jouw fame niet.
 // - Items waarvan de eisen niet getoond worden (Metal Gear, Nightshift top, Grey Thick Sweat Pants,
@@ -19,6 +20,11 @@
 // meso (#49, gelezen op 2026-10-04); hier staat de rode, de andere kleuren staan in wornItems.ts.
 // De Pao Bottoms en Qi Pao Pants hebben een mannen- en een vrouwenversie met dezelfde stats, dus die
 // blijven. 'Red Stealer Pants' is de naam zoals hij hier staat; de pagina noemt hem "Red / Gold".
+//
+// Items zonder jobregel tellen voor elke klas (Dave, #55, 2026-10-04), en staan dus ook bij de Warrior, Magician
+// en Bowman. Ze vragen geen stat, dus LUK en DEX staan op 0: de White Bandana (719, Don Hwang in Kerning City en
+// Natasha in Lith Harbor) en de Red Baseball Cap (781, Sam in Henesys). De andere kleuren (720 tot 723, 782 tot
+// 785) verschillen alleen in de bonusstat.
 import type { Armor, Source } from './types'
 
 const R = '2026-10-03'
@@ -27,8 +33,10 @@ const src = (id: number, retrieved = R): Source => ({ url: `https://meowdb.com/m
 /** De NPC-armor, per slot (hat, top, bottom, shoes) van laag naar hoog level. */
 export const NPC_ARMOR: readonly Armor[] = [
   { name: 'Red Ghetto Beanie', slot: 'hat', level: 10, wdef: 15, luk: 10, dex: 0, price: 1_200, source: src(732, '2026-10-04') },
+  { name: 'White Bandana', slot: 'hat', level: 10, wdef: 15, luk: 0, dex: 0, price: 1_200, source: src(719, '2026-10-04') },
   { name: 'Red Thief Hood', slot: 'hat', level: 15, wdef: 18, luk: 20, dex: 0, price: 1_900, source: src(756) },
   { name: 'Red Loosecap', slot: 'hat', level: 20, wdef: 21, luk: 30, dex: 10, price: 3_600, source: src(776) },
+  { name: 'Red Baseball Cap', slot: 'hat', level: 22, wdef: 22, luk: 0, dex: 0, price: 3_900, source: src(781, '2026-10-04') },
   { name: 'Red Tiberian', slot: 'hat', level: 25, wdef: 24, luk: 40, dex: 15, price: 4_500, source: src(803) },
   { name: 'Red Guise', slot: 'hat', level: 30, wdef: 27, luk: 50, dex: 20, price: 7_200, source: src(823) },
   { name: 'Red Cloth Vest', slot: 'top', level: 10, wdef: 24, luk: 10, dex: 0, price: 2_000, source: src(948) },

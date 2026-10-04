@@ -10,18 +10,20 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, statName, statOverride, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, isOptionalSlot, saveEquipment, searchCatalog, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { NOT_MODELLED, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
-import { isSkillKey } from './data/skills'
+import { notModelled, skillLevels, stepSkill, skillPointAdvice, type SkillChoice, type SkillPointAdvice } from './skillPoint'
+import { ALL_SKILLS, isSkillKey } from './data/skills'
 import { NIMBLE_BODY, SUBI } from './data/thief'
-import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
+import { WEAPON_MULT_BY_KIND } from './warriorGear'
+import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, luckySevenMp, powerStrikeMp, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
-import { loadProfile, parseProfile, profileFieldsFor, saveProfile, STAT_FIELDS, type Profile, type ProfileDraft, type ProfileField } from './profile'
+import { loadProfile, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { HP_POTION, hourPlan, isEstimated, MP_POTION, pickMonster, resolveSpot, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -184,7 +186,6 @@ function CollapseFoot(props: { head: RefObject<HTMLButtonElement | null>; onColl
  * weapon attack en WDEF volgen uit wat je bij je equipment kiest. Hier voegen ze niets toe.
  */
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'wdef'])
-const CHARACTER_STATS = STAT_FIELDS.filter((f) => !HIDDEN_STATS.has(f.key))
 /** De profielvelden die je equipment bepaalt: hun melding staat op de equipment-kaart. */
 const EQUIPMENT_STATS: ReadonlySet<string> = new Set<keyof ProfileDraft>(['clawWatk', 'wdef'])
 
@@ -314,7 +315,6 @@ function ProfileCard(props: {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const { draft, job } = props
-  const thief = isComputed(job)
   return (
     <section class={`card profile${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -328,10 +328,26 @@ function ProfileCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {CHARACTER_STATS.map((f) => (
-            <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
-          ))}
-          {thief && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+          {statFieldsFor(job)
+            .filter((f) => !HIDDEN_STATS.has(f.key))
+            .map((f) => (
+              <StatLine key={f.key} field={f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} onSave={(text) => props.onChange({ [f.key]: text })} />
+            ))}
+          {job === 'thief' && <p class="hint">De app rekent met de stars die je bij je equipment kiest, en die je laat herladen.</p>}
+          {job === 'warrior' && (
+            <>
+              <p class="hint">
+                De app rekent met Power Strike als je hem hebt geleerd, anders met je gewone aanval. Een wapen uit je equipment
+                vult je weapon attack, tijd per aanval en weapon multiplier in; die laatste twee zijn het gemiddelde van zwaaien en
+                steken (60% en 40%). Zet je geen wapen, dan rekent de app met 750 ms per aanval (Fast (5), zoals de meeste wapens) en weapon
+                multiplier 1,8, tot je een wapen zet. Een Warrior heeft geen munitie.
+              </p>
+              <p class="hint">
+                Weapon multiplier per soort wapen, als je je wapen zelf invult:{' '}
+                {WEAPON_MULT_BY_KIND.map((k) => `${k.label} ${nf.format(k.mult)}`).join(', ')}.
+              </p>
+            </>
+          )}
           <CollapseFoot head={head} onCollapse={() => setOpen(false)} />
         </div>
       </Collapse>
@@ -389,8 +405,17 @@ const formatMeso = (n: number) => (n > 0 && n < 1 ? 'minder dan 1 meso' : `± ${
 
 const listFormat = new Intl.ListFormat('nl-NL', { type: 'conjunction' })
 
+/** De bronnen van de skills die het model doorrekent, per job. */
+const SKILL_SOURCES = {
+  thief: [{ name: 'Nimble Body', source: NIMBLE_BODY.source }],
+  warrior: [
+    { name: 'Power Strike', source: POWER_STRIKE_SOURCE },
+    { name: 'Precise Strikes', source: PRECISE_STRIKES_SOURCE },
+  ],
+}
+
 /** Waar je skillpunt de meeste mesos bespaart (issue #26). */
-function SkillPointCard(props: { advice: SkillPointAdvice }) {
+function SkillPointCard(props: { advice: SkillPointAdvice; job: Job }) {
   const a = props.advice
   if (a.kind === 'none') return null
   const winner = a.choices.find((c) => c.id === a.winner)
@@ -427,24 +452,59 @@ function SkillPointCard(props: { advice: SkillPointAdvice }) {
         </ul>
       )}
       {a.maxed.length > 0 && <p class="hint">Al op het maximum: {listFormat.format(a.maxed)}.</p>}
-      <p class="hint">Niet doorgerekend: {listFormat.format(NOT_MODELLED)}.</p>
-      <p class="source">
-        Nimble Body:{' '}
-        <a href={NIMBLE_BODY.source.url} target="_blank" rel="noopener noreferrer">
-          NiaMeowDB
-        </a>
-        , opgehaald op {formatDate(NIMBLE_BODY.source.retrieved)}.
-      </p>
+      <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
+      {SKILL_SOURCES[props.job === 'warrior' ? 'warrior' : 'thief'].map((s) => (
+        <p class="source" key={s.name}>
+          {s.name}:{' '}
+          <a href={s.source.url} target="_blank" rel="noopener noreferrer">
+            NiaMeowDB
+          </a>
+          , opgehaald op {formatDate(s.source.retrieved)}.
+        </p>
+      ))}
     </section>
   )
 }
 
 /** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
 const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
-const clawUncomputable = 'Niet uit te rekenen: bij de beste plek kan de app de claws niet doorrekenen.'
 
-const clawMissing = (u: UnwearableClaw) =>
-  [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
+/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior een wapen (een ander lidwoord en een andere uitgang). */
+const WEAPON_TEXT = {
+  thief: {
+    title: 'Loont een nieuwe claw?',
+    noBetter: 'Geen claw die je kunt dragen en die beter is dan de jouwe.',
+    noBetterQuestion: 'Geen betere claw die je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de claws niet doorrekenen.',
+    notYet: 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.',
+    noPayback: 'Geen claw verdient zich terug vóór je volgende upgrade.',
+    toWear: 'deze claw',
+    old: 'je oude claw',
+    unpriced: 'Claws die je alleen kunt laten maken, hebben geen vaste prijs, dus die telt de app niet.',
+    prices: 'Claw-prijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen claw afwegen.',
+  },
+  warrior: {
+    title: 'Loont een nieuw wapen?',
+    noBetter: 'Geen wapen dat je kunt dragen en dat beter is dan het jouwe.',
+    noBetterQuestion: 'Geen beter wapen dat je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de wapens niet doorrekenen.',
+    notYet: 'Nog niet: geen wapen verdient zich terug vóór je volgende upgrade.',
+    noPayback: 'Geen wapen verdient zich terug vóór je volgende upgrade.',
+    toWear: 'dit wapen',
+    old: 'je oude wapen',
+    unpriced: 'Wapens zonder vaste winkelprijs, of waarvan de bron geen Warrior als job noemt, telt de app niet. Als beter telt een wapen waarmee je volgens de app meer EXP per meso haalt dan met je huidige.',
+    prices: 'Wapenprijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
+  },
+} as const
+const weaponText = (job: Job) => WEAPON_TEXT[job === 'warrior' ? 'warrior' : 'thief']
+
+/** De hoofdstat waar een wapen of stuk armor een eis in stelt: LUK voor een Thief, STR voor een Warrior. */
+const mainStat = (job: Job) => (job === 'warrior' ? 'STR' : 'LUK')
+
+const missingStats = (u: UnwearableClaw | UnwearableArmor, job: Job) =>
+  [u.needLuk > 0 && `${u.needLuk} ${mainStat(job)}`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
 
 /** Wat de winnende claw oplevert, in een zin; gedeeld door de kaart en het advies na een level-up. */
 function ClawWinnerLine(props: { win: ClawChoice }) {
@@ -458,18 +518,18 @@ function ClawWinnerLine(props: { win: ClawChoice }) {
 }
 
 /** Waarmee de claw-uitkomst gerekend is, en waar de prijzen vandaan komen. */
-function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' }> }) {
+function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' }>; job: Job }) {
   const a = props.advice
+  const t = weaponText(props.job)
   const first = a.choices[0]?.claw ?? a.notWearable[0]?.claw
   return (
     <>
       <p class="hint">
-        Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude claw telt niet mee.
-        Claws die je alleen kunt laten maken, hebben geen vaste prijs, dus die telt de app niet.
+        Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van {t.old} telt niet mee. {t.unpriced}
       </p>
       {first && (
         <p class="source">
-          Claw-prijzen:{' '}
+          {t.prices}:{' '}
           <a href={first.source.url} target="_blank" rel="noopener noreferrer">
             NiaMeowDB
           </a>
@@ -481,13 +541,14 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
 }
 
 /** Loont een nieuwe claw uit de winkel nu? (issue #25) */
-function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
+function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice; job: Job }) {
   const a = props.advice
+  const t = weaponText(props.job)
   if (a.kind === 'none' || (a.choices.length === 0 && a.notWearable.length === 0)) return null
   const win = a.choices.find((c) => c.claw === a.winner)
   return (
     <section class="card level-cost" aria-live="polite">
-      <h2>Loont een nieuwe claw?</h2>
+      <h2>{t.title}</h2>
       {win ? (
         <>
           <p class="level-cost-value">
@@ -497,11 +558,7 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
         </>
       ) : (
         <p class="hint">
-          {a.choices.length === 0
-            ? 'Geen claw die je kunt dragen en die beter is dan de jouwe.'
-            : noClawComputable(a)
-              ? clawUncomputable
-              : 'Nog niet: geen claw verdient zich terug vóór je volgende upgrade.'}
+          {a.choices.length === 0 ? t.noBetter : noClawComputable(a) ? t.uncomputable : t.notYet}
         </p>
       )}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -519,12 +576,12 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
         <ul class="choices">
           {a.notWearable.map((u) => (
             <li key={u.claw.name}>
-              {u.claw.name}: je hebt nog {clawMissing(u)} nodig om deze claw te dragen.
+              {u.claw.name}: je hebt nog {missingStats(u, props.job)} nodig om {t.toWear} te dragen.
             </li>
           ))}
         </ul>
       )}
-      <ClawNotes advice={a} />
+      <ClawNotes advice={a} job={props.job} />
     </section>
   )
 }
@@ -694,7 +751,7 @@ function EquipmentCard(props: {
 }) {
   const [open, setOpen] = useState(props.defaultOpen)
   const head = useRef<HTMLButtonElement>(null)
-  const thief = isComputed(props.job)
+  const computed = isComputed(props.job)
   const uid = useId()
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
@@ -711,8 +768,8 @@ function EquipmentCard(props: {
       </p>
       <Collapse open={open}>
         <div class="spot-body">
-          {/* Voor een andere job dan Thief kent de app nog geen items: dan typ je zelf wat je draagt. */}
-          {thief ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
+          {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
+          {computed ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
           {slotsFor(props.job).map(({ slot }) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
@@ -778,7 +835,20 @@ function EquipmentCard(props: {
               </div>
             )
           })}
-          {thief && (
+          {props.job === 'warrior' && (
+            <p class="source">
+              Wapens:{' '}
+              <a href={NPC_WARRIOR_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_WARRIOR_WEAPONS[0].source.retrieved)}. Armor:{' '}
+              <a href={NPC_WARRIOR_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(NPC_WARRIOR_ARMOR[0].source.retrieved)}.
+            </p>
+          )}
+          {props.job === 'thief' && (
             <p class="source">
               Claws:{' '}
               <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
@@ -803,21 +873,22 @@ function EquipmentCard(props: {
 }
 
 const SKILL_GROUPS = [
+  { job: 'Warrior', title: 'Warrior (1e job)' },
   { job: 'Thief', title: 'Thief (1e job)' },
   // De Beginner-skills onderaan: die zet je maar één keer, voor level 10.
   { job: 'Beginner', title: 'Beginner' },
 ] as const
 
 /**
- * De skillpunten die je nu hebt gezet: elke skill van een Thief tot de 2e job, met zijn maximum. Hier vul
- * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een andere job dan Thief ziet alleen de
- * Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
+ * De skillpunten die je nu hebt gezet: elke skill van je job tot de 2e job, met zijn maximum. Hier vul
+ * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent ziet
+ * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
  */
 function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const shown = profileFieldsFor(props.job).map((f) => f.key)
-  const levels = skillLevels(props.draft).filter((s) => shown.includes(s.key))
+  const levels = skillLevels(props.draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <button type="button" class="spot-head" ref={head} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -978,6 +1049,7 @@ function SpotCard(props: {
   profile: Profile | null
   /** Of de app voor je job kan rekenen; zo niet, dan zijn er geen voorstellen en is er geen "Beste". */
   computed: boolean
+  job: Job
   best: boolean
   /** False als de winnaar wisselt zodra een aanname anders uitvalt. */
   robust: boolean
@@ -1067,12 +1139,14 @@ function SpotCard(props: {
             placeholder={hint(auto?.cost.potions)}
             onInput={(potions) => props.onChange({ potions })}
           />
-          <Field
-            label={`Ammokosten (meso per uur)${leeg}`}
-            value={draft.ammo}
-            placeholder={hint(auto?.cost.ammo)}
-            onInput={(ammo) => props.onChange({ ammo })}
-          />
+          {props.job !== 'warrior' && (
+            <Field
+              label={`Ammokosten (meso per uur)${leeg}`}
+              value={draft.ammo}
+              placeholder={hint(auto?.cost.ammo)}
+              onInput={(ammo) => props.onChange({ ammo })}
+            />
+          )}
           <Field label="Reiskosten (meso per uur)" value={draft.travel} onInput={(travel) => props.onChange({ travel })} />
           <button type="button" class="btn danger" onClick={props.onRemove}>
             Verwijderen
@@ -1105,7 +1179,7 @@ function Panel(props: { active: boolean; collapsed: boolean; children: Component
 const QUESTION_TITLE = {
   claw: 'Moet ik mijn attack nu upgraden?',
   armor: 'Moet ik mijn defense nu upgraden?',
-  skill: 'Moet ik mijn skillpunt (dat extra mana gaat kosten) nu verhogen?',
+  skill: 'Moet ik mijn skillpunt nu verhogen?',
   hunting: 'Moet ik mijn hunting ground nu upgraden?',
 } as const
 
@@ -1133,12 +1207,9 @@ const SLOT_NAME = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.slot, s.label])) 
 type ArmorAdvice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
 const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-const armorMissing = (u: UnwearableArmor) =>
-  [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
-
-/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen WDEF geeft. */
+/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen DEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ' in plaats van je huidige stuk (WDEF onbekend).'
+  if (win.replaces === undefined) return ` in plaats van je huidige stuk (${STAT_NAME.armor} onbekend).`
   // Een overall vervangt top en bottom samen, en een top of bottom een overall die je draagt.
   const names = displacedSlots(equipment, win.armor.slot).map((s) => wornName(equipment[s])).filter((n) => n !== null)
   return ` in plaats van je ${names.join(' en ') || 'huidige stuk'}.`
@@ -1163,7 +1234,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
     <>
       <p class="hint">
         {a.choices.some((c) => c.replaces === undefined) &&
-          'Waar de app niet weet hoeveel WDEF je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder WDEF), is gerekend alsof het geen WDEF geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel WDEF, dan is de winst kleiner. '}
+          `Waar de app niet weet hoeveel ${STAT_NAME.armor} je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder ${STAT_NAME.armor}), is gerekend alsof het geen ${STAT_NAME.armor} geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel ${STAT_NAME.armor}, dan is de winst kleiner. `}
         Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
       </p>
       {first && (
@@ -1180,7 +1251,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
 }
 
 /** Defense: loont een nieuw stuk armor uit de winkel? Per slot het stuk dat het meeste netto oplevert. */
-function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment }) {
+function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equipment: Equipment; job: Job }) {
   const a = props.advice
   const title = QUESTION_TITLE.armor
   if (a.kind === 'none') {
@@ -1207,12 +1278,12 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
             ? 'Geen stuk dat je kunt dragen en beter is dan wat je al draagt.'
             : unknown
               ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
-              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet waar de app je huidige stuk rekent alsof het geen WDEF geeft' : ''}.`}
+              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? `, ook niet waar de app je huidige stuk rekent alsof het geen ${STAT_NAME.armor} geeft` : ''}.`}
         </p>
       )}
       {a.notWearable.map((u) => (
         <p class="hint" key={u.armor.name}>
-          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {armorMissing(u)} nodig om dit stuk te dragen.
+          {u.armor.name} ({SLOT_NAME[u.armor.slot]}): je hebt nog {missingStats(u, props.job)} nodig om dit stuk te dragen.
         </p>
       ))}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
@@ -1222,13 +1293,14 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
 }
 
 /** Attack: loont een nieuwe claw uit de winkel? De kaart op het beginscherm en dit advies delen de zinnen. */
-function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost }) {
+function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; job: Job }) {
   const a = props.advice
+  const t = weaponText(props.job)
   const title = QUESTION_TITLE.claw
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown">
-        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen claw afwegen.</p>
+        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} {t.noCost}</p>
       </Question>
     )
   }
@@ -1244,21 +1316,17 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost }) {
       ) : (
         <>
           <p class="verdict">
-            {a.choices.length === 0
-              ? 'Geen betere claw die je kunt dragen.'
-              : unknown
-                ? clawUncomputable
-                : 'Geen claw verdient zich terug vóór je volgende upgrade.'}
+            {a.choices.length === 0 ? t.noBetterQuestion : unknown ? t.uncomputable : t.noPayback}
           </p>
           {a.notWearable.map((u) => (
             <p class="hint" key={u.claw.name}>
-              {u.claw.name}: je hebt nog {clawMissing(u)} nodig om deze claw te dragen.
+              {u.claw.name}: je hebt nog {missingStats(u, props.job)} nodig om {t.toWear} te dragen.
             </p>
           ))}
         </>
       )}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
-      <ClawNotes advice={a} />
+      <ClawNotes advice={a} job={props.job} />
     </Question>
   )
 }
@@ -1272,7 +1340,7 @@ function noCostReason(c: LevelCost): string | null {
   return null
 }
 
-function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; placed: string | null; onApply: (choice: SkillChoice) => void }) {
+function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
   const winner = a.kind === 'advice' ? a.choices.find((c) => c.id === a.winner) : undefined
@@ -1294,7 +1362,8 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; place
       </Question>
     )
   }
-  const mpFrom = winner ? luckySevenMp(winner.to - 1) : 0
+  const mpOf = props.job === 'warrior' ? powerStrikeMp : luckySevenMp
+  const mpFrom = winner ? mpOf(winner.to - 1) : 0
   return (
     <Question title={title} chip={winner ? 'yes' : 'no'} headingRef={heading}>
       {winner ? (
@@ -1303,15 +1372,15 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; place
             Zet je skillpunt in {winner.name} (→ {winner.to}).
           </p>
           <p class="hint">Bespaart {formatMeso(winner.saving!)} op dit level.</p>
-          {winner.id === 'luckySeven' && (
+          {(winner.id === 'luckySeven' || winner.id === 'powerStrike') && (
             <p class="hint">
               {mpFrom === 0
-                ? `Elke worp kost je dan ${luckySevenMp(winner.to)} MP (nu 0).`
-                : `Elke worp kost je dan ${mpFrom} → ${luckySevenMp(winner.to)} MP.`}{' '}
+                ? `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpOf(winner.to)} MP (nu 0).`
+                : `Elke ${winner.id === 'luckySeven' ? 'worp' : 'aanval'} kost je dan ${mpFrom} → ${mpOf(winner.to)} MP.`}{' '}
               De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
             </p>
           )}
-          {winner.id === 'nimbleBody' && <p class="hint">Nimble Body kost geen extra mana.</p>}
+          {(winner.id === 'nimbleBody' || winner.id === 'preciseStrikes') && <p class="hint">{winner.name} kost geen extra mana.</p>}
         </>
       ) : (
         <>
@@ -1322,7 +1391,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; place
       )}
       {placed}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
-      <p class="hint">Niet doorgerekend: {listFormat.format(NOT_MODELLED)}.</p>
+      <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
       {winner && (
         <button type="button" class="btn" onClick={() => props.onApply(winner)}>
           Punt zetten
@@ -1422,7 +1491,7 @@ export function App() {
   const jobDirty = useRef(false)
   const parsed = useMemo(() => parseProfile(profileDraft, job), [profileDraft, job])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
-  // De berekening is die van de Thief. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
+  // De berekening kent de Thief en de Warrior. Voor een andere job geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   const profile = computed ? parsedProfile : null
   // De melding staat bij de kaart waar het foute veld staat.
@@ -1526,7 +1595,7 @@ export function App() {
     finish()
   }
   const applyPoint = (choice: SkillChoice) => {
-    writeProfile((p) => applySkillPoint(p, choice.id))
+    writeProfile((p) => applySkillPoint(p, choice.id, job))
     setPlaced(`${choice.name} → ${choice.to} gezet.`)
   }
   const levelUpped = applyLevelUp(profileDraft, job)
@@ -1659,8 +1728,8 @@ export function App() {
             {computed ? (
               <>
                 <LevelCostCard cost={cost} />
-                <SkillPointCard advice={skillAdvice} />
-                <ClawUpgradeCard advice={clawAdvice} />
+                <SkillPointCard advice={skillAdvice} job={job} />
+                <ClawUpgradeCard advice={clawAdvice} job={job} />
               </>
             ) : (
               <section class="card level-cost">
@@ -1683,6 +1752,7 @@ export function App() {
                     draft={draft}
                     profile={profile}
                     computed={computed}
+                    job={job}
                     best={computed && id === verdict.bestId}
                     robust={verdict.robust}
                     notBest={computed ? verdict.excluded.get(id) : undefined}
@@ -1721,7 +1791,10 @@ export function App() {
               Klopt dit met je spel?
             </h2>
             <p class="hint">
-              {changes ? `${levelUpSummary(changes)} ` : ''}Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.
+              {changes ? `${levelUpSummary(changes)} ` : ''}
+              {job === 'warrior'
+                ? 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je avoid in het spel.'
+                : 'Controleer je avoid in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.'}
             </p>
             <div class="card stats">
               {checkFieldsFor(job).map((f) => (
@@ -1776,10 +1849,10 @@ export function App() {
             {computed ? (
               <>
                 <AdviceHeader cost={cost} />
-                <ClawQuestion advice={clawAdvice} cost={cost} />
-                <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
+                <ClawQuestion advice={clawAdvice} cost={cost} job={job} />
+                <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} />
                 <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-                <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
+                <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} />
                 <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
               </>
             ) : (

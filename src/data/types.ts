@@ -119,6 +119,13 @@ export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
   mult: { swing: number; stab: number }
 }
 
+/**
+ * Een Warrior-wapen dat je kunt dragen maar niet in een winkel koopt (of dat de pagina zonder jobregel geeft):
+ * zoals WarriorWeapon, maar zonder eisen en prijs. De soort, snelheid en multipliers zijn dezelfde als bij de
+ * winkelwapens, zodat warriorGear.ts ze op dezelfde manier kan omzetten.
+ */
+export type WornWarriorWeapon = Pick<WarriorWeapon, 'name' | 'kind' | 'level' | 'watk' | 'speed' | 'mult' | 'source'>
+
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
 export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}
 
@@ -210,9 +217,14 @@ export interface PreciseStrikesLevel {
   critPct: number
 }
 
-/** Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. */
+/**
+ * Een claw uit een NPC-winkel: wat hij vraagt (level, LUK, DEX), wat hij geeft en wat hij kost. De upgrade-adviezen
+ * lezen ook een Warrior-wapen in deze vorm (zie warriorGear.ts): `luk` is dan de STR-eis en `mult` de weapon multiplier.
+ */
 export interface Claw extends ShopItem, Requires<'luk' | 'dex'> {
   watk: number
   /** De aanvalssnelheid zoals het spel hem noemt, en de tijd per aanval met Lucky Seven. */
   speed: { label: string; attackMs: number }
+  /** Alleen bij een Warrior-wapen: de verwachte weapon multiplier van een basisaanval (60% zwaai, 40% steek). */
+  mult?: number
 }

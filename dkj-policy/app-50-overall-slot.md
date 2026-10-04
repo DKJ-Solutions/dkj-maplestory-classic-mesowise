@@ -58,6 +58,11 @@ The equipment card gets an Overall row. This branch is parked without a PR until
 - [x] Cody: in the upgrade advice, `replacedWdef` compares an overall with the worn overall, or with top + bottom.
 - [x] Cody: the Blue Sauna Robe (1105, lv 30, WDEF 75) is in `wornItems.ts`.
 - [x] Cody: stale "no overall slot" text is updated in `magician.ts`, `armor.ts` and `wornItems.ts`.
+- [x] Cody, after the merge with main (#42, #55, #58, #64):
+  - Conflicts resolved in `app.tsx`, `armorUpgrade.ts` and `wornItems.test.ts`.
+  - The Warrior path handles `'overall'`: `SLOT_RANK` in `wornWarrior.ts`, and the stale line in `warrior.ts`.
+  - The Sauna Robe (no job line, per #55) is in `COMMON_WORN_IDS`, so every class can enter it.
+  - 904 tests pass and lint is clean.
 
 ### TEST
 

@@ -1,8 +1,9 @@
-// De skills die een Thief kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
+// De skills die een Thief of Warrior kan leren tot de 2e job: de drie van de Beginner en de zes van de 1e job,
 // elk met het hoogste skill-level. Alleen namen en maxima, voor de sectie "Skillpoints"; wat een
 // skill doet, staat in thief.ts voor de skills die het model doorrekent.
 // Opgehaald bij NiaMeowDB (meowdb.com) op de datum hieronder; de maxima staan zowel op de klassenpagina
 // als op de skillpagina's.
+import { IMPROVED_HP_RECOVERY, IRON_BODY_LEVELS, MAX_HP_INCREASE, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS, SLASH_BLAST_LEVELS } from './warrior'
 import type { Source } from './types'
 
 const R = '2026-10-04'
@@ -21,11 +22,17 @@ export type SkillKey =
   | 'disorder'
   | 'darkSight'
   | 'luckySeven'
+  | 'improvedHpRecovery'
+  | 'maxHpIncrease'
+  | 'ironBody'
+  | 'powerStrike'
+  | 'slashBlast'
+  | 'preciseStrikes'
 
 export interface SkillInfo {
   key: SkillKey
   name: string
-  job: 'Beginner' | 'Thief'
+  job: 'Beginner' | 'Thief' | 'Warrior'
   /** Het hoogste skill-level. */
   max: number
   source: Source
@@ -52,9 +59,26 @@ export const THIEF_SKILLS: readonly SkillInfo[] = [
   skill('luckySeven', 'Lucky Seven', 'Thief', 20, 'thief/lucky-seven'),
 ]
 
+/**
+ * De zes skills van de 1e job van een Warrior, in de volgorde van de klassenpagina. De maxima zijn het aantal
+ * levels in de gegevens van het model (data/warrior.ts), dezelfde als op de skillpagina's.
+ */
+export const WARRIOR_SKILLS: readonly SkillInfo[] = [
+  skill('improvedHpRecovery', 'Improved HP Recovery', 'Warrior', IMPROVED_HP_RECOVERY.itemRecoveryPct.length, 'warrior/improved-hp-recovery'),
+  skill('maxHpIncrease', 'Max HP Increase', 'Warrior', MAX_HP_INCREASE.maxHpPct.length, 'warrior/max-hp-increase'),
+  skill('ironBody', 'Iron Body', 'Warrior', IRON_BODY_LEVELS.length, 'warrior/iron-body'),
+  skill('powerStrike', 'Power Strike', 'Warrior', POWER_STRIKE_LEVELS.length, 'warrior/power-strike'),
+  skill('slashBlast', 'Slash Blast', 'Warrior', SLASH_BLAST_LEVELS.length, 'warrior/slash-blast'),
+  skill('preciseStrikes', 'Precise Strikes', 'Warrior', PRECISE_STRIKES_LEVELS.length, 'warrior/precise-strikes'),
+]
+
+/** Alle skills van alle jobs die de app kent. */
+export const ALL_SKILLS: readonly SkillInfo[] = [...THIEF_SKILLS, ...WARRIOR_SKILLS]
+
+/** De sleutels van de Thief-skills (Beginner en 1e job). */
 export const SKILL_KEYS: readonly SkillKey[] = THIEF_SKILLS.map((s) => s.key)
 
 /** Of een profielveld een skill is (die hoort in "Skillpoints", niet bij je stats). */
-export const isSkillKey = (key: string): key is SkillKey => (SKILL_KEYS as readonly string[]).includes(key)
+export const isSkillKey = (key: string): key is SkillKey => ALL_SKILLS.some((s) => s.key === key)
 
-export const skillInfo = (key: SkillKey): SkillInfo => THIEF_SKILLS.find((s) => s.key === key)!
+export const skillInfo = (key: SkillKey): SkillInfo => ALL_SKILLS.find((s) => s.key === key)!
