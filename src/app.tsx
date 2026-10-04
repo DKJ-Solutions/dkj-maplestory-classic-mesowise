@@ -144,7 +144,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
       {gender === null && <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>}
       {/* Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */}
       {!isComputed(job) && (
-        <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Je equipment kun je wel invullen.</p>
+        <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Equip kun je wel invullen.</p>
       )}
     </section>
   )
@@ -916,7 +916,7 @@ function EquipmentCard(props: {
   const name = (
     <span class="spot-name with-icon">
       <CardIcon name="sword" />
-      Je equipment
+      Equip
     </span>
   )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
@@ -925,7 +925,7 @@ function EquipmentCard(props: {
       <div class="spot-body">{body}</div>
     ) : (
       open && (
-        <CardPopup title="Je equipment" head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title="Equip" head={head} error={props.error} onClose={() => setOpen(false)}>
           {body}
         </CardPopup>
       )

@@ -10,7 +10,7 @@
 // Puur, zonder UI-import. Gekozen standaarden (de app toont ze): je stats van nu blijven gelden over de
 // hele horizon, alleen de EXP per level verschilt; de verkoopwaarde van je oude claw telt niet mee
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
-// het scherm "Je equipment" vult die in als je een claw kiest.
+// het scherm "Equip" vult die in als je een claw kiest.
 import { ASSUMPTION_VARIANTS } from './best'
 import { BOWMAN_WEAPONS } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
