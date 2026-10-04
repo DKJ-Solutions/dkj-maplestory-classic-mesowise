@@ -20,7 +20,7 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
-import { applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
+import { applyLevelDown, applyLevelUp, applySkillPoint, bestSpotOf, checkFieldsFor, huntingGroundAdvice, isMaxLevel, levelUpChanges, levelUpSummary, type BestSpot, type HuntingGroundAdvice } from './levelUp'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -1745,6 +1745,10 @@ export function App() {
   const levelUpped = applyLevelUp(profileDraft, job)
   // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.
   const canLevelUp = levelUpped !== profileDraft
+  // Een level terug: alleen het level, zonder flow (#130).
+  const canLevelDown = applyLevelDown(profileDraft) !== profileDraft
+  const levelDown = () => writeProfile(applyLevelDown)
+  const levelText = profileDraft.level.trim()
   // Wat de level-up zelf aanpaste (niet wat de speler daarna verschuift); zonder undo staan er geen cijfers.
   const changes = undo ? levelUpChanges(undo.draft, applyLevelUp(undo.draft, job)) : null
   const huntingAdvice = useMemo(() => huntingGroundAdvice(undo?.best ?? null, verdict, profile), [undo, verdict, profile])
@@ -1837,15 +1841,22 @@ export function App() {
         <div class="flow">
           <div class="track" style={{ transform: `translateX(-${step * 100}%)` }}>
             <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
-              <h1 class="sr-only" tabIndex={-1} ref={headingRef(0)}>
-                Mesowise
-              </h1>
+              {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
+              <div class="level-row">
+                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label="Naar het vorige level">
+                  <span aria-hidden="true">‹</span>
+                </button>
+                <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
+                  {levelText === '' ? 'Level ?' : `Level ${levelText}`}
+                  {jobChosen && <small>{jobLabel(job)}</small>}
+                </h1>
+                <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
+                  Level up
+                </button>
+              </div>
+              {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
               <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
-              {/* Bovenaan je huidige level met je job erachter; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
-              <p class="current-level">
-                {profileDraft.level.trim() === '' ? 'Level nog onbekend' : <>Level <strong>{profileDraft.level.trim()}</strong>{jobChosen && ` (${jobLabel(job)})`}</>}
-              </p>
               {computed && cost.kind === 'cost' && (
                 <p class="summary">
                   Op <strong>{cost.spotName}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
@@ -1900,15 +1911,6 @@ export function App() {
                   Zegt het spel iets anders over je monster, pas zijn info dan aan.
                 </p>
               )}
-
-              <div class="levelup-bar">
-                <button type="button" class="btn primary levelup" onClick={levelUp} disabled={!canLevelUp}>
-                  <span>Level up</span>
-                  <small>
-                    {canLevelUp ? `lv ${profileDraft.level.trim()} → ${levelUpped.level}` : isMaxLevel(profileDraft) ? 'Al op het hoogste level' : 'Controleer eerst je karakter'}
-                  </small>
-                </button>
-              </div>
 
               <footer class="credit">
                 Spelgegevens:{' '}

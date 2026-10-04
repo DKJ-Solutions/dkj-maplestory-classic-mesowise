@@ -39,19 +39,37 @@
 
 ### PLAN
 
+Issue #130: three elements side by side at the very top of the home screen. The "previous level" button
+lowers only the level (stats stay put): the app cannot know what the player did with their AP since, and
+undoing a fresh level-up stays on the check screen.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `applyLevelDown` in `src/levelUp.ts` (pure, level -1, bounded by the level field's min/max)
+- [x] `.level-row` at the top of panel 0 in `src/app.tsx`: small back button, visible h1 (takes over the
+      slide flow's focus ref from the sr-only "Mesowise" h1), green Level up; the bottom level-up bar goes
+- [x] Green `--levelup` / `--on-levelup` tokens, light and dark, in `src/style.css`
 
 ### TEST
 
+- [x] Vitest: `applyLevelDown` cases, the row's order and roles, back button lowers only the level
+- [x] Lint gate clean
+- [x] Victor's review: no bugs; focus-ring selector, a stale comment and `aria-describedby` on the disabled reason, all applied
+- [ ] Dave looks at the preview at phone width (visible result)
+
 ### DEPLOY: app/130-level-up-row
 
-**Score:**
+The home screen opens with a level row: a small button back to the previous level, the current level as a
+big heading, and a green Level up button. The Level up button moved up from the bottom of the page.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Dave and his friends see their level and the Level up button right at the top, and can step a level back
+after a mis-tap.
+
+**Score:** 3
 
 #### Pull Request
 

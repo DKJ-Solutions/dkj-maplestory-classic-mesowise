@@ -143,15 +143,21 @@ describe('begin zonder opslag', () => {
     expect(localStorage.length).toBe(0)
   })
 
-  it('toont op de level up-knop de stap van lv 10 naar lv 11', () => {
-    expect(screen.getByRole('button', { name: /Level up/ }).textContent).toContain('lv 10 → 11')
+  it('zet helemaal bovenaan vorig level, het huidige level als h1 en Level up naast elkaar (#130)', () => {
+    const row = panels()[0].firstElementChild!
+    expect(row.classList.contains('level-row')).toBe(true)
+    const [down, heading, up] = Array.from(row.children)
+    expect(down).toBe(screen.getByRole('button', { name: 'Naar het vorige level' }))
+    expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
+    expect(heading.textContent).toBe('Level 10')
+    expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))
+    expect(screen.getAllByRole('button', { name: /Level up/ })).toHaveLength(1)
   })
 
-  it('toont bovenaan het huidige level en zet de level up-knop onder de mob-kaart (#84)', () => {
-    expect(document.querySelector('.current-level')?.textContent).toBe('Level 10')
-    const mob = screen.getByRole('button', { name: /^Monster$/ })
-    const up = screen.getByRole('button', { name: /Level up/ })
-    expect(mob.compareDocumentPosition(up) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  it('zet met de kleine knop alleen het level een terug, zonder de level-up-flow', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Naar het vorige level' }))
+    expect(document.querySelector('.current-level')?.textContent).toBe('Level 9')
+    expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
   })
 
   // Dave, 4 oktober 2026: geen plekken, geen knop om ze toe te voegen en geen voorbeeldplek meer.
@@ -1425,7 +1431,7 @@ describe('een Magician in de app', () => {
     beforeEach(() => open())
 
     it('zet de job achter het level en niet achter Ability points', () => {
-      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20 (Magician)')
+      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20Magician')
       expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
     })
 
