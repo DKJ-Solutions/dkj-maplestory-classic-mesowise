@@ -497,16 +497,29 @@ describe('bewaren na elke wijziging', () => {
     expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
   })
 
+  it('toont Opslaan in de popup altijd, maar uitgeschakeld zolang er niets gewijzigd is', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    const save = () => h.d.getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement
+    expect(save().disabled).toBe(true)
+    h.typeExtra('4')
+    expect(save().disabled).toBe(false)
+    h.typeExtra('3')
+    expect(save().disabled).toBe(true)
+  })
+
   it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const h = openAbility('LUK')
     expect(h.base().value).toBe('37')
     expect(h.extra().value).toBe('3')
     expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
-    // De knoppenrij van elk vak is leeg zolang er niets gewijzigd is, zodat de CSS hem weg kan laten (geen gat tussen de vakken).
+    // De knoppenrij onder elk vak is leeg, zodat de CSS hem weg kan laten (geen gat tussen de vakken); alleen de laatste rij heeft Opslaan.
     const dialog = statLine('LUK').querySelector('dialog')!
     expect(dialog.classList.contains('ability-dialog')).toBe(true)
-    expect(Array.from(dialog.querySelectorAll('.stat-dialog-actions')).every((a) => a.childNodes.length === 0)).toBe(true)
+    const rows = Array.from(dialog.querySelectorAll('.stat-dialog-actions'))
+    expect(rows.slice(0, -1).map((a) => a.childNodes.length)).toEqual([0, 0])
+    expect(rows.at(-1)!.textContent).toBe('Opslaan')
   })
 
   it('laat de base AP niet hoger gaan dan je nog over hebt; de extra AP is vrij', () => {

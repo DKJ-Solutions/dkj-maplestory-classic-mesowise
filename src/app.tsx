@@ -536,13 +536,12 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
             dirty={false} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
           <StatEditor stat={`Extra ${f.label}`} heading="Extra AP van items" labelId={`${uid}-extra`} value={edit.extra} min={0} max={f.max} fallback={0} integer
             dirty={false} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
-          {dirty && (
-            <div class="stat-dialog-actions">
-              <button type="button" class="equip-save" onClick={save}>
-                Opslaan
-              </button>
-            </div>
-          )}
+          {/* Opslaan staat er altijd (Dave, 4 oktober 2026); zolang er niets gewijzigd is, kun je er niet op tikken. */}
+          <div class="stat-dialog-actions">
+            <button type="button" class="equip-save" disabled={!dirty} onClick={save}>
+              Opslaan
+            </button>
+          </div>
         </StatDialog>
       )}
     </div>
