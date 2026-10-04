@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**21 / 42 minor entries** <!-- pending-tally -->
+**21 / 43 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/50-overall-slot · 20261004-114221Z
+
+Players can now enter an overall (such as the Sauna Robe) on the equipment card. Their WDEF stays correct when they switch between an overall and a separate top and bottom.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Overall slot on the equipment card
+
+[PR #81](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/81)
+
+---
 
 ### DEPLOY: app/77-warrior-expected-stats · 20261004-113850Z
 
