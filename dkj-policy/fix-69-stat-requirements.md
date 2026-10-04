@@ -39,19 +39,36 @@
 
 ### PLAN
 
+#### The debt from #56
+
+`src/warriorGear.ts` copied a Warrior item's STR requirement into the field `luk`, because the claw and
+armor advice read `.luk` as "the main stat". The fix is to let the advice read each requirement in its own
+stat, so the adapter no longer has to rename anything and the Magician (INT) and Bowman (DEX) can reuse it.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/types.ts`: `Stat`, plus `Weapon` and `ArmorPiece` (requirements as `Partial<Requires<Stat>>`); `Claw` and `Armor` are those with LUK and DEX required
+- [x] `src/profile.ts`: `shortfall(reqs, profile)` returns what you lack per stat, your job's main stat first
+- [x] `clawUpgrade.ts` and `armorUpgrade.ts` report `needs: StatNeed[]` instead of `needLuk`/`needDex`; `warriorGear.ts` writes `str`; `app.tsx` renders `needs`
 
 ### TEST
 
+- [x] Existing advice tests moved to `needs`; new tests for `shortfall` and for Warrior gear carrying `str` and no `luk`
+- [x] `npm run lint` and `npx vitest run` green locally (906 tests)
+
 ### DEPLOY: fix/69-stat-requirements
 
-**Score:**
+Nothing changes on screen: the advice still says, for example, "je hebt nog 5 STR en 10 DEX nodig". Behind
+it, a Warrior weapon's STR requirement is now stored as STR instead of being filed under LUK, so the Magician
+and Bowman can use the same advice without another rename.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
