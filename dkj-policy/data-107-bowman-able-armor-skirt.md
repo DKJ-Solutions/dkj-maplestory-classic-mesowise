@@ -39,19 +39,30 @@
 
 ### PLAN
 
+- [x] Rebecca: read MeowDB 1190, 1191, 1192 and Sam's shop (npcs/211) for gender-only Bowman tops and bottoms
+- [x] Vera: cross-read the three item pages (lv 15, DEX 20, Bowman, Female only, W.DEF 20, 2,400 meso at Sam)
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/bowman.ts`: Green Able Armor Skirt (1190) with `gender: 'female'`; Brown and Grey Able Skirt (1191, 1192) in `GENDERED_WORN_BOWMAN_ARMOR`; header updated
+- [x] `src/bowmanGear.ts`: `BOWMAN_ARMOR` keeps `gender`, the worn list carries the other colours
 
 ### TEST
 
+- [ ] Tycho: data tests, gender tests (`genderData.test.ts`) and the advice for a female, male and unchosen Bowman
+- [ ] Victor: code review
+
 ### DEPLOY: data/107-bowman-able-armor-skirt
 
-**Score:**
+The Bowman's shop data now carries the female-only Green Able Armor Skirt (1190), and its other colours sit in the worn list. The data comes from MeowDB, and no other Bowman top or bottom was left out because of gender.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A female Bowman now gets a level-15 bottom in the armor advice. Before this change, that level had nothing for her. A male Bowman, or one whose gender is not set yet, sees no change.
+
+**Score:** 3
 
 #### Pull Request
 
