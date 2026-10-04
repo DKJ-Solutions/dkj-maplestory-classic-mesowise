@@ -78,8 +78,9 @@ slot is now a search bar: type the name of what you wear and pick it from the li
 shop items plus the other hats, tops, bottoms, shoes and claws a Thief can wear up to level 30 (124
 items, each read from its own NiaMeowDB page). If the list does not have it, use your own text as an
 own item. Under each item the expected WATK or WDEF from the database sits on the left and the value
-from your game on the right; the game value always overrules the expected one, and the field is marked
-when the two differ. A slot not filled in yet shows a search
+from your game on the right, aligned side by side; the game value always overrules the expected one.
+The value the app uses is highlighted and tagged "telt", the other is dimmed. On a phone, − and +
+buttons adjust the game value with one tap, and tapping the number selects it so typing replaces it. A slot not filled in yet shows a search
 prompt, and filling it in for the first time still leaves your WDEF as it was; a slot saved earlier as
 "Niets" comes back as not filled in. Items without a shop price never enter the upgrade advice.
 
