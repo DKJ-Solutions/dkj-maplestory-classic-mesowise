@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**28 / 64 minor entries** <!-- pending-tally -->
+**29 / 65 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/100-magician-matk-line · 20261004-133302Z
+
+Below the Attack range, the Total stats card always shows W.ATT and M.ATT; one of the two is 0. A Magician sees their M.ATT there, next to a W.ATT of 0: the M.ATT of their wand or staff plus half their INT (MagicTotal), the number the app calculates their spells with.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Magician player sees a real number where the card was blank, the same one the advice uses.
+
+**Score:** 2
+
+#### Pull Request
+
+the Total stats card shows M.ATT for a Magician
+
+[PR #110](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/110)
+
+---
 
 ### DEPLOY: app/87-overall-vs-pair · 20261004-131855Z
 
