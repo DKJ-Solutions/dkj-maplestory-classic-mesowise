@@ -740,16 +740,23 @@ describe('een Warrior in de app', () => {
       expect(home.textContent).toMatch(/Een Warrior heeft geen munitie/)
     })
 
-    it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot en geen verwachting bij accuracy', () => {
+    it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
       fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
       const editor = openStat('Weapon multiplier van je wapen')
       editor.type('2.4')
       editor.save()
       expect(profileFields().weaponMult).toBe('2.4')
       expect(statShown('Weapon multiplier van je wapen')).toBe('2.4')
-      expect(statLine('Accuracy').querySelector('s')).toBeNull()
+      expect(statLine('Weapon multiplier van je wapen').querySelector('s')).toBeNull()
       openHomeEquipment()
       expect(cards()[0].textContent).not.toMatch(/Ammo/)
+    })
+
+    it('toont de verwachte Warrior-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
+      fireEvent.click(screen.getByRole('button', { name: /Je karakter/ }))
+      // floor((1,2 x 20 + 2 x 20 + 0,6 x 4) / 2,5 + 10) = floor(36,56) = 36; avoid floor(4 / 3) + floor(20 / 6) + 5 = 9
+      expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('36')
+      expect(statLine('Avoid').querySelector('s')?.textContent).toBe('9')
     })
 
     it('toont bij Skillpoints de skills van de Warrior en niet die van de Thief', () => {
