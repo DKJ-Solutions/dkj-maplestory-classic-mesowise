@@ -1,7 +1,8 @@
 // De equipment die je draagt (Dave, 4 oktober 2026): per slot een claw, hoed, bovenstuk, broek of schoenen.
 // Het rekent mee: de claw zet je weapon attack en aanvalssnelheid in het profiel, armor past je WDEF aan, en
-// het armor-advies weet zo wat je in een slot al draagt. Puur, zonder UI-import. Alles uit de opslag is
-// onbetrouwbaar: wat niet klopt, valt terug op "Weet ik niet".
+// het armor-advies weet zo wat je in een slot al draagt. Je draagt altijd iets (Dave, 4 oktober 2026): er is
+// geen keuze "weet ik niet" of "niets", alleen een slot dat nog niet is ingevuld. Puur, zonder UI-import. Alles
+// uit de opslag is onbetrouwbaar: wat niet klopt, valt terug op "nog niet ingevuld".
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import type { ArmorSlot } from './data/types'
@@ -25,13 +26,13 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'shoes', label: 'Shoes' },
 ]
 
+/** Nog niet ingevuld: de begintoestand van een slot. Geen keuze in de lijst; terugkiezen kan niet. */
 export const UNKNOWN = 'unknown'
-export const NONE = 'none'
 export const OTHER = 'other'
 
 /**
- * Wat je in één slot draagt, zoals ingevuld. `pick` is 'unknown' (weet ik niet), 'none' (niets), 'other'
- * (een ander item: `name` en `stat` gelden dan) of de naam van een item uit de winkel.
+ * Wat je in één slot draagt, zoals ingevuld. `pick` is 'unknown' (nog niet ingevuld), 'other' (een ander
+ * item: `name` en `stat` gelden dan) of de naam van een item uit de winkel.
  */
 export interface EquipEntry {
   pick: string
@@ -43,7 +44,7 @@ export type Equipment = Record<EquipSlot, EquipEntry>
 
 const emptyEntry = (): EquipEntry => ({ pick: UNKNOWN, name: '', stat: '' })
 
-/** Niets bekend: zo begint iedereen, ook wie de app al gebruikte. */
+/** Nog niets ingevuld: zo begint iedereen, ook wie de app al gebruikte. */
 export const defaultEquipment = (): Equipment => ({
   claw: emptyEntry(),
   hat: emptyEntry(),
@@ -66,7 +67,6 @@ const shopItem = (slot: EquipSlot, name: string) => shopItems(slot).find((i) => 
 /** WATK of WDEF van wat je draagt; undefined = onbekend, ook bij "Ander item" zonder (geldig) getal: dan weet de app niet wat het stuk geeft. */
 export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined {
   if (entry.pick === UNKNOWN) return undefined
-  if (entry.pick === NONE) return 0
   if (entry.pick === OTHER) {
     const n = Number(entry.stat.trim())
     return entry.stat.trim() !== '' && Number.isFinite(n) ? Math.min(MAX_STAT, Math.max(0, Math.trunc(n))) : undefined
@@ -85,9 +85,9 @@ export function wornWdef(eq: Equipment): Partial<Record<ArmorSlot, number>> {
   return out
 }
 
-/** De naam van wat je in dit slot draagt, voor een samenvatting; null bij onbekend of niets. */
+/** De naam van wat je in dit slot draagt, voor een samenvatting; null als het slot nog niet is ingevuld. */
 export function wornName(entry: EquipEntry): string | null {
-  if (entry.pick === UNKNOWN || entry.pick === NONE) return null
+  if (entry.pick === UNKNOWN) return null
   if (entry.pick === OTHER) return entry.name.trim() || 'ander item'
   return entry.pick
 }
@@ -104,14 +104,14 @@ export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
  * claw uit de winkel ook je aanvalssnelheid. Armor: de WDEF in het profiel is het totaal uit je statvenster,
- * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Van of naar "weet ik niet" blijft
- * de WDEF staan (van onbekend naar bekend verandert de WDEF niet: dat stuk zat er al in).
+ * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Vul je een slot voor het eerst in,
+ * dan blijft de WDEF staan: dat stuk zat er al in.
  */
 export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before: EquipEntry, after: EquipEntry): ProfileDraft {
   const next = wornStat(slot, after)
   if (!isArmorSlot(slot)) {
     if (next === undefined) return profile
-    const claw = after.pick === OTHER || after.pick === NONE ? undefined : NPC_CLAWS.find((c) => c.name === after.pick)
+    const claw = after.pick === OTHER ? undefined : NPC_CLAWS.find((c) => c.name === after.pick)
     return { ...profile, clawWatk: String(next), ...(claw ? { attackMs: String(claw.speed.attackMs) } : {}) }
   }
   const prev = wornStat(slot, before)
@@ -131,18 +131,17 @@ export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string): 
 
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
 
-/** Eén bewaard slot; een onbekende of verdwenen keuze wordt "weet ik niet". */
+/** Eén bewaard slot; een onbekende of verdwenen keuze (ook het oude "niets") wordt "nog niet ingevuld". */
 function loadEntry(slot: EquipSlot, v: unknown): EquipEntry {
   if (typeof v !== 'object' || v === null) return emptyEntry()
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
-  if (pick === NONE) return { pick, name: '', stat: '' }
   if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
   if (pick !== UNKNOWN && shopItem(slot, pick)) return { pick, name: '', stat: '' }
   return emptyEntry()
 }
 
-/** De bewaarde equipment; een ontbrekend of onbruikbaar slot is "weet ik niet". */
+/** De bewaarde equipment; een ontbrekend of onbruikbaar slot is "nog niet ingevuld". */
 export function loadEquipment(storage: Storage | null | undefined): Equipment {
   const out = defaultEquipment()
   try {

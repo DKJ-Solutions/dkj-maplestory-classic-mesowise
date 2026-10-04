@@ -53,7 +53,7 @@ profile WDEF alone: that piece is already in the stat window total.
 ### TEST
 
 - [x] `equipment.test.ts` updated; 404 tests green, typecheck green
-- [ ] Victor (code) and Edith (UI text) review
+- [x] Victor (code): no findings; Edith (UI text): two shorter phrasings adopted
 - [ ] Dave looks at the equipment card at phone width before the merge
 
 ### DEPLOY: app/equipment-always-worn

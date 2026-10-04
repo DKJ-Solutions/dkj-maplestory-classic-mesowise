@@ -10,7 +10,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { KNOWN_SPOTS, findKnownSpot, knownSpotPatch, monsterLevels } from './data/spots'
 import type { ArmorSlot, KnownSpot } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { applyEquipChange, choosePick, entryChanged, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, NONE, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { applyEquipChange, choosePick, entryChanged, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, OTHER, saveEquipment, shopItems, UNKNOWN, wornName, wornSummary, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -300,7 +300,7 @@ function ClawUpgradeCard(props: { advice: ClawUpgradeAdvice }) {
 
 /** Hoe een keuze in een slot heet: voor in de "was"-badge. */
 const entryLabel = (e: EquipEntry): string =>
-  e.pick === UNKNOWN ? 'Weet ik niet' : e.pick === NONE ? 'Niets' : (e.name.trim() || 'Ander item')
+  e.pick === UNKNOWN ? 'nog niet ingevuld' : e.pick === OTHER ? (e.name.trim() || 'Ander item') : e.pick
 
 /**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
@@ -332,7 +332,7 @@ function EquipmentCard(props: {
       <Collapse open={open}>
         <div class="spot-body">
           <p class="hint">{props.hint}</p>
-          <p class="hint">Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          <p class="hint">Kies je bij Weapon "Ander item", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
@@ -346,8 +346,11 @@ function EquipmentCard(props: {
                     {before && entryChanged(before, entry) && <em class="was">was {entryLabel(before)}</em>}
                   </span>
                   <select value={entry.pick} onChange={onPick}>
-                    <option value={UNKNOWN}>Weet ik niet</option>
-                    <option value={NONE}>Niets</option>
+                    {entry.pick === UNKNOWN && (
+                      <option value={UNKNOWN} disabled>
+                        Kies wat je draagt
+                      </option>
+                    )}
                     {shopItems(slot).map((i) => (
                       <option key={i.name} value={i.name}>
                         {i.name} (lv {i.level}, {stat} {i.stat})
@@ -637,10 +640,9 @@ const noArmorComputable = (a: ArmorAdvice) => a.choices.length > 0 && a.choices.
 const armorMissing = (u: UnwearableArmor) =>
   [u.needLuk > 0 && `${u.needLuk} LUK`, u.needDex > 0 && `${u.needDex} DEX`].filter(Boolean).join(' en ')
 
-/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof het slot leeg is. */
+/** Waarvoor het stuk in de plaats komt: onbekend = gerekend alsof je huidige stuk geen WDEF geeft. */
 function replaceClause(win: ArmorChoice, equipment: Equipment): string {
-  if (win.replaces === undefined) return ', als je in dat slot nu niets draagt.'
-  if (equipment[win.armor.slot].pick === NONE) return '.'
+  if (win.replaces === undefined) return ' in plaats van je huidige stuk (WDEF onbekend).'
   return ` in plaats van je ${wornName(equipment[win.armor.slot]) ?? 'huidige stuk'}.`
 }
 
@@ -663,7 +665,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
     <>
       <p class="hint">
         {a.choices.some((c) => c.replaces === undefined) &&
-          'Waar je "Weet ik niet" hebt gekozen, is gerekend alsof je in dat slot nu niets draagt: dat is de grootste besparing die een stuk kan geven. Draag je er al iets, dan is de winst kleiner. '}
+          'Waar de app niet weet hoeveel WDEF je huidige stuk geeft (nog niet ingevuld, of "Ander item" zonder WDEF), is gerekend alsof het geen WDEF geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel WDEF, dan is de winst kleiner. '}
         Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
       </p>
       {first && (
@@ -707,7 +709,7 @@ function ArmorQuestion(props: { advice: ArmorUpgradeAdvice; cost: LevelCost; equ
             ? 'Geen stuk dat je kunt dragen en beter is dan wat je al draagt.'
             : unknown
               ? 'Niet uit te rekenen: bij de beste plek kan de app de armor niet doorrekenen.'
-              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet als je in een slot met "Weet ik niet" nu niets draagt' : ''}.`}
+              : `Geen stuk verdient zich terug vóór je volgende upgrade${a.choices.some((c) => c.replaces === undefined) ? ', ook niet waar de app je huidige stuk rekent alsof het geen WDEF geeft' : ''}.`}
         </p>
       )}
       {a.notWearable.map((u) => (

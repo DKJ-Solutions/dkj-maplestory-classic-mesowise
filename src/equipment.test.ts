@@ -34,14 +34,15 @@ function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Ma
 }
 
 const unknown: EquipEntry = { pick: 'unknown', name: '', stat: '' }
-const none: EquipEntry = { pick: 'none', name: '', stat: '' }
 const other = (stat: string, name = ''): EquipEntry => ({ pick: 'other', name, stat })
+/** Een stuk dat niets geeft: zo vul je een slot zonder WDEF of WATK in, want "niets" is geen keuze meer. */
+const zero = other('0')
 const shop = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
 const prof = (over: Partial<ProfileDraft>): ProfileDraft => ({ ...DEFAULT_PROFILE, ...over })
 const stored = (slots: unknown, version: unknown = 1) => fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ version, slots }) })
 
 describe('defaultEquipment en shopItems', () => {
-  it('begint met vijf slots die allemaal onbekend zijn', () => {
+  it('begint met vijf slots die allemaal nog niet zijn ingevuld', () => {
     const eq = defaultEquipment()
     expect(Object.keys(eq).sort()).toEqual(['bottom', 'claw', 'hat', 'shoes', 'top'])
     for (const { slot } of EQUIP_SLOTS) expect(eq[slot]).toEqual(unknown)
@@ -57,9 +58,9 @@ describe('defaultEquipment en shopItems', () => {
 })
 
 describe('wornStat', () => {
-  it('geeft undefined bij onbekend en 0 bij niets', () => {
+  it('geeft undefined bij nog niet ingevuld, en ook bij het vervallen "niets"', () => {
     expect(wornStat('hat', unknown)).toBeUndefined()
-    expect(wornStat('hat', none)).toBe(0)
+    expect(wornStat('hat', { pick: 'none', name: '', stat: '' })).toBeUndefined()
   })
 
   it('geeft de stat van een winkelitem in het eigen slot', () => {
@@ -97,30 +98,29 @@ describe('wornWdef, wornName en wornSummary', () => {
     claw: shop('Meba'),
     hat: unknown,
     top: shop('Red Pao'),
-    bottom: none,
+    bottom: unknown,
     shoes: other('7', '  Mijn laarzen  '),
   }
 
   it('geeft alleen de armorslots waarvan de WDEF bekend is, en nooit de claw', () => {
-    expect(wornWdef(eq)).toEqual({ top: 32, bottom: 0, shoes: 7 })
+    expect(wornWdef(eq)).toEqual({ top: 32, shoes: 7 })
   })
 
-  it('noemt wat je draagt, en niets bij onbekend of niets', () => {
+  it('noemt wat je draagt, en niets bij een slot dat nog niet is ingevuld', () => {
     expect(wornName(unknown)).toBeNull()
-    expect(wornName(none)).toBeNull()
     expect(wornName(shop('Red Pao'))).toBe('Red Pao')
     expect(wornName(other('7', '  Mijn laarzen  '))).toBe('Mijn laarzen')
     expect(wornName(other('7', '   '))).toBe('ander item')
   })
 
-  it('maakt de samenvatting in schermvolgorde zonder onbekend of niets', () => {
+  it('maakt de samenvatting in schermvolgorde zonder de slots die nog niet zijn ingevuld', () => {
     expect(wornSummary(eq)).toEqual(['Meba', 'Red Pao', 'Mijn laarzen'])
   })
 })
 
 describe('entryChanged', () => {
   it('ziet een andere keuze als gewijzigd', () => {
-    expect(entryChanged(unknown, none)).toBe(true)
+    expect(entryChanged(unknown, shop('Meba'))).toBe(true)
     expect(entryChanged(shop('Meba'), shop('Garnier'))).toBe(true)
     expect(entryChanged(shop('Meba'), shop('Meba'))).toBe(false)
   })
@@ -133,7 +133,7 @@ describe('entryChanged', () => {
   })
 
   it('negeert een achtergebleven naam of stat als de keuze geen Ander item is', () => {
-    expect(entryChanged({ pick: 'none', name: 'a', stat: '1' }, none)).toBe(false)
+    expect(entryChanged({ pick: 'Meba', name: 'a', stat: '1' }, shop('Meba'))).toBe(false)
   })
 })
 
@@ -146,20 +146,20 @@ describe('applyEquipChange: claw', () => {
 
   it('doet dat los van wat er eerst stond', () => {
     const a = applyEquipChange(prof({ clawWatk: '3' }), 'claw', shop('Garnier'), shop('Steel Titans'))
-    const b = applyEquipChange(prof({ clawWatk: '3' }), 'claw', none, shop('Steel Titans'))
+    const b = applyEquipChange(prof({ clawWatk: '3' }), 'claw', unknown, shop('Steel Titans'))
     expect(a).toEqual(b)
     expect(a).toMatchObject({ clawWatk: '13', attackMs: '720' })
   })
 
-  it('laat bij Ander item of Niets de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
+  it('laat bij Ander item de aanvalssnelheid staan, en bij een ongeldige stat alles', () => {
     expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), other('21'))).toMatchObject({ clawWatk: '21', attackMs: '800' })
-    expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), none)).toMatchObject({ clawWatk: '0', attackMs: '800' })
+    expect(applyEquipChange(prof({ attackMs: '800' }), 'claw', shop('Meba'), zero)).toMatchObject({ clawWatk: '0', attackMs: '800' })
     const p = prof({ clawWatk: '7', attackMs: '800' })
     expect(applyEquipChange(p, 'claw', shop('Meba'), other('abc'))).toBe(p)
     expect(applyEquipChange(p, 'claw', shop('Meba'), other(''))).toBe(p)
   })
 
-  it('raakt niets bij "weet ik niet"', () => {
+  it('raakt niets als het slot op "nog niet ingevuld" komt', () => {
     const p = prof({ clawWatk: '7' })
     expect(applyEquipChange(p, 'claw', shop('Meba'), unknown)).toBe(p)
   })
@@ -175,22 +175,22 @@ describe('applyEquipChange: armor', () => {
     expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Cloth Vest'), shop('Red Pao')).wdef).toBe('80')
   })
 
-  it('trekt het verschil af bij een slechter stuk, en bij niets gaat het hele stuk eraf', () => {
+  it('trekt het verschil af bij een slechter stuk, en bij een stuk zonder WDEF gaat het hele stuk eraf', () => {
     expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), shop('Red Cloth Vest')).wdef).toBe('64')
-    expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), none).wdef).toBe('40')
-    expect(applyEquipChange(prof({ wdef: '72' }), 'top', none, shop('Red Pao')).wdef).toBe('104')
+    expect(applyEquipChange(prof({ wdef: '72' }), 'top', shop('Red Pao'), zero).wdef).toBe('40')
+    expect(applyEquipChange(prof({ wdef: '72' }), 'top', zero, shop('Red Pao')).wdef).toBe('104')
   })
 
   it('komt niet onder 0', () => {
-    expect(applyEquipChange(prof({ wdef: '10' }), 'top', shop('Red Pao'), none).wdef).toBe('0')
-    expect(applyEquipChange(prof({ wdef: '0' }), 'top', shop('Red Pao'), none).wdef).toBe('0')
+    expect(applyEquipChange(prof({ wdef: '10' }), 'top', shop('Red Pao'), zero).wdef).toBe('0')
+    expect(applyEquipChange(prof({ wdef: '0' }), 'top', shop('Red Pao'), zero).wdef).toBe('0')
   })
 
   it('doet niets als het oude of het nieuwe stuk onbekend is, ook niet bij onbekend naar bekend', () => {
     const p = prof({ wdef: '72' })
     expect(applyEquipChange(p, 'top', unknown, shop('Red Pao'))).toBe(p)
     expect(applyEquipChange(p, 'top', shop('Red Pao'), unknown)).toBe(p)
-    expect(applyEquipChange(p, 'top', unknown, none)).toBe(p)
+    expect(applyEquipChange(p, 'top', unknown, zero)).toBe(p)
     expect(applyEquipChange(p, 'top', unknown, unknown)).toBe(p)
   })
 
@@ -211,7 +211,7 @@ describe('applyEquipChange: armor', () => {
   })
 
   it('raakt de claw-velden niet aan', () => {
-    const p = applyEquipChange(prof({ clawWatk: '9', attackMs: '800' }), 'top', none, shop('Red Pao'))
+    const p = applyEquipChange(prof({ clawWatk: '9', attackMs: '800' }), 'top', zero, shop('Red Pao'))
     expect(p).toMatchObject({ clawWatk: '9', attackMs: '800' })
   })
 
@@ -253,9 +253,9 @@ describe('applyEquipChange: armor', () => {
   })
 
   it('verliest het verschil bij de ondergrens 0 (bekende beperking: wisselen en terugwisselen geeft niet dezelfde WDEF)', () => {
-    let p = applyEquipChange(prof({ wdef: '5' }), 'top', other('12'), none)
+    let p = applyEquipChange(prof({ wdef: '5' }), 'top', other('12'), zero)
     expect(p.wdef).toBe('0')
-    p = applyEquipChange(p, 'top', none, other('12'))
+    p = applyEquipChange(p, 'top', zero, other('12'))
     expect(p.wdef).toBe('12')
   })
 })
@@ -277,8 +277,8 @@ describe('choosePick', () => {
     expect(choosePick('top', other('abc'), 'other')).toEqual(other(''))
   })
 
-  it('geeft OTHER de stat 0 als je niets droeg', () => {
-    expect(choosePick('top', none, 'other')).toEqual(other('0'))
+  it('geeft OTHER de stat 0 als je stuk niets gaf', () => {
+    expect(choosePick('top', zero, 'other')).toEqual(other('0'))
   })
 
   it('vult voor met de afgekapte waarde van een ander item', () => {
@@ -288,7 +288,6 @@ describe('choosePick', () => {
 
   it('geeft bij elke andere keuze een schone entry', () => {
     expect(choosePick('top', other('12', 'x'), 'Red Pao')).toEqual(shop('Red Pao'))
-    expect(choosePick('top', shop('Red Pao'), 'none')).toEqual(none)
     expect(choosePick('top', shop('Red Pao'), 'unknown')).toEqual(unknown)
   })
 })
@@ -299,7 +298,7 @@ describe('loadEquipment en saveEquipment', () => {
     const eq: Equipment = {
       claw: shop('Meba'),
       hat: other('5', 'Mijn muts'),
-      top: none,
+      top: other('0', 'Startshirt'),
       bottom: unknown,
       shoes: shop('Red Ninja Sandals'),
     }
@@ -322,19 +321,19 @@ describe('loadEquipment en saveEquipment', () => {
   })
 
   it('geeft niets bekend bij een verkeerde of ontbrekende versie, ook als de slots goed zijn', () => {
-    const slots = { top: { pick: 'none' } }
+    const slots = { top: { pick: 'Red Pao' } }
     for (const v of [2, 0, '1', null]) expect(loadEquipment(stored(slots, v)), String(v)).toEqual(defaultEquipment())
     expect(loadEquipment(fakeStorage({ [EQUIPMENT_KEY]: JSON.stringify({ slots }) }))).toEqual(defaultEquipment())
   })
 
-  it('houdt een goed slot en maakt een rommelig slot "weet ik niet"', () => {
+  it('houdt een goed slot en maakt een rommelig slot "nog niet ingevuld"', () => {
     const eq = loadEquipment(stored({ claw: { pick: 'Meba' }, hat: 'tekst', top: null, bottom: 7, shoes: { pick: 5 }, geheim: { pick: 'none' } }))
     expect(eq.claw).toEqual(shop('Meba'))
     for (const s of ['hat', 'top', 'bottom', 'shoes'] as const) expect(eq[s], s).toEqual(unknown)
     expect('geheim' in eq).toBe(false)
   })
 
-  it('maakt een onbekende of verdwenen winkelkeuze "weet ik niet", ook als hij bij een ander slot hoort', () => {
+  it('maakt een onbekende of verdwenen winkelkeuze "nog niet ingevuld", ook als hij bij een ander slot hoort', () => {
     const eq = loadEquipment(stored({ claw: { pick: 'Verdwenen Claw' }, hat: { pick: 'Red Pao' }, top: { pick: 'Red Pao' }, shoes: { pick: '__proto__' }, bottom: { pick: 'constructor' } }))
     expect(eq.claw).toEqual(unknown)
     expect(eq.hat).toEqual(unknown)
@@ -344,10 +343,15 @@ describe('loadEquipment en saveEquipment', () => {
   })
 
   it('wist naam en stat van een slot dat geen Ander item is', () => {
-    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, hat: { pick: 'none', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }))
+    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: 'x', stat: '9' }, top: { pick: 'unknown', name: 'x', stat: '9' } }))
     expect(eq.claw).toEqual(shop('Meba'))
-    expect(eq.hat).toEqual(none)
     expect(eq.top).toEqual(unknown)
+  })
+
+  it('maakt een bewaard "niets" van vroeger "nog niet ingevuld": je draagt altijd iets', () => {
+    const eq = loadEquipment(stored({ hat: { pick: 'none', name: 'x', stat: '9' }, claw: { pick: 'none' } }))
+    expect(eq.hat).toEqual(unknown)
+    expect(eq.claw).toEqual(unknown)
   })
 
   it('kapt te lange naam (40) en stat (12) af bij het laden en bij het bewaren', () => {
