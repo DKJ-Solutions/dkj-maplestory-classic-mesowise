@@ -62,6 +62,8 @@ by what the level still leaves, and the optional extra AP from items.
 - [x] Gwen: the "Base AP over" line left the card; the popup already shows it (Dave: shown twice)
 - [x] Gwen: the popup's Opslaan is always there, disabled and colourless while nothing has changed (Dave)
 - [x] Gwen: 1rem between the Extra field and the pencil on the card instead of 0.375rem (Dave)
+- [x] Gwen and Cody: the popup puts Base AP, Extra AP and Totaal (base plus extra, as typed) side by side, with − and + under each number so the three fit at phone width (Dave)
+- [x] Gwen: hierarchy in the popup: the stat title (DEX) larger and bold, the column labels small, muted capitals (Dave: both looked the same)
 - [x] Cody: a base stat cannot go below 4, the minimum every character starts with (same MeowDB source): the profile refuses it, the popup's minus stops at 4 and a lower typed number is saved as 4; the two Magician edge tests at INT 0 now feed the model directly
 - [x] Victor and Edith: review and Dutch copy read; lint and all tests green
 

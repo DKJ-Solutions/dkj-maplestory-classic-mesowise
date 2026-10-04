@@ -122,12 +122,12 @@ const openStat = (label: string) => {
   }
 }
 
-/** Opent de popup van een ability point (STR, DEX, INT, LUK): een vak voor de base AP en een voor de extra AP van items. */
+/** Opent de popup van een ability point (STR, DEX, INT, LUK): een vak voor de base AP, een voor de extra AP van items, en het totaal. */
 const openAbility = (label: string) => {
   fireEvent.click(within(statLine(label)).getByRole('button', { name: `${label} wijzigen` }))
   const d = within(statLine(label).querySelector('dialog') as HTMLDialogElement)
   const base = () => d.getByLabelText('Base AP') as HTMLInputElement
-  const extra = () => d.getByLabelText('Extra AP van items') as HTMLInputElement
+  const extra = () => d.getByLabelText('Extra AP') as HTMLInputElement
   return {
     base,
     extra,
@@ -497,6 +497,19 @@ describe('bewaren na elke wijziging', () => {
     expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
   })
 
+  it('toont in de popup het totaal van base en extra, en rekent mee terwijl je typt', () => {
+    fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
+    const h = openAbility('LUK')
+    const total = () => h.d.getByLabelText('Totaal').textContent
+    expect(total()).toBe('40')
+    h.typeExtra('10')
+    expect(total()).toBe('47')
+    h.typeExtra('')
+    expect(total()).toBe('37')
+    h.typeBase('')
+    expect(total()).toBe('?')
+  })
+
   it('toont Opslaan in de popup altijd, maar uitgeschakeld zolang er niets gewijzigd is', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ability points/ }))
     const h = openAbility('LUK')
@@ -514,12 +527,10 @@ describe('bewaren na elke wijziging', () => {
     expect(h.base().value).toBe('37')
     expect(h.extra().value).toBe('3')
     expect(h.d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
-    // De knoppenrij onder elk vak is leeg, zodat de CSS hem weg kan laten (geen gat tussen de vakken); alleen de laatste rij heeft Opslaan.
+    // Base, Extra en Totaal staan naast elkaar, met één Opslaan eronder.
     const dialog = statLine('LUK').querySelector('dialog')!
-    expect(dialog.classList.contains('ability-dialog')).toBe(true)
-    const rows = Array.from(dialog.querySelectorAll('.stat-dialog-actions'))
-    expect(rows.slice(0, -1).map((a) => a.childNodes.length)).toEqual([0, 0])
-    expect(rows.at(-1)!.textContent).toBe('Opslaan')
+    expect(Array.from(dialog.querySelectorAll('.ap-edit > .ap-edit-col > .stat-dialog-label')).map((l) => l.textContent)).toEqual(['Base AP', 'Extra AP', 'Totaal'])
+    expect(Array.from(dialog.querySelectorAll('.stat-dialog-actions')).map((a) => a.textContent)).toEqual(['Opslaan'])
   })
 
   it('laat de base AP niet hoger gaan dan je nog over hebt; de extra AP is vrij', () => {

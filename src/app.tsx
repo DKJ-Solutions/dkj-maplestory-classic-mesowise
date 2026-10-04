@@ -397,6 +397,35 @@ function StatEditor(props: {
 }
 
 /**
+ * Eén getal in de popup van een ability point: het label erboven, het vak, en − en + eronder (in plaats van ernaast,
+ * zodat Base, Extra en Totaal naast elkaar passen). Tik je op het getal, dan is het geselecteerd; Enter slaat op.
+ */
+function ApInput(props: { stat: string; label: string; id: string; value: string; min: number; max: number; onInput: (text: string) => void; onSave: () => void }) {
+  const { stat, value, min, max } = props
+  const step = (by: number) => props.onInput(stepValue(value, by, min, max, min))
+  return (
+    <div class="ap-edit-col">
+      <span class="stat-dialog-label" id={props.id}>{props.label}</span>
+      <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
+        value={value}
+        onFocus={(e) => e.currentTarget.select()}
+        onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            props.onSave()
+          }
+        }}
+      />
+      <div class="equip-step ap-edit-steps">
+        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Een kaart met een popup met een rij stat-regels (zelfde patroon als de andere kaarten). Zonder uitleg eronder: die
  * leest een speler toch niet (Dave, 4 oktober 2026).
  */
@@ -509,6 +538,10 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
     setEdit(null)
   }
   const dirty = edit !== null && (edit.base !== draft[stat] || edit.extra !== draft[extraKey])
+  // Base plus extra zoals je ze in de popup typt; een leeg extra-vak telt als 0, een base die geen heel getal is als onbekend.
+  const typedBase = edit === null ? NaN : Number(edit.base.trim())
+  const typedExtra = edit === null ? NaN : edit.extra.trim() === '' ? 0 : Number(edit.extra.trim())
+  const totalInEdit = edit !== null && edit.base.trim() !== '' && Number.isInteger(typedBase) && Number.isInteger(typedExtra) ? typedBase + typedExtra : null
   // Wat je level aan base AP geeft (apAtLevel) min wat er al staat, met de base die je in de popup typt in plaats van de bewaarde.
   // Alleen de popup toont dit; op de kaart stond het dubbel (Dave, 4 oktober 2026).
   const leftInEdit = (cap ?? 0) - (baseApSpent(draft) - baseNow) - (Number(edit?.base.trim()) || 0)
@@ -532,10 +565,15 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
       {edit !== null && (
         <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
           {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
-          <StatEditor stat={`Base ${f.label}`} heading="Base AP" labelId={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} fallback={f.min} integer
-            dirty={false} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
-          <StatEditor stat={`Extra ${f.label}`} heading="Extra AP van items" labelId={`${uid}-extra`} value={edit.extra} min={0} max={f.max} fallback={0} integer
-            dirty={false} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
+          {/* Base, Extra en Totaal naast elkaar (Dave, 4 oktober 2026); −/+ staan onder het getal, zodat het op een telefoon past. */}
+          <div class="ap-edit">
+            <ApInput stat={`Base ${f.label}`} label="Base AP" id={`${uid}-base`} value={edit.base} min={f.min} max={maxBase} onInput={(base) => setEdit({ ...edit, base })} onSave={save} />
+            <ApInput stat={`Extra ${f.label}`} label="Extra AP" id={`${uid}-extra`} value={edit.extra} min={0} max={f.max} onInput={(extra) => setEdit({ ...edit, extra })} onSave={save} />
+            <div class="ap-edit-col">
+              <span class="stat-dialog-label" id={`${uid}-total`}>Totaal</span>
+              <output class="ap-edit-total" aria-labelledby={`${uid}-total`}>{totalInEdit === null ? '?' : nfInt.format(totalInEdit)}</output>
+            </div>
+          </div>
           {/* Opslaan staat er altijd (Dave, 4 oktober 2026); zolang er niets gewijzigd is, kun je er niet op tikken. */}
           <div class="stat-dialog-actions">
             <button type="button" class="equip-save" disabled={!dirty} onClick={save}>
