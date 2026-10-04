@@ -5,6 +5,7 @@ import { expToNextLevel } from './data/expTable'
 import { baseAccuracy, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { warriorAccuracy } from './data/warrior'
 import {
+  applyLevelDown,
   applyLevelUp,
   applySkillPoint,
   bestSpotOf,
@@ -410,5 +411,30 @@ describe('een Warrior: applySkillPoint', () => {
     const out2 = applySkillPoint(thiefTyped, 'luckySeven', 'thief')
     expect(out2.weaponMult).toBe('2.6')
     expect(out2.powerStrike).toBe('9')
+  })
+})
+
+describe('applyLevelDown (#130)', () => {
+  it('zet alleen het level een terug; je stats blijven staan', () => {
+    const draft = { ...DEFAULT_PROFILE, level: '12' }
+    expect(applyLevelDown(draft)).toEqual({ ...draft, level: '11' })
+  })
+
+  it('maakt van een level-up alleen het level ongedaan', () => {
+    const up = applyLevelUp({ ...DEFAULT_PROFILE, level: '12' }, 'thief')
+    const back = applyLevelDown(up)
+    expect(back.level).toBe('12')
+    expect(back.hp).toBe(up.hp)
+    expect(back.luk).toBe(up.luk)
+  })
+
+  it.each(['1', '', 'abc', '12.5', '201'])('laat het profiel ongemoeid bij level %j', (level) => {
+    const draft = { ...DEFAULT_PROFILE, level }
+    expect(applyLevelDown(draft)).toBe(draft)
+  })
+
+  it('gaat van het hoogste level naar een lager', () => {
+    const max = String(PROFILE_FIELDS.find((f) => f.key === 'level')!.max)
+    expect(applyLevelDown({ ...DEFAULT_PROFILE, level: max }).level).toBe(String(Number(max) - 1))
   })
 })

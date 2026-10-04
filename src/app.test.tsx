@@ -143,15 +143,29 @@ describe('begin zonder opslag', () => {
     expect(localStorage.length).toBe(0)
   })
 
-  it('toont op de level up-knop de stap van lv 10 naar lv 11', () => {
-    expect(screen.getByRole('button', { name: /Level up/ }).textContent).toContain('lv 10 → 11')
+  it('zet helemaal bovenaan vorig level, het huidige level als h1 en Level up naast elkaar (#130)', () => {
+    const row = panels()[0].firstElementChild!
+    expect(row.classList.contains('level-row')).toBe(true)
+    const [down, heading, up] = Array.from(row.children)
+    expect(down).toBe(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    expect(down.textContent).toBe('Back')
+    expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
+    expect(heading.textContent).toBe('LV. 10')
+    expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))
+    expect(screen.getAllByRole('button', { name: /Level up/ })).toHaveLength(1)
   })
 
-  it('toont bovenaan het huidige level en zet de level up-knop onder de mob-kaart (#84)', () => {
-    expect(document.querySelector('.current-level')?.textContent).toBe('Level 10')
-    const mob = screen.getByRole('button', { name: /^Monster$/ })
-    const up = screen.getByRole('button', { name: /Level up/ })
-    expect(mob.compareDocumentPosition(up) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  it('zet met de kleine knop alleen het level een terug, zonder de level-up-flow', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 9')
+    expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
+  })
+
+  it('zet BACK op lv 1 uit, met een naam die zegt dat er geen vorig level is', () => {
+    for (let lv = 10; lv > 1; lv--) fireEvent.click(screen.getByRole('button', { name: `Back (naar LV. ${lv - 1})` }))
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 1')
+    const back = screen.getByRole('button', { name: 'Back (er is geen vorig level)' }) as HTMLButtonElement
+    expect(back.disabled).toBe(true)
   })
 
   // Dave, 4 oktober 2026: geen plekken, geen knop om ze toe te voegen en geen voorbeeldplek meer.
@@ -171,7 +185,7 @@ describe('begin zonder opslag', () => {
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
     levelUp()
-    expect(document.querySelector('.current-level')?.textContent).toBe('Level 11')
+    expect(document.querySelector('.current-level')?.textContent).toBe('LV. 11')
   })
 
   it('toont een slot dat nog niet is ingevuld als zoekbalk, zonder opties "Weet ik niet" of "Niets"', () => {
@@ -1424,8 +1438,8 @@ describe('een Magician in de app', () => {
   describe('het beginscherm', () => {
     beforeEach(() => open())
 
-    it('zet de job achter het level en niet achter Ability points', () => {
-      expect(document.querySelector('.current-level')?.textContent).toBe('Level 20 (Magician)')
+    it('zet de job niet bij het level (Dave, 4 oktober 2026, #130) en niet achter Ability points', () => {
+      expect(document.querySelector('.current-level')?.textContent).toBe('LV. 20')
       expect(screen.getByRole('button', { name: /Ability points/ }).textContent).not.toMatch(/Magician/)
     })
 
@@ -1592,6 +1606,9 @@ describe('de menubalk bovenin (issue #86)', () => {
   it('staat boven de schermen, buiten main, met de naam van de app en een menuknop', () => {
     expect(bar().closest('main')).toBeNull()
     expect(bar().querySelector('.topbar-name')?.textContent).toBe('Mesowise')
+    // De ondertitel staat rechts van de naam, en niet meer op het beginscherm (#130).
+    expect(bar().querySelector('.topbar-name')?.nextElementSibling?.textContent).toMatch(/^Zo min mogelijk mesos/)
+    expect(within(panels()[0]).queryByText(/Zo min mogelijk mesos/)).toBeNull()
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
