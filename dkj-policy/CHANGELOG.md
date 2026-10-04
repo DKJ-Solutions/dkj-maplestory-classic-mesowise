@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**12 / 22 minor entries** <!-- pending-tally -->
+**13 / 23 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equipment-section · 20261004-081637Z
+
+Onder de **Level up**-knop staat nu een inklapbare kaart "Je equipment"; ingeklapt zie je in de kop wat
+je draagt. Per slot (Weapon, Hat, Top, Bottom, Shoes) kies je wat je draagt: een winkelitem, "Niets", "Ander item" met eigen WATK of WDEF, of "Weet
+ik niet". De keuze rekent mee. Een claw vult je weapon attack in (en bij een winkelclaw je
+aanvalssnelheid), armor past je WDEF aan, en het defense-advies rekent met wat je in dat slot al draagt
+in plaats van alsof het leeg is. Na een level-up staat dezelfde kaart in het controlescherm, zodat je
+iets wat je in je vorige level hebt geloot of gekocht meteen bijwerkt.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Het defense-advies weet nu wat je draagt. Een "Koop" geldt daardoor niet meer alleen "als dat slot leeg
+is", en je hoeft na een loot je WDEF en weapon attack niet meer zelf uit te rekenen.
+
+**Score:** 3
+
+#### Pull Request
+
+equipment-sectie onder de Level up-knop, die meerekent
+
+[PR #46](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/46)
+
+---
 
 ### DEPLOY: app/33-level-up-hp-ap · 20261003-162708Z
 
