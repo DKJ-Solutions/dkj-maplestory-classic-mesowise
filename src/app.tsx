@@ -1851,9 +1851,6 @@ export function App() {
                 </h1>
                 <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
                   Level up
-                  <svg class="levelup-plus" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-                    <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" />
-                  </svg>
                 </button>
               </div>
               {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}

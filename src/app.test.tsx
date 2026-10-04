@@ -151,8 +151,6 @@ describe('begin zonder opslag', () => {
     expect(heading).toBe(screen.getByRole('heading', { level: 1 }))
     expect(heading.textContent).toBe('LV. 10')
     expect(up).toBe(screen.getByRole('button', { name: /Level up/ }))
-    // Hoofdletters komen uit de CSS, het plusje is decoratie: de naam blijft "Level up".
-    expect(up.querySelector('svg.levelup-plus')?.getAttribute('aria-hidden')).toBe('true')
     expect(screen.getAllByRole('button', { name: /Level up/ })).toHaveLength(1)
   })
 

@@ -51,7 +51,7 @@ undoing a fresh level-up stays on the check screen.
 - [x] Green gradient tokens (`--levelup-hi`, `--levelup-lo`, `--on-levelup`), light and dark, in `src/style.css`
 - [x] Dave's look, round 1: job removed from under the level; the level sits exactly mid-screen (grid with
       two equal side columns); Level up keeps only a green gradient (a livelier version was tried
-      and dropped as overdone); Level up no bigger than the level (1rem, 44px tall, 6rem side columns, h1 up to 2.5rem); heading reads LV. 10; button reads LEVEL UP (CSS uppercase) with a plus icon, no border
+      and dropped as overdone); Level up no bigger than the level (1rem, 44px tall, 6rem side columns, h1 up to 2.5rem); heading reads LV. 10; button reads LEVEL UP (CSS uppercase), no border, small radius (a plus icon was tried and dropped)
 
 ### TEST
 
