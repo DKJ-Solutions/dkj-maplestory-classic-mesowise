@@ -46,7 +46,7 @@ Dave (4 oktober 2026): een sectie over skillpunten, met de punten die de speler 
 - [x] Cody: skillLevels en pointsPlaced in src/skillPoint.ts, puur en zonder UI-import
 - [x] Cody + Gwen: inklapbare kaart "Je skillpunten" op het beginscherm en boven de skillvraag in "Wat nu?"
 - [x] Tycho: tests voor skillLevels en pointsPlaced (415 groen), typecheck groen
-- [ ] Victor en Edith: review van de diff
+- [x] Victor en Edith: review van de diff; twee weggevallen spaties hersteld, "Niet doorgerekend:" zoals elders, de twee hints samengevoegd, CSS gedeeld met .equipment
 - [ ] Dave kijkt naar het scherm vóór de merge
 
 ### TEST

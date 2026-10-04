@@ -421,16 +421,18 @@ function SkillsCard(props: { draft: ProfileDraft }) {
               </li>
             ))}
           </ul>
-          {unknown && <p class="hint">Een skill met "niet ingevuld" telt niet mee. Vul hem in bij je karakter.</p>}
-          <p class="hint">Pas je skill-levels aan bij je karakter. Zet je een punt via het advies, dan staat het hier meteen.</p>
-          <p class="hint">Niet bijgehouden: {listFormat.format(NOT_MODELLED)}.</p>
+          <p class="hint">
+            {unknown && 'Een skill die niet is ingevuld, telt niet mee in het aantal punten. '}
+            Je vult je skills in bij je karakter. Zet je een punt via het advies, dan telt het hier meteen mee.
+          </p>
+          <p class="hint">Niet doorgerekend:{listFormat.format(NOT_MODELLED)}.</p>
         </div>
       </Collapse>
     </section>
   )
 }
 
-function KnownSpotPicker(props:{ value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
+function KnownSpotPicker(props: { value: string; onChange: (patch: Partial<SpotDraft>) => void }) {
   const onChange = (e: Event) => props.onChange(knownSpotPatch((e.currentTarget as HTMLSelectElement).value))
   return (
     <label class="field">
@@ -1264,7 +1266,7 @@ export function App() {
             <ClawQuestion advice={clawAdvice} cost={cost} />
             <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} />
             <SkillsCard draft={profileDraft} />
-            <SkillQuestion advice={skillAdvice}cost={cost} placed={placed} onApply={applyPoint} />
+            <SkillQuestion advice={skillAdvice} cost={cost} placed={placed} onApply={applyPoint} />
             <HuntingQuestion advice={huntingAdvice} robust={verdict.robust} />
             <button
               type="button"

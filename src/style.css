@@ -240,8 +240,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Je equipment: inklapbaar zoals je karakter; per slot een keuzelijst, bij "Ander item" een naam en een getal */
-.equipment { padding: 0; overflow: hidden; }
-.equipment .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint, niet met een veld met eigen marge */
+.equipment, .skills { padding: 0; overflow: hidden; }
+.equipment .spot-body, .skills .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint, niet met een veld met eigen marge */
 .equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .equipment .spot-body .source a { color: var(--accent); }
 .equipment .equip-row { padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
@@ -250,9 +250,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-other { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0.75rem; margin-top: 0.5rem; }
 .equip-other input { min-height: 44px; }
 
-/* Je skillpunten: inklapbaar zoals je equipment; per skill een regel met het level en het maximum */
-.skills { padding: 0; overflow: hidden; }
-.skills .spot-body { padding-top: 0.875rem; }
+/* Je skillpunten (kaart en marges zoals je equipment): per skill een regel met het level en het maximum */
 .skill-list { list-style: none; margin: 0 0 0.75rem; padding: 0; }
 .skill-list li { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border); }
 .skill-list li span:last-child { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
