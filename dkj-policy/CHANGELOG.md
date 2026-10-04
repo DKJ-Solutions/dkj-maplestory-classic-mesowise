@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**19 / 35 minor entries** <!-- pending-tally -->
+**19 / 36 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/63-stat-editor · 20261004-103333Z
+
+The stat popups of the character card and the equipment card are now built from one shared piece, so the two can
+no longer drift apart. Nothing changes in what you see, except that integer stats on the character card open the
+plain number pad on an iPhone, as the equipment stats already did.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Shared StatEditor for the character and equipment stat popups
+
+[PR #72](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/72)
+
+---
 
 ### DEPLOY: app/65-ranged-ammo · 20261004-103041Z
 
