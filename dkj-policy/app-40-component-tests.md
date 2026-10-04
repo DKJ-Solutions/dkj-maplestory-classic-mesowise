@@ -1,4 +1,4 @@
-## app/40-component-tests
+﻿## app/40-component-tests
 
 > **How this file is read.** A step is `- [ ]` until it is resolved -- `- [x]` done, or
 > `- [~]` dropped with the reason, which exists so nobody ticks a box for work they did not do.
@@ -51,7 +51,7 @@ Issue #40: het scherm (`src/app.tsx`) had geen componenttests. Gekozen harnas (D
 ### TEST
 
 - [x] `npx vitest run src/app.test.tsx`: 26 geslaagd, 1 verwacht gefaald (#52)
-- [ ] Review door Victor
+- [x] Review door Victor: overbodige `@testing-library/dom` eruit, twee zwakke asserties aangescherpt
 
 ### DEPLOY: app/40-component-tests
 
