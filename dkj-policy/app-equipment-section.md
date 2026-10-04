@@ -45,7 +45,7 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
 
 ### CREATE
 
-- [x] `src/equipment.ts`: per slot (Claw, Hat, Top, Bottom, Shoes) "Weet ik niet", "Niets",
+- [x] `src/equipment.ts`: per slot (Weapon, Hat, Top, Bottom, Shoes) "Weet ik niet", "Niets",
   een winkelitem of "Ander item" met eigen WATK/WDEF, bewaard in localStorage
 - [x] Een keuze past het profiel aan: de claw zet je weapon attack (en bij een winkelclaw je
   aanvalssnelheid), armor past je totale WDEF aan met het verschil tussen het oude en het nieuwe stuk
@@ -61,8 +61,8 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
   krijgen een eigen pijltje met ruimte tot de rand, in de gedempte tekstkleur
 - [x] Dave (4 oktober 2026): de eerste hint in de open kaart zat tegen de bovenrand; nu dezelfde ruimte
   als bij "Je karakter"
-- [x] Dave (4 oktober 2026): de slots heten zoals in het spel (Claw, Hat, Top, Bottom, Shoes), ook in
-  het defense-advies
+- [x] Dave (4 oktober 2026): de slots heten zoals in het spel (Weapon, Hat, Top, Bottom, Shoes), ook in
+  het defense-advies; het wapenslot heet algemeen Weapon (de job-keuze in #41 bepaalt straks welk wapen)
 
 ### TEST
 
@@ -75,7 +75,7 @@ meteen bij. Dave koos ervoor dat de equipment meerekent en niet alleen wordt bij
 ### DEPLOY: app/equipment-section
 
 Onder de **Level up**-knop staat nu een inklapbare kaart "Je equipment"; ingeklapt zie je in de kop wat
-je draagt. Per slot (Claw, Hat, Top, Bottom, Shoes) kies je wat je draagt: een winkelitem, "Niets", "Ander item" met eigen WATK of WDEF, of "Weet
+je draagt. Per slot (Weapon, Hat, Top, Bottom, Shoes) kies je wat je draagt: een winkelitem, "Niets", "Ander item" met eigen WATK of WDEF, of "Weet
 ik niet". De keuze rekent mee. Een claw vult je weapon attack in (en bij een winkelclaw je
 aanvalssnelheid), armor past je WDEF aan, en het defense-advies rekent met wat je in dat slot al draagt
 in plaats van alsof het leeg is. Na een level-up staat dezelfde kaart in het controlescherm, zodat je

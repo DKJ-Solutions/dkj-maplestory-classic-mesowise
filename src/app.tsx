@@ -320,7 +320,7 @@ function EquipmentCard(props: {
       {open && (
         <div class="spot-body">
           <p class="hint">{props.hint}</p>
-          <p class="hint">Kies je bij de claw "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
+          <p class="hint">Kies je bij Weapon "Ander item" of "Niets", dan blijft je aanvalssnelheid zoals hij was. Vul die zo nodig zelf in bij je karakter.</p>
           {EQUIP_SLOTS.map(({ slot, label }) => {
             const entry = props.equipment[slot]
             const before = props.was?.[slot]
@@ -1096,7 +1096,7 @@ export function App() {
             <EquipmentCard
               equipment={equipment}
               defaultOpen={false}
-              hint="Wat je hier zet, rekent mee in het advies. Je claw vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
+              hint="Wat je hier zet, rekent mee in het advies. Je weapon vult je weapon attack en aanvalssnelheid in, armor past je WDEF aan."
               pending={pending}
               onPick={pickEquipment}
               onName={nameEquipment}

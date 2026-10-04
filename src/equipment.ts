@@ -18,7 +18,7 @@ export type EquipSlot = 'claw' | ArmorSlot
 
 /** De slots in de volgorde waarin het scherm ze toont. */
 export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
-  { slot: 'claw', label: 'Claw' },
+  { slot: 'claw', label: 'Weapon' },
   { slot: 'hat', label: 'Hat' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
