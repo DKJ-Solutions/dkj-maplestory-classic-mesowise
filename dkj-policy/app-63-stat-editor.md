@@ -41,17 +41,37 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `StatEditor` in `src/app.tsx`: the popup body (expected line, "<stat> in game", −/+ and the number, Reset and
+  Opslaan) shared by `StatLine` (character card) and `EquipmentCard`; each card passes its own labels, bounds,
+  step fallback, Reset target and what Opslaan does.
+- [x] The one deliberate difference: integer fields on the character card now also carry `pattern="[0-9]*"`, as the
+  equipment field already did (on iOS that opens the plain number pad).
+- [x] Review: the equipment card's inline comment no longer repeats what `StatEditor`'s doc says.
+
+#### For Dave's look
+
+Open a stat popup on both cards at phone width: it should look and behave as before. Parked without a PR (visible
+result).
 
 ### TEST
 
+- [x] `npm run lint` (typecheck) clean; Vitest 696/696 green. The existing app tests already cover both popups
+  (−/+ on both cards, the decimal attack time without −/+, the expected line, Reset, Opslaan only when changed,
+  Enter saves), so no new test was added.
+
 ### DEPLOY: app/63-stat-editor
 
-**Score:**
+The stat popups of the character card and the equipment card are now built from one shared piece, so the two can
+no longer drift apart. Nothing changes in what you see, except that integer stats on the character card open the
+plain number pad on an iPhone, as the equipment stats already did.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
