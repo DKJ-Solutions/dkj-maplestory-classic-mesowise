@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**23 / 59 minor entries** <!-- pending-tally -->
+**24 / 60 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/106-card-popup · 20261004-130103Z
+
+The cards no longer fold open. Each card head ends in an eye icon, and tapping it shows the card's content
+in a popup (a bottom sheet on a phone); the cross closes it and puts the focus back on the card. A new spot
+opens straight into its popup. On the level-up check screen the equipment stays directly on the card.
+The explanation texts under Ability points and Total stats are gone.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Dave and his friends see the cards change: the content opens in a popup behind an eye icon instead of
+folding open under the card, and the stats popups no longer end in a block of explanation.
+
+**Score:** 3
+
+#### Pull Request
+
+Cards open their content in a popup behind an eye icon
+
+[PR #115](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/115)
+
+---
 
 ### DEPLOY: app/111-close-button-fill · 20261004-125700Z
 
