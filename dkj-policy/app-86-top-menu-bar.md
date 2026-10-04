@@ -39,19 +39,36 @@
 
 ### PLAN
 
+#### What "the settings" are
+
+The app has no settings screen yet. The one real setting on the home screen is the job choice, so the
+hamburger menu holds that (`JobCard`). On the home screen the job card stays only until a job is chosen;
+after that you change it through the menu. Dave judges this by eye before anything merges.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `TopBar` in `src/app.tsx`: a sticky bar outside `main`, full width, with "Mesowise" and a hamburger button that opens "Instellingen" (the existing `StatDialog`) with the job card
+- [x] The home `h1` is kept for screen readers and focus, but hidden (`sr-only`): the bar carries the name
+- [x] The Level-up bar sticks below the menu bar (`--topbar-h`)
 
 ### TEST
 
+- [x] `src/app.test.tsx`: the bar is outside `main` with the name and menu button; the job card leaves the home screen once a job is chosen; the job changes through the menu
+- [x] `npm run lint` and `npx vitest run` green locally
+
 ### DEPLOY: app/86-top-menu-bar
 
-**Score:**
+A white menu bar now runs across the top of the screen, with the app name and a menu button on the right.
+The menu holds your job: once you have picked one, the job card no longer takes up space on the home
+screen, and you change your job through the menu.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
