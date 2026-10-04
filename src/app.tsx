@@ -1840,7 +1840,7 @@ export function App() {
               <h1 class="sr-only" tabIndex={-1} ref={headingRef(0)}>
                 Mesowise
               </h1>
-              <p class="lead">Zo veel mogelijk EXP per meso in MapleStory Classic World.</p>
+              <p class="lead">Zo min mogelijk mesos per level in MapleStory Classic World.</p>
 
               {/* Bovenaan je huidige level; de knop om te levelen staat onderaan (Dave, 4 oktober 2026, #84). */}
               <p class="current-level">

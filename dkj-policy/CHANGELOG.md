@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**22 / 52 minor entries** <!-- pending-tally -->
+**22 / 53 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/93-subtitle-mesos-per-level · 20261004-124135Z
+
+The subtitle under the app's title now reads "Zo min mogelijk mesos per level in MapleStory Classic World."
+instead of "Zo veel mogelijk EXP per meso"; the web manifest's description and the README say the same (#93).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+rename subtitle of app
+
+[PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
+
+---
 
 ### DEPLOY: data/90-magic-claw-per-hit · 20261004-123453Z
 
