@@ -761,6 +761,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
     ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
+  // Een slot zonder items (shield, gloves, cape en earrings, #117): de lijst klapt toch open, met wat je doet.
+  const noItems = typed === '' && found.length === 0
   const choose = (row: { pick: string; name?: string }) => {
     props.onPick(row.pick, row.name)
     setText(null)
@@ -826,7 +828,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
         }}
         onKeyDown={onKeyDown}
       />
-      {open && rows.length > 0 && (
+      {open && (rows.length > 0 || noItems) && (
         // mousedown niet laten blurren: anders sluit de lijst voordat de tik als keuze aankomt.
         <ul class="equip-list" id={`${id}-list`} role="listbox" onMouseDown={(e) => e.preventDefault()}>
           {rows.map((r, n) => (
@@ -837,6 +839,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; onPi
             </li>
           ))}
           {found.length > MAX_RESULTS && <li role="presentation" class="more">Typ meer om te zoeken.</li>}
+          {noItems && <li role="presentation" class="more">Hier kent de app nog geen items: typ de naam van wat je draagt.</li>}
         </ul>
       )}
     </div>

@@ -47,6 +47,7 @@ Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment car
 - [x] No slot says "(optioneel)" any more and every search box reads "Zoek wat je draagt"; `isOptionalSlot` is gone
 - [x] Shield only for the Warrior and the Magician (claws, bows and crossbows take both hands)
 - [x] No catalog for the new slots (no sourced item data yet): you fill them as a custom item with its DEF
+- [x] A slot without items still opens its list on a tap, with a line saying to type the name (Dave: "gloves geeft nu nog geen optie")
 
 ### TEST
 
@@ -56,7 +57,7 @@ Dave (October 4, 2026, #117): add shield, cape and earrings to the equipment car
 ### DEPLOY: app/117-shield-cape-earrings
 
 The equipment card has four new slots: Shield (Warrior and Magician only), Gloves, Cape and Earrings, and no slot is labelled "(optioneel)" any more, because every slot may stay empty. What you
-wear there counts toward your WDEF like the other armor. The app has no items for them yet, so you type the name and
+wear there counts toward your WDEF like the other armor. The app has no items for them yet, so a tap on the search box says to type the name, and you
 fill in the DEF as a custom item. Magic Def still counts hat, body and shoes, because a custom item carries no MDEF.
 
 **Score:** 2
