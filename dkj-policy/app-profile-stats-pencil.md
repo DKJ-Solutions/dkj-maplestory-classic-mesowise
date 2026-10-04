@@ -39,19 +39,36 @@
 
 ### PLAN
 
+Dave, October 4, 2026: the stats on the character card change only through the pencil, as on the equipment
+card; name and value share one row to save height; level, weapon attack and WDEF leave this card.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] ProfileCard: one row per stat (name, value, pencil), editing only in the StatDialog popup with a draft
+- [x] Level, weapon attack and WDEF removed from the card (level rises via Level up, the other two follow equipment)
+- [x] Styling for the stat row and the popup without -/+ for the decimal attack time
 
 ### TEST
 
+- [x] Component tests updated and added: save only after Opslaan/Enter, discard on close, + steps, no inputs outside the popup, the three stats absent
+- [x] `npx vitest run` (589 green), `npm run lint`, `scripts/lint/lint.ps1` clean
+- [ ] Code review (Victor) and proofread of the UI text (Edith)
+- [ ] Dave looks at the result at phone width before the merge
+
 ### DEPLOY: app/profile-stats-pencil
 
-**Score:**
+The character card is now read-only at a glance: each stat sits on one row with its value and a pencil, and a
+change goes through the same popup as on the equipment card, saved only with Opslaan or Enter. Level, weapon
+attack and WDEF are no longer on this card.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player can no longer change a stat by an accidental tap or scroll, and the card takes far less height on a
+phone; level, weapon attack and WDEF are set where they belong (Level up and the equipment card).
+
+**Score:** 3
 
 #### Pull Request
 
