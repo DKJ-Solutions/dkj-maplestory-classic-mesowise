@@ -30,6 +30,11 @@ const [HAT_A, HAT_B] = twoItems('hat')
 const [SHOE_A] = twoItems('shoes')
 const [TOP_A] = twoItems('top')
 
+/** Wat het level kost, zoals de Report-kaart het toont: het bedrag en de regel eronder (met de mob). */
+const levelCostText = () => {
+  const value = document.querySelector('.level-cost-value')
+  return value ? `${value.textContent} ${value.nextElementSibling?.textContent}` : undefined
+}
 const stored = (key: string) => JSON.parse(localStorage.getItem(key) ?? 'null')
 const profileFields = () => stored(PROFILE_KEY)?.fields
 /** De Attack zoals Total stats hem moet tonen: het schadebereik van het bewaarde profiel (#108). */
@@ -754,7 +759,7 @@ describe('bewaren na elke wijziging', () => {
   it('past een eigenschap van de mob aan met het potlood, bewaart hem en rekent ermee', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Monster$/ }))
     fireEvent.change(screen.getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
-    const before = document.querySelector('.summary')?.textContent
+    const before = levelCostText()
     const hp = openStat('HP')
     expect(hp.d.getByText('Verwacht volgens de database:')).toBeTruthy()
     hp.type('256')
@@ -762,12 +767,12 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig', mobHp: '256' }])
     expect(statLine('HP').querySelector('.equip-value')!.getAttribute('aria-label')).toBe('HP 256, gecorrigeerd, verwacht 128')
     // Twee keer zoveel HP: minder kills per uur, dus een duurder level.
-    expect(document.querySelector('.summary')?.textContent).not.toBe(before)
+    expect(levelCostText()).not.toBe(before)
     const back = openStat('HP')
     fireEvent.click(back.d.getByRole('button', { name: 'Reset naar 128' }))
     back.save()
     expect(stored(STORAGE_KEY).spots[0].mobHp).toBeUndefined()
-    expect(document.querySelector('.summary')?.textContent).toBe(before)
+    expect(levelCostText()).toBe(before)
   })
 
   it('negeert een oud eigen aantal kills per uur uit de opslag: dat vul je niet meer in, de app rekent het zelf', () => {
@@ -775,10 +780,10 @@ describe('bewaren na elke wijziging', () => {
       cleanup()
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [spot] }))
       render(<App />)
-      return document.querySelector('.summary')?.textContent
+      return levelCostText()
     }
     const own = summary({ ...mobDraft('Pig'), kills: '1' })
-    expect(own).toMatch(/^Op Pig/)
+    expect(own).toMatch(/Op Pig\./)
     expect(own).toBe(summary(mobDraft('Pig')!))
   })
 
@@ -796,10 +801,10 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
-    expect(document.querySelector('.summary')).toBeNull()
+    expect(document.querySelector('.level-cost-value')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /^Monster$/ }))
     fireEvent.change(screen.getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
-    expect(document.querySelector('.summary')?.textContent).toMatch(/^Op Pig · lv 10: kost ± [\d.]+ meso$/)
+    expect(levelCostText()).toMatch(/^± [\d.]+ meso.*Op Pig\.$/)
   })
 
   it('toont de equipment op het controlescherm direct op de kaart, zonder popup (#106)', () => {
@@ -1105,7 +1110,7 @@ describe('een Warrior in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
-      expect(home.textContent).toMatch(/Op .* · lv 20: kost /)
+      expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
       expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
@@ -1502,7 +1507,7 @@ describe('een Bowman in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = panels()[0]
-      expect(home.textContent).toMatch(/Op .* · lv 20: kost /)
+      expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
       expect(costText()).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()

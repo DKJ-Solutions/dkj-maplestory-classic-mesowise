@@ -264,8 +264,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    transparante van dezelfde dikte als bij BACK: zo blijven beide knoppen tot op de pixel even groot. */
 .btn.levelup { border-color: transparent; background: linear-gradient(180deg, var(--levelup-hi), var(--levelup-lo)) border-box; color: var(--on-levelup); }
 .level-row-hint { margin-top: -0.5rem; text-align: right; }
-.summary { margin: 0 0 1rem; color: var(--muted); }
-.summary strong { color: var(--text); }
 
 /* Stap 1: je stats controleren */
 .stats { padding: 0.25rem 1rem; }

@@ -2148,12 +2148,6 @@ export function App() {
               </div>
               {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
 
-              {computed && cost.kind === 'cost' && (
-                <p class="summary">
-                  Op <strong>{cost.spotName}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
-                </p>
-              )}
-
               {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
               {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
 
