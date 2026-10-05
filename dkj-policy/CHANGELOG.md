@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**52 / 89 minor entries** <!-- pending-tally -->
+**53 / 90 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/158-worn-item-requirements · 20261005-140115Z
+
+The change is in the game data and the app; no repo tooling changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Auto assign now knows the stat requirements of the items no NPC sells: the worn items, the other colours of the
+Warrior armour, the Bowman's Able skirts, and the shields, gloves, capes and earrings. Each comes from that item's
+own MeowDB page. So the secondary stat is set from everything you wear, and only an item you typed in yourself
+counts as unknown.
+
+**Score:** 3
+
+#### Pull Request
+
+Stat requirements for the no-price items
+
+[PR #163](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/163)
+
+---
 
 ### DEPLOY: app/145-skill-horizon · 20261005-134656Z
 
