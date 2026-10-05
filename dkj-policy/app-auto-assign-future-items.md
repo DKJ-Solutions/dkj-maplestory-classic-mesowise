@@ -39,19 +39,33 @@
 
 ### PLAN
 
+Dave, October 5, 2026: Auto assign put every AP but the worn requirements on LUK, so a Thief without a DEX item kept DEX 4.
+The secondary stat must also cover items still to be worn. Chosen horizon (menu): every catalog item of the job that the
+current level allows, worn or not. Custom ("Anders") items keep counting as no requirement; no requirement fields added.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/autoFillAp.ts`: `catalogNeed` takes the highest secondary requirement of every catalog item at or below the level; capped so the main stat still meets what is worn; a tie goes to the worn item
+- [x] `src/app.tsx`: the comment above the button describes the new rule
 
 ### TEST
 
+- [x] `src/autoFillAp.test.ts`: new cases for unworn items, the level limit, the tie and the cap; worn-item cases moved to levels where the catalog does not ask more
+- [x] `src/autoFillAp.items.test.ts`: the whole-catalog property now includes the catalog floor on the secondary stat; level 199/200 now fit under 999
+- [x] `npm run lint` and the full Vitest suite green (1513 tests)
+- [ ] Victor's review
+
 ### DEPLOY: app/auto-assign-future-items
 
-**Score:**
+`autoFillAp` now also reads the job's catalog up to the entered level for the secondary stat, not only the equipment slots.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Auto assign now sets the secondary stat (DEX for a Thief) high enough for every item your level lets you wear, not just what you have on, so the next claw or armor piece fits without redistributing AP.
+
+**Score:** 3
 
 #### Pull Request
 
