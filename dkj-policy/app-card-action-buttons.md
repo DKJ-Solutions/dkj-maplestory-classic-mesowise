@@ -54,7 +54,7 @@ clear button.
 - [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
 - [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
 - [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
-- [x] A card's popup (`.card-dialog`) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone, at least 1rem from every edge (Dave, October 5, 2026)
+- [x] Every popup (`.stat-dialog`: a card's popup, a report, a stat edit, the settings) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone, at least 1rem from every edge (Dave, October 5, 2026)
 - [x] More gap in `.stat-line` (0.75rem, was 0.375rem) and more padding above and below each line (0.5rem, was 0.25rem); the three boxes on an Ability points line 2.5rem instead of 3rem so the name still fits at phone width (Dave, October 5, 2026)
 - [x] No top space above the content of a card's popup; the value boxes (`.equip-value`) a size smaller: 38px high (was 44px, they are read-only), at least 3rem wide, the number at 1rem (Dave, October 5, 2026)
 - [x] The pencil (`.equip-edit`) 38px instead of 44px, as big as the value box beside it; the grid columns it sits in follow (Dave, October 5, 2026)
@@ -70,7 +70,7 @@ The change is in the app UI only; no repo tooling or data changed.
 
 A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
 buttons in the same style as the pencil buttons, on a row of their own below the name at full width, so it is obvious
-what can be tapped. A card's popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+what can be tapped. Every popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
 
 **Score:** 3
 

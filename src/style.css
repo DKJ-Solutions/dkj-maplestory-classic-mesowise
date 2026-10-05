@@ -351,18 +351,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* De popup om een stat te wijzigen (karakter) of te corrigeren (equipment): op een telefoon een paneel onderaan het scherm, breder gecentreerd */
+/* Elke popup staat in het midden van het scherm, ook op een telefoon, en blijft rondom minstens 1rem van de rand
+   (Dave, 5 oktober 2026); is de inhoud hoger, dan scrollt de popup. */
 .stat-dialog {
-  width: 100%; max-width: 26rem; margin: auto auto 0; padding: 0;
-  box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem 1rem 0 0;
+  width: calc(100% - 2rem); max-width: 26rem; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+  box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
-.stat-dialog-body { padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
+.stat-dialog-body { padding: 1rem; }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
-@media (min-width: 600px) { .stat-dialog { margin: auto; border-radius: 1rem; } }
-/* De popup van een kaart staat altijd in het midden van het scherm, ook op een telefoon, en blijft rondom minstens 1rem van de rand
-   (Dave, 5 oktober 2026); is de inhoud hoger, dan scrollt de popup. */
-.stat-dialog.card-dialog { width: calc(100% - 2rem); max-height: calc(100% - 2rem); margin: auto; border-radius: 1rem; overflow-y: auto; }
-.stat-dialog.card-dialog .stat-dialog-body { padding-bottom: 1rem; }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
 .stat-dialog { text-align: left; }
 .stat-dialog-head { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 0.5rem; margin-bottom: 0; }
