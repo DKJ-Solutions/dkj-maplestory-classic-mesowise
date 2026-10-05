@@ -52,6 +52,7 @@ a report with the extended advice. Not on Total stats and Ability points: nothin
 - [x] The "Stats" heading removed (the group keeps the name as `aria-label`) and 1rem more space between Total stats and Equip (Dave, October 5, 2026)
 - [x] The summary line under the level ("Op <mob> · lv N: kost ± ... meso") removed: the Report card already shows that cost (Dave, October 5, 2026); tests that read the cost there now read it from the Report card
 - [x] Popup titles (card and report) at `--fs-h2`, so the sizes run large to small: title, advice part, verdict, hint, source (Dave, October 5, 2026)
+- [x] No dotted underline under ATT and DEF: the browser's default for `<abbr title>`, which a phone cannot hover; the `<abbr>` stays for screen readers (Dave, October 5, 2026)
 - [x] Styling in `src/style.css`: 44px button in the eye's colour; the popup reuses the Report card's advice rules
 
 ### TEST

@@ -477,6 +477,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
 .question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
 .question-head h3 { margin: 0; font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }
+/* ATT en DEF zijn een <abbr> (een schermlezer zegt Attack en Defense), maar zonder de stippellijn van de browser: op een telefoon is er geen hover die hem uitlegt (Dave, 5 oktober 2026). */
+.question-head abbr[title] { text-decoration: none; cursor: inherit; }
 .question-head .chip { min-width: 0; margin-left: auto; text-align: right; }
 .chip { display: inline-block; padding: 0.125rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.875rem; font-weight: 700; max-width: 100%; overflow-wrap: anywhere; }
 .chip.yes { background: var(--accent); border-color: var(--accent); color: #fff; }
