@@ -57,6 +57,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): with the close cross borderless, the pencil is centred under it (3px in from the right edge) instead of edge-aligned
 - [x] Dave (October 5, 2026): in the menu "Job:" and "Gender:" share one style (both plain `.job-title` labels)
 - [x] Dave (October 5, 2026): in the menu the row with "Character" and the pencil is gone; Job and Gender are open straight away, a different pick is a draft until Opslaan, and Opslaan slides the panel shut (closing without it discards the draft). The home-screen card keeps its pencil
+- [x] Dave (October 5, 2026): in the menu each question is one row: "Job:" with its four buttons, then "Gender:" with its two, labels in one column and the buttons on a shared four-column grid
 - [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it, without a border
 
 ### TEST

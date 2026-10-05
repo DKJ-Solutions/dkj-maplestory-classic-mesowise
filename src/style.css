@@ -474,6 +474,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-list { margin: 0; padding: 0; list-style: none; }
 .stat-dialog .job { margin: 0.5rem 0 0; }
 .menu-list .job-title { font-size: 1rem; font-weight: 600; }
+/* Eén rij per vraag (Dave, 5 oktober 2026): links het label in één kolom, rechts de knoppen. Vier gelijke kolommen,
+   zodat de twee knoppen van Gender even breed zijn als die van Job en er recht onder beginnen. */
+.menu-list .job { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.75rem; align-items: center; }
+.menu-list .job > * { grid-column: 1 / -1; margin: 0; }
+.menu-list .job > .job-head { grid-column: 1; min-height: 0; margin: 0; }
+.menu-list .job > .job-choices { grid-column: 2; grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
+.menu-list .job > .job-actions { margin-top: 0.5rem; }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
 .stat-dialog.menu-drawer {
