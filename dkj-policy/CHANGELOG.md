@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**54 / 91 minor entries** <!-- pending-tally -->
+**55 / 92 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/auto-assign-future-items · 20261005-142411Z
+
+`autoFillAp` now also reads the job's catalog up to the entered level for the secondary stat, not only the equipment slots.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Auto assign now sets the secondary stat (DEX for a Thief) high enough for every item your level lets you wear, not just what you have on, so the next claw or armor piece fits without redistributing AP.
+
+**Score:** 3
+
+#### Pull Request
+
+Auto assign sets the secondary stat for every item your level allows, not only what you wear
+
+[PR #165](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/165)
+
+---
 
 ### DEPLOY: app/equip-value-not-a-button · 20261005-140559Z
 
