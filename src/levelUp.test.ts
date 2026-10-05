@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { apAtLevel, baseAccuracy, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { bowmanAccuracy } from './data/bowman'
+import { magicianAccuracy } from './data/magician'
 import { warriorAccuracy } from './data/warrior'
 import {
   applyLevelDown,
@@ -368,5 +370,182 @@ describe('de level-up-snapshot (#154)', () => {
     expect(snapshotApplies(snap, { ...up, level: '12' }, 'thief')).toBe(false)
     expect(snapshotApplies(snap, up, 'warrior')).toBe(false)
     expect(snapshotApplies(null, up, 'thief')).toBe(false)
+  })
+})
+
+describe('applyLevelUp: HP en accuracy per job over de drempel en de floor (#154)', () => {
+  const base = { ...DEFAULT_PROFILE, hp: '100', accuracy: '100', dex: '25', int: '30', luk: '40' }
+  const accuracyOf: Record<Job, (stat: number, level: number, luk: number) => number> = {
+    thief: baseAccuracy,
+    warrior: warriorAccuracy,
+    bowman: bowmanAccuracy,
+    magician: magicianAccuracy,
+  }
+  // De stat waaruit het stat-deel van de accuracy volgt: DEX, bij een Magician INT.
+  const statOf = (job: Job) => Number(job === 'magician' ? base.int : base.dex)
+
+  it.each(['thief', 'warrior', 'bowman', 'magician'] as Job[])('%s: +16 HP tot en met level 9, de job-waarde vanaf level 10 (Magician: ook +16, volgens de HP/MP-gids)', (job) => {
+    const hp = (level: number) => Number(applyLevelUp({ ...base, level: String(level) }, job).hp) - 100
+    const jobHp = { thief: 22, warrior: 28, bowman: 22, magician: 16 }[job]
+    expect([hp(1), hp(8), hp(9)]).toEqual([16, 16, 16])
+    expect([hp(10), hp(11), hp(199)]).toEqual([jobHp, jobHp, jobHp])
+  })
+
+  it.each(['thief', 'warrior', 'bowman', 'magician'] as Job[])('%s: de accuracy-stap is op elk level het verschil van zijn eigen formule, en 0 of 1', (job) => {
+    for (let level = 1; level < 200; level++) {
+      const out = applyLevelUp({ ...base, level: String(level) }, job)
+      const expected = accuracyOf[job](statOf(job), level + 1, 40) - accuracyOf[job](statOf(job), level, 40)
+      expect(Number(out.accuracy) - 100, `${job} lv ${level}`).toBe(expected)
+      expect(expected).toBeGreaterThanOrEqual(0)
+      expect(expected).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('geeft de Thief om het andere level +1 accuracy (DEX 25, LUK 40: lv 10 +1, lv 11 +0, lv 12 +1)', () => {
+    const step = (level: number) => Number(applyLevelUp({ ...base, level: String(level) }, 'thief').accuracy) - 100
+    expect([step(10), step(11), step(12), step(13)]).toEqual([1, 0, 1, 0])
+  })
+
+  it('gebruikt bij een Magician INT en niet DEX voor de accuracy', () => {
+    const lowDex = { ...base, level: '30', dex: '4', int: '200', accuracy: '100' }
+    const out = applyLevelUp(lowDex, 'magician')
+    expect(Number(out.accuracy) - 100).toBe(magicianAccuracy(200, 31, 40) - magicianAccuracy(200, 30, 40))
+    // DEX verandert het verschil niet.
+    expect(applyLevelUp({ ...lowDex, dex: '150' }, 'magician').accuracy).toBe(out.accuracy)
+  })
+
+  it('rekent de accuracy met base plus extra AP van items (Warrior met DEX-items, Magician met INT-items, Bowman met LUK-items)', () => {
+    const w = { ...base, level: '30', dex: '10', dexExtra: '15' }
+    expect(Number(applyLevelUp(w, 'warrior').accuracy) - 100).toBe(warriorAccuracy(25, 31, 40) - warriorAccuracy(25, 30, 40))
+    const m = { ...base, level: '30', int: '10', intExtra: '90' }
+    expect(Number(applyLevelUp(m, 'magician').accuracy) - 100).toBe(magicianAccuracy(100, 31, 40) - magicianAccuracy(100, 30, 40))
+    const l = { ...base, level: '30', luk: '10', lukExtra: '200' }
+    expect(Number(applyLevelUp(l, 'bowman').accuracy) - 100).toBe(bowmanAccuracy(25, 31, 210) - bowmanAccuracy(25, 30, 210))
+  })
+
+  it('raakt per job alleen level, hp en accuracy aan', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as Job[]) {
+      const out = applyLevelUp({ ...base, level: '30' }, job)
+      expect({ ...out, level: '', hp: '', accuracy: '' }, job).toEqual({ ...base, level: '', hp: '', accuracy: '' })
+    }
+  })
+})
+
+describe('apToDistribute: randgevallen (#154)', () => {
+  const placed = (str: number, dex: number, int: number, luk: number) => ({ str: String(str), dex: String(dex), int: String(int), luk: String(luk) })
+
+  it('geeft level 1 de startpunten: 25 AP, en toont niets als die gezet zijn', () => {
+    expect(apAtLevel(1)).toBe(25)
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '1', ...placed(4, 4, 4, 13) })).toBeNull()
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '1', ...placed(4, 4, 4, 12) })).toBe(1)
+  })
+
+  it('toont niets bij precies evenveel gezet als het level geeft, en 1 bij één punt minder', () => {
+    expect(apToDistribute({ ...DEFAULT_PROFILE, ...placed(4, 25, 4, 37) })).toBeNull()
+    expect(apToDistribute({ ...DEFAULT_PROFILE, ...placed(4, 25, 4, 36) })).toBe(1)
+    expect(apToDistribute({ ...DEFAULT_PROFILE, ...placed(4, 25, 4, 38) })).toBeNull()
+  })
+
+  it('werkt op de grenzen level 1 en level 200, en niet net erbuiten', () => {
+    const none = placed(4, 4, 4, 4)
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '200', ...none })).toBe(apAtLevel(200) - 16)
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '201', ...none })).toBeNull()
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '0', ...none })).toBeNull()
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: '-1', ...none })).toBeNull()
+  })
+
+  it('leest een level met spaties, en geeft niets bij een decimaal of onleesbaar level', () => {
+    const none = placed(4, 4, 4, 4)
+    expect(apToDistribute({ ...DEFAULT_PROFILE, level: ' 11 ', ...none })).toBe(apAtLevel(11) - 16)
+    for (const level of ['', '  ', '10.5', 'abc', 'Infinity', 'NaN']) {
+      expect(apToDistribute({ ...DEFAULT_PROFILE, level, ...none }), level).toBeNull()
+    }
+  })
+
+  it('telt alleen base AP: de extra AP van items verlagen het getal niet', () => {
+    const d = { ...DEFAULT_PROFILE, level: '11', ...placed(4, 4, 4, 4), strExtra: '50', dexExtra: '50', intExtra: '50', lukExtra: '50' }
+    expect(apToDistribute(d)).toBe(apAtLevel(11) - 16)
+  })
+
+  it('geeft niets terug als er te veel base AP staat, ook al zijn er extra AP', () => {
+    expect(apToDistribute({ ...DEFAULT_PROFILE, ...placed(4, 25, 4, 38), lukExtra: '10' })).toBeNull()
+  })
+
+  it('telt een negatief, decimaal of leeg veld als 0 (zoals baseApSpent)', () => {
+    const at = (over: Partial<typeof DEFAULT_PROFILE>) => apToDistribute({ ...DEFAULT_PROFILE, level: '2', str: '4', dex: '4', int: '4', luk: '4', ...over })
+    const full = apAtLevel(2) - 16
+    expect(at({ str: '-5' })).toBe(full + 4)
+    expect(at({ str: '4.5' })).toBe(full + 4)
+    expect(at({ str: '' })).toBe(full + 4)
+  })
+})
+
+describe('spToDistribute: de grens van de 1e job (#154)', () => {
+  it('geeft onder level 10 niets: de 1e job begint op level 10', () => {
+    for (const level of ['1', '5', '9']) expect(spToDistribute({ ...DEFAULT_PROFILE, level, luckySeven: '0' }, 'thief'), level).toBeNull()
+  })
+
+  it('geeft op level 10 één punt, en niets meer als dat gezet is', () => {
+    expect(spToDistribute({ ...DEFAULT_PROFILE, level: '10', luckySeven: '0' }, 'thief')).toBe(1)
+    expect(spToDistribute({ ...DEFAULT_PROFILE, level: '10', luckySeven: '1' }, 'thief')).toBeNull()
+  })
+
+  it('geeft 3 punten erbij per level vanaf level 11', () => {
+    expect(spToDistribute({ ...DEFAULT_PROFILE, level: '11', luckySeven: '1' }, 'thief')).toBe(3)
+    expect(spToDistribute({ ...DEFAULT_PROFILE, level: '12', luckySeven: '1' }, 'thief')).toBe(6)
+  })
+
+  it('telt de skills van de andere jobs in het concept niet mee', () => {
+    // Een Warrior met Thief-waarden in het concept (een terugwissel verliest niets): alleen zijn eigen skills tellen.
+    const d = { ...DEFAULT_PROFILE, level: '11', luckySeven: '4', nimbleBody: '3', powerStrike: '0', preciseStrikes: '0' }
+    expect(spToDistribute(d, 'warrior')).toBe(4)
+    expect(spToDistribute({ ...d, powerStrike: '4' }, 'warrior')).toBeNull()
+  })
+
+  it('geeft niets bij een ongeldig level, voor elke job', () => {
+    for (const job of ['warrior', 'bowman', 'magician', 'thief'] as Job[]) {
+      for (const level of ['', 'x', '10.5', '0', '201']) expect(spToDistribute({ ...DEFAULT_PROFILE, level }, job), `${job} ${level}`).toBeNull()
+    }
+  })
+})
+
+describe('snapshotApplies: na een jobwissel of een handmatig aangepast level (#154)', () => {
+  const eq = { slot: 'x' }
+  const snap = takeSnapshot(DEFAULT_PROFILE, eq, 'thief')
+
+  it('geldt niet meer als het level na de level-up is aangepast (omhoog, omlaag of leeg)', () => {
+    for (const level of ['10', '12', '1', '200', '', 'x', '11.5']) {
+      expect(snapshotApplies(snap, { ...DEFAULT_PROFILE, level }, 'thief'), level).toBe(false)
+    }
+  })
+
+  it('geldt nog als het level terug is op het nieuwe level, ook met spaties en met andere stats', () => {
+    expect(snapshotApplies(snap, { ...DEFAULT_PROFILE, level: ' 11 ', luk: '99' }, 'thief')).toBe(true)
+  })
+
+  it('geldt niet na een andere job, ook niet op het juiste level', () => {
+    for (const job of ['warrior', 'bowman', 'magician'] as Job[]) {
+      expect(snapshotApplies(snap, { ...DEFAULT_PROFILE, level: '11' }, job), job).toBe(false)
+    }
+  })
+
+  it('onthoudt de job waarmee de snapshot is genomen, en niet de huidige', () => {
+    const w = takeSnapshot({ ...DEFAULT_PROFILE, level: '30' }, eq, 'warrior')
+    expect(w.job).toBe('warrior')
+    expect(snapshotApplies(w, { ...DEFAULT_PROFILE, level: '31' }, 'warrior')).toBe(true)
+    expect(snapshotApplies(w, { ...DEFAULT_PROFILE, level: '31' }, 'thief')).toBe(false)
+  })
+
+  it('bewaart het concept en de equipment zoals ze waren, zonder de invoer te wijzigen', () => {
+    const d = { ...DEFAULT_PROFILE }
+    const s = takeSnapshot(d, eq, 'thief')
+    expect(s.draft).toBe(d)
+    expect(s.equipment).toBe(eq)
+    expect(d).toEqual(DEFAULT_PROFILE)
+  })
+
+  it('geeft bij level 200 toLevel 200: de level-up deed niets, dus Back mag ook niets terugzetten behalve op level 200 zelf', () => {
+    const top = takeSnapshot({ ...DEFAULT_PROFILE, level: '200' }, eq, 'thief')
+    expect(top.toLevel).toBe('200')
   })
 })

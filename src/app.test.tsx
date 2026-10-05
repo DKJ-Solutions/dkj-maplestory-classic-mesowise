@@ -267,6 +267,23 @@ describe('begin zonder opslag', () => {
       expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
     })
 
+    it('zet in de Report-kaart elke vraag onder dezelfde kop als in het rapport achter het oog: ATT en DEF bij Equip, Skill bij Skillpoints, Mob bij Monster', () => {
+      const inReportCard = (title: string) => within(reportCard()).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
+      const cardOf: Record<string, string[]> = { Equip: ['ATT', 'DEF'], Skillpoints: ['Skill'], Monster: ['Mob'] }
+      for (const [card, titles] of Object.entries(cardOf)) {
+        const dialog = openReport(card)
+        for (const title of titles) {
+          const own = within(dialog).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
+          expect(own, card + ': ' + title).toBe(inReportCard(title))
+        }
+        // De andere vragen staan niet in dit rapport.
+        for (const t of ['ATT', 'DEF', 'Skill', 'Mob'].filter((x) => !titles.includes(x))) {
+          expect(within(dialog).queryByRole('heading', { level: 3, name: t }), card + ' toont ' + t + ' niet').toBeNull()
+        }
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+      }
+    })
+
     it('opent het rapport zonder de popup achter het oog, en andersom', () => {
       openReport('Equip')
       expect(document.querySelector('dialog.card-dialog')).toBeNull()
@@ -1013,6 +1030,46 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().hp).toBe('466')
   })
 
+  it('gooit een stat die je na de level-up zette weg bij Back, en zet de equipment van het level eronder terug', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const luk = openAbility('LUK')
+    luk.typeBase('40')
+    luk.save()
+    expect(profileFields().luk).toBe('40')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', MEBA.name)
+    fireEvent.click(backButton())
+    expect(profileFields()).toEqual(STARTER_PROFILE)
+    expect(worn(cards()[0], 'Weapon')).toBeNull()
+  })
+
+  it('zet bij twee level-ups achter elkaar alleen de equipment van het tweede level terug, niet die van het eerste', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    pick(cards()[0], 'Weapon', MEBA.name)
+    levelUp()
+    pick(cards()[0], 'Hat', HAT_A.name)
+    expect(level()).toBe('LV. 12')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 11')
+    expect(worn(cards()[0], 'Weapon')).toBe(MEBA.name)
+    expect(worn(cards()[0], 'Hat')).toBeNull()
+    expect(profileFields().clawWatk).toBe(String(MEBA.watk))
+  })
+
+  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: stats en equipment blijven', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    fireEvent.click(backButton())
+    const before = profileFields()
+    fireEvent.click(backButton())
+    expect(profileFields()).toEqual({ ...before, level: '9' })
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+  })
+
   it('bewaart de snapshot niet: na herladen zet Back alleen het level een terug (#130)', () => {
     levelUp()
     cleanup()
@@ -1062,6 +1119,34 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
     expect(apNote()).toBeNull()
     expect(spNote()).toBeNull()
+  })
+
+  it('toont na een level-up de AP en SP van een Warrior: 5 AP en 3 SP erbij per level', () => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
+    // Level 20: 120 AP, 118 gezet = 2 over; 31 SP, 1 gezet = 30 over.
+    localStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', int: '4', luk: '4', powerStrike: '1', preciseStrikes: '0' } }),
+    )
+    render(<App />)
+    expect(apNote()).toBe('2 AP te verdelen')
+    expect(spNote()).toBe('30 SP te verdelen')
+    levelUp()
+    expect(apNote()).toBe('7 AP te verdelen')
+    expect(spNote()).toBe('33 SP te verdelen')
+    fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(apNote()).toBe('2 AP te verdelen')
+    expect(spNote()).toBe('30 SP te verdelen')
+  })
+
+  it('telt de extra AP van items niet mee: een item met +50 LUK verlaagt het aantal AP te verdelen niet', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const luk = openAbility('LUK')
+    luk.typeExtra('50')
+    luk.save()
+    expect(apNote()).toBe('5 AP te verdelen')
   })
 
   it('toont geen AP-regel bij te veel AP voor het level', () => {
