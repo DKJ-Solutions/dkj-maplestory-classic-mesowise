@@ -141,7 +141,7 @@ const openAbility = (label: string) => {
 
 /** Opent de Skillpoints-kaart van het beginscherm en geeft de kaart terug (de popup zit erin). */
 const openHomeSkills = () => {
-  const head = within(panels()[0]).getByRole('button', { name: /Skillpoints/ })
+  const head = within(panels()[0]).getByRole('button', { name: /^Skillpoints$/ })
   fireEvent.click(head)
   return head.closest('section')!
 }
@@ -198,9 +198,55 @@ describe('begin zonder opslag', () => {
 
   // Dave, 4 oktober 2026: de kaart staat onder Skillpoints, en net als de andere kaarten toont de kop alleen de titel.
   it('zet de kaart Monster direct onder Skillpoints', () => {
-    const skills = screen.getByRole('button', { name: /Skillpoints/ }).closest('section')!
+    const skills = screen.getByRole('button', { name: /^Skillpoints$/ }).closest('section')!
     const mob = screen.getByRole('button', { name: /^Monster$/ }).closest('section')!
     expect(skills.nextElementSibling).toBe(mob)
+  })
+
+  // Dave, 5 oktober 2026: naast het oog een rapport met het uitgebreide advies, alleen bij een kaart waar je iets kiest.
+  describe('het rapport naast het oog', () => {
+    const report = (title: string) => screen.queryByRole('button', { name: `Rapport: ${title}` })
+    const openReport = (title: string) => {
+      fireEvent.click(report(title)!)
+      return document.querySelector('dialog.report-dialog') as HTMLDialogElement
+    }
+
+    it('staat bij Equip, Skillpoints en Monster rechts naast het oog, en niet bij Ability points en Total stats', () => {
+      for (const title of ['Equip', 'Skillpoints', 'Monster']) {
+        const button = report(title)!
+        expect(button, title).not.toBeNull()
+        expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+        // Een eigen knop naast de kop, niet erin: een knop in een knop kan niet.
+        const head = button.previousElementSibling as HTMLElement
+        expect(head.classList.contains('spot-head')).toBe(true)
+        expect(head.querySelector('svg.card-eye')).not.toBeNull()
+      }
+      expect(report('Ability points')).toBeNull()
+      expect(report('Total stats')).toBeNull()
+      expect(document.querySelectorAll('.card-report')).toHaveLength(3)
+    })
+
+    it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
+      const dialog = openReport('Equip')
+      expect(dialog.open).toBe(true)
+      expect(dialog.getAttribute('aria-label')).toBe('Rapport: Equip')
+      expect(Array.from(dialog.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF'])
+      // De inhoud van de kaart zelf staat er niet in: die zit achter het oog.
+      expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
+    })
+
+    it('toont bij Skillpoints het skill-advies en bij Monster het mob-advies', () => {
+      expect(Array.from(openReport('Skillpoints').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill'])
+      fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
+      expect(document.querySelector('dialog.report-dialog')).toBeNull()
+      expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
+    })
+
+    it('opent het rapport zonder de popup achter het oog, en andersom', () => {
+      openReport('Equip')
+      expect(document.querySelector('dialog.card-dialog')).toBeNull()
+      expect(report('Equip')!.getAttribute('aria-expanded')).toBe('true')
+    })
   })
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
@@ -1871,7 +1917,7 @@ describe('skillpunten per level (issue #136)', () => {
     // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
     expect(section.textContent).not.toContain('geen skillpunten meer over')
     // Zet de pot vol via de Skillpoints-kaart van het adviesscherm.
-    const card = within(panels()[2]).getByRole('button', { name: /Skillpoints/ })
+    const card = within(panels()[2]).getByRole('button', { name: /^Skillpoints$/ })
     fireEvent.click(card)
     fireEvent.input(within(panels()[2]).getByLabelText(/^Lucky Seven, level van 0 tot/), { target: { value: '4' } })
     // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.

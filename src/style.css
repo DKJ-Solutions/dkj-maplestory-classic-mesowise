@@ -68,7 +68,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 /* Een kaart waarvan de popup openstaat, krijgt een fellere rand. :where houdt de regel zwak, zodat "Beste" (vol
    accent met dubbele rand) en een fout (rood) altijd voorgaan. */
-.card:where(:has(> .spot-head[aria-expanded='true'])) {
+.card:where(:has(> .spot-head[aria-expanded='true'], > .card-head > [aria-expanded='true'])) {
   border-color: var(--muted);
   border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
 }
@@ -132,6 +132,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
 /* Een oog in een eigen kolom helemaal rechts: een tik op de kop toont de inhoud van deze kaart in een popup (#106). */
 .card-eye { grid-column: 3; grid-row: 1 / span 2; align-self: center; color: var(--muted); }
+/* Een kop met een rapport (Dave, 5 oktober 2026): het rapport-icoon als eigen knop rechts naast het oog, even groot
+   als een vinger (44px), in dezelfde kleur als het oog. */
+.card-head { display: flex; align-items: stretch; }
+.card-head .spot-head { flex: 1; min-width: 0; padding-right: 0.25rem; }
+.card-report { flex: none; width: 44px; min-height: 44px; margin-right: 0.375rem; padding: 0; border: 0; background: none;
+  display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; border-radius: 0.5rem; }
+.card-report:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Het rapport in zijn popup: de delen van het advies staan onder elkaar met een lijn ertussen, net als in de Report-kaart (de regels bij .level-cost). */
+.report-body { padding-top: 0.875rem; }
 /* Een kop die niets opent (de equipment op het controlescherm, waar de inhoud al op de kaart staat) */
 .spot-head.static { cursor: default; }
 /* De popup van een kaart: de inhoud zonder eigen rand, in elke kaart even ver onder de titel; de melding net onder de titel.
@@ -217,11 +226,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .job .hint:last-child { margin-bottom: 0; }
 .level-cost-value { margin: 0 0 0.25rem; }
 .level-cost-value strong { font-size: 2rem; color: var(--accent); }
-.level-cost .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.level-cost .source a { color: var(--accent); }
+.level-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.level-cost .source a, .report-body .source a { color: var(--accent); }
 
 /* Wat dit level kost en de drie adviezen in één kaart (#126): elk advies onder een lijn. */
-.level-cost .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.level-cost .advice-part + .advice-part, .report-body .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 
 /* Level up: drie schermen naast elkaar die naar links schuiven */
 .flow {
