@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**55 / 92 minor entries** <!-- pending-tally -->
+**56 / 93 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/monster-save-button · 20261005-143856Z
+
+Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had. In every popup where you edit a value (Monster, a stat, an ability point, a skill, an equipment correction), once something has changed, the close button turns into a save tick with a red undo arrow beside it to cancel.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player switching mobs now confirms the switch, so a slip in the list no longer throws away their own corrections to the old mob.
+
+**Score:** 2
+
+#### Pull Request
+
+the Monster popup gets an Opslaan button for the chosen mob
+
+[PR #166](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/166)
+
+---
 
 ### DEPLOY: app/auto-assign-future-items · 20261005-142411Z
 
