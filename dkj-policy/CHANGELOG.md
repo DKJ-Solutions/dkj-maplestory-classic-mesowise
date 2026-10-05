@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**48 / 85 minor entries** <!-- pending-tally -->
+**49 / 86 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/levelup-snapshot · 20261005-123919Z
+
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Level up now keeps everything of your level and stays on the home screen: the "Klopt dit met je spel?" and "Wat nu?"
+screens are gone. Only level, Max HP and the level part of accuracy change by themselves; the app no longer puts the
+Thief's 5 AP in LUK. The AP and SP you still have to distribute show as a count behind the card heading, such as
+"Skillpoints (3)" and "Ability points (5)", and Ability points and Total stats now each have a row of their own.
+Back right after a level-up puts back the level you came from, stats and equipment included. Total stats carries a
+hint to check Accuracy and Avoid in the game after placing AP.
+
+**Score:** 4
+
+#### Pull Request
+
+Level up keeps a snapshot of your level; only AP and SP always change
+
+[PR #156](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/156)
+
+---
 
 ### DEPLOY: app/skill-edit-button · 20261005-120348Z
 
