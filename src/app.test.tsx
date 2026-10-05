@@ -218,12 +218,12 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints en Monster rechts naast het oog, en niet bij Ability points en Total stats', () => {
+    it('staat bij Equip, Skillpoints en Monster naast het oog, en niet bij Ability points en Total stats', () => {
       for (const title of ['Equip', 'Skillpoints', 'Monster']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
-        // Een knop rechts naast het oog, allebei in de kop van de kaart.
+        // Een knop na het oog, allebei in de kop van de kaart.
         const eye = button.previousElementSibling as HTMLElement
         expect(eye.getAttribute('aria-label')).toBe(`${title} bekijken`)
         expect(eye.closest('.spot-head')).toBe(button.closest('.spot-head'))

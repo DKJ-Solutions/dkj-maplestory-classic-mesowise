@@ -214,8 +214,8 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
 }
 
 /**
- * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en rechts het oog als knop die de inhoud in
- * een popup toont. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
+ * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
+ * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
  */
 function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
   return (
@@ -1060,7 +1060,7 @@ function EquipmentCard(props: {
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
       {props.inline ? (
-        <div class="spot-head static">{name}</div>
+        <div class="spot-head">{name}</div>
       ) : (
         <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
           {name}

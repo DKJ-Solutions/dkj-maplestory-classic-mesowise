@@ -42,24 +42,25 @@
 Dave, October 5, 2026: only the eye and the report icon can be tapped, not the whole card head, and both become a
 clear button.
 
-- [x] Decide the look: the same as the pencil buttons (`--edit-bg`/`--edit-fg`, 44px), so all icon buttons in the app are one family
+- [x] Decide the look: the same colours as the pencil buttons (`--edit-bg`/`--edit-fg`), 44px high, so all icon buttons in the app are one family
 
 ### CREATE
 
 - [x] `src/app.tsx`: `CardHead` is a plain `div` with the title; the eye is its own button (`<card> bekijken`), next to the report button (`Report: <card>`)
 - [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup. Every card head is the same (Dave, October 5, 2026): 1rem padding all round, centred, and two rows, the name and then the buttons at full width (shared when a card has two, 0.625rem apart)
-
-### TEST
-
-- [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
-- [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
 - [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
 - [x] Every popup (`.stat-dialog`: a card's popup, a report, a stat edit, the settings) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone, at least 1rem from every edge (Dave, October 5, 2026)
 - [x] More gap in `.stat-line` (0.75rem, was 0.375rem) and more padding above and below each line (0.5rem, was 0.25rem); the three boxes on an Ability points line 2.5rem instead of 3rem so the name still fits at phone width (Dave, October 5, 2026)
 - [x] No top space above the content of a card's popup; the value boxes (`.equip-value`) a size smaller: 38px high (was 44px, they are read-only), at least 3rem wide, the number at 1rem (Dave, October 5, 2026)
 - [x] The pencil (`.equip-edit`) 38px instead of 44px, as big as the value box beside it; the grid columns it sits in follow (Dave, October 5, 2026)
 - [x] 1rem below the title of every popup (`.stat-dialog-head`); the report's own top space dropped so it does not double (Dave, October 5, 2026)
-- [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
+- [x] Review fixes (Victor, Edith): stale comments brought up to date, the unused `.spot-value` rules and `static` class removed
+
+### TEST
+
+- [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
+- [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
+- [~] Layout at 360px and 320px phone width: CSS only, which jsdom does not compute -- Dave judges it by eye (Victor: the Ability points line fits at 360px, gets tight at 320px)
 
 ### DEPLOY: app/card-action-buttons
 
@@ -71,7 +72,10 @@ The change is in the app UI only; no repo tooling or data changed.
 
 A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
 buttons in the same style as the pencil buttons, on a row of their own below the name at full width, so it is obvious
-what can be tapped. Every popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+what can be tapped.
+Every popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+In the popups, the stat lines have more room, the value boxes and the pencil are a size smaller, and the title has
+a little space below it.
 
 **Score:** 3
 
