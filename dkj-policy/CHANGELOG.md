@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**58 / 95 minor entries** <!-- pending-tally -->
+**59 / 96 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/download-button · 20261005-181712Z
+
+Styling of the settings drawer and the dialog header buttons; `StatDialog` always renders its title as an `<h2>`, which drops its `heading` prop.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The settings menu reads as a tidy list: lines between the rows, the job and gender choices as a list with the chosen one highlighted, and the offline download as a clear button at the bottom. The save and undo buttons in every popup are a little smaller.
+
+**Score:** 2
+
+#### Pull Request
+
+Offline download as a proper button in the menu
+
+[PR #169](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/169)
+
+---
 
 ### DEPLOY: app/offline-file · 20261005-174638Z
 
