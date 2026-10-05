@@ -286,11 +286,16 @@ describe('maxHpAfterPoint', () => {
 describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
   const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...knownSpotPatch(spotId) })
+  // De kosten van de horizon van een skillpunt (#145): je level plus de 4 erna, elk level op dat level doorgerekend.
   const costOf = (drafts: readonly SpotDraft[], p: Profile) => {
-    const { ranked, bestId } = pickUnder(drafts, p)
-    const best = ranked.find((r) => r.spot.id === bestId)!
-    if (isInvalid(best)) throw new Error('beste plek ongeldig')
-    return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+    let sum = 0
+    for (let level = p.level; level < p.level + 5; level++) {
+      const { ranked, bestId } = pickUnder(drafts, { ...p, level })
+      const best = ranked.find((r) => r.spot.id === bestId)!
+      if (isInvalid(best)) throw new Error('beste plek ongeldig')
+      sum += mesoCostOfLevel(expToNextLevel(level)!, best.expPerMeso)!
+    }
+    return sum
   }
   const ids = (p: Profile, drafts: readonly SpotDraft[] = [own('b', 1_000, 10_000)]) => {
     const advice = skillPointAdvice(drafts, p)

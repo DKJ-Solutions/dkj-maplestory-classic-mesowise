@@ -39,19 +39,35 @@
 
 ### PLAN
 
+- [x] Horizon set by the owner on #145: 5 levels (current plus 4), summed like horizonCost, cut off at the end of the EXP table
+- [x] Each level of the horizon is evaluated at that level (the mob model depends on the level difference with the monster), other stats as now; with one EXP per meso for all five levels the saving would only scale and the ranking could never change
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: the horizon in `src/skillPoint.ts` (`skillHorizon`, `SKILL_HORIZON_LEVELS`), `mesoCostAt` removed now that it has no caller
+- [x] Cody: the Skill card and the placed confirmation say "van lv X tot en met lv Y" instead of "op dit level", with a hint when the EXP table cuts the horizon off
+- [x] Cody: review fixes: `horizonCost` takes an EXP per meso per level so the skill advice shares its loop, the placement check in the conditional ("zou ... besparen") because the levels lie ahead, stale comments; the stale file name `mesoCostAt.ts` is #161
 
 ### TEST
 
+- [x] Tycho: horizon boundaries, the per-level evaluation, the cut-off at lv 30, the UI sentences (1507 tests green)
+- [x] Victor: code review (no correctness findings); Edith: Dutch text
+- [ ] Dave looked at the preview on his phone
+
 ### DEPLOY: app/145-skill-horizon
 
-**Score:**
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+The skill-point advice now weighs a point over 5 levels, your current level plus the 4 after it, instead of the current
+level alone. Each of those levels is calculated at that level, so a skill that saves little now but more once the level
+difference with the monster shifts can win. The Skill card says over which levels it counts ("van lv 10 tot en met lv
+14"), and says so when the EXP table (up to lv 30) cuts that horizon short.
+
+**Score:** 3
 
 #### Pull Request
 

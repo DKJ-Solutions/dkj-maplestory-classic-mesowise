@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { pickUnder } from './best'
-import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
+import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { expToNextLevel } from './data/expTable'
 import { knownSpotPatch, mobDraft } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
-import { NOT_MODELLED, notModelled, SKILLS, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
+import { NOT_MODELLED, notModelled, SKILL_HORIZON_LEVELS, SKILLS, skillHorizon, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 // Op level 10 heb je 1 skillpunt van de 1e job (issue #136): het voorbeeldprofiel heeft Lucky Seven 1, dus zet de fixture die op 0.
@@ -27,12 +27,19 @@ const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...
 // Een bekende plek wint van een eigen plek met weinig EXP per uur, dus het profiel doet ertoe.
 const drafts = [known('a', 'henesys-rain-forest-east'), own('b', 1_000, 10_000)]
 
-/** De mesokosten van je level op de beste plek, rechtstreeks uitgerekend. */
-const costOf = (p: Profile) => {
-  const { ranked, bestId } = pickUnder(drafts, p)
+/** De mesokosten van één level op de beste plek van dat level, rechtstreeks uitgerekend. */
+const levelCostOf = (p: Profile, d: readonly SpotDraft[] = drafts) => {
+  const { ranked, bestId } = pickUnder(d, p)
   const best = ranked.find((r) => r.spot.id === bestId)!
   if (isInvalid(best)) throw new Error('beste plek ongeldig')
   return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+}
+
+/** De mesokosten van de horizon van een skillpunt (je level plus de 4 erna, #145): elk level op dat level doorgerekend. */
+const costOf = (p: Profile, d: readonly SpotDraft[] = drafts) => {
+  let sum = 0
+  for (let level = p.level; level < p.level + 5; level++) sum += levelCostOf({ ...p, level }, d)
+  return sum
 }
 
 describe('SKILLS', () => {
@@ -62,6 +69,19 @@ describe('SKILLS', () => {
   })
 })
 
+describe('skillHorizon', () => {
+  it('loopt van je level tot en met 4 levels verder (#145)', () => {
+    expect(SKILL_HORIZON_LEVELS).toBe(5)
+    expect(skillHorizon(10)).toEqual({ from: 10, to: 14, truncated: false })
+    expect(skillHorizon(26)).toEqual({ from: 26, to: 30, truncated: false })
+  })
+
+  it('stopt aan het eind van de EXP-tabel (lv 30), en zegt dat hij is afgekapt', () => {
+    expect(skillHorizon(28)).toEqual({ from: 28, to: 30, truncated: true })
+    expect(skillHorizon(30)).toEqual({ from: 30, to: 30, truncated: true })
+  })
+})
+
 describe('skillPointAdvice', () => {
   it('rekent per skill de mesokosten met één punt erbij, en de besparing tegen de kosten zonder', () => {
     const advice = skillPointAdvice(drafts, profile)
@@ -76,6 +96,24 @@ describe('skillPointAdvice', () => {
     }
   })
 
+  it('rekent elk level van de horizon op dat level door, niet met de EXP per meso van nu (#145)', () => {
+    const advice = skillPointAdvice(drafts, profile)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    // Met de EXP per meso van lv 10 voor alle vijf levels: de kosten van lv 10 maal de EXP van de horizon gedeeld door die van lv 10.
+    const flat = (levelCostOf(profile) * (1_716 + 2_360 + 3_216 + 4_200 + 5_460)) / 1_716
+    expect(advice.base).not.toBeCloseTo(flat, 0)
+    expect(advice.base).toBeCloseTo(costOf(profile), 6)
+  })
+
+  it('kapt de horizon af aan het eind van de EXP-tabel en telt alleen de levels die er zijn', () => {
+    const late = { ...profile, level: 28 }
+    const advice = skillPointAdvice(drafts, late)
+    if (advice.kind !== 'advice') throw new Error('geen advies')
+    expect(advice).toMatchObject({ from: 28, to: 30, truncated: true })
+    const sum = [28, 29, 30].reduce((t, level) => t + levelCostOf({ ...late, level }), 0)
+    expect(advice.base).toBeCloseTo(sum, 6)
+  })
+
   it('zet de grootste besparing eerst en kiest de eerste als winnaar, ook als die niet boven 0 ligt', () => {
     const advice = skillPointAdvice(drafts, profile)
     if (advice.kind !== 'advice') throw new Error('geen advies')
@@ -87,7 +125,8 @@ describe('skillPointAdvice', () => {
 
   it('kiest bij besparing 0 toch een winnaar: een vrij punt moet ergens heen', () => {
     const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], profile)
-    expect(advice).toMatchObject({ kind: 'advice', base: 429, robust: true })
+    // 40.000 EXP per uur voor 10.000 meso is 4 EXP per meso; lv 10 t/m 14 vragen 1.716 + 2.360 + 3.216 + 4.200 + 5.460 = 16.952 EXP.
+    expect(advice).toMatchObject({ kind: 'advice', from: 10, to: 14, truncated: false, base: 4238, robust: true })
     if (advice.kind !== 'advice') throw new Error('geen advies')
     expect(advice.left).toBeGreaterThan(0)
     for (const c of advice.choices) expect(c.saving).toBe(0)

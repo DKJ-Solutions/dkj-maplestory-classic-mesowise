@@ -1,7 +1,6 @@
-// De EXP per meso op de beste plek, en wat een level daar in mesos kost. Gedeeld door de adviezen die
-// een profiel naast een aangepast profiel leggen (skillpunt #26, claw #25). Puur, zonder UI-import.
+// De EXP per meso op de beste plek. Gedeeld door de adviezen die een profiel naast een aangepast profiel
+// leggen (skillpunt #26, claw #25); wat een horizon van levels daar kost, staat in horizonCost.ts. Puur, zonder UI-import.
 import { pickUnder } from './best'
-import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import type { Assumptions } from './calc/mobModel'
 import { isInvalid, type RankResult } from './calc/rankSpots'
 import type { Profile } from './profile'
@@ -19,8 +18,3 @@ export function bestExpPerMeso(drafts: readonly SpotDraft[], profile: Profile, a
   return expPerMesoOf(ranked, bestId)
 }
 
-/** Wat `expToNext` EXP in mesos kost op de beste plek: undefined zonder "Beste", null zonder EXP. */
-export function mesoCostAt(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions, expToNext: number): number | null | undefined {
-  const epm = bestExpPerMeso(drafts, profile, a)
-  return epm === undefined ? undefined : mesoCostOfLevel(expToNext, epm)
-}
