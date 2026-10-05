@@ -39,19 +39,30 @@
 
 ### PLAN
 
+Issue #172: since #173 a Bowman can hold a one-handed beginner weapon, and then a shield fits beside it. The slot follows the weapon, not the job alone. A visible result: parked for Dave's look, no PR until then.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `hasSlot`/`slotsFor`/`catalogItems`/`searchCatalog` take the weapon; a Bowman has the shield slot only with one of the five beginner weapons, and then his catalogue offers Stolen Fence and Pan Lid.
+- [x] Cody: `wornWdef`, `wornMdef` and `changeEquipment` take the job (required), so a hidden shield never counts; swapping to a bow takes the shield off and its known WDEF out of the profile.
+- [x] Cody: `loadEquipment`/`equipmentForJob` drop a stored shield the weapon does not allow; `autoFillAp` reads the slots with the weapon.
 
 ### TEST
 
+- [x] Tycho: tests for WDEF/MDEF with and without a shield, every weapon-swap direction in `changeEquipment`, load and job change, AP fill, the Shield row in the app, and no change for the other jobs.
+- [x] Victor: nothing blocking; the required `job` and one shared slot check came from his review.
+
 ### DEPLOY: app/172-bowman-shield-slot
 
-**Score:**
+Internal: slot availability in `equipment.ts` depends on the worn weapon; `wornWdef`, `wornMdef` and `changeEquipment` take the job as a required parameter.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Bowman who still holds a beginner weapon (Sword, Hand Axe, Wooden Club, Razor or Fruit Knife) now gets the Shield slot and can enter Stolen Fence or Pan Lid. Picking a bow takes the shield off again, and its WDEF with it.
+
+**Score:** 2
 
 #### Pull Request
 
