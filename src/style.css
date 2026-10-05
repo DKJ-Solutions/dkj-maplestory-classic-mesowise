@@ -343,7 +343,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .spot-body .stat-line:first-child { margin-top: 0.875rem; }
 .stat-line:last-of-type { border-bottom: 0; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
-.stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
+.stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon, en blijft rondom minstens 1rem van de rand
    (Dave, 5 oktober 2026); is de inhoud hoger, dan scrollt de popup. */
@@ -430,7 +430,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-sp.over { color: #dc2626; }
 /* Een skill op één rij, net als een stat-regel (Dave, 5 oktober 2026): de naam met wat hij kost en geeft, het level en het potlood. */
 .skill-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 38px; column-gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
-.skill-row .equip-value, .skill-row .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
+.skill-row .equip-value, .skill-row .equip-edit { grid-row: auto; grid-column: auto; }
 .skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 /* Onder de naam: de MP die de skill per keer kost op je level (issue #83) en op het volgende (issue #138), elk op een eigen regel */
 .skill-mp { display: block; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
