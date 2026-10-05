@@ -47,13 +47,13 @@ clear button.
 ### CREATE
 
 - [x] `src/app.tsx`: `CardHead` is a plain `div` with the title; the eye is its own button (`<card> bekijken`), next to the report button (`Report: <card>`)
-- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup; more padding in the head (1.25rem, was 0.5rem; 0.875rem left and right on the two stats cards side by side, the most that fits at phone width) and between the two buttons (0.625rem, was 0.375rem; Dave, October 5, 2026)
+- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup; more padding in the head, the same on every card (1.25rem top and bottom, 0.875rem left and right -- the most that fits for the two stats cards side by side at phone width -- and 0.5rem between name and buttons) and between the two buttons (0.625rem, was 0.375rem; Dave, October 5, 2026)
 
 ### TEST
 
 - [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
 - [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
-- [x] Ability points and Total stats side by side in a two-column grid, with a little less room on the left and between name and eye so they fit at phone width (Dave, October 5, 2026)
+- [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
 - [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
 
 ### DEPLOY: app/card-action-buttons
