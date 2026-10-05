@@ -112,17 +112,18 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .spot.invalid { border-color: #dc2626; }
 
 /* Elke kaartkop heeft dezelfde ruimte, 1rem rondom, en twee rijen (Dave, 5 oktober 2026): de naam, en daaronder de knoppen
-   over de volle breedte. */
+   over de volle breedte. Alles in het midden. */
 .spot-head {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.75rem;
   padding: 1rem;
+  text-align: center;
 }
 .spot-name { font-weight: 600; overflow-wrap: normal; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
-.spot-name.with-icon { display: flex; align-items: center; gap: 0.5rem; }
+.spot-name.with-icon { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
 /* Onder de naam de knoppen van de kaart (Dave, 5 oktober 2026): het oog toont de inhoud in een popup (#106), het
    rapport het advies. Alleen deze knoppen zijn te tikken, niet de kop; ze zien eruit als het potlood, 44px hoog en samen de volle breedte. */
