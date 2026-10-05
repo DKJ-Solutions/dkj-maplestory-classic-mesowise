@@ -2139,7 +2139,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(menu.getByRole('heading', { name: 'Warrior (m)' })).toBeTruthy()
   })
 
-  it('wisselt de job via het menu en sluit met "Sluiten"', () => {
+  it('wisselt de job via het menu en sluit met "Sluiten"', async () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     let menu = openMenu()
@@ -2149,10 +2149,51 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(stored(JOB_KEY)?.job).toBe('thief')
     expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
     fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
+    // Het paneel schuift eerst naar rechts weg en sluit dan.
+    await act(() => new Promise((r) => setTimeout(r, 350)))
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
     menu = openMenu()
     expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
+  })
+
+  describe('als paneel dat van rechts inschuift', () => {
+    const drawer = () => bar().querySelector('dialog') as HTMLDialogElement
+    const swipe = (dx: number, dy: number) => {
+      const d = drawer()
+      fireEvent.touchStart(d, { touches: [{ clientX: 100, clientY: 300 }] })
+      fireEvent.touchMove(d, { touches: [{ clientX: 100 + dx / 2, clientY: 300 + dy / 2 }] })
+      fireEvent.touchMove(d, { touches: [{ clientX: 100 + dx, clientY: 300 + dy }] })
+      fireEvent.touchEnd(d, { touches: [] })
+    }
+    const openDrawer = () => {
+      openMenu()
+      Object.defineProperty(drawer(), 'offsetWidth', { configurable: true, value: 300 })
+    }
+
+    it('is een paneel en geen popup in het midden', () => {
+      openMenu()
+      expect(drawer().classList.contains('menu-drawer')).toBe(true)
+    })
+
+    it('sluit met een veeg naar rechts, na het wegschuiven, en zet de focus terug op de menuknop', async () => {
+      openDrawer()
+      swipe(120, 10)
+      expect(drawer().style.transform).toBe('translateX(100%)')
+      await act(() => new Promise((r) => setTimeout(r, 350)))
+      expect(bar().querySelector('dialog')).toBeNull()
+      expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    })
+
+    it('veert terug bij een korte veeg, en blijft open bij scrollen of een veeg naar links', () => {
+      openDrawer()
+      swipe(40, 0)
+      expect(drawer()).not.toBeNull()
+      expect(drawer().style.transform).toBe('')
+      swipe(10, 200)
+      swipe(-150, 0)
+      expect(drawer()).not.toBeNull()
+    })
   })
 })
 

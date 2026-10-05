@@ -156,7 +156,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
 
 /**
  * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
- * hamburgermenu met de instellingen. Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
+ * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
  * je er geen hebt gekozen.
  */
 function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
@@ -180,7 +180,7 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
         </button>
       </div>
       {open && (
-        <StatDialog title="Instellingen" closeLabel="Sluiten" onCancel={close}>
+        <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
           <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
         </StatDialog>
       )}
@@ -1035,9 +1035,71 @@ function StatDialog(props: {
    * gooien het concept ook weg.
    */
   onSave?: () => void
+  /**
+   * Een paneel dat van rechts naar links het scherm in schuift in plaats van een popup in het midden (Dave, 5 oktober
+   * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
+   */
+  drawer?: boolean
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  // De veeg van het paneel: waar de vinger begon, hoe ver hij naar rechts is, en of het een veeg opzij is (geen scroll).
+  const drag = useRef<{ x: number; y: number; dx: number; sideways: boolean | null } | null>(null)
+  // Het paneel schuift eerst naar rechts weg en sluit dan; zonder beweging (of zonder matchMedia, zoals in de tests) meteen.
+  const cancel = () => {
+    const d = ref.current
+    if (!props.drawer || !d || !window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches) return props.onCancel()
+    if (d.dataset.closing) return
+    d.dataset.closing = '1'
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      props.onCancel()
+    }
+    d.addEventListener('transitionend', finish, { once: true })
+    setTimeout(finish, 300)
+    d.style.transition = 'transform 200ms ease-in'
+    d.style.transform = 'translateX(100%)'
+  }
+  const snapBack = (d: HTMLDialogElement) => {
+    d.style.transition = 'transform 150ms ease-out'
+    d.style.transform = ''
+  }
+  const swipe = props.drawer
+    ? {
+        onTouchStart: (e: TouchEvent) => {
+          const t = e.touches[0]
+          drag.current = { x: t.clientX, y: t.clientY, dx: 0, sideways: null }
+        },
+        onTouchMove: (e: TouchEvent) => {
+          const s = drag.current
+          const d = ref.current
+          if (!s || !d) return
+          const t = e.touches[0]
+          const dx = t.clientX - s.x
+          const dy = t.clientY - s.y
+          if (s.sideways === null && Math.max(Math.abs(dx), Math.abs(dy)) > 8) s.sideways = Math.abs(dx) > Math.abs(dy)
+          if (!s.sideways) return
+          s.dx = Math.max(0, dx)
+          d.style.transition = 'none'
+          d.style.transform = `translateX(${s.dx}px)`
+        },
+        onTouchEnd: () => {
+          const s = drag.current
+          const d = ref.current
+          drag.current = null
+          if (!s?.sideways || !d) return
+          // Een derde van de breedte (hooguit 80px) ver genoeg: dicht; anders veert hij terug.
+          if (s.dx > Math.min(80, d.offsetWidth / 3)) cancel()
+          else snapBack(d)
+        },
+        onTouchCancel: () => {
+          drag.current = null
+          if (ref.current) snapBack(ref.current)
+        },
+      }
+    : {}
   const name = (
     <>
       {props.title}
@@ -1055,13 +1117,14 @@ function StatDialog(props: {
   return (
     <dialog
       ref={ref}
-      class={props.className ? `stat-dialog ${props.className}` : 'stat-dialog'}
+      class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
       aria-label={props.title}
       onCancel={(e) => {
         e.preventDefault()
-        props.onCancel()
+        cancel()
       }}
-      onClick={(e) => e.target === ref.current && props.onCancel()}
+      onClick={(e) => e.target === ref.current && cancel()}
+      {...swipe}
     >
       <div class="stat-dialog-body">
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
@@ -1069,7 +1132,7 @@ function StatDialog(props: {
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
         // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
-        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={props.onCancel}>
+        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={cancel}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
       )}
@@ -1077,7 +1140,7 @@ function StatDialog(props: {
         type="button"
         class={props.onSave ? 'stat-dialog-close save' : 'stat-dialog-close'}
         aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
-        onClick={props.onSave ?? props.onCancel}
+        onClick={props.onSave ?? cancel}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           {props.onSave ? (

@@ -39,19 +39,35 @@
 
 ### PLAN
 
+The hamburger menu opened a centred popup. Dave (October 5, 2026): it should swipe in from right to left
+instead. Read as a side drawer that slides in from the right edge, closable by swiping it back to the right.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `StatDialog` gains a `drawer` mode: full-height panel anchored right, slide-in animation, slide-out before closing (instant under reduced motion)
+- [x] Swipe to close: a sideways drag to the right moves the panel with the finger; past a third of its width (at most 80px) it closes, otherwise it springs back; vertical drags stay scrolling
+- [x] The settings menu in `TopBar` uses the drawer mode
 
 ### TEST
 
+- [x] Tests: drawer class, swipe-right closes and returns focus, short swipe / scroll / swipe-left keep it open; the close-button test waits for the slide-out
+- [x] Typecheck and full suite green (1519 tests)
+- [ ] Dave looks at the preview on his phone before the merge (visible result)
+
 ### DEPLOY: app/menu-drawer
 
-**Score:**
+The settings menu is no longer a popup in the middle of the screen: it slides in from the right edge as a
+full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
+swipe springs back, and scrolling up and down inside it still works.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player opening the menu sees a side panel that slides in, and can swipe it shut instead of reaching for
+the close button.
+
+**Score:** 2
 
 #### Pull Request
 
