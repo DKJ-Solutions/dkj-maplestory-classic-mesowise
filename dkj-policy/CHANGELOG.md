@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**53 / 90 minor entries** <!-- pending-tally -->
+**54 / 91 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equip-value-not-a-button · 20261005-140559Z
+
+Styling only, in `src/style.css`; no calculation, data or repo tooling changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A value box no longer looks like the pencil button next to it: the value is plain read-only text without a border or
+fill, so only the pencil reads as something to tap. A corrected value keeps its orange border. In Ability points the
+total stands out on its own: larger and bold, without a border, while base and extra are in normal weight, and the row
+is tighter now the boxes carry no borders.
+
+**Score:** 2
+
+#### Pull Request
+
+the value box no longer looks like the pencil button next to it
+
+[PR #164](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/164)
+
+---
 
 ### DEPLOY: data/158-worn-item-requirements · 20261005-140115Z
 
