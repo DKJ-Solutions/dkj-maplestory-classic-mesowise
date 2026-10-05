@@ -16,7 +16,7 @@ import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 
 const parseW = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
-  const r = parseProfile({ ...DEFAULT_PROFILE, str: '100', dex: '100', luk: '4', clawWatk: '30', weaponMult: '1.8', attackMs: '750', hp: '1000', accuracy: '100', avoid: '20', wdef: '50', ...over }, 'warrior')
+  const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', str: '100', dex: '100', luk: '4', clawWatk: '30', weaponMult: '1.8', attackMs: '750', hp: '1000', accuracy: '100', avoid: '20', wdef: '50', ...over }, 'warrior')
   if (!('profile' in r)) throw new Error('Warrior-profiel ongeldig')
   return r.profile
 }
@@ -194,7 +194,7 @@ describe('Warrior-wapens: de winkel', () => {
   })
 
   it('verandert niets voor de Thief: dezelfde claws en dezelfde regel (meer weapon attack)', () => {
-    const r = parseProfile({ ...DEFAULT_PROFILE, level: '15', luk: '100', dex: '100', clawWatk: '10' })
+    const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '15', luk: '100', dex: '100', clawWatk: '10' })
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     const a = advice(r.profile)
     expect(names(a)).toEqual(['Steel Titans'])
@@ -297,7 +297,7 @@ describe('Warrior-armor: de winkel', () => {
   })
 
   it('verandert niets voor de Thief: dezelfde winkel en de eis in LUK', () => {
-    const r = parseProfile({ ...DEFAULT_PROFILE, level: '25', luk: '35', dex: '10', str: '999' })
+    const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '25', luk: '35', dex: '10', str: '999' })
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     const a = advice(r.profile)
     for (const c of a.choices) expect(NPC_ARMOR).toContain(c.armor)

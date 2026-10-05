@@ -315,7 +315,7 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
 })
 
 describe('resolveSpot voor een Warrior', () => {
-  const r = parseProfile({ ...DEFAULT_PROFILE, level: '30', hp: '1000', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', accuracy: '80', powerStrike: '20' }, 'warrior')
+  const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '30', hp: '1000', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', accuracy: '80', powerStrike: '20' }, 'warrior')
   if (!('profile' in r)) throw new Error('Warrior-profiel ongeldig')
   const warrior = r.profile
   const chosen = { ...newDraft('a'), ...knownSpotPatch(subway.id), travel: '100' }

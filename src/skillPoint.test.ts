@@ -221,7 +221,7 @@ describe('stepSkill', () => {
 })
 
 describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
-  const wDraft: ProfileDraft = { ...DEFAULT_PROFILE, level: '20', str: '70', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '60', powerStrike: '5', preciseStrikes: '2' }
+  const wDraft: ProfileDraft = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', str: '70', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '60', powerStrike: '5', preciseStrikes: '2' }
   const wParsed = parseProfile(wDraft, 'warrior')
   if (!('profile' in wParsed)) throw new Error('Warrior-profiel ongeldig')
   const warrior: Profile = wParsed.profile
@@ -400,7 +400,7 @@ describe('skillPointAdvice: punten over (issue #136)', () => {
 
 describe('minusOne en plusOne', () => {
   const warriorBase = (() => {
-    const r = parseProfile({ ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60' }, 'warrior')
+    const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60' }, 'warrior')
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     return r.profile
   })()
@@ -443,8 +443,8 @@ describe('minusOne en plusOne', () => {
 })
 
 describe('skillPointAdvice: de plaatsingscheck zonder punt over', () => {
-  const magRaw = { ...DEFAULT_PROFILE, hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
-  const warRaw = { ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0' }
+  const magRaw = { ...DEFAULT_PROFILE, lukExtra: '0', hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
+  const warRaw = { ...DEFAULT_PROFILE, lukExtra: '0', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0' }
   const advise = (job: 'magician' | 'warrior' | 'thief', raw: object, mob: string) => {
     const r = parseProfile(raw as ProfileDraft, job)
     if (!('profile' in r)) throw new Error('profiel ongeldig')
@@ -539,7 +539,7 @@ describe('skillPointAdvice: placement.closest bij "good"', () => {
 
   it('kiest als closest de verplaatsing met de hoogste (minst negatieve) besparing, en nooit een positieve', () => {
     // Warrior met het punt in Improved HP Recovery: Power Strike en Precise Strikes zijn de alternatieven.
-    const raw = { ...DEFAULT_PROFILE, hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0', level: '10', powerStrike: '0', preciseStrikes: '0' }
+    const raw = { ...DEFAULT_PROFILE, lukExtra: '0', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', luckySeven: '0', nimbleBody: '0', level: '10', powerStrike: '0', preciseStrikes: '0' }
     const a = adviseW({ ...raw, improvedHpRecovery: '1' }, 'warrior', 'Ribbon Pig')
     const c = closestOf(a)!
     const viaPrecise = adviseW({ ...raw, preciseStrikes: '1' }, 'warrior', 'Ribbon Pig')
@@ -561,7 +561,7 @@ describe('skillPointAdvice: placement.closest bij "good"', () => {
 })
 
 describe('skillPointAdvice: robust bij de plaatsingscheck', () => {
-  const magRaw = { ...DEFAULT_PROFILE, hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
+  const magRaw = { ...DEFAULT_PROFILE, lukExtra: '0', hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
   const adviseR = (job: 'thief' | 'magician', raw: object, mob: string) => {
     const r = parseProfile(raw as ProfileDraft, job)
     if (!('profile' in r)) throw new Error('profiel ongeldig')

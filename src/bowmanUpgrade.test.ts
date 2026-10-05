@@ -18,7 +18,7 @@ import { newDraft, type SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
 
 const parseB = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
-  const r = parseProfile({ ...DEFAULT_PROFILE, str: '100', dex: '100', luk: '4', clawWatk: '20', attackMs: '810', hp: '1000', accuracy: '100', avoid: '20', wdef: '50', ...over }, 'bowman')
+  const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', str: '100', dex: '100', luk: '4', clawWatk: '20', attackMs: '810', hp: '1000', accuracy: '100', avoid: '20', wdef: '50', ...over }, 'bowman')
   if (!('profile' in r)) throw new Error('Bowman-profiel ongeldig')
   return r.profile
 }

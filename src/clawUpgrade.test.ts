@@ -294,7 +294,7 @@ describe('clawUpgradeAdvice: het eerstvolgende betere wapen (next)', () => {
 
   for (const [job, shop] of [['warrior', WARRIOR_WEAPONS], ['bowman', BOWMAN_WEAPONS]] as const) {
     it(`volgt bij een ${job} de regel meer schade per ms: het eerste duurdere wapen boven je level dat meer power geeft`, () => {
-      const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
+      const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
       if (!('profile' in r)) throw new Error('profiel ongeldig')
       const lowest = shop[0]
       const level = lowest.level
@@ -307,7 +307,7 @@ describe('clawUpgradeAdvice: het eerstvolgende betere wapen (next)', () => {
     })
 
     it(`geeft bij een ${job} met het sterkste wapen van de winkel op het hoogste level geen volgend wapen`, () => {
-      const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
+      const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, job)
       if (!('profile' in r)) throw new Error('profiel ongeldig')
       const strongest = shop.reduce((a, b) => (power(b) > power(a) ? b : a))
       expect(adv(drafts, wearing(r.profile, strongest, lastLevel))).toBeNull()
@@ -332,7 +332,7 @@ describe('nextBetterWeapon (rechtstreeks, uit het profiel alleen)', () => {
   })
 
   it('laat het weaponMult-veld van een Bowman buiten beschouwing: zijn bogen hebben geen multiplier', () => {
-    const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'bowman')
+    const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'bowman')
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     const first = BOWMAN_WEAPONS[0]
     const worn: Profile = { ...r.profile, level: first.level, clawWatk: first.watk, attackMs: first.speed.attackMs, weaponMult: 1.8 }
@@ -343,7 +343,7 @@ describe('nextBetterWeapon (rechtstreeks, uit het profiel alleen)', () => {
   })
 
   it('telt bij een Warrior wel de multiplier uit het profiel mee', () => {
-    const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'warrior')
+    const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60' }, 'warrior')
     if (!('profile' in r)) throw new Error('profiel ongeldig')
     const first = WARRIOR_WEAPONS[0]
     const worn: Profile = { ...r.profile, level: first.level, clawWatk: first.watk, attackMs: first.speed.attackMs, weaponMult: first.mult ?? 1 }

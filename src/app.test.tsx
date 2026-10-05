@@ -5,7 +5,7 @@ import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
-import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, STARTER_PROFILE, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
 import { mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
@@ -539,7 +539,7 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     const h = openAbility('LUK')
     h.typeExtra('15')
-    expect(profileFields()?.lukExtra ?? STARTER_PROFILE.lukExtra).toBe(STARTER_PROFILE.lukExtra)
+    expect(profileFields()?.lukExtra ?? DEFAULT_PROFILE.lukExtra).toBe(DEFAULT_PROFILE.lukExtra)
     h.save()
     expect(profileFields().lukExtra).toBe('15')
     expect(extraShown('LUK')).toBe('15')
@@ -958,7 +958,7 @@ describe('level-up en Back (#154)', () => {
     levelUp()
     const f = profileFields()
     expect(f.hp).toBe('466')
-    expect([f.str, f.dex, f.int, f.luk]).toEqual([STARTER_PROFILE.str, STARTER_PROFILE.dex, STARTER_PROFILE.int, STARTER_PROFILE.luk])
+    expect([f.str, f.dex, f.int, f.luk]).toEqual([DEFAULT_PROFILE.str, DEFAULT_PROFILE.dex, DEFAULT_PROFILE.int, DEFAULT_PROFILE.luk])
   })
 
   it('laat equipment en wat je draagt staan', () => {
@@ -973,7 +973,7 @@ describe('level-up en Back (#154)', () => {
     levelUp()
     expect(backButton().getAttribute('aria-label')).toBe('Back (naar LV. 10)')
     fireEvent.click(backButton())
-    expect(profileFields()).toEqual(STARTER_PROFILE)
+    expect(profileFields()).toEqual(DEFAULT_PROFILE)
     expect(level()).toBe('LV. 10')
   })
 
@@ -1018,7 +1018,7 @@ describe('level-up en Back (#154)', () => {
     fireEvent.click(backButton())
     fireEvent.click(backButton())
     expect(level()).toBe('LV. 9')
-    expect(profileFields().hp).toBe(STARTER_PROFILE.hp)
+    expect(profileFields().hp).toBe(DEFAULT_PROFILE.hp)
   })
 
   it('zet na een nieuwe level-up weer de snapshot van het level eronder terug', () => {
@@ -1040,7 +1040,7 @@ describe('level-up en Back (#154)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', MEBA.name)
     fireEvent.click(backButton())
-    expect(profileFields()).toEqual(STARTER_PROFILE)
+    expect(profileFields()).toEqual(DEFAULT_PROFILE)
     expect(worn(cards()[0], 'Weapon')).toBeNull()
   })
 
@@ -1185,7 +1185,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     // Level 20: 120 AP, 118 gezet = 2 over; 31 SP, 1 gezet = 30 over.
     localStorage.setItem(
       PROFILE_KEY,
-      JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', int: '4', luk: '4', powerStrike: '1', preciseStrikes: '0' } }),
+      JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', int: '4', luk: '4', powerStrike: '1', preciseStrikes: '0' } }),
     )
     render(<App />)
     expect(apNote()).toBe('2 AP te verdelen')
@@ -1291,7 +1291,7 @@ describe('advies na de level-up', () => {
       }),
     )
     // Na de level-up wint Lucky Seven (van 2 naar 3) bij deze stats; gemeten met skillPointAdvice, niet afgeleid.
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', luckySeven: '2', luk: '60' } }))
     render(<App />)
   })
   const afterLevelUp = () => {
@@ -1311,7 +1311,7 @@ describe('advies na de level-up', () => {
 })
 
 describe('een Warrior in de app', () => {
-  const warriorFields = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0' }
+  const warriorFields = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0' }
   const open = (job: string) => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
@@ -1681,7 +1681,7 @@ describe('het geslacht (issue #55)', () => {
           spots: [mobDraft('Ribbon Pig')],
         }),
       )
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', luckySeven: '2', luk: '60' } }))
       render(<App />)
       levelUp()
       }
@@ -1702,7 +1702,7 @@ describe('het geslacht (issue #55)', () => {
 
 describe('een Bowman in de app', () => {
   // Level 20 Bowman: DEX 80 voor schade, STR 20, een War Bow (30 ATT, 810 ms) en Arrow Blow 1.
-  const bowmanFields = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', arrowBlow: '1' }
+  const bowmanFields = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', arrowBlow: '1' }
   const open = () => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'bowman' }))
@@ -1859,7 +1859,7 @@ describe('een Bowman in de app', () => {
 
 describe('een Magician in de app', () => {
   // Level 20, INT 60, LUK 10, een Sapphire Staff (M.ATT 31) en Energy Bolt 1.
-  const magicianFields = { ...DEFAULT_PROFILE, level: '20', hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', energyBolt: '1', magicClaw: '0' }
+  const magicianFields = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', energyBolt: '1', magicClaw: '0' }
   const open = (over: Partial<typeof magicianFields> = {}) => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
@@ -2187,7 +2187,7 @@ describe('skillpunten per level (issue #136)', () => {
 
 describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart', () => {
   // Level 20 Bowman op een plek waar Arrow Blow niets verandert; The Eye of Amazon 3 maakt Focus leerbaar, en Focus kost extra.
-  const bowman = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', eyeOfAmazon: '3' }
+  const bowman = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '20', dex: '80', luk: '4', clawWatk: '30', attackMs: '810', accuracy: '60', avoid: '10', wdef: '60', eyeOfAmazon: '3' }
   const skillSection = (job: string, fields: object, spot: string) => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
@@ -2240,7 +2240,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
 
   it('toont een regel per keuze met het juiste einde: bespaart, scheelt niets en kost extra', () => {
     // Warrior op Snail: Improved HP Recovery bespaart, Power Strike en Max HP Increase doen niets, Iron Body kost extra.
-    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
+    const w = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
     const section = skillSection('warrior', w, 'Snail')
     expect(section.querySelector('.chip')!.textContent).toBe('Improved HP Recovery → 4')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Improved HP Recovery (→ 4).')
@@ -2260,7 +2260,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
   }
 
   it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
-    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
+    const w = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
     const text = placedHint(skillSection('warrior', w, 'Snail'))
     expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso op dit level\./)
     // De tweede keuze (Power Strike → 2, scheelt niets) staat er als eigen zin achter.
@@ -2281,7 +2281,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
 
   it('noemt bij een gelijkspel dat de andere evenveel scheelt en dat de app dan de eerste kiest', () => {
     // Warrior op Snail met Improved HP Recovery op het maximum: Power Strike, Precise Strikes en Max HP Increase scheelt allemaal niets.
-    const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '15' }
+    const w = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '15' }
     const section = skillSection('warrior', w, 'Snail')
     const l = lines(section)
     expect(l.length).toBeGreaterThan(1)
@@ -2293,7 +2293,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
 describe('de kaart Report en het blok Stats op het beginscherm', () => {
   const home = () => {
     cleanup()
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', luckySeven: '2', luk: '60' } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
     return homeScreen()
