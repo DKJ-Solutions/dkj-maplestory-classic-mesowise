@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**61 / 98 minor entries** <!-- pending-tally -->
+**62 / 99 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/171-beginner-attack · 20261005-214542Z
+
+Internal: `beginnerAttack` in the mob model, a hidden `dagger` profile field set by the weapon pick, the dagger
+multiplier with its source, and `attacksAsBeginner` used by the attack, the ammo cost and the W.ATT.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Below level 10 a Thief or Bowman is calculated as the Beginner he still is: he swings the weapon in his hand, with
+no stars or arrows to pay for. A Sword, Hand Axe or Wooden Club hits with STR, a Razor or Fruit Knife with LUK
+(NiaMeowDB's damage guide). Before, the app had him throw stars or shoot arrows he could not use yet, which made
+EXP per meso below level 10 look better than it is. From level 10 nothing changes.
+
+**Score:** 3
+
+#### Pull Request
+
+Below level 10 a Thief or Bowman attacks as a Beginner
+
+[PR #174](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/174)
+
+---
 
 ### DEPLOY: app/172-bowman-shield-slot · 20261005-211317Z
 
