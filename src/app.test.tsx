@@ -569,9 +569,9 @@ describe('bewaren na elke wijziging', () => {
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
-  it('toont de base AP die je nog over hebt alleen in de popup, niet als eigen regel op de kaart', () => {
+  it('toont de base AP die je nog over hebt in de popup van Ability points en in die van een stat (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
+    expect(homeScreen().querySelector('section.profile .ap-balance')?.textContent).toBe('Base AP over: 0 van 70')
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
@@ -1076,7 +1076,8 @@ describe('level-up en Back (#154)', () => {
       fireEvent.click(backButton())
     })
     expect(level()).toBe('LV. 10')
-    expect(screen.queryByRole('status')).toBeNull()
+    // Alleen het aantal AP in de kop van Ability points staat er: (0), want op LV. 10 is alles verdeeld.
+    expect(screen.getAllByRole('status').map((el) => el.textContent)).toEqual(['(0)0 AP te verdelen'])
   })
 
   it('toont bij Total stats een hint dat de app het effect van je AP niet meetelt', () => {
@@ -1129,8 +1130,15 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
-  it('toont niets zolang alle AP en SP gezet zijn', () => {
-    expect(apNote()).toBeNull()
+  it('toont bovenin de popup van Ability points de base AP die over zijn, zoals in de popup van een stat', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    expect(homeScreen().querySelector('dialog .ap-balance')?.textContent).toBe('Base AP over: 5 van 75')
+  })
+
+  it('toont (0) bij Ability points en niets bij Skillpoints zolang alle AP en SP gezet zijn', () => {
+    expect(apNote()).toBe('0 AP te verdelen')
+    expect(homeScreen().querySelector('section.profile .to-distribute [aria-hidden="true"]')?.textContent).toBe('(0)')
     expect(spNote()).toBeNull()
   })
 
@@ -1145,10 +1153,10 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(apNote()).toBe('2 AP te verdelen')
   })
 
-  it('toont niets meer na Back naar het level waar alles verdeeld was', () => {
+  it('toont weer (0) na Back naar het level waar alles verdeeld was', () => {
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
-    expect(apNote()).toBeNull()
+    expect(apNote()).toBe('0 AP te verdelen')
     expect(spNote()).toBeNull()
   })
 
@@ -1180,9 +1188,12 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(apNote()).toBe('5 AP te verdelen')
   })
 
-  it('toont geen AP-regel bij te veel AP voor het level', () => {
+  it('toont bij te veel AP voor het level het verschil onder 0, in de foutkleur', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    expect(apNote()).toBeNull()
+    expect(apNote()).toBe('5 AP te veel gezet')
+    const el = homeScreen().querySelector('section.profile .to-distribute')
+    expect(el?.classList.contains('over')).toBe(true)
+    expect(el?.querySelector('[aria-hidden="true"]')?.textContent).toBe('(−5)')
   })
 })
 
@@ -1209,9 +1220,8 @@ describe('Vul in op je equipment (#157)', () => {
     expect(profileFields().accuracy).toBe(before.accuracy)
     expect(statShown('DEX')).toBe('20')
     expect(statShown('LUK')).toBe('47')
-    expect(apNote()).toBeNull()
-    expect(headingText()).toBe('Ability points')
-    expect(homeScreen().querySelector('section.profile .to-distribute')).toBeNull()
+    expect(apNote()).toBe('0 AP te verdelen')
+    expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
   })
 
   it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {

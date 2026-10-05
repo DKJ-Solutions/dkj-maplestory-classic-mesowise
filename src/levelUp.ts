@@ -92,10 +92,18 @@ export function applyLevelDown(draft: ProfileDraft): ProfileDraft {
  * getal als er nog AP over zijn; zonder geldig level, of als er al evenveel of meer staat, is er niets te tonen (null).
  */
 export function apToDistribute(draft: ProfileDraft): number | null {
+  const left = apBalance(draft)
+  return left !== null && left > 0 ? left : null
+}
+
+/**
+ * Wat je level aan base AP geeft min wat in STR, DEX, INT en LUK staat, ook als dat 0 of minder is: de kop van Ability
+ * points toont het altijd (Dave, 5 oktober 2026, #157). Onder 0 staat er meer dan je level geeft. Null zonder geldig level.
+ */
+export function apBalance(draft: ProfileDraft): number | null {
   const level = wholeOf(draft.level)
   if (level === null || level < LEVEL_MIN || level > LEVEL_MAX) return null
-  const left = apAtLevel(level) - baseApSpent(draft)
-  return left > 0 ? left : null
+  return apAtLevel(level) - baseApSpent(draft)
 }
 
 /** Hoeveel skillpunten van de pot van je 1e job je nog te zetten hebt; null als er geen over zijn of het level niet klopt. */

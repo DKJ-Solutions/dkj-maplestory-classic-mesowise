@@ -23,7 +23,7 @@ import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, N
 import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
-import { applyLevelDown, applyLevelUp, applySkillPoint, apToDistribute, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
+import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
@@ -543,8 +543,11 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
+  // Wat je level aan base AP geeft min wat er al staat, zoals in de popup van een stat; ook hier, boven de vier stats (Dave, 5 oktober 2026, #157).
+  const balance = apBalance(draft)
   const lead = (
     <>
+      {cap !== null && balance !== null && <p class="stat-dialog-db ap-balance">{apLeftLabel(balance)}: <strong>{nfInt.format(Math.abs(balance))}</strong> van {cap}</p>}
       {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -567,9 +570,8 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
       </div>
     </>
   )
-  // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154).
-  const left = apToDistribute(draft)
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={left !== null && <ToDistribute count={left} unit="AP" />} />
+  // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
 }
 
 /**
@@ -1389,10 +1391,12 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
  * 2026, #154). Een schermlezer hoort de hele zin.
  */
 function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
+  // Onder 0: er staat meer dan je level geeft; met een echt minteken en in de kleur van een fout.
+  const over = props.count < 0
   return (
-    <span class="to-distribute" role="status">
-      <span aria-hidden="true">({props.count})</span>
-      <span class="sr-only">{`${props.count} ${props.unit} te verdelen`}</span>
+    <span class={`to-distribute${over ? ' over' : ''}`} role="status">
+      <span aria-hidden="true">({over ? `−${-props.count}` : props.count})</span>
+      <span class="sr-only">{over ? `${-props.count} ${props.unit} te veel gezet` : `${props.count} ${props.unit} te verdelen`}</span>
     </span>
   )
 }
