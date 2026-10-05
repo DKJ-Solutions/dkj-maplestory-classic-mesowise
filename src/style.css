@@ -474,6 +474,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-list { margin: 0; padding: 0; list-style: none; }
 .stat-dialog .job { margin: 0.5rem 0 0; }
 .menu-list .job-title { font-size: 1rem; font-weight: 600; }
+/* Het potlood staat met zijn midden recht onder het kruisje: dat heeft geen rand en een tikvlak van 44px, het potlood
+   is een omrand vak van --control-h (Dave, 5 oktober 2026). */
+.menu-list .job-edit { margin-right: calc((44px - var(--control-h)) / 2); }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
 .stat-dialog.menu-drawer {

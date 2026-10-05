@@ -54,6 +54,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): in the menu the job heading has no card icon (the shield); the home-screen card keeps it
 - [x] Dave (October 5, 2026): the title "Instellingen" sits in the panel's header, in the type of the app name in the top bar (removing it was tried and reverted)
 - [x] Dave (October 5, 2026): in the menu the job is a list item (`ul.menu-list > li.job`), its title "Character" a plain label instead of an `h2`; the home-screen card keeps its `h2`
+- [x] Dave (October 5, 2026): with the close cross borderless, the pencil is centred under it (3px in from the right edge) instead of edge-aligned
 - [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it, without a border
 
 ### TEST
