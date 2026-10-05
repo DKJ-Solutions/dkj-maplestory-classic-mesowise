@@ -577,7 +577,8 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
               </h3>
             </div>
           )}
-          <button type="button" class="btn" onClick={fill}>Auto assign</button>
+          {/* Fel zolang er AP te verdelen is, dan doet de knop iets; zonder AP over is hij de gewone knop (Dave, 5 oktober 2026). */}
+          <button type="button" class={balance !== null && balance > 0 ? 'btn auto-assign ready' : 'btn auto-assign'} onClick={fill}>Auto assign</button>
         </div>
         {filledShown && <p class="hint" role="status">{filled.text}</p>}
       </div>
