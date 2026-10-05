@@ -470,17 +470,16 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .topbar-tagline { min-width: 0; font-size: 0.75rem; line-height: 1.25; color: var(--muted); }
 .topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); cursor: pointer; }
 .topbar-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* In het menu staat de job zonder kaart eromheen, als item van een lijst (Dave, 5 oktober 2026). */
+/* De instellingen in het menu (Dave, 5 oktober 2026): per rij het label, wat je koos, en rechts een potlood zoals
+   overal in de app. De potloden staan met hun midden recht onder het kruisje (dat heeft geen rand en een tikvlak
+   van 44px). */
 .menu-list { margin: 0; padding: 0; list-style: none; }
-.stat-dialog .job { margin: 0.5rem 0 0; }
-.menu-list .job-title { font-size: 1rem; font-weight: 600; }
-/* Eén rij per vraag (Dave, 5 oktober 2026): links het label in één kolom, rechts de knoppen. Vier gelijke kolommen,
-   zodat de twee knoppen van Gender even breed zijn als die van Job en er recht onder beginnen. */
-.menu-list .job { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.75rem; align-items: center; }
-.menu-list .job > * { grid-column: 1 / -1; margin: 0; }
-.menu-list .job > .job-head { grid-column: 1; min-height: 0; margin: 0; }
-.menu-list .job > .job-choices { grid-column: 2; grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
-.menu-list .job > .job-actions { margin-top: 0.5rem; }
+.menu-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 0.75rem; min-height: 44px; }
+.menu-row + .menu-row { margin-top: 0.5rem; }
+.menu-label { font-size: 1rem; font-weight: 600; }
+.menu-value { min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
+.menu-row .equip-edit { margin-right: calc((44px - var(--control-h)) / 2); }
+.menu-list ~ .hint, .menu-list ~ .debug { margin-top: 1rem; }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
 .stat-dialog.menu-drawer {
@@ -494,7 +493,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-drawer .stat-dialog-head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 1rem; padding: 0 calc(1rem + 44px + 0.5rem) 0 1rem; border-bottom: 1px solid var(--border); }
 /* In de kop de titel Instellingen, in de letter van de naam in de menubalk (Dave, 5 oktober 2026). */
 .menu-drawer .stat-dialog-name { font-size: 1.125rem; font-weight: 700; }
-.menu-drawer .stat-dialog-close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); border: 0; }
+.menu-drawer .stat-dialog-close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); }
+/* Het grijze kruisje zonder rand; het vinkje en de rode terugdraai-pijl houden hun eigen rand. */
+.menu-drawer .stat-dialog-close:not(.save):not(.cancel) { border: 0; }
+.menu-drawer .stat-dialog-head.two { padding-right: calc(1rem + 2 * 44px + 1rem); }
 .menu-drawer::backdrop { animation: backdrop-in 220ms ease-out; }
 @keyframes drawer-in { from { transform: translateX(100%); } }
 @keyframes backdrop-in { from { opacity: 0; } }
