@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave's design round on the settings menu, judged live in the preview step by step.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] The offline download is a full-width button with a download icon, soft (page background, thin border), pinned to the bottom of the drawer
+- [x] Menu rows get a divider between each row and 0.5rem padding on all sides; the drawer header loses its bottom margin
+- [x] Every dialog title is an `<h2>` (the `heading` prop of `StatDialog` is gone)
+- [x] The choice panel (job, gender) in the menu is the same divided list: chosen row amber and bold, the others muted
+- [x] The save checkmark and cancel arrow show a 36px face inside their 44px tap area, 6px apart
 
 ### TEST
 
+- [x] `npm run lint` and `npm test` (46 files, 1529 tests) green; the menu-heading test now expects exactly the drawer title
+- [x] Judged by Dave in the live preview after each step
+
 ### DEPLOY: app/download-button
 
-**Score:**
+Styling of the settings drawer and the dialog header buttons; `StatDialog` always renders its title as an `<h2>`, which drops its `heading` prop.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+The settings menu reads as a tidy list: lines between the rows, the job and gender choices as a list with the chosen one highlighted, and the offline download as a clear button at the bottom. The save and undo buttons in every popup are a little smaller.
+
+**Score:** 2
 
 #### Pull Request
 
