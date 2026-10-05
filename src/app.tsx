@@ -564,16 +564,15 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
         .map((f) => (
           <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
         ))}
-      {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links de kop zoals een groep in Skillpoints, met wat je gezet hebt van wat je
-          level geeft, rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
+      {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
+          ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
           hoofdstat). De melding staat eronder. */}
       <div class="ap-autofill">
         <div class="ap-row">
           {cap !== null && (
             <div class="skill-group ap-group">
               <h3>
-                Base AP
-                <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
+                <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="BASE AP" />
               </h3>
             </div>
           )}
@@ -1427,8 +1426,8 @@ function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
   )
 }
 
-/** Wat je gezet hebt van wat je level geeft: "0 / 7 SP" boven een groep skills, "67 / 80 AP" boven je ability points (#157). */
-function PoolCount(props: { usage: { spent: number; cap: number | null }; unit?: 'SP' | 'AP' }) {
+/** Wat je gezet hebt van wat je level geeft: "0 / 7 SP" boven een groep skills, "67 / 80 BASE AP" onder je ability points (#157). */
+function PoolCount(props: { usage: { spent: number; cap: number | null }; unit?: 'SP' | 'BASE AP' }) {
   const { spent, cap } = props.usage
   const unit = props.unit ?? 'SP'
   return (

@@ -571,7 +571,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont in de popup van Ability points je gezette base AP van wat je level geeft, en in die van een stat wat er over is (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('section.profile dialog .ap-group .skill-sp')?.textContent).toBe('70 / 70 AP')
+    expect(homeScreen().querySelector('section.profile dialog .ap-group .skill-sp')?.textContent).toBe('70 / 70 BASE AP')
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
@@ -1130,14 +1130,14 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
-  it('toont in de popup van Ability points een kop zoals een groep in Skillpoints: Base AP met 70 / 75 AP', () => {
+  it('toont in de popup van Ability points een kop zoals een groep in Skillpoints: 70 / 75 BASE AP', () => {
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
     expect(homeScreen().querySelector('dialog .stat-dialog-head > h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
     expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
     const head = homeScreen().querySelector('dialog .ap-group h3')!
-    expect(head.textContent).toBe('Base AP70 / 75 AP')
+    expect(head.textContent).toBe('70 / 75 BASE AP')
     expect(head.querySelector('.skill-sp')?.classList.contains('over')).toBe(false)
   })
 
@@ -1151,7 +1151,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     const count = homeScreen().querySelector('dialog .ap-group .skill-sp')!
-    expect(count.textContent).toBe('70 / 65 AP')
+    expect(count.textContent).toBe('70 / 65 BASE AP')
     expect(count.classList.contains('over')).toBe(true)
   })
 
