@@ -469,3 +469,5 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .ap-autofill { padding: 1rem 1rem 0.25rem; }
 .ap-autofill .btn { width: 100%; }
 .ap-autofill .hint { margin: 0.75rem 0 0; }
+/* De kop Base AP onderaan de popup van Ability points, onder de knop (#157). */
+.ap-group { margin: 1rem 0 0; }

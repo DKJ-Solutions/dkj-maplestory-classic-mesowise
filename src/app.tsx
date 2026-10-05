@@ -549,15 +549,6 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const balance = apBalance(draft)
   const lead = (
     <>
-      {/* Zoals een groep in Skillpoints (Dave, 5 oktober 2026, #157): de kop met rechts wat je gezet hebt van wat je level geeft. */}
-      {cap !== null && (
-        <div class="skill-group ap-group">
-          <h3>
-            Base AP
-            <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
-          </h3>
-        </div>
-      )}
       {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -578,6 +569,15 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
         <button type="button" class="btn" onClick={fill}>Vul in op je equipment</button>
         {filledShown && <p class="hint" role="status">{filled.text}</p>}
       </div>
+      {/* Onderaan (Dave, 5 oktober 2026), zoals een groep in Skillpoints (#157): de kop met rechts wat je gezet hebt van wat je level geeft. */}
+      {cap !== null && (
+        <div class="skill-group ap-group">
+          <h3>
+            Base AP
+            <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
+          </h3>
+        </div>
+      )}
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
