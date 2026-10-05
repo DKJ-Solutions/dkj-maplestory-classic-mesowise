@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**56 / 93 minor entries** <!-- pending-tally -->
+**57 / 94 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/menu-drawer · 20261005-154907Z
+
+The settings menu is no longer a popup in the middle of the screen: it slides in from the right edge as a
+full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
+swipe springs back, and scrolling up and down inside it still works. The menu lists your job and gender,
+each with a pencil; tapping it slides a second panel over the menu to pick a new one, and saving slides it
+back. On the home screen, a chosen job card is now headed just "Character". The grey close cross in every
+popup has lost its border.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player opening the menu sees a side panel that slides in, and can swipe it shut instead of reaching for
+the close button.
+
+**Score:** 2
+
+#### Pull Request
+
+The settings menu slides in from the right and swipes away
+
+[PR #167](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/167)
+
+---
 
 ### DEPLOY: app/monster-save-button · 20261005-143856Z
 
