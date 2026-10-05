@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**59 / 96 minor entries** <!-- pending-tally -->
+**60 / 97 minor entries** <!-- pending-tally -->
+
+### DEPLOY: data/beginner-weapons · 20261005-194006Z
+
+Internal: a new data file with five MeowDB weapons and the weapon catalog sorted by level.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Beginner (level 1 to 9) can now pick the weapon in their hand: Sword, Hand Axe, Wooden Club, Razor and Fruit Knife, at the top of the weapon list for Thief, Warrior (no daggers) and Bowman. They have no price, so they are not in the weapon advice. An item without a level requirement no longer shows "lv 0" in the search list.
+
+**Score:** 3
+
+#### Pull Request
+
+Beginner weapons below level 10 in the weapon list
+
+[PR #173](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/173)
+
+---
 
 ### DEPLOY: app/download-button · 20261005-181712Z
 
