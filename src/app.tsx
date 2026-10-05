@@ -1478,13 +1478,24 @@ function HuntedMobCard(props: {
 }) {
   const { result, draft, profile } = props
   const [open, setOpen] = useState(false)
+  // De mob die je in de popup kiest is een concept; pas Opslaan legt hem vast, sluiten gooit hem weg (Dave, 5 oktober 2026).
+  const [choice, setChoice] = useState<string | null>(null)
   const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
+  const chosen = choice !== null && choice !== (mob?.name ?? '') ? MOBS.find((m) => m.name === choice) : undefined
+  const save = () => {
+    if (chosen) props.onPick(chosen.name)
+    setChoice(null)
+  }
+  const close = () => {
+    setChoice(null)
+    setOpen(false)
+  }
   const known = draft ? spotOf(draft) : undefined
   const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
   const invalid = result !== undefined && isInvalid(result)
   const title = 'Monster'
-  const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
+  const onMob = (e: Event) => setChoice((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
       <CardHead label={title} head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
@@ -1497,10 +1508,10 @@ function HuntedMobCard(props: {
         {invalid ? result.error : null}
       </p>
       {open && (
-        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={() => setOpen(false)}>
+        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={close}>
           <label class="field">
             <span>De mob die je het meest killt</span>
-            <select value={mob?.name ?? ''} onChange={onMob}>
+            <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
               {!mob && <option value="">Kies een mob</option>}
               {MOBS.map((m) => (
                 <option key={m.name} value={m.name}>
@@ -1509,7 +1520,10 @@ function HuntedMobCard(props: {
               ))}
             </select>
           </label>
-          {mob && draft && (
+          {/* Een gekozen maar nog niet opgeslagen mob: zijn getallen uit de database, alleen om te lezen; aanpassen kan na Opslaan. */}
+          {chosen &&
+            MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(chosen))} readOnly onSave={() => {}} />)}
+          {!chosen && mob && draft && (
             <>
               {/* Zegt het spel iets anders dan de database, pas het dan aan; de app rekent met jouw getal (Dave, 4 oktober 2026). */}
               {MOB_FIELDS.map((f) => (
@@ -1527,7 +1541,13 @@ function HuntedMobCard(props: {
               ))}
             </>
           )}
-          <Warnings s={picked} />
+          {!chosen && <Warnings s={picked} />}
+          {/* Opslaan staat er altijd, net als bij Ability points; zolang je geen andere mob kiest, kun je er niet op tikken. */}
+          <div class="stat-dialog-actions">
+            <button type="button" class="equip-save" disabled={!chosen} onClick={save}>
+              Opslaan
+            </button>
+          </div>
         </CardPopup>
       )}
     </section>
