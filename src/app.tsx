@@ -290,7 +290,10 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
           {/* Het offline-bestand zelf heeft geen download nodig. */}
           {import.meta.env.MODE !== 'offline' && (
             <div class="menu-download">
-              <a href={`${import.meta.env.BASE_URL}mesowise-offline.html`} download>Offlineversie downloaden</a>
+              <a class="download-btn" href={`${import.meta.env.BASE_URL}mesowise-offline.html`} download>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                Offlineversie downloaden
+              </a>
               <p class="hint">Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</p>
             </div>
           )}
@@ -370,7 +373,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
         </svg>
       </button>
       {open && (
-        <StatDialog title={`Report: ${props.title}`} heading closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Report: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">{props.children}</div>
         </StatDialog>
       )}
@@ -391,7 +394,7 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} titleNote={props.titleNote} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -1136,8 +1139,6 @@ function StatDialog(props: {
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
   className?: string
-  /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
-  heading?: boolean
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
   onCancel: () => void
@@ -1237,7 +1238,8 @@ function StatDialog(props: {
       {props.titleNote && <> {props.titleNote}</>}
     </>
   )
-  const title = props.heading ? <h2 class="stat-dialog-name">{name}</h2> : <strong class="stat-dialog-name">{name}</strong>
+  // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
+  const title = <h2 class="stat-dialog-name">{name}</h2>
   useEffect(() => {
     const d = ref.current
     d?.showModal()

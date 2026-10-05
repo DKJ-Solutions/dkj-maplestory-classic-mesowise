@@ -2136,13 +2136,13 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(homeJobCard()).not.toBeNull()
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
-    // In het menu een rij per instelling, met wat je koos en een potlood; geen knoppen en geen koppen (Dave, 5 oktober 2026).
+    // In het menu een rij per instelling, met wat je koos en een potlood; geen knoppen, en geen koppen behalve de titel van het menu (Dave, 5 oktober 2026).
     const menu = openMenu()
     expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
     expect(menu.getByRole('button', { name: 'Job wijzigen' })).toBeTruthy()
     expect(menu.getByRole('button', { name: 'Gender wijzigen' })).toBeTruthy()
     expect(menu.queryByRole('button', { name: 'Thief' })).toBeNull()
-    expect(menu.queryAllByRole('heading')).toHaveLength(0)
+    expect(menu.queryAllByRole('heading').map((h) => h.textContent)).toEqual(['Instellingen'])
   })
 
   it('noemt een instelling die nog niet gekozen is "Niet gekozen"', () => {
