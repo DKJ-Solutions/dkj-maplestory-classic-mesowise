@@ -47,7 +47,7 @@ clear button.
 ### CREATE
 
 - [x] `src/app.tsx`: `CardHead` is a plain `div` with the title; the eye is its own button (`<card> bekijken`), next to the report button (`Report: <card>`)
-- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup; more padding in the head, the same on every card (1.5rem all round, 0.5rem between name and buttons); where a name does not fit beside the buttons, as on the two stats cards side by side at phone width, the buttons wrap to a line below and between the two buttons (0.625rem, was 0.375rem; Dave, October 5, 2026)
+- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup. Every card head is the same (Dave, October 5, 2026): 1.5rem padding all round and two rows, the name and then the buttons at full width (shared when a card has two, 0.625rem apart)
 
 ### TEST
 
@@ -65,7 +65,8 @@ The change is in the app UI only; no repo tooling or data changed.
 #### What makes this deploy extra special
 
 A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
-buttons in the same style as the pencil buttons, so it is obvious what can be tapped. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+buttons in the same style as the pencil buttons, on a row of their own below the name at full width, so it is obvious
+what can be tapped. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
 
 **Score:** 3
 
