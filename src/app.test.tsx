@@ -2110,16 +2110,17 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     expect(mob.textContent!.includes('Wissel naar ')).toBe(chipOf('Mob') === 'Wisselen')
   })
 
-  it('zet Ability points en Total stats in één blok Stats, en alleen die twee', () => {
+  it('zet Ability points en Total stats in één blok Stats zonder zichtbare kop, en alleen die twee', () => {
     const h = home()
-    const heading = within(h).getByRole('heading', { level: 2, name: 'Stats' })
-    const group = heading.closest('section.stats-group')!
-    expect(group.getAttribute('aria-labelledby')).toBe(heading.id)
+    const group = h.querySelector('section.stats-group')!
+    expect(group.getAttribute('aria-label')).toBe('Stats')
+    expect(group.querySelector('h2')).toBeNull()
+    expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
     expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats/ })).toHaveLength(2)
     expect(within(group as HTMLElement).getByRole('button', { name: /Ability points/ })).toBeTruthy()
     expect(within(group as HTMLElement).getByRole('button', { name: /Total stats/ })).toBeTruthy()
-    // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen naast de kop.
-    expect(Array.from(group.children).filter((e) => e !== heading)).toHaveLength(2)
+    // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen.
+    expect(group.children).toHaveLength(2)
     expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip/ })).toBeNull()
   })
 

@@ -471,7 +471,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
 .advice-cost strong { color: var(--accent); }
-.stats-group > h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); line-height: 1.2; }
+/* De Stats-groep heeft geen kop; padding (geen margin, die valt samen met die van de laatste kaart) geeft extra ruimte boven Equip. */
+.stats-group { padding-bottom: 1rem; }
 /* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
 .question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
 .question-head h3 { margin: 0; font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }
