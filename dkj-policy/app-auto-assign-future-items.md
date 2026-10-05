@@ -53,7 +53,7 @@ current level allows, worn or not. Custom ("Anders") items keep counting as no r
 - [x] `src/autoFillAp.test.ts`: new cases for unworn items, the level limit, the tie and the cap; worn-item cases moved to levels where the catalog does not ask more
 - [x] `src/autoFillAp.items.test.ts`: the whole-catalog property now includes the catalog floor on the secondary stat; level 199/200 now fit under 999
 - [x] `npm run lint` and the full Vitest suite green (1513 tests)
-- [ ] Victor's review
+- [x] Victor's review: ship; `limitedBy` under the cap and the defensive `max` guard now documented in comments
 
 ### DEPLOY: app/auto-assign-future-items
 

@@ -24,7 +24,10 @@ export type AutoFillResult =
       ok: true
       /** De base AP per stat die erin komen. */
       base: Record<Stat, number>
-      /** Het item dat de eis op de secundaire stat bepaalt, gedragen of niet; null als niets meer dan het minimum vraagt. */
+      /**
+       * Het item dat het doel van de secundaire stat bepaalt, gedragen of niet; null als niets meer dan het minimum vraagt. Is er
+       * te weinig AP voor dat doel, dan staat het item er toch: zijn eis is dan nog niet gehaald.
+       */
       limitedBy: string | null
       /** Per stat die een item verder optilt dan 4 (de secundaire of een derde): het item dat het vraagt. */
       limits: Partial<Record<Stat, string>>
@@ -101,6 +104,7 @@ export function autoFillAp(job: Job, level: string, equipment: Equipment): AutoF
   }
   const others = STATS.filter((s) => s !== main).reduce((sum, s) => sum + need[s], 0)
   const mainValue = total - others
+  // Een vangnet: met de AP per level van nu blijft de hoofdstat ook op level 200 onder het maximum.
   if (mainValue > STAT_MAX) return { ok: false, reason: 'max', unknown, have: total }
   if (mainValue < need[main]) return { ok: false, reason: 'short', unknown, need: others + need[main], have: total }
   const base = { ...need, [main]: mainValue }
