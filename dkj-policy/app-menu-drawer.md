@@ -60,6 +60,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): in the menu each question is one row: "Job:" with its four buttons, then "Gender:" with its two, labels in one column and the buttons on a shared four-column grid
 - [x] Dave (October 5, 2026): the menu is a list instead, one row per setting ("Job: Thief", "Gender: Male") with a pencil like every other in the app; the pencil slides a second drawer over the menu with that setting's choices, where a change turns the cross into the save tick (plus the red undo and Opslaan at the bottom), and saving slides that drawer back to the menu. The home-screen job card is a plain card again, with its own pencil. Swipes on the second drawer no longer reach the menu under it
 - [x] Dave (October 5, 2026): each pencil sits on its own row (the shared `.equip-edit` grid placement had pushed it below), centred under the close cross, with the value right-aligned against it; checked in the preview
+- [x] Dave (October 5, 2026): the grey close cross loses its border in every popup, not just the menu; the save tick and the red undo keep theirs
 - [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it, without a border
 
 ### TEST
@@ -74,7 +75,7 @@ The settings menu is no longer a popup in the middle of the screen: it slides in
 full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
 swipe springs back, and scrolling up and down inside it still works. The menu lists your job and gender,
 each with a pencil; tapping it slides a second panel over the menu to pick a new one, and saving slides it
-back.
+back. The close cross in every popup has lost its border.
 
 **Score:** 2
 
