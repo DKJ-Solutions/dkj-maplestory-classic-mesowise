@@ -240,10 +240,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .level-row-hint { margin-top: -0.5rem; text-align: right; }
 
 /* Hoeveel AP of SP je na een level-up nog zelf moet verdelen (#154): een regel onder de kop van de kaart, in het accent. */
-/* Het aantal AP of SP bij de kop (#154). Achter de naam: de flex-gap van de kop is breder dan een spatie, dus een stukje
-   terug. Op een eigen regel (Ability points): dicht onder de naam, niet op de afstand van de knoppen. */
+/* Het aantal AP of SP achter de kop (#154): de flex-gap van de kop is breder dan een spatie, dus een stukje terug. */
 .to-distribute { margin-left: -0.25rem; color: var(--accent); }
-.spot-head > .to-distribute { margin: -0.5rem 0 0; font-weight: 600; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
@@ -416,9 +414,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De hint boven de velden van Total stats: wat de app niet voor je bijhoudt. */
 .total-stats-hint { margin: 0.5rem 0 0.75rem; }
-/* Ability points en Total stats naast elkaar (Dave, 5 oktober 2026). */
+/* Ability points en Total stats elk op een eigen rij: naast elkaar paste "Ability points (5)" niet (Dave, 5 oktober 2026, #154). */
 /* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
-.stats-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
+.stats-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
 .stats-group > .card { margin: 0; }
 /* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
 .question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }

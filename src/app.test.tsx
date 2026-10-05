@@ -1122,12 +1122,11 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
   const spNote = () => homeScreen().querySelector('section.skills .spot-head .to-distribute .sr-only')?.textContent ?? null
 
-  it('zet het aantal tussen haakjes: achter de kop bij Skillpoints (3), op een eigen regel bij Ability points (5)', () => {
+  it('zet het aantal tussen haakjes achter de kop: Skillpoints (3), Ability points (5)', () => {
     levelUp()
     expect(homeScreen().querySelector('section.skills .spot-head .spot-name')?.textContent).toBe('Skillpoints(3)3 SP te verdelen')
     expect(homeScreen().querySelector('section.skills .to-distribute [aria-hidden="true"]')?.textContent).toBe('(3)')
-    expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points')
-    expect(homeScreen().querySelector('section.profile .spot-head > .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
+    expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
   it('toont niets zolang alle AP en SP gezet zijn', () => {
