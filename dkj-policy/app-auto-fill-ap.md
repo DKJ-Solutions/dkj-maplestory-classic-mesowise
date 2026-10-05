@@ -39,19 +39,36 @@
 
 ### PLAN
 
+- [x] Rule for #157 set: the secondary stat on the highest requirement of the worn equipment, the rest to the main stat, the others 4
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: autoFillAp (pure module) and the Auto assign button in the Ability points popup
+- [x] Cody: review fixes (stale message, the 999 cap, a third stat, one main-stat table)
+- [x] Dave's look rounds: the AP left always behind Ability points, (n) behind the popup titles, 73 / 80 BASE AP with Auto assign on one row aligned right, no sentence after success, the changed boxes light up, popup titles as h2, the close button in the body
 
 ### TEST
 
+- [x] Tycho: tests across jobs, the catalogue and the boundaries (1500 tests green)
+- [x] Victor: code review; Edith: Dutch text
+- [x] Dave looked at the preview on his phone and said ship it
+
 ### DEPLOY: app/auto-fill-ap
 
-**Score:**
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+The Ability points popup has an Auto assign button: it puts the secondary stat exactly on the highest requirement of the
+equipment you wear (DEX for a Thief or Warrior, STR for a Bowman, LUK for a Magician), the rest of your level's AP in
+the main stat and leaves the others at 4. The boxes it changes light up briefly; when it cannot fill anything in, it
+says why. The AP still free now always stand behind Ability points, also (0) or below zero in red when more is placed
+than the level gives, and behind the titles of the Ability points and Skillpoints popups. Beside the button the popup
+shows how many base AP are placed of what the level gives, such as 73 / 80 BASE AP. Popup titles are now h2 headings.
+
+**Score:** 3
 
 #### Pull Request
 
