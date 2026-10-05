@@ -10,6 +10,7 @@
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import type { WornWdef } from './armorUpgrade'
 import { accessoriesFor } from './data/accessories'
+import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS } from './data/beginnerWeapons'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -143,12 +144,13 @@ export const MAX_RESULTS = 8
  * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
  * jobregel, zie magicianGear.ts; het getal van zijn wapen is de M.ATT). Een naam mag bij meer jobs staan, maar dan is het hetzelfde
  * item (dezelfde stat en bron; een test bewaakt dat). Elke job krijgt ook de items voor shield, gloves, cape en earrings
- * die hij mag dragen (accessories.ts, #125). Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
+ * die hij mag dragen (accessories.ts, #125), en Thief, Warrior en Bowman de wapens onder level 10 (data/beginnerWeapons.ts):
+ * wie nog Beginner is, draagt er een. Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
-  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: WORN_CLAWS, wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
-  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: WORN_WARRIOR_CLAWS, wornArmor: [...WORN_WARRIOR_ARMOR, ...accessoriesFor('warrior')] },
-  bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
+  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: [...BEGINNER_WORN_WEAPONS, ...WORN_CLAWS], wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
+  warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: [...BEGINNER_WORN_WARRIOR_WEAPONS, ...WORN_WARRIOR_CLAWS], wornArmor: [...WORN_WARRIOR_ARMOR, ...accessoriesFor('warrior')] },
+  bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: BEGINNER_WORN_WEAPONS, wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
   magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
 }
 
@@ -178,7 +180,10 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false)
         attackMs: c.speed.attackMs,
         ...(c.mult !== undefined ? { mult: c.mult } : {}),
       }))
-  return items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
+  const unique = items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
+  // Wapens op level, laagste eerst (stabiel: bij gelijk level blijft de volgorde van de lijsten): de zoekbalk toont er maar
+  // MAX_RESULTS, en wie nog Beginner is moet de wapens onder level 10 zien zonder te typen.
+  return isArmorSlot(slot) ? unique : [...unique].sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
 }
 
 // Opzoeken kent ook de bronze pijlen: wat je draagt blijft bestaan, ook als de lijst het niet (meer) aanbiedt.

@@ -1044,7 +1044,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; help
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
+    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: !i.level ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {
