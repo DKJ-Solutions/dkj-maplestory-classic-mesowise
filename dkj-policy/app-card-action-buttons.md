@@ -58,6 +58,7 @@ clear button.
 - [x] More gap in `.stat-line` (0.75rem, was 0.375rem) and more padding above and below each line (0.5rem, was 0.25rem); the three boxes on an Ability points line 2.5rem instead of 3rem so the name still fits at phone width (Dave, October 5, 2026)
 - [x] No top space above the content of a card's popup; the value boxes (`.equip-value`) a size smaller: 38px high (was 44px, they are read-only), at least 3rem wide, the number at 1rem (Dave, October 5, 2026)
 - [x] The pencil (`.equip-edit`) 38px instead of 44px, as big as the value box beside it; the grid columns it sits in follow (Dave, October 5, 2026)
+- [x] 1rem below the title of every popup (`.stat-dialog-head`); the report's own top space dropped so it does not double (Dave, October 5, 2026)
 - [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
 
 ### DEPLOY: app/card-action-buttons
