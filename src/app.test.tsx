@@ -1773,6 +1773,24 @@ describe('een Bowman in de app', () => {
   const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
   const costText = () => within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
 
+  describe('het shield-slot (#172)', () => {
+    beforeEach(open)
+    const hasShieldRow = () => within(cards()[0]).queryByLabelText('Zoek je Shield') !== null
+
+    it('toont het shield-slot met een Sword in de hand, laat het weg met een boog en haalt een gekozen shield eraf', () => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', 'Sword')
+      expect(hasShieldRow()).toBe(true)
+      pick(cards()[0], 'Shield', 'Pan Lid')
+      expect(slots().shield.pick).toBe('Pan Lid')
+      pick(cards()[0], 'Weapon', 'Ryden')
+      expect(hasShieldRow()).toBe(false)
+      expect(slots().shield.pick).toBe('unknown')
+      pick(cards()[0], 'Weapon', 'Razor')
+      expect(hasShieldRow()).toBe(true)
+    })
+  })
+
   describe('het beginscherm', () => {
     beforeEach(open)
 

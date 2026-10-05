@@ -228,3 +228,20 @@ describe('autoFillPatch: alleen base AP', () => {
     for (const k of ['strExtra', 'dexExtra', 'intExtra', 'lukExtra', 'accuracy', 'level', 'wdef']) expect(patch).not.toHaveProperty(k)
   })
 })
+
+describe('autoFillAp: shield-slot van de Bowman (#172)', () => {
+  it('een bewaard shield telt niet mee met een boog; geen enkel shield dat een Bowman kan bereiken heeft een stat-eis', () => {
+    for (const w of ['Sword', 'Razor']) for (const { name } of catalogItems('shield', 'bowman', false, w)) expect(Object.keys(itemRequirements('shield', { pick: name, name: '', stat: '' }) ?? {}), name).toEqual([])
+    const bare = wear({ claw: 'Ryden' })
+    const withShield = wear({ claw: 'Ryden', shield: 'Pan Lid' })
+    expect(autoFillAp('bowman', '40', withShield)).toEqual(autoFillAp('bowman', '40', bare))
+  })
+
+  it('een shield met een stat-eis (alleen met geweld in de opslag) beperkt een Bowman met een boog niet, en met een wapen voor één hand wel', () => {
+    // Steel Shield eist STR 20; de catalogus biedt hem een Bowman niet aan, dus dit komt alleen uit handmatig bewerkte opslag.
+    const bow = wear({ claw: 'Ryden', shield: 'Steel Shield' })
+    expect(autoFillAp('bowman', '40', bow)).toEqual(autoFillAp('bowman', '40', wear({ claw: 'Ryden' })))
+    const sword = autoFillAp('bowman', '40', wear({ claw: 'Sword', shield: 'Steel Shield' }))
+    expect(sword.ok).toBe(true)
+  })
+})
