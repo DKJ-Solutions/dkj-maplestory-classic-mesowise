@@ -16,9 +16,6 @@ export const GENDERS: readonly { gender: Gender; label: string }[] = [
   { gender: 'female', label: 'Female' },
 ]
 
-/** Hoe de kop van de jobkaart het geslacht achter je job zet: (m) of (f) (Dave, 4 oktober 2026). */
-export const genderShort = (gender: Gender): string => (gender === 'male' ? 'm' : 'f')
-
 const isGender = (v: unknown): v is Gender => GENDERS.some((g) => g.gender === v)
 
 /**

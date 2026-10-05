@@ -47,27 +47,29 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] `StatDialog` gains a `drawer` mode: full-height panel anchored right, slide-in animation, slide-out before closing (instant under reduced motion)
 - [x] Swipe to close: a sideways drag to the right moves the panel with the finger; past a third of its width (at most 80px) it closes, otherwise it springs back; vertical drags stay scrolling
 - [x] The settings menu in `TopBar` uses the drawer mode
-- [x] Dave (October 5, 2026): a chosen job card is headed just "Character"; the job and gender show behind the pencil (a line with "Warrior (m)" under the heading was tried and removed)
-- [x] Dave (October 5, 2026): in the menu the job sits without a card around it (no `.card` class, so no border); on the home screen it stays a card
-- [x] Dave (October 5, 2026): in the menu the pencil lines up right under the close cross
-- [x] Dave (October 5, 2026): the job pencil looks exactly like every other pencil in the app (`.equip-edit`: light fill, border, same icon and size), checked in the preview: its right edge sits on the close cross's
-- [x] Dave (October 5, 2026): in the menu the job heading has no card icon (the shield); the home-screen card keeps it
+- [x] Dave (October 5, 2026): a chosen home-screen job card is headed just "Character"; the job and gender show behind the pencil (a line with "Warrior (m)" under the heading was tried and removed)
+- [~] Dave (October 5, 2026): in the menu the job sits without a card around it -- superseded by the list of rows below
+- [~] Dave (October 5, 2026): in the menu the pencil lines up right under the close cross -- superseded by the list of rows below
+- [x] Dave (October 5, 2026): the job pencil looks exactly like every other pencil in the app (`.equip-edit`: light fill, border, same icon and size)
+- [~] Dave (October 5, 2026): in the menu the job heading has no card icon -- superseded by the list of rows below
 - [x] Dave (October 5, 2026): the title "Instellingen" sits in the panel's header, in the type of the app name in the top bar (removing it was tried and reverted)
-- [x] Dave (October 5, 2026): in the menu the job is a list item (`ul.menu-list > li.job`), its title "Character" a plain label instead of an `h2`; the home-screen card keeps its `h2`
-- [x] Dave (October 5, 2026): with the close cross borderless, the pencil is centred under it (3px in from the right edge) instead of edge-aligned
-- [x] Dave (October 5, 2026): in the menu "Job:" and "Gender:" share one style (both plain `.job-title` labels)
-- [x] Dave (October 5, 2026): in the menu the row with "Character" and the pencil is gone; Job and Gender are open straight away, a different pick is a draft until Opslaan, and Opslaan slides the panel shut (closing without it discards the draft). The home-screen card keeps its pencil
-- [x] Dave (October 5, 2026): in the menu each question is one row: "Job:" with its four buttons, then "Gender:" with its two, labels in one column and the buttons on a shared four-column grid
-- [x] Dave (October 5, 2026): the menu is a list instead, one row per setting ("Job: Thief", "Gender: Male") with a pencil like every other in the app; the pencil slides a second drawer over the menu with that setting's choices, where a change turns the cross into the save tick (plus the red undo and Opslaan at the bottom), and saving slides that drawer back to the menu. The home-screen job card is a plain card again, with its own pencil. Swipes on the second drawer no longer reach the menu under it
+- [~] Dave (October 5, 2026): in the menu the job is a list item (`ul.menu-list > li.job`) -- superseded by the list of rows below
+- [~] Dave (October 5, 2026): with the close cross borderless, the pencil is centred under it -- superseded by the list of rows below, which keeps the centring
+- [~] Dave (October 5, 2026): in the menu "Job:" and "Gender:" share one style -- superseded by the list of rows below
+- [~] Dave (October 5, 2026): in the menu Job and Gender are open straight away, with Opslaan sliding the panel shut -- superseded by the second drawer below
+- [~] Dave (October 5, 2026): in the menu each question is one row of buttons -- superseded by the list of rows below
+- [x] Dave (October 5, 2026): the menu is a list, one row per setting ("Job: Thief", "Gender: Male") with a pencil like every other in the app; the pencil slides a second drawer over the menu with that setting's choices, where a change turns the cross into the save tick (plus the red undo and Opslaan at the bottom), and saving slides that drawer back to the menu. The home-screen job card is a plain card again, with its own pencil. Swipes on the second drawer no longer reach the menu under it
 - [x] Dave (October 5, 2026): each pencil sits on its own row (the shared `.equip-edit` grid placement had pushed it below), centred under the close cross, with the value right-aligned against it; checked in the preview
 - [x] Dave (October 5, 2026): the grey close cross loses its border in every popup, not just the menu; the save tick and the red undo keep theirs
-- [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it, without a border
+- [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it
+- [x] Review (Victor): the slide-out finishes only on the panel's own transform transition, a save tapped during a slide-out still saves, the closing state resets afterwards; the unused `genderShort` is removed, and `JobCard` decides on a boolean instead of a second job list
 
 ### TEST
 
 - [x] Tests: drawer class, swipe-right closes and returns focus, short swipe / scroll / swipe-left keep it open; the close-button test waits for the slide-out
-- [x] Typecheck and full suite green (1519 tests)
-- [ ] Dave looks at the preview on his phone before the merge (visible result)
+- [x] Tests: the menu rows, the second drawer (save, tick, undo, picking back, a first pick), a save during the slide-out, Escape and swipes closing only the top drawer
+- [x] Typecheck and full suite green
+- [x] Dave looked at the preview before the merge (visible result): "ship it", October 5, 2026
 
 ### DEPLOY: app/menu-drawer
 
@@ -75,7 +77,8 @@ The settings menu is no longer a popup in the middle of the screen: it slides in
 full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
 swipe springs back, and scrolling up and down inside it still works. The menu lists your job and gender,
 each with a pencil; tapping it slides a second panel over the menu to pick a new one, and saving slides it
-back. The close cross in every popup has lost its border.
+back. On the home screen, a chosen job card is now headed just "Character". The grey close cross in every
+popup has lost its border.
 
 **Score:** 2
 

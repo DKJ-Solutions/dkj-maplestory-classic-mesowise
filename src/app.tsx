@@ -56,15 +56,16 @@ function NotComputed(props: { job: Job }) {
 }
 
 /**
- * Sluit de popup of het paneel waar iets in staat, met dezelfde beweging als het kruisje; buiten een popup null. Met
- * een functie erbij draait die in plaats van het gewone sluiten, als het paneel weg is (Opslaan).
+ * Sluit de popup of het paneel waarin deze component staat, met dezelfde beweging als het kruisje; buiten een popup
+ * null. Met een functie erbij draait die in plaats van het gewone sluiten, als het paneel weg is (Opslaan).
  */
 const DialogClose = createContext<((then?: () => void) => void) | null>(null)
 
 /**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
- * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
- * job (Dave, 4 oktober 2026). Het potlood rechts herstelt een vergissing: het toont weer alle jobs en het geslacht.
+ * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog de kop
+ * Character en het potlood (Dave, 4 en 5 oktober 2026). Het potlood herstelt een vergissing: het toont weer alle jobs
+ * en het geslacht.
  * In het menu staan job en geslacht als rijen van een lijst (SettingsList).
  */
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
@@ -75,7 +76,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   const editing = draft !== null
   const titleId = useId()
   const genderTitleId = useId()
-  const choices = jobChoices(chosen && !editing)
+  const showJobs = !chosen || editing
   const pickJob = (j: Job) => (editing ? setDraft({ ...draft, job: j }) : props.onChange(j))
   const pickGender = (g: Gender) => (editing ? setDraft({ ...draft, gender: g }) : props.onGender(g))
   const dirty = editing && (draft.job !== job || draft.gender !== gender)
@@ -107,7 +108,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
           </button>
         )}
       </div>
-      {choices.length > 0 && <JobChoices labelledBy={titleId} pressed={editing ? shownJob : undefined} onPick={pickJob} />}
+      {showJobs && <JobChoices labelledBy={titleId} pressed={editing ? shownJob : undefined} onPick={pickJob} />}
       {/*
         Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Zodra je kiest,
         verdwijnt deze rij (Dave, 4 oktober 2026: scheelt hoogte); het potlood toont hem weer. Kop en knoppen precies
@@ -260,8 +261,8 @@ function ChoiceSave(props: { onSave: () => void }) {
 
 /**
  * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
- * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
- * je er geen hebt gekozen.
+ * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
+ * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
 function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const [open, setOpen] = useState(false)
@@ -1149,21 +1150,34 @@ function StatDialog(props: {
   const ref = useRef<HTMLDialogElement>(null)
   // De veeg van het paneel: waar de vinger begon, hoe ver hij naar rechts is, en of het een veeg opzij is (geen scroll).
   const drag = useRef<{ x: number; y: number; dx: number; sideways: boolean | null } | null>(null)
+  // Wat er gebeurt als het paneel weg is; null zolang het niet wegschuift.
+  const closing = useRef<(() => void) | null>(null)
   // Het paneel schuift eerst naar rechts weg en sluit dan; zonder beweging (of zonder matchMedia, zoals in de tests) meteen.
-  // Met then (Opslaan) draait die in plaats van onCancel, zodra het paneel weg is.
-  const cancel = (then: () => void = props.onCancel) => {
+  // Met then (Opslaan) draait die in plaats van onCancel, zodra het paneel weg is. Tik je tijdens het wegschuiven nog op
+  // Opslaan, dan wint Opslaan: je wijziging gaat niet verloren omdat je eerst veegde.
+  const cancel = (then?: () => void) => {
     const d = ref.current
-    if (!props.drawer || !d || !window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches) return then()
-    if (d.dataset.closing) return
-    d.dataset.closing = '1'
-    let done = false
-    const finish = () => {
-      if (done) return
-      done = true
-      then()
+    if (!props.drawer || !d || !window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches) return (then ?? props.onCancel)()
+    if (closing.current) {
+      if (then) closing.current = then
+      return
     }
-    d.addEventListener('transitionend', finish, { once: true })
-    setTimeout(finish, 300)
+    closing.current = then ?? props.onCancel
+    let timer = 0
+    const finish = (e?: TransitionEvent) => {
+      // Alleen het eigen wegschuiven telt, niet een knop erin die van kleur verandert.
+      if (e && (e.target !== d || e.propertyName !== 'transform')) return
+      d.removeEventListener('transitionend', finish)
+      clearTimeout(timer)
+      const run = closing.current
+      // Terug in rust, voor het geval het paneel na then blijft staan.
+      closing.current = null
+      d.style.transition = ''
+      d.style.transform = ''
+      run?.()
+    }
+    d.addEventListener('transitionend', finish)
+    timer = window.setTimeout(finish, 300)
     d.style.transition = 'transform 200ms ease-in'
     d.style.transform = 'translateX(100%)'
   }
@@ -1199,7 +1213,7 @@ function StatDialog(props: {
           const d = ref.current
           drag.current = null
           if (!s?.sideways || !d) return
-          // Een derde van de breedte (hooguit 80px) ver genoeg: dicht; anders veert hij terug.
+          // Voorbij een derde van de breedte (hooguit 80px) sluit hij; anders veert hij terug.
           if (s.dx > Math.min(80, d.offsetWidth / 3)) cancel()
           else snapBack(d)
         },

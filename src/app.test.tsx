@@ -2176,6 +2176,60 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
   })
 
+  it('laat het vinkje weer verdwijnen als je de oude keuze terugkiest', () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
+    expect(choicePanel().getByRole('button', { name: 'Opslaan en sluiten' })).toBeTruthy()
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Warrior' }))
+    expect(choicePanel().queryByRole('button', { name: 'Opslaan en sluiten' })).toBeNull()
+    expect(choicePanel().queryByRole('button', { name: 'Opslaan' })).toBeNull()
+  })
+
+  it('kiest in het tweede paneel een job die nog niet gekozen was', async () => {
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    expect(choicePanel().getByRole('button', { name: 'Thief' }).getAttribute('aria-pressed')).toBeNull()
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Opslaan' }))
+    await slid()
+    expect(stored(JOB_KEY)?.job).toBe('thief')
+    expect(rows(menu)[0]).toBe('Job: Thief')
+  })
+
+  it('slaat toch op als je tijdens het wegschuiven nog op Opslaan tikt (review)', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    const panel = choicePanel()
+    fireEvent.click(panel.getByRole('button', { name: 'Thief' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Annuleren' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Opslaan' }))
+    await slid()
+    expect(stored(JOB_KEY)?.job).toBe('thief')
+  })
+
+  it('sluit met Escape alleen het bovenste paneel', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent(bar().querySelectorAll('dialog')[1], new Event('cancel', { cancelable: true }))
+    await slid()
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+  })
+
+  it('veegt alleen het bovenste paneel weg, niet het menu eronder', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    const top = bar().querySelectorAll('dialog')[1] as HTMLDialogElement
+    Object.defineProperty(top, 'offsetWidth', { configurable: true, value: 300 })
+    fireEvent.touchStart(top, { touches: [{ clientX: 100, clientY: 300 }] })
+    fireEvent.touchMove(top, { touches: [{ clientX: 160, clientY: 305 }] })
+    fireEvent.touchMove(top, { touches: [{ clientX: 220, clientY: 310 }] })
+    fireEvent.touchEnd(top, { touches: [] })
+    expect((bar().querySelector('dialog') as HTMLDialogElement).style.transform).toBe('')
+    await slid()
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+  })
+
   it('sluit het menu met "Sluiten" en zet de focus terug op de menuknop', async () => {
     chooseWarriorMale()
     fireEvent.click(openMenu().getByRole('button', { name: 'Sluiten' }))
