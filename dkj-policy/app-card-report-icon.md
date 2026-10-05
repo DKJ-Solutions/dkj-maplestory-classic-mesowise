@@ -51,6 +51,7 @@ a report with the extended advice. Not on Total stats and Ability points: nothin
 - [x] Stats group (Ability points, Total stats) moved to the top, so the three report cards sit together (Dave, October 5, 2026)
 - [x] The "Stats" heading removed (the group keeps the name as `aria-label`) and 1rem more space between Total stats and Equip (Dave, October 5, 2026)
 - [x] The summary line under the level ("Op <mob> · lv N: kost ± ... meso") removed: the Report card already shows that cost (Dave, October 5, 2026); tests that read the cost there now read it from the Report card
+- [x] Popup titles (card and report) at `--fs-h2`, so the sizes run large to small: title, advice part, verdict, hint, source (Dave, October 5, 2026)
 - [x] Styling in `src/style.css`: 44px button in the eye's colour; the popup reuses the Report card's advice rules
 
 ### TEST
@@ -58,6 +59,7 @@ a report with the extended advice. Not on Total stats and Ability points: nothin
 - [x] Tests in `src/app.test.tsx`: the icon sits on exactly those three cards, beside the eye, and each popup shows its own advice; card-name lookups anchored so they no longer also match the report button
 - [x] Test that the Stats group comes first and Equip, Skillpoints and Monster follow each other
 - [x] `npx vitest run`: 1415 passed; `scripts/lint/lint.ps1`: clean
+- [~] Font sizes: CSS only, which jsdom does not compute -- no automated test; Dave judges it by eye
 - [~] Browser check at phone width -- dropped: two Chrome browsers connected and none selected; Dave looks before the merge anyway (visible result)
 
 ### DEPLOY: app/card-report-icon
