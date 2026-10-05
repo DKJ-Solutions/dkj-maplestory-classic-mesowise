@@ -48,13 +48,13 @@
 
 ### TEST
 
-- [x] app.test.tsx: existing mob tests save via Opslaan; new test for draft, disabled button and discard on close that Opslaan closes the popup, the ✓ and Annuleren buttons, and that the input survives the button swap (1516 green)
+- [x] app.test.tsx: existing mob tests save via Opslaan; new tests for the draft, the disabled button, discard on close, Opslaan closing the popup, the ✓ and Annuleren buttons, and the input surviving the button swap (1516 green)
 - [x] Lint gate clean
-- [ ] Dave looks at the popup on his phone before the merge (visible result)
+- [x] Dave looked at the popup in the preview and approved it ("mooi ship it", October 5, 2026)
 
 ### DEPLOY: app/monster-save-button
 
-Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had. In every popup with a change pending, the close button turns into a save tick with a red undo arrow beside it to cancel.
+Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had. In every popup where you edit a value (Monster, a stat, an ability point, a skill, an equipment correction), once something has changed, the close button turns into a save tick with a red undo arrow beside it to cancel.
 
 **Score:** 2
 

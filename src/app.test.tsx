@@ -495,7 +495,7 @@ describe('equipment: de popup achter het potlood', () => {
     expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
   })
 
-  // Dave, 5 oktober 2026: naast het vinkje een kruisje Annuleren, dat de wijziging weggooit.
+  // Dave, 5 oktober 2026: naast het vinkje een rode terugdraai-pijl Annuleren, die de wijziging weggooit.
   it('gooit het concept weg met Annuleren naast het vinkje', () => {
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')

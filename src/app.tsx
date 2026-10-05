@@ -267,7 +267,8 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
 }
 
 /**
- * De inhoud van een kaart, in een popup. Wat je erin wijzigt geldt meteen, dus sluiten is gewoon sluiten. De focus
+ * De inhoud van een kaart, in een popup. Wat je erin wijzigt geldt meteen, dus sluiten is gewoon sluiten; behalve in de
+ * Monster-popup, waar de mobkeuze een concept is (onSave, zie HuntedMobCard). De focus
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
@@ -1065,7 +1066,7 @@ function StatDialog(props: {
       <div class="stat-dialog-body">
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
-      {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt. */}
+      {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
         // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
         <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={props.onCancel}>
