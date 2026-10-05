@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**50 / 87 minor entries** <!-- pending-tally -->
+**51 / 88 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/155-default-profile-ap · 20261005-133943Z
+
+The example profile in the code now follows the AP rule; the old impossible copy is gone and the tests build on the
+legal one. No repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Nothing changes on screen: a new player already started with this profile. It prevents a failure that has not
+happened yet: a saved profile missing its LUK field would have been filled with 40 base LUK, 3 more than level 10 allows.
+
+**Score:** 1
+
+#### Pull Request
+
+DEFAULT_PROFILE fits the AP rule at level 10
+
+[PR #160](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/160)
+
+---
 
 ### DEPLOY: app/auto-fill-ap · 20261005-132954Z
 
