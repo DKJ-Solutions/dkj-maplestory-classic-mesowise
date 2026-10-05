@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**60 / 97 minor entries** <!-- pending-tally -->
+**61 / 98 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/172-bowman-shield-slot · 20261005-211317Z
+
+Internal: slot availability in `equipment.ts` depends on the worn weapon; `wornWdef`, `wornMdef` and `changeEquipment` take the job as a required parameter.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Bowman who still holds a beginner weapon (Sword, Hand Axe, Wooden Club, Razor or Fruit Knife) now gets the Shield slot and can enter Stolen Fence or Pan Lid. Picking a bow takes the shield off again, and its WDEF with it.
+
+**Score:** 2
+
+#### Pull Request
+
+Bowman: shield slot while holding a one-handed weapon
+
+[PR #175](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/175)
+
+---
 
 ### DEPLOY: data/beginner-weapons · 20261005-194006Z
 
