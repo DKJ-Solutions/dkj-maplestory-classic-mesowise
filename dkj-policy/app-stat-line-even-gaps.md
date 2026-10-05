@@ -47,7 +47,7 @@ boxes, so box to box was 2.25rem while the last box to the pencil was 0.75rem.
 
 ### CREATE
 
-- [x] `src/style.css`: on an Ability points line every visible distance is 0.75rem -- box to box (0.125rem gap, 0.5rem sign, 0.125rem gap) and last box to pencil (0.125rem gap plus 0.625rem in the last column, pencil on the right); an ordinary stat line already had 0.75rem everywhere
+- [x] `src/style.css`: on an Ability points line box to box is 1.5rem (0.375rem gap, 0.75rem sign, 0.375rem gap) and the last box to the pencil the same (0.375rem gap plus 1.125rem in the last column, pencil on the right). A first try at 0.75rem everywhere squeezed the `+` between its boxes (Dave, October 5, 2026)
 
 ### TEST
 
