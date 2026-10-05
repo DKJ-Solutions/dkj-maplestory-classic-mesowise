@@ -1612,7 +1612,7 @@ describe('het geslacht (issue #55)', () => {
   const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
   const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
   // De zichtbare jobkaart: in het menu als dat open staat, anders op het beginscherm (#86).
-  const card = () => (document.querySelector<HTMLElement>('dialog section.job') ?? document.querySelector<HTMLElement>('section.job'))!
+  const card = () => document.querySelector<HTMLElement>('section.job')!
   const group = () => within(card()).getByRole('group', { name: 'Gender:' })
   const button = (name: 'Male' | 'Female') => within(group()).getByRole('button', { name })
   const pressed = (name: 'Male' | 'Female') => button(name).getAttribute('aria-pressed')
@@ -1629,7 +1629,17 @@ describe('het geslacht (issue #55)', () => {
   })
 
   const JOB_KEY = 'mesowise.job.v1'
-  const jobTitle = () => card().querySelector('h2')!.textContent
+  const title = () => card().querySelector('.job-title')!.textContent
+  // Je job en geslacht zoals ze ingedrukt staan, als "Warrior (f)", achter het potlood (dat dit even opent en weer sluit).
+  const jobTitle = () => {
+    const edit = within(card()).queryByRole('button', { name: 'Job en geslacht wijzigen' })
+    if (edit) fireEvent.click(edit)
+    const on = (name: string) => within(within(card()).getByRole('group', { name })).queryAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent
+    const gender = on('Gender:')
+    const shown = `${on('Job:')}${gender ? ` (${gender === 'Male' ? 'm' : 'f'})` : ''}`
+    if (edit) fireEvent.click(within(card()).getByRole('button', { name: 'Job en geslacht niet wijzigen' }))
+    return shown
+  }
   const withWarrior = (gender?: 'male' | 'female') => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
@@ -1651,63 +1661,32 @@ describe('het geslacht (issue #55)', () => {
   })
 
   it('heeft voor job en geslacht dezelfde soort kop: "Job:" zolang je kiest, en "Gender:"', () => {
-    expect(jobTitle()).toBe('Job:')
+    expect(title()).toBe('Job:')
     const [job, gender] = Array.from(card().querySelectorAll('h2'))
     expect(gender.tagName).toBe(job.tagName)
     expect(gender.textContent).toBe('Gender:')
   })
 
-  it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
+  it('heet op het beginscherm gekozen Character, met de job achter het potlood', () => {
     withWarrior()
+    expect(title()).toBe('Character')
     expect(jobTitle()).toBe('Warrior')
-    fireEvent.click(button('Female'))
-    // Job en geslacht gekozen: de kaart staat nu alleen nog in het menu.
-    fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
-    expect(jobTitle()).toBe('Warrior (f)')
-    withWarrior('male')
-    expect(jobTitle()).toBe('Warrior (m)')
   })
 
   const pencil = () => within(card()).getByRole('button', { name: /^Job en geslacht (niet )?wijzigen$/ })
   const save = () => within(card()).queryByRole('button', { name: 'Opslaan' })
   const jobButton = (name: string) => within(within(card()).getByRole('group', { name: 'Job:' })).getByRole('button', { name })
 
-  it('toont met het potlood de rij weer, met je keuze ingedrukt, en nog geen Opslaan', () => {
-    withWarrior('female')
-    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
+  it('toont op het beginscherm met het potlood de jobs weer, met je keuze ingedrukt, en nog geen Opslaan', () => {
+    withWarrior()
+    expect(screen.queryByRole('group', { name: 'Job:' })).toBeNull()
     fireEvent.click(pencil())
-    expect(pressed('Female')).toBe('true')
-    expect(pressed('Male')).toBe('false')
+    expect(jobButton('Warrior').getAttribute('aria-pressed')).toBe('true')
     expect(save()).toBeNull()
-  })
-
-  it('laat met het potlood open Opslaan verschijnen zodra je iets wijzigt, en weer verdwijnen als je terugkiest', () => {
-    withWarrior('female')
-    fireEvent.click(pencil())
-    fireEvent.click(button('Male'))
-    expect(pressed('Male')).toBe('true')
-    expect(save()).toBeTruthy()
-    // Nog niets vastgelegd: alleen een concept.
-    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
-    fireEvent.click(button('Female'))
-    expect(save()).toBeNull()
-  })
-
-  it('legt bij Opslaan job en geslacht samen vast en sluit de rijen', () => {
-    withWarrior('female')
-    fireEvent.click(pencil())
-    fireEvent.click(jobButton('Thief'))
-    fireEvent.click(button('Male'))
-    fireEvent.click(save()!)
-    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'male' })
-    expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'thief' })
-    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
-    expect(save()).toBeNull()
-    expect(jobTitle()).toBe('Thief (m)')
   })
 
   it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
-    withWarrior('female')
+    withWarrior()
     const icon = () => pencil().querySelector('path')!.getAttribute('d')
     const closed = icon()
     fireEvent.click(pencil())
@@ -1717,23 +1696,20 @@ describe('het geslacht (issue #55)', () => {
   })
 
   it('gooit het concept weg als je het potlood weer dichtklikt', () => {
-    withWarrior('female')
+    withWarrior()
     fireEvent.click(pencil())
     fireEvent.click(jobButton('Thief'))
-    fireEvent.click(button('Male'))
+    expect(save()).toBeTruthy()
     fireEvent.click(pencil())
-    expect(stored(GENDER_KEY)).toEqual({ version: 1, gender: 'female' })
-    expect(jobTitle()).toBe('Warrior (f)')
-    fireEvent.click(pencil())
-    expect(pressed('Female')).toBe('true')
-    expect(save()).toBeNull()
+    expect(stored(JOB_KEY)).toEqual({ version: 1, job: 'warrior' })
+    expect(jobTitle()).toBe('Warrior')
   })
 
-  it('leest een bewaarde keuze bij het starten: geen rij Gender: en geen hint', () => {
+  it('leest een bewaarde keuze bij het starten: geen hint, en de keuze in het menu', () => {
     withWarrior('female')
-    expect(screen.queryByRole('group', { name: 'Gender:' })).toBeNull()
     expect(screen.queryByText(JOB_HINT)).toBeNull()
-    expect(jobTitle()).toBe('Warrior (f)')
+    const rows = Array.from(document.querySelectorAll('dialog .menu-row'), (r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+    expect(rows).toEqual(['Job: Warrior', 'Gender: Female'])
   })
 
   it('behandelt een onbruikbare bewaarde keuze als nog niet gekozen', () => {
@@ -2129,30 +2105,181 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
+  const rows = (menu: ReturnType<typeof openMenu>) =>
+    menu.getAllByRole('listitem').map((r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+  // Het tweede paneel, boven het menu (Dave, 5 oktober 2026).
+  const choicePanel = () => within(bar().querySelectorAll('dialog')[1] as HTMLDialogElement)
+  const slid = () => act(() => new Promise((r) => setTimeout(r, 350)))
+  const chooseWarriorMale = () => {
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
+    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
+  }
+
   it('toont de jobkaart op het beginscherm tot job en geslacht gekozen zijn (#55), en daarna alleen in het menu', () => {
     expect(homeJobCard()).not.toBeNull()
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
     expect(homeJobCard()).not.toBeNull()
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
+    // In het menu een rij per instelling, met wat je koos en een potlood; geen knoppen en geen koppen (Dave, 5 oktober 2026).
     const menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Warrior (m)' })).toBeTruthy()
+    expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
+    expect(menu.getByRole('button', { name: 'Job wijzigen' })).toBeTruthy()
+    expect(menu.getByRole('button', { name: 'Gender wijzigen' })).toBeTruthy()
+    expect(menu.queryByRole('button', { name: 'Thief' })).toBeNull()
+    expect(menu.queryAllByRole('heading')).toHaveLength(0)
   })
 
-  it('wisselt de job via het menu en sluit met "Sluiten"', () => {
-    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
-    fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
-    let menu = openMenu()
-    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht wijzigen' }))
-    fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
-    fireEvent.click(menu.getByRole('button', { name: 'Opslaan' }))
+  it('noemt een instelling die nog niet gekozen is "Niet gekozen"', () => {
+    expect(rows(openMenu())).toEqual(['Job: Niet gekozen', 'Gender: Niet gekozen'])
+  })
+
+  it('wijzigt de job in een tweede paneel: Opslaan schuift het weg en het menu toont de nieuwe job', async () => {
+    chooseWarriorMale()
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    const panel = choicePanel()
+    expect(panel.getByRole('button', { name: 'Warrior' }).getAttribute('aria-pressed')).toBe('true')
+    // Nog niets gewijzigd: het kruisje, geen Opslaan.
+    expect(panel.queryByRole('button', { name: 'Opslaan' })).toBeNull()
+    fireEvent.click(panel.getByRole('button', { name: 'Thief' }))
+    expect(stored(JOB_KEY)?.job).toBe('warrior')
+    expect(panel.getByRole('button', { name: 'Opslaan en sluiten' })).toBeTruthy()
+    fireEvent.click(panel.getByRole('button', { name: 'Opslaan' }))
+    await slid()
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
-    fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(rows(menu)).toEqual(['Job: Thief', 'Gender: Male'])
+    expect(document.activeElement).toBe(menu.getByRole('button', { name: 'Job wijzigen' }))
+  })
+
+  it('wijzigt het geslacht met het vinkje rechtsboven', async () => {
+    chooseWarriorMale()
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Gender wijzigen' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Female' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Opslaan en sluiten' }))
+    await slid()
+    expect(stored('mesowise.gender.v1')).toEqual({ version: 1, gender: 'female' })
+    expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Female'])
+  })
+
+  it('gooit de wijziging weg met Annuleren, en houdt het menu open', async () => {
+    chooseWarriorMale()
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Annuleren' }))
+    await slid()
+    expect(stored(JOB_KEY)?.job).toBe('warrior')
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
+  })
+
+  it('laat het vinkje weer verdwijnen als je de oude keuze terugkiest', () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
+    expect(choicePanel().getByRole('button', { name: 'Opslaan en sluiten' })).toBeTruthy()
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Warrior' }))
+    expect(choicePanel().queryByRole('button', { name: 'Opslaan en sluiten' })).toBeNull()
+    expect(choicePanel().queryByRole('button', { name: 'Opslaan' })).toBeNull()
+  })
+
+  it('kiest in het tweede paneel een job die nog niet gekozen was', async () => {
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
+    expect(choicePanel().getByRole('button', { name: 'Thief' }).getAttribute('aria-pressed')).toBeNull()
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
+    fireEvent.click(choicePanel().getByRole('button', { name: 'Opslaan' }))
+    await slid()
+    expect(stored(JOB_KEY)?.job).toBe('thief')
+    expect(rows(menu)[0]).toBe('Job: Thief')
+  })
+
+  it('slaat toch op als je tijdens het wegschuiven nog op Opslaan tikt (review)', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    const panel = choicePanel()
+    fireEvent.click(panel.getByRole('button', { name: 'Thief' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Annuleren' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Opslaan' }))
+    await slid()
+    expect(stored(JOB_KEY)?.job).toBe('thief')
+  })
+
+  it('sluit met Escape alleen het bovenste paneel', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent(bar().querySelectorAll('dialog')[1], new Event('cancel', { cancelable: true }))
+    await slid()
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+  })
+
+  it('veegt alleen het bovenste paneel weg, niet het menu eronder', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    const top = bar().querySelectorAll('dialog')[1] as HTMLDialogElement
+    Object.defineProperty(top, 'offsetWidth', { configurable: true, value: 300 })
+    fireEvent.touchStart(top, { touches: [{ clientX: 100, clientY: 300 }] })
+    fireEvent.touchMove(top, { touches: [{ clientX: 160, clientY: 305 }] })
+    fireEvent.touchMove(top, { touches: [{ clientX: 220, clientY: 310 }] })
+    fireEvent.touchEnd(top, { touches: [] })
+    expect((bar().querySelector('dialog') as HTMLDialogElement).style.transform).toBe('')
+    await slid()
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+  })
+
+  it('sluit het menu met "Sluiten" en zet de focus terug op de menuknop', async () => {
+    chooseWarriorMale()
+    fireEvent.click(openMenu().getByRole('button', { name: 'Sluiten' }))
+    // Het paneel schuift eerst naar rechts weg en sluit dan.
+    await slid()
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
-    menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
+  })
+
+  describe('als paneel dat van rechts inschuift', () => {
+    const drawer = () => bar().querySelector('dialog') as HTMLDialogElement
+    const swipe = (dx: number, dy: number) => {
+      const d = drawer()
+      fireEvent.touchStart(d, { touches: [{ clientX: 100, clientY: 300 }] })
+      fireEvent.touchMove(d, { touches: [{ clientX: 100 + dx / 2, clientY: 300 + dy / 2 }] })
+      fireEvent.touchMove(d, { touches: [{ clientX: 100 + dx, clientY: 300 + dy }] })
+      fireEvent.touchEnd(d, { touches: [] })
+    }
+    const openDrawer = () => {
+      openMenu()
+      Object.defineProperty(drawer(), 'offsetWidth', { configurable: true, value: 300 })
+    }
+
+    it('is een paneel en geen popup in het midden', () => {
+      openMenu()
+      expect(drawer().classList.contains('menu-drawer')).toBe(true)
+      // Met Instellingen in de kop en zonder kaarticoon (Dave, 5 oktober 2026).
+      expect(drawer().querySelector('.stat-dialog-head .stat-dialog-name')?.textContent).toBe('Instellingen')
+      expect(drawer().querySelector('.card-icon')).toBeNull()
+      expect(drawer().getAttribute('aria-label')).toBe('Instellingen')
+    })
+
+    it('sluit met een veeg naar rechts, na het wegschuiven, en zet de focus terug op de menuknop', async () => {
+      openDrawer()
+      swipe(120, 10)
+      expect(drawer().style.transform).toBe('translateX(100%)')
+      await act(() => new Promise((r) => setTimeout(r, 350)))
+      expect(bar().querySelector('dialog')).toBeNull()
+      expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    })
+
+    it('veert terug bij een korte veeg, en blijft open bij scrollen of een veeg naar links', () => {
+      openDrawer()
+      swipe(40, 0)
+      expect(drawer()).not.toBeNull()
+      expect(drawer().style.transform).toBe('')
+      swipe(10, 200)
+      swipe(-150, 0)
+      expect(drawer()).not.toBeNull()
+    })
   })
 })
 

@@ -1,5 +1,5 @@
-import type { ComponentChildren, Ref, RefObject } from 'preact'
-import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
+import { createContext, type ComponentChildren, type Ref, type RefObject } from 'preact'
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid, type RankResult } from './calc/rankSpots'
 import { bestVerdict } from './best'
@@ -25,7 +25,7 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
+import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -56,9 +56,17 @@ function NotComputed(props: { job: Job }) {
 }
 
 /**
+ * Sluit de popup of het paneel waarin deze component staat, met dezelfde beweging als het kruisje; buiten een popup
+ * null. Met een functie erbij draait die in plaats van het gewone sluiten, als het paneel weg is (Opslaan).
+ */
+const DialogClose = createContext<((then?: () => void) => void) | null>(null)
+
+/**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
- * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
- * job (Dave, 4 oktober 2026). Het potlood rechts herstelt een vergissing: het toont weer alle jobs en het geslacht.
+ * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog de kop
+ * Character en het potlood (Dave, 4 en 5 oktober 2026). Het potlood herstelt een vergissing: het toont weer alle jobs
+ * en het geslacht.
+ * In het menu staan job en geslacht als rijen van een lijst (SettingsList).
  */
 function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const { job, chosen, gender } = props
@@ -66,10 +74,9 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   // concept weg (Dave, 4 oktober 2026). De eerste keuze van een job of geslacht geldt meteen, zoals altijd.
   const [draft, setDraft] = useState<{ job: Job; gender: Gender | null } | null>(null)
   const editing = draft !== null
-  // De kaart staat soms twee keer in beeld (op het beginscherm en in Instellingen), dus elke kop krijgt een eigen id.
   const titleId = useId()
   const genderTitleId = useId()
-  const choices = jobChoices(chosen && !editing)
+  const showJobs = !chosen || editing
   const pickJob = (j: Job) => (editing ? setDraft({ ...draft, job: j }) : props.onChange(j))
   const pickGender = (g: Gender) => (editing ? setDraft({ ...draft, gender: g }) : props.onGender(g))
   const dirty = editing && (draft.job !== job || draft.gender !== gender)
@@ -84,7 +91,8 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   return (
     <section class="card job">
       <div class="job-head">
-        <h2 id={titleId} class="with-icon"><CardIcon name="shield" />{chosen && !editing ? `${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Job:'}</h2>
+        {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
+        <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
         {chosen && (
           <button
             type="button"
@@ -95,47 +103,23 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
           >
             {/* Open: een kruis, want een klik sluit en gooit het concept weg (Dave, 4 oktober 2026); dicht: het potlood. */}
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              {editing ? (
-                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              ) : (
-                <path d="M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-              )}
+              {editing ? <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /> : <PencilPath />}
             </svg>
           </button>
         )}
       </div>
-      {choices.length > 0 && (
-        <div class="job-choices" role="group" aria-labelledby={titleId}>
-          {choices.map((j) => (
-            <button
-              key={j}
-              type="button"
-              class="btn job-choice"
-              aria-pressed={editing ? j === shownJob : undefined}
-              onClick={() => pickJob(j)}
-            >
-              {jobLabel(j)}
-            </button>
-          ))}
-        </div>
-      )}
+      {showJobs && <JobChoices labelledBy={titleId} pressed={editing ? shownJob : undefined} onPick={pickJob} />}
       {/*
-        Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Zodra je kiest, staat
-        het als (m) of (f) achter je job in de kop en verdwijnt deze rij (Dave, 4 oktober 2026: scheelt hoogte); het
-        potlood toont hem weer. Kop en knoppen precies zoals die van de job (Dave, 4 oktober 2026).
+        Het geslacht (issue #55): sommige winkelarmor is alleen voor mannen of alleen voor vrouwen. Zodra je kiest,
+        verdwijnt deze rij (Dave, 4 oktober 2026: scheelt hoogte); het potlood toont hem weer. Kop en knoppen precies
+        zoals die van de job (Dave, 4 oktober 2026).
       */}
       {(gender === null || editing) && (
         <>
           <div class="job-head">
-            <h2 id={genderTitleId}>Gender:</h2>
+            <h2 id={genderTitleId} class="job-title">Gender:</h2>
           </div>
-          <div class="job-choices" role="group" aria-labelledby={genderTitleId}>
-            {GENDERS.map((g) => (
-              <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === shownGender} onClick={() => pickGender(g.gender)}>
-                {g.label}
-              </button>
-            ))}
-          </div>
+          <GenderChoices labelledBy={genderTitleId} pressed={shownGender} onPick={pickGender} />
         </>
       )}
       {dirty && (
@@ -145,19 +129,140 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
           </button>
         </div>
       )}
-      {gender === null && <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>}
-      {/* Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */}
-      {!isComputed(job) && (
-        <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Equip kun je wel invullen.</p>
-      )}
+      {gender === null && <GenderHint />}
+      <NotComputedDebug job={job} />
     </section>
+  )
+}
+
+/** Het potlood van een knop die iets wijzigt, overal in de app hetzelfde. */
+function PencilPath() {
+  return <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+}
+
+function JobChoices(props: { labelledBy?: string; label?: string; pressed: Job | undefined; onPick: (job: Job) => void }) {
+  return (
+    <div class="job-choices" role="group" aria-labelledby={props.labelledBy} aria-label={props.label}>
+      {jobChoices(false).map((j) => (
+        <button key={j} type="button" class="btn job-choice" aria-pressed={props.pressed === undefined ? undefined : j === props.pressed} onClick={() => props.onPick(j)}>
+          {jobLabel(j)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function GenderChoices(props: { labelledBy?: string; label?: string; pressed: Gender | null; onPick: (gender: Gender) => void }) {
+  return (
+    <div class="job-choices" role="group" aria-labelledby={props.labelledBy} aria-label={props.label}>
+      {GENDERS.map((g) => (
+        <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === props.pressed} onClick={() => props.onPick(g.gender)}>
+          {g.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function GenderHint() {
+  return <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>
+}
+
+/** Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */
+function NotComputedDebug(props: { job: Job }) {
+  if (isComputed(props.job)) return null
+  return <p class="debug">{notComputedText(props.job)} De app toont daarom geen advies en geen getallen. Equip kun je wel invullen.</p>
+}
+
+/**
+ * De instellingen in het menu (Dave, 5 oktober 2026): één rij per instelling, met wat je hebt gekozen en een potlood.
+ * Het potlood schuift een tweede paneel over het menu met de keuzes; Opslaan legt de keuze vast en schuift dat paneel
+ * weer weg.
+ */
+function SettingsList(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
+  const [editing, setEditing] = useState<'job' | 'gender' | null>(null)
+  const jobEdit = useRef<HTMLButtonElement>(null)
+  const genderEdit = useRef<HTMLButtonElement>(null)
+  // Het paneel verdwijnt bij sluiten, dus de focus gaat terug naar het potlood dat het opende.
+  const close = () => {
+    const back = editing === 'job' ? jobEdit : genderEdit
+    setEditing(null)
+    back.current?.focus()
+  }
+  const rows = [
+    { key: 'job' as const, label: 'Job', value: props.chosen ? jobLabel(props.job) : 'Niet gekozen', ref: jobEdit },
+    { key: 'gender' as const, label: 'Gender', value: GENDERS.find((g) => g.gender === props.gender)?.label ?? 'Niet gekozen', ref: genderEdit },
+  ]
+  return (
+    <>
+      <ul class="menu-list">
+        {rows.map((r) => (
+          <li key={r.key} class="menu-row">
+            <span class="menu-label">{r.label}:</span>
+            <span class="menu-value">{r.value}</span>
+            <button ref={r.ref} type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${r.label} wijzigen`} onClick={() => setEditing(r.key)}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><PencilPath /></svg>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {props.gender === null && <GenderHint />}
+      <NotComputedDebug job={props.job} />
+      {editing === 'job' && (
+        <ChoiceDrawer title="Job" current={props.chosen ? props.job : null} onSave={props.onChange} onCancel={close}>
+          {(draft, pick) => <JobChoices label="Job" pressed={draft ?? undefined} onPick={pick} />}
+        </ChoiceDrawer>
+      )}
+      {editing === 'gender' && (
+        <ChoiceDrawer title="Gender" current={props.gender} onSave={props.onGender} onCancel={close}>
+          {(draft, pick) => <GenderChoices label="Gender" pressed={draft} onPick={pick} />}
+        </ChoiceDrawer>
+      )}
+    </>
+  )
+}
+
+/**
+ * Het tweede paneel van het menu: de keuzes van één instelling. Een tik is een concept; zodra het afwijkt wordt het
+ * kruisje een vinkje en staat Opslaan onderin, zoals in elke popup van de app. Opslaan schuift het paneel weg.
+ */
+function ChoiceDrawer<T>(props: {
+  title: string
+  current: T | null
+  onSave: (value: T) => void
+  onCancel: () => void
+  children: (draft: T | null, pick: (value: T) => void) => ComponentChildren
+}) {
+  const [draft, setDraft] = useState<T | null>(props.current)
+  const changed = draft !== null && draft !== props.current
+  const save = () => {
+    if (draft !== null) props.onSave(draft)
+    props.onCancel()
+  }
+  return (
+    <StatDialog title={props.title} drawer onCancel={props.onCancel} onSave={changed ? save : undefined}>
+      {props.children(draft, setDraft)}
+      {changed && <ChoiceSave onSave={save} />}
+    </StatDialog>
+  )
+}
+
+/** Opslaan onderin het paneel: schuift het eerst weg, en slaat dan op (Dave, 5 oktober 2026). */
+function ChoiceSave(props: { onSave: () => void }) {
+  const close = useContext(DialogClose)
+  return (
+    <div class="job-actions">
+      <button type="button" class="equip-save" onClick={() => (close ? close(props.onSave) : props.onSave())}>
+        Opslaan
+      </button>
+    </div>
   )
 }
 
 /**
  * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
- * hamburgermenu met de instellingen. Je job is die instelling; op het beginscherm staat zijn kaart alleen nog zolang
- * je er geen hebt gekozen.
+ * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
+ * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
 function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const [open, setOpen] = useState(false)
@@ -180,8 +285,8 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
         </button>
       </div>
       {open && (
-        <StatDialog title="Instellingen" closeLabel="Sluiten" onCancel={close}>
-          <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+        <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
+          <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
         </StatDialog>
       )}
     </header>
@@ -1035,9 +1140,90 @@ function StatDialog(props: {
    * gooien het concept ook weg.
    */
   onSave?: () => void
+  /**
+   * Een paneel dat van rechts naar links het scherm in schuift in plaats van een popup in het midden (Dave, 5 oktober
+   * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
+   */
+  drawer?: boolean
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  // De veeg van het paneel: waar de vinger begon, hoe ver hij naar rechts is, en of het een veeg opzij is (geen scroll).
+  const drag = useRef<{ x: number; y: number; dx: number; sideways: boolean | null } | null>(null)
+  // Wat er gebeurt als het paneel weg is; null zolang het niet wegschuift.
+  const closing = useRef<(() => void) | null>(null)
+  // Het paneel schuift eerst naar rechts weg en sluit dan; zonder beweging (of zonder matchMedia, zoals in de tests) meteen.
+  // Met then (Opslaan) draait die in plaats van onCancel, zodra het paneel weg is. Tik je tijdens het wegschuiven nog op
+  // Opslaan, dan wint Opslaan: je wijziging gaat niet verloren omdat je eerst veegde.
+  const cancel = (then?: () => void) => {
+    const d = ref.current
+    if (!props.drawer || !d || !window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches) return (then ?? props.onCancel)()
+    if (closing.current) {
+      if (then) closing.current = then
+      return
+    }
+    closing.current = then ?? props.onCancel
+    let timer = 0
+    const finish = (e?: TransitionEvent) => {
+      // Alleen het eigen wegschuiven telt, niet een knop erin die van kleur verandert.
+      if (e && (e.target !== d || e.propertyName !== 'transform')) return
+      d.removeEventListener('transitionend', finish)
+      clearTimeout(timer)
+      const run = closing.current
+      // Terug in rust, voor het geval het paneel na then blijft staan.
+      closing.current = null
+      d.style.transition = ''
+      d.style.transform = ''
+      run?.()
+    }
+    d.addEventListener('transitionend', finish)
+    timer = window.setTimeout(finish, 300)
+    d.style.transition = 'transform 200ms ease-in'
+    d.style.transform = 'translateX(100%)'
+  }
+  const snapBack = (d: HTMLDialogElement) => {
+    d.style.transition = 'transform 150ms ease-out'
+    d.style.transform = ''
+  }
+  const swipe = props.drawer
+    ? {
+        // Een paneel boven het menu staat er in de DOM in: de veeg hoort alleen bij het bovenste.
+        onTouchStart: (e: TouchEvent) => {
+          e.stopPropagation()
+          const t = e.touches[0]
+          drag.current = { x: t.clientX, y: t.clientY, dx: 0, sideways: null }
+        },
+        onTouchMove: (e: TouchEvent) => {
+          e.stopPropagation()
+          const s = drag.current
+          const d = ref.current
+          if (!s || !d) return
+          const t = e.touches[0]
+          const dx = t.clientX - s.x
+          const dy = t.clientY - s.y
+          if (s.sideways === null && Math.max(Math.abs(dx), Math.abs(dy)) > 8) s.sideways = Math.abs(dx) > Math.abs(dy)
+          if (!s.sideways) return
+          s.dx = Math.max(0, dx)
+          d.style.transition = 'none'
+          d.style.transform = `translateX(${s.dx}px)`
+        },
+        onTouchEnd: (e: TouchEvent) => {
+          e.stopPropagation()
+          const s = drag.current
+          const d = ref.current
+          drag.current = null
+          if (!s?.sideways || !d) return
+          // Voorbij een derde van de breedte (hooguit 80px) sluit hij; anders veert hij terug.
+          if (s.dx > Math.min(80, d.offsetWidth / 3)) cancel()
+          else snapBack(d)
+        },
+        onTouchCancel: (e: TouchEvent) => {
+          e.stopPropagation()
+          drag.current = null
+          if (ref.current) snapBack(ref.current)
+        },
+      }
+    : {}
   const name = (
     <>
       {props.title}
@@ -1055,13 +1241,14 @@ function StatDialog(props: {
   return (
     <dialog
       ref={ref}
-      class={props.className ? `stat-dialog ${props.className}` : 'stat-dialog'}
+      class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
       aria-label={props.title}
       onCancel={(e) => {
         e.preventDefault()
-        props.onCancel()
+        cancel()
       }}
-      onClick={(e) => e.target === ref.current && props.onCancel()}
+      onClick={(e) => e.target === ref.current && cancel()}
+      {...swipe}
     >
       <div class="stat-dialog-body">
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
@@ -1069,7 +1256,7 @@ function StatDialog(props: {
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
         // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
-        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={props.onCancel}>
+        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={() => cancel()}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
       )}
@@ -1077,7 +1264,7 @@ function StatDialog(props: {
         type="button"
         class={props.onSave ? 'stat-dialog-close save' : 'stat-dialog-close'}
         aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
-        onClick={props.onSave ?? props.onCancel}
+        onClick={() => (props.onSave ? cancel(props.onSave) : cancel())}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           {props.onSave ? (
@@ -1087,7 +1274,7 @@ function StatDialog(props: {
           )}
         </svg>
       </button>
-      {props.children}
+      <DialogClose.Provider value={cancel}>{props.children}</DialogClose.Provider>
       </div>
     </dialog>
   )
