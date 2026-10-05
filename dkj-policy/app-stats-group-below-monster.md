@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Dave, October 5, 2026: the Ability points and Total stats group goes below the Monster card after all (#149 had put it
+at the top). Placed directly under Monster, above the Report card.
+
+- [x] Decide the spot: directly under Monster, above the Report card
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: the Stats group moved from above Equip to below Monster
+- [x] `src/style.css`: the extra 1rem moved from below the group to above it, so it still separates the group from the cards with a report
 
 ### TEST
 
+- [x] `src/app.test.tsx`: the order test now checks Equip, Skillpoints, Monster, the Stats group, then the Report card
+- [x] `npx vitest run`: 1415 passed; `scripts/lint/lint.ps1`: clean
+- [~] Spacing: CSS only, which jsdom does not compute -- Dave judges it by eye
+
 ### DEPLOY: app/stats-group-below-monster
 
-**Score:**
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Ability points and Total stats now sit below the Monster card instead of at the top, so the home screen opens on
+the cards with a report: Equip, Skillpoints and Monster.
+
+**Score:** 2
 
 #### Pull Request
 
