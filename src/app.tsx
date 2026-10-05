@@ -15,7 +15,7 @@ import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { notModelled, skillLevels, skillPoolUsage, stepSkill, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
+import { notModelled, skillLevels, skillPoolUsage, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
@@ -1250,7 +1250,8 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
   const level = s.level
   const effect = (l: number) => skillEffectText(s.key, l, wdef)
   const passive = skillMpAt(s, 1) === null
-  if (passive && effect(1) === null) return [[{ text: 'Passief, kost geen MP' }]]
+  // Een passief zonder effect: niets onder de naam; de regel "Passief, kost geen MP" voegde niets toe (Dave, 5 oktober 2026).
+  if (passive && effect(1) === null) return []
   // Een passief: wat hij geeft. Een skill met MP: de MP, en wat hij geeft als hij een total verandert.
   const line = (label: string, l: number, mp: string): SkillLinePart[] => {
     const gain = effect(l)
@@ -1259,9 +1260,9 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
     if (gain !== null) parts.push(...(parts.length ? [{ text: ', ' }] : []), { text: gain, tone: 'gain' })
     return [{ text: label }, ...parts]
   }
-  const now = level === 0 ? [{ text: 'Nu: niet geleerd' }] : line('Nu: ', level, `−${skillMpAt(s, level)} MP per keer`)
-  const lines = passive ? [[{ text: 'Passief, kost geen MP' }], now] : [now]
-  return level < s.max ? [...lines, line('Volgend level: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : lines
+  // Now en Next, kort zoals de rest van de spelwoorden (Dave, 5 oktober 2026).
+  const now = level === 0 ? [{ text: 'Now: niet geleerd' }] : line('Now: ', level, `−${skillMpAt(s, level)} MP per keer`)
+  return level < s.max ? [now, line('Next: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : [now]
 }
 
 /** Een stuk van een regel onder een skill: wat hij kost (rood), wat hij geeft (groen), of gewone tekst. */
@@ -1283,11 +1284,6 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   // De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de kaart alleen het procent.
   const wdefNumber = Number(props.draft.wdef.trim())
   const wdef = props.draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
-  // Is de pot van deze groep vol (zonder geldig level: nooit), dan kan er geen punt meer bij.
-  const full = (job: SkillLevel['job']) => {
-    const { spent, cap } = skillPoolUsage(props.draft, props.job, skillPoolOf(job))
-    return cap !== null && spent >= cap
-  }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <CardHead label="Skillpoints" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
@@ -1310,54 +1306,69 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
               {levels
                 .filter((s) => s.job === job)
                 .map((s) => (
-                  <div class="skill-row" key={s.key}>
-                    <span>
-                      {s.name}
-                      <small class="skill-mp">
-                        {skillMpLines(s, wdef).map((line) => (
-                          <span key={line.map((p) => p.text).join('')}>
-                            {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
-                          </span>
-                        ))}
-                      </small>
-                    </span>
-                    <span class="skill-input">
-                      <button
-                        type="button"
-                        class="step"
-                        aria-label={`${s.name} een level lager`}
-                        disabled={s.level === 0}
-                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], -1, s.max) })}
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={s.max}
-                        aria-label={`${s.name}, level van 0 tot ${s.max}`}
-                        value={props.draft[s.key]}
-                        onInput={(e) => props.onChange({ [s.key]: (e.currentTarget as HTMLInputElement).value })}
-                      />
-                      <button
-                        type="button"
-                        class="step"
-                        aria-label={`${s.name} een level hoger`}
-                        disabled={s.level === s.max || full(job)}
-                        onClick={() => props.onChange({ [s.key]: stepSkill(props.draft[s.key], 1, s.max) })}
-                      >
-                        +
-                      </button>
-                      <small>/ {s.max}</small>
-                    </span>
-                  </div>
+                  <SkillLine key={s.key} skill={s} draft={props.draft} job={props.job} wdef={wdef} onChange={props.onChange} />
                 ))}
             </div>
           ))}
         </CardPopup>
       )}
     </section>
+  )
+}
+
+/**
+ * Eén skill in de popup van Skillpoints (Dave, 5 oktober 2026): links de naam met wat hij kost en geeft, rechts alleen het
+ * level dat er nu staat en het potlood, net als bij equipment. Wijzigen gaat in een eigen popup met − en +; hoger dan het
+ * maximum van de skill of dan wat de pot nog over laat kan niet.
+ */
+function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wdef: number | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
+  const { skill: s, draft } = props
+  const uid = useId()
+  const [edit, setEdit] = useState<string | null>(null)
+  const value = draft[s.key]
+  const { spent, cap } = skillPoolUsage(draft, props.job, skillPoolOf(s.job))
+  // Wat er nu staat telt niet mee in wat er over is: dat is wat deze skill hoogstens kan worden.
+  const now = s.level ?? 0
+  const left = cap === null ? null : cap - (spent - now)
+  const max = left === null ? s.max : Math.min(s.max, Math.max(now, left))
+  const save = () => {
+    if (edit === null) return
+    const n = Number(edit.trim())
+    // Een getypt getal buiten de grenzen gaat naar de dichtstbijzijnde; een leeg of onleesbaar vak laat de fout zien.
+    const level = edit.trim() !== '' && Number.isInteger(n) ? String(Math.min(max, Math.max(0, n))) : edit
+    if (level !== value) props.onChange({ [s.key]: level })
+    setEdit(null)
+  }
+  const lines = skillMpLines(s, props.wdef)
+  return (
+    <div class="skill-row">
+      <span>
+        {s.name}
+        {lines.length > 0 && (
+          <small class="skill-mp">
+            {lines.map((line) => (
+              <span key={line.map((p) => p.text).join('')}>
+                {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
+              </span>
+            ))}
+          </small>
+        )}
+      </span>
+      <div class="equip-value" aria-label={`${s.name} level ${value.trim() || 'onbekend'}`}>
+        <span class="equip-value-num">
+          <strong>{value.trim() || '?'}</strong>
+        </span>
+      </div>
+      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${s.name} wijzigen`} onClick={() => setEdit(value)}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      {edit !== null && (
+        <StatDialog title={s.name} onCancel={() => setEdit(null)}>
+          {cap !== null && <p class="stat-dialog-db">SP over: <strong>{nfInt.format(Math.max(0, cap - spent))}</strong> van {cap}</p>}
+          <StatEditor stat={s.name} heading={`Level (0 tot ${s.max})`} labelId={`${uid}-level`} value={edit} min={0} max={max} fallback={0} integer dirty={edit !== value} onInput={setEdit} onSave={save} />
+        </StatDialog>
+      )}
+    </div>
   )
 }
 
