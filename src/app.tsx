@@ -2154,12 +2154,6 @@ export function App() {
               {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
               {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
 
-              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats", bovenaan, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bij elkaar staan. Zonder zichtbare kop en met wat extra ruimte eronder (Dave, 5 oktober 2026); de naam staat in aria-label. */}
-              <section class="stats-group" aria-label="Stats">
-                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
-              </section>
-
               <EquipmentCard
                 job={job}
                 equipment={equipment}
@@ -2206,6 +2200,12 @@ export function App() {
                 onChange={(patch) => update(drafts[0].id, patch)}
                 report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
               />
+
+              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
+              <section class="stats-group" aria-label="Stats">
+                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+              </section>
 
               <LevelAdviceCard
                 job={job}

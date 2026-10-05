@@ -231,14 +231,15 @@ describe('begin zonder opslag', () => {
       expect(document.querySelectorAll('.card-report')).toHaveLength(3)
     })
 
-    it('zet de Stats-groep bovenaan, zodat de kaarten met een rapport bij elkaar staan', () => {
+    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Monster en boven de Report-kaart', () => {
       const stats = panels()[0].querySelector('section.stats-group')!
       const equip = report('Equip')!.closest('section')!
       const skills = report('Skillpoints')!.closest('section')!
       const mob = report('Monster')!.closest('section')!
-      expect(stats.nextElementSibling).toBe(equip)
       expect(equip.nextElementSibling).toBe(skills)
       expect(skills.nextElementSibling).toBe(mob)
+      expect(mob.nextElementSibling).toBe(stats)
+      expect(stats.nextElementSibling).toBe(panels()[0].querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
