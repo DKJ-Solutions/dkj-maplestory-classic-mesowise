@@ -1186,6 +1186,67 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   })
 })
 
+describe('Vul in op je equipment (#157)', () => {
+  const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
+  const headingText = () => homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent
+  const fillButton = () => screen.getByRole('button', { name: 'Vul in op je equipment' })
+  const wearIgor = () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+  }
+
+  it('schrijft de base AP van het level, toont de melding en haalt het aantal (n) uit de kop; extra AP en accuracy blijven staan', () => {
+    levelUp()
+    expect(headingText()).toBe('Ability points(5)5 AP te verdelen')
+    wearIgor()
+    const before = { ...profileFields() }
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    // Level 11 = 75 AP: DEX op de eis van Steel Igor (20), LUK de rest (75 - 4 - 4 - 20 = 47), STR en INT 4.
+    expect(screen.getByText('Ingevuld: DEX 20 (voor Steel Igor), LUK 47.')).toBeTruthy()
+    expect(profileFields()).toMatchObject({ str: '4', dex: '20', int: '4', luk: '47', level: '11' })
+    expect(profileFields().lukExtra).toBe(before.lukExtra)
+    expect(profileFields().accuracy).toBe(before.accuracy)
+    expect(statShown('DEX')).toBe('20')
+    expect(statShown('LUK')).toBe('47')
+    expect(apNote()).toBeNull()
+    expect(headingText()).toBe('Ability points')
+    expect(homeScreen().querySelector('section.profile .to-distribute')).toBeNull()
+  })
+
+  it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    wearIgor()
+    const before = { ...profileFields() }
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: dat vraagt 73, je hebt er 65. Er is niets ingevuld.')).toBeTruthy()
+    const after = profileFields()
+    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
+  })
+
+  it('past de speler daarna een stat aan, dan verdwijnt de melding', () => {
+    levelUp()
+    wearIgor()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.queryByText(/^Ingevuld:/)).not.toBeNull()
+    const luk = openAbility('LUK')
+    luk.typeBase('40')
+    luk.save()
+    expect(screen.queryByText(/^Ingevuld:/)).toBeNull()
+  })
+
+  it('zonder getal in het levelveld schrijft de knop niets en vraagt om een level', () => {
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '' } }))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.getByText('Vul eerst een geldig level in. Er is niets ingevuld.')).toBeTruthy()
+  })
+})
+
 describe('advies na de level-up', () => {
   // De app rekent met de mob waarop je jaagt.
   beforeEach(() => {
