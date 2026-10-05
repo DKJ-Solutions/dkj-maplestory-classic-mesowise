@@ -64,13 +64,30 @@ hold for a Beginner is inferred (the guide never mentions a Beginner's attack), 
 
 ### TEST
 
+- [x] Tycho: `src/beginnerAttack.test.ts` (the formula per weapon family with hand-derived values, who attacks as a
+  Beginner, W.ATT without ammo, no ammo or MP cost, the stat-window range, the dagger/LUK switch, and that a level-10
+  Thief and a level-9 Warrior are unchanged); `beginnerWeapons.test.ts` updated for the dagger multiplier and flag.
+- [x] Victor's review: no formula or attack-path bug. Fixed: a stale `dagger` flag after switching to an own ("other")
+  weapon, now cleared on any new pick (tested). Not taken: Auto assign still follows the job's main stat below level
+  10, which is how a future Thief or Bowman builds and matches a dagger; a level-9 profile without a picked weapon
+  counts as a sword (documented on the field).
+- [~] Edith: no UI text added (the `dagger` field has no input), so there was nothing for her to read.
+
 ### DEPLOY: app/171-beginner-attack
 
-**Score:**
+Internal: `beginnerAttack` in the mob model, a hidden `dagger` profile field set by the weapon pick, the dagger
+multiplier with its source, and `attacksAsBeginner` used by the attack, the ammo cost and the W.ATT.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Below level 10 a Thief or Bowman is calculated as the Beginner he still is: he swings the weapon in his hand, with
+no stars or arrows to pay for. A Sword, Hand Axe or Wooden Club hits with STR, a Razor or Fruit Knife with LUK
+(NiaMeowDB's damage guide). Before, the app had him throw stars or shoot arrows he could not use yet, which made
+EXP per meso below level 10 look better than it is. From level 10 nothing changes.
+
+**Score:** 3
 
 #### Pull Request
 

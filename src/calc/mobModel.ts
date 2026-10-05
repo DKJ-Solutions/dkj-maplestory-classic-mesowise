@@ -126,6 +126,20 @@ export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMu
 }
 
 /**
+ * De gewone aanval van een Beginner (onder level 10, issue #171): geen skill, en de stats van de wapenfamilie in zijn hand
+ * (de damage-gids, de tabel per wapenfamilie): STR als hoofdstat en DEX als secundaire bij een zwaard, bijl of stomp, LUK
+ * als hoofdstat en STR + DEX als secundaire bij een dagger. `weaponMult` is de verwachte multiplier van het wapen (zie
+ * data/beginnerWeapons.ts). De gids geeft de stats per wapen, niet per job: dat ze voor een Beginner gelden, is afgeleid.
+ * Eén klap per aanval, geen munitie en geen MP.
+ */
+export function beginnerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>, weaponMult: number, dagger: boolean): Attack {
+  const range = dagger
+    ? damageRange(null, c.watk, c.luk, c.str + c.dex, weaponMult, BASE_MASTERY)
+    : damageRange(null, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY)
+  return { ...range, stars: 1, mpPerAttack: 0 }
+}
+
+/**
  * De aanval van een Bowman met een boog of kruisboog: dezelfde formule, met DEX als hoofdstat en STR als secundaire stat
  * (de damage-gids, "Bow / Crossbow / Claw"). `bow` geeft de weapon multiplier van een schot en de basis-mastery (data/bowman.ts).
  * `skill` is Arrow Blow op het gezette level, of null voor het gewone schot. Eén klap en één pijl per aanval.

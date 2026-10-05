@@ -1,7 +1,7 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { ASSUMPTIONS, bowAttack, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, beginnerAttack, bowAttack, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { ARROW_BLOW_LEVELS, BOWMAN_DAMAGE, BOWMAN_MASTERY_BASE } from './data/bowman'
 import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT, MAGICIAN_MP_POTIONS } from './data/magician'
@@ -10,7 +10,7 @@ import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion, SpellLevel } from './data/types'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS } from './data/warrior'
 import type { Job } from './job'
-import { toCharacter, type Profile } from './profile'
+import { attacksAsBeginner, toCharacter, type Profile } from './profile'
 import { buffBonus } from './skillEffects'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
@@ -59,14 +59,18 @@ function magicianAttacks(profile: Profile, character: Character): Attack[] {
   return spells
 }
 
+/** De gewone aanval van een Beginner met het wapen in zijn hand (#171): de multiplier en of het een dagger is, uit de equipment. */
+const beginnerAttackOf = (profile: Profile, c: Character): Attack => beginnerAttack(c, profile.weaponMult, profile.dagger === 1)
+
 /**
- * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
+ * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief of Bowman onder level 10 slaat als Beginner (#171). Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
  * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Bowman schiet Arrow Blow op het
  * gezette level, of zonder punten het gewone schot; een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er
  * geen voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
  * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
  */
 function attacksOf(profile: Profile, character: Character): Attack[] {
+  if (attacksAsBeginner(profile.job, profile.level)) return [beginnerAttackOf(profile, character)]
   switch (profile.job) {
     case 'warrior':
       return [meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))]
@@ -89,8 +93,9 @@ function attacksOf(profile: Profile, character: Character): Attack[] {
  */
 export function statWindowRange(profile: Profile): { min: number; max: number } | null {
   const c = toCharacter(profile)
-  const a =
-    profile.job === 'warrior'
+  const a = attacksAsBeginner(profile.job, profile.level)
+    ? beginnerAttackOf(profile, c)
+    : profile.job === 'warrior'
       ? meleeAttack(c, profile.weaponMult, null)
       : profile.job === 'bowman'
         ? bowAttack(c, BOW, null)
@@ -140,7 +145,7 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior of Magician gooit niets, dus 0. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior, Magician of Beginner gooit niets, dus 0. */
   rechargePerStar: number
   /** De potion waarmee deze job zijn MP aanvult. */
   mpPotion: Potion
@@ -165,7 +170,8 @@ const expPerMeso = (s: MonsterSuggestion): number => {
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attacks = attacksOf(profile, character)
-  const rechargePerStar = profile.job === 'warrior' || profile.job === 'magician' ? 0 : profile.starRecharge
+  const throwsNothing = profile.job === 'warrior' || profile.job === 'magician' || attacksAsBeginner(profile.job, profile.level)
+  const rechargePerStar = throwsNothing ? 0 : profile.starRecharge
   const mpPotion = mpPotionFor(profile.job)
   const buffMpPerHour = buffBonus(profile).mpPerHour
   const potionFactor = potionFactorOf(profile)
