@@ -2151,6 +2151,10 @@ describe('de menubalk bovenin (issue #86)', () => {
     const menu = openMenu()
     expect(menu.getByRole('listitem').querySelector('.job-title')?.textContent).toBe('Character')
     expect(menu.queryByRole('heading', { name: 'Character' })).toBeNull()
+    // Met het potlood open hebben Job: en Gender: in het menu dezelfde styling, en geen van beide is een kop.
+    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht wijzigen' }))
+    expect(Array.from(menu.getByRole('listitem').querySelectorAll('.job-title'), (t) => `${t.tagName} ${t.className} ${t.textContent}`)).toEqual(['SPAN job-title Job:', 'SPAN job-title Gender:'])
+    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht niet wijzigen' }))
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', async () => {

@@ -141,7 +141,8 @@ function JobCard(props: {
       {(gender === null || editing) && (
         <>
           <div class="job-head">
-            <h2 id={genderTitleId}>Gender:</h2>
+            {/* In het menu net als Job: een gewone tekst, geen kop (Dave, 5 oktober 2026). */}
+            {props.plain ? <span id={genderTitleId} class="job-title">Gender:</span> : <h2 id={genderTitleId} class="job-title">Gender:</h2>}
           </div>
           <div class="job-choices" role="group" aria-labelledby={genderTitleId}>
             {GENDERS.map((g) => (
