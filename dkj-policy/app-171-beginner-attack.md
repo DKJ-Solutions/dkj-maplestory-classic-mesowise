@@ -39,9 +39,28 @@
 
 ### PLAN
 
+Issue #171. The issue's reason was checked first and holds only in part: a Thief below level 10 cannot carry Lucky
+Seven points (`skillPointCap` gives the job pool 0, and `parseProfile` refuses more), so he was calculated with the
+**plain claw throw** (LUK primary, multiplier 2.5, the stars' W.ATT added and their recharge charged), not Lucky Seven.
+A Bowman shot his bow and paid for arrows. Both are wrong for someone holding a Sword or a Razor. The Warrior was
+already right (his `meleeAttack` without Power Strike is the Beginner swing), and the Magician has no attack below
+10 (no suggestion, which is honest), so both stay as they are.
+
+The facts (Rebecca, checked against the raw page by Vera, 2026-10-05,
+[the damage guide](https://meowdb.com/msclassic/guides/explaining-the-damage-formula)): the stats are given per
+weapon family, "Dagger, Claw: LUK, STR + DEX" and "Sword, Axe, Blunt...: STR, DEX"; "Dagger 1.0 2.0" (swing, stab),
+and the guide's own expected multiplier "1.40 for Dagger" matches the repo's 60/40 split. That the per-family stats
+hold for a Beginner is inferred (the guide never mentions a Beginner's attack), and the code says so.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `data/beginnerWeapons.ts`: `DAGGER` (multipliers + source), every weapon below level 10 carries its expected
+  multiplier (daggers 1.4), `isBeginnerDagger`; the Warrior's list still leaves the daggers out.
+- [x] `calc/mobModel.ts`: `beginnerAttack` (STR/DEX, or LUK/STR+DEX with a dagger; no skill, no ammo, no MP).
+- [x] `profile.ts`: hidden 0/1 field `dagger` (like `bronzeArrows`), `attacksAsBeginner`, `weaponMult` and `dagger`
+  read from the draft for a Thief or Bowman, and no star or arrow W.ATT below level 10 (`toCharacter`, `totalAttack`).
+- [x] `equipment.ts`: a weapon pick sets `dagger`.
+- [x] `suggest.ts`: `attacksOf`, the ammo cost and `statWindowRange` use the Beginner attack below level 10.
 
 ### TEST
 
