@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**44 / 81 minor entries** <!-- pending-tally -->
+**45 / 82 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/stats-group-below-monster · 20261005-085549Z
+
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Ability points and Total stats now sit below the Monster card instead of at the top, so the home screen opens on
+the cards with a report: Equip, Skillpoints and Monster.
+
+**Score:** 2
+
+#### Pull Request
+
+The Ability points and Total stats group below the Monster card
+
+[PR #150](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/150)
+
+---
 
 ### DEPLOY: app/card-report-icon · 20261005-082819Z
 
