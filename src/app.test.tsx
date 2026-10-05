@@ -1612,7 +1612,8 @@ describe('het geslacht (issue #55)', () => {
   const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
   const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
   // De zichtbare jobkaart: in het menu als dat open staat, anders op het beginscherm (#86).
-  const card = () => (document.querySelector<HTMLElement>('dialog section.job') ?? document.querySelector<HTMLElement>('section.job'))!
+  // In het menu is de job een item van een lijst (Dave, 5 oktober 2026), op het beginscherm een kaart.
+  const card = () => (document.querySelector<HTMLElement>('dialog li.job') ?? document.querySelector<HTMLElement>('section.job'))!
   const group = () => within(card()).getByRole('group', { name: 'Gender:' })
   const button = (name: 'Male' | 'Female') => within(group()).getByRole('button', { name })
   const pressed = (name: 'Male' | 'Female') => button(name).getAttribute('aria-pressed')
@@ -1633,7 +1634,7 @@ describe('het geslacht (issue #55)', () => {
   // Dit opent het potlood, leest ze als "Warrior (f)" en sluit het weer; zonder keuze is het de kop zelf.
   const jobTitle = () => {
     const edit = within(card()).queryByRole('button', { name: 'Job en geslacht wijzigen' })
-    if (!edit) return card().querySelector('h2')!.textContent
+    if (!edit) return card().querySelector('.job-title')!.textContent
     fireEvent.click(edit)
     const on = (name: string) => within(within(card()).getByRole('group', { name })).queryAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent
     const gender = on('Gender:')
@@ -1670,7 +1671,7 @@ describe('het geslacht (issue #55)', () => {
 
   it('heet gekozen alleen Character; achter het potlood staan de job en het gekozen geslacht', () => {
     withWarrior()
-    expect(card().querySelector('h2')!.textContent).toBe('Character')
+    expect(card().querySelector('.job-title')!.textContent).toBe('Character')
     expect(jobTitle()).toBe('Warrior')
     fireEvent.click(button('Female'))
     // Job en geslacht gekozen: de kaart staat nu alleen nog in het menu.
@@ -2148,7 +2149,8 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     const menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Character' })).toBeTruthy()
+    expect(menu.getByRole('listitem').querySelector('.job-title')?.textContent).toBe('Character')
+    expect(menu.queryByRole('heading', { name: 'Character' })).toBeNull()
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', async () => {

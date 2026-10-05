@@ -89,12 +89,16 @@ function JobCard(props: {
   }
   const shownJob = draft?.job ?? job
   const shownGender = editing ? draft.gender : gender
-  return (
-    <section class={props.plain ? 'job' : 'card job'}>
+  const body = (
+    <>
       <div class="job-head">
         {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
-        {/* In het menu is het geen kaart, dus ook geen kaarticoon (Dave, 5 oktober 2026). */}
-        <h2 id={titleId} class={props.plain ? undefined : 'with-icon'}>{!props.plain && <CardIcon name="shield" />}{chosen && !editing ? 'Character' : 'Job:'}</h2>
+        {/* In het menu is het geen kaart, dus ook geen kop en geen kaarticoon (Dave, 5 oktober 2026). */}
+        {props.plain ? (
+          <span id={titleId} class="job-title">{chosen && !editing ? 'Character' : 'Job:'}</span>
+        ) : (
+          <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
+        )}
         {chosen && (
           <button
             type="button"
@@ -160,7 +164,15 @@ function JobCard(props: {
       {!isComputed(job) && (
         <p class="debug">{notComputedText(job)} De app toont daarom geen advies en geen getallen. Equip kun je wel invullen.</p>
       )}
-    </section>
+    </>
+  )
+  // In het menu is de job een item van een lijst, geen kaart met een kop (Dave, 5 oktober 2026).
+  return props.plain ? (
+    <ul class="menu-list">
+      <li class="job">{body}</li>
+    </ul>
+  ) : (
+    <section class="card job">{body}</section>
   )
 }
 
