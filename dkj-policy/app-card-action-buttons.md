@@ -55,7 +55,7 @@ clear button.
 - [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
 - [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
 - [x] A card's popup (`.card-dialog`) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone, at least 1rem from every edge (Dave, October 5, 2026)
-- [x] More gap in `.stat-line` (0.75rem, was 0.375rem); the three boxes on an Ability points line 2.5rem instead of 3rem so the name still fits at phone width (Dave, October 5, 2026)
+- [x] More gap in `.stat-line` (0.75rem, was 0.375rem) and more padding above and below each line (0.5rem, was 0.25rem); the three boxes on an Ability points line 2.5rem instead of 3rem so the name still fits at phone width (Dave, October 5, 2026)
 - [x] No top space above the content of a card's popup; the value boxes (`.equip-value`) a size smaller: 38px high (was 44px, they are read-only), at least 3rem wide, the number at 1rem (Dave, October 5, 2026)
 - [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
 
