@@ -1138,7 +1138,8 @@ function StatDialog(props: {
       {...swipe}
     >
       <div class="stat-dialog-body">
-      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
+      {/* Het menu toont geen titel (Dave, 5 oktober 2026); de kop blijft als rij van het kruisje, en aria-label noemt het paneel nog. */}
+      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{!props.drawer && title}</div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (

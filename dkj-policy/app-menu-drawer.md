@@ -52,6 +52,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): in the menu the pencil lines up right under the close cross
 - [x] Dave (October 5, 2026): the job pencil looks exactly like every other pencil in the app (`.equip-edit`: light fill, border, same icon and size), checked in the preview: its right edge sits on the close cross's
 - [x] Dave (October 5, 2026): in the menu the job heading has no card icon (the shield); the home-screen card keeps it
+- [x] Dave (October 5, 2026): the menu panel shows no title; the head row stays for the close cross, and the panel keeps "Instellingen" as its accessible name
 
 ### TEST
 
