@@ -214,27 +214,23 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
 }
 
 /**
- * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): een tik op de kop toont de inhoud in een popup.
- * Het oog rechts zegt dat er iets te bekijken is; de kaart zelf klapt niet meer open.
+ * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
+ * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
  */
-function CardHead(props: { head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
-  const button = (
-    <button type="button" class="spot-head" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} onClick={props.onOpen}>
+function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
+  return (
+    <div class="spot-head">
       {props.children}
-      <svg class="card-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-      </svg>
-    </button>
-  )
-  // Met een rapport staat zijn knop naast het oog: een eigen knop, want een knop mag niet in een knop.
-  return props.report ? (
-    <div class="card-head">
-      {button}
-      {props.report}
+      <div class="card-actions">
+        <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+          </svg>
+        </button>
+        {props.report}
+      </div>
     </div>
-  ) : (
-    button
   )
 }
 
@@ -252,7 +248,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
   }
   return (
     <>
-      <button ref={button} type="button" class="card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
+      <button ref={button} type="button" class="card-action card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
         {/* Een klembord met regels: het rapport */}
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3" />
@@ -488,7 +484,7 @@ function StatsCard(props: {
   const { draft, job } = props
   return (
     <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
+      <CardHead label={props.title} head={head} open={open} onOpen={() => setOpen(true)}>
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
@@ -1064,9 +1060,9 @@ function EquipmentCard(props: {
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
       {props.inline ? (
-        <div class="spot-head static">{name}</div>
+        <div class="spot-head">{name}</div>
       ) : (
-        <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+        <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
           {name}
         </CardHead>
       )}
@@ -1294,7 +1290,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
+      <CardHead label="Skillpoints" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
@@ -1412,7 +1408,7 @@ function HuntedMobCard(props: {
   const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
+      <CardHead label={title} head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
         <span class="spot-name with-icon">
           <CardIcon name="target" />
           {title}
