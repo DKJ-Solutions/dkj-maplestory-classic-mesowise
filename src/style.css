@@ -240,7 +240,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .level-row-hint { margin-top: -0.5rem; text-align: right; }
 
 /* Hoeveel AP of SP je na een level-up nog zelf moet verdelen (#154): een regel onder de kop van de kaart, in het accent. */
-.to-distribute { margin: 0; padding: 0 1rem 0.75rem; font-size: 0.875rem; font-weight: 600; color: var(--accent); }
+/* Het aantal AP of SP achter de kop (#154): de flex-gap van de kop is breder dan een spatie, dus een stukje terug. */
+.to-distribute { margin-left: -0.25rem; color: var(--accent); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */

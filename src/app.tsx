@@ -478,8 +478,8 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
-  /** Een regel onder de kop, zoals hoeveel AP je nog te verdelen hebt. */
-  note?: string | null
+  /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
+  note?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
@@ -490,12 +490,12 @@ function StatsCard(props: {
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
+          {props.note}
         </span>
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {props.note && <p class="to-distribute" role="status">{props.note}</p>}
       {open && (
         <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
@@ -553,7 +553,7 @@ function ProfileCard(props: StatsCardProps) {
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154).
   const left = apToDistribute(draft)
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={left === null ? null : `${left} AP te verdelen`} />
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={left !== null && <ToDistribute count={left} unit="AP" />} />
 }
 
 /**
@@ -1284,12 +1284,12 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
+          {spLeft !== null && <ToDistribute count={spLeft} unit="SP" />}
         </span>
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {spLeft !== null && <p class="to-distribute" role="status">{spLeft} SP te verdelen</p>}
       {open && (
         <CardPopup title="Skillpoints" head={head} error={props.error} onClose={() => setOpen(false)}>
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
@@ -1368,6 +1368,19 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
 }
 
 /** "12 / 16 SP": hoeveel punten van de pot je hebt gezet; zonder geldig level alleen wat je zette. Boven het maximum in de foutkleur. */
+/**
+ * Hoeveel AP of SP je nog te verdelen hebt, tussen haakjes achter de kop van de kaart: "Skillpoints (1)" (Dave, 5 oktober
+ * 2026, #154). Een schermlezer hoort de hele zin.
+ */
+function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
+  return (
+    <span class="to-distribute" role="status">
+      <span aria-hidden="true">({props.count})</span>
+      <span class="sr-only">{`${props.count} ${props.unit} te verdelen`}</span>
+    </span>
+  )
+}
+
 function PoolCount(props: { usage: { spent: number; cap: number | null } }) {
   const { spent, cap } = props.usage
   return (
