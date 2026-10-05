@@ -39,19 +39,36 @@
 
 ### PLAN
 
+- [x] Dave's shape for #154 chosen: stay on the home screen, snapshot per level, AP and SP to distribute on their cards
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: Level up stores a snapshot and stays home; the check and advice screens removed; no automatic AP in LUK
+- [x] Cody: AP and SP left as a count behind the card headings; Ability points and Total stats each on their own row
+- [x] Cody: review fixes (snapshot from a ref, cleared on a job change, Total stats hint, stale wording)
 
 ### TEST
 
+- [x] Tycho: tests for the counters, the snapshot, Back and per-job HP/accuracy steps (1450 tests green)
+- [x] Victor: code review; Edith: Dutch text and stale comments
+- [x] Dave looked at the preview on his phone and said ship it
+
 ### DEPLOY: app/levelup-snapshot
 
-**Score:**
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Level up now keeps everything of your level and stays on the home screen: the "Klopt dit met je spel?" and "Wat nu?"
+screens are gone. Only level, Max HP and the level part of accuracy change by themselves; the app no longer puts the
+Thief's 5 AP in LUK. The AP and SP you still have to distribute show as a count behind the card heading, such as
+"Skillpoints (3)" and "Ability points (5)", and Ability points and Total stats now each have a row of their own.
+Back right after a level-up puts back the level you came from, stats and equipment included. Total stats carries a
+hint to check Accuracy and Avoid in the game after placing AP.
+
+**Score:** 4
 
 #### Pull Request
 
