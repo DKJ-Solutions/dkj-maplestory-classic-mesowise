@@ -26,7 +26,7 @@ export type AutoFillResult =
       limitedBy: string | null
       /** Per stat die een item verder optilt dan 4 (de secundaire of een derde): het item dat het vraagt. */
       limits: Partial<Record<Stat, string>>
-      /** Gedragen items waarvan de app de eisen niet kent (eigen item, of een item zonder prijs): die tellen als geen eis. */
+      /** Gedragen items waarvan de app de eisen niet kent (een eigen item): die tellen als geen eis. */
       unknown: string[]
     }
   | { ok: false; reason: 'level' | 'short' | 'max'; unknown: string[]; need?: number; have?: number }

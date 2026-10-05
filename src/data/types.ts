@@ -106,11 +106,15 @@ export interface ArmorPiece extends ShopArmor, Partial<Requires<Stat>> {}
 /** Een stuk Thief-armor: wat hij vraagt (level, LUK, DEX), wat hij aan WDEF geeft en wat hij kost. */
 export type Armor = ArmorPiece & Requires<'luk' | 'dex'>
 
-/** Een stuk armor dat je kunt dragen maar niet in een winkel koopt: geen eisen of prijs, alleen wat de app nodig heeft om je WDEF te kennen. */
-export type WornArmor = Pick<Armor, 'name' | 'slot' | 'level' | 'wdef' | 'mdef' | 'source' | 'gender'>
+/**
+ * Een stuk armor dat je kunt dragen maar niet in een winkel koopt: zonder prijs, met wat de app nodig heeft om je WDEF te
+ * kennen en met de stat-eisen van de itempagina (#158). Zoals bij ArmorPiece staat alleen een eis die de pagina noemt; een stat die er
+ * niet staat vraagt niets.
+ */
+export type WornArmor = Pick<ArmorPiece, 'name' | 'slot' | 'level' | 'wdef' | 'mdef' | 'source' | 'gender' | Stat>
 
-/** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs. */
-export type WornClaw = Pick<Weapon, 'name' | 'level' | 'watk' | 'speed' | 'source'>
+/** Een claw die je kunt dragen maar niet in een winkel koopt: wat hij geeft en hoe snel hij slaat, zonder prijs, met zijn eisen (#158). */
+export type WornClaw = Pick<Weapon, 'name' | 'level' | 'watk' | 'speed' | 'source' | Stat>
 
 /** De soort Warrior-wapen; de soort bepaalt de multipliers voor zwaaien en steken. */
 export type WarriorWeaponKind =
@@ -145,7 +149,7 @@ export interface WarriorWeapon extends ShopItem, Requires<'str' | 'dex'> {
  * zoals WarriorWeapon, maar zonder eisen en prijs. De soort, snelheid en multipliers zijn dezelfde als bij de
  * winkelwapens, zodat warriorGear.ts ze op dezelfde manier kan omzetten.
  */
-export type WornWarriorWeapon = Pick<WarriorWeapon, 'name' | 'kind' | 'level' | 'watk' | 'speed' | 'mult' | 'source'>
+export type WornWarriorWeapon = Pick<WarriorWeapon, 'name' | 'kind' | 'level' | 'watk' | 'speed' | 'mult' | 'str' | 'dex' | 'source'>
 
 /** Een stuk Warrior-armor uit een NPC-winkel: wat het vraagt (level, STR, DEX), wat het aan WDEF geeft en wat het kost. */
 export interface WarriorArmor extends ShopArmor, Requires<'str' | 'dex'> {}

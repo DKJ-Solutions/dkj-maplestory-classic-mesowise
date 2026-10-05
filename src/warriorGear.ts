@@ -21,13 +21,15 @@ export const WARRIOR_WEAPONS: readonly Weapon[] = NPC_WARRIOR_WEAPONS.map((w) =>
   source: w.source,
 }))
 
-/** De Warrior-wapens zonder prijs, op dezelfde manier omgezet: de claw-vorm met aanvalstijd en multiplier, zonder eisen en prijs. */
+/** De Warrior-wapens zonder prijs, op dezelfde manier omgezet: de claw-vorm met aanvalstijd, multiplier en eisen, zonder prijs (#158). */
 export const WORN_WARRIOR_CLAWS: readonly (WornClaw & { mult: number })[] = WORN_WARRIOR_WEAPONS.map((w) => ({
   name: w.name,
   level: w.level,
   watk: w.watk,
   speed: { label: w.speed.label, attackMs: averageAttackMs(w.speed) },
   mult: effectiveMultiplier(w.mult),
+  str: w.str,
+  dex: w.dex,
   source: w.source,
 }))
 

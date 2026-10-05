@@ -191,14 +191,16 @@ const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
 /**
- * De stat-eisen van wat je in een slot draagt (een eis die de pagina niet noemt staat er niet). Alleen items uit de winkellijsten
- * kennen hun eisen; undefined bij een leeg slot, een eigen item of een item zonder prijs (de lijst "zonder prijs" legt de eisen
- * niet vast): daarvan weet de app niet wat het vraagt. Ammo vraagt alleen een level.
+ * De stat-eisen van wat je in een slot draagt (een eis die de pagina niet noemt staat er niet). Winkelitems en items zonder prijs
+ * kennen hun eisen (#158; bij dezelfde naam wint de winkelregel); undefined bij een leeg slot, een eigen item of een naam die in
+ * geen lijst staat: daarvan weet de app niet wat het vraagt. Ammo vraagt alleen een level.
  */
 export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Requires<Stat>> | undefined {
   if (slot === 'ammo' || isEmptyEntry(entry) || entry.pick === OTHER) return undefined
   const found = (Object.values(SHOP) as NonNullable<(typeof SHOP)[Job]>[])
-    .flatMap((shop): readonly (Weapon | ArmorPiece)[] => (isArmorSlot(slot) ? shop.armor.filter((a) => a.slot === slot) : shop.weapons))
+    .flatMap((shop): readonly (Weapon | ArmorPiece | WornArmor | WornClaw)[] =>
+      isArmorSlot(slot) ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot) : [...shop.weapons, ...shop.wornWeapons],
+    )
     .find((i) => i.name === entry.pick)
   if (!found) return undefined
   const out: Partial<Requires<Stat>> = {}

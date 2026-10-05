@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { apAtLevel } from './data/thief'
-import { defaultEquipment, OTHER, type Equipment } from './equipment'
+import { defaultEquipment, itemRequirements, OTHER, type Equipment } from './equipment'
 
 const wear = (patch: Partial<Record<keyof Equipment, string>>): Equipment => {
   const eq = defaultEquipment()
@@ -45,11 +45,11 @@ describe('autoFillAp', () => {
     for (const lvl of ['', 'abc', '0', '201', '10.5']) expect(autoFillAp('thief', lvl, defaultEquipment())).toMatchObject({ ok: false, reason: 'level' })
   })
 
-  it('een eigen item en een item zonder prijs tellen als geen eis en staan in unknown', () => {
+  it('een eigen item telt als geen eis en staat in unknown; een item zonder prijs kent zijn eisen (#158)', () => {
     const eq = wear({ hat: 'Brown Skullcap' })
     eq.shoes = { pick: OTHER, name: 'Mijn schoenen', stat: '5' }
     const r = autoFillAp('thief', '30', eq)
-    expect(r).toMatchObject({ ok: true, unknown: ['Brown Skullcap', 'Mijn schoenen'], limitedBy: null })
+    expect(r).toMatchObject({ ok: true, unknown: ['Mijn schoenen'], limitedBy: null })
     expect(autoFillMessage('thief', r)).toBeNull()
   })
 
@@ -71,11 +71,26 @@ describe('autoFillAp', () => {
 })
 
 describe('itemRequirements', () => {
-  it('kent de eisen van een winkelitem en niet die van leeg, ammo of een item zonder prijs', async () => {
-    const { itemRequirements } = await import('./equipment')
+  it('kent de eisen van een winkelitem en van een item zonder prijs, en niet die van een onbekende naam (#158)', () => {
     expect(itemRequirements('claw', { pick: 'Steel Igor', name: '', stat: '' })).toEqual({ luk: 45, dex: 20 })
     expect(itemRequirements('claw', { pick: 'unknown', name: '', stat: '' })).toBeUndefined()
-    expect(itemRequirements('hat', { pick: 'Brown Skullcap', name: '', stat: '' })).toBeUndefined()
+    expect(itemRequirements('hat', { pick: 'Brown Skullcap', name: '', stat: '' })).toEqual({})
+  })
+
+  it('kent de eisen van de items zonder prijs, per lijst één steekproef van de MeowDB-itempagina (#158)', () => {
+    const req = (slot: Parameters<typeof itemRequirements>[0], pick: string) => itemRequirements(slot, { pick, name: '', stat: '' })
+    // wornItems.ts: twee broeken van hetzelfde level met een andere eis, en een hoed zonder jobregel met een INT-eis.
+    expect(req('bottom', 'Blue Cloth Pants')).toEqual({ dex: 10 })
+    expect(req('bottom', 'Black Cloth Pants')).toEqual({ luk: 10 })
+    expect(req('hat', 'Bronze Pride')).toEqual({ int: 40 })
+    // wornWarrior.ts, bowman.ts en accessories.ts.
+    expect(req('bottom', 'Steel Sergeant Kilt')).toEqual({ str: 30, dex: 10 })
+    expect(req('bottom', 'Brown Able Skirt')).toEqual({ dex: 20 })
+    expect(req('shield', 'Nimble Wristguard')).toEqual({ dex: 12, luk: 34 })
+    expect(req('gloves', 'Dark Wolfskin')).toEqual({ dex: 15, luk: 40 })
+    // Een pagina zonder vereistenblok: geen eis.
+    expect(req('shoes', 'Leather Sandals')).toEqual({})
+    expect(itemRequirements('top', { pick: 'Blue Pao', name: '', stat: '' })).toEqual({ dex: 10, luk: 30 })
   })
 })
 

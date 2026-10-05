@@ -11,6 +11,12 @@ const wear = (patch: Partial<Record<keyof Equipment, string>>): Equipment => {
   for (const [slot, pick] of Object.entries(patch)) eq[slot as keyof Equipment] = { pick: pick!, name: '', stat: '' }
   return eq
 }
+/** Een claw uit de lijst en een eigen hoed: een item zonder bekende eisen. */
+const withOwnHat = (claw: string): Equipment => {
+  const eq = wear({ claw })
+  eq.hat = { pick: OTHER, name: 'Mijn hoed', stat: '5' }
+  return eq
+}
 const sum = (b: Record<string, number>) => Object.values(b).reduce((a, n) => a + n, 0)
 const JOBS: readonly Job[] = ['thief', 'warrior', 'bowman', 'magician']
 const STATS: readonly Stat[] = ['str', 'dex', 'int', 'luk']
@@ -190,14 +196,14 @@ describe('autoFillAp: de grens van AP en levels', () => {
   })
 
   it('te weinig AP en een onbekend item: de melding zegt alleen waarom er niets is ingevuld', () => {
-    const r = autoFillAp('thief', '1', wear({ claw: 'Steel Igor', hat: 'Brown Skullcap' }))
-    expect(r).toMatchObject({ ok: false, reason: 'short', unknown: ['Brown Skullcap'] })
+    const r = autoFillAp('thief', '1', withOwnHat('Steel Igor'))
+    expect(r).toMatchObject({ ok: false, reason: 'short', unknown: ['Mijn hoed'] })
     expect(autoFillMessage('thief', r)).toBe('Je level geeft te weinig AP voor je equipment: je hebt er 25 en je equipment vraagt er 73. Er is niets ingevuld.')
   })
 
   it('een ongeldig level geeft de melding om eerst een level in te vullen, en wint van een te grote eis', () => {
     expect(autoFillMessage('thief', autoFillAp('thief', '', defaultEquipment()))).toBe('Vul eerst een geldig level in. Er is niets ingevuld.')
-    expect(autoFillAp('thief', 'abc', wear({ claw: 'Steel Igor', hat: 'Brown Skullcap' }))).toEqual({ ok: false, reason: 'level', unknown: ['Brown Skullcap'] })
+    expect(autoFillAp('thief', 'abc', withOwnHat('Steel Igor'))).toEqual({ ok: false, reason: 'level', unknown: ['Mijn hoed'] })
   })
 })
 
