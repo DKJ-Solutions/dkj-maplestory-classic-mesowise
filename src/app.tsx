@@ -93,7 +93,8 @@ function JobCard(props: {
     <section class={props.plain ? 'job' : 'card job'}>
       <div class="job-head">
         {/* Gekozen heet de kaart Character, met je job eronder (Dave, 5 oktober 2026). */}
-        <h2 id={titleId} class="with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
+        {/* In het menu is het geen kaart, dus ook geen kaarticoon (Dave, 5 oktober 2026). */}
+        <h2 id={titleId} class={props.plain ? undefined : 'with-icon'}>{!props.plain && <CardIcon name="shield" />}{chosen && !editing ? 'Character' : 'Job:'}</h2>
         {chosen && (
           <button
             type="button"
