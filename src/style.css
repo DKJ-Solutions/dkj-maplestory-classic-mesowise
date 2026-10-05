@@ -135,7 +135,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .report-body { padding-top: 0.875rem; }
 /* De popup van een kaart: de inhoud zonder eigen rand, in elke kaart even ver onder de titel; de melding net onder de titel.
    .card ervoor wint van de kaartregels verderop (zoals .equipment .spot-body), de popup zit in de kaart. */
-.card .card-dialog .spot-body { padding: 0.875rem 0 0; border-top: 0; }
+.card .card-dialog .spot-body { padding: 0; border-top: 0; } /* geen ruimte boven de inhoud (Dave, 5 oktober 2026) */
 .card .card-dialog .spot-body > .field:first-child, .card .card-dialog .spot-body > .stat-line:first-child { margin-top: 0; }
 .card-dialog .error { padding: 0.5rem 0 0; }
 .spot-value { grid-column: 2; text-align: right; }
@@ -333,9 +333,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-list li.more { min-height: 0; padding-top: 0.25rem; padding-bottom: 0.25rem; color: var(--muted); font-size: 0.875rem; cursor: default; }
 /* De stat die telt, met een potlood om te corrigeren. Gecorrigeerd: oranje rand, de verwachting klein doorgestreept */
 .equip-value { grid-row: 2; grid-column: 2; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 0.375rem;
-  min-width: 3.5rem; height: 44px; margin-bottom: calc(0.25rem + 2px); padding: 0.25rem 0.75rem; box-sizing: border-box;
+  min-width: 3rem; height: 38px; margin-bottom: calc(0.25rem + 2px); padding: 0.25rem 0.625rem; box-sizing: border-box;
   border: 1px solid var(--border); border-radius: 0.5rem; background: var(--bg); font-variant-numeric: tabular-nums; }
-.equip-value-num { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1.0625rem; line-height: 1.2; color: var(--text); }
+.equip-value-num { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1rem; line-height: 1.2; color: var(--text); }
 .equip-value-db { font-size: 0.75rem; color: var(--muted); }
 .equip-value.changed { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .equip-edit { grid-row: 2; grid-column: 3; width: 44px; height: 44px; margin-bottom: calc(0.25rem + 2px); padding: 0; display: flex; align-items: center; justify-content: center;
