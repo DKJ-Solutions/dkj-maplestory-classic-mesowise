@@ -438,6 +438,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .card { transition: none; }
+  .ap-base.flash { animation: none; }
 }
 
 /* De menubalk (issue #86): in de kaartkleur (wit, in het donkere thema donker), over de hele breedte en altijd bovenin. De inhoud lijnt uit met main. */
@@ -468,9 +469,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-head .switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Base AP invullen op je equipment (#157): onder de stat-regels in de popup van Ability points, op volle breedte met de melding eronder */
 .ap-autofill { padding: 1rem 1rem 0.25rem; }
-.ap-autofill .hint { margin: 0.75rem 0 0; }
-/* Eén rij onderaan de popup van Ability points (#157): de kop Base AP vult de ruimte, de knop staat rechts zo breed als zijn tekst. */
-.ap-row { display: flex; align-items: center; gap: 0.75rem; }
-.ap-row .ap-group { flex: 1; min-width: 0; margin: 0; }
+.ap-autofill .hint { margin: 0.75rem 0 0; text-align: right; }
+/* Een base die Auto assign veranderde licht even op in de accentkleur (#157); zonder beweging bij "minder beweging". */
+@keyframes ap-flash { from { background: var(--accent); color: #fff; } }
+.ap-base.flash { animation: ap-flash 1.2s ease-out; }
+/* Eén rij onderaan de popup van Ability points (#157), helemaal rechts (Dave, 5 oktober 2026): het aantal base AP en de knop, zo breed als zijn tekst. */
+.ap-row { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; }
+.ap-row .ap-group { min-width: 0; margin: 0; }
 .ap-row .ap-group h3 { margin: 0; }
 .ap-row .btn { flex: none; width: auto; margin: 0; }

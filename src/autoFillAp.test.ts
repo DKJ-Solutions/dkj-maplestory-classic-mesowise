@@ -50,7 +50,7 @@ describe('autoFillAp', () => {
     eq.shoes = { pick: OTHER, name: 'Mijn schoenen', stat: '5' }
     const r = autoFillAp('thief', '30', eq)
     expect(r).toMatchObject({ ok: true, unknown: ['Brown Skullcap', 'Mijn schoenen'], limitedBy: null })
-    expect(autoFillMessage('thief', r)).toContain('Brown Skullcap')
+    expect(autoFillMessage('thief', r)).toBeNull()
   })
 
   it('stats buiten hoofd en secundair blijven op 4 als niets er meer voor vraagt', () => {
@@ -58,9 +58,9 @@ describe('autoFillAp', () => {
     expect(r.ok && r.base.int).toBe(4)
   })
 
-  it('de melding noemt de secundaire stat met het item en de hoofdstat', () => {
+  it('na een gelukte invulling geen melding: de secundaire stat staat op de eis van het item', () => {
     const r = autoFillAp('thief', '30', wear({ claw: 'Steel Igor' }))
-    expect(autoFillMessage('thief', r)).toBe(`Ingevuld: DEX 20 (voor Steel Igor) en LUK ${apAtLevel(30) - 28}.`)
+    expect(autoFillMessage('thief', r)).toBeNull()
   })
 
   it('autoFillPatch schrijft alleen de vier base-velden', () => {
@@ -80,9 +80,9 @@ describe('itemRequirements', () => {
 })
 
 describe('een derde stat', () => {
-  it('een eis op een stat die geen hoofd of secundair is wordt opgetild en met het item genoemd', () => {
+  it('een eis op een stat die geen hoofd of secundair is wordt opgetild', () => {
     const r = autoFillAp('thief', '40', wear({ claw: 'Gladius' }))
     expect(r).toMatchObject({ ok: true, limits: { str: 'Gladius' } })
-    expect(autoFillMessage('thief', r)).toMatch(/^Ingevuld: DEX \d+ \(voor Gladius\), STR \d+ \(voor Gladius\) en LUK \d+\.$/)
+    expect(autoFillMessage('thief', r)).toBeNull()
   })
 })

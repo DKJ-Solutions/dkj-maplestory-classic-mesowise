@@ -1225,7 +1225,7 @@ describe('Auto assign (#157)', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
   }
 
-  it('schrijft de base AP van het level, toont de melding en haalt het aantal (n) uit de kop; extra AP en accuracy blijven staan', () => {
+  it('schrijft de base AP van het level zonder melding, laat de veranderde vakken oplichten en zet (0) in de kop; extra AP en accuracy blijven staan', () => {
     levelUp()
     expect(headingText()).toBe('Ability points(5)5 AP te verdelen')
     wearIgor()
@@ -1233,7 +1233,10 @@ describe('Auto assign (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
     // Level 11 = 75 AP: DEX op de eis van Steel Igor (20), LUK de rest (75 - 4 - 4 - 20 = 47), STR en INT 4.
-    expect(screen.getByText('Ingevuld: DEX 20 (voor Steel Igor) en LUK 47.')).toBeTruthy()
+    expect(homeScreen().querySelector('.ap-autofill .hint')).toBeNull()
+    // DEX en LUK veranderden en lichten op; STR en INT bleven 4.
+    const flashing = (label: string) => statLine(label).querySelector('.ap-base')!.classList.contains('flash')
+    expect(['STR', 'DEX', 'INT', 'LUK'].map(flashing)).toEqual([false, true, false, true])
     expect(profileFields()).toMatchObject({ str: '4', dex: '20', int: '4', luk: '47', level: '11' })
     expect(profileFields().lukExtra).toBe(before.lukExtra)
     expect(profileFields().accuracy).toBe(before.accuracy)
@@ -1254,16 +1257,16 @@ describe('Auto assign (#157)', () => {
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
   })
 
-  it('past de speler daarna een stat aan, dan verdwijnt de melding', () => {
-    levelUp()
+  it('past de speler daarna een stat aan, dan verdwijnt de melding van een mislukte poging', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     wearIgor()
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
-    expect(screen.queryByText(/^Ingevuld:/)).not.toBeNull()
+    expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()
     const luk = openAbility('LUK')
-    luk.typeBase('40')
+    luk.typeBase('30')
     luk.save()
-    expect(screen.queryByText(/^Ingevuld:/)).toBeNull()
+    expect(screen.queryByText(/Er is niets ingevuld/)).toBeNull()
   })
 
   it('zonder getal in het levelveld schrijft de knop niets en vraagt om een level', () => {

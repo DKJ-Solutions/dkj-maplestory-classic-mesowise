@@ -7,7 +7,7 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot, Weapon } from './data/types'
+import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
@@ -533,14 +533,20 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const { draft } = props
-  // De melding na "Auto assign" hoort bij de base AP die erin kwamen: pas je ze daarna aan, dan verdwijnt hij.
-  // Level, base AP en equipment moeten nog zijn zoals na het invullen (ook na een mislukte poging: dan is er niets geschreven).
+  // Alleen als "Auto assign" niets kon invullen een melding (Dave, 5 oktober 2026): die hoort bij het level, de base AP en de
+  // equipment van dat moment, en verdwijnt zodra een van die verandert.
   const [filled, setFilled] = useState<{ text: string; equipment: Equipment; job: Job; fields: Pick<ProfileDraft, 'level' | 'str' | 'dex' | 'int' | 'luk'> } | null>(null)
   const pick = (d: ProfileDraft) => ({ level: d.level, str: d.str, dex: d.dex, int: d.int, luk: d.luk })
+  // Een gelukte Auto assign laat de base-vakken oplichten die hij veranderde, in plaats van een zin; n start de animatie opnieuw.
+  const [flash, setFlash] = useState<{ keys: readonly Stat[]; n: number }>({ keys: [], n: 0 })
   const fill = () => {
     const r = autoFillAp(props.job, draft.level, props.equipment)
-    if (r.ok) props.onChange(autoFillPatch(r.base))
-    setFilled({ text: autoFillMessage(props.job, r), equipment: props.equipment, job: props.job, fields: { ...pick(draft), ...(r.ok ? autoFillPatch(r.base) : {}) } })
+    const text = autoFillMessage(props.job, r)
+    setFilled(text === null ? null : { text, equipment: props.equipment, job: props.job, fields: pick(draft) })
+    if (!r.ok) return
+    const patch = autoFillPatch(r.base)
+    setFlash({ keys: (['str', 'dex', 'int', 'luk'] as const).filter((k) => patch[k] !== draft[k]), n: flash.n + 1 })
+    props.onChange(patch)
   }
   const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
   const level = Number(draft.level.trim())
@@ -562,7 +568,7 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
       {shownStats(props.job)
         .filter((f) => ABILITY_KEYS.includes(f.key))
         .map((f) => (
-          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
+          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} flash={flash.keys.includes(f.key as Stat) ? flash.n : 0} />
         ))}
       {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
           ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
@@ -593,7 +599,14 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
  * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de base AP, en met een plus ernaast de extra AP van
  * items (altijd een vak, 0 als je die niet hebt); in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
  */
-function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: number | null; onSave: (patch: Partial<ProfileDraft>) => void }) {
+function AbilityLine(props: {
+  field: ProfileField
+  draft: ProfileDraft
+  cap: number | null
+  onSave: (patch: Partial<ProfileDraft>) => void
+  /** Boven 0: Auto assign veranderde deze base; elke nieuwe waarde laat het vak opnieuw oplichten (#157). */
+  flash?: number
+}) {
   const { field: f, draft, cap } = props
   const stat = f.key as 'str' | 'dex' | 'int' | 'luk'
   const extraKey = EXTRA_KEY[stat]
@@ -626,7 +639,7 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   return (
     <div class="stat-line ability-line">
       <span class="stat-line-name">{f.label}</span>
-      <div class="equip-value ap-base" aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
+      <div key={props.flash ?? 0} class={`equip-value ap-base${props.flash ? ' flash' : ''}`} aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
         <span class="equip-value-num">
           <strong>{draft[stat].trim() || '?'}</strong>
         </span>

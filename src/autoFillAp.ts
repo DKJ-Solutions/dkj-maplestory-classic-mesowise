@@ -79,22 +79,17 @@ export function autoFillAp(job: Job, level: string, equipment: Equipment): AutoF
   return { ok: true, base, limitedBy: need[secondary] > STARTING_AP.perStat ? (by[secondary] ?? null) : null, limits, unknown }
 }
 
-/** De melding bij het resultaat, in het Nederlands: wat erin kwam (hoofd- en secundaire stat), of waarom er niets is ingevuld. */
-export function autoFillMessage(job: Job, r: AutoFillResult): string {
-  const unknownNote = r.unknown.length > 0 ? ` De app kent de eisen van ${r.unknown.join(', ')} niet: die tellen als geen eis.` : ''
-  if (!r.ok) {
-    const why =
-      r.reason === 'level'
-        ? 'Vul eerst een geldig level in.'
-        : r.reason === 'max'
-          ? `Je level geeft ${r.have} AP, meer dan één stat kan hebben (${STAT_MAX}).`
-          : `Je level geeft te weinig AP voor je equipment: je hebt er ${r.have} en je equipment vraagt er ${r.need}.`
-    return `${why} Er is niets ingevuld.${unknownNote}`
-  }
-  const { main, secondary } = MAIN_SECONDARY[job]
-  // De secundaire stat eerst, dan een derde stat die een item optilt, en de hoofdstat als laatste.
-  const parts = [secondary, ...STATS.filter((s) => s !== main && s !== secondary && r.limits[s] !== undefined), main].map(
-    (s) => `${s.toUpperCase()} ${r.base[s]}${r.limits[s] ? ` (voor ${r.limits[s]})` : ''}`,
-  )
-  return `Ingevuld: ${parts.slice(0, -1).join(', ')} en ${parts[parts.length - 1]}.${unknownNote}`
+/**
+ * De melding als er niets is ingevuld, in het Nederlands: waarom. Na een gelukte Auto assign geen zin (null): het scherm laat de
+ * veranderde vakken oplichten (Dave, 5 oktober 2026).
+ */
+export function autoFillMessage(_job: Job, r: AutoFillResult): string | null {
+  if (r.ok) return null
+  const why =
+    r.reason === 'level'
+      ? 'Vul eerst een geldig level in.'
+      : r.reason === 'max'
+        ? `Je level geeft ${r.have} AP, meer dan één stat kan hebben (${STAT_MAX}).`
+        : `Je level geeft te weinig AP voor je equipment: je hebt er ${r.have} en je equipment vraagt er ${r.need}.`
+  return `${why} Er is niets ingevuld.`
 }

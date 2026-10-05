@@ -28,7 +28,7 @@ describe('autoFillAp: hoofd en secundair per job, zonder equipment', () => {
     expect(r.base[main]).toBe(apAtLevel(40) - 12)
     for (const s of STATS) if (s !== main) expect(r.base[s]).toBe(4)
     expect(sum(r.base)).toBe(apAtLevel(40))
-    expect(autoFillMessage(job, r)).toBe(`Ingevuld: ${secondary.toUpperCase()} 4 en ${main.toUpperCase()} ${apAtLevel(40) - 12}.`)
+    expect(autoFillMessage(job, r)).toBeNull()
   })
 })
 
@@ -42,7 +42,7 @@ describe('autoFillAp: echte items per job', () => {
   it('Thief: de armor met de hoogste DEX-eis bepaalt het limietitem, ook als de claw minder vraagt', () => {
     const r = autoFillAp('thief', '40', wear({ claw: 'Steel Titans', hat: 'Red Guise' }))
     expect(r).toMatchObject({ ok: true, base: { dex: 20 }, limitedBy: 'Red Guise' })
-    expect(autoFillMessage('thief', r)).toBe(`Ingevuld: DEX 20 (voor Red Guise) en LUK ${apAtLevel(40) - 28}.`)
+    expect(autoFillMessage('thief', r)).toBeNull()
   })
 
   it('bij gelijke eis houdt het eerste item in slotvolgorde de eer: claw voor hat', () => {
@@ -58,7 +58,7 @@ describe('autoFillAp: echte items per job', () => {
   it('Warrior: Gladius (STR 65, DEX 30) geeft DEX 30 en STR de rest', () => {
     const r = autoFillAp('warrior', '40', wear({ claw: 'Gladius' }))
     expect(r).toMatchObject({ ok: true, base: { str: apAtLevel(40) - 38, dex: 30, int: 4, luk: 4 }, limitedBy: 'Gladius' })
-    expect(autoFillMessage('warrior', r)).toBe(`Ingevuld: DEX 30 (voor Gladius) en STR ${apAtLevel(40) - 38}.`)
+    expect(autoFillMessage('warrior', r)).toBeNull()
   })
 
   it('Warrior: wapen en armor samen, de hoogste DEX-eis wint (Two-Handed Sword DEX 20, Silver Master Sergeant DEX 15)', () => {
@@ -80,7 +80,7 @@ describe('autoFillAp: echte items per job', () => {
   it('Bowman: Ryden (STR 30, DEX 65): STR is secundair, DEX is de hoofdstat', () => {
     const r = autoFillAp('bowman', '40', wear({ claw: 'Ryden' }))
     expect(r).toMatchObject({ ok: true, base: { str: 30, dex: apAtLevel(40) - 38, int: 4, luk: 4 }, limitedBy: 'Ryden' })
-    expect(autoFillMessage('bowman', r)).toBe(`Ingevuld: STR 30 (voor Ryden) en DEX ${apAtLevel(40) - 38}.`)
+    expect(autoFillMessage('bowman', r)).toBeNull()
   })
 
   it('Magician: Wizard Staff (INT 50, LUK 20) en Jester (INT 50, LUK 20): LUK 20, INT de rest', () => {
@@ -189,10 +189,10 @@ describe('autoFillAp: de grens van AP en levels', () => {
     expect(autoFillMessage('warrior', r)).toBe('Je level geeft te weinig AP voor je equipment: je hebt er 35 en je equipment vraagt er 40. Er is niets ingevuld.')
   })
 
-  it('te weinig AP en een onbekend item: de melding noemt ook het onbekende item', () => {
+  it('te weinig AP en een onbekend item: de melding zegt alleen waarom er niets is ingevuld', () => {
     const r = autoFillAp('thief', '1', wear({ claw: 'Steel Igor', hat: 'Brown Skullcap' }))
     expect(r).toMatchObject({ ok: false, reason: 'short', unknown: ['Brown Skullcap'] })
-    expect(autoFillMessage('thief', r)).toBe('Je level geeft te weinig AP voor je equipment: je hebt er 25 en je equipment vraagt er 73. Er is niets ingevuld. De app kent de eisen van Brown Skullcap niet: die tellen als geen eis.')
+    expect(autoFillMessage('thief', r)).toBe('Je level geeft te weinig AP voor je equipment: je hebt er 25 en je equipment vraagt er 73. Er is niets ingevuld.')
   })
 
   it('een ongeldig level geeft de melding om eerst een level in te vullen, en wint van een te grote eis', () => {
