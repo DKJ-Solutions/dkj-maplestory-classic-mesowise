@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**46 / 83 minor entries** <!-- pending-tally -->
+**47 / 84 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/stat-line-even-gaps · 20261005-113849Z
+
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+On an Ability points line the boxes and the pencil are now evenly spaced: the pencil no longer sits closer to the last
+box than the boxes sit to each other.
+
+**Score:** 2
+
+#### Pull Request
+
+Every gap in a stat line the same
+
+[PR #152](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/152)
+
+---
 
 ### DEPLOY: app/card-action-buttons · 20261005-102756Z
 
