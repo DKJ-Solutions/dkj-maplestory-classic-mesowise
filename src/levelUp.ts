@@ -3,11 +3,9 @@
 // (vaste waarde per level, data/thief.ts, data/warrior.ts, data/bowman.ts, data/magician.ts) en het level-deel van de accuracy.
 // De AP en de skillpunten verdeelt de speler zelf: hoeveel er nog te verdelen zijn, staat in apToDistribute en spToDistribute.
 // Evasion, equipment en mob blijven staan tot de speler ze wijzigt; het advies zegt wanneer een wissel goedkoper is.
-import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
 import { apAtLevel, baseAccuracy, hpPerLevelFrom } from './data/thief'
-import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
-import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
+import { OWN_AP } from './profileLevelUp'
 import { baseApSpent, DRAFT_FIELDS, draftStatTotal, parseProfile, PROFILE_FIELDS, skillPointsLeft, type ProfileDraft } from './profile'
 import { skillPoolUsage, skillsOf, type SkillId } from './skillPoint'
 
@@ -29,17 +27,6 @@ const numberOf = (text: string): number | null => {
 const wholeOf = (text: string): number | null => {
   const n = numberOf(text)
   return n !== null && Number.isInteger(n) ? n : null
-}
-
-/**
- * Wat een level-up bijwerkt voor een Warrior, Bowman en Magician: zijn eigen Max HP per level en het stat-deel van zijn
- * accuracy (dat van het level afhangt), met `stat` als de stat waaruit dat deel volgt (DEX; bij een Magician INT).
- * De Thief heeft zijn eigen formules in applyLevelUp.
- */
-const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number) => number; accuracy: (stat: number, level: number, luk: number) => number }>> = {
-  warrior: { stat: 'dex', hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
-  bowman: { stat: 'dex', hpFrom: bowmanHpPerLevelFrom, accuracy: bowmanAccuracy },
-  magician: { stat: 'int', hpFrom: magicianHpPerLevelFrom, accuracy: magicianAccuracy },
 }
 
 /**

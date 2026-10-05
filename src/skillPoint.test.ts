@@ -4,11 +4,12 @@ import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { knownSpotPatch, mobDraft } from './data/spots'
-import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { baseAccuracy, hpPerLevelFrom, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
+import { profileAfterLevelUp } from './profileLevelUp'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
-import { NOT_MODELLED, notModelled, SKILLS, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
+import { NOT_MODELLED, notModelled, SKILL_HORIZON_LEVELS, skillHorizon, SKILLS, skillLevels, skillPointAdvice, skillPoolUsage, skillsOf, stepSkill } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
 
 // Op level 10 heb je 1 skillpunt van de 1e job (issue #136): het voorbeeldprofiel heeft Lucky Seven 1, dus zet de fixture die op 0.
@@ -27,12 +28,16 @@ const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...
 // Een bekende plek wint van een eigen plek met weinig EXP per uur, dus het profiel doet ertoe.
 const drafts = [known('a', 'henesys-rain-forest-east'), own('b', 1_000, 10_000)]
 
-/** De mesokosten van je level op de beste plek, rechtstreeks uitgerekend. */
+/** De mesokosten van je level en de vier erna (issue #145) op de beste plek, rechtstreeks uitgerekend: elk level met het profiel van dat level. */
 const costOf = (p: Profile) => {
-  const { ranked, bestId } = pickUnder(drafts, p)
-  const best = ranked.find((r) => r.spot.id === bestId)!
-  if (isInvalid(best)) throw new Error('beste plek ongeldig')
-  return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+  let sum = 0
+  for (let i = 0; i < 5; i++, p = profileAfterLevelUp(p)) {
+    const { ranked, bestId } = pickUnder(drafts, p)
+    const best = ranked.find((r) => r.spot.id === bestId)!
+    if (isInvalid(best)) throw new Error('beste plek ongeldig')
+    sum += mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+  }
+  return sum
 }
 
 describe('SKILLS', () => {
@@ -87,7 +92,7 @@ describe('skillPointAdvice', () => {
 
   it('kiest bij besparing 0 toch een winnaar: een vrij punt moet ergens heen', () => {
     const advice = skillPointAdvice([own('a', 40_000, 10_000), own('b', 30_000, 10_000)], profile)
-    expect(advice).toMatchObject({ kind: 'advice', base: 429, robust: true })
+    expect(advice).toMatchObject({ kind: 'advice', base: 4238, robust: true })
     if (advice.kind !== 'advice') throw new Error('geen advies')
     expect(advice.left).toBeGreaterThan(0)
     for (const c of advice.choices) expect(c.saving).toBe(0)
@@ -587,5 +592,135 @@ describe('skillPointAdvice: robust bij de plaatsingscheck', () => {
     const a = adviseR('magician', { ...magRaw, level: '12', energyBolt: '2', magicClaw: '5', improvedMpRecovery: '0' }, 'Bubbling')
     expect(a.placement).toMatchObject({ kind: 'better', from: 'Magic Claw', to: 'Improved MP Recovery' })
     expect(a.robust).toBe(false)
+  })
+})
+
+describe('skillHorizon (issue #145)', () => {
+  it('rekent over je level en de vier erna', () => {
+    expect(SKILL_HORIZON_LEVELS).toBe(5)
+    expect(skillHorizon(10)).toEqual({ from: 10, to: 14, truncated: false })
+    expect(skillHorizon(1)).toEqual({ from: 1, to: 5, truncated: false })
+  })
+
+  it('kapt niet af als de horizon precies op het laatste level van de EXP-tabel (30) eindigt', () => {
+    // Zelfde betekenis als de horizon van het claw-advies: afgekapt is alleen wat de tabel niet meer haalt.
+    expect(skillHorizon(26)).toEqual({ from: 26, to: 30, truncated: false })
+  })
+
+  it('kapt af bij het laatste level van de tabel zodra de vijf levels er voorbij gaan', () => {
+    expect(skillHorizon(27)).toEqual({ from: 27, to: 30, truncated: true })
+    expect(skillHorizon(28)).toEqual({ from: 28, to: 30, truncated: true })
+    expect(skillHorizon(29)).toEqual({ from: 29, to: 30, truncated: true })
+  })
+
+  it('geeft op level 30 één level, afgekapt', () => {
+    expect(skillHorizon(30)).toEqual({ from: 30, to: 30, truncated: true })
+  })
+})
+
+describe('skillPointAdvice over de horizon (issue #145)', () => {
+  const adviceOf = (d: readonly SpotDraft[], p: Profile) => {
+    const a = skillPointAdvice(d, p)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    return a
+  }
+  /** De mesokosten van één level op de beste plek, met het profiel zoals het is (geen level-up erbij). */
+  const levelCost = (d: readonly SpotDraft[], p: Profile) => {
+    const { ranked, bestId } = pickUnder(d, p)
+    const best = ranked.find((r) => r.spot.id === bestId)!
+    if (isInvalid(best)) throw new Error('beste plek ongeldig')
+    return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+  }
+
+  it('geeft de horizon mee: van je level tot vier erna, niet afgekapt', () => {
+    expect(adviceOf(drafts, profile)).toMatchObject({ from: 10, to: 14, truncated: false })
+  })
+
+  it('kapt het advies van een level-27-profiel af bij 30, en rekent op level 30 met één level', () => {
+    expect(adviceOf(drafts, { ...profile, level: 27 })).toMatchObject({ from: 27, to: 30, truncated: true })
+    expect(adviceOf(drafts, { ...profile, level: 30 })).toMatchObject({ from: 30, to: 30, truncated: true })
+    expect(adviceOf(drafts, { ...profile, level: 26 })).toMatchObject({ from: 26, to: 30, truncated: false })
+  })
+
+  it('telt de basiskosten als de som van de kosten per level, elk met het profiel van dat level (los van de code uitgerekend)', () => {
+    // Een Thief met de hand een level verder gezet: level +1, HP + vaste waarde, het level-deel van de accuracy.
+    let p = profile
+    let sum = 0
+    for (let level = 10; level <= 14; level++) {
+      sum += levelCost(drafts, p)
+      p = {
+        ...p,
+        level: level + 1,
+        hp: p.hp + hpPerLevelFrom(level),
+        accuracy: p.accuracy + baseAccuracy(p.dex, level + 1, p.luk) - baseAccuracy(p.dex, level, p.luk),
+      }
+    }
+    expect(adviceOf(drafts, profile).base).toBeCloseTo(sum, 6)
+  })
+
+  it('telt op level 30 alleen dat level, en op level 28 meer dan dat ene level', () => {
+    expect(adviceOf(drafts, { ...profile, level: 30 }).base).toBeCloseTo(levelCost(drafts, { ...profile, level: 30 }), 6)
+    expect(adviceOf(drafts, { ...profile, level: 28 }).base).toBeGreaterThan(levelCost(drafts, { ...profile, level: 30 }))
+  })
+
+  it('geeft geen advies buiten de tabel (level 0, 31 en 200) of zonder "Beste"', () => {
+    expect(skillPointAdvice(drafts, { ...profile, level: 0 })).toEqual({ kind: 'none' })
+    expect(skillPointAdvice(drafts, { ...profile, level: 31 })).toEqual({ kind: 'none' })
+    expect(skillPointAdvice(drafts, { ...profile, level: 200 })).toEqual({ kind: 'none' })
+    expect(skillPointAdvice([], profile)).toEqual({ kind: 'none' })
+  })
+
+  it('geeft geen advies als de beste plek geen EXP oplevert (een onhaalbaar level)', () => {
+    // 0 EXP per uur: de kosten van het level zijn null, dus er valt niets te vergelijken.
+    expect(skillPointAdvice([own('a', 0, 10_000)], profile)).toEqual({ kind: 'none' })
+  })
+
+  it('rekent de besparing van een skill over de horizon, niet vijf keer die van je level', () => {
+    // Nimble Body op Snail: de extra accuracy telt op elk volgend level mee, en de kosten per level lopen op met de EXP.
+    const snail = [mobDraft('Snail')!]
+    const nimble = adviceOf(snail, profile).choices.find((c) => c.id === 'nimbleBody')!
+    const nimbleOne = SKILLS.find((s) => s.id === 'nimbleBody')!.plusOne(profile)
+    const currentOnly = levelCost(snail, profile) - levelCost(snail, nimbleOne)
+    expect(nimble.saving!).toBeGreaterThan(0)
+    expect(currentOnly).toBeGreaterThan(0)
+    expect(Math.abs(nimble.saving! - 5 * currentOnly)).toBeGreaterThan(1)
+  })
+
+  describe('de rangschikking verschilt van die op alleen je huidige level (gevonden door te zoeken, vastgezet)', () => {
+    // Magician op Dark Axe Stump: op lv 14 bespaart alleen Improved MP Recovery iets, maar over lv 14 t/m 18 wint Energy Bolt
+    // (vanaf lv 15 gaat hij tellen); op lv 19 is het omgekeerd.
+    const magician = { ...DEFAULT_PROFILE, hp: '600', int: '60', dex: '20', luk: '10', clawWatk: '31', accuracy: '40', avoid: '10', wdef: '40', luckySeven: '0', nimbleBody: '0' }
+    const stump = [mobDraft('Dark Axe Stump')!]
+    const magAt = (level: number): Profile => {
+      const r = parseProfile({ ...magician, level: String(level) }, 'magician')
+      if (!('profile' in r)) throw new Error('profiel ongeldig')
+      return r.profile
+    }
+    const currentOnly = (p: Profile) => {
+      const base = levelCost(stump, p)
+      return skillsOf('magician')
+        .filter((s) => s.level(p) < s.max && (s.learnable?.(p) ?? true))
+        .map((s) => ({ id: s.id, saving: base - levelCost(stump, s.plusOne(p)) }))
+        .sort((x, y) => y.saving - x.saving)
+    }
+
+    it('kiest op lv 14 Energy Bolt over de horizon, waar alleen het huidige level Improved MP Recovery had gekozen', () => {
+      const p = magAt(14)
+      const now = currentOnly(p)
+      expect(now[0].id).toBe('improvedMpRecovery')
+      expect(now[0].saving).toBeGreaterThan(1)
+      expect(now.find((s) => s.id === 'energyBolt')!.saving).toBeCloseTo(0, 6)
+      const a = adviceOf(stump, p)
+      expect(a.winner).toBe('energyBolt')
+      expect(a.choices.map((c) => c.id)).toEqual(['energyBolt', 'improvedMpRecovery', 'magicClaw'])
+    })
+
+    it('kiest op lv 19 Improved MP Recovery over de horizon, waar het huidige level Energy Bolt had gekozen', () => {
+      const p = magAt(19)
+      expect(currentOnly(p)[0].id).toBe('energyBolt')
+      const a = adviceOf(stump, p)
+      expect(a.winner).toBe('improvedMpRecovery')
+      expect(a.choices[0].saving!).toBeGreaterThan(a.choices.find((c) => c.id === 'energyBolt')!.saving!)
+    })
   })
 })

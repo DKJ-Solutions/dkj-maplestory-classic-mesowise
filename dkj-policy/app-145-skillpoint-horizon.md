@@ -39,19 +39,43 @@
 
 ### PLAN
 
+Issue #145, decided by the owner on October 4, 2026: the skill-point advice weighs a point over a fixed horizon of 5
+levels (the current level plus the 4 after it), cut off where the EXP table ends, as the upgrade advice does.
+
+#### Design choice
+
+A sum with one fixed EXP per meso (as `horizonCost` does for equipment) would only rescale the saving and never change
+which skill wins. So each level of the horizon is evaluated with the profile at that level (`profileAfterLevelUp`:
+level +1, Max HP per job and the level part of accuracy, the same source rules as `applyLevelUp`), because the mob
+model depends on the character level. AP and skill points the player places stay as they are.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/profileLevelUp.ts`: `profileAfterLevelUp` on a numeric profile; `OWN_AP` moved here from `levelUp.ts` (Cody)
+- [x] `src/skillPoint.ts`: `SKILL_HORIZON_LEVELS`, `skillHorizon`, horizon cost for base, choices, placement and robustness (Cody)
+- [x] `src/app.tsx`: the skill advice speaks of "over lv X t/m Y" and names the EXP-table cut-off (Cody)
+- [x] Guard: a level outside the table gives no advice instead of throwing (found by Tycho)
 
 ### TEST
 
+- [x] Horizon tests: bounds and cut-off, `profileAfterLevelUp` against `applyLevelUp` for all four jobs, an independently summed base, a real ranking that flips with the horizon (Magician on Dark Axe Stump), app wording at lv 11, 26, 27 and 30 (Tycho)
+- [x] Code review (Victor)
+- [x] Dutch UI text (Edith)
+
 ### DEPLOY: app/145-skillpoint-horizon
 
-**Score:**
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+The skill-point advice now weighs a point over the coming 5 levels (your level and the 4 after it) instead of the
+current level alone, because a skill point stays forever. Each of those levels is calculated with your character at
+that level, so a skill that pays off a little later can win now. The advice says which levels it counts, such as
+"Bespaart 4.606 meso over lv 14 t/m 18", and from level 27 on it says the EXP table stops at level 30.
+
+**Score:** 3
 
 #### Pull Request
 

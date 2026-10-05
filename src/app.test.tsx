@@ -1843,7 +1843,7 @@ describe('een Bowman in de app', () => {
       const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
       expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
-      expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+      expect(section.textContent).toMatch(/Over lv \d+ t\/m \d+ bespaart geen enkele skill meso, maar je punt moet toch ergens heen\./)
       // Eén keuze: geen lijst met opties.
       expect(section.querySelector('.skill-options')).toBeNull()
       expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
@@ -2203,7 +2203,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('bowman', { ...bowman, arrowBlow: '1' }, 'Ribbon Pig')
     expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
-    expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+    expect(section.textContent).toContain('Over lv 21 t/m 25 bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
     expect(section.textContent).not.toContain('Bespaart ±')
     // Gelijkspel op 0 is robuust: geen "Hangt af van de aannames".
     expect(section.textContent).not.toContain('Hangt af van de aannames')
@@ -2216,7 +2216,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
     expect(section.querySelector('.chip')!.textContent).toBe('Focus → 1')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
-    expect(section.textContent).toMatch(/Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
+    expect(section.textContent).toMatch(/Over lv \d+ t\/m \d+ bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
     expect(section.textContent).not.toContain('Geen van de skills')
     expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
   })
@@ -2244,7 +2244,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('warrior', w, 'Snail')
     expect(section.querySelector('.chip')!.textContent).toBe('Improved HP Recovery → 4')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Improved HP Recovery (→ 4).')
-    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso op dit level\./)
+    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso over lv 21 t\/m 25\./)
     const l = lines(section)
     expect(l).toHaveLength(5)
     expect(l[0]).toMatch(/^Improved HP Recovery → 4: bespaart ± [\d.]+ meso$/)
@@ -2262,7 +2262,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
   it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
     const w = { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
     const text = placedHint(skillSection('warrior', w, 'Snail'))
-    expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso op dit level\./)
+    expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso over lv 21 t\/m 25\./)
     // De tweede keuze (Power Strike → 2, scheelt niets) staat er als eigen zin achter.
     expect(text).toContain(' De tweede keuze, Power Strike → 2, scheelt niets.')
   })
@@ -2494,8 +2494,8 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
 
   it('noemt onder "Goed gezet" de beste andere verdeling met de extra kosten, als die iets kost', () => {
     const part = skillPart({ level: '10', luckySeven: '0', nimbleBody: '1' })
-    expect(part.textContent).toContain('Geen enkel punt in een andere skill was dit level goedkoper.')
-    expect(part.textContent).toMatch(/Het dichtstbij: een punt in Lucky Seven in plaats van in Nimble Body had dit level ± [\d.]+ meso extra gekost\./)
+    expect(part.textContent).toContain('Geen enkel punt in een andere skill was over lv 10 t/m 14 goedkoper.')
+    expect(part.textContent).toMatch(/Het dichtstbij: een punt in Lucky Seven in plaats van in Nimble Body had ± [\d.]+ meso extra gekost over lv 10 t\/m 14\./)
     expect(part.textContent).not.toContain('scheelt evenveel')
   })
 
@@ -2505,7 +2505,7 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     const chip = part.querySelector('.chip')!
     expect(chip.textContent).toBe('Beter in Nimble Body')
     expect(chip.classList.contains('no')).toBe(true)
-    expect(part.querySelector('.verdict')!.textContent).toMatch(/^Een punt in Nimble Body in plaats van in Lucky Seven had dit level ± [\d.]+ meso bespaard\.$/)
+    expect(part.querySelector('.verdict')!.textContent).toMatch(/^Een punt in Nimble Body in plaats van in Lucky Seven had ± [\d.]+ meso bespaard over lv 10 t\/m 14\.$/)
     expect(within(part).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
   })
 
@@ -2513,5 +2513,44 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     const part = skillPart({ level: '10', luckySeven: '0', keenEyes: '1' })
     expect(part.querySelector('.chip')!.textContent).toBe('Geen punt over')
     expect(part.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
+  })
+})
+
+describe('het skill-advies telt over een horizon van vijf levels (issue #145)', () => {
+  // Het advies hoort bij het level ná "Level up": level 26 wordt 27, 29 wordt 30.
+  const skillSectionAfterLevelUp = (fields: object, spot: string) => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '0', nimbleBody: '0', ...fields } }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(spot)] }))
+    render(<App />)
+    levelUp()
+    return within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
+  }
+  const TRUNCATED = 'De EXP-tabel loopt tot lv 30, dus verder rekent de app niet.'
+
+  it('noemt de levels van de horizon en zegt niets over afkappen zolang de tabel ver genoeg loopt', () => {
+    const section = skillSectionAfterLevelUp({ level: '10' }, 'Snail')
+    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso over lv 11 t\/m 15\./)
+    expect(section.textContent).not.toContain('EXP-tabel loopt')
+  })
+
+  it('geeft lv 26 t/m 30 niet als afgekapt: de tabel haalt precies de vijf levels', () => {
+    const section = skillSectionAfterLevelUp({ level: '25' }, 'Snail')
+    expect(section.textContent).toMatch(/over lv 26 t\/m 30\./)
+    expect(section.textContent).not.toContain('EXP-tabel loopt')
+  })
+
+  it('zegt bij een level-27-profiel dat de tabel bij lv 30 ophoudt', () => {
+    const section = skillSectionAfterLevelUp({ level: '26' }, 'Snail')
+    expect(section.textContent).toMatch(/over lv 27 t\/m 30\./)
+    expect(section.textContent).toContain(TRUNCATED)
+  })
+
+  it('noemt op lv 30 één level ("lv 30", geen "t/m") en zegt dat de tabel ophoudt', () => {
+    const section = skillSectionAfterLevelUp({ level: '29' }, 'Snail')
+    expect(section.textContent).toMatch(/over lv 30\./)
+    expect(section.textContent).not.toMatch(/lv 30 t\/m/)
+    expect(section.textContent).toContain(TRUNCATED)
   })
 })

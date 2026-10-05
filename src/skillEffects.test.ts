@@ -10,6 +10,7 @@ import { expToNextLevel } from './data/expTable'
 import { MAGIC_CLAW_LEVELS } from './data/magician'
 import { findKnownSpot, knownSpotPatch } from './data/spots'
 import type { Job } from './job'
+import { profileAfterLevelUp } from './profileLevelUp'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileDraft } from './profile'
 import { buffBonus, ironBodyDef, maxHpAfterPoint, maxHpBeforePoint, skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPointAdvice, skillsOf } from './skillPoint'
@@ -286,11 +287,16 @@ describe('maxHpAfterPoint', () => {
 describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
   const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...knownSpotPatch(spotId) })
+  // De kosten van je level en de vier erna (issue #145), elk level met het profiel van dat level.
   const costOf = (drafts: readonly SpotDraft[], p: Profile) => {
-    const { ranked, bestId } = pickUnder(drafts, p)
-    const best = ranked.find((r) => r.spot.id === bestId)!
-    if (isInvalid(best)) throw new Error('beste plek ongeldig')
-    return mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+    let sum = 0
+    for (let i = 0; i < 5; i++, p = profileAfterLevelUp(p)) {
+      const { ranked, bestId } = pickUnder(drafts, p)
+      const best = ranked.find((r) => r.spot.id === bestId)!
+      if (isInvalid(best)) throw new Error('beste plek ongeldig')
+      sum += mesoCostOfLevel(expToNextLevel(p.level)!, best.expPerMeso)!
+    }
+    return sum
   }
   const ids = (p: Profile, drafts: readonly SpotDraft[] = [own('b', 1_000, 10_000)]) => {
     const advice = skillPointAdvice(drafts, p)
