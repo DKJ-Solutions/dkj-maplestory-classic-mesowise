@@ -271,14 +271,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -479,6 +479,8 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
+  /** Achter de titel van de popup, zoals de AP die je nog te verdelen hebt (zie StatDialog). */
+  titleNote?: ComponentChildren
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
 }) {
@@ -498,7 +500,7 @@ function StatsCard(props: {
         {props.error}
       </p>
       {open && (
-        <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title={props.title} titleNote={props.titleNote} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -579,7 +581,9 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
+  // Op de kaart en achter de titel van zijn popup: "Ability points (6)" (Dave, 5 oktober 2026, #157).
+  const toDistribute = balance !== null && <ToDistribute count={balance} unit="AP" />
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute} titleNote={toDistribute} />
 }
 
 /**
@@ -1005,11 +1009,19 @@ function StatDialog(props: {
   className?: string
   /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
   heading?: boolean
+  /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
+  titleNote?: ComponentChildren
   onCancel: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
-  const title = props.heading ? <h2 class="stat-dialog-name">{props.title}</h2> : <strong class="stat-dialog-name">{props.title}</strong>
+  const name = (
+    <>
+      {props.title}
+      {props.titleNote && <> {props.titleNote}</>}
+    </>
+  )
+  const title = props.heading ? <h2 class="stat-dialog-name">{name}</h2> : <strong class="stat-dialog-name">{name}</strong>
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1319,7 +1331,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
         {props.error}
       </p>
       {open && (
-        <CardPopup title="Skillpoints" head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title="Skillpoints" titleNote={spLeft !== null && <ToDistribute count={spLeft} unit="SP" />} head={head} error={props.error} onClose={() => setOpen(false)}>
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>

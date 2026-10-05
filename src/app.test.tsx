@@ -1133,10 +1133,18 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   it('toont in de popup van Ability points een kop zoals een groep in Skillpoints: Base AP met 70 / 75 AP', () => {
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points')
+    // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
+    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
+    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
     const head = homeScreen().querySelector('dialog .ap-group h3')!
     expect(head.textContent).toBe('Base AP70 / 75 AP')
     expect(head.querySelector('.skill-sp')?.classList.contains('over')).toBe(false)
+  })
+
+  it('zet ook achter de titel van de popup van Skillpoints de SP die nog vrij zijn: Skillpoints (3)', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Skillpoints bekijken' }))
+    expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head > h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
   })
 
   it('kleurt het aantal als fout als er meer base AP staan dan je level geeft', () => {
