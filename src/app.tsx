@@ -1260,8 +1260,9 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
     if (gain !== null) parts.push(...(parts.length ? [{ text: ', ' }] : []), { text: gain, tone: 'gain' })
     return [{ text: label }, ...parts]
   }
-  const now = level === 0 ? [{ text: 'Nu: niet geleerd' }] : line('Nu: ', level, `−${skillMpAt(s, level)} MP per keer`)
-  return level < s.max ? [now, line('Volgend level: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : [now]
+  // Now en Next, kort zoals de rest van de spelwoorden (Dave, 5 oktober 2026).
+  const now = level === 0 ? [{ text: 'Now: niet geleerd' }] : line('Now: ', level, `−${skillMpAt(s, level)} MP per keer`)
+  return level < s.max ? [now, line('Next: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : [now]
 }
 
 /** Een stuk van een regel onder een skill: wat hij kost (rood), wat hij geeft (groen), of gewone tekst. */

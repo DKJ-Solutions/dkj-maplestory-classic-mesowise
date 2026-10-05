@@ -1245,26 +1245,26 @@ describe('een Warrior in de app', () => {
       // Slash Blast kost 4 MP op level 4 en 5 MP op level 5 (de skillpagina, data/warrior.ts).
       setSkill(skills, 'Slash Blast', '4')
       // Slash Blast kost ook HP (3 op level 4, 4 op level 5) en raakt tot 4 monsters met 79% en 82% schade (#139).
-      expect(lines('Slash Blast')).toEqual(['Nu: −4 MP per keer, −3 HP, +79% schade, tot 4 monsters', 'Volgend level: −5 MP, −4 HP, +82% schade, tot 4 monsters'])
+      expect(lines('Slash Blast')).toEqual(['Now: −4 MP per keer, −3 HP, +79% schade, tot 4 monsters', 'Next: −5 MP, −4 HP, +82% schade, tot 4 monsters'])
       // Op het maximum (20, 12 MP) is er geen volgend level.
       setSkill(skills, 'Slash Blast', '20')
-      expect(lines('Slash Blast')).toEqual(['Nu: −12 MP per keer, −8 HP, +130% schade, tot 4 monsters'])
+      expect(lines('Slash Blast')).toEqual(['Now: −12 MP per keer, −8 HP, +130% schade, tot 4 monsters'])
       // Op level 0 is hij nog niet geleerd; level 1 kost 15 MP en geeft 5% van de DEF uit het profiel (60): +3 (#139).
       setSkill(skills, 'Iron Body', '0')
-      expect(lines('Iron Body')).toEqual(['Nu: niet geleerd', 'Volgend level: −15 MP, +3 DEF (5%)'])
+      expect(lines('Iron Body')).toEqual(['Now: niet geleerd', 'Next: −15 MP, +3 DEF (5%)'])
       // Level 5 geeft 9% (floor(5,4) = +5), level 6 geeft 10% (+6).
       setSkill(skills, 'Iron Body', '5')
-      expect(lines('Iron Body')).toEqual(['Nu: −15 MP per keer, +5 DEF (9%)', 'Volgend level: −15 MP, +6 DEF (10%)'])
-      // Wat het kost is rood (.cost), wat het geeft groen (.gain); "Nu: " en de komma niet.
+      expect(lines('Iron Body')).toEqual(['Now: −15 MP per keer, +5 DEF (9%)', 'Next: −15 MP, +6 DEF (10%)'])
+      // Wat het kost is rood (.cost), wat het geeft groen (.gain); "Now: " en de komma niet.
       const toned = (tone: string) => [...row('Iron Body').querySelectorAll(`.skill-mp .${tone}`)].map((p) => p.textContent)
       expect(toned('cost')).toEqual(['−15 MP per keer', '−15 MP'])
       expect(toned('gain')).toEqual(['+5 DEF (9%)', '+6 DEF (10%)'])
       // Een passief met een effect: alleen wat hij geeft, zonder regel "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
       setSkill(skills, 'Precise Strikes', '2')
-      expect(lines('Precise Strikes')).toEqual(['Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])
+      expect(lines('Precise Strikes')).toEqual(['Now: +6 Accuracy, +1% Crit. Rate', 'Next: +7 Accuracy, +1% Crit. Rate'])
       // Op level 0 van een passief met effect: nog niet geleerd, en wat level 1 geeft.
       setSkill(skills, 'Precise Strikes', '0')
-      expect(lines('Precise Strikes')).toEqual(['Nu: niet geleerd', 'Volgend level: +5 Accuracy, +1% Crit. Rate'])
+      expect(lines('Precise Strikes')).toEqual(['Now: niet geleerd', 'Next: +5 Accuracy, +1% Crit. Rate'])
       // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
       setSkill(skills, 'Power Strike', '')
       expect(lines('Power Strike')).toEqual([])

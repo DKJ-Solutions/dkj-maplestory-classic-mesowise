@@ -48,6 +48,7 @@ replaced by an edit button, as on Equip; left of it only the level the skill has
 
 - [x] `src/app.tsx`: `SkillLine` -- the name with its cost and gain lines, a value box with the level, and the pencil; the popup clamps a typed level to 0 .. the allowed maximum on save
 - [x] `src/app.tsx`: the line "Passief, kost geen MP" removed under a passive skill; one with an effect shows only what it gives (Dave, October 5, 2026)
+- [x] `src/app.tsx`: under a skill "Nu:" is now "Now:" and "Volgend level:" is "Next:" (Dave, October 5, 2026)
 - [x] `src/style.css`: everything in an Equip row (`.equip-row`) centred vertically, the bottom margins that aligned it to the bottom edge removed (Dave, October 5, 2026)
 - [x] `src/style.css`: the value box and the pencil share one height token (`--control-h`, 38px); the pencil also gets it as `max-height` and `align-self: center`, so it can never be taller than the box. Measured in Chrome both were already 38 x 38px at the same top; the dark pencil only looked bigger than the light box, so the pencil now has the box's light fill, border and a dark icon (Dave, October 5, 2026)
 - [x] `src/style.css`: `.skill-row` laid out like `.stat-line` (name, value, pencil, 0.75rem apart); the stepper styles (`.skill-input`) removed
@@ -68,7 +69,8 @@ The change is in the app UI only; no repo tooling or data changed.
 
 A row in the Skillpoints popup now shows only the skill's level and a pencil, as on Equip, instead of a minus, a box
 and a plus. The pencil opens a small popup to change the level, which shows how many SP are left and does not go past
-what the pool allows. A passive skill no longer carries the line "Passief, kost geen MP". In the Equip popup everything in a row now sits
+what the pool allows. A passive skill no longer carries the line "Passief, kost geen MP", and the lines under a skill start with "Now:" and
+"Next:". In the Equip popup everything in a row now sits
 in the middle of that row, and every pencil has the same light look as the value box beside it.
 
 **Score:** 3
