@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
@@ -56,10 +56,12 @@ const rangeOf = (job: 'thief' | 'warrior' | 'bowman'): string => {
 }
 const slots = () => stored(EQUIPMENT_KEY)?.slots
 
-/** De drie schermen van de flow: [0] thuis, [1] controle na de level-up, [2] advies. */
-const panels = () => Array.from(document.querySelectorAll<HTMLElement>('.panel'))
+/** Het beginscherm: alles staat op één scherm (#154). */
+const homeScreen = () => document.querySelector<HTMLElement>('main')!
+/** De Report-kaart onderaan het beginscherm: de kosten van het level en de vier adviezen. */
+const reportCard = () => document.querySelector<HTMLElement>('section.level-cost')!
 
-/** De equipment-kaarten: [0] op het beginscherm, [1] op het controlescherm van de level-up. */
+/** De equipment-kaarten (er is er één, op het beginscherm). */
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
 
 // Een slot heet in het scherm Weapon, Hat, Top, Bottom, Overall of Shoes; de zoekbalk heet "Zoek je <Slot>".
@@ -86,7 +88,6 @@ const pickOwn = (card: HTMLElement, slot: string, text: string) => {
 }
 /** De naam op de knop van een ingevuld slot; null als het slot nog niet is ingevuld. */
 const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent ?? null
-const badge = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('em.was')?.textContent ?? null
 
 /** Opent de popup achter het potlood van een slot en geeft de handvatten ervan. */
 const openDialog = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF') => {
@@ -113,12 +114,12 @@ const correct = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF', value: st
 
 /** De rij van een stat op de karakterkaart (beginscherm). */
 const statLine = (label: string) => {
-  const line = Array.from(panels()[0].querySelectorAll<HTMLElement>('.stat-line')).find((l) => l.querySelector('.stat-line-name')?.textContent === label)
+  const line = Array.from(homeScreen().querySelectorAll<HTMLElement>('.stat-line')).find((l) => l.querySelector('.stat-line-name')?.textContent === label)
   if (!line) throw new Error(`geen stat ${label}`)
   return line
 }
 /** De namen van de stat-regels in één kaart van het beginscherm. */
-const cardNames = (selector: string) => Array.from(panels()[0].querySelectorAll(`${selector} .stat-line-name`)).map((n) => n.textContent)
+const cardNames = (selector: string) => Array.from(homeScreen().querySelectorAll(`${selector} .stat-line-name`)).map((n) => n.textContent)
 /** Het getal van een stat op de kaart; bij een ability point (STR, DEX, INT, LUK) de base AP. */
 const statShown = (label: string) => (statLine(label).querySelector('.ap-base strong') ?? statLine(label).querySelector('.equip-value strong'))?.textContent
 /** De extra AP van items van een ability point op de kaart. */
@@ -156,13 +157,12 @@ const openAbility = (label: string) => {
 
 /** Opent de Skillpoints-kaart van het beginscherm en geeft de kaart terug (de popup zit erin). */
 const openHomeSkills = () => {
-  const head = within(panels()[0]).getByRole('button', { name: 'Skillpoints bekijken' })
+  const head = within(homeScreen()).getByRole('button', { name: 'Skillpoints bekijken' })
   fireEvent.click(head)
   return head.closest('section')!
 }
 const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip bekijken' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
-const undoLevelUp = () => fireEvent.click(screen.getByRole('button', { name: 'Level-up ongedaan maken' }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -179,7 +179,7 @@ describe('begin zonder opslag', () => {
   })
 
   it('zet helemaal bovenaan vorig level, het huidige level als h1 en Level up naast elkaar (#130)', () => {
-    const row = panels()[0].firstElementChild!
+    const row = homeScreen().firstElementChild!
     expect(row.classList.contains('level-row')).toBe(true)
     const [down, heading, up] = Array.from(row.children)
     expect(down).toBe(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
@@ -190,10 +190,9 @@ describe('begin zonder opslag', () => {
     expect(screen.getAllByRole('button', { name: /Level up/ })).toHaveLength(1)
   })
 
-  it('zet met de kleine knop alleen het level een terug, zonder de level-up-flow', () => {
+  it('zet met de kleine knop zonder level-up alleen het level een terug', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
     expect(document.querySelector('.current-level')?.textContent).toBe('LV. 9')
-    expect(panels()[0].getAttribute('aria-hidden')).not.toBe('true')
   })
 
   it('zet BACK op lv 1 uit, met een naam die zegt dat er geen vorig level is', () => {
@@ -242,14 +241,14 @@ describe('begin zonder opslag', () => {
     })
 
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Monster en boven de Report-kaart', () => {
-      const stats = panels()[0].querySelector('section.stats-group')!
+      const stats = homeScreen().querySelector('section.stats-group')!
       const equip = report('Equip')!.closest('section')!
       const skills = report('Skillpoints')!.closest('section')!
       const mob = report('Monster')!.closest('section')!
       expect(equip.nextElementSibling).toBe(skills)
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(stats)
-      expect(stats.nextElementSibling).toBe(panels()[0].querySelector('section.level-cost'))
+      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -266,6 +265,23 @@ describe('begin zonder opslag', () => {
       fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
       expect(document.querySelector('dialog.report-dialog')).toBeNull()
       expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
+    })
+
+    it('zet in de Report-kaart elke vraag onder dezelfde kop als in het rapport achter het oog: ATT en DEF bij Equip, Skill bij Skillpoints, Mob bij Monster', () => {
+      const inReportCard = (title: string) => within(reportCard()).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
+      const cardOf: Record<string, string[]> = { Equip: ['ATT', 'DEF'], Skillpoints: ['Skill'], Monster: ['Mob'] }
+      for (const [card, titles] of Object.entries(cardOf)) {
+        const dialog = openReport(card)
+        for (const title of titles) {
+          const own = within(dialog).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
+          expect(own, card + ': ' + title).toBe(inReportCard(title))
+        }
+        // De andere vragen staan niet in dit rapport.
+        for (const t of ['ATT', 'DEF', 'Skill', 'Mob'].filter((x) => !titles.includes(x))) {
+          expect(within(dialog).queryByRole('heading', { level: 3, name: t }), card + ' toont ' + t + ' niet').toBeNull()
+        }
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+      }
     })
 
     it('opent het rapport zonder de popup achter het oog, en andersom', () => {
@@ -532,7 +548,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(panels()[0].querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
+    expect(homeScreen().querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
   it('toont geen level, Max HP, ATT en DEF: die liggen elders vast', () => {
@@ -555,14 +571,14 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont de base AP die je nog over hebt alleen in de popup, niet als eigen regel op de kaart', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(panels()[0].querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
+    expect(homeScreen().querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
 
   it('zet per stat op de kaart de base AP, plus de extra AP van items, is het totaal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    const head = panels()[0].querySelector('section.profile .ability-head')!
+    const head = homeScreen().querySelector('section.profile .ability-head')!
     expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', '', 'Totaal', ''])
     expect(Array.from(statLine('LUK').children).slice(1, 6).map((c) => c.textContent)).toEqual(['37', '+', '3', '=', '40'])
   })
@@ -579,7 +595,7 @@ describe('bewaren na elke wijziging', () => {
     h.save()
     expect(profileFields().lukExtra).toBe('0')
     expect(extraShown('LUK')).toBe('0')
-    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+    expect(homeScreen().querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
   })
 
   it('toont in de popup het totaal van base en extra, en rekent mee terwijl je typt', () => {
@@ -644,7 +660,7 @@ describe('bewaren na elke wijziging', () => {
     h.typeExtra('2')
     h.save()
     expect(profileFields().str).toBe('4')
-    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+    expect(homeScreen().querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
   })
 
   it('geeft base AP vrij die je uit een andere stat haalt', () => {
@@ -677,8 +693,8 @@ describe('bewaren na elke wijziging', () => {
     const h = openAbility('STR')
     h.typeExtra('5000')
     h.save()
-    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(true)
-    expect(panels()[0].querySelector('section.total-stats')!.classList.contains('invalid')).toBe(false)
+    expect(homeScreen().querySelector('section.profile')!.classList.contains('invalid')).toBe(true)
+    expect(homeScreen().querySelector('section.total-stats')!.classList.contains('invalid')).toBe(false)
   })
 
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
@@ -726,9 +742,9 @@ describe('bewaren na elke wijziging', () => {
     const h = openStat('Tijd per aanval (ms)')
     h.type('50')
     h.save()
-    const profile = panels()[0].querySelector('section.total-stats')!
+    const profile = homeScreen().querySelector('section.total-stats')!
     expect(profile.classList.contains('invalid')).toBe(true)
-    expect(panels()[0].querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
+    expect(homeScreen().querySelector('section.profile')!.classList.contains('invalid')).toBe(false)
     expect(profile.querySelector('.error')?.textContent).not.toBe('')
     expect(cards()[0].classList.contains('invalid')).toBe(false)
   })
@@ -832,13 +848,6 @@ describe('bewaren na elke wijziging', () => {
     expect(levelCostText()).toMatch(/^± [\d.]+ meso.*Op Pig\.$/)
   })
 
-  it('toont de equipment op het controlescherm direct op de kaart, zonder popup (#106)', () => {
-    levelUp()
-    expect(within(cards()[1]).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
-    expect(cards()[1].querySelector('dialog')).toBeNull()
-    expect(within(cards()[1]).getByLabelText('Zoek je Weapon')).toBeTruthy()
-  })
-
   it('bewaart de gekozen job', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Warrior' }))
     expect(stored(JOB_KEY).job).toBe('warrior')
@@ -931,22 +940,44 @@ describe('bewaren na elke wijziging', () => {
   })
 })
 
-describe('level-up en ongedaan maken', () => {
-  it('verhoogt het level en toont "was" bij de gewijzigde stat', () => {
+describe('level-up en Back (#154)', () => {
+  const backButton = () => screen.getByRole('button', { name: /^Back/ })
+  const level = () => document.querySelector('.current-level')?.textContent
+
+  it('gaat naar het volgende level en blijft op het beginscherm: geen controle- of adviesscherm', () => {
     levelUp()
+    expect(level()).toBe('LV. 11')
     expect(profileFields().level).toBe('11')
-    const row = within(panels()[1]).getByLabelText(/^Level/, { selector: 'input' }).closest('label')!
-    expect(row.querySelector('em.was')?.textContent).toBe('was 10')
+    expect(screen.queryByRole('heading', { name: 'Klopt dit met je spel?' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Wat nu?' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Alles klopt, toon advies' })).toBeNull()
+    expect(screen.getByRole('heading', { level: 2, name: 'Report' })).toBeTruthy()
   })
 
-  it('zet het profiel terug op dat van voor de level-up', () => {
+  it('past alleen aan wat uit een bronregel volgt: level, Max HP en accuracy; de AP blijven staan', () => {
     levelUp()
-    expect(profileFields().level).toBe('11')
-    undoLevelUp()
+    const f = profileFields()
+    expect(f.hp).toBe('466')
+    expect([f.str, f.dex, f.int, f.luk]).toEqual([STARTER_PROFILE.str, STARTER_PROFILE.dex, STARTER_PROFILE.int, STARTER_PROFILE.luk])
+  })
+
+  it('laat equipment en wat je draagt staan', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+  })
+
+  it('zet met Back na een level-up het profiel terug op dat van voor de level-up', () => {
+    levelUp()
+    expect(backButton().getAttribute('aria-label')).toBe('Back (naar LV. 10)')
+    fireEvent.click(backButton())
     expect(profileFields()).toEqual(STARTER_PROFILE)
+    expect(level()).toBe('LV. 10')
   })
 
-  it('zet equipment en profiel allebei terug, ook na een wissel op het controlescherm', () => {
+  it('zet equipment en profiel allebei terug, ook na wissels op het beginscherm', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Hat', HAT_A.name)
@@ -955,12 +986,12 @@ describe('level-up en ongedaan maken', () => {
     const slotsBefore = slots()
 
     levelUp()
-    pick(cards()[1], 'Weapon', MEBA.name)
-    pick(cards()[1], 'Shoes', SHOE_A.name)
+    pick(cards()[0], 'Weapon', MEBA.name)
+    pick(cards()[0], 'Shoes', SHOE_A.name)
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
     expect(slots().shoes.pick).toBe(SHOE_A.name)
 
-    undoLevelUp()
+    fireEvent.click(backButton())
     expect(profileFields()).toEqual(profileBefore)
     expect(profileFields().level).toBe('10')
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
@@ -971,14 +1002,105 @@ describe('level-up en ongedaan maken', () => {
     expect(worn(cards()[0], 'Shoes')).toBeNull()
   })
 
-  it('gooit een eigen item met een opgeslagen getal van het controlescherm weg', () => {
+  it('gooit een eigen item met een opgeslagen getal na de level-up weg bij Back', () => {
     levelUp()
-    pickOwn(cards()[1], 'Weapon', 'Mijn claw')
-    correct(cards()[1], 'Weapon', 'ATT', '77')
+    openHomeEquipment()
+    pickOwn(cards()[0], 'Weapon', 'Mijn claw')
+    correct(cards()[0], 'Weapon', 'ATT', '77')
     expect(profileFields().clawWatk).toBe('77')
-    undoLevelUp()
+    fireEvent.click(backButton())
     expect(profileFields().clawWatk).toBe(DEFAULT_PROFILE.clawWatk)
     expect(slots().claw.pick).toBe('unknown')
+  })
+
+  it('gebruikt de snapshot één keer: een tweede Back zet alleen het level een terug', () => {
+    levelUp()
+    fireEvent.click(backButton())
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 9')
+    expect(profileFields().hp).toBe(STARTER_PROFILE.hp)
+  })
+
+  it('zet na een nieuwe level-up weer de snapshot van het level eronder terug', () => {
+    levelUp()
+    levelUp()
+    expect(level()).toBe('LV. 12')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 11')
+    expect(profileFields().hp).toBe('466')
+  })
+
+  it('gooit een stat die je na de level-up zette weg bij Back, en zet de equipment van het level eronder terug', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const luk = openAbility('LUK')
+    luk.typeBase('40')
+    luk.save()
+    expect(profileFields().luk).toBe('40')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', MEBA.name)
+    fireEvent.click(backButton())
+    expect(profileFields()).toEqual(STARTER_PROFILE)
+    expect(worn(cards()[0], 'Weapon')).toBeNull()
+  })
+
+  it('zet bij twee level-ups achter elkaar alleen de equipment van het tweede level terug, niet die van het eerste', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    pick(cards()[0], 'Weapon', MEBA.name)
+    levelUp()
+    pick(cards()[0], 'Hat', HAT_A.name)
+    expect(level()).toBe('LV. 12')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 11')
+    expect(worn(cards()[0], 'Weapon')).toBe(MEBA.name)
+    expect(worn(cards()[0], 'Hat')).toBeNull()
+    expect(profileFields().clawWatk).toBe(String(MEBA.watk))
+  })
+
+  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: stats en equipment blijven', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    fireEvent.click(backButton())
+    const before = profileFields()
+    fireEvent.click(backButton())
+    expect(profileFields()).toEqual({ ...before, level: '9' })
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+  })
+
+  it('leest de snapshot synchroon: Level up en meteen Back in één stap zet het profiel terug', () => {
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
+      fireEvent.click(backButton())
+    })
+    expect(level()).toBe('LV. 10')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('toont bij Total stats een hint dat de app het effect van je AP niet meetelt', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    expect(homeScreen().querySelector('.total-stats-hint')?.textContent).toMatch(/Accuracy en Avoid/)
+  })
+
+  it('wist de snapshot bij een andere job: Back zet daarna alleen het level een terug', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Warrior' }))
+    expect(level()).toBe('LV. 11')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 10')
+    expect(profileFields().hp).toBe('466')
+  })
+
+  it('bewaart de snapshot niet: na herladen zet Back alleen het level een terug (#130)', () => {
+    levelUp()
+    cleanup()
+    render(<App />)
+    expect(level()).toBe('LV. 11')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 10')
+    expect(profileFields().hp).toBe('466')
   })
 
   it('legt een nog open concept in de popup vast als vangnet bij de level-up', () => {
@@ -995,77 +1117,76 @@ describe('level-up en ongedaan maken', () => {
   })
 })
 
-describe('de "was"-badge per slot', () => {
-  it('staat er niet zolang er niets gewijzigd is', () => {
+describe('de AP en SP die je nog moet verdelen (#154)', () => {
+  // De zin die een schermlezer hoort; zichtbaar staat alleen het getal tussen haakjes achter de kop.
+  const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
+  const spNote = () => homeScreen().querySelector('section.skills .spot-head .to-distribute .sr-only')?.textContent ?? null
+
+  it('zet het aantal tussen haakjes achter de kop: Skillpoints (3), Ability points (5)', () => {
     levelUp()
-    for (const slot of ['Weapon', 'Hat', 'Top', 'Bottom', 'Overall', 'Shoes']) expect(badge(cards()[1], slot)).toBeNull()
+    expect(homeScreen().querySelector('section.skills .spot-head .spot-name')?.textContent).toBe('Skillpoints(3)3 SP te verdelen')
+    expect(homeScreen().querySelector('section.skills .to-distribute [aria-hidden="true"]')?.textContent).toBe('(3)')
+    expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
-  it('toont alleen bij het gewijzigde slot wat het was', () => {
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
-    levelUp()
-    pick(cards()[1], 'Weapon', MEBA.name)
-    pick(cards()[1], 'Hat', HAT_A.name)
-    expect(badge(cards()[1], 'Weapon')).not.toBeNull()
-    expect(badge(cards()[1], 'Hat')).toBe('was nog niet ingevuld')
-    expect(badge(cards()[1], 'Top')).toBeNull()
-    expect(badge(cards()[1], 'Shoes')).toBeNull()
+  it('toont niets zolang alle AP en SP gezet zijn', () => {
+    expect(apNote()).toBeNull()
+    expect(spNote()).toBeNull()
   })
 
-  // Was bekende bug #52 (entryLabel las `name` in plaats van `pick`, dus "was Ander item"); in de nieuwe entryLabel
-  // is dat verholpen, dus dit is nu een gewone test.
-  it('noemt een winkelitem bij zijn naam (#52)', () => {
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+  it('toont na een level-up 5 AP en 3 SP te verdelen, en telt mee terwijl je ze zet', () => {
     levelUp()
-    pick(cards()[1], 'Weapon', MEBA.name)
-    expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name}`)
+    expect(apNote()).toBe('5 AP te verdelen')
+    expect(spNote()).toBe('3 SP te verdelen')
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const luk = openAbility('LUK')
+    luk.typeBase('40')
+    luk.save()
+    expect(apNote()).toBe('2 AP te verdelen')
   })
 
-  it('noemt "nog niet ingevuld", een eigen item en een aangepaste stat bij naam', () => {
-    openHomeEquipment()
-    pickOwn(cards()[0], 'Top', 'Mijn top')
-    pick(cards()[0], 'Weapon', IGOR.name)
-    correct(cards()[0], 'Weapon', 'ATT', '31')
+  it('toont niets meer na Back naar het level waar alles verdeeld was', () => {
     levelUp()
-    pick(cards()[1], 'Top', TOP_A.name)
-    expect(badge(cards()[1], 'Top')).toBe('was Mijn top')
-    pick(cards()[1], 'Weapon', MEBA.name)
-    expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name} (aangepast: 31)`)
-    pick(cards()[1], 'Shoes', SHOE_A.name)
-    expect(badge(cards()[1], 'Shoes')).toBe('was nog niet ingevuld')
+    fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(apNote()).toBeNull()
+    expect(spNote()).toBeNull()
   })
 
-  it('toont bij een gecorrigeerde stat op hetzelfde item ook de badge, en verdwijnt bij terugzetten', () => {
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+  it('toont na een level-up de AP en SP van een Warrior: 5 AP en 3 SP erbij per level', () => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
+    // Level 20: 120 AP, 118 gezet = 2 over; 31 SP, 1 gezet = 30 over.
+    localStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '20', hp: '800', str: '90', dex: '20', int: '4', luk: '4', powerStrike: '1', preciseStrikes: '0' } }),
+    )
+    render(<App />)
+    expect(apNote()).toBe('2 AP te verdelen')
+    expect(spNote()).toBe('30 SP te verdelen')
     levelUp()
-    correct(cards()[1], 'Weapon', 'ATT', '31')
-    expect(badge(cards()[1], 'Weapon')).toBe(`was ${IGOR.name}`)
-    correct(cards()[1], 'Weapon', 'ATT', String(IGOR.watk))
-    expect(badge(cards()[1], 'Weapon')).toBeNull()
+    expect(apNote()).toBe('7 AP te verdelen')
+    expect(spNote()).toBe('33 SP te verdelen')
+    fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(apNote()).toBe('2 AP te verdelen')
+    expect(spNote()).toBe('30 SP te verdelen')
   })
 
-  it('verdwijnt als je terugkiest wat het was', () => {
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+  it('telt de extra AP van items niet mee: een item met +50 LUK verlaagt het aantal AP te verdelen niet', () => {
     levelUp()
-    pick(cards()[1], 'Weapon', MEBA.name)
-    expect(badge(cards()[1], 'Weapon')).not.toBeNull()
-    pick(cards()[1], 'Weapon', IGOR.name)
-    expect(badge(cards()[1], 'Weapon')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const luk = openAbility('LUK')
+    luk.typeExtra('50')
+    luk.save()
+    expect(apNote()).toBe('5 AP te verdelen')
   })
 
-  it('staat niet op de kaart van het beginscherm', () => {
-    openHomeEquipment()
-    levelUp()
-    pick(cards()[1], 'Weapon', IGOR.name)
-    expect(badge(cards()[0], 'Weapon')).toBeNull()
+  it('toont geen AP-regel bij te veel AP voor het level', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    expect(apNote()).toBeNull()
   })
 })
 
-describe('adviesscherm na de level-up', () => {
+describe('advies na de level-up', () => {
   // De app rekent met de mob waarop je jaagt.
   beforeEach(() => {
     cleanup()
@@ -1080,32 +1201,19 @@ describe('adviesscherm na de level-up', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
     render(<App />)
   })
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
   }
 
   it('zet een punt in de aanbevolen skill en bewaart het', () => {
-    toAdvice()
-    const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
-    expect(button.closest('section')!.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Lucky Seven (→ 3).')
+    afterLevelUp()
+    const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+    expect(button.closest<HTMLElement>('.question')!.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Lucky Seven (→ 3).')
     expect(profileFields().luckySeven).toBe('2')
     fireEvent.click(button)
     expect(profileFields().luckySeven).toBe('3')
     expect(profileFields().level).toBe('11')
-    expect(within(panels()[2]).getByText(/^Lucky Seven → 3 gezet./)).toBeTruthy()
-  })
-
-  it('biedt op het adviesscherm geen "Level-up ongedaan maken" meer aan', () => {
-    toAdvice()
-    expect(screen.queryByRole('button', { name: 'Level-up ongedaan maken' })).toBeNull()
-  })
-
-  it('brengt "Klaar" terug naar het beginscherm en laat het profiel staan', () => {
-    toAdvice()
-    fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
-    expect(profileFields().level).toBe('11')
-    expect(screen.getByRole('button', { name: /Level up/ })).toBeTruthy()
+    expect(within(reportCard()).getByText(/^Lucky Seven → 3 gezet./)).toBeTruthy()
   })
 })
 
@@ -1124,9 +1232,8 @@ describe('een Warrior in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
   }
   const NOT_YET = /Nog niet doorgerekend/
 
@@ -1134,7 +1241,7 @@ describe('een Warrior in de app', () => {
     beforeEach(() => open('warrior'))
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
-      const home = panels()[0]
+      const home = homeScreen()
       expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
       expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
@@ -1142,7 +1249,7 @@ describe('een Warrior in de app', () => {
     })
 
     it('noemt op het beginscherm geen claws, en toont de skillkaart en (zodra er een wapen beter is) de wapenkaart', () => {
-      const home = panels()[0]
+      const home = homeScreen()
       expect(home.textContent).not.toMatch(/claw/i)
       expect(within(home).getByRole('heading', { level: 2, name: 'Report' })).toBeTruthy()
       // Het wapenadvies heet bij een Warrior "nieuw wapen", nooit "nieuwe claw".
@@ -1150,9 +1257,9 @@ describe('een Warrior in de app', () => {
     })
 
     it('rekent het level met het Warrior-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
-      const warriorCost = within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
+      const warriorCost = within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
       open('thief')
-      const thiefCost = within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
+      const thiefCost = within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
       expect(warriorCost).toBeTruthy()
       expect(thiefCost).toBeTruthy()
       expect(warriorCost).not.toBe(thiefCost)
@@ -1189,10 +1296,10 @@ describe('een Warrior in de app', () => {
 
     it('toont bij je karakter de weapon multiplier en STR, zonder uitleg eronder', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-      const home = panels()[0]
+      const home = homeScreen()
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026).
-      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|rekent met Power Strike|geen munitie|per soort wapen/)
       fireEvent.click(within(home.querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
       fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
@@ -1275,10 +1382,10 @@ describe('een Warrior in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open('warrior')
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +28 HP en laat LUK en STR staan', () => {
@@ -1289,21 +1396,21 @@ describe('een Warrior in de app', () => {
     })
 
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
-      const advice = panels()[2]
+      const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
       expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
-      const text = panels()[2].textContent!
+      const text = reportCard().textContent!
       expect(text).toMatch(/Niet doorgerekend: Slash Blast/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven/)
     })
 
     it('geeft als skillpunt Power Strike (→ 2), met zijn MP, en zet het punt in het bewaarde profiel', () => {
       // Gemeten met skillPointAdvice voor dit profiel (STR 90, WATK 40, Power Strike 1): Power Strike wint, Precise Strikes spaart niets.
-      const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
-      const section = button.closest('section')!
+      const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+      const section = button.closest<HTMLElement>('.question')!
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Power Strike (→ 2).')
       // Power Strike 1 en 2 kosten allebei 4 MP per aanval (de skillpagina).
       expect(section.textContent).toContain('Elke aanval kost je dan 4 → 4 MP.')
@@ -1312,11 +1419,11 @@ describe('een Warrior in de app', () => {
       expect(profileFields().powerStrike).toBe('2')
       expect(profileFields().preciseStrikes).toBe('0')
       expect(profileFields().level).toBe('21')
-      expect(within(panels()[2]).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
+      expect(within(reportCard()).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
     })
 
     it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
-      const claw = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
+      const claw = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wapen/)
     })
@@ -1324,13 +1431,12 @@ describe('een Warrior in de app', () => {
 
   it('toont voor een Thief nog steeds de Thief-teksten (claw, Subi, Lucky Seven)', () => {
     open('thief')
-    toAdvice()
-    expect(panels()[2].textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
-    expect(panels()[2].textContent).not.toMatch(NOT_YET)
-    fireEvent.click(screen.getByRole('button', { name: 'Klaar' }))
+    afterLevelUp()
+    expect(reportCard().textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
+    expect(reportCard().textContent).not.toMatch(NOT_YET)
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-    expect(panels()[0].querySelector('dialog .hint')).toBeNull()
-    expect(panels()[0].textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
+    expect(homeScreen().querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
+    expect(homeScreen().textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
 })
 
@@ -1472,8 +1578,8 @@ describe('het geslacht (issue #55)', () => {
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 
-  describe('op het adviesscherm', () => {
-    const toAdvice = () => {
+  describe('op de Report-kaart', () => {
+    const afterLevelUp = () => {
       cleanup()
       localStorage.setItem(
         STORAGE_KEY,
@@ -1485,18 +1591,17 @@ describe('het geslacht (issue #55)', () => {
       localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
       render(<App />)
       levelUp()
-      fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
-    }
-    const armorSection = () => screen.getByRole('heading', { level: 3, name: 'DEF' }).closest('section')!
+      }
+    const armorSection = () => screen.getByRole('heading', { level: 3, name: 'DEF' }).closest<HTMLElement>('.question')!
 
     it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
-      toAdvice()
+      afterLevelUp()
       expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
     })
 
     it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
       localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
-      toAdvice()
+      afterLevelUp()
       expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
     })
   })
@@ -1518,19 +1623,18 @@ describe('een Bowman in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
   }
   const NOT_YET = /Nog niet doorgerekend/
   const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
-  const costText = () => within(panels()[0]).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
+  const costText = () => within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
 
   describe('het beginscherm', () => {
     beforeEach(open)
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
-      const home = panels()[0]
+      const home = homeScreen()
       expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
       expect(costText()).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
@@ -1588,10 +1692,10 @@ describe('een Bowman in de app', () => {
     it('toont bij Ability points DEX en STR, en bij Total stats geen uitleg, weapon multiplier, Subi of stars', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
       fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-      const home = panels()[0]
+      const home = homeScreen()
       expect(statShown('DEX')).toBe('80')
       expect(statShown('STR')).toBe('20')
-      expect(home.querySelector('dialog.card-dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog.card-dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Arrow Blow als je hem hebt geleerd|1 meso per pijl|Weapon multiplier|Subi|stars/)
     })
 
@@ -1614,10 +1718,10 @@ describe('een Bowman in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open()
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +22 HP en laat STR, DEX en LUK staan', () => {
@@ -1629,13 +1733,13 @@ describe('een Bowman in de app', () => {
     })
 
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
-      const advice = panels()[2]
+      const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
       expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
-      const text = panels()[2].textContent!
+      const text = reportCard().textContent!
       expect(text).toMatch(/Niet doorgerekend: Double Shot, Critical Shot en The Eye of Amazon/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Slash Blast/)
     })
@@ -1643,7 +1747,7 @@ describe('een Bowman in de app', () => {
     it('rekent Arrow Blow als enige skill door en zet het punt toch, met de eerlijke hint dat het niets scheelt', () => {
       // Dit profiel (DEX 80, 30 ATT) heeft elke Rain Forest-kill in 2 schoten; 4% meer schade van Arrow Blow 1 → 2 verandert dat niet.
       // Een vrij punt moet ergens heen (Dave, 4 oktober 2026): Arrow Blow wint dus met besparing 0.
-      const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+      const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
       expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
       expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
@@ -1653,7 +1757,7 @@ describe('een Bowman in de app', () => {
     })
 
     it('noemt wapens, geen claws', () => {
-      const weapon = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
+      const weapon = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
       expect(weapon.textContent).not.toMatch(/claw/i)
       expect(weapon.textContent).toMatch(/wapen|boog/)
     })
@@ -1676,9 +1780,8 @@ describe('een Magician in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
   }
   const NOT_YET = /Nog niet doorgerekend/
 
@@ -1691,7 +1794,7 @@ describe('een Magician in de app', () => {
     })
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
-      const home = panels()[0]
+      const home = homeScreen()
       expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
@@ -1736,7 +1839,7 @@ describe('een Magician in de app', () => {
     it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en W.ATT 0 naast M.ATT (#100)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
       fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-      const home = panels()[0]
+      const home = homeScreen()
       expect(statShown('INT')).toBe('60')
       expect(statShown('LUK')).toBe('10')
       const names = Array.from(home.querySelectorAll('.stat-line-name')).map((e) => e.textContent)
@@ -1745,7 +1848,7 @@ describe('een Magician in de app', () => {
       // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
       expect(statShown('Attack')).toBe('?')
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026, #106).
-      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier|Een cast duurt|Een Magician heeft geen munitie/)
       // W.ATT staat op 0 en M.ATT toont MagicTotal = floor(60 / 2) + 31 = 61 (#100).
       expect(statShown('W.ATT')).toBe('0')
@@ -1767,13 +1870,13 @@ describe('een Magician in de app', () => {
     })
 
     it('noemt bij het equipmentadvies wands en staffs, geen claws', () => {
-      const equip = within(panels()[0]).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
+      const equip = within(homeScreen()).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
       expect(equip.textContent).toMatch(/wand|staff/i)
       expect(equip.textContent).not.toMatch(/claw/i)
     })
 
     it('zet de kosten en de vier adviezen in één kaart Report: ATT, DEF, Skill en Mob (#126)', () => {
-      const home = panels()[0]
+      const home = homeScreen()
       expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
       const card = within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
       const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
@@ -1785,10 +1888,10 @@ describe('een Magician in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open()
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +16 HP en laat INT en LUK staan', () => {
@@ -1799,26 +1902,26 @@ describe('een Magician in de app', () => {
     })
 
     it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
-      const advice = panels()[2]
+      const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
       expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
     })
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
-      const text = panels()[2].textContent!
+      const text = reportCard().textContent!
       expect(text).toMatch(/Niet doorgerekend: Magic Guard en Max MP Increase/)
       expect(text).not.toMatch(/Keen Eyes|Dark Sight|Lucky Seven|Power Strike|Slash Blast/)
     })
 
     it('noemt Magic Claw niet als punt zolang Energy Bolt op 0 staat', () => {
       open({ energyBolt: '0' })
-      toAdvice()
-      const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+      afterLevelUp()
+      const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
       expect(section.textContent).not.toContain('Magic Claw → 1')
     })
 
     it('noemt wands en staffs, geen claws', () => {
-      const claw = within(panels()[2]).getByRole('heading', { level: 3, name: 'ATT' }).closest('section')!
+      const claw = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wand of staff|wapen/)
     })
@@ -1827,9 +1930,9 @@ describe('een Magician in de app', () => {
   it('geeft als skillpunt Energy Bolt (→ 4), met zijn MP, en zet het punt in het bewaarde profiel', () => {
     // Gemeten met skillPointAdvice voor dit profiel (INT 20, M.ATT 10, Energy Bolt 3): Energy Bolt wint; Magic Claw 1 geeft evenveel schade per cast en spaart niets.
     open({ int: '20', clawWatk: '10', energyBolt: '3' })
-    toAdvice()
-    const button = within(panels()[2]).getByRole('button', { name: 'Punt zetten' })
-    const section = button.closest('section')!
+    afterLevelUp()
+    const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+    const section = button.closest<HTMLElement>('.question')!
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Energy Bolt (→ 4).')
     // Energy Bolt 3 en 4 kosten allebei 8 MP per cast (de skillpagina).
     expect(section.textContent).toContain('Elke cast kost je dan 8 → 8 MP.')
@@ -1838,16 +1941,7 @@ describe('een Magician in de app', () => {
     expect(profileFields().energyBolt).toBe('4')
     expect(profileFields().magicClaw).toBe('0')
     expect(profileFields().level).toBe('21')
-    expect(within(panels()[2]).getByText(/^Energy Bolt → 4 gezet./)).toBeTruthy()
-  })
-
-  it('toont op het controlescherm INT bovenaan, met de zin over de AP', () => {
-    open()
-    levelUp()
-    const check = panels()[1]
-    expect(check.textContent).toContain('Verdeel je AP zelf: INT voor schade en accuracy, LUK voor wapen-eisen.')
-    const labels = Array.from(check.querySelectorAll('.stats .stat-row-name, .stats label, .stats span')).map((e) => e.textContent)
-    expect(labels).toContain('INT')
+    expect(within(reportCard()).getByText(/^Energy Bolt → 4 gezet./)).toBeTruthy()
   })
 })
 
@@ -1857,14 +1951,14 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(within(bar()).getByRole('button', { name: 'Instellingen' }))
     return within(bar().querySelector('dialog') as HTMLDialogElement)
   }
-  const homeJobCard = () => panels()[0].querySelector('section.job')
+  const homeJobCard = () => homeScreen().querySelector('section.job')
 
   it('staat boven de schermen, buiten main, met de naam van de app en een menuknop', () => {
     expect(bar().closest('main')).toBeNull()
     expect(bar().querySelector('.topbar-name')?.textContent).toBe('Mesowise')
     // De ondertitel staat rechts van de naam, en niet meer op het beginscherm (#130).
     expect(bar().querySelector('.topbar-name')?.nextElementSibling?.textContent).toMatch(/^Zo min mogelijk mesos/)
-    expect(within(panels()[0]).queryByText(/Zo min mogelijk mesos/)).toBeNull()
+    expect(within(homeScreen()).queryByText(/Zo min mogelijk mesos/)).toBeNull()
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
   })
 
@@ -1985,14 +2079,12 @@ describe('skillpunten per level (issue #136)', () => {
     cleanup()
     render(<App />)
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
-    const section = within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+    const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
     // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
     expect(section.textContent).not.toContain('geen skillpunten meer over')
-    // Zet de pot vol via de Skillpoints-kaart van het adviesscherm.
-    const card = within(panels()[2]).getByRole('button', { name: 'Skillpoints bekijken' })
-    fireEvent.click(card)
-    setSkill(panels()[2], 'Lucky Seven', '4')
+    // Zet de pot vol via de Skillpoints-kaart van het beginscherm.
+    fireEvent.click(within(homeScreen()).getByRole('button', { name: 'Skillpoints bekijken' }))
+    setSkill(homeScreen(), 'Lucky Seven', '4')
     // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.
     expect(section.querySelector('.chip')!.textContent).toBe('Goed gezet')
     expect(section.querySelector('.verdict')!.textContent).toBe('Je skillpunten staan goed.')
@@ -2010,8 +2102,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(spot)] }))
     render(<App />)
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Alles klopt, toon advies' }))
-    return within(panels()[2]).getByRole('heading', { level: 3, name: 'Skill' }).closest('section')!
+    return within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
   }
   const lines = (section: HTMLElement) => Array.from(section.querySelectorAll('.skill-options li')).map((li) => li.textContent)
 
@@ -2072,7 +2163,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
 
   const placedHint = (section: HTMLElement) => {
     fireEvent.click(within(section).getByRole('button', { name: 'Punt zetten' }))
-    return within(panels()[2]).getByText(/ gezet\./).textContent!
+    return within(reportCard()).getByText(/ gezet\./).textContent!
   }
 
   it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
@@ -2112,7 +2203,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    return panels()[0]
+    return homeScreen()
   }
   const card = (h: HTMLElement) => within(h).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
 
@@ -2192,7 +2283,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '10' } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    const att = () => within(panels()[0]).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
+    const att = () => within(homeScreen()).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
     // Zonder wapen in het slot staat er geen "Je draagt", wel de eerstvolgende claw.
     expect(att().textContent).not.toContain('Je draagt')
     expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
@@ -2211,7 +2302,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
       if (gender) localStorage.setItem('mesowise.gender.v1', JSON.stringify({ version: 1, gender }))
       if (equipment) localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: equipment }))
       render(<App />)
-      return panels()[0]
+      return homeScreen()
     }
     const part = (h: HTMLElement, title: string) => within(h).getByRole('heading', { level: 3, name: title }).closest('.advice-part') as HTMLElement
     const chipOf = (el: HTMLElement) => el.querySelector('.chip')!
@@ -2222,8 +2313,8 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
       expect(part(h, 'ATT').textContent).not.toContain('Je draagt')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Garnier')
-      expect(part(panels()[0], 'ATT').textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
-      expect(part(panels()[0], 'ATT').textContent).toContain('Steel Titans, kun je vanaf lv 15 dragen.')
+      expect(part(homeScreen(), 'ATT').textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
+      expect(part(homeScreen(), 'ATT').textContent).toContain('Steel Titans, kun je vanaf lv 15 dragen.')
     })
 
     it('noemt bij een ongeldig profiel op lv 9 geen "geen betere claw meer": onbekend is niet hetzelfde als het einde van de winkel', () => {
@@ -2295,7 +2386,7 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(mob)] }))
     render(<App />)
-    return within(panels()[0]).getByRole('heading', { level: 3, name: 'Skill' }).closest('.advice-part') as HTMLElement
+    return within(homeScreen()).getByRole('heading', { level: 3, name: 'Skill' }).closest('.advice-part') as HTMLElement
   }
 
   it('zegt "Goed gezet" (yes) als geen punt in een andere skill goedkoper was', () => {

@@ -9,7 +9,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, entryChanged, entryLabel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
@@ -22,7 +22,7 @@ import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
-import { applyLevelDown, applyLevelUp, applySkillPoint, checkFieldsFor, isMaxLevel, levelUpChanges, levelUpSummary } from './levelUp'
+import { applyLevelDown, applyLevelUp, applySkillPoint, apToDistribute, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
@@ -478,6 +478,8 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
+  /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
+  note?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
@@ -488,6 +490,7 @@ function StatsCard(props: {
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
+          {props.note}
         </span>
       </CardHead>
       <p class="error" aria-live="polite">
@@ -548,7 +551,9 @@ function ProfileCard(props: StatsCardProps) {
         ))}
     </>
   )
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} />
+  // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154).
+  const left = apToDistribute(draft)
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={left !== null && <ToDistribute count={left} unit="AP" />} />
 }
 
 /**
@@ -646,6 +651,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
       <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
       <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
       <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
+      {isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
     </>
   )
   const mdef = wornMdef(props.equipment)
@@ -1008,7 +1014,7 @@ function StatDialog(props: {
 
 /**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
- * WDEF aan (zie equipment.ts). `was` is de toestand van vóór de level-up; wat daarvan afwijkt krijgt een badge.
+ * WDEF aan (zie equipment.ts).
  */
 function EquipmentCard(props: {
   job: Job
@@ -1016,13 +1022,9 @@ function EquipmentCard(props: {
   equipment: Equipment
   /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
-  was?: Equipment
   /** Alleen een Bowman: of hij Helpful Stranger heeft (#64); met de schakelaar aan biedt de ammo-lijst de bronze pijlen aan. */
   helpfulStranger: boolean
   onHelpfulStranger: (on: boolean) => void
-  hint?: string
-  /** De inhoud staat meteen op de kaart in plaats van in een popup: op het controlescherm na de level-up, waar je hem nakijkt. */
-  inline?: boolean
   onPick: (slot: EquipSlot, pick: string, name?: string) => void
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het concept uit het corrigeervak wordt vastgelegd (Opslaan of Enter). */
@@ -1048,35 +1050,26 @@ function EquipmentCard(props: {
   )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
-    props.inline ? (
-      <div class="spot-body">{body}</div>
-    ) : (
-      open && (
-        <CardPopup title="Equip" head={head} error={props.error} onClose={() => setOpen(false)}>
-          {body}
-        </CardPopup>
-      )
+    open && (
+      <CardPopup title="Equip" head={head} error={props.error} onClose={() => setOpen(false)}>
+        {body}
+      </CardPopup>
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      {props.inline ? (
-        <div class="spot-head">{name}</div>
-      ) : (
-        <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
-          {name}
-        </CardHead>
-      )}
+      <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+        {name}
+      </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
-          {computed ? props.hint && <p class="hint">{props.hint}</p> : <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
+          {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
           {slotsFor(props.job).map(({ slot }) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
-            const before = props.was?.[slot]
             const stat = statName(slot, props.job)
             const db = databaseStat(slot, entry)
             const own = statOverride(slot, entry)
@@ -1097,7 +1090,6 @@ function EquipmentCard(props: {
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
                   <EquipSearch slot={slot} job={props.job} entry={entry} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
-                  {before && entryChanged(before, entry) && <em class="was">was {entryLabel(slot, before)}</em>}
                   {slot === 'ammo' && props.job === 'bowman' && (
                     <label class="switch">
                       <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
@@ -1284,12 +1276,15 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   // De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de kaart alleen het procent.
   const wdefNumber = Number(props.draft.wdef.trim())
   const wdef = props.draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
+  // De punten van de pot van je 1e job die je nog niet hebt gezet (#154).
+  const spLeft = spToDistribute(props.draft, props.job)
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
       <CardHead label="Skillpoints" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
+          {spLeft !== null && <ToDistribute count={spLeft} unit="SP" />}
         </span>
       </CardHead>
       <p class="error" aria-live="polite">
@@ -1373,6 +1368,19 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
 }
 
 /** "12 / 16 SP": hoeveel punten van de pot je hebt gezet; zonder geldig level alleen wat je zette. Boven het maximum in de foutkleur. */
+/**
+ * Hoeveel AP of SP je nog te verdelen hebt, tussen haakjes achter de kop van de kaart: "Skillpoints (1)" (Dave, 5 oktober
+ * 2026, #154). Een schermlezer hoort de hele zin.
+ */
+function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
+  return (
+    <span class="to-distribute" role="status">
+      <span aria-hidden="true">({props.count})</span>
+      <span class="sr-only">{`${props.count} ${props.unit} te verdelen`}</span>
+    </span>
+  )
+}
+
 function PoolCount(props: { usage: { spent: number; cap: number | null } }) {
   const { spent, cap } = props.usage
   return (
@@ -1466,30 +1474,9 @@ function HuntedMobCard(props: {
   )
 }
 
-// De level-up-flow: drie schermen naast elkaar die naar links schuiven.
-type Step = 0 | 1 | 2
-const SLIDE_MS = 250
-
-/** De zin boven de controle na een level-up, per job: wat hij met zijn AP doet. */
-const LEVEL_UP_HINT = {
-  thief: 'Controleer je evasion in het spel; heeft je wapen meer DEX nodig, zet dan AP in DEX.',
-  warrior: 'Verdeel je AP zelf: STR voor schade, DEX voor accuracy en voor wapen-eisen. Controleer je evasion in het spel.',
-  bowman: 'Verdeel je AP zelf: DEX voor schade, accuracy en wapen-eisen, STR voor de wapens die dat vragen. Controleer je evasion in het spel.',
-  magician: 'Verdeel je AP zelf: INT voor schade en accuracy, LUK voor wapen-eisen. Controleer je evasion in het spel.',
-} as const
-
 /** Kosten in meso, voor in een zin; de kosten van een level ronden naar boven af. */
 const formatCost = (meso: number) => (meso === 0 ? 'niets' : `± ${nfInt.format(Math.ceil(meso))} meso`)
 const placeName = (name: string) => name.trim() || 'Naamloze plek'
-
-/** Eén scherm van de flow: buiten beeld is het niet bereikbaar met Tab of een schermlezer. */
-function Panel(props: { active: boolean; collapsed: boolean; children: ComponentChildren }) {
-  return (
-    <div class={`panel${props.collapsed ? ' collapsed' : ''}`} inert={!props.active} aria-hidden={!props.active}>
-      {props.children}
-    </div>
-  )
-}
 
 /** Eén regel onder elke kop: wat dat deel tegen elkaar afweegt. */
 const QUESTION_LEAD = {
@@ -1872,54 +1859,6 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
   )
 }
 
-/** Het advies voor een job die de app nog niet doorrekent: de zin staat één keer bovenaan, elke vraag draagt alleen het label. */
-function NotComputedAdvice(props: { job: Job }) {
-  return (
-    <>
-      <p class="lead">{notComputedText(props.job)}</p>
-      {Object.values(QUESTION_TITLE).map((t) => (
-        <Question key={t} title={t} chip="todo" />
-      ))}
-    </>
-  )
-}
-
-/** Boven het advies: wat het nieuwe level kost, of waarom de app dat niet weet. */
-function AdviceHeader(props: { cost: LevelCost }) {
-  const c = props.cost
-  if (c.kind !== 'cost') return <p class="lead">{noCostReason(c)} De kosten van dit level kan de app dus niet uitrekenen.</p>
-  if (c.meso === null) {
-    return (
-      <p class="lead advice-cost">
-        Lv {c.level}: dit level is op {placeName(c.spotName)} <strong>niet haalbaar</strong> (de plek levert geen EXP op).
-      </p>
-    )
-  }
-  return (
-    <p class="lead advice-cost">
-      Lv {c.level}: dit level kost je <strong>{formatCost(c.meso)}</strong> op {placeName(c.spotName)}.
-    </p>
-  )
-}
-
-/** Een stat in het controlescherm; `was` toont de oude waarde zodra hij veranderd is. */
-function StatRow(props: { label: string; value: string; was: string | undefined; decimal: boolean; onInput: (v: string) => void }) {
-  return (
-    <label class="stat-row">
-      <span class="stat-label">
-        {props.label}
-        {props.was !== undefined && <em class="was">was {props.was}</em>}
-      </span>
-      <input
-        type="number"
-        inputMode={props.decimal ? 'decimal' : 'numeric'}
-        value={props.value}
-        onInput={(e) => props.onInput((e.currentTarget as HTMLInputElement).value)}
-      />
-    </label>
-  )
-}
-
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
@@ -1980,81 +1919,54 @@ export function App() {
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment)), [drafts, profile, equipment])
 
-  // De level-up-flow. De stap staat niet in de opslag (bij herladen begin je thuis); de ongedaan-
-  // maak-gegevens blijven in het geheugen: het profiel van voor de level-up en de beste plek van toen.
-  const [step, setStep] = useState<Step>(0)
-  const [settled, setSettled] = useState<Step>(0)
-  const [undo, setUndo] = useState<{ draft: ProfileDraft; equipment: Equipment } | null>(null)
-  const headings = useRef<(HTMLElement | null)[]>([null, null, null])
-  const moved = useRef(false)
+  // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
+  // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
+  // geheugen: na herladen is Back weer alleen een level terug (#130), want wat je sinds de level-up deed, is dan ook weg.
+  // De ref is voor synchrone reads (Level up en meteen Back vóór een render); de state is voor wat het scherm toont.
+  const [snapshot, setSnapshotState] = useState<LevelUpSnapshot<Equipment> | null>(null)
+  const snapshotRef = useRef<LevelUpSnapshot<Equipment> | null>(null)
+  const setSnapshot = (next: LevelUpSnapshot<Equipment> | null) => {
+    snapshotRef.current = next
+    setSnapshotState(next)
+  }
   // De bevestiging na "Punt zetten", zodat een dubbele tik zichtbaar is.
   const [placed, setPlaced] = useState<string | null>(null)
-
-  // Na het schuiven klapt het vorige scherm in, zodat de pagina niet zo hoog blijft als het hoogste scherm.
-  // Daarna de focus naar de kop van het nieuwe scherm, voor toetsenbord en schermlezer.
-  useEffect(() => {
-    if (!moved.current) return
-    window.scrollTo(0, 0)
-    headings.current[step]?.focus({ preventScroll: true })
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const t = setTimeout(
-      () => {
-        setSettled(step)
-        // Pas nu het scherm thuis klaar is met schuiven: eerder zou het advies midden in de beweging omslaan.
-        if (step === 0) {
-          setUndo(null)
-          setPlaced(null)
-        }
-      },
-      reduce ? 0 : SLIDE_MS,
-    )
-    return () => clearTimeout(t)
-  }, [step])
-  const headingRef = (i: number) => (el: HTMLElement | null) => {
-    headings.current[i] = el
-  }
-  const go = (to: Step) => {
-    moved.current = true
-    setStep(to)
-  }
 
   const levelUp = () => {
     // Eerst een nog niet opgeslagen concept uit het corrigeervak, dan pas rekenen: alles uit de refs, niet uit deze render.
     commitAllEquipment()
     if (applyLevelUp(profileRef.current, job) === profileRef.current) return
     setPlaced(null)
-    setUndo({ draft: profileRef.current, equipment: equipmentRef.current })
+    setSnapshot(takeSnapshot(profileRef.current, equipmentRef.current, job))
     writeProfile((p) => applyLevelUp(p, job))
-    go(1)
-  }
-  const finish = () => go(0)
-  const undoLevelUp = () => {
-    if (undo) {
-      writeProfile(() => undo.draft)
-      writeEquipment(undo.equipment)
-      clearPending()
-    }
-    finish()
+    window.scrollTo(0, 0)
   }
   const applyPoint = (choice: SkillChoice) => {
     writeProfile((p) => applySkillPoint(p, choice.id, job))
     setPlaced(placedText(choice, skillAdvice))
   }
   const levelUpped = applyLevelUp(profileDraft, job)
-  // Zonder verandering (level leeg, onleesbaar of al het hoogste) begint de flow niet.
+  // Zonder verandering (level leeg, onleesbaar of al het hoogste) kun je niet levelen.
   const canLevelUp = levelUpped !== profileDraft
-  // Een level terug: alleen het level, zonder flow (#130).
-  const levelDowned = applyLevelDown(profileDraft)
+  // Back: net gelevelled, dan komt de snapshot terug; anders alleen een level terug (#130).
+  const restore = snapshotApplies(snapshot, profileDraft, job) ? snapshot : null
+  const levelDowned = restore ? restore.draft : applyLevelDown(profileDraft)
   const canLevelDown = levelDowned !== profileDraft
   const levelDown = () => {
     // Net als Level up: eerst een open concept uit het corrigeervak vastleggen.
     commitAllEquipment()
-    writeProfile(applyLevelDown)
+    const snap = snapshotApplies(snapshotRef.current, profileRef.current, job) ? snapshotRef.current : null
+    if (snap) {
+      writeProfile(() => snap.draft)
+      writeEquipment(snap.equipment)
+      clearPending()
+      setSnapshot(null)
+      setPlaced(null)
+    } else {
+      writeProfile(applyLevelDown)
+    }
   }
   const levelText = profileDraft.level.trim()
-  // Wat de level-up zelf aanpaste (niet wat de speler daarna verschuift); zonder undo staan er geen cijfers.
-  const changes = undo ? levelUpChanges(undo.draft, applyLevelUp(undo.draft, job)) : null
-
   // Het profiel bijwerken: de ref loopt voor op de render, zodat een tweede event niets overschrijft.
   const writeProfile = (change: (p: ProfileDraft) => ProfileDraft) => {
     profileDirty.current = true
@@ -2111,6 +2023,8 @@ export function App() {
     if (next === job) return
     commitAllEquipment()
     clearPending()
+    // De snapshot hoort bij de equipment van de vorige job.
+    setSnapshot(null)
     const kept = equipmentForJob(equipmentRef.current, next)
     writeEquipment(kept)
     // Verdwijnt de bronze pijl uit het ammo-slot (andere job), dan rekent een terugkeer niet stilletjes met bronze.
@@ -2140,194 +2054,107 @@ export function App() {
     <>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
-        <div class="flow">
-          <div class="track" style={{ transform: `translateX(-${step * 100}%)` }}>
-            <Panel active={step === 0} collapsed={step !== 0 && settled !== 0}>
-              {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
-              <div class="level-row">
-                {/* De terugknop heet BACK; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
-                <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
-                  Back
-                </button>
-                <h1 class="current-level" tabIndex={-1} ref={headingRef(0)}>
-                  {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
-                </h1>
-                <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
-                  Level up
-                </button>
-              </div>
-              {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
+      {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
+      <div class="level-row">
+        {/* De terugknop heet BACK; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
+        <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
+          Back
+        </button>
+        <h1 class="current-level">
+          {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
+        </h1>
+        <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
+          Level up
+        </button>
+      </div>
+      {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
 
-              {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
-              {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
+      {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
+      {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
 
-              <EquipmentCard
-                job={job}
-                equipment={equipment}
-                pending={pending}
-                helpfulStranger={profileDraft.helpfulStranger === '1'}
-                onHelpfulStranger={changeHelpfulStranger}
-                onPick={pickEquipment}
-                onStatInput={(slot, text) => setPendingFor(slot, text)}
-                onCommit={commitEquipment}
-                onDiscard={(slot) => setPendingFor(slot, undefined)}
-                error={equipError}
-                report={
-                  computed ? (
-                    <>
-                      <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} part />
-                      <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} part />
-                    </>
-                  ) : (
-                    <NotComputed job={job} />
-                  )
-                }
-              />
-              {/* Het rapport van een kaart (CardReport): het advies over wat je op die kaart kiest. */}
-              <SkillsCard
-                job={job}
-                draft={profileDraft}
-                error={skillError}
-                onChange={updateProfile}
-                report={
-                  computed ? (
-                    <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={step === 0 ? placed : null} onApply={applyPoint} part>
-                      <SkillSources job={job} />
-                    </SkillQuestion>
-                  ) : (
-                    <NotComputed job={job} />
-                  )
-                }
-              />
-              <HuntedMobCard
-                result={verdict.ranked[0]}
-                draft={drafts[0]}
-                profile={profile}
-                onPick={pickMob}
-                onChange={(patch) => update(drafts[0].id, patch)}
-                report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
-              />
+      <EquipmentCard
+        job={job}
+        equipment={equipment}
+        pending={pending}
+        helpfulStranger={profileDraft.helpfulStranger === '1'}
+        onHelpfulStranger={changeHelpfulStranger}
+        onPick={pickEquipment}
+        onStatInput={(slot, text) => setPendingFor(slot, text)}
+        onCommit={commitEquipment}
+        onDiscard={(slot) => setPendingFor(slot, undefined)}
+        error={equipError}
+        report={
+          computed ? (
+            <>
+              <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} part />
+              <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} part />
+            </>
+          ) : (
+            <NotComputed job={job} />
+          )
+        }
+      />
+      {/* Het rapport van een kaart (CardReport): het advies over wat je op die kaart kiest. */}
+      <SkillsCard
+        job={job}
+        draft={profileDraft}
+        error={skillError}
+        onChange={updateProfile}
+        report={
+          computed ? (
+            <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} part>
+              <SkillSources job={job} />
+            </SkillQuestion>
+          ) : (
+            <NotComputed job={job} />
+          )
+        }
+      />
+      <HuntedMobCard
+        result={verdict.ranked[0]}
+        draft={drafts[0]}
+        profile={profile}
+        onPick={pickMob}
+        onChange={(patch) => update(drafts[0].id, patch)}
+        report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
+      />
 
-              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
-              <section class="stats-group" aria-label="Stats">
-                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
-              </section>
+      {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
+      <section class="stats-group" aria-label="Stats">
+        <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+        <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+      </section>
 
-              <LevelAdviceCard
-                job={job}
-                computed={computed}
-                cost={cost}
-                clawAdvice={clawAdvice}
-                nextWeapon={nextWeapon}
-                armorAdvice={armorAdvice}
-                equipment={equipment}
-                gender={gender}
-                mobAdvice={mobAdvice}
-                skillAdvice={skillAdvice}
-                placed={step === 0 ? placed : null}
-                onApply={applyPoint}
-              />
+      <LevelAdviceCard
+        job={job}
+        computed={computed}
+        cost={cost}
+        clawAdvice={clawAdvice}
+        nextWeapon={nextWeapon}
+        armorAdvice={armorAdvice}
+        equipment={equipment}
+        gender={gender}
+        mobAdvice={mobAdvice}
+        skillAdvice={skillAdvice}
+        placed={placed}
+        onApply={applyPoint}
+      />
 
-              {computed && (
-                <p class="note">
-                  Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
-                  oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-                  tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-                  Zegt het spel iets anders over je monster, pas zijn info dan aan.
-                </p>
-              )}
+      {computed && (
+        <p class="note">
+          Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
+          oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+          tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+          Zegt het spel iets anders over je monster, pas zijn info dan aan.
+        </p>
+      )}
 
-              <footer class="credit">
-                Spelgegevens:{' '}
-                <a href="https://meowdb.com" target="_blank" rel="noopener noreferrer">
-                  NiaMeowDB (meowdb.com)
-                </a>
-              </footer>
-            </Panel>
-
-            <Panel active={step === 1} collapsed={step !== 1 && settled !== 1}>
-              <h2 tabIndex={-1} ref={headingRef(1)}>
-                Klopt dit met je spel?
-              </h2>
-              <p class="hint">
-                {changes ? `${levelUpSummary(changes)} ` : ''}
-                {LEVEL_UP_HINT[job]}
-              </p>
-              <div class="card stats">
-                {checkFieldsFor(job).map((f) => (
-                  <StatRow
-                    key={f.key}
-                    label={f.label}
-                    value={profileDraft[f.key]}
-                    was={undo && undo.draft[f.key] !== profileDraft[f.key] ? undo.draft[f.key] : undefined}
-                    decimal={!f.integer}
-                    onInput={(v) => updateProfile({ [f.key]: v })}
-                  />
-                ))}
-                <p class="error" aria-live="polite">
-                  {statError}
-                </p>
-              </div>
-              <EquipmentCard
-                job={job}
-                equipment={equipment}
-                was={undo?.equipment}
-                inline
-                hint="Iets geloot of gekocht in je vorige level? Zet het hier meteen goed."
-                pending={pending}
-                helpfulStranger={profileDraft.helpfulStranger === '1'}
-                onHelpfulStranger={changeHelpfulStranger}
-                onPick={pickEquipment}
-                onStatInput={(slot, text) => setPendingFor(slot, text)}
-                onCommit={commitEquipment}
-                onDiscard={(slot) => setPendingFor(slot, undefined)}
-                error={equipError}
-              />
-              <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-              {/* Een concept in het corrigeervak kan hier niet openstaan (de popup blokkeert deze knop); vastleggen is een vangnet. */}
-              <button
-                type="button"
-                class="btn primary"
-                onClick={() => {
-                  commitAllEquipment()
-                  go(2)
-                }}
-                disabled={!parsedProfile}
-              >
-                Alles klopt, toon advies
-              </button>
-              <button type="button" class="btn back" onClick={undoLevelUp}>
-                Level-up ongedaan maken
-              </button>
-            </Panel>
-
-            <Panel active={step === 2} collapsed={step !== 2 && settled !== 2}>
-              <h2 tabIndex={-1} ref={headingRef(2)}>
-                Wat nu?
-              </h2>
-              {computed ? (
-                <>
-                  <AdviceHeader cost={cost} />
-                  <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} />
-                  <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} />
-                  <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
-                  <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={step === 2 ? placed : null} onApply={applyPoint} />
-                  <MobQuestion advice={mobAdvice} cost={cost} />
-                </>
-              ) : (
-                <NotComputedAdvice job={job} />
-              )}
-              <button
-                type="button"
-                class="btn primary"
-                onClick={finish}
-              >
-                Klaar
-              </button>
-            </Panel>
-          </div>
-        </div>
+      <footer class="credit">
+        Spelgegevens:{' '}
+        <a href="https://meowdb.com" target="_blank" rel="noopener noreferrer">
+          NiaMeowDB (meowdb.com)
+        </a>
+      </footer>
       </main>
     </>
   )

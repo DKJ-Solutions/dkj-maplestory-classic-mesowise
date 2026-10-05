@@ -1,15 +1,15 @@
-// De level-up-flow: wat er gebeurt als je in het spel een level omhoog gaat. Puur, zonder UI-import;
-// het scherm toont alleen wat hier uitkomt. De app past het level aan (+1), Max HP (vaste waarde per
-// level), de 5 AP (standaard in LUK) en de accuracy die daaruit volgt; alles met bron in data/thief.ts.
-// Evasion en een andere AP-verdeling (DEX voor je claw) laat de app aan de speler. Een Warrior, Bowman of Magician krijgt level +1,
-// zijn Max HP (data/warrior.ts, data/bowman.ts, data/magician.ts) en de accuracy die het nieuwe level geeft; zijn AP verdeelt hij zelf.
+// De level-up: een snapshot van het huidige level, waarna alles meegaat naar het volgende level (issue #154). Puur, zonder
+// UI-import; het scherm toont alleen wat hier uitkomt. De app past alleen aan wat uit een bronregel volgt: level +1, Max HP
+// (vaste waarde per level, data/thief.ts, data/warrior.ts, data/bowman.ts, data/magician.ts) en het level-deel van de accuracy.
+// De AP en de skillpunten verdeelt de speler zelf: hoeveel er nog te verdelen zijn, staat in apToDistribute en spToDistribute.
+// Evasion, equipment en mob blijven staan tot de speler ze wijzigt; het advies zegt wanneer een wissel goedkoper is.
 import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
-import { AP_PER_LEVEL, baseAccuracy, hpPerLevelFrom } from './data/thief'
+import { apAtLevel, baseAccuracy, hpPerLevelFrom } from './data/thief'
 import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
 import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
-import { DRAFT_FIELDS, draftStatTotal, parseProfile, PROFILE_FIELDS, profileFieldsFor, skillPointsLeft, STAT_FIELDS, statFieldsFor, type ProfileDraft, type ProfileKey } from './profile'
-import { skillsOf, type SkillId } from './skillPoint'
+import { baseApSpent, DRAFT_FIELDS, draftStatTotal, parseProfile, PROFILE_FIELDS, skillPointsLeft, type ProfileDraft } from './profile'
+import { skillPoolUsage, skillsOf, type SkillId } from './skillPoint'
 
 const LEVEL_FIELD = PROFILE_FIELDS.find((f) => f.key === 'level')!
 const LEVEL_MAX = LEVEL_FIELD.max
@@ -32,9 +32,9 @@ const wholeOf = (text: string): number | null => {
 }
 
 /**
- * Wat een level-up bijwerkt voor een job die zijn AP zelf verdeelt (Warrior, Bowman en Magician): zijn eigen Max HP per level en het
- * stat-deel van zijn accuracy (dat van het level afhangt), met `stat` als de stat waaruit dat deel volgt (DEX; bij een Magician INT).
- * De Thief heeft zijn eigen regels in applyLevelUp.
+ * Wat een level-up bijwerkt voor een Warrior, Bowman en Magician: zijn eigen Max HP per level en het stat-deel van zijn
+ * accuracy (dat van het level afhangt), met `stat` als de stat waaruit dat deel volgt (DEX; bij een Magician INT).
+ * De Thief heeft zijn eigen formules in applyLevelUp.
  */
 const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number) => number; accuracy: (stat: number, level: number, luk: number) => number }>> = {
   warrior: { stat: 'dex', hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
@@ -43,12 +43,11 @@ const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number)
 }
 
 /**
- * Het profiel na een level-up: level +1, Max HP + de vaste waarde van die job, de 5 AP in LUK en de
- * accuracy die daarbij hoort (alleen het verschil van het stat-deel, want de accuracy in het profiel is
- * het totaal uit het statvenster). Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
- * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van
- * parseProfile). HP per level en AP in LUK zijn van de Thief: een Warrior of Bowman krijgt zijn eigen HP per level en geen AP,
- * een andere job krijgt alleen level +1 en de speler vult de rest zelf in.
+ * Het profiel na een level-up: level +1, Max HP + de vaste waarde van die job en de accuracy die het nieuwe level geeft
+ * (alleen het verschil van het level-deel, want de accuracy in het profiel is het totaal uit het statvenster). De AP plaatst de
+ * app niet (#154): de speler verdeelt ze zelf. Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
+ * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van parseProfile).
+ * Een job die de app niet doorrekent krijgt alleen level +1.
  */
 export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const level = numberOf(draft.level)
@@ -56,14 +55,13 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const next: ProfileDraft = { ...draft, level: String(level + 1) }
   if (!isComputed(job)) return next
   const hp = wholeOf(draft.hp)
-  // De accuracy rekent met je totale stats (base AP plus items); de nieuwe AP gaan in je base.
+  // De accuracy rekent met je totale stats (base AP plus items).
   const dex = draftStatTotal(draft, 'dex')
   const luk = draftStatTotal(draft, 'luk')
-  const base = wholeOf(draft.luk)
   const accuracy = wholeOf(draft.accuracy)
   const own = OWN_AP[job]
   if (own) {
-    // De AP laat de app aan de speler (de hoofdstat voor schade, de accuracy-stat en wapen-eisen); alleen het level telt in de accuracy.
+    // Alleen het level telt in de accuracy; de AP verdeelt de speler.
     const stat = draftStatTotal(draft, own.stat)
     if (hp !== null) next.hp = String(hp + own.hpFrom(level))
     if (stat !== null && luk !== null && accuracy !== null) {
@@ -72,16 +70,15 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
     return next
   }
   if (hp !== null) next.hp = String(hp + hpPerLevelFrom(level))
-  if (base !== null) next.luk = String(base + AP_PER_LEVEL.amount)
   if (dex !== null && luk !== null && accuracy !== null) {
-    next.accuracy = String(accuracy + baseAccuracy(dex, level + 1, luk + AP_PER_LEVEL.amount) - baseAccuracy(dex, level, luk))
+    next.accuracy = String(accuracy + baseAccuracy(dex, level + 1, luk) - baseAccuracy(dex, level, luk))
   }
   return next
 }
 
 /**
- * Het profiel een level terug (issue #130): alleen level -1. Je stats blijven staan, want de app weet niet wat je sinds de
- * level-up met je AP hebt gedaan; wie een level-up net heeft gedaan, maakt die ongedaan op het controlescherm. Is het level geen
+ * Het profiel een level terug (issue #130): alleen level -1. Je stats blijven staan, want de app weet niet wat je met je AP
+ * hebt gedaan; wie net een level-up heeft gedaan, herstelt in plaats daarvan zijn snapshot (zie snapshotApplies). Is het level geen
  * heel getal of al het laagste, dan blijft het profiel zoals het was.
  */
 export function applyLevelDown(draft: ProfileDraft): ProfileDraft {
@@ -90,63 +87,43 @@ export function applyLevelDown(draft: ProfileDraft): ProfileDraft {
   return { ...draft, level: String(level - 1) }
 }
 
-/** Wat applyLevelUp werkelijk veranderde: de HP-stijging (null als HP gelijk bleef), en of LUK en accuracy zijn aangepast. */
-export interface LevelUpChanges {
-  hp: number | null
-  luk: boolean
-  accuracy: boolean
+/**
+ * Hoeveel base AP je nog te verdelen hebt: wat je level geeft (apAtLevel) min wat in STR, DEX, INT en LUK staat. Alleen een
+ * getal als er nog AP over zijn; zonder geldig level, of als er al evenveel of meer staat, is er niets te tonen (null).
+ */
+export function apToDistribute(draft: ProfileDraft): number | null {
+  const level = wholeOf(draft.level)
+  if (level === null || level < LEVEL_MIN || level > LEVEL_MAX) return null
+  const left = apAtLevel(level) - baseApSpent(draft)
+  return left > 0 ? left : null
 }
 
-/** Vergelijkt het profiel van voor en na een level-up; een veld dat gelijk bleef telt niet als aangepast. */
-export function levelUpChanges(before: ProfileDraft, after: ProfileDraft): LevelUpChanges {
-  const hpBefore = wholeOf(before.hp)
-  const hpAfter = wholeOf(after.hp)
-  return {
-    hp: hpBefore !== null && hpAfter !== null && hpAfter !== hpBefore ? hpAfter - hpBefore : null,
-    luk: before.luk !== after.luk,
-    accuracy: before.accuracy !== after.accuracy,
-  }
+/** Hoeveel skillpunten van de pot van je 1e job je nog te zetten hebt; null als er geen over zijn of het level niet klopt. */
+export function spToDistribute(draft: ProfileDraft, job: Job): number | null {
+  const { spent, cap } = skillPoolUsage(draft, job, 'job')
+  return cap !== null && cap - spent > 0 ? cap - spent : null
 }
 
-/** De zin "Bijgewerkt: level +1, Max HP +22, 5 AP in LUK en je accuracy." met alleen wat werkelijk veranderde. */
-export function levelUpSummary(changes: LevelUpChanges): string {
-  const items = [
-    'level +1',
-    ...(changes.hp !== null ? [`Max HP +${changes.hp}`] : []),
-    ...(changes.luk ? [`${AP_PER_LEVEL.amount} AP in LUK`] : []),
-    ...(changes.accuracy ? ['je accuracy'] : []),
-  ]
-  const last = items.pop()!
-  return `Bijgewerkt: ${items.length ? `${items.join(', ')} en ${last}` : last}.`
+/** De stand van een level-up-snapshot: het profiel en de equipment van het level eronder, met het level waarnaar je ging. */
+export interface LevelUpSnapshot<E> {
+  job: Job
+  /** Het level van het profiel ná de level-up; Back herstelt alleen als je nog op dat level staat. */
+  toLevel: string
+  draft: ProfileDraft
+  equipment: E
 }
 
-/** De velden die een speler na een level-up het vaakst moet bijwerken, bovenaan; daarna de rest. */
-const AFTER_LEVEL_UP: readonly ProfileKey[] = ['level', 'hp', 'luk', 'dex', 'str', 'accuracy', 'avoid']
+/** Een snapshot van vlak voor de level-up (het profiel dat er nu staat, nog op het oude level). */
+export const takeSnapshot = <E>(draft: ProfileDraft, equipment: E, job: Job): LevelUpSnapshot<E> => ({
+  job,
+  toLevel: applyLevelUp(draft, job).level,
+  draft,
+  equipment,
+})
 
-/** De stats in de volgorde voor het controlescherm (de velden die alleen ter info zijn, staan er niet in); je skills staan in hun eigen kaart. */
-export const CHECK_FIELDS = [
-  ...AFTER_LEVEL_UP.map((k) => PROFILE_FIELDS.find((f) => f.key === k)!),
-  ...STAT_FIELDS.filter((f) => !AFTER_LEVEL_UP.includes(f.key) && !f.informative),
-]
-
-/** Bij een Warrior staat STR (zijn hoofdstat) vóór LUK, en de weapon multiplier staat bij de rest; bij een Bowman staat DEX (zijn hoofdstat) voor STR; bij een Magician INT (zijn hoofdstat) vóór LUK. */
-const OWN_AFTER_LEVEL_UP: Partial<Record<Job, readonly ProfileKey[]>> = {
-  warrior: ['level', 'hp', 'str', 'dex', 'accuracy', 'avoid'],
-  bowman: ['level', 'hp', 'dex', 'str', 'accuracy', 'avoid'],
-  // Zijn M.ATT en WDEF volgen uit de equipment; de overige velden staan erachter.
-  magician: ['level', 'hp', 'int', 'luk', 'dex', 'accuracy', 'avoid'],
-}
-
-/** De velden van het controlescherm voor deze job (zonder de Thief-skills bij een andere job). */
-export const checkFieldsFor = (job: Job) => {
-  const order = OWN_AFTER_LEVEL_UP[job]
-  if (order) {
-    const first = order.map((k) => DRAFT_FIELDS.find((f) => f.key === k)!)
-    return [...first, ...statFieldsFor(job).filter((f) => !order.includes(f.key) && !f.informative)]
-  }
-  const shown = profileFieldsFor(job)
-  return CHECK_FIELDS.filter((f) => shown.includes(f))
-}
+/** Of Back deze snapshot mag herstellen: zelfde job en je staat nog op het level waar de level-up je bracht. */
+export const snapshotApplies = <E>(snap: LevelUpSnapshot<E> | null, draft: ProfileDraft, job: Job): snap is LevelUpSnapshot<E> =>
+  snap !== null && snap.job === job && snap.toLevel === draft.level.trim()
 
 /**
  * Het profiel met één punt erbij in deze skill (dezelfde stap als het skillpuntadvies rekent). Is het

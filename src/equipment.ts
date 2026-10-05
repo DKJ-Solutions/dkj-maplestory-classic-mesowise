@@ -268,19 +268,6 @@ export function wornName(entry: EquipEntry): string | null {
   return entry.pick
 }
 
-/** Hoe een keuze heet in de "was"-badge; een eigen stat bij een catalogusitem staat erbij. */
-export function entryLabel(slot: EquipSlot, entry: EquipEntry): string {
-  if (entry.pick === UNKNOWN) return 'nog niet ingevuld'
-  if (entry.pick === NONE) return 'niets'
-  if (entry.pick === OTHER) return entry.name.trim() || 'Eigen item'
-  const own = statOverride(slot, entry)
-  return own === undefined ? entry.pick : `${entry.pick} (aangepast: ${own})`
-}
-
-/** Of dit slot anders is dan in `before` (voor de "was"-badge). Bij elke keuze telt een andere stat; de naam alleen bij een eigen item. */
-export const entryChanged = (a: EquipEntry, b: EquipEntry): boolean =>
-  a.pick !== b.pick || (a.pick !== UNKNOWN && a.stat.trim() !== b.stat.trim()) || (a.pick === OTHER && a.name.trim() !== b.name.trim())
-
 const isArrow = (name: string): boolean => NPC_ARROWS.some((a) => a.name === name) || isBronzeArrow(name)
 
 /** Het profiel met de pijlkeuze zoals de equipment ze toont: bronze alleen als de bronze pijl in het ammo-slot staat. */
