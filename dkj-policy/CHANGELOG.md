@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**51 / 88 minor entries** <!-- pending-tally -->
+**52 / 89 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/145-skill-horizon · 20261005-134656Z
+
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+The skill-point advice now weighs a point over 5 levels, your current level plus the 4 after it, instead of the current
+level alone. Each of those levels is calculated at that level, so a skill that saves little now but more once the level
+difference with the monster shifts can win. The Skill card says over which levels it counts ("van lv 10 tot en met lv
+14"), and says so when the EXP table (up to lv 30) cuts that horizon short.
+
+**Score:** 3
+
+#### Pull Request
+
+Skill points: weigh a skill's saving over the coming 5 levels
+
+[PR #162](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/162)
+
+---
 
 ### DEPLOY: app/155-default-profile-ap · 20261005-133943Z
 
