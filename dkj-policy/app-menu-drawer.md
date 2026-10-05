@@ -50,6 +50,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): a chosen job card is headed "Character", with the job and gender ("Warrior (m)") as a line under it
 - [x] Dave (October 5, 2026): in the menu the job sits without a card around it (no `.card` class, so no border); on the home screen it stays a card
 - [x] Dave (October 5, 2026): in the menu the pencil lines up right under the close cross
+- [x] Dave (October 5, 2026): the job pencil looks exactly like every other pencil in the app (`.equip-edit`: light fill, border, same icon and size), checked in the preview: its right edge sits on the close cross's
 
 ### TEST
 
