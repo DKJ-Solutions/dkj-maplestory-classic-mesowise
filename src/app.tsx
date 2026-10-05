@@ -1483,9 +1483,12 @@ function HuntedMobCard(props: {
   const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
   const chosen = choice !== null && choice !== (mob?.name ?? '') ? MOBS.find((m) => m.name === choice) : undefined
+  // Opslaan sluit de popup, net als bij de andere popups (Dave, 5 oktober 2026); de focus gaat terug naar de kop.
   const save = () => {
     if (chosen) props.onPick(chosen.name)
     setChoice(null)
+    setOpen(false)
+    requestAnimationFrame(() => head.current?.focus())
   }
   const close = () => {
     setChoice(null)

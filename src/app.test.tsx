@@ -163,11 +163,13 @@ const openHomeSkills = () => {
 }
 const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip bekijken' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
-/** Een mob kiezen in de open Monster-popup en hem met Opslaan vastleggen. */
+/** De open Monster-popup. */
+const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
+/** Een mob kiezen in de open Monster-popup en hem met Opslaan vastleggen; Opslaan sluit de popup, dus hij gaat weer open. */
 const chooseMob = (name: string) => {
-  const dialog = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
-  fireEvent.change(within(dialog).getByLabelText('De mob die je het meest killt'), { target: { value: name } })
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Opslaan' }))
+  fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: name } })
+  fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
 }
 
 beforeEach(() => {
@@ -778,12 +780,11 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
-    const select = within(dialog).getByLabelText('De mob die je het meest killt') as HTMLSelectElement
     chooseMob('Pig')
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig', monster: 'Pig' }])
     chooseMob('Slime')
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime', monster: 'Slime' }])
-    expect(select.value).toBe('Slime')
+    expect((within(mobDialog()).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
     expect(headTitle('Monster')).toBe('Monster')
   })
 
@@ -847,7 +848,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   // Dave, 5 oktober 2026: de mobkeuze telt pas na Opslaan; sluiten zonder opslaan houdt de vorige mob.
-  it('legt een gekozen mob pas vast met Opslaan, en sluiten gooit de keuze weg', () => {
+  it('legt een gekozen mob pas vast met Opslaan, dat de popup sluit; sluiten zonder opslaan gooit de keuze weg', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     chooseMob('Pig')
     const dialog = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
@@ -864,9 +865,16 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('WDEF')).queryByRole('button', { name: 'WDEF wijzigen' })).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
-    const again = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
-    expect((within(again).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
+    expect((within(mobDialog()).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
+    // Opslaan legt de mob vast en sluit de popup (Dave, 5 oktober 2026).
+    fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: 'Slime' } })
+    fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
+    expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
+    expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime' }])
+    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    const again = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
+    expect((within(again).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {

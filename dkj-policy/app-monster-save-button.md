@@ -41,18 +41,18 @@
 
 ### CREATE
 
-- [x] Monster popup: the mob select is a draft; Opslaan (always shown, disabled until another mob is chosen) commits it, closing discards it
+- [x] Monster popup: the mob select is a draft; Opslaan (always shown, disabled until another mob is chosen) commits it and closes the popup, closing without it discards it
 - [x] While a draft mob is shown, its database stats are read-only (corrections apply after Opslaan, since a new mob resets them)
 
 ### TEST
 
-- [x] app.test.tsx: existing mob tests save via Opslaan; new test for draft, disabled button and discard on close (213 green)
+- [x] app.test.tsx: existing mob tests save via Opslaan; new test for draft, disabled button and discard on close and that Opslaan closes the popup (1514 green)
 - [x] Lint gate clean
 - [ ] Dave looks at the popup on his phone before the merge (visible result)
 
 ### DEPLOY: app/monster-save-button
 
-Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, like the other popups, and closing the popup keeps the mob you had.
+Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had.
 
 **Score:** 2
 
