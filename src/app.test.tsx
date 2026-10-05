@@ -479,15 +479,44 @@ describe('equipment: de popup achter het potlood', () => {
     expect(profileFields().clawWatk).toBe('33')
   })
 
-  it('gooit het concept weg met ✕ (Sluiten zonder opslaan)', () => {
+  // Dave, 5 oktober 2026: zodra er iets gewijzigd is, wordt het kruisje een vinkje dat opslaat; Opslaan onderin blijft.
+  it('maakt van ✕ een vinkje dat opslaat zodra het concept afwijkt', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    expect(h.d.getByRole('button', { name: 'Sluiten zonder opslaan' })).toBeTruthy()
+    expect(h.d.queryByRole('button', { name: 'Opslaan en sluiten' })).toBeNull()
+    const field = h.input()
+    h.type('31')
+    // Het vak blijft hetzelfde element: wisselen de knoppen, dan houdt het zijn focus en kun je verder typen.
+    expect(h.input()).toBe(field)
+    expect(h.d.queryByRole('button', { name: 'Sluiten zonder opslaan' })).toBeNull()
+    fireEvent.click(h.d.getByRole('button', { name: 'Opslaan en sluiten' }))
+    expect(profileFields().clawWatk).toBe('31')
+    expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
+  })
+
+  // Dave, 5 oktober 2026: naast het vinkje een kruisje Annuleren, dat de wijziging weggooit.
+  it('gooit het concept weg met Annuleren naast het vinkje', () => {
+    fillIgor()
+    const h = openDialog(cards()[0], 'Weapon', 'ATT')
+    expect(h.d.queryByRole('button', { name: 'Annuleren' })).toBeNull()
+    h.type('31')
+    fireEvent.click(h.d.getByRole('button', { name: 'Annuleren' }))
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    expect(slots().claw.stat).toBe('')
+    expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
+    // een nieuwe popup begint weer bij de toegepaste stand
+    expect(openDialog(cards()[0], 'Weapon', 'ATT').input().value).toBe(String(IGOR.watk))
+  })
+
+  it('zet het vinkje terug naar ✕ als het concept weer gelijk is aan wat er staat', () => {
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     h.type('31')
+    h.type(String(IGOR.watk))
     h.close()
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
-    expect(slots().claw.stat).toBe('')
-    // een nieuwe popup begint weer bij de toegepaste stand
-    expect(openDialog(cards()[0], 'Weapon', 'ATT').input().value).toBe(String(IGOR.watk))
+    expect(rowOf(cards()[0], 'Weapon').querySelector('dialog')).toBeNull()
   })
 
   it('gooit het concept weg met Escape', () => {
@@ -761,7 +790,8 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     const h = openAbility('LUK')
     h.typeExtra('77')
-    h.close()
+    // Met een wijziging is het kruisje een vinkje; weggooien gaat met Escape (of een tik naast de popup).
+    fireEvent(statLine('LUK').querySelector('dialog')!, new Event('cancel', { cancelable: true }))
     expect(extraShown('LUK')).toBe('3')
     expect(statLine('LUK').querySelector('dialog')).toBeNull()
   })
@@ -863,7 +893,9 @@ describe('bewaren na elke wijziging', () => {
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
     expect(statLine('WDEF').querySelector('.equip-value')!.getAttribute('aria-label')).toBe('WDEF 10')
     expect(within(statLine('WDEF')).queryByRole('button', { name: 'WDEF wijzigen' })).toBeNull()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+    // Met een gekozen mob is het kruisje een vinkje, met Annuleren ernaast dat de keuze weggooit.
+    expect(within(dialog).queryByRole('button', { name: 'Sluiten' })).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Annuleren' }))
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     expect((within(mobDialog()).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
@@ -872,9 +904,15 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
     expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime' }])
+    // Het vinkje rechtsboven doet hetzelfde als Opslaan onderin.
+    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
+    fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan en sluiten' }))
+    expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
+    expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     const again = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
-    expect((within(again).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
+    expect((within(again).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
