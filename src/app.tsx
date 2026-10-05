@@ -1,5 +1,5 @@
-import type { ComponentChildren, Ref, RefObject } from 'preact'
-import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
+import { createContext, type ComponentChildren, type Ref, type RefObject } from 'preact'
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid, type RankResult } from './calc/rankSpots'
 import { bestVerdict } from './best'
@@ -55,6 +55,9 @@ function NotComputed(props: { job: Job }) {
   return <p class="hint">{notComputedText(props.job)}</p>
 }
 
+/** Sluit de popup of het paneel waar iets in staat, met dezelfde beweging als het kruisje; buiten een popup null. */
+const DialogClose = createContext<(() => void) | null>(null)
+
 /**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
@@ -73,49 +76,57 @@ function JobCard(props: {
   // Met het potlood open is een klik een concept; Opslaan legt job en geslacht samen vast, het potlood dicht gooit het
   // concept weg (Dave, 4 oktober 2026). De eerste keuze van een job of geslacht geldt meteen, zoals altijd.
   const [draft, setDraft] = useState<{ job: Job; gender: Gender | null } | null>(null)
-  const editing = draft !== null
+  const closeDialog = useContext(DialogClose)
+  // In het menu staan job en geslacht meteen open, zonder potlood (Dave, 5 oktober 2026): een andere keuze is dan een
+  // concept tot Opslaan, zoals met het potlood open op het beginscherm.
+  const open = draft ?? (props.plain && chosen ? { job, gender } : null)
+  const editing = open !== null
   // De kaart staat soms twee keer in beeld (op het beginscherm en in Instellingen), dus elke kop krijgt een eigen id.
   const titleId = useId()
   const genderTitleId = useId()
   const choices = jobChoices(chosen && !editing)
-  const pickJob = (j: Job) => (editing ? setDraft({ ...draft, job: j }) : props.onChange(j))
-  const pickGender = (g: Gender) => (editing ? setDraft({ ...draft, gender: g }) : props.onGender(g))
-  const dirty = editing && (draft.job !== job || draft.gender !== gender)
+  const pickJob = (j: Job) => (editing ? setDraft({ ...open, job: j }) : props.onChange(j))
+  const pickGender = (g: Gender) => (editing ? setDraft({ ...open, gender: g }) : props.onGender(g))
+  const dirty = editing && (open.job !== job || open.gender !== gender)
   const save = () => {
-    if (!draft) return
-    if (draft.job !== job) props.onChange(draft.job)
-    if (draft.gender !== null && draft.gender !== gender) props.onGender(draft.gender)
+    if (!open) return
+    if (open.job !== job) props.onChange(open.job)
+    if (open.gender !== null && open.gender !== gender) props.onGender(open.gender)
     setDraft(null)
+    // In het menu schuift het paneel na Opslaan weer weg (Dave, 5 oktober 2026).
+    if (props.plain) closeDialog?.()
   }
-  const shownJob = draft?.job ?? job
-  const shownGender = editing ? draft.gender : gender
+  const shownJob = open?.job ?? job
+  const shownGender = editing ? open.gender : gender
   const body = (
     <>
       <div class="job-head">
-        {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
-        {/* In het menu is het geen kaart, dus ook geen kop en geen kaarticoon (Dave, 5 oktober 2026). */}
         {props.plain ? (
-          <span id={titleId} class="job-title">{chosen && !editing ? 'Character' : 'Job:'}</span>
+          // In het menu is het geen kaart: geen kop, geen kaarticoon en geen potlood, alleen de vraag (Dave, 5 oktober 2026).
+          <span id={titleId} class="job-title">Job:</span>
         ) : (
-          <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
-        )}
-        {chosen && (
-          <button
-            type="button"
-            class="job-edit"
-            aria-label={editing ? 'Job en geslacht niet wijzigen' : 'Job en geslacht wijzigen'}
-            aria-pressed={editing}
-            onClick={() => setDraft(editing ? null : { job, gender })}
-          >
-            {/* Open: een kruis, want een klik sluit en gooit het concept weg (Dave, 4 oktober 2026); dicht: het potlood. */}
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              {editing ? (
-                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              ) : (
-                <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              )}
-            </svg>
-          </button>
+          <>
+            {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
+            <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
+            {chosen && (
+              <button
+                type="button"
+                class="job-edit"
+                aria-label={editing ? 'Job en geslacht niet wijzigen' : 'Job en geslacht wijzigen'}
+                aria-pressed={editing}
+                onClick={() => setDraft(editing ? null : { job, gender })}
+              >
+                {/* Open: een kruis, want een klik sluit en gooit het concept weg (Dave, 4 oktober 2026); dicht: het potlood. */}
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  {editing ? (
+                    <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  ) : (
+                    <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  )}
+                </svg>
+              </button>
+            )}
+          </>
         )}
       </div>
       {choices.length > 0 && (
@@ -1173,7 +1184,7 @@ function StatDialog(props: {
           )}
         </svg>
       </button>
-      {props.children}
+      <DialogClose.Provider value={cancel}>{props.children}</DialogClose.Provider>
       </div>
     </dialog>
   )

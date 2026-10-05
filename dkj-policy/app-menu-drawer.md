@@ -56,6 +56,7 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] Dave (October 5, 2026): in the menu the job is a list item (`ul.menu-list > li.job`), its title "Character" a plain label instead of an `h2`; the home-screen card keeps its `h2`
 - [x] Dave (October 5, 2026): with the close cross borderless, the pencil is centred under it (3px in from the right edge) instead of edge-aligned
 - [x] Dave (October 5, 2026): in the menu "Job:" and "Gender:" share one style (both plain `.job-title` labels)
+- [x] Dave (October 5, 2026): in the menu the row with "Character" and the pencil is gone; Job and Gender are open straight away, a different pick is a draft until Opslaan, and Opslaan slides the panel shut (closing without it discards the draft). The home-screen card keeps its pencil
 - [x] Dave (October 5, 2026): the panel's head row is a header as tall as the top bar, with a line under it across the full width; the close cross is centred in it, without a border
 
 ### TEST
@@ -68,8 +69,8 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 
 The settings menu is no longer a popup in the middle of the screen: it slides in from the right edge as a
 full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
-swipe springs back, and scrolling up and down inside it still works. Once you have chosen a job, its card
-is headed "Character"; in the menu it sits without a card around it, under a header with a line.
+swipe springs back, and scrolling up and down inside it still works. In the menu your job and gender are
+right there to change, under a header with a line; Opslaan saves them and slides the panel shut.
 
 **Score:** 2
 
