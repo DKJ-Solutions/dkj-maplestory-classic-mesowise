@@ -217,8 +217,8 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
  * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): een tik op de kop toont de inhoud in een popup.
  * Het oog rechts zegt dat er iets te bekijken is; de kaart zelf klapt niet meer open.
  */
-function CardHead(props: { head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; children: ComponentChildren }) {
-  return (
+function CardHead(props: { head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
+  const button = (
     <button type="button" class="spot-head" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} onClick={props.onOpen}>
       {props.children}
       <svg class="card-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -226,6 +226,46 @@ function CardHead(props: { head: Ref<HTMLButtonElement>; open: boolean; onOpen: 
         <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
       </svg>
     </button>
+  )
+  // Met een rapport staat zijn knop naast het oog: een eigen knop, want een knop mag niet in een knop.
+  return props.report ? (
+    <div class="card-head">
+      {button}
+      {props.report}
+    </div>
+  ) : (
+    button
+  )
+}
+
+/**
+ * Het rapport van een kaart (Dave, 5 oktober 2026): een icoon naast het oog dat het uitgebreide advies over die kaart
+ * in een popup toont. Alleen bij een kaart waar je iets kiest (Equip, Skillpoints, Monster); Ability points en
+ * Total stats zijn vaste feiten en krijgen er geen.
+ */
+function CardReport(props: { title: string; children: ComponentChildren }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  return (
+    <>
+      <button ref={button} type="button" class="card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
+        {/* Een klembord met regels: het rapport */}
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3" />
+          <path d="M9 3h6v3H9Z" />
+          <path d="M9 11h6M9 15h6" />
+        </svg>
+      </button>
+      {open && (
+        <StatDialog title={`Report: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+          <div class="report-body">{props.children}</div>
+        </StatDialog>
+      )}
+    </>
   )
 }
 
@@ -995,6 +1035,8 @@ function EquipmentCard(props: {
   onDiscard: (slot: EquipSlot) => void
   /** De melding als weapon attack of WDEF in het profiel ongeldig is. */
   error: string | null
+  /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
+  report?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
@@ -1024,7 +1066,7 @@ function EquipmentCard(props: {
       {props.inline ? (
         <div class="spot-head static">{name}</div>
       ) : (
-        <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
+        <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
           {name}
         </CardHead>
       )}
@@ -1237,7 +1279,7 @@ interface SkillLinePart {
  * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent (de Magician) ziet
  * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
  */
-function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void; report?: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const shown = profileFieldsFor(props.job).map((f) => f.key)
@@ -1252,7 +1294,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
   }
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
+      <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
@@ -1356,6 +1398,8 @@ function HuntedMobCard(props: {
   profile: Profile | null
   onPick: (name: string) => void
   onChange: (patch: Partial<SpotDraft>) => void
+  /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
+  report?: ComponentChildren
 }) {
   const { result, draft, profile } = props
   const [open, setOpen] = useState(false)
@@ -1368,7 +1412,7 @@ function HuntedMobCard(props: {
   const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
-      <CardHead head={head} open={open} onOpen={() => setOpen(true)}>
+      <CardHead head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
         <span class="spot-name with-icon">
           <CardIcon name="target" />
           {title}
@@ -1690,9 +1734,12 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   const title = QUESTION_TITLE.skill
   const winner = a.kind === 'advice' ? a.choices.find((c) => c.id === a.winner) : undefined
   const heading = useRef<HTMLHeadingElement>(null)
-  // Verdwijnt de knop na het zetten van het punt, dan zou de focus op de pagina vallen: naar de vraag.
+  // Verdwijnt de knop na het zetten van het punt, dan zou de focus op de pagina vallen: naar de vraag. Alleen als het
+  // punt nu gezet wordt, niet bij het openen van het rapport terwijl er al een punt gezet is (dan blijft de focus bij de popup).
+  const placedBefore = useRef(props.placed)
   useEffect(() => {
-    if (props.placed && !winner) heading.current?.focus({ preventScroll: true })
+    if (props.placed && props.placed !== placedBefore.current && !winner) heading.current?.focus({ preventScroll: true })
+    placedBefore.current = props.placed
   }, [props.placed, winner])
   const placed = props.placed && (
     <p class="hint" aria-live="polite">
@@ -2104,14 +2151,14 @@ export function App() {
               </div>
               {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
 
-              {computed && cost.kind === 'cost' && (
-                <p class="summary">
-                  Op <strong>{cost.spotName}</strong> · lv {cost.level}: {cost.meso === null ? 'niet haalbaar' : `kost ${formatCost(cost.meso)}`}
-                </p>
-              )}
-
               {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
               {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
+
+              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats", bovenaan, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bij elkaar staan. Zonder zichtbare kop en met wat extra ruimte eronder (Dave, 5 oktober 2026); de naam staat in aria-label. */}
+              <section class="stats-group" aria-label="Stats">
+                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+              </section>
 
               <EquipmentCard
                 job={job}
@@ -2124,21 +2171,40 @@ export function App() {
                 onCommit={commitEquipment}
                 onDiscard={(slot) => setPendingFor(slot, undefined)}
                 error={equipError}
+                report={
+                  computed ? (
+                    <>
+                      <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} part />
+                      <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} part />
+                    </>
+                  ) : (
+                    <NotComputed job={job} />
+                  )
+                }
               />
-
-              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok onder de kop "Stats". De kaarten zelf hebben geen kop (alleen een knop), dus de h2 is de kop van het blok. */}
-              <section class="stats-group" aria-labelledby="stats-heading">
-                <h2 id="stats-heading">Stats</h2>
-                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
-              </section>
-              <SkillsCard job={job} draft={profileDraft} error={skillError} onChange={updateProfile} />
+              {/* Het rapport van een kaart (CardReport): het advies over wat je op die kaart kiest. */}
+              <SkillsCard
+                job={job}
+                draft={profileDraft}
+                error={skillError}
+                onChange={updateProfile}
+                report={
+                  computed ? (
+                    <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={step === 0 ? placed : null} onApply={applyPoint} part>
+                      <SkillSources job={job} />
+                    </SkillQuestion>
+                  ) : (
+                    <NotComputed job={job} />
+                  )
+                }
+              />
               <HuntedMobCard
                 result={verdict.ranked[0]}
                 draft={drafts[0]}
                 profile={profile}
                 onPick={pickMob}
                 onChange={(patch) => update(drafts[0].id, patch)}
+                report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
               />
 
               <LevelAdviceCard
