@@ -42,7 +42,7 @@
 ### CREATE
 
 - [x] Monster popup: the mob select is a draft; Opslaan (always shown, disabled until another mob is chosen) commits it and closes the popup, closing without it discards it
-- [x] Every popup with a draft (Monster, a stat, an ability point, a skill, an equipment correction): once something changed, the top-right ✕ becomes a ✓ that saves and closes, with a ✕ Annuleren beside it that discards; Escape and a tap outside still discard
+- [x] Every popup with a draft (Monster, a stat, an ability point, a skill, an equipment correction): once something changed, the top-right ✕ becomes a ✓ that saves and closes, with a red undo arrow Annuleren beside it that discards (distinct from the grey close cross); Escape and a tap outside still discard
 - [x] The buttons keep their place in the tree, so the input below is not rebuilt and keeps its focus while typing
 - [x] While a draft mob is shown, its database stats are read-only (corrections apply after Opslaan, since a new mob resets them)
 
@@ -54,7 +54,7 @@
 
 ### DEPLOY: app/monster-save-button
 
-Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had. In every popup with a change pending, the close button turns into a save tick with a cancel cross beside it.
+Choosing a mob in the Monster popup no longer applies at once: the choice is a draft until you tap Opslaan, which closes the popup like the other popups do, and closing the popup keeps the mob you had. In every popup with a change pending, the close button turns into a save tick with a red undo arrow beside it to cancel.
 
 **Score:** 2
 

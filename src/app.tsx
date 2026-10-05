@@ -1030,7 +1030,7 @@ function StatDialog(props: {
   onCancel: () => void
   /**
    * Alleen als er iets gewijzigd is: dan wordt het kruisje een vinkje dat opslaat en sluit, naast Opslaan onderin, met
-   * links ervan een kruisje Annuleren dat de wijziging weggooit (Dave, 5 oktober 2026). Escape en een tik naast de popup
+   * links ervan een rode terugdraai-pijl Annuleren die de wijziging weggooit (Dave, 5 oktober 2026). Escape en een tik naast de popup
    * gooien het concept ook weg.
    */
   onSave?: () => void
@@ -1067,8 +1067,9 @@ function StatDialog(props: {
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt. */}
       {props.onSave && (
+        // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
         <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={props.onCancel}>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
       )}
       <button
