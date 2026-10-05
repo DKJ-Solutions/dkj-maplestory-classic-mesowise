@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BRONZE_ARROW, PLAIN_ARROW } from './bowmanGear'
 import { isSkillKey } from './data/skills'
 import { apAtLevel, SUBI } from './data/thief'
-import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, skillPointsLeft, skillPointsSpent, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft, STARTER_PROFILE, baseApSpent, draftStatTotal } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, loadProfile, mainStatOf, parseProfile, shortfall, skillPointsLeft, skillPointsSpent, PROFILE_FIELDS, profileFieldsFor, PROFILE_KEY, saveProfile, statFieldsFor, toCharacter, totalAttack, totalMagicAttack, type ProfileDraft, baseApSpent, draftStatTotal } from './profile'
 
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -75,7 +75,7 @@ describe('parseProfile en het geslacht (issue #55)', () => {
   })
 
   it('geeft bij een fout nog steeds de melding, ook met een geslacht', () => {
-    expect(parseProfile({ ...DEFAULT_PROFILE, luk: '' }, 'thief', 'male')).toEqual({ error: 'Vul bij je karakter "LUK" in.', key: 'luk' })
+    expect(parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '' }, 'thief', 'male')).toEqual({ error: 'Vul bij je karakter "LUK" in.', key: 'luk' })
   })
 })
 
@@ -105,22 +105,22 @@ describe('toCharacter', () => {
 describe('loadProfile en saveProfile', () => {
   it('geven heen en terug hetzelfde profiel', () => {
     const storage = fakeStorage()
-    const draft = { ...DEFAULT_PROFILE, luk: '55', level: '' }
+    const draft = { ...DEFAULT_PROFILE, lukExtra: '0', luk: '55', level: '' }
     expect(saveProfile(storage, draft)).toBe(true)
     expect(loadProfile(storage)).toEqual(draft)
   })
 
   it('geven zonder of met kapotte opslag het beginprofiel', () => {
-    expect(loadProfile(null)).toEqual(STARTER_PROFILE)
-    expect(loadProfile(fakeStorage())).toEqual(STARTER_PROFILE)
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: '{kapot' }))).toEqual(STARTER_PROFILE)
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 2, fields: { luk: '9' } }) }))).toEqual(STARTER_PROFILE)
+    expect(loadProfile(null)).toEqual(DEFAULT_PROFILE)
+    expect(loadProfile(fakeStorage())).toEqual(DEFAULT_PROFILE)
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: '{kapot' }))).toEqual(DEFAULT_PROFILE)
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: JSON.stringify({ version: 2, fields: { luk: '9' } }) }))).toEqual(DEFAULT_PROFILE)
   })
 
-  it('verdeelt in het beginprofiel precies de base AP van level 10, met de rest van de LUK als extra AP van items', () => {
-    expect(baseApSpent(STARTER_PROFILE)).toBe(apAtLevel(10))
-    expect(draftStatTotal(STARTER_PROFILE, 'luk')).toBe(Number(DEFAULT_PROFILE.luk))
-    expect(STARTER_PROFILE.lukExtra).toBe('3')
+  it('verdeelt in het voorbeeldprofiel precies de base AP van level 10, met de rest van de LUK als extra AP van items (issue #155)', () => {
+    expect(baseApSpent(DEFAULT_PROFILE)).toBe(apAtLevel(10))
+    expect(draftStatTotal(DEFAULT_PROFILE, 'luk')).toBe(40)
+    expect(DEFAULT_PROFILE.lukExtra).toBe('3')
   })
 
   it('geeft een bewaard profiel van vóór de extra AP geen extra AP van items: je stats blijven wat je invulde', () => {
@@ -137,7 +137,7 @@ describe('loadProfile en saveProfile', () => {
 
   it('geeft een bewaard profiel van vóór INT (#82) INT 4, zonder dat de rest verandert', () => {
     const raw = JSON.stringify({ version: 1, fields: { str: '50', luk: '60' } })
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, str: '50', luk: '60', int: '4' })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', str: '50', luk: '60', int: '4' })
   })
 
   it('rekent de Attack uit je equipment: bij een Thief claw plus stars, bij een Warrior alleen het wapen (#82)', () => {
@@ -282,7 +282,7 @@ describe('profileFieldsFor', () => {
 })
 
 describe('Warrior-profiel: job, weaponMult en skills', () => {
-  const warriorDraft: ProfileDraft = { ...DEFAULT_PROFILE, level: '30', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', powerStrike: '20' }
+  const warriorDraft: ProfileDraft = { ...DEFAULT_PROFILE, lukExtra: '0', level: '30', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', powerStrike: '20' }
   const parseW = (over: Partial<ProfileDraft> = {}) => parseProfile({ ...warriorDraft, ...over }, 'warrior')
 
   it('zet de job in het profiel (Thief standaard) en leest de Warrior-velden als getallen', () => {

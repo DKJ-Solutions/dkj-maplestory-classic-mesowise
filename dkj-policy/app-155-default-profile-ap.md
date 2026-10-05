@@ -39,19 +39,36 @@
 
 ### PLAN
 
+#### Finding (#155), verified
+
+`DEFAULT_PROFILE` carried 4 + 25 + 4 + 40 = 73 base AP at level 10, where `apAtLevel(10)` = 70. A fresh app already
+started from `STARTER_PROFILE` (37 base LUK + 3 extra), so the visible symptom the issue names was gone; what remained
+was two starting profiles, one of them impossible, with the impossible one used as the fallback for missing fields and
+as the base of the tests.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `DEFAULT_PROFILE` becomes the legal profile (LUK 37 base + 3 extra, total LUK still 40); `STARTER_PROFILE` is folded into it
+- [x] `loadProfile` keeps the extra-AP fields at 0 for a saved profile that predates them, so its typed stats stay its totals
+- [x] Tests that override LUK on the default profile pin `lukExtra: '0'`, which is what they got before
 
 ### TEST
 
+- [x] Full suite green (1500 tests), typecheck green; the fresh app's profile is identical to the old `STARTER_PROFILE`
+
 ### DEPLOY: app/155-default-profile-ap
 
-**Score:**
+The example profile in the code now follows the AP rule; the old impossible copy is gone and the tests build on the
+legal one. No repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Nothing changes on screen: a new player already started with this profile. It prevents a failure that has not
+happened yet: a saved profile missing its LUK field would have been filled with 40 base LUK, 3 more than level 10 allows.
+
+**Score:** 1
 
 #### Pull Request
 

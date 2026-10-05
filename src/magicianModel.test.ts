@@ -62,6 +62,7 @@ const mDraft: ProfileDraft = {
   int: '100',
   dex: '20',
   luk: '30',
+  lukExtra: '0',
   clawWatk: '55',
   accuracy: '80',
   avoid: '20',

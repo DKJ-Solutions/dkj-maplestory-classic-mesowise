@@ -15,7 +15,7 @@ describe('expectedStat', () => {
   })
 
   it('volgt DEX, LUK en level', () => {
-    const draft = { ...DEFAULT_PROFILE, level: '20', dex: '30', luk: '90' }
+    const draft = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', dex: '30', luk: '90' }
     // floor((1,2 x 30 + 2 x 20 + 0,6 x 90) x 0,25 + 15) = floor(47,5) = 47
     expect(expectedStat('accuracy', draft, 'thief')).toBe(47)
   })
@@ -36,7 +36,7 @@ describe('expectedStat', () => {
 
   it('heeft geen verwachting als een benodigd veld geen geheel getal is', () => {
     expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, dex: '' }, 'thief')).toBeUndefined()
-    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, luk: '4.5' }, 'thief')).toBeUndefined()
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, lukExtra: '0', luk: '4.5' }, 'thief')).toBeUndefined()
   })
 
   it('rekent de Warrior-accuracy met zijn eigen formule', () => {
@@ -46,7 +46,7 @@ describe('expectedStat', () => {
   })
 
   it('volgt bij de Warrior het voorbeeld uit de bron: DEX 30, level 30 en LUK 4 geven 49 accuracy', () => {
-    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, dex: '30', level: '30', luk: '4' }, 'warrior')).toBe(49)
+    expect(expectedStat('accuracy', { ...DEFAULT_PROFILE, lukExtra: '0', dex: '30', level: '30', luk: '4' }, 'warrior')).toBe(49)
   })
 
   it('telt Precise Strikes mee bij de Warrior-accuracy, en Nimble Body niet', () => {

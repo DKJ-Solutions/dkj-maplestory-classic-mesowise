@@ -166,6 +166,7 @@ export const ABILITY_KEYS: readonly ProfileKey[] = ['str', 'dex', 'int', 'luk']
 
 /** Per stat het veld met wat je items extra geven; het veld van de stat zelf is je base AP. */
 export const EXTRA_KEY = { str: 'strExtra', dex: 'dexExtra', int: 'intExtra', luk: 'lukExtra' } as const satisfies Record<Stat, ProfileKey>
+const isExtraKey = (k: ProfileKey): boolean => Object.values<ProfileKey>(EXTRA_KEY).includes(k)
 
 /** Je totale stat uit het concept: base AP plus wat je items geven (leeg telt als 0). Null als de base geen heel getal is. */
 export function draftStatTotal(d: ProfileDraft, stat: Stat): number | null {
@@ -181,20 +182,24 @@ export const baseApSpent = (d: ProfileDraft): number => (['str', 'dex', 'int', '
  * popup van hun stat staat) die een job invult, voor de kaart "Je karakter".
  */
 export const statFieldsFor = (job: Job): readonly ProfileField[] =>
-  profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.some((a) => a.key === f.key) && !Object.values<ProfileKey>(EXTRA_KEY).includes(f.key))
+  profileFieldsFor(job).filter((f) => !isSkillKey(f.key) && !AMMO_FIELDS.some((a) => a.key === f.key) && !isExtraKey(f.key))
 
-/** Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. */
+/**
+ * Een voorbeeld-Thief op lv 10 (de stats uit het model in issue #15); vul je eigen karakter in. De AP zijn verdeeld
+ * zoals het spel ze geeft: base 4 + 25 + 4 + 37 = 70, precies wat level 10 geeft (apAtLevel), en de 3 LUK daarboven
+ * komen van items (issue #155).
+ */
 export const DEFAULT_PROFILE: ProfileDraft = {
   level: '10',
   hp: '444',
   str: '4',
   dex: '25',
   int: '4',
-  luk: '40',
+  luk: '37',
   strExtra: '0',
   dexExtra: '0',
   intExtra: '0',
-  lukExtra: '0',
+  lukExtra: '3',
   clawWatk: '10',
   accuracy: '33',
   avoid: '23',
@@ -354,14 +359,8 @@ export function toCharacter(p: Profile): Character {
 }
 
 /** Het bewaarde profiel; een ontbrekend of onbruikbaar veld krijgt de standaardwaarde. */
-/**
- * Het profiel waarmee een nieuwe speler begint: het voorbeeldprofiel, maar met de AP verdeeld zoals het spel ze geeft.
- * Base AP 4 + 25 + 4 + 37 = 70, precies wat level 10 geeft (apAtLevel); de 3 LUK daarboven komen van items.
- */
-export const STARTER_PROFILE: ProfileDraft = { ...DEFAULT_PROFILE, luk: '37', lukExtra: '3' }
-
 export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
-  const out = { ...STARTER_PROFILE }
+  const out = { ...DEFAULT_PROFILE }
   try {
     const raw = storage?.getItem(PROFILE_KEY)
     if (!raw) return out
@@ -371,8 +370,9 @@ export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
     if (typeof fields !== 'object' || fields === null) return out
     for (const f of DRAFT_FIELDS) {
       const v = (fields as Record<string, unknown>)[f.key]
-      // Een veld dat een bewaard profiel niet heeft, krijgt de waarde van het voorbeeldprofiel (zonder extra AP van items).
-      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : DEFAULT_PROFILE[f.key]
+      // Een veld dat een bewaard profiel niet heeft, krijgt de waarde van het voorbeeldprofiel, behalve de extra AP van
+      // items: een profiel van vóór die velden typte zijn totale stats, dus daar komt niets bij.
+      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : isExtraKey(f.key) ? '0' : DEFAULT_PROFILE[f.key]
     }
     return out
   } catch {

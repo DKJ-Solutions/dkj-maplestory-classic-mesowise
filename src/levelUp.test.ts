@@ -46,7 +46,7 @@ describe('applyLevelUp', () => {
   })
 
   it('plaatst zelf geen AP: STR, DEX, INT en LUK blijven staan (#154)', () => {
-    const next = applyLevelUp({ ...DEFAULT_PROFILE, luk: '40', str: '4' }, 'thief')
+    const next = applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '40', str: '4' }, 'thief')
     expect([next.str, next.dex, next.int, next.luk]).toEqual(['4', DEFAULT_PROFILE.dex, DEFAULT_PROFILE.int, '40'])
   })
 
@@ -63,28 +63,28 @@ describe('applyLevelUp', () => {
 
   it('geeft +1 of +0 accuracy: het level geeft 0,5, de floor rondt af (zonder AP-verschuiving)', () => {
     // dex 0, luk 5: level 10 geeft floor(830/40) = 20, level 11 geeft floor(850/40) = 21 => +1.
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: '0', luk: '5', accuracy: '20' }, 'thief').accuracy).toBe('21')
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', dex: '0', luk: '5', accuracy: '20' }, 'thief').accuracy).toBe('21')
     // dex 0, luk 9: level 10 geeft floor(854/40) = 21, level 11 geeft floor(874/40) = 21 => +0.
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: '0', luk: '9', accuracy: '21' }, 'thief').accuracy).toBe('21')
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', dex: '0', luk: '9', accuracy: '21' }, 'thief').accuracy).toBe('21')
   })
 
   it('rekent de floor in gehele getallen: +1 bij luk 213, +0 bij luk 228 (dex 6, level 10)', () => {
     // luk 213: floor(2150/40) = 53 -> floor(2170/40) = 54 => +1. luk 228: floor(2240/40) = 56 -> floor(2260/40) = 56 => +0.
-    const base = { ...DEFAULT_PROFILE, dex: '6', level: '10', accuracy: '100' }
+    const base = { ...DEFAULT_PROFILE, lukExtra: '0', dex: '6', level: '10', accuracy: '100' }
     expect(applyLevelUp({ ...base, luk: '213' }, 'thief').accuracy).toBe('101')
     expect(applyLevelUp({ ...base, luk: '228' }, 'thief').accuracy).toBe('100')
   })
 
   it('past hp en accuracy alleen aan als het hele getallen zijn; een decimaal blijft zoals getypt', () => {
     expect(applyLevelUp({ ...DEFAULT_PROFILE, hp: '444.5' }, 'thief').hp).toBe('444.5')
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, luk: '40.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', luk: '40.5', accuracy: '33' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '40.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', luk: '40.5', accuracy: '33' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, accuracy: '33.5' }, 'thief').accuracy).toBe('33.5')
     expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: '25.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', dex: '25.5', accuracy: '33' })
   })
 
   it('laat een veld dat geen getal is zoals getypt, en past de rest wel aan', () => {
     expect(applyLevelUp({ ...DEFAULT_PROFILE, hp: 'abc' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: 'abc', accuracy: '34' })
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, luk: '' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', luk: '', accuracy: '33' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', luk: '', accuracy: '33' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, accuracy: 'x' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', accuracy: 'x' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: 'Infinity' }, 'thief')).toEqual({
       ...DEFAULT_PROFILE,
@@ -176,7 +176,7 @@ describe('applyLevelUp per job', () => {
 
 describe('een Warrior: applyLevelUp', () => {
   // De Warrior krijgt vanaf level 10 +28 HP per level, daaronder +16 (de HP/MP-gids), en geen AP: die verdeelt hij zelf.
-  const w = { ...DEFAULT_PROFILE, level: '10', hp: '444', str: '60', dex: '25', luk: '4', accuracy: '33' }
+  const w = { ...DEFAULT_PROFILE, lukExtra: '0', level: '10', hp: '444', str: '60', dex: '25', luk: '4', accuracy: '33' }
 
   it('geeft van level 10 naar 11 +28 HP, en laat STR, DEX en LUK staan (geen AP-verdeling)', () => {
     const out = applyLevelUp(w, 'warrior')
@@ -206,7 +206,7 @@ describe('een Warrior: applyLevelUp', () => {
   })
 
   it('gebruikt de Warrior-accuracy en niet die van de Thief', () => {
-    const same = { ...DEFAULT_PROFILE, level: '10', luk: '40', dex: '25', accuracy: '33' }
+    const same = { ...DEFAULT_PROFILE, lukExtra: '0', level: '10', luk: '40', dex: '25', accuracy: '33' }
     expect(applyLevelUp(same, 'warrior').accuracy).toBe(String(33 + warriorAccuracy(25, 11, 40) - warriorAccuracy(25, 10, 40)))
     expect(applyLevelUp(same, 'warrior').luk).toBe('40')
     expect(applyLevelUp(same, 'thief').luk).toBe('40')
@@ -324,7 +324,7 @@ describe('applyLevelUp met extra AP van items', () => {
 describe('apToDistribute (#154)', () => {
   it('geeft wat je level aan base AP geeft min wat er in STR, DEX, INT en LUK staat', () => {
     // Level 10 geeft 70; na een level-up is dat 75.
-    const at10 = { ...DEFAULT_PROFILE, str: '4', dex: '25', int: '4', luk: '37' }
+    const at10 = { ...DEFAULT_PROFILE, lukExtra: '0', str: '4', dex: '25', int: '4', luk: '37' }
     expect(apAtLevel(10)).toBe(70)
     expect(apToDistribute(at10)).toBeNull()
     expect(apToDistribute(applyLevelUp(at10, 'thief'))).toBe(5)
@@ -333,11 +333,11 @@ describe('apToDistribute (#154)', () => {
 
   it('toont niets bij te veel AP, een leeg of onleesbaar level, of een level buiten 1 tot 200', () => {
     expect(apToDistribute({ ...DEFAULT_PROFILE, str: '90' })).toBeNull()
-    for (const level of ['', 'x', '10.5', '0', '201']) expect(apToDistribute({ ...DEFAULT_PROFILE, level, str: '4', luk: '4' }), level).toBeNull()
+    for (const level of ['', 'x', '10.5', '0', '201']) expect(apToDistribute({ ...DEFAULT_PROFILE, lukExtra: '0', level, str: '4', luk: '4' }), level).toBeNull()
   })
 
   it('telt een onleesbare stat als 0', () => {
-    const d = { ...DEFAULT_PROFILE, level: '2', str: '4', dex: '4', int: '4', luk: 'x' }
+    const d = { ...DEFAULT_PROFILE, lukExtra: '0', level: '2', str: '4', dex: '4', int: '4', luk: 'x' }
     expect(apToDistribute(d)).toBe(apAtLevel(2) - 12)
   })
 })
@@ -374,7 +374,7 @@ describe('de level-up-snapshot (#154)', () => {
 })
 
 describe('applyLevelUp: HP en accuracy per job over de drempel en de floor (#154)', () => {
-  const base = { ...DEFAULT_PROFILE, hp: '100', accuracy: '100', dex: '25', int: '30', luk: '40' }
+  const base = { ...DEFAULT_PROFILE, lukExtra: '0', hp: '100', accuracy: '100', dex: '25', int: '30', luk: '40' }
   const accuracyOf: Record<Job, (stat: number, level: number, luk: number) => number> = {
     thief: baseAccuracy,
     warrior: warriorAccuracy,
@@ -472,7 +472,7 @@ describe('apToDistribute: randgevallen (#154)', () => {
   })
 
   it('telt een negatief, decimaal of leeg veld als 0 (zoals baseApSpent)', () => {
-    const at = (over: Partial<typeof DEFAULT_PROFILE>) => apToDistribute({ ...DEFAULT_PROFILE, level: '2', str: '4', dex: '4', int: '4', luk: '4', ...over })
+    const at = (over: Partial<typeof DEFAULT_PROFILE>) => apToDistribute({ ...DEFAULT_PROFILE, lukExtra: '0', level: '2', str: '4', dex: '4', int: '4', luk: '4', ...over })
     const full = apAtLevel(2) - 16
     expect(at({ str: '-5' })).toBe(full + 4)
     expect(at({ str: '4.5' })).toBe(full + 4)
@@ -520,7 +520,7 @@ describe('snapshotApplies: na een jobwissel of een handmatig aangepast level (#1
   })
 
   it('geldt nog als het level terug is op het nieuwe level, ook met spaties en met andere stats', () => {
-    expect(snapshotApplies(snap, { ...DEFAULT_PROFILE, level: ' 11 ', luk: '99' }, 'thief')).toBe(true)
+    expect(snapshotApplies(snap, { ...DEFAULT_PROFILE, lukExtra: '0', level: ' 11 ', luk: '99' }, 'thief')).toBe(true)
   })
 
   it('geldt niet na een andere job, ook niet op het juiste level', () => {
