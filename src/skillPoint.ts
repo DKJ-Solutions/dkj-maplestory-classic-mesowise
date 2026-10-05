@@ -1,13 +1,18 @@
 // Waar je skillpunt de meeste mesos bespaart (Dave, 3 oktober 2026, issue #26). Een punt kost niets,
 // dus de vraag is niet óf, maar in welke skill: per skill die het mob-model kan doorrekenen het profiel
-// met één punt erbij, en de mesokosten van je level op de beste plek. Puur, zonder UI-import.
+// met één punt erbij, en de mesokosten van de horizon (hieronder) op de beste plek. Puur, zonder UI-import.
 // Staat er nog een punt open, dan is "niet zetten" geen antwoord: het punt moet ergens heen, ook als geen skill iets bespaart.
+// Een punt blijft voor altijd staan, dus de besparing telt over een vaste horizon van 5 levels: je huidige plus de 4 erna
+// (Dave, 4 oktober 2026, issue #145), opgeteld zoals horizonCost dat voor de upgrades doet. Elk level van de horizon wordt op dat
+// level doorgerekend (het mob-model kent het levelverschil met het monster), met je andere stats van nu: zo kan een punt dat nu
+// weinig scheelt later een klap per kill schelen. Niet langer, want elk level geeft 3 nieuwe punten die een voorsprong alsnog
+// kunnen inhalen; eindigt de EXP-tabel eerder, dan stopt de horizon daar.
 // De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
 // Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
 // sinds issue #141, Max HP Increase en de buffs sinds issue #139).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
-import { expToNextLevel } from './data/expTable'
+import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import { ALL_SKILLS, THIEF_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import {
@@ -30,12 +35,24 @@ import {
   PRECISE_STRIKES_LEVELS,
 } from './data/warrior'
 import type { Job } from './job'
-import { mesoCostAt } from './mesoCostAt'
+import { horizonCost } from './horizonCost'
+import { bestExpPerMeso } from './mesoCostAt'
 import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { maxHpAfterPoint, maxHpBeforePoint } from './skillEffects'
 import type { SpotDraft } from './spotDraft'
 
 const LEVEL_FIELD = STAT_FIELDS.find((f) => f.key === 'level')!
+
+/** Over hoeveel levels een skillpunt telt: je huidige plus de 4 erna (issue #145). */
+export const SKILL_HORIZON_LEVELS = 5
+
+const LAST_TABLE_LEVEL = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
+
+/** De horizon van een skillpunt: van je level tot 4 levels verder, hoogstens tot het eind van de EXP-tabel. */
+export function skillHorizon(level: number): { from: number; to: number; truncated: boolean } {
+  const end = level + SKILL_HORIZON_LEVELS - 1
+  return { from: level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
+}
 
 /** De skills die het mob-model kan doorrekenen. */
 export type SkillId = Extract<
@@ -307,10 +324,14 @@ export function stepSkill(text: string, delta: -1 | 1, max: number): string {
   return String(Math.min(Math.max(from + delta, 0), max))
 }
 
-/** De mesokosten van je level op de beste plek; undefined als er niets uit te rekenen valt. */
+/**
+ * De mesokosten van de horizon (skillHorizon): per level de kosten op de beste plek van dat level, met je andere stats van nu.
+ * Undefined als er op een level niets uit te rekenen valt, null als een level onhaalbaar is.
+ */
 function mesoCost(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions): number | null | undefined {
-  const expToNext = expToNextLevel(profile.level)
-  return expToNext === undefined ? undefined : mesoCostAt(drafts, profile, a, expToNext)
+  if (expToNextLevel(profile.level) === undefined) return undefined
+  const { from, to } = skillHorizon(profile.level)
+  return horizonCost(from, to, (level) => bestExpPerMeso(drafts, { ...profile, level }, a))
 }
 
 export interface SkillChoice {
@@ -318,22 +339,26 @@ export interface SkillChoice {
   name: string
   /** Het skill-level na het punt. */
   to: number
-  /** De mesokosten van je level met het punt erbij, of null als dat niet uit te rekenen valt. */
+  /** De mesokosten van de horizon met het punt erbij, of null als dat niet uit te rekenen valt. */
   meso: number | null
-  /** Hoeveel meso het punt dit level bespaart (0 of negatief: niets), of null zonder kosten. */
+  /** Hoeveel meso het punt over de horizon bespaart (0 of negatief: niets), of null zonder kosten. */
   saving: number | null
 }
 
-/** Zonder punt over: zit je verdeling goed, of had één punt in skill B in plaats van in skill A de kosten van het level verlaagd? */
+/** Zonder punt over: zit je verdeling goed, of had één punt in skill B in plaats van in skill A de kosten van de horizon verlaagd? */
 export type SkillMove = { from: string; to: string; saving: number }
 export type SkillPlacement = { kind: 'good'; /** De beste andere verplaatsing van één punt (besparing 0 of negatief), als de app er een kon doorrekenen. */ closest: SkillMove | null } | { kind: 'better'; from: string; to: string; saving: number }
 
 export type SkillPointAdvice =
-  /** De kosten van je level zijn niet uit te rekenen (geen profiel, buiten de tabel, geen "Beste"). */
+  /** De kosten van de horizon zijn niet uit te rekenen (geen profiel, buiten de tabel, geen "Beste"). */
   | { kind: 'none' }
   | {
       kind: 'advice'
-      /** De mesokosten van je level zonder het punt. */
+      /** Het eerste en het laatste level van de horizon, en of de EXP-tabel hem afkapt (skillHorizon). */
+      from: number
+      to: number
+      truncated: boolean
+      /** De mesokosten van de horizon zonder het punt. */
       base: number
       /** Per skill die nog omhoog kan, van meeste naar minste besparing. */
       choices: SkillChoice[]
@@ -432,5 +457,5 @@ export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile 
     return typeof mine === 'number' && typeof best === 'number' && best - mine <= 0.5
   })
   const maxed = skillsOf(profile.job).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
-  return { kind: 'advice', ...main, maxed, robust }
+  return { kind: 'advice', ...skillHorizon(profile.level), ...main, maxed, robust }
 }

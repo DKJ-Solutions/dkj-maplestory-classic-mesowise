@@ -19,6 +19,15 @@ describe('horizonCost', () => {
     expect(horizonCost(15, 17, 0)).toBeNull()
   })
 
+  it('neemt met een functie per level de EXP per meso van dat level (#145)', () => {
+    expect(horizonCost(15, 16, (level) => (level === 15 ? 2 : 4))).toBeCloseTo(7_050 / 2 + 8_840 / 4, 9)
+  })
+
+  it('is undefined als de functie op een level geen EXP per meso kent, en null als een level onhaalbaar is', () => {
+    expect(horizonCost(15, 17, (level) => (level === 16 ? undefined : 2))).toBeUndefined()
+    expect(horizonCost(15, 17, (level) => (level === 16 ? 0 : 2))).toBeNull()
+  })
+
   it('is 0 bij een lege horizon (from na to)', () => {
     expect(horizonCost(16, 15, 2)).toBe(0)
   })

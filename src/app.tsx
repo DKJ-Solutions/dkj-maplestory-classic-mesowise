@@ -15,7 +15,7 @@ import { NPC_CLAWS } from './data/claws'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
-import { notModelled, skillLevels, skillPoolUsage, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
+import { notModelled, SKILL_HORIZON_LEVELS, skillLevels, skillPoolUsage, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
@@ -1759,12 +1759,18 @@ const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   magicClaw: { noun: 'cast' },
 }
 
+/** De horizon van het skillpunt-advies in woorden (#145): "van lv 10 tot en met lv 14", of "op lv 30" als hij één level lang is. */
+const skillSpan = (a: { from: number; to: number }) => (a.from === a.to ? `op lv ${a.from}` : `van lv ${a.from} tot en met lv ${a.to}`)
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
 /** De bevestiging na "Punt zetten": waarom dit de beste keuze was, naast de tweede keus, uit het advies van vóór het punt. */
 function placedText(choice: SkillChoice, advice: SkillPointAdvice): string {
   const saving = choice.saving as number // de winnaar heeft altijd een besparing
+  // Een winnaar komt altijd uit een advies van soort 'advice'; zonder horizon blijft de zin zonder levels.
+  const span = advice.kind === 'advice' ? ` ${skillSpan(advice)}` : ''
   const why =
     saving > 0
-      ? ` De beste keuze: bespaart ${formatMeso(saving)} op dit level.`
+      ? ` De beste keuze: bespaart ${formatMeso(saving)}${span}.`
       : saving === 0
         ? ' De beste keuze: geen skill bespaart hier meso, deze scheelt niets.'
         : ` De beste keuze: geen skill bespaart hier meso, deze kost het minst extra (${formatMeso(-saving)}).`
@@ -1779,7 +1785,7 @@ function placedText(choice: SkillChoice, advice: SkillPointAdvice): string {
   return `${choice.name} → ${choice.to} gezet.${why}${versus}${caution}`
 }
 
-/** Wat één skillpunt op dit level doet, in een korte regel voor de lijst met keuzes. */
+/** Wat één skillpunt over de horizon doet, in een korte regel voor de lijst met keuzes. */
 const skillOptionText = (saving: number | null) =>
   saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
 
@@ -1803,7 +1809,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown" lead={QUESTION_LEAD.skill} headingRef={heading} part={props.part}>
-        <p class="hint">{noCostReason(props.cost)} Zonder de kosten van dit level kan de app geen skillpunt afwegen.</p>
+        <p class="hint">{noCostReason(props.cost)} Zonder de kosten van je level kan de app geen skillpunt afwegen.</p>
         {placed}
         {props.children}
       </Question>
@@ -1814,6 +1820,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   const placement = a.kind === 'advice' ? a.placement : null
   const attack = winner ? ATTACK_SKILLS[winner.id] : undefined
   const mpFrom = winner && attack ? mpPerUse(winner.id, winner.to - 1) : 0
+  const span = skillSpan(a)
   return (
     <Question title={title} chip={winner || placement?.kind === 'good' ? 'yes' : 'no'} chipText={winner ? `${winner.name} → ${winner.to}` : placement ? (placement.kind === 'good' ? 'Goed gezet' : `Beter in ${placement.to}`) : a.left === 0 ? 'Geen punt over' : 'Geen keuze'} lead={QUESTION_LEAD.skill} headingRef={heading} part={props.part}>
       {winner ? (
@@ -1822,12 +1829,14 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
             Zet je skillpunt in {winner.name} (→ {winner.to}).
           </h4>
           {saving > 0 ? (
-            <p class="hint">Bespaart {formatMeso(saving)} op dit level.</p>
+            <p class="hint">
+              Bespaart {formatMeso(saving)} {span}.
+            </p>
           ) : saving === 0 ? (
-            <p class="hint">Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.</p>
+            <p class="hint">{capitalize(span)} bespaart geen enkele skill meso, maar je punt moet toch ergens heen.</p>
           ) : (
             <p class="hint">
-              Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen. Deze kost het minst extra: {formatMeso(-saving)}.
+              {capitalize(span)} bespaart geen enkele skill meso, maar je punt moet toch ergens heen. Deze kost het minst extra: {formatMeso(-saving)}.
             </p>
           )}
           {options.length > 1 && (
@@ -1851,23 +1860,24 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
         </>
       ) : (
         <>
-          <h4 class="verdict">{placement ? (placement.kind === 'good' ? 'Je skillpunten staan goed.' : `Een punt in ${placement.to} in plaats van in ${placement.from} had dit level ${formatMeso(placement.saving)} bespaard.`) : a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : a.choices.length === 0 ? 'Er is geen skill meer om je punt in te zetten.' : 'De app kan niet doorrekenen wat je punt voor deze skills doet.'}</h4>
+          <h4 class="verdict">{placement ? (placement.kind === 'good' ? 'Je skillpunten staan goed.' : `Een punt in ${placement.to} in plaats van in ${placement.from} zou ${span} ${formatMeso(placement.saving)} besparen.`) : a.left === 0 ? 'Je hebt op dit level geen skillpunten meer over.' : a.choices.length === 0 ? 'Er is geen skill meer om je punt in te zetten.' : 'De app kan niet doorrekenen wat je punt voor deze skills doet.'}</h4>
           {a.left > 0 && a.choices.length === 0 && <p class="hint">Alle skills die de app kan doorrekenen, staan al op het maximum.</p>}
           {placement?.kind === 'good' && (
             <>
-              <p class="hint">Geen enkel punt in een andere skill was dit level goedkoper.</p>
+              <p class="hint">Geen enkel punt in een andere skill zou {span} goedkoper zijn.</p>
               {placement.closest && (
                 <p class="hint">
                   {placement.closest.saving < 0
-                    ? `Het dichtstbij: een punt in ${placement.closest.to} in plaats van in ${placement.closest.from} had dit level ${formatMeso(-placement.closest.saving)} extra gekost.`
+                    ? `Het dichtstbij: een punt in ${placement.closest.to} in plaats van in ${placement.closest.from} zou ${span} ${formatMeso(-placement.closest.saving)} extra kosten.`
                     : `Een punt in ${placement.closest.to} in plaats van in ${placement.closest.from} scheelt evenveel; je keuze is even goed.`}
                 </p>
               )}
             </>
           )}
-          {a.choices.length > 0 && a.base === 0 && <p class="hint">Dit level is al gratis.</p>}
+          {a.choices.length > 0 && a.base === 0 && <p class="hint">{a.from === a.to ? 'Dit level is' : 'Deze levels zijn'} al gratis.</p>}
         </>
       )}
+      {a.truncated && <p class="hint">Een punt telt over {SKILL_HORIZON_LEVELS} levels, maar de EXP-tabel loopt tot lv {a.to}, dus verder rekent de app niet.</p>}
       {placed}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>

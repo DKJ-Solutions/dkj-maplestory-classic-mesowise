@@ -1843,7 +1843,7 @@ describe('een Bowman in de app', () => {
       const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
       expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
-      expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+      expect(section.textContent).toContain('Van lv 21 tot en met lv 25 bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
       // Eén keuze: geen lijst met opties.
       expect(section.querySelector('.skill-options')).toBeNull()
       expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
@@ -2203,7 +2203,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('bowman', { ...bowman, arrowBlow: '1' }, 'Ribbon Pig')
     expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
-    expect(section.textContent).toContain('Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
+    expect(section.textContent).toContain('Van lv 21 tot en met lv 25 bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
     expect(section.textContent).not.toContain('Bespaart ±')
     // Gelijkspel op 0 is robuust: geen "Hangt af van de aannames".
     expect(section.textContent).not.toContain('Hangt af van de aannames')
@@ -2216,7 +2216,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('bowman', { ...bowman, arrowBlow: '20' }, 'Ribbon Pig')
     expect(section.querySelector('.chip')!.textContent).toBe('Focus → 1')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Focus (→ 1).')
-    expect(section.textContent).toMatch(/Op dit level bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
+    expect(section.textContent).toMatch(/Van lv 21 tot en met lv 25 bespaart geen enkele skill meso, maar je punt moet toch ergens heen\. Deze kost het minst extra: ± [\d.]+ meso\./)
     expect(section.textContent).not.toContain('Geen van de skills')
     expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
   })
@@ -2244,7 +2244,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     const section = skillSection('warrior', w, 'Snail')
     expect(section.querySelector('.chip')!.textContent).toBe('Improved HP Recovery → 4')
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Improved HP Recovery (→ 4).')
-    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso op dit level\./)
+    expect(section.textContent).toMatch(/Bespaart ± [\d.]+ meso van lv 21 tot en met lv 25\./)
     const l = lines(section)
     expect(l).toHaveLength(5)
     expect(l[0]).toMatch(/^Improved HP Recovery → 4: bespaart ± [\d.]+ meso$/)
@@ -2262,7 +2262,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
   it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
     const w = { ...DEFAULT_PROFILE, lukExtra: '0', level: '20', hp: '800', str: '90', dex: '20', luk: '4', clawWatk: '40', weaponMult: '1.8', attackMs: '750', accuracy: '40', avoid: '10', wdef: '60', powerStrike: '1', preciseStrikes: '0', improvedHpRecovery: '3', maxHpIncrease: '3' }
     const text = placedHint(skillSection('warrior', w, 'Snail'))
-    expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso op dit level\./)
+    expect(text).toMatch(/^Improved HP Recovery → 4 gezet\. De beste keuze: bespaart ± [\d.]+ meso van lv 21 tot en met lv 25\./)
     // De tweede keuze (Power Strike → 2, scheelt niets) staat er als eigen zin achter.
     expect(text).toContain(' De tweede keuze, Power Strike → 2, scheelt niets.')
   })
@@ -2494,8 +2494,8 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
 
   it('noemt onder "Goed gezet" de beste andere verdeling met de extra kosten, als die iets kost', () => {
     const part = skillPart({ level: '10', luckySeven: '0', nimbleBody: '1' })
-    expect(part.textContent).toContain('Geen enkel punt in een andere skill was dit level goedkoper.')
-    expect(part.textContent).toMatch(/Het dichtstbij: een punt in Lucky Seven in plaats van in Nimble Body had dit level ± [\d.]+ meso extra gekost\./)
+    expect(part.textContent).toContain('Geen enkel punt in een andere skill zou van lv 10 tot en met lv 14 goedkoper zijn.')
+    expect(part.textContent).toMatch(/Het dichtstbij: een punt in Lucky Seven in plaats van in Nimble Body zou van lv 10 tot en met lv 14 ± [\d.]+ meso extra kosten\./)
     expect(part.textContent).not.toContain('scheelt evenveel')
   })
 
@@ -2505,8 +2505,16 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     const chip = part.querySelector('.chip')!
     expect(chip.textContent).toBe('Beter in Nimble Body')
     expect(chip.classList.contains('no')).toBe(true)
-    expect(part.querySelector('.verdict')!.textContent).toMatch(/^Een punt in Nimble Body in plaats van in Lucky Seven had dit level ± [\d.]+ meso bespaard\.$/)
+    expect(part.querySelector('.verdict')!.textContent).toMatch(/^Een punt in Nimble Body in plaats van in Lucky Seven zou van lv 10 tot en met lv 14 ± [\d.]+ meso besparen\.$/)
     expect(within(part).queryByRole('button', { name: 'Punt zetten' })).toBeNull()
+  })
+
+  it('telt een skillpunt over 5 levels en zegt het als de EXP-tabel die horizon afkapt (#145)', () => {
+    const early = skillPart({ level: '10', luckySeven: '0', nimbleBody: '1' })
+    expect(early.textContent).not.toContain('EXP-tabel loopt tot')
+    const late = skillPart({ level: '28' })
+    expect(late.textContent).toMatch(/van lv 28 tot en met lv 30/i)
+    expect(late.textContent).toContain('Een punt telt over 5 levels, maar de EXP-tabel loopt tot lv 30, dus verder rekent de app niet.')
   })
 
   it('houdt "Geen punt over" als de app het punt niet kan verplaatsen, omdat het in een skill staat die ze niet doorrekent', () => {
