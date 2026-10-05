@@ -1203,7 +1203,7 @@ describe('Vul in op je equipment (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
     // Level 11 = 75 AP: DEX op de eis van Steel Igor (20), LUK de rest (75 - 4 - 4 - 20 = 47), STR en INT 4.
-    expect(screen.getByText('Ingevuld: DEX 20 (voor Steel Igor), LUK 47.')).toBeTruthy()
+    expect(screen.getByText('Ingevuld: DEX 20 (voor Steel Igor) en LUK 47.')).toBeTruthy()
     expect(profileFields()).toMatchObject({ str: '4', dex: '20', int: '4', luk: '47', level: '11' })
     expect(profileFields().lukExtra).toBe(before.lukExtra)
     expect(profileFields().accuracy).toBe(before.accuracy)
@@ -1220,7 +1220,7 @@ describe('Vul in op je equipment (#157)', () => {
     const before = { ...profileFields() }
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
-    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: dat vraagt 73, je hebt er 65. Er is niets ingevuld.')).toBeTruthy()
+    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: je hebt er 65 en je equipment vraagt er 73. Er is niets ingevuld.')).toBeTruthy()
     const after = profileFields()
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
   })

@@ -532,14 +532,15 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const { draft } = props
   // De melding na "Vul in op je equipment" hoort bij de base AP die erin kwamen: pas je ze daarna aan, dan verdwijnt hij.
-  const [filled, setFilled] = useState<{ text: string; patch: Partial<ProfileDraft> } | null>(null)
+  // Level, base AP en equipment moeten nog zijn zoals na het invullen (ook na een mislukte poging: dan is er niets geschreven).
+  const [filled, setFilled] = useState<{ text: string; equipment: Equipment; job: Job; fields: Pick<ProfileDraft, 'level' | 'str' | 'dex' | 'int' | 'luk'> } | null>(null)
+  const pick = (d: ProfileDraft) => ({ level: d.level, str: d.str, dex: d.dex, int: d.int, luk: d.luk })
   const fill = () => {
     const r = autoFillAp(props.job, draft.level, props.equipment)
-    const patch = r.ok ? autoFillPatch(r.base) : {}
-    if (r.ok) props.onChange(patch)
-    setFilled({ text: autoFillMessage(props.job, r), patch })
+    if (r.ok) props.onChange(autoFillPatch(r.base))
+    setFilled({ text: autoFillMessage(props.job, r), equipment: props.equipment, job: props.job, fields: { ...pick(draft), ...(r.ok ? autoFillPatch(r.base) : {}) } })
   }
-  const filledShown = filled !== null && (Object.keys(filled.patch) as (keyof ProfileDraft)[]).every((k) => draft[k] === filled.patch[k])
+  const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
   const lead = (

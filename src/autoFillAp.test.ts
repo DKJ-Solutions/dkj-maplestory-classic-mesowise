@@ -29,7 +29,7 @@ describe('autoFillAp', () => {
   })
 
   it('een eis op de hoofdstat wordt door de hoofdstat zelf gehaald', () => {
-    // Steel Igor vraagt LUK 45; op level 30 komt LUK uit op 170 - 12 - 20 + ... ruim erboven
+    // LUK komt ruim boven 45 uit
     const r = autoFillAp('thief', '30', wear({ claw: 'Steel Igor' }))
     if (r.ok) expect(r.base.luk).toBeGreaterThanOrEqual(45)
   })
@@ -60,7 +60,7 @@ describe('autoFillAp', () => {
 
   it('de melding noemt de secundaire stat met het item en de hoofdstat', () => {
     const r = autoFillAp('thief', '30', wear({ claw: 'Steel Igor' }))
-    expect(autoFillMessage('thief', r)).toBe(`Ingevuld: DEX 20 (voor Steel Igor), LUK ${apAtLevel(30) - 28}.`)
+    expect(autoFillMessage('thief', r)).toBe(`Ingevuld: DEX 20 (voor Steel Igor) en LUK ${apAtLevel(30) - 28}.`)
   })
 
   it('autoFillPatch schrijft alleen de vier base-velden', () => {
@@ -76,5 +76,13 @@ describe('itemRequirements', () => {
     expect(itemRequirements('claw', { pick: 'Steel Igor', name: '', stat: '' })).toEqual({ luk: 45, dex: 20 })
     expect(itemRequirements('claw', { pick: 'unknown', name: '', stat: '' })).toBeUndefined()
     expect(itemRequirements('hat', { pick: 'Brown Skullcap', name: '', stat: '' })).toBeUndefined()
+  })
+})
+
+describe('een derde stat', () => {
+  it('een eis op een stat die geen hoofd of secundair is wordt opgetild en met het item genoemd', () => {
+    const r = autoFillAp('thief', '40', wear({ claw: 'Gladius' }))
+    expect(r).toMatchObject({ ok: true, limits: { str: 'Gladius' } })
+    expect(autoFillMessage('thief', r)).toMatch(/^Ingevuld: DEX \d+ \(voor Gladius\), STR \d+ \(voor Gladius\) en LUK \d+\.$/)
   })
 })

@@ -393,7 +393,7 @@ export function saveProfile(storage: Storage | null | undefined, d: ProfileDraft
 }
 
 /** De hoofdstat voor schade en wapen-eisen: STR voor een Warrior, DEX voor een Bowman, INT voor een Magician, LUK voor een Thief. */
-const mainStatKey = (job: Job): Stat => (job === 'warrior' ? 'str' : job === 'bowman' ? 'dex' : job === 'magician' ? 'int' : 'luk')
+export const mainStatKey = (job: Job): Stat => (job === 'warrior' ? 'str' : job === 'bowman' ? 'dex' : job === 'magician' ? 'int' : 'luk')
 
 /** Een stat van het profiel; INT is het veld onder Ability points (#82). */
 const statOf = (p: Profile, s: Stat): number => p[s]
