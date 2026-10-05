@@ -131,7 +131,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .card-action { flex: 1; min-width: 0; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--edit-fg); background: var(--edit-bg); border: 0; border-radius: 0.5rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .card-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* Het rapport in zijn popup: de delen van het advies staan onder elkaar met een lijn ertussen, net als in de Report-kaart (de regels bij .level-cost). */
 /* De popup van een kaart: de inhoud zonder eigen rand, in elke kaart even ver onder de titel; de melding net onder de titel.
    .card ervoor wint van de kaartregels verderop (zoals .equipment .spot-body), de popup zit in de kaart. */
 .card .card-dialog .spot-body { padding: 0; border-top: 0; } /* geen ruimte boven de inhoud (Dave, 5 oktober 2026) */
@@ -215,6 +214,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .job .hint:last-child { margin-bottom: 0; }
 .level-cost-value { margin: 0 0 0.25rem; }
 .level-cost-value strong { font-size: 2rem; color: var(--accent); }
+/* De bron en de lijn tussen de delen van het advies: in de Report-kaart en in het rapport van een kaart gelijk. */
 .level-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .level-cost .source a, .report-body .source a { color: var(--accent); }
 
