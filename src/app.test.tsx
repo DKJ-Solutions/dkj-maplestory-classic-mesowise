@@ -1216,10 +1216,10 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   })
 })
 
-describe('Vul in op je equipment (#157)', () => {
+describe('Auto assign (#157)', () => {
   const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
   const headingText = () => homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent
-  const fillButton = () => screen.getByRole('button', { name: 'Vul in op je equipment' })
+  const fillButton = () => screen.getByRole('button', { name: 'Auto assign' })
   const wearIgor = () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)

@@ -533,7 +533,7 @@ const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
 function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const { draft } = props
-  // De melding na "Vul in op je equipment" hoort bij de base AP die erin kwamen: pas je ze daarna aan, dan verdwijnt hij.
+  // De melding na "Auto assign" hoort bij de base AP die erin kwamen: pas je ze daarna aan, dan verdwijnt hij.
   // Level, base AP en equipment moeten nog zijn zoals na het invullen (ook na een mislukte poging: dan is er niets geschreven).
   const [filled, setFilled] = useState<{ text: string; equipment: Equipment; job: Job; fields: Pick<ProfileDraft, 'level' | 'str' | 'dex' | 'int' | 'luk'> } | null>(null)
   const pick = (d: ProfileDraft) => ({ level: d.level, str: d.str, dex: d.dex, int: d.int, luk: d.luk })
@@ -564,20 +564,23 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
         .map((f) => (
           <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
         ))}
-      {/* Base AP op je equipment (#157): de secundaire stat precies op de hoogste eis, de rest naar de hoofdstat. */}
+      {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links de kop zoals een groep in Skillpoints, met wat je gezet hebt van wat je
+          level geeft, rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
+          hoofdstat). De melding staat eronder. */}
       <div class="ap-autofill">
-        <button type="button" class="btn" onClick={fill}>Vul in op je equipment</button>
+        <div class="ap-row">
+          {cap !== null && (
+            <div class="skill-group ap-group">
+              <h3>
+                Base AP
+                <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
+              </h3>
+            </div>
+          )}
+          <button type="button" class="btn" onClick={fill}>Auto assign</button>
+        </div>
         {filledShown && <p class="hint" role="status">{filled.text}</p>}
       </div>
-      {/* Onderaan (Dave, 5 oktober 2026), zoals een groep in Skillpoints (#157): de kop met rechts wat je gezet hebt van wat je level geeft. */}
-      {cap !== null && (
-        <div class="skill-group ap-group">
-          <h3>
-            Base AP
-            <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
-          </h3>
-        </div>
-      )}
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).

@@ -467,7 +467,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-head .switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Base AP invullen op je equipment (#157): onder de stat-regels in de popup van Ability points, op volle breedte met de melding eronder */
 .ap-autofill { padding: 1rem 1rem 0.25rem; }
-.ap-autofill .btn { width: 100%; }
 .ap-autofill .hint { margin: 0.75rem 0 0; }
-/* De kop Base AP onderaan de popup van Ability points, onder de knop (#157). */
-.ap-group { margin: 1rem 0 0; }
+/* Eén rij onderaan de popup van Ability points (#157): de kop Base AP vult de ruimte, de knop staat rechts zo breed als zijn tekst. */
+.ap-row { display: flex; align-items: center; gap: 0.75rem; }
+.ap-row .ap-group { flex: 1; min-width: 0; margin: 0; }
+.ap-row .ap-group h3 { margin: 0; }
+.ap-row .btn { flex: none; width: auto; margin: 0; }
