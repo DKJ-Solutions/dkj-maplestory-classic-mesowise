@@ -7,7 +7,7 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot, Weapon } from './data/types'
+import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
@@ -22,7 +22,8 @@ import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
-import { applyLevelDown, applyLevelUp, applySkillPoint, apToDistribute, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
+import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
+import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
@@ -257,7 +258,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
         </svg>
       </button>
       {open && (
-        <StatDialog title={`Report: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Report: ${props.title}`} heading closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">{props.children}</div>
         </StatDialog>
       )}
@@ -270,14 +271,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -478,6 +479,8 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
+  /** Achter de titel van de popup, zoals de AP die je nog te verdelen hebt (zie StatDialog). */
+  titleNote?: ComponentChildren
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
 }) {
@@ -497,7 +500,7 @@ function StatsCard(props: {
         {props.error}
       </p>
       {open && (
-        <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title={props.title} titleNote={props.titleNote} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -528,10 +531,28 @@ type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onC
 const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
 
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
-function ProfileCard(props: StatsCardProps) {
+function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const { draft } = props
+  // Alleen als "Auto assign" niets kon invullen een melding (Dave, 5 oktober 2026): die hoort bij het level, de base AP en de
+  // equipment van dat moment, en verdwijnt zodra een van die verandert.
+  const [filled, setFilled] = useState<{ text: string; equipment: Equipment; job: Job; fields: Pick<ProfileDraft, 'level' | 'str' | 'dex' | 'int' | 'luk'> } | null>(null)
+  const pick = (d: ProfileDraft) => ({ level: d.level, str: d.str, dex: d.dex, int: d.int, luk: d.luk })
+  // Een gelukte Auto assign laat de base-vakken oplichten die hij veranderde, in plaats van een zin; n start de animatie opnieuw.
+  const [flash, setFlash] = useState<{ keys: readonly Stat[]; n: number }>({ keys: [], n: 0 })
+  const fill = () => {
+    const r = autoFillAp(props.job, draft.level, props.equipment)
+    const text = autoFillMessage(props.job, r)
+    setFilled(text === null ? null : { text, equipment: props.equipment, job: props.job, fields: pick(draft) })
+    if (!r.ok) return
+    const patch = autoFillPatch(r.base)
+    setFlash({ keys: (['str', 'dex', 'int', 'luk'] as const).filter((k) => patch[k] !== draft[k]), n: flash.n + 1 })
+    props.onChange(patch)
+  }
+  const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
+  // Wat je level aan base AP geeft min wat er al staat: het aantal (n) op de kaart (#154, #157).
+  const balance = apBalance(draft)
   const lead = (
     <>
       {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
@@ -547,20 +568,45 @@ function ProfileCard(props: StatsCardProps) {
       {shownStats(props.job)
         .filter((f) => ABILITY_KEYS.includes(f.key))
         .map((f) => (
-          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
+          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} flash={flash.keys.includes(f.key as Stat) ? flash.n : 0} />
         ))}
+      {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
+          ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
+          hoofdstat). De melding staat eronder. */}
+      <div class="ap-autofill">
+        <div class="ap-row">
+          {cap !== null && (
+            <div class="skill-group ap-group">
+              <h3>
+                <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="BASE AP" />
+              </h3>
+            </div>
+          )}
+          {/* Fel zolang er AP te verdelen is, dan doet de knop iets; zonder AP over is hij de gewone knop (Dave, 5 oktober 2026). */}
+          <button type="button" class={balance !== null && balance > 0 ? 'btn auto-assign ready' : 'btn auto-assign'} onClick={fill}>Auto assign</button>
+        </div>
+        {filledShown && <p class="hint" role="status">{filled.text}</p>}
+      </div>
     </>
   )
-  // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154).
-  const left = apToDistribute(draft)
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={left !== null && <ToDistribute count={left} unit="AP" />} />
+  // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
+  // Op de kaart en achter de titel van zijn popup: "Ability points (6)" (Dave, 5 oktober 2026, #157).
+  const toDistribute = balance !== null && <ToDistribute count={balance} unit="AP" />
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute} titleNote={toDistribute} />
 }
 
 /**
  * Eén stat van je Ability points (Dave, 4 oktober 2026): op de kaart de base AP, en met een plus ernaast de extra AP van
  * items (altijd een vak, 0 als je die niet hebt); in de popup twee manieren om AP toe te voegen. Base AP kan niet hoger dan wat je level nog over laat; Extra AP (van je items) is vrij. Eén Opslaan voor allebei.
  */
-function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: number | null; onSave: (patch: Partial<ProfileDraft>) => void }) {
+function AbilityLine(props: {
+  field: ProfileField
+  draft: ProfileDraft
+  cap: number | null
+  onSave: (patch: Partial<ProfileDraft>) => void
+  /** Boven 0: Auto assign veranderde deze base; elke nieuwe waarde laat het vak opnieuw oplichten (#157). */
+  flash?: number
+}) {
   const { field: f, draft, cap } = props
   const stat = f.key as 'str' | 'dex' | 'int' | 'luk'
   const extraKey = EXTRA_KEY[stat]
@@ -593,7 +639,7 @@ function AbilityLine(props: { field: ProfileField; draft: ProfileDraft; cap: num
   return (
     <div class="stat-line ability-line">
       <span class="stat-line-name">{f.label}</span>
-      <div class="equip-value ap-base" aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
+      <div key={props.flash ?? 0} class={`equip-value ap-base${props.flash ? ' flash' : ''}`} aria-label={`${f.label} base ${draft[stat].trim() || 'onbekend'}`}>
         <span class="equip-value-num">
           <strong>{draft[stat].trim() || '?'}</strong>
         </span>
@@ -977,10 +1023,21 @@ function StatDialog(props: {
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
   className?: string
+  /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
+  heading?: boolean
+  /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
+  titleNote?: ComponentChildren
   onCancel: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const name = (
+    <>
+      {props.title}
+      {props.titleNote && <> {props.titleNote}</>}
+    </>
+  )
+  const title = props.heading ? <h2 class="stat-dialog-name">{name}</h2> : <strong class="stat-dialog-name">{name}</strong>
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1000,12 +1057,11 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && props.onCancel()}
     >
       <div class="stat-dialog-body">
-      <div class="stat-dialog-head">
-        <strong>{props.title}</strong>
-        <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
-        </button>
-      </div>
+      <div class="stat-dialog-head">{title}</div>
+      {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
+      <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
+      </button>
       {props.children}
       </div>
     </dialog>
@@ -1291,7 +1347,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
         {props.error}
       </p>
       {open && (
-        <CardPopup title="Skillpoints" head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title="Skillpoints" titleNote={spLeft !== null && <ToDistribute count={spLeft} unit="SP" />} head={head} error={props.error} onClose={() => setOpen(false)}>
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>
@@ -1373,19 +1429,23 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
  * 2026, #154). Een schermlezer hoort de hele zin.
  */
 function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
+  // Onder 0: er staat meer dan je level geeft; met een echt minteken en in de kleur van een fout.
+  const over = props.count < 0
   return (
-    <span class="to-distribute" role="status">
-      <span aria-hidden="true">({props.count})</span>
-      <span class="sr-only">{`${props.count} ${props.unit} te verdelen`}</span>
+    <span class={`to-distribute${over ? ' over' : ''}`} role="status">
+      <span aria-hidden="true">({over ? `−${-props.count}` : props.count})</span>
+      <span class="sr-only">{over ? `${-props.count} ${props.unit} te veel gezet` : `${props.count} ${props.unit} te verdelen`}</span>
     </span>
   )
 }
 
-function PoolCount(props: { usage: { spent: number; cap: number | null } }) {
+/** Wat je gezet hebt van wat je level geeft: "0 / 7 SP" boven een groep skills, "67 / 80 BASE AP" onder je ability points (#157). */
+function PoolCount(props: { usage: { spent: number; cap: number | null }; unit?: 'SP' | 'BASE AP' }) {
   const { spent, cap } = props.usage
+  const unit = props.unit ?? 'SP'
   return (
     <span class={`skill-sp${cap !== null && spent > cap ? ' over' : ''}`}>
-      {cap === null ? `${spent} SP` : `${spent} / ${cap} SP`}
+      {cap === null ? `${spent} ${unit}` : `${spent} / ${cap} ${unit}`}
     </span>
   )
 }
@@ -2121,7 +2181,7 @@ export function App() {
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
-        <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
       </section>
 

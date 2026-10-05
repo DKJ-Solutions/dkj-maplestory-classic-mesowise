@@ -569,9 +569,9 @@ describe('bewaren na elke wijziging', () => {
     expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
-  it('toont de base AP die je nog over hebt alleen in de popup, niet als eigen regel op de kaart', () => {
+  it('toont in de popup van Ability points je gezette base AP van wat je level geeft, en in die van een stat wat er over is (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('section.profile')!.textContent).not.toMatch(/Base AP over|Base AP te veel/)
+    expect(homeScreen().querySelector('section.profile dialog .ap-group .skill-sp')?.textContent).toBe('70 / 70 BASE AP')
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
@@ -1076,7 +1076,8 @@ describe('level-up en Back (#154)', () => {
       fireEvent.click(backButton())
     })
     expect(level()).toBe('LV. 10')
-    expect(screen.queryByRole('status')).toBeNull()
+    // Alleen het aantal AP in de kop van Ability points staat er: (0), want op LV. 10 is alles verdeeld.
+    expect(screen.getAllByRole('status').map((el) => el.textContent)).toEqual(['(0)0 AP te verdelen'])
   })
 
   it('toont bij Total stats een hint dat de app het effect van je AP niet meetelt', () => {
@@ -1129,8 +1130,34 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
-  it('toont niets zolang alle AP en SP gezet zijn', () => {
-    expect(apNote()).toBeNull()
+  it('toont in de popup van Ability points een kop zoals een groep in Skillpoints: 70 / 75 BASE AP', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
+    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
+    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
+    const head = homeScreen().querySelector('dialog .ap-group h3')!
+    expect(head.textContent).toBe('70 / 75 BASE AP')
+    expect(head.querySelector('.skill-sp')?.classList.contains('over')).toBe(false)
+  })
+
+  it('zet ook achter de titel van de popup van Skillpoints de SP die nog vrij zijn: Skillpoints (3)', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Skillpoints bekijken' }))
+    expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head > h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
+  })
+
+  it('kleurt het aantal als fout als er meer base AP staan dan je level geeft', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const count = homeScreen().querySelector('dialog .ap-group .skill-sp')!
+    expect(count.textContent).toBe('70 / 65 BASE AP')
+    expect(count.classList.contains('over')).toBe(true)
+  })
+
+  it('toont (0) bij Ability points en niets bij Skillpoints zolang alle AP en SP gezet zijn', () => {
+    expect(apNote()).toBe('0 AP te verdelen')
+    expect(homeScreen().querySelector('section.profile .to-distribute [aria-hidden="true"]')?.textContent).toBe('(0)')
     expect(spNote()).toBeNull()
   })
 
@@ -1145,10 +1172,10 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(apNote()).toBe('2 AP te verdelen')
   })
 
-  it('toont niets meer na Back naar het level waar alles verdeeld was', () => {
+  it('toont weer (0) na Back naar het level waar alles verdeeld was', () => {
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
-    expect(apNote()).toBeNull()
+    expect(apNote()).toBe('0 AP te verdelen')
     expect(spNote()).toBeNull()
   })
 
@@ -1180,9 +1207,75 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(apNote()).toBe('5 AP te verdelen')
   })
 
-  it('toont geen AP-regel bij te veel AP voor het level', () => {
+  it('toont bij te veel AP voor het level het verschil onder 0, in de foutkleur', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    expect(apNote()).toBeNull()
+    expect(apNote()).toBe('5 AP te veel gezet')
+    const el = homeScreen().querySelector('section.profile .to-distribute')
+    expect(el?.classList.contains('over')).toBe(true)
+    expect(el?.querySelector('[aria-hidden="true"]')?.textContent).toBe('(−5)')
+  })
+})
+
+describe('Auto assign (#157)', () => {
+  const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
+  const headingText = () => homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent
+  const fillButton = () => screen.getByRole('button', { name: 'Auto assign' })
+  const wearIgor = () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+  }
+
+  it('schrijft de base AP van het level zonder melding, laat de veranderde vakken oplichten en zet (0) in de kop; extra AP en accuracy blijven staan', () => {
+    levelUp()
+    expect(headingText()).toBe('Ability points(5)5 AP te verdelen')
+    wearIgor()
+    const before = { ...profileFields() }
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    // Level 11 = 75 AP: DEX op de eis van Steel Igor (20), LUK de rest (75 - 4 - 4 - 20 = 47), STR en INT 4.
+    expect(homeScreen().querySelector('.ap-autofill .hint')).toBeNull()
+    // DEX en LUK veranderden en lichten op; STR en INT bleven 4.
+    const flashing = (label: string) => statLine(label).querySelector('.ap-base')!.classList.contains('flash')
+    expect(['STR', 'DEX', 'INT', 'LUK'].map(flashing)).toEqual([false, true, false, true])
+    expect(profileFields()).toMatchObject({ str: '4', dex: '20', int: '4', luk: '47', level: '11' })
+    expect(profileFields().lukExtra).toBe(before.lukExtra)
+    expect(profileFields().accuracy).toBe(before.accuracy)
+    expect(statShown('DEX')).toBe('20')
+    expect(statShown('LUK')).toBe('47')
+    expect(apNote()).toBe('0 AP te verdelen')
+    expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
+  })
+
+  it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    wearIgor()
+    const before = { ...profileFields() }
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: je hebt er 65 en je equipment vraagt er 73. Er is niets ingevuld.')).toBeTruthy()
+    const after = profileFields()
+    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
+  })
+
+  it('past de speler daarna een stat aan, dan verdwijnt de melding van een mislukte poging', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    wearIgor()
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()
+    const luk = openAbility('LUK')
+    luk.typeBase('30')
+    luk.save()
+    expect(screen.queryByText(/Er is niets ingevuld/)).toBeNull()
+  })
+
+  it('zonder getal in het levelveld schrijft de knop niets en vraagt om een level', () => {
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '' } }))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(fillButton())
+    expect(screen.getByText('Vul eerst een geldig level in. Er is niets ingevuld.')).toBeTruthy()
   })
 })
 

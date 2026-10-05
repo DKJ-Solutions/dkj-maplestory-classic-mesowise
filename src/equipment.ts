@@ -15,7 +15,7 @@ import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from '
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
-import type { ArmorPiece, ArmorSlot, Weapon, WornArmor, WornClaw } from './data/types'
+import type { ArmorPiece, ArmorSlot, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
@@ -189,6 +189,22 @@ const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(sl
 // we dus in de lijsten van alle jobs.
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
+
+/**
+ * De stat-eisen van wat je in een slot draagt (een eis die de pagina niet noemt staat er niet). Alleen items uit de winkellijsten
+ * kennen hun eisen; undefined bij een leeg slot, een eigen item of een item zonder prijs (de lijst "zonder prijs" legt de eisen
+ * niet vast): daarvan weet de app niet wat het vraagt. Ammo vraagt alleen een level.
+ */
+export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Requires<Stat>> | undefined {
+  if (slot === 'ammo' || isEmptyEntry(entry) || entry.pick === OTHER) return undefined
+  const found = (Object.values(SHOP) as NonNullable<(typeof SHOP)[Job]>[])
+    .flatMap((shop): readonly (Weapon | ArmorPiece)[] => (isArmorSlot(slot) ? shop.armor.filter((a) => a.slot === slot) : shop.weapons))
+    .find((i) => i.name === entry.pick)
+  if (!found) return undefined
+  const out: Partial<Requires<Stat>> = {}
+  for (const s of ['str', 'dex', 'int', 'luk'] as const) if (found[s] !== undefined) out[s] = found[s]
+  return out
+}
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
 export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false): readonly CatalogItem[] {
