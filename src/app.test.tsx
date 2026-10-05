@@ -1933,6 +1933,9 @@ describe('skillpunten per level (issue #136)', () => {
     expect((within(d).getByLabelText(/^Level/) as HTMLInputElement).max).toBe('4')
     setSkill(card, 'Lucky Seven', '9')
     expect(profileFields().luckySeven).toBe('4')
+    // Een negatief level gaat naar 0.
+    setSkill(card, 'Lucky Seven', '-2')
+    expect(profileFields().luckySeven).toBe('0')
   })
 
   it('toont op de Skillpoints-kaart per pot "x / y SP"', () => {

@@ -1339,17 +1339,20 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
     if (level !== value) props.onChange({ [s.key]: level })
     setEdit(null)
   }
+  const lines = skillMpLines(s, props.wdef)
   return (
     <div class="skill-row">
       <span>
         {s.name}
-        <small class="skill-mp">
-          {skillMpLines(s, props.wdef).map((line) => (
-            <span key={line.map((p) => p.text).join('')}>
-              {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
-            </span>
-          ))}
-        </small>
+        {lines.length > 0 && (
+          <small class="skill-mp">
+            {lines.map((line) => (
+              <span key={line.map((p) => p.text).join('')}>
+                {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
+              </span>
+            ))}
+          </small>
+        )}
       </span>
       <div class="equip-value" aria-label={`${s.name} level ${value.trim() || 'onbekend'}`}>
         <span class="equip-value-num">
