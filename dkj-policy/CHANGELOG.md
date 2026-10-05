@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**47 / 84 minor entries** <!-- pending-tally -->
+**48 / 85 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/skill-edit-button · 20261005-120348Z
+
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A row in the Skillpoints popup now shows only the skill's level and a pencil, as on Equip, instead of a minus, a box
+and a plus. The pencil opens a small popup to change the level, which shows how many SP are left and does not go past
+what the pool allows. A passive skill no longer carries the line "Passief, kost geen MP", and the lines under a skill start with "Now:" and
+"Next:". In Equip everything in a row now sits in the middle
+of that row, and every pencil next to a value box (Equip, the stats, the skills) has the same light look as that box.
+
+**Score:** 3
+
+#### Pull Request
+
+A skill's level behind an edit button, like Equip
+
+[PR #153](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/153)
+
+---
 
 ### DEPLOY: app/stat-line-even-gaps · 20261005-113849Z
 
