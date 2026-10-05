@@ -84,7 +84,8 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   return (
     <section class="card job">
       <div class="job-head">
-        <h2 id={titleId} class="with-icon"><CardIcon name="shield" />{chosen && !editing ? `${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}` : 'Job:'}</h2>
+        {/* Gekozen heet de kaart Character, met je job eronder (Dave, 5 oktober 2026). */}
+        <h2 id={titleId} class="with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
         {chosen && (
           <button
             type="button"
@@ -104,6 +105,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
           </button>
         )}
       </div>
+      {chosen && !editing && <p class="job-current">{`${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}`}</p>}
       {choices.length > 0 && (
         <div class="job-choices" role="group" aria-labelledby={titleId}>
           {choices.map((j) => (

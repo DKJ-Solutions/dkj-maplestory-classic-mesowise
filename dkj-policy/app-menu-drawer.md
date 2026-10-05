@@ -47,6 +47,8 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 - [x] `StatDialog` gains a `drawer` mode: full-height panel anchored right, slide-in animation, slide-out before closing (instant under reduced motion)
 - [x] Swipe to close: a sideways drag to the right moves the panel with the finger; past a third of its width (at most 80px) it closes, otherwise it springs back; vertical drags stay scrolling
 - [x] The settings menu in `TopBar` uses the drawer mode
+- [x] Dave (October 5, 2026): a chosen job card is headed "Character", with the job and gender ("Warrior (m)") as a line under it
+- [x] Dave (October 5, 2026): the job card loses its border
 
 ### TEST
 
@@ -58,7 +60,8 @@ instead. Read as a side drawer that slides in from the right edge, closable by s
 
 The settings menu is no longer a popup in the middle of the screen: it slides in from the right edge as a
 full-height panel, and slides back out when closed. On a phone you can swipe it away to the right; a short
-swipe springs back, and scrolling up and down inside it still works.
+swipe springs back, and scrolling up and down inside it still works. Once you have chosen a job, its card
+is headed "Character" with your job and gender underneath, and the card has no border.
 
 **Score:** 2
 

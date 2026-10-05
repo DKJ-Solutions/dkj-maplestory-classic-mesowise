@@ -1629,7 +1629,8 @@ describe('het geslacht (issue #55)', () => {
   })
 
   const JOB_KEY = 'mesowise.job.v1'
-  const jobTitle = () => card().querySelector('h2')!.textContent
+  // Gekozen heet de kop Character en staat je job eronder (Dave, 5 oktober 2026).
+  const jobTitle = () => card().querySelector('.job-current')?.textContent ?? card().querySelector('h2')!.textContent
   const withWarrior = (gender?: 'male' | 'female') => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
@@ -1657,8 +1658,9 @@ describe('het geslacht (issue #55)', () => {
     expect(gender.textContent).toBe('Gender:')
   })
 
-  it('zet het gekozen geslacht als (m) of (f) achter de job in de kop', () => {
+  it('heet gekozen Character, met de job en het gekozen geslacht als (m) of (f) eronder', () => {
     withWarrior()
+    expect(card().querySelector('h2')!.textContent).toBe('Character')
     expect(jobTitle()).toBe('Warrior')
     fireEvent.click(button('Female'))
     // Job en geslacht gekozen: de kaart staat nu alleen nog in het menu.
@@ -2136,7 +2138,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     const menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Warrior (m)' })).toBeTruthy()
+    expect(menu.getByText('Warrior (m)')).toBeTruthy()
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', async () => {
@@ -2147,14 +2149,14 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
     fireEvent.click(menu.getByRole('button', { name: 'Opslaan' }))
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
+    expect(menu.getByText('Thief (m)')).toBeTruthy()
     fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
     // Het paneel schuift eerst naar rechts weg en sluit dan.
     await act(() => new Promise((r) => setTimeout(r, 350)))
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
     menu = openMenu()
-    expect(menu.getByRole('heading', { name: 'Thief (m)' })).toBeTruthy()
+    expect(menu.getByText('Thief (m)')).toBeTruthy()
   })
 
   describe('als paneel dat van rechts inschuift', () => {
