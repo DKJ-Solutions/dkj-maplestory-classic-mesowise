@@ -383,6 +383,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    Zonder padding opzij, zodat ook 999 op 1.25rem ruim in zijn vak van 3rem past (Dave, 5 oktober 2026). */
 .ability-line .ap-total { padding-left: 0; padding-right: 0; }
 .ability-line .ap-total .equip-value-num { font-size: 1.25rem; }
+/* Base en extra in normaal gewicht, zodat alleen het totaal vet staat (Dave, 5 oktober 2026). */
+.ability-line .ap-base .equip-value-num, .ability-line .ap-extra .equip-value-num { font-weight: 400; }
 .ability-head { padding-bottom: 0; border-bottom: 0; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-align: center; }
 .equip-step { display: grid; grid-template-columns: 44px 3.5rem 44px; gap: 0.25rem; }
 .equip-step input { display: block; height: 44px; margin: 0; padding: 0 0.25rem; box-sizing: border-box; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums;
