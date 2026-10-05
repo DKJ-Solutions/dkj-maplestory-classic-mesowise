@@ -39,19 +39,36 @@
 
 ### PLAN
 
+Issue #158: the no-price items (worn items, Warrior colours, Bowman skirts, accessories) carry no stat requirements, so
+the base-AP auto-fill (#157) treats them as having none. Give each its requirements from its own MeowDB item page.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Read the requirements block of all 236 item pages on 2026-10-05 (Rebecca, three batches); 12 unusual rows re-read independently and confirmed
+- [x] `WornArmor` and `WornClaw` carry optional str/dex/int/luk, as `ArmorPiece` does; every row filled, only non-zero values (Vera)
+- [x] `itemRequirements` (`src/equipment.ts`) also searches the no-price lists, the shop row first
+- [x] The Warrior's no-price weapons carry STR and DEX too, so a row added later cannot lose them (found by Victor)
 
 ### TEST
 
+- [x] Every row machine-compared with the MeowDB reads: 236 ids, 0 mismatches
+- [x] A sample per list pinned in `src/autoFillAp.test.ts`; the two tests that used a no-price item as "unknown" now use an own item
+- [x] Code review (Victor)
+
 ### DEPLOY: data/158-worn-item-requirements
 
-**Score:**
+The change is in the game data and the app; no repo tooling changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Auto assign now knows the stat requirements of the items no NPC sells: the worn items, the other colours of the
+Warrior armour, the Bowman's Able skirts, and the shields, gloves, capes and earrings. Each comes from that item's
+own MeowDB page. So the secondary stat is set from everything you wear, and only an item you typed in yourself
+counts as unknown.
+
+**Score:** 3
 
 #### Pull Request
 
