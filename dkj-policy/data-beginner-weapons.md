@@ -46,13 +46,16 @@ Dave, October 5, 2026: "als ik nog lv. 9 ben, zorg dan dat ik ook beginner wapen
 - [x] `src/data/beginnerWeapons.ts`: the five weapons with level, W.ATK, speed and item page (retrieved 2026-10-05)
 - [x] `src/equipment.ts`: price-less weapons for Thief and Bowman (all five) and Warrior (no daggers: no dagger multiplier known); not for the Magician (his weapon number is M.ATT, these have none)
 - [x] `src/equipment.ts`: the weapon list sorted by level, lowest first, so the 8-result search shows them without typing
+- [x] `src/app.tsx`: an item without a level requirement (level 0) shows no "lv 0" in the search list
+- [x] Header of `beginnerWeapons.ts`: below level 10 the model stays the job's own (#171)
 
 ### TEST
 
 - [x] `src/data/beginnerWeapons.test.ts`: the data, the multipliers, which job gets which, the sort, same item across jobs, stats and profile change
 - [x] The two pinned weapon-list tests in `src/equipment.test.ts` updated
 - [x] `npx vitest run` (1535 green) and `npm run lint`
-- [ ] Victor's review
+- [x] Victor's review: no correctness bug; the model limit filed as #171, the Bowman shield slot as #172, "lv 0" fixed
+- [~] Edith: no new UI text, only "lv 0" left out
 
 ### DEPLOY: data/beginner-weapons
 
@@ -62,7 +65,7 @@ Internal: a new data file with five MeowDB weapons and the weapon catalog sorted
 
 #### What makes this deploy extra special
 
-A Beginner (level 1 to 9) can now pick the weapon in their hand: Sword, Hand Axe, Wooden Club, Razor and Fruit Knife, at the top of the weapon list for Thief, Warrior (no daggers) and Bowman. They have no price, so they are not in the weapon advice.
+A Beginner (level 1 to 9) can now pick the weapon in their hand: Sword, Hand Axe, Wooden Club, Razor and Fruit Knife, at the top of the weapon list for Thief, Warrior (no daggers) and Bowman. They have no price, so they are not in the weapon advice. An item without a level requirement no longer shows "lv 0" in the search list.
 
 **Score:** 3
 

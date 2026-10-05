@@ -28,6 +28,7 @@ import {
   equipmentForJob,
 } from './equipment'
 import { NPC_ARMOR } from './data/armor'
+import { BEGINNER_WEAPONS } from './data/beginnerWeapons'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { THROWING_STARS } from './data/thief'
@@ -690,11 +691,11 @@ describe('equipment voor een Warrior', () => {
   const warriorShop: Equipment = { claw: shop('Gladius'), ammo: unknown, hat: shop('Bronze Full Helm'), top: unknown, bottom: unknown, overall: unknown, shoes: shop('Bronze Grieves'), shield: unknown, gloves: unknown, cape: unknown, earrings: unknown }
 
   describe('catalogItems voor een Warrior', () => {
-    it('geeft bij Weapon de NPC-wapens van de Warrior, met naam, level en weapon attack (wapens zonder prijs zijn er sinds #55 niet)', () => {
+    it('geeft bij Weapon de wapens onder level 10 zonder dagger en dan de NPC-wapens van de Warrior, met naam, level en weapon attack', () => {
       const items = catalogItems('claw', 'warrior')
       // De acht wapens zonder jobregel zijn sinds #55 NPC-wapens; de lijst zonder prijs is leeg.
       expect(WORN_WARRIOR_WEAPONS).toEqual([])
-      expect(items.map((i) => i.name)).toEqual(NPC_WARRIOR_WEAPONS.map((w) => w.name))
+      expect(items.map((i) => i.name)).toEqual(['Sword', 'Hand Axe', 'Wooden Club', ...NPC_WARRIOR_WEAPONS.map((w) => w.name)])
       expect(items.find((i) => i.name === 'Long Sword')).toMatchObject({ level: 10, stat: 27, mult: expect.any(Number), attackMs: expect.any(Number) })
       expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8 })
       expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5 })
@@ -1202,9 +1203,10 @@ describe('equipment voor een Bowman', () => {
   const slots = EQUIP_SLOTS.map((s) => s.slot)
   const bowmanGear: Equipment = { claw: shop('Balanche'), ammo: shop('Arrows for Crossbows'), hat: shop('Hunter'), top: unknown, bottom: unknown, overall: unknown, shoes: shop('Hard Leather Boots'), shield: unknown, gloves: unknown, cape: unknown, earrings: unknown }
 
-  it('geeft bij Weapon alle 10 bogen en kruisbogen, op level, met weapon attack en tijd per aanval maar zonder multiplier', () => {
+  it('geeft bij Weapon de 5 wapens onder level 10 en alle 10 bogen en kruisbogen, op level, met weapon attack en tijd per aanval', () => {
     const items = catalogItems('claw', 'bowman')
-    expect(items).toHaveLength(NPC_BOWMAN_WEAPONS.length)
+    expect(items).toHaveLength(BEGINNER_WEAPONS.length + NPC_BOWMAN_WEAPONS.length)
+    expect(items.slice(0, 5).map((i) => i.name)).toEqual(BEGINNER_WEAPONS.map((w) => w.name))
     expect(items.map((i) => i.level)).toEqual([...items.map((i) => i.level!)].sort((a, b) => a - b))
     expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810 })
     expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750 })
