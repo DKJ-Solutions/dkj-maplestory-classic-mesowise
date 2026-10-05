@@ -13,8 +13,9 @@
 // MeowDB is hier de Magician. Earrings geven alleen M.DEF: hun W.DEF is 0, want hun pagina toont geen W.DEF-regel.
 //
 // Het shield-slot heeft de app voor de Warrior, de Magician en (sinds #133) de Thief, met zijn wristguards (921 tot 923):
-// MeowDB geeft ze als shield. Een job zonder dat slot (de Bowman) krijgt er ook geen items voor, ook niet de shields
-// zonder jobregel (zie equipment.ts).
+// MeowDB geeft ze als shield. De Bowman heeft het slot alleen met een wapen voor één hand (de wapens onder level 10, #172);
+// dan krijgt hij de shields zonder jobregel (Stolen Fence, Pan Lid). Dat bepaalt equipment.ts, niet dit filter: met een boog
+// of zonder wapen heeft hij het slot niet en geeft de catalogus er geen items voor.
 import type { Job } from '../job'
 import type { Source, WornArmor } from './types'
 

@@ -663,7 +663,7 @@ describe('Magician: equipment', () => {
   it('telt de MDEF van de Magician-armor op voor de Magic Def (#91): Wizardry Hat 14, Doros Robe 49, Wind Shoes 9', () => {
     const pick = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
     const eq = { ...equipmentForJob(loadEquipment(undefined, 'magician'), 'magician'), hat: pick('Wizardry Hat'), overall: pick('Doros Robe / Doroness Robe'), shoes: pick('Wind Shoes') }
-    expect(wornMdef(eq)).toBe(14 + 49 + 9)
+    expect(wornMdef(eq, 'magician')).toBe(14 + 49 + 9)
   })
 
   it('heeft geen dubbele namen in een lijst, geen wapennaam die ook bij de Thief of Warrior staat, en dezelfde stats bij een gedeelde armornaam', () => {

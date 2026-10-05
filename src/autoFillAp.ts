@@ -5,7 +5,7 @@
 // de extra AP van items en de getypte accuracy blijven staan.
 import { apAtLevel, STARTING_AP } from './data/thief'
 import type { Stat } from './data/types'
-import { catalogItems, EQUIP_SLOTS, itemRequirements, wornName, type Equipment } from './equipment'
+import { catalogItems, EQUIP_SLOTS, itemRequirements, slotsFor, wornName, type Equipment } from './equipment'
 import type { Job } from './job'
 import { mainStatKey, PROFILE_FIELDS, type ProfileDraft } from './profile'
 
@@ -72,7 +72,8 @@ export function autoFillAp(job: Job, level: string, equipment: Equipment): AutoF
   const unknown: string[] = []
   const need: Record<Stat, number> = { str: STARTING_AP.perStat, dex: STARTING_AP.perStat, int: STARTING_AP.perStat, luk: STARTING_AP.perStat }
   const by: Partial<Record<Stat, string>> = {}
-  for (const { slot } of EQUIP_SLOTS) {
+  // Een slot dat de job met dit wapen niet heeft (het shield van een Bowman met een boog, #172) telt niet mee.
+  for (const { slot } of slotsFor(job, equipment.claw.pick)) {
     const entry = equipment[slot]
     const name = wornName(entry)
     if (name === null || slot === 'ammo') continue

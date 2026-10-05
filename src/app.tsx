@@ -816,7 +816,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
       {isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
     </>
   )
-  const mdef = wornMdef(props.equipment)
+  const mdef = wornMdef(props.equipment, job)
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
   )
@@ -1030,7 +1030,7 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
  * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
  * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
  */
-function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; helpfulStranger?: boolean; onPick: (pick: string, name?: string) => void }) {
+function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weapon: string; helpfulStranger?: boolean; onPick: (pick: string, name?: string) => void }) {
   const { slot, entry } = props
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -1039,7 +1039,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; help
   const [active, setActive] = useState(0)
   const open = text !== null
   const typed = (text ?? '').trim()
-  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger)
+  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger, props.weapon)
   const stat = statName(slot, props.job)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
@@ -1344,7 +1344,7 @@ function EquipmentCard(props: {
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {slotsFor(props.job).map(({ slot }) => {
+          {slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)
@@ -1366,7 +1366,7 @@ function EquipmentCard(props: {
               <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
-                  <EquipSearch slot={slot} job={props.job} entry={entry} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {slot === 'ammo' && props.job === 'bowman' && (
                     <label class="switch">
                       <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
@@ -2231,7 +2231,7 @@ export function App() {
   const clawAdvice = useMemo(() => clawUpgradeAdvice(drafts, profile), [drafts, profile])
   const nextWeapon = useMemo(() => (profile ? nextBetterWeapon(profile) : undefined), [profile])
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
-  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment)), [drafts, profile, equipment])
+  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
   // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
@@ -2313,7 +2313,7 @@ export function App() {
   // Een wissel past ook het profiel aan (weapon attack, aanvalssnelheid of WDEF), zodat het advies meteen klopt.
   const applyEntry = (slot: EquipSlot, after: EquipEntry) => {
     // Een overall vult top en bottom ook (en andersom): changeEquipment geeft de hele nieuwe toestand.
-    const changed = changeEquipment(profileRef.current, equipmentRef.current, slot, after)
+    const changed = changeEquipment(profileRef.current, equipmentRef.current, slot, after, job)
     writeProfile(() => changed.profile)
     writeEquipment(changed.equipment)
   }

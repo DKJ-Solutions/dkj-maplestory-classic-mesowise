@@ -48,18 +48,26 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'earrings', label: 'Earrings' },
 ]
 
-/** Of een job het slot heeft. */
-const hasSlot = (job: Job, slot: EquipSlot): boolean => {
+/** De wapens voor één hand die een Bowman kan vasthouden (de wapens onder level 10): met zo'n wapen past er een shield bij (#172). */
+const isOneHanded = (weapon: string): boolean => BEGINNER_WORN_WEAPONS.some((w) => w.name === weapon)
+
+/** Of een job het slot heeft; `weapon` is de pick in het wapenslot (claw): voor het shield-slot van de Bowman telt wat hij vasthoudt. */
+const hasSlot = (job: Job, slot: EquipSlot, weapon = ''): boolean => {
   // Ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets.
   if (slot === 'ammo') return job === 'thief' || job === 'bowman'
   // Een shield (issue #117) alleen naast een wapen voor één hand: een boog of kruisboog vraagt beide handen. Een claw niet:
   // de Thief draagt in het shield-slot zijn wristguards (issue #133; Seclusion, Nimble en Jurgen Wristguard op NiaMeowDB).
-  if (slot === 'shield') return job !== 'bowman'
+  // De Bowman heeft het slot dus alleen met een wapen onder level 10 (Sword, Hand Axe, Wooden Club, Razor, Fruit Knife; #172).
+  // Met een boog, een leeg wapenslot of een eigen wapen heeft hij het niet.
+  if (slot === 'shield') return job !== 'bowman' || isOneHanded(weapon)
   return true
 }
 
-/** De slots die een job heeft, in de volgorde van het scherm. */
-export const slotsFor = (job: Job): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot))
+/** Of een job het slot heeft met het wapen dat in `eq` staat (#172): het shield van een Bowman hangt af van zijn wapen. */
+const hasSlotFor = (eq: Equipment, job: Job, slot: EquipSlot): boolean => hasSlot(job, slot, eq.claw.pick)
+
+/** De slots die een job heeft, in de volgorde van het scherm; `weapon` is de pick in het wapenslot (voor het shield van de Bowman, #172). */
+export const slotsFor = (job: Job, weapon = ''): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot, weapon))
 
 /** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
 export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
@@ -159,10 +167,10 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
  * dan wint de NPC-regel. De bronze pijlen van een Bowman staan er alleen in met `helpfulStranger` (#64): zonder die
  * rang kan hij ze niet kopen, dus de lijst biedt ze dan niet aan.
  */
-export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false): readonly CatalogItem[] {
+export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false, weapon = ''): readonly CatalogItem[] {
   // Een slot dat de job niet heeft, heeft voor hem geen items (#125): anders bleef bij een wissel van job een shield staan
-  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF.
-  if (!hasSlot(job, slot)) return []
+  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF. Bij de Bowman hangt het shield-slot af van `weapon` (#172).
+  if (!hasSlot(job, slot, weapon)) return []
   // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
     if (job === 'thief') return THROWING_STARS.map((t) => ({ name: t.name, level: t.level, stat: t.watk }))
@@ -187,7 +195,7 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false)
 }
 
 // Opzoeken kent ook de bronze pijlen: wat je draagt blijft bestaan, ook als de lijst het niet (meer) aanbiedt.
-const catalogItem = (slot: EquipSlot, name: string, job: Job) => catalogItems(slot, job, true).find((i) => i.name === name)
+const catalogItem = (slot: EquipSlot, name: string, job: Job, weapon = '') => catalogItems(slot, job, true, weapon).find((i) => i.name === name)
 
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
 // zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
@@ -214,9 +222,9 @@ export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Re
 }
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = ''): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  return catalogItems(slot, job, helpfulStranger).filter((i) => i.name.toLowerCase().includes(q))
+  return catalogItems(slot, job, helpfulStranger, weapon).filter((i) => i.name.toLowerCase().includes(q))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */
@@ -246,11 +254,14 @@ export function wornStat(slot: EquipSlot, entry: EquipEntry): number | undefined
   return db === undefined ? undefined : (parseStat(entry.stat) ?? db)
 }
 
-/** De WDEF per armorslot waarvan de app weet wat je draagt, en of je een overall draagt, ook met onbekende WDEF (#118). */
-export function wornWdef(eq: Equipment): WornWdef {
+/**
+ * De WDEF per armorslot waarvan de app weet wat je draagt, en of je een overall draagt, ook met onbekende WDEF (#118). Een slot
+ * dat de job met dit wapen niet heeft, telt niet mee: een shield dat een Bowman met een boog nog bewaard heeft (#172).
+ */
+export function wornWdef(eq: Equipment, job: Job): WornWdef {
   const out: WornWdef = {}
   for (const { slot } of EQUIP_SLOTS) {
-    if (!isArmorSlot(slot)) continue
+    if (!isArmorSlot(slot) || !hasSlotFor(eq, job, slot)) continue
     const w = wornStat(slot, eq[slot])
     if (w !== undefined) out[slot] = w
   }
@@ -272,7 +283,7 @@ function slotMdef(slot: ArmorSlot, entry: EquipEntry): number | undefined {
  * een item uit de catalogus draagt (#125: earrings geven vooral MDEF); leeg of een eigen item (waarvan de app alleen de WDEF
  * vraagt) telt als 0 en maakt de som niet onbekend, want die slots mogen leeg blijven.
  */
-export function wornMdef(eq: Equipment): number | null {
+export function wornMdef(eq: Equipment, job: Job): number | null {
   const body: readonly ArmorSlot[] = isEmptyEntry(eq.overall) ? ['top', 'bottom'] : ['overall']
   let sum = 0
   for (const slot of ['hat', ...body, 'shoes'] as const) {
@@ -280,7 +291,9 @@ export function wornMdef(eq: Equipment): number | null {
     if (m === undefined) return null
     sum += m
   }
-  for (const slot of ['shield', 'gloves', 'cape', 'earrings'] as const) sum += slotMdef(slot, eq[slot]) ?? 0
+  for (const slot of ['shield', 'gloves', 'cape', 'earrings'] as const) {
+    if (hasSlotFor(eq, job, slot)) sum += slotMdef(slot, eq[slot]) ?? 0
+  }
   return sum
 }
 
@@ -377,8 +390,15 @@ export function displacedSlots(eq: Equipment, slot: EquipSlot): readonly EquipSl
  * Bewust anders dan het advies: is van een vervangen slot de stat onbekend (nooit ingevuld, of een eigen item zonder
  * getal), dan blijft de WDEF in het profiel staan, want je beschrijft wat je al droeg en de app weet niet wat eraf
  * moet. Het advies telt een onbekende helft juist als leeg (zie armorUpgrade.ts), de grootste besparing die kan.
+ * Een shield dat het nieuwe wapen niet toelaat komt eraf (#172): wissel een Bowman een wapen voor één hand voor een
+ * boog (of een leeg of eigen wapen), dan wordt het shield "nog niet ingevuld" en gaat zijn WDEF van het profiel af, zoals in het spel.
+ * Is de stat van dat shield onbekend, dan blijft de WDEF staan (zie hierboven).
  */
-export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: EquipSlot, after: EquipEntry): { equipment: Equipment; profile: ProfileDraft } {
+export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: EquipSlot, after: EquipEntry, job: Job): { equipment: Equipment; profile: ProfileDraft } {
+  if (slot === 'claw' && isFilled(eq.shield) && hasSlotFor(eq, job, 'shield') && !hasSlot(job, 'shield', after.pick)) {
+    const bare: Equipment = { ...eq, shield: emptyEntry() }
+    return changeEquipment(shiftWdef(profile, 0, [wornStat('shield', eq.shield)]), bare, slot, after, job)
+  }
   const out: Equipment = { ...eq, [slot]: after }
   const displaced = displacedSlots(eq, slot)
   if (isFilled(after)) {
@@ -431,7 +451,7 @@ export function equipmentForJob(eq: Equipment, job: Job): Equipment {
   const out = { ...eq }
   for (const { slot } of EQUIP_SLOTS) {
     const { pick } = eq[slot]
-    if (pick !== UNKNOWN && pick !== OTHER && pick !== NONE && !catalogItem(slot, pick, job)) out[slot] = emptyEntry()
+    if (pick !== UNKNOWN && pick !== OTHER && pick !== NONE && !catalogItem(slot, pick, job, out.claw.pick)) out[slot] = emptyEntry()
   }
   return out
 }
@@ -439,13 +459,13 @@ export function equipmentForJob(eq: Equipment, job: Job): Equipment {
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
 
 /** Eén bewaard slot; een onbekende of verdwenen keuze (ook het oude "niets") wordt "nog niet ingevuld". Een eigen stat bij een catalogusitem blijft alleen als hij geldig is en afwijkt van de database. */
-function loadEntry(slot: EquipSlot, v: unknown, job: Job): EquipEntry {
+function loadEntry(slot: EquipSlot, v: unknown, job: Job, weapon: string): EquipEntry {
   if (typeof v !== 'object' || v === null) return emptyEntry()
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
   if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
   if (pick === NONE && (slot === 'top' || slot === 'bottom')) return { ...emptyEntry(), pick }
-  if (pick !== UNKNOWN && catalogItem(slot, pick, job)) {
+  if (pick !== UNKNOWN && catalogItem(slot, pick, job, weapon)) {
     const stat = str(raw.stat, MAX_STAT_LENGTH).trim()
     return { pick, name: '', stat: statOverride(slot, { pick, name: '', stat }) === undefined ? '' : stat }
   }
@@ -462,7 +482,8 @@ export function loadEquipment(storage: Storage | null | undefined, job: Job, hel
     if (typeof data !== 'object' || data === null || (data as { version?: unknown }).version !== VERSION) return out
     const slots = (data as { slots?: unknown }).slots
     if (typeof slots !== 'object' || slots === null) return out
-    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job)
+    // Het wapenslot (claw) staat voorop in EQUIP_SLOTS: het shield van een Bowman wordt geladen met het wapen dat hij net kreeg (#172).
+    for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job, out.claw.pick)
     // Opslag van voor de overall (issue #50) heeft het slot niet: dat laadt als leeg. Staat er wel een overall naast
     // een top of bottom (handmatig bewerkt), dan wint de overall, want die beslaat ze.
     if (isFilled(out.overall)) {
