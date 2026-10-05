@@ -54,7 +54,7 @@ clear button.
 - [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
 - [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
 - [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
-- [x] A card's popup (`.card-dialog`) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone (Dave, October 5, 2026)
+- [x] A card's popup (`.card-dialog`) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone, at least 1rem from every edge (Dave, October 5, 2026)
 - [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
 
 ### DEPLOY: app/card-action-buttons
