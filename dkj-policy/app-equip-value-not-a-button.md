@@ -41,17 +41,29 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Value box (`.equip-value`) as read-only text: no border, no fill, bold number; the pencil button unchanged
+- [x] AP row on the card: total without border, larger (1.25rem) in a 3rem column; base and extra in normal weight
+- [x] Tighter gaps in the AP row now the boxes have no borders
 
 ### TEST
 
+- [x] `npm run lint` (typecheck) and the full Vitest suite green (1507 tests)
+- [x] Checked in the browser on the preview; Dave reviewed it on the live link
+
 ### DEPLOY: app/equip-value-not-a-button
 
-**Score:**
+Styling only, in `src/style.css`; no calculation, data or repo tooling changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A value box no longer looks like the pencil button next to it: the value is plain read-only text without a border or
+fill, so only the pencil reads as something to tap. A corrected value keeps its orange border. In Ability points the
+total stands out on its own: larger and bold, without a border, while base and extra are in normal weight, and the row
+is tighter now the boxes carry no borders.
+
+**Score:** 2
 
 #### Pull Request
 
