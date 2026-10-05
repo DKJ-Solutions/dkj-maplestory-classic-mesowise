@@ -22,6 +22,7 @@ import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
+import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apToDistribute, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
@@ -528,8 +529,17 @@ type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onC
 const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
 
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
-function ProfileCard(props: StatsCardProps) {
+function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const { draft } = props
+  // De melding na "Vul in op je equipment" hoort bij de base AP die erin kwamen: pas je ze daarna aan, dan verdwijnt hij.
+  const [filled, setFilled] = useState<{ text: string; patch: Partial<ProfileDraft> } | null>(null)
+  const fill = () => {
+    const r = autoFillAp(props.job, draft.level, props.equipment)
+    const patch = r.ok ? autoFillPatch(r.base) : {}
+    if (r.ok) props.onChange(patch)
+    setFilled({ text: autoFillMessage(props.job, r), patch })
+  }
+  const filledShown = filled !== null && (Object.keys(filled.patch) as (keyof ProfileDraft)[]).every((k) => draft[k] === filled.patch[k])
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
   const lead = (
@@ -549,6 +559,11 @@ function ProfileCard(props: StatsCardProps) {
         .map((f) => (
           <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} />
         ))}
+      {/* Base AP op je equipment (#157): de secundaire stat precies op de hoogste eis, de rest naar de hoofdstat. */}
+      <div class="ap-autofill">
+        <button type="button" class="btn" onClick={fill}>Vul in op je equipment</button>
+        {filledShown && <p class="hint" role="status">{filled.text}</p>}
+      </div>
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154).
@@ -2121,7 +2136,7 @@ export function App() {
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
-        <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
       </section>
 

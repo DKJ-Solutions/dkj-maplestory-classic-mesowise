@@ -461,3 +461,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-head .switch span { padding: 0.5rem 0; }
 .equip-head .switch small { display: block; margin-top: 0.125rem; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
 .equip-head .switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Base AP invullen op je equipment (#157): onder de stat-regels in de popup van Ability points, op volle breedte met de melding eronder */
+.ap-autofill { padding: 1rem 1rem 0.25rem; }
+.ap-autofill .btn { width: 100%; }
+.ap-autofill .hint { margin: 0.75rem 0 0; }
