@@ -39,19 +39,33 @@
 
 ### PLAN
 
+Dave, October 5, 2026: every column in a stat line should have exactly the same gap; the pencil felt much closer than
+the rest. Measured: every grid gap was 0.75rem, but on an Ability points line the `+` and `=` columns sat between the
+boxes, so box to box was 2.25rem while the last box to the pencil was 0.75rem.
+
+- [x] Find the cause: the sign columns, not the gap value
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/style.css`: on an Ability points line every visible distance is 0.75rem -- box to box (0.125rem gap, 0.5rem sign, 0.125rem gap) and last box to pencil (0.125rem gap plus 0.625rem in the last column, pencil on the right); an ordinary stat line already had 0.75rem everywhere
 
 ### TEST
 
+- [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
+- [~] The spacing: CSS only, which jsdom does not compute -- Dave judges it by eye
+
 ### DEPLOY: app/stat-line-even-gaps
 
-**Score:**
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+On an Ability points line the boxes and the pencil are now evenly spaced: the pencil no longer sits closer to the last
+box than the boxes sit to each other.
+
+**Score:** 2
 
 #### Pull Request
 
