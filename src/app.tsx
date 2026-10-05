@@ -271,14 +271,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; sub?: ComponentChildren; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} sub={props.sub} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -477,6 +477,8 @@ function StatsCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
   /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
   lead?: ComponentChildren
+  /** Een regel onder de titel van de popup, in zijn kop (zie StatDialog). */
+  sub?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
@@ -498,7 +500,7 @@ function StatsCard(props: {
         {props.error}
       </p>
       {open && (
-        <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title={props.title} sub={props.sub} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -547,7 +549,6 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const balance = apBalance(draft)
   const lead = (
     <>
-      {cap !== null && balance !== null && <p class="stat-dialog-db ap-balance">{apLeftLabel(balance)}: <strong>{nfInt.format(Math.abs(balance))}</strong> van {cap}</p>}
       {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -571,7 +572,8 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
+  const sub = cap !== null && balance !== null && <p class="stat-dialog-db ap-balance">{apLeftLabel(balance)}: <strong>{nfInt.format(Math.abs(balance))}</strong> van {cap}</p>
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} sub={sub} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
 }
 
 /**
@@ -995,6 +997,8 @@ function StatDialog(props: {
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
   className?: string
+  /** Een regel onder de titel, in de kop van de popup (Dave, 5 oktober 2026, #157): de kop is dan de titel met die regel, naast het kruisje. */
+  sub?: ComponentChildren
   onCancel: () => void
   children: ComponentChildren
 }) {
@@ -1019,7 +1023,14 @@ function StatDialog(props: {
     >
       <div class="stat-dialog-body">
       <div class="stat-dialog-head">
-        <strong>{props.title}</strong>
+        {props.sub ? (
+          <div class="stat-dialog-title">
+            <strong>{props.title}</strong>
+            {props.sub}
+          </div>
+        ) : (
+          <strong>{props.title}</strong>
+        )}
         <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
         </button>
