@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
@@ -2103,6 +2103,21 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(bar().querySelector('.topbar-name')?.nextElementSibling?.textContent).toMatch(/^Zo min mogelijk mesos/)
     expect(within(homeScreen()).queryByText(/Zo min mogelijk mesos/)).toBeNull()
     expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('laat de downloadlink weg in het offline-bestand zelf', () => {
+    vi.stubEnv('MODE', 'offline')
+    try {
+      expect(openMenu().queryByRole('link', { name: 'Offlineversie downloaden' })).toBeNull()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('biedt in het menu de offlineversie als download aan', () => {
+    const link = openMenu().getByRole('link', { name: 'Offlineversie downloaden' })
+    expect(link.getAttribute('href')).toBe(`${import.meta.env.BASE_URL}mesowise-offline.html`)
+    expect(link.hasAttribute('download')).toBe(true)
   })
 
   const rows = (menu: ReturnType<typeof openMenu>) =>

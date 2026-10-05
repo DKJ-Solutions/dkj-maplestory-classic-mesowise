@@ -43,17 +43,29 @@ Browser offline already exists (PWA, #16). Add a single-file build (JS+CSS inlin
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `singleFile()` Vite plugin in `vite.config.ts`: `--mode offline` inlines the JS and CSS into one `mesowise-offline.html` (relative base, favicon as data URI, no manifest), and fails the build loudly when an external asset reference survives
+- [x] `npm run build` also builds the offline file into `dist/`, so the Pages deploy publishes it; `build:offline` builds it alone into `dist-offline/`
+- [x] No service worker registration in the offline file (`src/main.tsx`)
+- [x] Settings menu: an "Offlineversie downloaden" link with a short hint, hidden inside the offline file itself
 
 ### TEST
 
+- [x] `src/offlineBuild.test.ts` runs the real offline build in-process and checks a single self-contained file; `src/app.test.tsx` checks that the menu link is there and is absent in offline mode
+- [x] `npm run lint`, `npm test` (46 files, 1529 tests), `npm run build` and `scripts/lint/lint.ps1` green
+- [x] The built file renders the app when opened from disk (`file://`) in headless Chrome
+- [x] Review: Victor (code), Tycho (tests), Edith (Dutch text); findings applied
+
 ### DEPLOY: app/offline-file
 
-**Score:**
+The build gains a second output, `mesowise-offline.html`: the whole app in one HTML file, with no external requests and no service worker, built by a small handwritten Vite plugin and checked by a test that runs the real offline build.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Mesowise can now be downloaded from the settings menu as a single file that opens in a browser on a PC without internet. What is saved in that file stays separate from the web version, which already worked offline as an installable app.
+
+**Score:** 3
 
 #### Pull Request
 
