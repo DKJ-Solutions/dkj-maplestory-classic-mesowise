@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**45 / 82 minor entries** <!-- pending-tally -->
+**46 / 83 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/card-action-buttons · 20261005-102756Z
+
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
+buttons in the same style as the pencil buttons, on a row of their own below the name at full width, so it is obvious
+what can be tapped.
+Every popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+In the popups, the stat lines have more room, the value boxes and the pencil are a size smaller, and the title has
+a little space below it.
+
+**Score:** 3
+
+#### Pull Request
+
+Only the eye and the report icon open a card, as clear buttons
+
+[PR #151](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/151)
+
+---
 
 ### DEPLOY: app/stats-group-below-monster · 20261005-085549Z
 
