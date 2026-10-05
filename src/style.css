@@ -243,8 +243,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Het aantal AP of SP achter de kop (#154): de flex-gap van de kop is breder dan een spatie, dus een stukje terug. */
 .to-distribute { margin-left: -0.25rem; color: var(--accent); }
 .to-distribute.over { color: var(--cost); }
-/* Achter de titel van een popup staat er een gewone spatie voor, dus zonder de terugstap van de kaartkop. */
-.stat-dialog-name .to-distribute { margin-left: 0; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */

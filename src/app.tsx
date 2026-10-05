@@ -271,14 +271,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -477,8 +477,6 @@ function StatsCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
   /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
   lead?: ComponentChildren
-  /** Achter de titel van de popup, zoals (13/80) bij Ability points (zie StatDialog). */
-  titleNote?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
@@ -500,7 +498,7 @@ function StatsCard(props: {
         {props.error}
       </p>
       {open && (
-        <CardPopup title={props.title} titleNote={props.titleNote} head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title={props.title} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -545,10 +543,19 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
   const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
   const level = Number(draft.level.trim())
   const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
-  // Wat je level aan base AP geeft min wat er al staat, zoals in de popup van een stat; ook hier, boven de vier stats (Dave, 5 oktober 2026, #157).
+  // Wat je level aan base AP geeft min wat er al staat: het aantal (n) op de kaart (#154, #157).
   const balance = apBalance(draft)
   const lead = (
     <>
+      {/* Zoals een groep in Skillpoints (Dave, 5 oktober 2026, #157): de kop met rechts wat je gezet hebt van wat je level geeft. */}
+      {cap !== null && (
+        <div class="skill-group ap-group">
+          <h3>
+            Base AP
+            <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="AP" />
+          </h3>
+        </div>
+      )}
       {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
       <div class="stat-line ability-line ability-head" aria-hidden="true">
         <span />
@@ -572,8 +579,7 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
-  const titleNote = cap !== null && balance !== null && <ApBalance left={balance} cap={cap} />
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} titleNote={titleNote} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
 }
 
 /**
@@ -997,21 +1003,13 @@ function StatDialog(props: {
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
   className?: string
-  /** Achter de titel, in de kop van de popup: "Ability points (13/80)" (Dave, 5 oktober 2026, #157). */
-  titleNote?: ComponentChildren
   /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
   heading?: boolean
   onCancel: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
-  const name = (
-    <>
-      {props.title}
-      {props.titleNote && <> {props.titleNote}</>}
-    </>
-  )
-  const title = props.heading ? <h2 class="stat-dialog-name">{name}</h2> : <strong class="stat-dialog-name">{name}</strong>
+  const title = props.heading ? <h2 class="stat-dialog-name">{props.title}</h2> : <strong class="stat-dialog-name">{props.title}</strong>
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1413,25 +1411,13 @@ function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
   )
 }
 
-/**
- * De base AP die je nog over hebt van wat je level geeft, achter de titel van de popup van Ability points: "(13/80)" (Dave,
- * 5 oktober 2026, #157). Onder 0 staat er meer dan je level geeft: met een echt minteken en in de kleur van een fout.
- */
-function ApBalance(props: { left: number; cap: number }) {
-  const over = props.left < 0
-  return (
-    <span class={`to-distribute ap-balance${over ? ' over' : ''}`}>
-      <span aria-hidden="true">({over ? `−${-props.left}` : props.left}/{props.cap})</span>
-      <span class="sr-only">{`${apLeftLabel(props.left)}: ${Math.abs(props.left)} van ${props.cap}`}</span>
-    </span>
-  )
-}
-
-function PoolCount(props: { usage: { spent: number; cap: number | null } }) {
+/** Wat je gezet hebt van wat je level geeft: "0 / 7 SP" boven een groep skills, "67 / 80 AP" boven je ability points (#157). */
+function PoolCount(props: { usage: { spent: number; cap: number | null }; unit?: 'SP' | 'AP' }) {
   const { spent, cap } = props.usage
+  const unit = props.unit ?? 'SP'
   return (
     <span class={`skill-sp${cap !== null && spent > cap ? ' over' : ''}`}>
-      {cap === null ? `${spent} SP` : `${spent} / ${cap} SP`}
+      {cap === null ? `${spent} ${unit}` : `${spent} / ${cap} ${unit}`}
     </span>
   )
 }
