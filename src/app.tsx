@@ -571,8 +571,8 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
           <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} flash={flash.keys.includes(f.key as Stat) ? flash.n : 0} />
         ))}
       {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
-          ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis, de rest naar de
-          hoofdstat). De melding staat eronder. */}
+          ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis van wat je draagt of
+          op je level mag dragen, de rest naar de hoofdstat). De melding staat eronder. */}
       <div class="ap-autofill">
         <div class="ap-row">
           {cap !== null && (

@@ -12,9 +12,10 @@ const sum = (b: Record<string, number>) => Object.values(b).reduce((a, n) => a +
 
 describe('autoFillAp', () => {
   it('Thief: DEX krijgt de hoogste eis, de rest gaat naar LUK, de andere twee blijven 4', () => {
-    const r = autoFillAp('thief', '30', wear({ claw: 'Steel Igor' }))
-    expect(r).toMatchObject({ ok: true, base: { str: 4, dex: 20, int: 4, luk: apAtLevel(30) - 28 }, limitedBy: 'Steel Igor' })
-    if (r.ok) expect(sum(r.base)).toBe(apAtLevel(30))
+    // Level 20: niets dat je op je level mag dragen vraagt meer DEX dan Steel Igor.
+    const r = autoFillAp('thief', '20', wear({ claw: 'Steel Igor' }))
+    expect(r).toMatchObject({ ok: true, base: { str: 4, dex: 20, int: 4, luk: apAtLevel(20) - 28 }, limitedBy: 'Steel Igor' })
+    if (r.ok) expect(sum(r.base)).toBe(apAtLevel(20))
   })
 
   it('zonder equipment: secundaire stat 4, alles andere naar de hoofdstat, geen limietitem', () => {
@@ -22,10 +23,10 @@ describe('autoFillAp', () => {
     expect(r).toMatchObject({ ok: true, base: { str: apAtLevel(10) - 12, dex: 4, int: 4, luk: 4 }, limitedBy: null, unknown: [] })
   })
 
-  it('hoofd en secundair per job', () => {
+  it('hoofd en secundair per job; zonder equipment volgt de secundaire stat wat je op je level mag dragen', () => {
     const lvl = '50'
-    expect(autoFillAp('bowman', lvl, defaultEquipment())).toMatchObject({ ok: true, base: { dex: apAtLevel(50) - 12, str: 4 } })
-    expect(autoFillAp('magician', lvl, defaultEquipment())).toMatchObject({ ok: true, base: { int: apAtLevel(50) - 12, luk: 4 } })
+    expect(autoFillAp('bowman', lvl, defaultEquipment())).toMatchObject({ ok: true, base: { dex: apAtLevel(50) - 38, str: 30 }, limitedBy: 'Ryden' })
+    expect(autoFillAp('magician', lvl, defaultEquipment())).toMatchObject({ ok: true, base: { int: apAtLevel(50) - 28, luk: 20 }, limitedBy: 'Wizard Staff' })
   })
 
   it('een eis op de hoofdstat wordt door de hoofdstat zelf gehaald', () => {
@@ -48,7 +49,7 @@ describe('autoFillAp', () => {
   it('een eigen item telt als geen eis en staat in unknown; een item zonder prijs kent zijn eisen (#158)', () => {
     const eq = wear({ hat: 'Brown Skullcap' })
     eq.shoes = { pick: OTHER, name: 'Mijn schoenen', stat: '5' }
-    const r = autoFillAp('thief', '30', eq)
+    const r = autoFillAp('thief', '8', eq)
     expect(r).toMatchObject({ ok: true, unknown: ['Mijn schoenen'], limitedBy: null })
     expect(autoFillMessage('thief', r)).toBeNull()
   })
@@ -67,6 +68,37 @@ describe('autoFillAp', () => {
     const r = autoFillAp('thief', '30', defaultEquipment())
     if (!r.ok) throw new Error('verwacht ok')
     expect(Object.keys(autoFillPatch(r.base)).sort()).toEqual(['dex', 'int', 'luk', 'str'])
+  })
+})
+
+describe('autoFillAp: items die je nog niet draagt (Dave, 5 oktober 2026)', () => {
+  it('een Thief zonder equipment krijgt DEX voor wat hij op zijn level mag dragen', () => {
+    expect(autoFillAp('thief', '8', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 4 }, limitedBy: null })
+    expect(autoFillAp('thief', '10', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 10 }, limitedBy: 'Blue Cloth Pants' })
+    expect(autoFillAp('thief', '20', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 20 }, limitedBy: 'Steel Igor' })
+    expect(autoFillAp('thief', '40', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 34, luk: apAtLevel(40) - 42 }, limitedBy: 'Seclusion Wristguard' })
+  })
+
+  it('een item boven je level telt niet: Steel Igor (level 20) tilt DEX niet op level 15', () => {
+    const r = autoFillAp('thief', '15', defaultEquipment())
+    if (!r.ok) throw new Error('verwacht ok')
+    expect(r.base.dex).toBeLessThan(20)
+    expect(r.limitedBy).not.toBe('Steel Igor')
+  })
+
+  it('wat je draagt en hoger vraagt wint van de catalogus; bij gelijke eis houdt het gedragen item de eer', () => {
+    expect(autoFillAp('thief', '10', wear({ claw: 'Steel Igor' }))).toMatchObject({ ok: false, reason: 'short' })
+    expect(autoFillAp('thief', '11', wear({ claw: 'Steel Igor' }))).toMatchObject({ ok: true, base: { dex: 20 }, limitedBy: 'Steel Igor' })
+    expect(autoFillAp('warrior', '40', wear({ claw: 'Gladius' }))).toMatchObject({ ok: true, base: { dex: 30 }, limitedBy: 'Gladius' })
+  })
+
+  it('te weinig AP voor de toekomstige eis: de secundaire stat krijgt wat er past, de hoofdstat haalt nog wat je draagt', () => {
+    // Ruwe invoer: STR 50 (Red Cross Shield), INT 50 (Red Lutia) en LUK 50 (Red Stealer Pants) gedragen. Level 32 geeft 180 AP:
+    // er blijft 30 over voor DEX, minder dan de 34 van Seclusion Wristguard. Level 30 (170): de 20 die shield en broek vragen; het shield komt eerst in slotvolgorde.
+    const eq = wear({ shield: 'Red Cross Shield', gloves: 'Red Lutia', bottom: 'Red Stealer Pants' })
+    expect(autoFillAp('thief', '32', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 30, int: 50, luk: 50 }, limitedBy: 'Seclusion Wristguard' })
+    expect(autoFillAp('thief', '30', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 20, int: 50, luk: 50 }, limitedBy: 'Red Cross Shield' })
+    expect(autoFillAp('thief', '29', eq)).toMatchObject({ ok: false, reason: 'short', need: 170, have: 165 })
   })
 })
 
