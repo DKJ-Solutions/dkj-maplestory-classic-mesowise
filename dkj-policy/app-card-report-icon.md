@@ -48,12 +48,14 @@ a report with the extended advice. Not on Total stats and Ability points: nothin
 
 - [x] `CardReport` in `src/app.tsx`: its own button beside the eye (a button cannot sit inside the head button), opening a popup with the advice
 - [x] `CardHead` takes an optional `report`; Equip, Skillpoints and Monster pass it on the home screen only
+- [x] Stats group (Ability points, Total stats) moved to the top, so the three report cards sit together (Dave, October 5, 2026)
 - [x] Styling in `src/style.css`: 44px button in the eye's colour; the popup reuses the Report card's advice rules
 
 ### TEST
 
 - [x] Tests in `src/app.test.tsx`: the icon sits on exactly those three cards, beside the eye, and each popup shows its own advice; card-name lookups anchored so they no longer also match the report button
-- [x] `npx vitest run`: 1414 passed; `scripts/lint/lint.ps1`: clean
+- [x] Test that the Stats group comes first and Equip, Skillpoints and Monster follow each other
+- [x] `npx vitest run`: 1415 passed; `scripts/lint/lint.ps1`: clean
 - [~] Browser check at phone width -- dropped: two Chrome browsers connected and none selected; Dave looks before the merge anyway (visible result)
 
 ### DEPLOY: app/card-report-icon
@@ -66,7 +68,7 @@ The change is in the app UI only; no repo tooling or data changed.
 
 The Equip, Skillpoints and Monster cards now have a report icon beside the eye. It opens the advice for that card
 on its own: the weapon and armor advice for Equip, the skill advice for Skillpoints and the mob advice for Monster.
-Ability points and Total stats get no icon, because there is nothing to choose there.
+Ability points and Total stats get no icon, because there is nothing to choose there; their Stats group now sits at the top, so the three cards with a report stand together.
 
 **Score:** 3
 

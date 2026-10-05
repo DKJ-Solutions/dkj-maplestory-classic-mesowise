@@ -2157,6 +2157,13 @@ export function App() {
               {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
               {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
 
+              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok onder de kop "Stats", bovenaan, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bij elkaar staan (Dave, 5 oktober 2026). De kaarten zelf hebben geen kop (alleen een knop), dus de h2 is de kop van het blok. */}
+              <section class="stats-group" aria-labelledby="stats-heading">
+                <h2 id="stats-heading">Stats</h2>
+                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
+                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+              </section>
+
               <EquipmentCard
                 job={job}
                 equipment={equipment}
@@ -2179,13 +2186,6 @@ export function App() {
                   )
                 }
               />
-
-              {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok onder de kop "Stats". De kaarten zelf hebben geen kop (alleen een knop), dus de h2 is de kop van het blok. */}
-              <section class="stats-group" aria-labelledby="stats-heading">
-                <h2 id="stats-heading">Stats</h2>
-                <ProfileCard job={job} draft={profileDraft} error={characterError} onChange={updateProfile} />
-                <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
-              </section>
               {/* Het rapport van een kaart (CardReport): het advies over wat je op die kaart kiest. */}
               <SkillsCard
                 job={job}
