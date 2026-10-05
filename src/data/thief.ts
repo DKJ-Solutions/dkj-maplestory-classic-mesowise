@@ -111,7 +111,7 @@ export const STARTING_AP = {
 export const apAtLevel = (level: number): number =>
   4 * STARTING_AP.perStat + STARTING_AP.atCreation + AP_PER_LEVEL.amount * (level - 1)
 
-/** De Thief-gids: de accuracy-formule en het advies om de rest van de AP in LUK te zetten. */
+/** De Thief-gids: de accuracy-formule (en zijn advies om AP in LUK te zetten). */
 export const ACCURACY_SOURCE: Source = { url: 'https://meowdb.com/msclassic/guides/thief-class-guide', retrieved: R }
 
 /**

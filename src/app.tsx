@@ -651,6 +651,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
       <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
       <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
       <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
+      {isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
     </>
   )
   const mdef = wornMdef(props.equipment)
@@ -1908,7 +1909,13 @@ export function App() {
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
   // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
   // geheugen: na herladen is Back weer alleen een level terug (#130), want wat je sinds de level-up deed, is dan ook weg.
-  const [snapshot, setSnapshot] = useState<LevelUpSnapshot<Equipment> | null>(null)
+  // De ref is voor synchrone reads (Level up en meteen Back vóór een render); de state is voor wat het scherm toont.
+  const [snapshot, setSnapshotState] = useState<LevelUpSnapshot<Equipment> | null>(null)
+  const snapshotRef = useRef<LevelUpSnapshot<Equipment> | null>(null)
+  const setSnapshot = (next: LevelUpSnapshot<Equipment> | null) => {
+    snapshotRef.current = next
+    setSnapshotState(next)
+  }
   // De bevestiging na "Punt zetten", zodat een dubbele tik zichtbaar is.
   const [placed, setPlaced] = useState<string | null>(null)
 
@@ -1935,7 +1942,7 @@ export function App() {
   const levelDown = () => {
     // Net als Level up: eerst een open concept uit het corrigeervak vastleggen.
     commitAllEquipment()
-    const snap = snapshotApplies(snapshot, profileRef.current, job) ? snapshot : null
+    const snap = snapshotApplies(snapshotRef.current, profileRef.current, job) ? snapshotRef.current : null
     if (snap) {
       writeProfile(() => snap.draft)
       writeEquipment(snap.equipment)
@@ -2003,6 +2010,8 @@ export function App() {
     if (next === job) return
     commitAllEquipment()
     clearPending()
+    // De snapshot hoort bij de equipment van de vorige job.
+    setSnapshot(null)
     const kept = equipmentForJob(equipmentRef.current, next)
     writeEquipment(kept)
     // Verdwijnt de bronze pijl uit het ammo-slot (andere job), dan rekent een terugkeer niet stilletjes met bronze.

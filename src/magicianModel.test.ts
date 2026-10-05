@@ -227,7 +227,7 @@ describe('expectedStat voor een Magician', () => {
   })
 })
 
-describe('Magician: applyLevelUp en het controlescherm', () => {
+describe('Magician: applyLevelUp', () => {
   const m: ProfileDraft = { ...mDraft, level: '10', hp: '444' }
 
   it('geeft +16 HP per level (de Beginner en de Magician hebben dezelfde HP per level) en laat INT, DEX, LUK en STR staan', () => {

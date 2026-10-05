@@ -59,7 +59,6 @@ main {
 
 h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
-.lead { margin: 0 0 1.25rem; color: var(--muted); }
 
 .card {
   background: var(--card);
@@ -412,9 +411,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .skill-mp .cost { color: var(--cost); }
 .skill-mp .gain { color: var(--gain); }
 
-/* Stap 2: wat nu? */
-.advice-cost { color: var(--text); font-size: 1.125rem; }
-.advice-cost strong { color: var(--accent); }
+/* De hint boven de velden van Total stats: wat de app niet voor je bijhoudt. */
+.total-stats-hint { margin: 0.5rem 0 0.75rem; }
 /* Ability points en Total stats naast elkaar (Dave, 5 oktober 2026). */
 /* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
 .stats-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }

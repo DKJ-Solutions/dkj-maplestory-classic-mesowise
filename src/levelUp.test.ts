@@ -277,7 +277,7 @@ describe('applyLevelDown (#130)', () => {
     expect(applyLevelDown(draft)).toEqual({ ...draft, level: '11' })
   })
 
-  it('maakt van een level-up alleen het level ongedaan', () => {
+  it('zet na een level-up zonder snapshot alleen het level een terug', () => {
     const up = applyLevelUp({ ...DEFAULT_PROFILE, level: '12' }, 'thief')
     const back = applyLevelDown(up)
     expect(back.level).toBe('12')

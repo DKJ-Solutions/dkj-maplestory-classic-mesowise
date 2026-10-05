@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
@@ -61,7 +61,7 @@ const homeScreen = () => document.querySelector<HTMLElement>('main')!
 /** De Report-kaart onderaan het beginscherm: de kosten van het level en de vier adviezen. */
 const reportCard = () => document.querySelector<HTMLElement>('section.level-cost')!
 
-/** De equipment-kaarten: [0] op het beginscherm, [1] op het controlescherm van de level-up. */
+/** De equipment-kaarten (er is er één, op het beginscherm). */
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
 
 // Een slot heet in het scherm Weapon, Hat, Top, Bottom, Overall of Shoes; de zoekbalk heet "Zoek je <Slot>".
@@ -1070,6 +1070,29 @@ describe('level-up en Back (#154)', () => {
     expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
   })
 
+  it('leest de snapshot synchroon: Level up en meteen Back in één stap zet het profiel terug', () => {
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
+      fireEvent.click(backButton())
+    })
+    expect(level()).toBe('LV. 10')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('toont bij Total stats een hint dat de app het effect van je AP niet meetelt', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    expect(homeScreen().querySelector('.total-stats-hint')?.textContent).toMatch(/Accuracy en Avoid/)
+  })
+
+  it('wist de snapshot bij een andere job: Back zet daarna alleen het level een terug', () => {
+    levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Warrior' }))
+    expect(level()).toBe('LV. 11')
+    fireEvent.click(backButton())
+    expect(level()).toBe('LV. 10')
+    expect(profileFields().hp).toBe('466')
+  })
+
   it('bewaart de snapshot niet: na herladen zet Back alleen het level een terug (#130)', () => {
     levelUp()
     cleanup()
@@ -1170,12 +1193,12 @@ describe('advies na de level-up', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, luckySeven: '2', luk: '60' } }))
     render(<App />)
   })
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
   }
 
   it('zet een punt in de aanbevolen skill en bewaart het', () => {
-    toAdvice()
+    afterLevelUp()
     const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
     expect(button.closest<HTMLElement>('.question')!.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Lucky Seven (→ 3).')
     expect(profileFields().luckySeven).toBe('2')
@@ -1201,7 +1224,7 @@ describe('een Warrior in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
   }
   const NOT_YET = /Nog niet doorgerekend/
@@ -1268,7 +1291,7 @@ describe('een Warrior in de app', () => {
       const home = homeScreen()
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026).
-      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|rekent met Power Strike|geen munitie|per soort wapen/)
       fireEvent.click(within(home.querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
       fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
@@ -1351,10 +1374,10 @@ describe('een Warrior in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open('warrior')
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +28 HP en laat LUK en STR staan', () => {
@@ -1400,11 +1423,11 @@ describe('een Warrior in de app', () => {
 
   it('toont voor een Thief nog steeds de Thief-teksten (claw, Subi, Lucky Seven)', () => {
     open('thief')
-    toAdvice()
+    afterLevelUp()
     expect(reportCard().textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
     expect(reportCard().textContent).not.toMatch(NOT_YET)
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-    expect(homeScreen().querySelector('dialog .hint')).toBeNull()
+    expect(homeScreen().querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
     expect(homeScreen().textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
 })
@@ -1547,8 +1570,8 @@ describe('het geslacht (issue #55)', () => {
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 
-  describe('op het adviesscherm', () => {
-    const toAdvice = () => {
+  describe('op de Report-kaart', () => {
+    const afterLevelUp = () => {
       cleanup()
       localStorage.setItem(
         STORAGE_KEY,
@@ -1564,13 +1587,13 @@ describe('het geslacht (issue #55)', () => {
     const armorSection = () => screen.getByRole('heading', { level: 3, name: 'DEF' }).closest<HTMLElement>('.question')!
 
     it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
-      toAdvice()
+      afterLevelUp()
       expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
     })
 
     it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
       localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
-      toAdvice()
+      afterLevelUp()
       expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
     })
   })
@@ -1592,7 +1615,7 @@ describe('een Bowman in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
   }
   const NOT_YET = /Nog niet doorgerekend/
@@ -1664,7 +1687,7 @@ describe('een Bowman in de app', () => {
       const home = homeScreen()
       expect(statShown('DEX')).toBe('80')
       expect(statShown('STR')).toBe('20')
-      expect(home.querySelector('dialog.card-dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog.card-dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Arrow Blow als je hem hebt geleerd|1 meso per pijl|Weapon multiplier|Subi|stars/)
     })
 
@@ -1687,10 +1710,10 @@ describe('een Bowman in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open()
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +22 HP en laat STR, DEX en LUK staan', () => {
@@ -1749,7 +1772,7 @@ describe('een Magician in de app', () => {
     )
     render(<App />)
   }
-  const toAdvice = () => {
+  const afterLevelUp = () => {
     levelUp()
   }
   const NOT_YET = /Nog niet doorgerekend/
@@ -1817,7 +1840,7 @@ describe('een Magician in de app', () => {
       // Zijn wapen geeft M.ATT, geen weapon attack: de Attack uit het statvenster leidt de app niet af.
       expect(statShown('Attack')).toBe('?')
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026, #106).
-      expect(home.querySelector('dialog .hint')).toBeNull()
+      expect(home.querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|Weapon multiplier|Een cast duurt|Een Magician heeft geen munitie/)
       // W.ATT staat op 0 en M.ATT toont MagicTotal = floor(60 / 2) + 31 = 61 (#100).
       expect(statShown('W.ATT')).toBe('0')
@@ -1857,10 +1880,10 @@ describe('een Magician in de app', () => {
     })
   })
 
-  describe('het adviesscherm na een level-up', () => {
+  describe('de Report-kaart na een level-up', () => {
     beforeEach(() => {
       open()
-      toAdvice()
+      afterLevelUp()
     })
 
     it('verhoogt het level, geeft +16 HP en laat INT en LUK staan', () => {
@@ -1884,7 +1907,7 @@ describe('een Magician in de app', () => {
 
     it('noemt Magic Claw niet als punt zolang Energy Bolt op 0 staat', () => {
       open({ energyBolt: '0' })
-      toAdvice()
+      afterLevelUp()
       const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
       expect(section.textContent).not.toContain('Magic Claw → 1')
     })
@@ -1899,7 +1922,7 @@ describe('een Magician in de app', () => {
   it('geeft als skillpunt Energy Bolt (→ 4), met zijn MP, en zet het punt in het bewaarde profiel', () => {
     // Gemeten met skillPointAdvice voor dit profiel (INT 20, M.ATT 10, Energy Bolt 3): Energy Bolt wint; Magic Claw 1 geeft evenveel schade per cast en spaart niets.
     open({ int: '20', clawWatk: '10', energyBolt: '3' })
-    toAdvice()
+    afterLevelUp()
     const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
     const section = button.closest<HTMLElement>('.question')!
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Energy Bolt (→ 4).')
