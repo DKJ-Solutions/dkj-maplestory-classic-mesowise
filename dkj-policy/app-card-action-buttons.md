@@ -54,6 +54,7 @@ clear button.
 - [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
 - [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
 - [x] Ability points and Total stats side by side in a two-column grid (Dave, October 5, 2026)
+- [x] A card's popup (`.card-dialog`) sits in the middle of the screen at every width, not as a sheet from the bottom on a phone (Dave, October 5, 2026)
 - [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
 
 ### DEPLOY: app/card-action-buttons
@@ -66,7 +67,7 @@ The change is in the app UI only; no repo tooling or data changed.
 
 A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
 buttons in the same style as the pencil buttons, on a row of their own below the name at full width, so it is obvious
-what can be tapped. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
+what can be tapped. A card's popup now opens in the middle of the screen, also on a phone. The cards have a little more room inside, and Ability points and Total stats now sit side by side.
 
 **Score:** 3
 

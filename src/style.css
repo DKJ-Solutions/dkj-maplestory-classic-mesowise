@@ -358,6 +358,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-dialog-body { padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 @media (min-width: 600px) { .stat-dialog { margin: auto; border-radius: 1rem; } }
+/* De popup van een kaart staat altijd in het midden van het scherm, ook op een telefoon (Dave, 5 oktober 2026), met wat ruimte aan de zijkanten. */
+.stat-dialog.card-dialog { width: calc(100% - 2rem); margin: auto; border-radius: 1rem; }
+.stat-dialog.card-dialog .stat-dialog-body { padding-bottom: 1rem; }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
 .stat-dialog { text-align: left; }
 .stat-dialog-head { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 0.5rem; margin-bottom: 0; }
