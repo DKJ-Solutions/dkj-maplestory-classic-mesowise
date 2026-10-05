@@ -39,19 +39,35 @@
 
 ### PLAN
 
+Dave, October 5, 2026: every row in the Skillpoints popup was far too full. The `−`, input and `+` (`.skill-input`) are
+replaced by an edit button, as on Equip; left of it only the level the skill has now.
+
+- [x] Decide the editor: the existing `StatEditor` in its own popup, capped at the skill's maximum and at what the pool leaves, with the SP left shown above it
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: `SkillLine` -- the name with its cost and gain lines, a value box with the level, and the pencil; the popup clamps a typed level to 0 .. the allowed maximum on save
+- [x] `src/style.css`: `.skill-row` laid out like `.stat-line` (name, value, pencil, 0.75rem apart); the stepper styles (`.skill-input`) removed
 
 ### TEST
 
+- [x] `src/app.test.tsx`: skills are set through the pencil and the popup; the pool tests read the popup's maximum instead of a disabled `+`; new tests for the row (only the level and the pencil) and the popup (SP left, a too-high level clamped)
+- [x] `npx vitest run`: 1418 passed; `scripts/lint/lint.ps1`: clean
+- [~] The look: CSS only, which jsdom does not compute -- Dave judges it by eye
+
 ### DEPLOY: app/skill-edit-button
 
-**Score:**
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A row in the Skillpoints popup now shows only the skill's level and a pencil, as on Equip, instead of a minus, a box
+and a plus. The pencil opens a small popup to change the level, which shows how many SP are left and does not go past
+what the pool allows.
+
+**Score:** 3
 
 #### Pull Request
 

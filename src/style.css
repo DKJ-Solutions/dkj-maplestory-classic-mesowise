@@ -77,7 +77,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .field:last-child { margin-bottom: 0; }
 .field span { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 0.25rem; }
 
-.field input, .field select, .skill-input input {
+.field input, .field select {
   width: 100%;
   font-size: 1rem; /* 16px: iOS zoomt dan niet in bij focus */
   padding: 0.625rem 0.75rem;
@@ -168,8 +168,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .warn { margin: 0 0 0.875rem; font-size: 0.875rem; color: #b45309; font-weight: 600; }
 .credit { margin-top: 1.5rem; font-size: 0.875rem; color: var(--muted); text-align: center; }
 
-.btn:focus-visible, .field input:focus-visible, .field select:focus-visible,
-.skill-input input:focus-visible, .skill-input .step:focus-visible {
+.btn:focus-visible, .field input:focus-visible, .field select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -430,33 +429,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Hoeveel punten van de pot je hebt gezet (issue #136); boven het maximum in de foutkleur */
 .skill-sp { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; white-space: nowrap; }
 .skill-sp.over { color: #dc2626; }
-.skill-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+/* Een skill op één rij, net als een stat-regel (Dave, 5 oktober 2026): de naam met wat hij kost en geeft, het level en het potlood. */
+.skill-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 38px; column-gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.skill-row .equip-value, .skill-row .equip-edit { grid-row: auto; grid-column: auto; margin-bottom: 0; }
 .skill-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 /* Onder de naam: de MP die de skill per keer kost op je level (issue #83) en op het volgende (issue #138), elk op een eigen regel */
 .skill-mp { display: block; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .skill-mp > span { display: block; }
 .skill-mp .cost { color: var(--cost); }
 .skill-mp .gain { color: var(--gain); }
-/* Een stepper: − en + als grote tikvlakken (44px), het getal ertussen kun je ook typen */
-.skill-input { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
-.skill-input input { width: 3rem; padding: 0.5rem 0.25rem; min-height: 44px; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
-.skill-input input::-webkit-inner-spin-button, .skill-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.skill-input .step {
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--bg);
-  color: var(--accent);
-  font: inherit;
-  font-size: 1.375rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  touch-action: manipulation; /* geen zoom bij snel twee keer tikken */
-}
-.skill-input .step:disabled { color: var(--muted); opacity: 0.4; cursor: not-allowed; }
-.skill-input small { width: 1.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }

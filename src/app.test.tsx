@@ -37,6 +37,14 @@ const levelCostText = () => {
 }
 /** De titel in de kop van een kaart; de kop zelf is geen knop meer, alleen het oog en het rapport (Dave, 5 oktober 2026). */
 const headTitle = (card: string) => screen.getByRole('button', { name: `${card} bekijken` }).closest('.spot-head')!.querySelector('.spot-name')!.textContent
+/** Zet een skill via zijn potlood en de popup (Dave, 5 oktober 2026): typ het level en sla op met Enter. */
+const setSkill = (within_: HTMLElement, name: string, value: string) => {
+  fireEvent.click(within(within_).getByRole('button', { name: `${name} wijzigen` }))
+  const d = document.querySelector(`dialog[aria-label="${name}"]`) as HTMLElement
+  const input = within(d).getByLabelText(/^Level/) as HTMLInputElement
+  fireEvent.input(input, { target: { value } })
+  fireEvent.keyDown(input, { key: 'Enter' })
+}
 const stored = (key: string) => JSON.parse(localStorage.getItem(key) ?? 'null')
 const profileFields = () => stored(PROFILE_KEY)?.fields
 /** De Attack zoals Total stats hem moet tonen: het schadebereik van het bewaarde profiel (#108). */
@@ -1232,34 +1240,33 @@ describe('een Warrior in de app', () => {
 
     it('toont bij elke skill de MP op het gezette level en op het volgende, en bij een passieve skill dat hij niets kost (#83, #138)', () => {
       const skills = openHomeSkills()
-      const row = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)).closest('.skill-row')!
-      const input = (name: string) => within(skills).getByLabelText(new RegExp(`^${name}, level van 0 tot`)) as HTMLInputElement
+      const row = (name: string) => within(skills).getByRole('button', { name: `${name} wijzigen` }).closest('.skill-row')!
       const lines = (name: string) => [...row(name).querySelectorAll('.skill-mp > span')].map((l) => l.textContent)
       // Slash Blast kost 4 MP op level 4 en 5 MP op level 5 (de skillpagina, data/warrior.ts).
-      fireEvent.input(input('Slash Blast'), { target: { value: '4' } })
+      setSkill(skills, 'Slash Blast', '4')
       // Slash Blast kost ook HP (3 op level 4, 4 op level 5) en raakt tot 4 monsters met 79% en 82% schade (#139).
       expect(lines('Slash Blast')).toEqual(['Nu: −4 MP per keer, −3 HP, +79% schade, tot 4 monsters', 'Volgend level: −5 MP, −4 HP, +82% schade, tot 4 monsters'])
       // Op het maximum (20, 12 MP) is er geen volgend level.
-      fireEvent.input(input('Slash Blast'), { target: { value: '20' } })
+      setSkill(skills, 'Slash Blast', '20')
       expect(lines('Slash Blast')).toEqual(['Nu: −12 MP per keer, −8 HP, +130% schade, tot 4 monsters'])
       // Op level 0 is hij nog niet geleerd; level 1 kost 15 MP en geeft 5% van de DEF uit het profiel (60): +3 (#139).
-      fireEvent.input(input('Iron Body'), { target: { value: '0' } })
+      setSkill(skills, 'Iron Body', '0')
       expect(lines('Iron Body')).toEqual(['Nu: niet geleerd', 'Volgend level: −15 MP, +3 DEF (5%)'])
       // Level 5 geeft 9% (floor(5,4) = +5), level 6 geeft 10% (+6).
-      fireEvent.input(input('Iron Body'), { target: { value: '5' } })
+      setSkill(skills, 'Iron Body', '5')
       expect(lines('Iron Body')).toEqual(['Nu: −15 MP per keer, +5 DEF (9%)', 'Volgend level: −15 MP, +6 DEF (10%)'])
       // Wat het kost is rood (.cost), wat het geeft groen (.gain); "Nu: " en de komma niet.
       const toned = (tone: string) => [...row('Iron Body').querySelectorAll(`.skill-mp .${tone}`)].map((p) => p.textContent)
       expect(toned('cost')).toEqual(['−15 MP per keer', '−15 MP'])
       expect(toned('gain')).toEqual(['+5 DEF (9%)', '+6 DEF (10%)'])
       // Een passief met een effect: dat staat onder "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
-      fireEvent.input(input('Precise Strikes'), { target: { value: '2' } })
+      setSkill(skills, 'Precise Strikes', '2')
       expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])
       // Op level 0 van een passief met effect: nog niet geleerd, en wat level 1 geeft.
-      fireEvent.input(input('Precise Strikes'), { target: { value: '0' } })
+      setSkill(skills, 'Precise Strikes', '0')
       expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: niet geleerd', 'Volgend level: +5 Accuracy, +1% Crit. Rate'])
       // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
-      fireEvent.input(input('Power Strike'), { target: { value: '' } })
+      setSkill(skills, 'Power Strike', '')
       expect(lines('Power Strike')).toEqual([])
     })
 
@@ -1895,7 +1902,38 @@ describe('skillpunten per level (issue #136)', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     render(<App />)
   }
-  const plusOf = (card: HTMLElement, skill: string) => within(card).getByLabelText(`${skill} een level hoger`) as HTMLButtonElement
+  /** Of er bij een skill nog een punt bij kan: de popup laat dan meer toe dan het level dat er staat. */
+  const canRaise = (card: HTMLElement, skill: string) => {
+    const row = within(card).getByRole('button', { name: `${skill} wijzigen` }).closest('.skill-row')!
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: `${skill} wijzigen` }))
+    const d = document.querySelector(`dialog[aria-label="${skill}"]`) as HTMLElement
+    const input = within(d).getByLabelText(/^Level/) as HTMLInputElement
+    const raise = Number(input.max) > (Number(input.value) || 0)
+    fireEvent.click(within(d).getByRole('button', { name: 'Sluiten zonder opslaan' }))
+    return raise
+  }
+
+  // Dave, 5 oktober 2026: een rij was te vol; er staat nu alleen het level en een potlood, zoals bij Equip.
+  it('toont per skill alleen het level en een potlood, zonder − en + in de rij', () => {
+    setProfile({ level: '11', luckySeven: '3' })
+    const card = openHomeSkills()
+    const row = within(card).getByRole('button', { name: 'Lucky Seven wijzigen' }).closest('.skill-row') as HTMLElement
+    expect(row.querySelector('.equip-value')!.textContent).toBe('3')
+    expect(row.querySelector('input')).toBeNull()
+    expect(within(row).getAllByRole('button')).toHaveLength(1)
+  })
+
+  it('toont in de popup van een skill hoeveel SP er over is, en zet een te hoog level op wat de pot toelaat', () => {
+    setProfile({ level: '11', luckySeven: '1' })
+    const card = openHomeSkills()
+    fireEvent.click(within(card).getByRole('button', { name: 'Lucky Seven wijzigen' }))
+    const d = document.querySelector('dialog[aria-label="Lucky Seven"]') as HTMLElement
+    // Lv 11 geeft 4 SP voor de 1e job; Lucky Seven 1 laat er 3 over, dus hoogstens level 4.
+    expect(d.querySelector('.stat-dialog-db')!.textContent).toBe('SP over: 3 van 4')
+    expect((within(d).getByLabelText(/^Level/) as HTMLInputElement).max).toBe('4')
+    setSkill(card, 'Lucky Seven', '9')
+    expect(profileFields().luckySeven).toBe('4')
+  })
 
   it('toont op de Skillpoints-kaart per pot "x / y SP"', () => {
     setProfile({ level: '11', luckySeven: '3', nimbleBody: '1', threeSnails: '2' })
@@ -1904,38 +1942,38 @@ describe('skillpunten per level (issue #136)', () => {
     expect(card.textContent).toContain('2 / 9 SP')
   })
 
-  it('zet de + van de skills van de 1e job uit als die pot vol is, en laat de Beginner-skills met rust', () => {
+  it('laat bij de skills van de 1e job geen punt meer toe als die pot vol is, en laat de Beginner-skills met rust', () => {
     setProfile({ level: '11', luckySeven: '3', nimbleBody: '1' })
     const card = openHomeSkills()
-    expect(plusOf(card, 'Lucky Seven').disabled).toBe(true)
-    expect(plusOf(card, 'Keen Eyes').disabled).toBe(true)
-    expect(plusOf(card, 'Three Snails').disabled).toBe(false)
+    expect(canRaise(card, 'Lucky Seven')).toBe(false)
+    expect(canRaise(card, 'Keen Eyes')).toBe(false)
+    expect(canRaise(card, 'Three Snails')).toBe(true)
   })
 
-  it('zet de + van de Beginner-skills uit als de Beginner-pot vol is', () => {
+  it('laat bij de Beginner-skills geen punt meer toe als de Beginner-pot vol is', () => {
     setProfile({ level: '5', luckySeven: '0', threeSnails: '3', nimbleFeet: '1' })
     const card = openHomeSkills()
     expect(card.textContent).toContain('4 / 4 SP')
-    expect(plusOf(card, 'Recovery').disabled).toBe(true)
-    expect(plusOf(card, 'Three Snails').disabled).toBe(true)
+    expect(canRaise(card, 'Recovery')).toBe(false)
+    expect(canRaise(card, 'Three Snails')).toBe(false)
   })
 
-  it('laat de + aan zolang er een punt over is, en zet er dan een bij', () => {
+  it('laat een punt toe zolang er een over is, en zet er dan een bij', () => {
     setProfile({ level: '11', luckySeven: '3' })
     const card = openHomeSkills()
-    expect(plusOf(card, 'Keen Eyes').disabled).toBe(false)
-    fireEvent.click(plusOf(card, 'Keen Eyes'))
+    expect(canRaise(card, 'Keen Eyes')).toBe(true)
+    setSkill(card, 'Keen Eyes', '1')
     expect(profileFields().keenEyes).toBe('1')
     expect(card.textContent).toContain('4 / 4 SP')
-    expect(plusOf(card, 'Keen Eyes').disabled).toBe(true)
+    expect(canRaise(card, 'Keen Eyes')).toBe(false)
   })
 
-  it('toont alleen wat je zette als het level geen geldig getal is, en zet de + niet uit', () => {
+  it('toont alleen wat je zette als het level geen geldig getal is, en laat een punt toe', () => {
     setProfile({ level: '', luckySeven: '3' })
     const card = openHomeSkills()
     expect(card.textContent).toContain('3 SP')
     expect(card.textContent).not.toMatch(/\d+ \/ \d+ SP/)
-    expect(plusOf(card, 'Keen Eyes').disabled).toBe(false)
+    expect(canRaise(card, 'Keen Eyes')).toBe(true)
   })
 
   it('zegt bij de skillvraag dat je skillpunten goed staan als de pot vol is', () => {
@@ -1951,7 +1989,7 @@ describe('skillpunten per level (issue #136)', () => {
     // Zet de pot vol via de Skillpoints-kaart van het adviesscherm.
     const card = within(panels()[2]).getByRole('button', { name: 'Skillpoints bekijken' })
     fireEvent.click(card)
-    fireEvent.input(within(panels()[2]).getByLabelText(/^Lucky Seven, level van 0 tot/), { target: { value: '4' } })
+    setSkill(panels()[2], 'Lucky Seven', '4')
     // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.
     expect(section.querySelector('.chip')!.textContent).toBe('Goed gezet')
     expect(section.querySelector('.verdict')!.textContent).toBe('Je skillpunten staan goed.')
