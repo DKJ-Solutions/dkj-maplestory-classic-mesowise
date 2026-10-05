@@ -35,7 +35,7 @@ import {
 } from './equipment'
 import { expectedStat } from './expectedStats'
 import { isComputed } from './job'
-import { applyLevelUp, applySkillPoint, checkFieldsFor } from './levelUp'
+import { applyLevelUp, applySkillPoint } from './levelUp'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
 import { bestExpPerMeso } from './mesoCostAt'
 import {
@@ -247,13 +247,6 @@ describe('Magician: applyLevelUp en het controlescherm', () => {
   it('laat de accuracy staan als INT of LUK geen geheel getal is', () => {
     expect(applyLevelUp({ ...m, int: '', accuracy: '80' }, 'magician').accuracy).toBe('80')
     expect(applyLevelUp({ ...m, luk: 'x', accuracy: '80' }, 'magician').accuracy).toBe('80')
-  })
-
-  it('laat het controlescherm met INT beginnen, dan LUK en DEX, en toont geen skills', () => {
-    const keys = checkFieldsFor('magician').map((f) => f.key)
-    expect(keys.slice(0, 7)).toEqual(['level', 'hp', 'int', 'luk', 'dex', 'accuracy', 'avoid'])
-    // De rest staat erachter, zonder de velden die alleen ter info zijn (Magic, Crit. enzovoort).
-    expect(keys).toEqual([...keys.slice(0, 7), 'str', 'clawWatk', 'wdef'])
   })
 
   it('geeft de MP per cast van Energy Bolt en Magic Claw (0 op level 0)', () => {

@@ -8,8 +8,6 @@ import {
   commitStat,
   databaseStat,
   defaultEquipment,
-  entryChanged,
-  entryLabel,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
@@ -227,17 +225,6 @@ describe('commitStat', () => {
   })
 })
 
-describe('entryLabel', () => {
-  it('noemt het item, met de eigen stat erbij als die afwijkt', () => {
-    expect(entryLabel('top', unknown)).toBe('nog niet ingevuld')
-    expect(entryLabel('top', shop('Red Pao'))).toBe('Red Pao')
-    expect(entryLabel('top', shop('Red Pao', '32'))).toBe('Red Pao')
-    expect(entryLabel('top', shop('Red Pao', '35'))).toBe('Red Pao (aangepast: 35)')
-    expect(entryLabel('top', other('5', ' Muts '))).toBe('Muts')
-    expect(entryLabel('top', other('5'))).toBe('Eigen item')
-  })
-})
-
 describe('wornWdef en wornName', () => {
   const eq: Equipment = {
     claw: shop('Meba'),
@@ -316,27 +303,6 @@ describe('MDEF in de data (#91)', () => {
   it('geeft de MDEF door in de catalogus van een armorslot, ook voor een andere job die het item draagt', () => {
     expect(catalogItems('hat', 'thief').find((i) => i.name === 'Bronze Pride')?.mdef).toBe(18)
     expect(catalogItems('hat', 'warrior').every((i) => i.mdef === 0)).toBe(true)
-  })
-})
-
-describe('entryChanged', () => {
-  it('ziet een andere keuze als gewijzigd', () => {
-    expect(entryChanged(unknown, shop('Meba'))).toBe(true)
-    expect(entryChanged(shop('Meba'), shop('Garnier'))).toBe(true)
-    expect(entryChanged(shop('Meba'), shop('Meba'))).toBe(false)
-  })
-
-  it('ziet bij een eigen item een andere naam of stat, maar negeert spaties rond de tekst', () => {
-    expect(entryChanged(other('5', 'x'), other('5', 'x'))).toBe(false)
-    expect(entryChanged(other(' 5 ', ' x '), other('5', 'x'))).toBe(false)
-    expect(entryChanged(other('5', 'x'), other('6', 'x'))).toBe(true)
-    expect(entryChanged(other('5', 'x'), other('5', 'y'))).toBe(true)
-  })
-
-  it('negeert een achtergebleven naam als de keuze geen eigen item is, maar ziet een eigen stat', () => {
-    expect(entryChanged({ pick: 'Meba', name: 'a', stat: '' }, shop('Meba'))).toBe(false)
-    expect(entryChanged(shop('Meba'), shop('Meba', '21'))).toBe(true)
-    expect(entryChanged(shop('Meba', ' 21 '), shop('Meba', '21'))).toBe(false)
   })
 })
 
