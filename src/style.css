@@ -117,7 +117,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
   gap: 0.75rem;
   align-items: center;
   min-height: 44px;
-  padding: 0.875rem 0.875rem 0.875rem 1rem;
+  padding: 1rem;
 }
 .spot-name { grid-column: 1; font-weight: 600; overflow-wrap: anywhere; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
@@ -462,8 +462,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
 .advice-cost strong { color: var(--accent); }
-/* De Stats-groep heeft geen kop; padding (geen margin, die valt samen met die van de kaart erboven) geeft extra ruimte onder Monster. */
-.stats-group { padding-top: 1rem; }
+/* Ability points en Total stats naast elkaar (Dave, 5 oktober 2026). Op een telefoon is elke kaart dan zo'n 160px breed:
+   iets minder ruimte links en tussen de naam en het oog, en een naam breekt op een spatie, niet midden in een woord. */
+/* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
+.stats-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
+.stats-group > .card { margin: 0; }
+.stats-group .card > .spot-head { gap: 0.5rem; padding-left: 0.875rem; }
+.stats-group .card > .spot-head .spot-name { overflow-wrap: normal; }
 /* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
 .question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
 .question-head h3 { margin: 0; font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }
