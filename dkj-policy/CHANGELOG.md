@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**43 / 80 minor entries** <!-- pending-tally -->
+**44 / 81 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/card-report-icon · 20261005-082819Z
+
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+The Equip, Skillpoints and Monster cards now have a report icon beside the eye. It opens the advice for that card on
+its own: weapon and armor for Equip, the skill for Skillpoints and the mob for Monster.
+
+Ability points and Total stats get no icon, because there is nothing to choose there. They now sit at the top, without
+the "Stats" heading and with a little more space above Equip, so the three cards with a report stand together.
+
+The summary line under the level is gone, because the Report card already shows what the level costs. Popup titles are
+now the largest text in their popup, and ATT and DEF no longer carry a dotted underline.
+
+**Score:** 3
+
+#### Pull Request
+
+A report icon beside the eye on the Equip, Skillpoints and Monster cards
+
+[PR #149](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/149)
+
+---
 
 ### DEPLOY: data/146-exp-levels-1-9 · 20261004-210517Z
 
