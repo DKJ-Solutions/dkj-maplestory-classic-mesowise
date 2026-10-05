@@ -477,8 +477,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 0.75rem; min-height: 44px; }
 .menu-row + .menu-row { margin-top: 0.5rem; }
 .menu-label { font-size: 1rem; font-weight: 600; }
-.menu-value { min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
-.menu-row .equip-edit { margin-right: calc((44px - var(--control-h)) / 2); }
+/* De waarde staat helemaal rechts, tegen het potlood (Dave, 5 oktober 2026). */
+.menu-value { min-width: 0; font-size: 1rem; text-align: right; overflow-wrap: anywhere; }
+/* .equip-edit staat elders op een vaste plek in zijn raster; hier op de rij zelf. */
+.menu-row .equip-edit { grid-row: auto; grid-column: auto; margin-right: calc((44px - var(--control-h)) / 2); }
 .menu-list ~ .hint, .menu-list ~ .debug { margin-top: 1rem; }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
