@@ -26,7 +26,7 @@ export const skillPoolOf = (job: SkillInfo['job']): SkillPool => (job === 'Begin
 export const SKILL_POOL_NAME: Record<SkillPool, string> = { beginner: 'Beginner-skills', job: 'skills van je 1e job' }
 
 /** Het level waarop elke klas zijn 1e job krijgt (in het spel voor elke klas, ook de Magician). */
-const FIRST_JOB_LEVEL = 10
+export const FIRST_JOB_LEVEL = 10
 
 /**
  * Hoeveel skillpunten je in totaal hebt verdiend op dit level, per pot. Beginner: 1 per level-up tot level 10 (dus

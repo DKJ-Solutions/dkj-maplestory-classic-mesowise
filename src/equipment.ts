@@ -10,7 +10,7 @@
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import type { WornWdef } from './armorUpgrade'
 import { accessoriesFor } from './data/accessories'
-import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS } from './data/beginnerWeapons'
+import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -136,7 +136,7 @@ export interface CatalogItem {
   stat: number
   /** Alleen een claw: de tijd per aanval met Lucky Seven, zodat de aanvalssnelheid mee verandert. */
   attackMs?: number
-  /** Alleen een Warrior-wapen: de verwachte weapon multiplier van een basisaanval, zodat die mee verandert. */
+  /** Een Warrior-wapen of een wapen onder level 10: de verwachte weapon multiplier van een basisaanval, zodat die mee verandert. */
   mult?: number
   /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
   mdef?: number
@@ -329,7 +329,7 @@ export function setHelpfulStranger(profile: ProfileDraft, eq: Equipment, on: boo
 
 /**
  * Het profiel na een wissel in één slot. Claw: je weapon attack wordt die van de nieuwe claw, en bij een
- * ander wapen uit de catalogus ook je aanvalssnelheid (en bij een Warrior-wapen zijn weapon multiplier; pas je
+ * ander wapen uit de catalogus ook je aanvalssnelheid (en bij een Warrior-wapen of een wapen onder level 10 zijn weapon multiplier, en of het een dagger is; pas je
  * alleen de WATK van hetzelfde wapen aan, dan blijven een zelf ingevulde aanvalssnelheid en multiplier staan). Armor: de WDEF in het profiel is het totaal uit je statvenster,
  * dus alleen het verschil tussen het oude en het nieuwe stuk erbij of eraf. Vul je een slot voor het eerst in,
  * dan blijft de WDEF staan: dat stuk zat er al in.
@@ -346,10 +346,13 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
     return { ...base, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }
   }
   if (!isArmorSlot(slot)) {
-    if (next === undefined) return profile
+    // Een dagger onder level 10 rekent met LUK als hoofdstat (#171): elk ander nieuw wapen, ook een eigen item, zet het uit.
+    const dagger = isBeginnerDagger(after.pick) ? '1' : '0'
+    const withDagger = after.pick === before.pick || profile.dagger === dagger ? profile : { ...profile, dagger }
+    if (next === undefined) return withDagger
     const item = after.pick === OTHER || after.pick === before.pick ? undefined : anyItem('claw', after.pick)
     return {
-      ...profile,
+      ...withDagger,
       clawWatk: String(next),
       ...(item?.attackMs !== undefined ? { attackMs: String(item.attackMs) } : {}),
       ...(item?.mult !== undefined ? { weaponMult: String(item.mult) } : {}),

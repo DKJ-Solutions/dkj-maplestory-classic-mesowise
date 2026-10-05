@@ -10,12 +10,12 @@
 // Voor welke job (een naam bij meer jobs moet hetzelfde item zijn, zie equipment.ts):
 // - Thief en Bowman: alle vijf. Het getal is de W.ATK.
 // - Warrior: Sword, Hand Axe en Wooden Club, met de multiplier van hun soort (MULT in warrior.ts). De daggers (Razor en
-//   Fruit Knife) niet: de app kent de weapon multiplier van een dagger niet.
+//   Fruit Knife) niet: zijn model rekent met STR als hoofdstat, en een dagger rekent met LUK (DAGGER hieronder).
 // - Magician: geen. Voor hem telt de M.ATT van zijn wapen, en deze wapens hebben er geen.
 //
-// Wat de app ermee rekent: het wapen zet je weapon attack en tijd per aanval, maar het model blijft dat van je job (een
-// Thief met Lucky Seven, een Bowman met zijn boog). Een Beginner-aanval kent de app niet (#45: de Beginner is geen job in
-// de app), dus onder level 10 is het getal een benadering, zie #171.
+// Wat de app ermee rekent (#171): onder level 10 slaat een Thief of Bowman als Beginner, met de gewone aanval van het wapen
+// in zijn hand (beginnerAttack in calc/mobModel.ts): de multiplier van zijn soort, zonder skill, stars of pijlen. Een Warrior
+// rekende al zo (meleeAttack zonder Power Strike).
 //
 // Niet opgenomen: Beginner's War Bow (664) en Beginner's Wooden Wand (649) zijn level 10, niet lager.
 import { SPEED } from './attackSpeed'
@@ -39,15 +39,30 @@ export const BEGINNER_WEAPONS: readonly BeginnerWeapon[] = [
   { name: 'Fruit Knife', kind: 'dagger', level: 8, watk: 23, speed: SPEED.faster3, source: src(559) },
 ]
 
+/**
+ * De dagger in de damage-gids (guides/explaining-the-damage-formula, gecontroleerd op de pagina zelf op 2026-10-05): de
+ * multipliers "Dagger 1.0 2.0" (zwaai, steek), en de stats per wapenfamilie "Dagger, Claw: LUK, STR + DEX", met de formule
+ * "(LUK × W + STR + DEX) / 100". De gids geeft de stats per wapen, niet per job; dat ze ook voor een Beginner gelden, is
+ * daaruit afgeleid. De verwachte multiplier (60% zwaai, 40% steek) is 1,4; de gids noemt zelf "1.40 for Dagger".
+ */
+export const DAGGER = {
+  mult: { swing: 1.0, stab: 2.0 },
+  source: { url: 'https://meowdb.com/msclassic/guides/explaining-the-damage-formula', retrieved: R } satisfies Source,
+} as const
+
 const isWarriorKind = (k: BeginnerWeapon['kind']): k is WarriorWeaponKind => k !== 'dagger'
 
+/** Of dit de naam van een dagger onder level 10 is: dan rekent de Beginner-aanval met LUK als hoofdstat. */
+export const isBeginnerDagger = (name: string): boolean => BEGINNER_WEAPONS.some((w) => w.kind === 'dagger' && w.name === name)
+
 /**
- * De wapens onder level 10 als items zonder prijs, met de verwachte multiplier (60% zwaai, 40% steek) voor wie er een heeft.
+ * De wapens onder level 10 als items zonder prijs, met de verwachte multiplier (60% zwaai, 40% steek) van hun soort.
  * Thief, Warrior en Bowman lezen dezelfde objecten, zodat een naam bij elke job hetzelfde item is.
  */
-export const BEGINNER_WORN_WEAPONS: readonly (WornClaw & { mult?: number })[] = BEGINNER_WEAPONS.map(({ kind, ...w }) =>
-  isWarriorKind(kind) ? { ...w, mult: effectiveMultiplier(MULT[kind]) } : w,
-)
+export const BEGINNER_WORN_WEAPONS: readonly (WornClaw & { mult: number })[] = BEGINNER_WEAPONS.map(({ kind, ...w }) => ({
+  ...w,
+  mult: effectiveMultiplier(isWarriorKind(kind) ? MULT[kind] : DAGGER.mult),
+}))
 
-/** Wat een Warrior ervan kan gebruiken: alleen wat een multiplier heeft (geen dagger). */
-export const BEGINNER_WORN_WARRIOR_WEAPONS = BEGINNER_WORN_WEAPONS.filter((w): w is WornClaw & { mult: number } => w.mult !== undefined)
+/** Wat een Warrior ervan kan gebruiken: geen dagger (zie de kop van dit bestand). */
+export const BEGINNER_WORN_WARRIOR_WEAPONS = BEGINNER_WORN_WEAPONS.filter((w) => !isBeginnerDagger(w.name))

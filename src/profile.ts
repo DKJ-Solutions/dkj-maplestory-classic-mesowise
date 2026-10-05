@@ -5,7 +5,7 @@ import { arrowFor } from './bowmanGear'
 import type { Character } from './calc/mobModel'
 import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
-import { SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
+import { FIRST_JOB_LEVEL, SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { ATTACK_MS, STARTING_AP, SUBI } from './data/thief'
 import type { Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
@@ -90,6 +90,13 @@ const ARROW_CHOICE = [
   { key: 'bronzeArrows', label: 'Bronze pijlen gekozen', min: 0, max: 1, integer: true },
 ] as const
 
+/**
+ * Of de wapenhand van een Beginner een dagger is (issue #171), als 0 of 1 in het concept zodat hij met het profiel wordt
+ * bewaard: dan rekent zijn gewone aanval met LUK als hoofdstat in plaats van STR. De equipment zet het (applyEquipChange); een
+ * oud bewaard profiel zonder dit veld laadt als geen dagger. Geen invulveld.
+ */
+const WEAPON_CHOICE = [{ key: 'dagger', label: 'Dagger in de hand', min: 0, max: 1, integer: true }] as const
+
 /** De gezette skillpunten: per skill van 0 (nog niet geleerd) tot het maximum uit de spelgegevens. */
 const skillFields = (skills: readonly SkillInfo[]): readonly ProfileField[] =>
   skills.map((s) => ({ key: s.key, label: s.name, min: 0, max: s.max, integer: true }))
@@ -99,7 +106,7 @@ const BOWMAN_SKILL_FIELDS = skillFields(BOWMAN_SKILLS)
 const MAGICIAN_SKILL_FIELDS = skillFields(MAGICIAN_SKILLS)
 const BEGINNER_SKILL_FIELDS = skillFields(THIEF_SKILLS.filter((s) => s.job === 'Beginner'))
 
-export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | (typeof ARROW_CHOICE)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
+export type ProfileKey = (typeof STATS)[number]['key'] | (typeof AMMO)[number]['key'] | (typeof ARROW_CHOICE)[number]['key'] | (typeof WEAPON_CHOICE)[number]['key'] | typeof WEAPON_MULT_FIELD.key | SkillKey
 
 /** De stats van je karakter; je skills hebben hun eigen kaart. */
 export const STAT_FIELDS: readonly ProfileField[] = STATS
@@ -132,7 +139,7 @@ const MAGICIAN_FIELDS: readonly ProfileField[] = [
 ]
 
 /** Elk veld dat een profiel bewaart, van elke job. */
-export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...ARROW_CHOICE, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS, ...MAGICIAN_SKILL_FIELDS]
+export const DRAFT_FIELDS: readonly ProfileField[] = [...PROFILE_FIELDS, WEAPON_MULT_FIELD, ...ARROW_CHOICE, ...WEAPON_CHOICE, ...WARRIOR_SKILL_FIELDS, ...BOWMAN_SKILL_FIELDS, ...MAGICIAN_SKILL_FIELDS]
 export type ProfileDraft = Record<ProfileKey, string>
 
 /**
@@ -226,6 +233,7 @@ export const DEFAULT_PROFILE: ProfileDraft = {
   weaponMult: '1.8',
   helpfulStranger: '0',
   bronzeArrows: '0',
+  dagger: '0',
   improvedHpRecovery: '0',
   maxHpIncrease: '0',
   ironBody: '0',
@@ -283,6 +291,13 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
     out.starWatk = arrow.watk
     out.starRecharge = arrow.pricePerArrow
   }
+  // Een Thief of Bowman onder level 10 slaat als Beginner met het wapen in zijn hand (#171): de multiplier en of het een dagger
+  // is, staan in het concept zoals de equipment ze zette. Geen invulveld, dus wat niet klopt, valt terug op de standaardwaarde.
+  if (job === 'thief' || job === 'bowman') {
+    const mult = Number(d.weaponMult.trim())
+    if (d.weaponMult.trim() !== '' && mult >= WEAPON_MULT_FIELD.min && mult <= WEAPON_MULT_FIELD.max) out.weaponMult = mult
+    out.dagger = d.dagger.trim() === '1' ? 1 : 0
+  }
   // Je zet niet meer skillpunten dan je op dit level verdiende (issue #136). Het level is hier al goedgekeurd.
   for (const pool of ['beginner', 'job'] as const) {
     const spent = skillPointsSpent(out, job, pool)
@@ -305,8 +320,18 @@ export const skillPointsLeft = (p: Profile, pool: SkillPool): number => Math.max
 /** De pijl van een Bowman uit het concept: bronze alleen met de schakelaar aan én de bronze pijl gekozen (zie ARROW_CHOICE). */
 const bowmanArrow = (d: ProfileDraft) => arrowFor(d.helpfulStranger.trim() === '1', d.bronzeArrows.trim() === '1')
 
-/** De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een Warrior gooit niets. */
-const weaponAttack = (job: Job, clawWatk: number, starWatk: number): number => (job === 'warrior' ? clawWatk : clawWatk + starWatk)
+/**
+ * Of dit karakter als Beginner slaat (issue #171): een Thief of Bowman onder level 10 heeft nog geen claw of boog maar een
+ * wapen onder level 10, en gooit of schiet dus niets. Een Warrior slaat al met zijn wapen; een Magician heeft dan geen aanval.
+ */
+export const attacksAsBeginner = (job: Job, level: number): boolean => (job === 'thief' || job === 'bowman') && level < FIRST_JOB_LEVEL
+
+/**
+ * De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een
+ * Warrior gooit niets, en een Beginner (attacksAsBeginner) ook niet.
+ */
+const weaponAttack = (job: Job, level: number, clawWatk: number, starWatk: number): number =>
+  job === 'warrior' || attacksAsBeginner(job, level) ? clawWatk : clawWatk + starWatk
 
 const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
 
@@ -318,9 +343,11 @@ const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
   if (job === 'magician') return 0
   const claw = whole(d.clawWatk)
-  // Een Bowman schiet zijn pijl, ook als er in het concept stars van een andere job staan (zie parseProfile).
-  const stars = job === 'warrior' ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
-  return claw === null || stars === null ? null : weaponAttack(job, claw, stars)
+  // Een Beginner gooit en schiet niets (#171); zonder geldig level telt de job. Een Bowman schiet zijn pijl, ook als er in het
+  // concept stars van een andere job staan (zie parseProfile).
+  const level = whole(d.level) ?? FIRST_JOB_LEVEL
+  const stars = job === 'warrior' || attacksAsBeginner(job, level) ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
+  return claw === null || stars === null ? null : weaponAttack(job, level, claw, stars)
 }
 
 /**
@@ -349,7 +376,7 @@ export function toCharacter(p: Profile): Character {
     dex: p.dex,
     int: p.int,
     luk: p.luk,
-    watk: magician ? 0 : weaponAttack(p.job, p.clawWatk, p.starWatk),
+    watk: magician ? 0 : weaponAttack(p.job, p.level, p.clawWatk, p.starWatk),
     matk: magician ? p.clawWatk : 0,
     accuracy: p.accuracy + buff.accuracy,
     avoid: p.avoid + buff.avoid,

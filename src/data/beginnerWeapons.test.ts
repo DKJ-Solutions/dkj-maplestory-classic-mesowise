@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyEquipChange, catalogItems, itemRequirements, searchCatalog, wornStat, type EquipEntry } from '../equipment'
 import { DEFAULT_PROFILE } from '../profile'
-import { BEGINNER_WEAPONS, BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS } from './beginnerWeapons'
+import { BEGINNER_WEAPONS, BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, DAGGER, isBeginnerDagger } from './beginnerWeapons'
 
 const pick = (name: string): EquipEntry => ({ pick: name, name: '', stat: '' })
 const unknown: EquipEntry = { pick: 'unknown', name: '', stat: '' }
@@ -21,9 +21,13 @@ describe('de wapens onder level 10', () => {
     }
   })
 
-  it('geven een multiplier aan zwaard, bijl en stomp (60% zwaai, 40% steek), en niet aan een dagger', () => {
-    // 1h-sword 1,8 en 1,8; 1h-axe en 1h-blunt 2,4 en 1,2: 0,6 x 2,4 + 0,4 x 1,2 = 1,92.
-    expect(BEGINNER_WORN_WEAPONS.map((w) => w.mult)).toEqual([1.8, 1.92, 1.92, undefined, undefined])
+  it('geven elk de verwachte multiplier van hun soort (60% zwaai, 40% steek), ook een dagger (#171)', () => {
+    // 1h-sword 1,8 en 1,8; 1h-axe en 1h-blunt 2,4 en 1,2: 0,6 x 2,4 + 0,4 x 1,2 = 1,92; dagger 1,0 en 2,0: 1,4.
+    expect(BEGINNER_WORN_WEAPONS.map((w) => w.mult)).toEqual([1.8, 1.92, 1.92, 1.4, 1.4])
+    expect(DAGGER.mult).toEqual({ swing: 1.0, stab: 2.0 })
+    expect(DAGGER.source.url).toBe('https://meowdb.com/msclassic/guides/explaining-the-damage-formula')
+    expect(BEGINNER_WEAPONS.filter((w) => isBeginnerDagger(w.name)).map((w) => w.name)).toEqual(['Razor', 'Fruit Knife'])
+    expect(isBeginnerDagger('Garnier')).toBe(false)
     expect(BEGINNER_WORN_WARRIOR_WEAPONS.map((w) => w.name)).toEqual(['Sword', 'Hand Axe', 'Wooden Club'])
   })
 
@@ -53,11 +57,18 @@ describe('de wapens onder level 10', () => {
       }
   })
 
-  it('vragen geen stat en zetten weapon attack, tijd per aanval en (bij zwaard, bijl en stomp) de multiplier', () => {
+  it('vragen geen stat en zetten weapon attack, tijd per aanval, de multiplier en of het een dagger is', () => {
     expect(itemRequirements('claw', pick('Fruit Knife'))).toEqual({})
     expect(wornStat('claw', pick('Wooden Club'))).toBe(19)
     const p = { ...DEFAULT_PROFILE, clawWatk: '5', attackMs: '999', weaponMult: '2.5' }
-    expect(applyEquipChange(p, 'claw', unknown, pick('Sword'))).toEqual({ ...p, clawWatk: '17', attackMs: '720', weaponMult: '1.8' })
-    expect(applyEquipChange(p, 'claw', unknown, pick('Fruit Knife'))).toEqual({ ...p, clawWatk: '23', attackMs: '660' })
+    expect(applyEquipChange(p, 'claw', unknown, pick('Sword'))).toEqual({ ...p, clawWatk: '17', attackMs: '720', weaponMult: '1.8', dagger: '0' })
+    expect(applyEquipChange(p, 'claw', unknown, pick('Fruit Knife'))).toEqual({ ...p, clawWatk: '23', attackMs: '660', weaponMult: '1.4', dagger: '1' })
+    // Een claw daarna zet de dagger weer uit; een claw heeft geen multiplier, dus die blijft staan (hij telt pas onder level 10).
+    const knife = applyEquipChange(p, 'claw', unknown, pick('Fruit Knife'))
+    expect(applyEquipChange(knife, 'claw', pick('Fruit Knife'), pick('Garnier'))).toMatchObject({ dagger: '0', weaponMult: '1.4' })
+    // Een eigen item ook, met of zonder ingevulde W.ATT (Victor's review op #171).
+    const other = (stat: string): EquipEntry => ({ pick: 'other', name: 'Mijn mes', stat })
+    expect(applyEquipChange(knife, 'claw', pick('Fruit Knife'), other('30'))).toMatchObject({ dagger: '0', clawWatk: '30' })
+    expect(applyEquipChange(knife, 'claw', pick('Fruit Knife'), other(''))).toMatchObject({ dagger: '0' })
   })
 })
