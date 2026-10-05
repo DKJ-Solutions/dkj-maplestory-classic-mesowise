@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**49 / 86 minor entries** <!-- pending-tally -->
+**50 / 87 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/auto-fill-ap · 20261005-132954Z
+
+The change is in the app only; no repo tooling or data changed.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+The Ability points popup has an Auto assign button: it puts the secondary stat exactly on the highest requirement of the
+equipment you wear (DEX for a Thief or Warrior, STR for a Bowman, LUK for a Magician), the rest of your level's AP in
+the main stat and leaves the others at 4. The boxes it changes light up briefly; when it cannot fill anything in, it
+says why. The AP still free now always stand behind Ability points, also (0) or below zero in red when more is placed
+than the level gives, and behind the titles of the Ability points and Skillpoints popups. Beside the button the popup
+shows how many base AP are placed of what the level gives, such as 73 / 80 BASE AP. Popup titles are now h2 headings.
+
+**Score:** 3
+
+#### Pull Request
+
+Fill in your base AP automatically from the equipment you wear
+
+[PR #159](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/159)
+
+---
 
 ### DEPLOY: app/levelup-snapshot · 20261005-123919Z
 
