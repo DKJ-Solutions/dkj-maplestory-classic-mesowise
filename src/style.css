@@ -111,23 +111,24 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .hunted .hint a { color: var(--accent); }
 .spot.invalid { border-color: #dc2626; }
 
-/* Elke kaartkop heeft dezelfde ruimte (Dave, 5 oktober 2026). In de breedte niet meer dan 1rem: Ability points en Total
-   stats staan naast elkaar, en dan is een kaart op een telefoon zo'n 160px breed ("Ability" past dan vanaf 375px). */
+/* Elke kaartkop heeft dezelfde ruimte, 1.5rem rondom (Dave, 5 oktober 2026). Past de naam niet naast de knoppen (Ability
+   points en Total stats staan naast elkaar, op een telefoon zo'n 160px breed), dan zakken de knoppen naar een regel eronder. */
 .spot-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   min-height: 44px;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem;
 }
-.spot-name { grid-column: 1; font-weight: 600; overflow-wrap: anywhere; }
+.spot-name { font-weight: 600; overflow-wrap: normal; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
 .spot-name.with-icon { display: flex; align-items: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
 /* Rechts in de kop de knoppen van de kaart (Dave, 5 oktober 2026): het oog toont de inhoud in een popup (#106), het
    rapport het advies. Alleen deze knoppen zijn te tikken, niet de kop; ze zien eruit als het potlood, een vingerbreed (44px). */
-.card-actions { grid-column: 2; display: flex; gap: 0.625rem; }
+.card-actions { display: flex; gap: 0.625rem; margin-left: auto; }
 .card-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--edit-fg); background: var(--edit-bg); border: 0; border-radius: 0.5rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .card-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -462,11 +463,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Stap 2: wat nu? */
 .advice-cost { color: var(--text); font-size: 1.125rem; }
 .advice-cost strong { color: var(--accent); }
-/* Ability points en Total stats naast elkaar (Dave, 5 oktober 2026); een naam breekt daar op een spatie, niet midden in een woord. */
+/* Ability points en Total stats naast elkaar (Dave, 5 oktober 2026). */
 /* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
 .stats-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
 .stats-group > .card { margin: 0; }
-.stats-group .card > .spot-head .spot-name { overflow-wrap: normal; }
 /* Kop links, het oordeel (chip) rechts op dezelfde regel; een lange chip krimpt en breekt om, of zakt onder de kop */
 .question-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
 .question-head h3 { margin: 0; font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }

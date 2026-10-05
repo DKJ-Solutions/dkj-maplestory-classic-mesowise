@@ -47,7 +47,7 @@ clear button.
 ### CREATE
 
 - [x] `src/app.tsx`: `CardHead` is a plain `div` with the title; the eye is its own button (`<card> bekijken`), next to the report button (`Report: <card>`)
-- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup; more padding in the head, the same on every card (1.5rem top and bottom, 1rem left and right -- the most that fits for the two stats cards side by side at phone width, from 375px -- and 0.5rem between name and buttons) and between the two buttons (0.625rem, was 0.375rem; Dave, October 5, 2026)
+- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup; more padding in the head, the same on every card (1.5rem all round, 0.5rem between name and buttons); where a name does not fit beside the buttons, as on the two stats cards side by side at phone width, the buttons wrap to a line below and between the two buttons (0.625rem, was 0.375rem; Dave, October 5, 2026)
 
 ### TEST
 
