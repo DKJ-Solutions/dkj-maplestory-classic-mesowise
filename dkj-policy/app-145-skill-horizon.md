@@ -52,7 +52,7 @@
 
 - [x] Tycho: horizon boundaries, the per-level evaluation, the cut-off at lv 30, the UI sentences (1507 tests green)
 - [x] Victor: code review (no correctness findings); Edith: Dutch text
-- [ ] Dave looked at the preview on his phone
+- [x] Dave looked at the preview and said ship it
 
 ### DEPLOY: app/145-skill-horizon
 
