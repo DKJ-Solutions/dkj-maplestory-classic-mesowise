@@ -258,7 +258,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
         </svg>
       </button>
       {open && (
-        <StatDialog title={`Report: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Report: ${props.title}`} heading closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">{props.children}</div>
         </StatDialog>
       )}
@@ -278,7 +278,7 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} sub={props.sub} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} sub={props.sub} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -999,10 +999,13 @@ function StatDialog(props: {
   className?: string
   /** Een regel onder de titel, in de kop van de popup (Dave, 5 oktober 2026, #157): de kop is dan de titel met die regel, naast het kruisje. */
   sub?: ComponentChildren
+  /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
+  heading?: boolean
   onCancel: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const title = props.heading ? <h2 class="stat-dialog-name">{props.title}</h2> : <strong class="stat-dialog-name">{props.title}</strong>
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1025,11 +1028,11 @@ function StatDialog(props: {
       <div class="stat-dialog-head">
         {props.sub ? (
           <div class="stat-dialog-title">
-            <strong>{props.title}</strong>
+            {title}
             {props.sub}
           </div>
         ) : (
-          <strong>{props.title}</strong>
+          title
         )}
         <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>

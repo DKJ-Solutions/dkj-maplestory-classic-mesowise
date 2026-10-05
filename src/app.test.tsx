@@ -1136,7 +1136,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(homeScreen().querySelector('dialog .ap-balance')?.textContent).toBe('Base AP over: 5 van 75')
     // In de kop van de popup, samen met de titel (naast het kruisje).
     expect(homeScreen().querySelector('dialog .stat-dialog-head > .stat-dialog-title > .ap-balance')).not.toBeNull()
-    expect(homeScreen().querySelector('dialog .stat-dialog-title > strong')?.textContent).toBe('Ability points')
+    expect(homeScreen().querySelector('dialog .stat-dialog-title > h2')?.textContent).toBe('Ability points')
   })
 
   it('toont (0) bij Ability points en niets bij Skillpoints zolang alle AP en SP gezet zijn', () => {
