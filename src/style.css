@@ -111,15 +111,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .hunted .hint a { color: var(--accent); }
 .spot.invalid { border-color: #dc2626; }
 
-/* Elke kaartkop heeft dezelfde ruimte (Dave, 5 oktober 2026). In de breedte niet meer dan 0.875rem: Ability points en Total
-   stats staan naast elkaar, en dan is een kaart op een telefoon zo'n 160px breed. */
+/* Elke kaartkop heeft dezelfde ruimte (Dave, 5 oktober 2026). In de breedte niet meer dan 1rem: Ability points en Total
+   stats staan naast elkaar, en dan is een kaart op een telefoon zo'n 160px breed ("Ability" past dan vanaf 375px). */
 .spot-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
   min-height: 44px;
-  padding: 1.25rem 0.875rem;
+  padding: 1.5rem 1rem;
 }
 .spot-name { grid-column: 1; font-weight: 600; overflow-wrap: anywhere; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
