@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Dave, October 5, 2026: only the eye and the report icon can be tapped, not the whole card head, and both become a
+clear button.
+
+- [x] Decide the look: the same as the pencil buttons (`--edit-bg`/`--edit-fg`, 44px), so all icon buttons in the app are one family
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: `CardHead` is a plain `div` with the title; the eye is its own button (`<card> bekijken`), next to the report button (`Report: <card>`)
+- [x] `src/style.css`: `.card-actions` and `.card-action` for both buttons; the head no longer looks or acts like a button; the open-card border rule follows the new markup
 
 ### TEST
 
+- [x] `src/app.test.tsx`: cards open through the eye button; a tap on the title opens nothing; the head holds exactly the eye and the report button
+- [x] `npx vitest run`: 1416 passed; `scripts/lint/lint.ps1`: clean
+- [~] The button look: CSS only, which jsdom does not compute -- Dave judges it by eye
+
 ### DEPLOY: app/card-action-buttons
 
-**Score:**
+The change is in the app UI only; no repo tooling or data changed.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A card no longer opens when you tap its title. Only the eye and the report icon open it, and both are now clear
+buttons in the same style as the pencil buttons, so it is obvious what can be tapped.
+
+**Score:** 3
 
 #### Pull Request
 
