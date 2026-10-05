@@ -303,15 +303,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .equip-list li.own { flex-direction: row; align-items: center; gap: 0.5rem; border: 1px dashed var(--muted); }
 .equip-list li.own::before { content: '+'; flex: none; font-weight: 700; color: var(--accent); }
 .equip-list li.more { min-height: 0; padding-top: 0.25rem; padding-bottom: 0.25rem; color: var(--muted); font-size: 0.875rem; cursor: default; }
-/* De stat die telt, met een potlood om te corrigeren. Gecorrigeerd: oranje rand, de verwachting klein doorgestreept */
+/* De stat die telt, met een potlood om te corrigeren. Gecorrigeerd: oranje rand, de verwachting klein doorgestreept.
+   Het vak is alleen om te lezen en lijkt dus niet op het potlood: geen rand en geen vulling, een vet getal; alleen het
+   potlood is een omlijnde knop (Dave, 5 oktober 2026). De rand blijft 1px transparant, zodat de maat gelijk blijft. */
 .equip-value { grid-row: 2; grid-column: 2; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 0.375rem;
   min-width: 3rem; height: var(--control-h); padding: 0.25rem 0.625rem; box-sizing: border-box;
-  border: 1px solid var(--border); border-radius: 0.5rem; background: var(--bg); font-variant-numeric: tabular-nums; }
-.equip-value-num { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1rem; line-height: 1.2; color: var(--text); }
-.equip-value-db { font-size: 0.75rem; color: var(--muted); }
+  border: 1px solid transparent; border-radius: 0.5rem; background: transparent; font-variant-numeric: tabular-nums; }
+.equip-value-num { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1rem; font-weight: 600; line-height: 1.2; color: var(--text); }
+.equip-value-db { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
 .equip-value.changed { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
-/* Het potlood is even groot als het vak ernaast (--control-h) en nooit hoger, en ziet er net zo uit: lichte vulling met
-   dezelfde rand, een donker icoon. Een donker vlak oogde groter dan het lichte vak (Dave, 5 oktober 2026). */
+/* Het potlood is even groot als het vak ernaast (--control-h) en nooit hoger: een knop met lichte vulling,
+   een rand en een donker icoon. Een donker vlak oogde te groot (Dave, 5 oktober 2026). */
 .equip-edit { grid-row: 2; grid-column: 3; width: var(--control-h); height: var(--control-h); max-height: var(--control-h); box-sizing: border-box; align-self: center; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .equip-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -370,15 +372,19 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* − en + even groot als in de andere stat-popups (52 x 52px), ook in deze smallere rij */
 .ap-edit .ap-edit-steps { grid-template-columns: 52px minmax(0, 1fr) 52px; gap: 0.375rem; }
 /* Ability points op de kaart: per stat de naam, base + extra (0 als je die niet hebt) = totaal, en het potlood; de kopjes staan erboven.
-   De vakken zijn 2.5rem (genoeg voor 999), zodat de drie op een telefoon naast de naam passen. Van vak tot vak is het
-   1.5rem (0.375rem gap, 0.75rem voor het + of =, 0.375rem gap), en het potlood staat even ver van het laatste vak (0.375rem gap
-   en 1.125rem extra in de laatste kolom, het potlood rechts) (Dave, 5 oktober 2026). */
-.stat-line.ability-line { column-gap: 0.375rem; grid-template-columns: minmax(0, 1fr) 2.5rem 0.75rem 2.5rem 0.75rem 2.5rem calc(var(--control-h) + 1.125rem); }
+   Base en extra zijn 2.5rem (genoeg voor 999), het totaal 3rem voor zijn grotere getal; zo passen ze op een telefoon naast de naam.
+   Zonder randen kan het krapper: van vak tot vak is het 1rem (0.25rem gap, 0.5rem voor het + of =, 0.25rem gap), en het potlood
+   staat even ver van het laatste vak (0.25rem gap en 0.75rem extra in de laatste kolom, het potlood rechts) (Dave, 5 oktober 2026). */
+.stat-line.ability-line { column-gap: 0.25rem; grid-template-columns: minmax(0, 1fr) 2.5rem 0.5rem 2.5rem 0.5rem 3rem calc(var(--control-h) + 0.75rem); }
 .ability-line .equip-edit { justify-self: end; }
 .ap-plus { text-align: center; font-weight: 600; color: var(--muted); }
 .ability-line .equip-value { min-width: 0; padding: 0.25rem; }
-/* Het totaal is alleen om te lezen: zonder achtergrond en met een gestippelde rand, net als het totaal in de popup */
-.ability-line .ap-total { background: transparent; border-style: dashed; }
+/* Het totaal is alleen om te lezen: zonder rand en zonder achtergrond, met een groter getal dan base en extra, zodat het eruit springt.
+   Zonder padding opzij, zodat ook 999 op 1.25rem ruim in zijn vak van 3rem past (Dave, 5 oktober 2026). */
+.ability-line .ap-total { padding-left: 0; padding-right: 0; }
+.ability-line .ap-total .equip-value-num { font-size: 1.25rem; }
+/* Base en extra in normaal gewicht, zodat alleen het totaal vet staat (Dave, 5 oktober 2026). */
+.ability-line .ap-base .equip-value-num, .ability-line .ap-extra .equip-value-num { font-weight: 400; }
 .ability-head { padding-bottom: 0; border-bottom: 0; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-align: center; }
 .equip-step { display: grid; grid-template-columns: 44px 3.5rem 44px; gap: 0.25rem; }
 .equip-step input { display: block; height: 44px; margin: 0; padding: 0 0.25rem; box-sizing: border-box; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums;
