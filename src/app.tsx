@@ -25,7 +25,7 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { GENDERS, genderShort, loadGender, saveGender, type Gender } from './gender'
+import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
@@ -92,7 +92,7 @@ function JobCard(props: {
   return (
     <section class={props.plain ? 'job' : 'card job'}>
       <div class="job-head">
-        {/* Gekozen heet de kaart Character, met je job eronder (Dave, 5 oktober 2026). */}
+        {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
         {/* In het menu is het geen kaart, dus ook geen kaarticoon (Dave, 5 oktober 2026). */}
         <h2 id={titleId} class={props.plain ? undefined : 'with-icon'}>{!props.plain && <CardIcon name="shield" />}{chosen && !editing ? 'Character' : 'Job:'}</h2>
         {chosen && (
@@ -114,7 +114,6 @@ function JobCard(props: {
           </button>
         )}
       </div>
-      {chosen && !editing && <p class="job-current">{`${jobLabel(job)}${gender ? ` (${genderShort(gender)})` : ''}`}</p>}
       {choices.length > 0 && (
         <div class="job-choices" role="group" aria-labelledby={titleId}>
           {choices.map((j) => (

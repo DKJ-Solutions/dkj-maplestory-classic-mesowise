@@ -1629,8 +1629,18 @@ describe('het geslacht (issue #55)', () => {
   })
 
   const JOB_KEY = 'mesowise.job.v1'
-  // Gekozen heet de kop Character en staat je job eronder (Dave, 5 oktober 2026).
-  const jobTitle = () => card().querySelector('.job-current')?.textContent ?? card().querySelector('h2')!.textContent
+  // Gekozen heet de kop alleen Character (Dave, 5 oktober 2026): je job en geslacht staan ingedrukt achter het potlood.
+  // Dit opent het potlood, leest ze als "Warrior (f)" en sluit het weer; zonder keuze is het de kop zelf.
+  const jobTitle = () => {
+    const edit = within(card()).queryByRole('button', { name: 'Job en geslacht wijzigen' })
+    if (!edit) return card().querySelector('h2')!.textContent
+    fireEvent.click(edit)
+    const on = (name: string) => within(within(card()).getByRole('group', { name })).queryAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent
+    const gender = on('Gender:')
+    const shown = `${on('Job:')}${gender ? ` (${gender === 'Male' ? 'm' : 'f'})` : ''}`
+    fireEvent.click(within(card()).getByRole('button', { name: 'Job en geslacht niet wijzigen' }))
+    return shown
+  }
   const withWarrior = (gender?: 'male' | 'female') => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'warrior' }))
@@ -1658,7 +1668,7 @@ describe('het geslacht (issue #55)', () => {
     expect(gender.textContent).toBe('Gender:')
   })
 
-  it('heet gekozen Character, met de job en het gekozen geslacht als (m) of (f) eronder', () => {
+  it('heet gekozen alleen Character; achter het potlood staan de job en het gekozen geslacht', () => {
     withWarrior()
     expect(card().querySelector('h2')!.textContent).toBe('Character')
     expect(jobTitle()).toBe('Warrior')
@@ -2138,7 +2148,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     const menu = openMenu()
-    expect(menu.getByText('Warrior (m)')).toBeTruthy()
+    expect(menu.getByRole('heading', { name: 'Character' })).toBeTruthy()
   })
 
   it('wisselt de job via het menu en sluit met "Sluiten"', async () => {
@@ -2149,14 +2159,14 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(menu.getByRole('button', { name: 'Thief' }))
     fireEvent.click(menu.getByRole('button', { name: 'Opslaan' }))
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(menu.getByText('Thief (m)')).toBeTruthy()
     fireEvent.click(menu.getByRole('button', { name: 'Sluiten' }))
     // Het paneel schuift eerst naar rechts weg en sluit dan.
     await act(() => new Promise((r) => setTimeout(r, 350)))
     expect(bar().querySelector('dialog')).toBeNull()
     expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
     menu = openMenu()
-    expect(menu.getByText('Thief (m)')).toBeTruthy()
+    fireEvent.click(menu.getByRole('button', { name: 'Job en geslacht wijzigen' }))
+    expect(menu.getByRole('button', { name: 'Thief' }).getAttribute('aria-pressed')).toBe('true')
   })
 
   describe('als paneel dat van rechts inschuift', () => {
