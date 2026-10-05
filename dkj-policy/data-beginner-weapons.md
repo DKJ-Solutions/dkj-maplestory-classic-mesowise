@@ -39,21 +39,33 @@
 
 ### PLAN
 
+Dave, October 5, 2026: "als ik nog lv. 9 ben, zorg dan dat ik ook beginner wapens kan kiezen. want nu beginnen de wapens pas bij lv 10". Rebecca read MeowDB: five weapons below level 10, none with a job rule or stat requirement (Sword 541, Hand Axe 576, Wooden Club 585, Razor 558, Fruit Knife 559).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/beginnerWeapons.ts`: the five weapons with level, W.ATK, speed and item page (retrieved 2026-10-05)
+- [x] `src/equipment.ts`: price-less weapons for Thief and Bowman (all five) and Warrior (no daggers: no dagger multiplier known); not for the Magician (his weapon number is M.ATT, these have none)
+- [x] `src/equipment.ts`: the weapon list sorted by level, lowest first, so the 8-result search shows them without typing
 
 ### TEST
 
+- [x] `src/data/beginnerWeapons.test.ts`: the data, the multipliers, which job gets which, the sort, same item across jobs, stats and profile change
+- [x] The two pinned weapon-list tests in `src/equipment.test.ts` updated
+- [x] `npx vitest run` (1535 green) and `npm run lint`
+- [ ] Victor's review
+
 ### DEPLOY: data/beginner-weapons
 
-**Score:**
+Internal: a new data file with five MeowDB weapons and the weapon catalog sorted by level.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Beginner (level 1 to 9) can now pick the weapon in their hand: Sword, Hand Axe, Wooden Club, Razor and Fruit Knife, at the top of the weapon list for Thief, Warrior (no daggers) and Bowman. They have no price, so they are not in the weapon advice.
+
+**Score:** 3
 
 #### Pull Request
 
 Beginner weapons below level 10 in the weapon list
-
