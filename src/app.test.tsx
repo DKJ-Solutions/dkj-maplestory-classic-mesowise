@@ -571,7 +571,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont de base AP die je nog over hebt in de popup van Ability points en in die van een stat (#157)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('section.profile .ap-balance')?.textContent).toBe('Base AP over: 0 van 70')
+    expect(homeScreen().querySelector('section.profile dialog .ap-balance [aria-hidden="true"]')?.textContent).toBe('(0/70)')
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
@@ -1130,13 +1130,22 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     expect(homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent).toBe('Ability points(5)5 AP te verdelen')
   })
 
-  it('toont bovenin de popup van Ability points de base AP die over zijn, zoals in de popup van een stat', () => {
+  it('zet achter de titel van de popup van Ability points de base AP die over zijn: Ability points (5/75)', () => {
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    expect(homeScreen().querySelector('dialog .ap-balance')?.textContent).toBe('Base AP over: 5 van 75')
-    // In de kop van de popup, samen met de titel (naast het kruisje).
-    expect(homeScreen().querySelector('dialog .stat-dialog-head > .stat-dialog-title > .ap-balance')).not.toBeNull()
-    expect(homeScreen().querySelector('dialog .stat-dialog-title > h2')?.textContent).toBe('Ability points')
+    const h2 = homeScreen().querySelector('dialog .stat-dialog-head > h2')!
+    expect(h2.querySelector('.ap-balance [aria-hidden="true"]')?.textContent).toBe('(5/75)')
+    expect(h2.textContent).toBe('Ability points (5/75)Base AP over: 5 van 75')
+    // Geen eigen regel meer onder de titel.
+    expect(homeScreen().querySelector('dialog .stat-dialog-db.ap-balance')).toBeNull()
+  })
+
+  it('zet bij te veel base AP het verschil onder 0 achter de titel, in de foutkleur', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    const el = homeScreen().querySelector('dialog .stat-dialog-head .ap-balance')!
+    expect(el.classList.contains('over')).toBe(true)
+    expect(el.querySelector('[aria-hidden="true"]')?.textContent).toBe('(−5/65)')
   })
 
   it('toont (0) bij Ability points en niets bij Skillpoints zolang alle AP en SP gezet zijn', () => {

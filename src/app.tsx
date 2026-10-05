@@ -271,14 +271,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; sub?: ComponentChildren; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} sub={props.sub} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -477,8 +477,8 @@ function StatsCard(props: {
   onChange: (patch: Partial<ProfileDraft>) => void
   /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
   lead?: ComponentChildren
-  /** Een regel onder de titel van de popup, in zijn kop (zie StatDialog). */
-  sub?: ComponentChildren
+  /** Achter de titel van de popup, zoals (13/80) bij Ability points (zie StatDialog). */
+  titleNote?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
@@ -500,7 +500,7 @@ function StatsCard(props: {
         {props.error}
       </p>
       {open && (
-        <CardPopup title={props.title} sub={props.sub} head={head} error={props.error} onClose={() => setOpen(false)}>
+        <CardPopup title={props.title} titleNote={props.titleNote} head={head} error={props.error} onClose={() => setOpen(false)}>
           {props.lead}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -572,8 +572,8 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     </>
   )
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
-  const sub = cap !== null && balance !== null && <p class="stat-dialog-db ap-balance">{apLeftLabel(balance)}: <strong>{nfInt.format(Math.abs(balance))}</strong> van {cap}</p>
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} sub={sub} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
+  const titleNote = cap !== null && balance !== null && <ApBalance left={balance} cap={cap} />
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} titleNote={titleNote} fields={[]} note={balance !== null && <ToDistribute count={balance} unit="AP" />} />
 }
 
 /**
@@ -997,15 +997,21 @@ function StatDialog(props: {
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
   className?: string
-  /** Een regel onder de titel, in de kop van de popup (Dave, 5 oktober 2026, #157): de kop is dan de titel met die regel, naast het kruisje. */
-  sub?: ComponentChildren
+  /** Achter de titel, in de kop van de popup: "Ability points (13/80)" (Dave, 5 oktober 2026, #157). */
+  titleNote?: ComponentChildren
   /** De titel als h2 (de popup van een kaart, Dave, 5 oktober 2026); anders een strong, zoals in de popup van één stat. */
   heading?: boolean
   onCancel: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
-  const title = props.heading ? <h2 class="stat-dialog-name">{props.title}</h2> : <strong class="stat-dialog-name">{props.title}</strong>
+  const name = (
+    <>
+      {props.title}
+      {props.titleNote && <> {props.titleNote}</>}
+    </>
+  )
+  const title = props.heading ? <h2 class="stat-dialog-name">{name}</h2> : <strong class="stat-dialog-name">{name}</strong>
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1025,16 +1031,7 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && props.onCancel()}
     >
       <div class="stat-dialog-body">
-      <div class="stat-dialog-head">
-        {props.sub ? (
-          <div class="stat-dialog-title">
-            {title}
-            {props.sub}
-          </div>
-        ) : (
-          title
-        )}
-      </div>
+      <div class="stat-dialog-head">{title}</div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
@@ -1412,6 +1409,20 @@ function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
     <span class={`to-distribute${over ? ' over' : ''}`} role="status">
       <span aria-hidden="true">({over ? `−${-props.count}` : props.count})</span>
       <span class="sr-only">{over ? `${-props.count} ${props.unit} te veel gezet` : `${props.count} ${props.unit} te verdelen`}</span>
+    </span>
+  )
+}
+
+/**
+ * De base AP die je nog over hebt van wat je level geeft, achter de titel van de popup van Ability points: "(13/80)" (Dave,
+ * 5 oktober 2026, #157). Onder 0 staat er meer dan je level geeft: met een echt minteken en in de kleur van een fout.
+ */
+function ApBalance(props: { left: number; cap: number }) {
+  const over = props.left < 0
+  return (
+    <span class={`to-distribute ap-balance${over ? ' over' : ''}`}>
+      <span aria-hidden="true">({over ? `−${-props.left}` : props.left}/{props.cap})</span>
+      <span class="sr-only">{`${apLeftLabel(props.left)}: ${Math.abs(props.left)} van ${props.cap}`}</span>
     </span>
   )
 }
