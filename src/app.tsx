@@ -267,18 +267,19 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
 }
 
 /**
- * De inhoud van een kaart, in een popup. Wat je erin wijzigt geldt meteen, dus sluiten is gewoon sluiten. De focus
+ * De inhoud van een kaart, in een popup. Wat je erin wijzigt geldt meteen, dus sluiten is gewoon sluiten; behalve in de
+ * Monster-popup, waar de mobkeuze een concept is (onSave, zie HuntedMobCard). De focus
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+    <StatDialog title={props.title} titleNote={props.titleNote} heading closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">{props.children}</div>
     </StatDialog>
@@ -349,7 +350,7 @@ function StatLine(props: {
         </button>
       )}
       {draft !== null && (
-        <StatDialog title={f.label} onCancel={() => setDraft(null)}>
+        <StatDialog title={f.label} onCancel={() => setDraft(null)} onSave={draft !== value ? save : undefined}>
           <StatEditor
             stat={f.label}
             labelId={`${uid}-game`}
@@ -660,7 +661,7 @@ function AbilityLine(props: {
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
       {edit !== null && (
-        <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)}>
+        <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)} onSave={dirty ? save : undefined}>
           {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
           {/* Eén kolom (Dave, 4 oktober 2026): Base AP, Extra AP en Totaal onder elkaar, de drie getallen precies boven elkaar. */}
           <div class="ap-edit">
@@ -1015,7 +1016,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; help
 
 /**
  * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment), en die van een kaart: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
- * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan (in een kaart-popup geldt een wijziging al meteen, zie CardPopup).
+ * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan; is er iets gewijzigd, dan is het kruisje een vinkje dat opslaat (onSave).
  */
 function StatDialog(props: {
   title: string
@@ -1028,6 +1029,12 @@ function StatDialog(props: {
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
   onCancel: () => void
+  /**
+   * Alleen als er iets gewijzigd is: dan wordt het kruisje een vinkje dat opslaat en sluit, naast Opslaan onderin, met
+   * links ervan een rode terugdraai-pijl Annuleren die de wijziging weggooit (Dave, 5 oktober 2026). Escape en een tik naast de popup
+   * gooien het concept ook weg.
+   */
+  onSave?: () => void
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -1057,10 +1064,28 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && props.onCancel()}
     >
       <div class="stat-dialog-body">
-      <div class="stat-dialog-head">{title}</div>
+      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
-      <button type="button" class="stat-dialog-close" aria-label={props.closeLabel ?? 'Sluiten zonder opslaan'} onClick={props.onCancel}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" /></svg>
+      {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
+      {props.onSave && (
+        // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
+        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={props.onCancel}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      )}
+      <button
+        type="button"
+        class={props.onSave ? 'stat-dialog-close save' : 'stat-dialog-close'}
+        aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
+        onClick={props.onSave ?? props.onCancel}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          {props.onSave ? (
+            <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
+          ) : (
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" />
+          )}
+        </svg>
       </button>
       {props.children}
       </div>
@@ -1170,7 +1195,7 @@ function EquipmentCard(props: {
                     </button>
                     {isEditing && (
                       // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
-                      <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }}>
+                      <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
                         <StatEditor
                           stat={stat}
                           labelId={`${uid}-${slot}-game`}
@@ -1414,7 +1439,7 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
       {edit !== null && (
-        <StatDialog title={s.name} onCancel={() => setEdit(null)}>
+        <StatDialog title={s.name} onCancel={() => setEdit(null)} onSave={edit !== value ? save : undefined}>
           {cap !== null && <p class="stat-dialog-db">SP over: <strong>{nfInt.format(Math.max(0, cap - spent))}</strong> van {cap}</p>}
           <StatEditor stat={s.name} heading={`Level (0 tot ${s.max})`} labelId={`${uid}-level`} value={edit} min={0} max={max} fallback={0} integer dirty={edit !== value} onInput={setEdit} onSave={save} />
         </StatDialog>
@@ -1478,13 +1503,27 @@ function HuntedMobCard(props: {
 }) {
   const { result, draft, profile } = props
   const [open, setOpen] = useState(false)
+  // De mob die je in de popup kiest is een concept; pas Opslaan legt hem vast, sluiten gooit hem weg (Dave, 5 oktober 2026).
+  const [choice, setChoice] = useState<string | null>(null)
   const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
+  const chosen = choice !== null && choice !== (mob?.name ?? '') ? MOBS.find((m) => m.name === choice) : undefined
+  // Opslaan sluit de popup, net als bij de andere popups (Dave, 5 oktober 2026); de focus gaat terug naar de kop.
+  const save = () => {
+    if (chosen) props.onPick(chosen.name)
+    setChoice(null)
+    setOpen(false)
+    requestAnimationFrame(() => head.current?.focus())
+  }
+  const close = () => {
+    setChoice(null)
+    setOpen(false)
+  }
   const known = draft ? spotOf(draft) : undefined
   const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
   const invalid = result !== undefined && isInvalid(result)
   const title = 'Monster'
-  const onMob = (e: Event) => props.onPick((e.currentTarget as HTMLSelectElement).value)
+  const onMob = (e: Event) => setChoice((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
       <CardHead label={title} head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
@@ -1497,10 +1536,10 @@ function HuntedMobCard(props: {
         {invalid ? result.error : null}
       </p>
       {open && (
-        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={() => setOpen(false)}>
+        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined}>
           <label class="field">
             <span>De mob die je het meest killt</span>
-            <select value={mob?.name ?? ''} onChange={onMob}>
+            <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
               {!mob && <option value="">Kies een mob</option>}
               {MOBS.map((m) => (
                 <option key={m.name} value={m.name}>
@@ -1509,7 +1548,10 @@ function HuntedMobCard(props: {
               ))}
             </select>
           </label>
-          {mob && draft && (
+          {/* Een gekozen maar nog niet opgeslagen mob: zijn getallen uit de database, alleen om te lezen; aanpassen kan na Opslaan. */}
+          {chosen &&
+            MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(chosen))} readOnly onSave={() => {}} />)}
+          {!chosen && mob && draft && (
             <>
               {/* Zegt het spel iets anders dan de database, pas het dan aan; de app rekent met jouw getal (Dave, 4 oktober 2026). */}
               {MOB_FIELDS.map((f) => (
@@ -1527,7 +1569,13 @@ function HuntedMobCard(props: {
               ))}
             </>
           )}
-          <Warnings s={picked} />
+          {!chosen && <Warnings s={picked} />}
+          {/* Opslaan staat er altijd, net als bij Ability points; zolang je geen andere mob kiest, kun je er niet op tikken. */}
+          <div class="stat-dialog-actions">
+            <button type="button" class="equip-save" disabled={!chosen} onClick={save}>
+              Opslaan
+            </button>
+          </div>
         </CardPopup>
       )}
     </section>
