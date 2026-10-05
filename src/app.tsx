@@ -60,7 +60,15 @@ function NotComputed(props: { job: Job }) {
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog je
  * job (Dave, 4 oktober 2026). Het potlood rechts herstelt een vergissing: het toont weer alle jobs en het geslacht.
  */
-function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
+function JobCard(props: {
+  job: Job
+  chosen: boolean
+  onChange: (job: Job) => void
+  gender: Gender | null
+  onGender: (gender: Gender) => void
+  /** In het menu zonder kaart eromheen (Dave, 5 oktober 2026); op het beginscherm een gewone kaart. */
+  plain?: boolean
+}) {
   const { job, chosen, gender } = props
   // Met het potlood open is een klik een concept; Opslaan legt job en geslacht samen vast, het potlood dicht gooit het
   // concept weg (Dave, 4 oktober 2026). De eerste keuze van een job of geslacht geldt meteen, zoals altijd.
@@ -82,7 +90,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   const shownJob = draft?.job ?? job
   const shownGender = editing ? draft.gender : gender
   return (
-    <section class="card job">
+    <section class={props.plain ? 'job' : 'card job'}>
       <div class="job-head">
         {/* Gekozen heet de kaart Character, met je job eronder (Dave, 5 oktober 2026). */}
         <h2 id={titleId} class="with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
@@ -183,7 +191,7 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
       </div>
       {open && (
         <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
-          <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+          <JobCard job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} plain />
         </StatDialog>
       )}
     </header>
