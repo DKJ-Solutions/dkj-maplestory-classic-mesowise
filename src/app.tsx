@@ -1250,7 +1250,8 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
   const level = s.level
   const effect = (l: number) => skillEffectText(s.key, l, wdef)
   const passive = skillMpAt(s, 1) === null
-  if (passive && effect(1) === null) return [[{ text: 'Passief, kost geen MP' }]]
+  // Een passief zonder effect: niets onder de naam; de regel "Passief, kost geen MP" voegde niets toe (Dave, 5 oktober 2026).
+  if (passive && effect(1) === null) return []
   // Een passief: wat hij geeft. Een skill met MP: de MP, en wat hij geeft als hij een total verandert.
   const line = (label: string, l: number, mp: string): SkillLinePart[] => {
     const gain = effect(l)
@@ -1260,8 +1261,7 @@ function skillMpLines(s: SkillLevel, wdef: number | null): SkillLinePart[][] {
     return [{ text: label }, ...parts]
   }
   const now = level === 0 ? [{ text: 'Nu: niet geleerd' }] : line('Nu: ', level, `−${skillMpAt(s, level)} MP per keer`)
-  const lines = passive ? [[{ text: 'Passief, kost geen MP' }], now] : [now]
-  return level < s.max ? [...lines, line('Volgend level: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : lines
+  return level < s.max ? [now, line('Volgend level: ', level + 1, `−${skillMpAt(s, level + 1)} MP`)] : [now]
 }
 
 /** Een stuk van een regel onder een skill: wat hij kost (rood), wat hij geeft (groen), of gewone tekst. */

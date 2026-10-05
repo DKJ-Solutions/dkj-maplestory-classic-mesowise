@@ -1238,7 +1238,7 @@ describe('een Warrior in de app', () => {
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('toont bij elke skill de MP op het gezette level en op het volgende, en bij een passieve skill dat hij niets kost (#83, #138)', () => {
+    it('toont bij elke skill de MP op het gezette level en op het volgende, en bij een passieve skill alleen wat hij geeft (#83, #138)', () => {
       const skills = openHomeSkills()
       const row = (name: string) => within(skills).getByRole('button', { name: `${name} wijzigen` }).closest('.skill-row')!
       const lines = (name: string) => [...row(name).querySelectorAll('.skill-mp > span')].map((l) => l.textContent)
@@ -1259,12 +1259,12 @@ describe('een Warrior in de app', () => {
       const toned = (tone: string) => [...row('Iron Body').querySelectorAll(`.skill-mp .${tone}`)].map((p) => p.textContent)
       expect(toned('cost')).toEqual(['−15 MP per keer', '−15 MP'])
       expect(toned('gain')).toEqual(['+5 DEF (9%)', '+6 DEF (10%)'])
-      // Een passief met een effect: dat staat onder "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
+      // Een passief met een effect: alleen wat hij geeft, zonder regel "Passief, kost geen MP" (Precise Strikes 2 geeft +6 Accuracy en +1% crit, level 3 +7).
       setSkill(skills, 'Precise Strikes', '2')
-      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])
+      expect(lines('Precise Strikes')).toEqual(['Nu: +6 Accuracy, +1% Crit. Rate', 'Volgend level: +7 Accuracy, +1% Crit. Rate'])
       // Op level 0 van een passief met effect: nog niet geleerd, en wat level 1 geeft.
       setSkill(skills, 'Precise Strikes', '0')
-      expect(lines('Precise Strikes')).toEqual(['Passief, kost geen MP', 'Nu: niet geleerd', 'Volgend level: +5 Accuracy, +1% Crit. Rate'])
+      expect(lines('Precise Strikes')).toEqual(['Nu: niet geleerd', 'Volgend level: +5 Accuracy, +1% Crit. Rate'])
       // Een veld dat geen geldig level is, krijgt geen MP: het veld meldt de fout zelf.
       setSkill(skills, 'Power Strike', '')
       expect(lines('Power Strike')).toEqual([])

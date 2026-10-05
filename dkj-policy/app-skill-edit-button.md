@@ -47,6 +47,7 @@ replaced by an edit button, as on Equip; left of it only the level the skill has
 ### CREATE
 
 - [x] `src/app.tsx`: `SkillLine` -- the name with its cost and gain lines, a value box with the level, and the pencil; the popup clamps a typed level to 0 .. the allowed maximum on save
+- [x] `src/app.tsx`: the line "Passief, kost geen MP" removed under a passive skill; one with an effect shows only what it gives (Dave, October 5, 2026)
 - [x] `src/style.css`: `.skill-row` laid out like `.stat-line` (name, value, pencil, 0.75rem apart); the stepper styles (`.skill-input`) removed
 
 ### TEST
@@ -65,7 +66,7 @@ The change is in the app UI only; no repo tooling or data changed.
 
 A row in the Skillpoints popup now shows only the skill's level and a pencil, as on Equip, instead of a minus, a box
 and a plus. The pencil opens a small popup to change the level, which shows how many SP are left and does not go past
-what the pool allows.
+what the pool allows. A passive skill no longer carries the line "Passief, kost geen MP".
 
 **Score:** 3
 
