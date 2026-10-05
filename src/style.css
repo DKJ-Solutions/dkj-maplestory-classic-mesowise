@@ -9,7 +9,8 @@
   /* Tekst op een accentknop (Opslaan): wit in light, donker op het fellere oranje van dark (Dave, 4 oktober 2026). */
   --on-accent: #ffffff;
   --border: #e5e7eb;
-  /* Bewerkknoppen (potlood): gevuld, zonder rand (Dave, #111). Light: donkere vulling met licht icoon; dark: witte vulling met donkerblauw icoon. */
+  /* Gevulde knoppen zonder rand (Dave, #111): het oog en het rapport op een kaart en het potlood van je job. Light: donkere vulling met
+     licht icoon; dark: witte vulling met donkerblauw icoon. Het potlood naast een waardevak is licht, als dat vak (5 oktober 2026). */
   --edit-bg: #1f2937;
   --edit-fg: #ffffff;
   /* Level up (#130): wit op donkergroen in light, donker op fel groen in dark. */
