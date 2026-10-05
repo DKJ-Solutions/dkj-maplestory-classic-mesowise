@@ -287,6 +287,13 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
       {open && (
         <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
           <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+          {/* Het offline-bestand zelf heeft geen download nodig. */}
+          {import.meta.env.MODE !== 'offline' && (
+            <div class="menu-download">
+              <a href={`${import.meta.env.BASE_URL}mesowise-offline.html`} download>Offlineversie downloaden</a>
+              <p class="hint">Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</p>
+            </div>
+          )}
         </StatDialog>
       )}
     </header>

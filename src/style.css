@@ -483,6 +483,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* .equip-edit staat elders op een vaste plek in zijn raster; hier op de rij zelf. */
 .menu-row .equip-edit { grid-row: auto; grid-column: auto; margin-right: calc((44px - var(--control-h)) / 2); }
 .menu-list ~ .hint, .menu-list ~ .debug { margin-top: 1rem; }
+.menu-download { margin-top: 1.5rem; }
+.menu-download a { display: inline-block; padding: 0.625rem 0; font-size: 1rem; font-weight: 600; color: var(--text); text-decoration: underline; }
+.menu-download .hint { margin: 0; }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
 .stat-dialog.menu-drawer {
