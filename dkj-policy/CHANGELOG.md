@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**57 / 94 minor entries** <!-- pending-tally -->
+**58 / 95 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/offline-file · 20261005-174638Z
+
+The build gains a second output, `mesowise-offline.html`: the whole app in one HTML file, with no external requests and no service worker, built by a small handwritten Vite plugin and checked by a test that runs the real offline build.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Mesowise can now be downloaded from the settings menu as a single file that opens in a browser on a PC without internet. What is saved in that file stays separate from the web version, which already worked offline as an installable app.
+
+**Score:** 3
+
+#### Pull Request
+
+Offline version as a single HTML file for use on a PC
+
+[PR #168](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/168)
+
+---
 
 ### DEPLOY: app/menu-drawer · 20261005-154907Z
 
