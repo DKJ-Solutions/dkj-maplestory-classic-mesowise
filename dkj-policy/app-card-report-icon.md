@@ -53,12 +53,14 @@ a report with the extended advice. Not on Total stats and Ability points: nothin
 - [x] The summary line under the level ("Op <mob> · lv N: kost ± ... meso") removed: the Report card already shows that cost (Dave, October 5, 2026); tests that read the cost there now read it from the Report card
 - [x] Popup titles (card and report) at `--fs-h2`, so the sizes run large to small: title, advice part, verdict, hint, source (Dave, October 5, 2026)
 - [x] No dotted underline under ATT and DEF: the browser's default for `<abbr title>`, which a phone cannot hover; the `<abbr>` stays for screen readers (Dave, October 5, 2026)
+- [x] Review fixes (Victor, Edith): the skill heading only takes focus when a point is placed now, not when the report opens with one already placed; the popup is called "Report: <card>", like the Report card
 - [x] Styling in `src/style.css`: 44px button in the eye's colour; the popup reuses the Report card's advice rules
 
 ### TEST
 
 - [x] Tests in `src/app.test.tsx`: the icon sits on exactly those three cards, beside the eye, and each popup shows its own advice; card-name lookups anchored so they no longer also match the report button
 - [x] Test that the Stats group comes first and Equip, Skillpoints and Monster follow each other
+- [x] Test that the eye popup opens without the report too
 - [x] `npx vitest run`: 1415 passed; `scripts/lint/lint.ps1`: clean
 - [~] Font sizes: CSS only, which jsdom does not compute -- no automated test; Dave judges it by eye
 - [~] Browser check at phone width -- dropped: two Chrome browsers connected and none selected; Dave looks before the merge anyway (visible result)
@@ -71,9 +73,14 @@ The change is in the app UI only; no repo tooling or data changed.
 
 #### What makes this deploy extra special
 
-The Equip, Skillpoints and Monster cards now have a report icon beside the eye. It opens the advice for that card
-on its own: the weapon and armor advice for Equip, the skill advice for Skillpoints and the mob advice for Monster.
-Ability points and Total stats get no icon, because there is nothing to choose there; they now sit at the top, without the "Stats" heading and with a little more space above Equip, so the three cards with a report stand together. The summary line under the level is gone, because the Report card already shows what the level costs.
+The Equip, Skillpoints and Monster cards now have a report icon beside the eye. It opens the advice for that card on
+its own: weapon and armor for Equip, the skill for Skillpoints and the mob for Monster.
+
+Ability points and Total stats get no icon, because there is nothing to choose there. They now sit at the top, without
+the "Stats" heading and with a little more space above Equip, so the three cards with a report stand together.
+
+The summary line under the level is gone, because the Report card already shows what the level costs. Popup titles are
+now the largest text in their popup, and ATT and DEF no longer carry a dotted underline.
 
 **Score:** 3
 

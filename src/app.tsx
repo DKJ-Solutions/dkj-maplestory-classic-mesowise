@@ -252,7 +252,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
   }
   return (
     <>
-      <button ref={button} type="button" class="card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Rapport: ${props.title}`} onClick={() => setOpen(true)}>
+      <button ref={button} type="button" class="card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
         {/* Een klembord met regels: het rapport */}
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3" />
@@ -261,7 +261,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
         </svg>
       </button>
       {open && (
-        <StatDialog title={`Rapport: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Report: ${props.title}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">{props.children}</div>
         </StatDialog>
       )}
@@ -1734,9 +1734,12 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   const title = QUESTION_TITLE.skill
   const winner = a.kind === 'advice' ? a.choices.find((c) => c.id === a.winner) : undefined
   const heading = useRef<HTMLHeadingElement>(null)
-  // Verdwijnt de knop na het zetten van het punt, dan zou de focus op de pagina vallen: naar de vraag.
+  // Verdwijnt de knop na het zetten van het punt, dan zou de focus op de pagina vallen: naar de vraag. Alleen als het
+  // punt nu gezet wordt, niet bij het openen van het rapport terwijl er al een punt gezet is (dan blijft de focus bij de popup).
+  const placedBefore = useRef(props.placed)
   useEffect(() => {
-    if (props.placed && !winner) heading.current?.focus({ preventScroll: true })
+    if (props.placed && props.placed !== placedBefore.current && !winner) heading.current?.focus({ preventScroll: true })
+    placedBefore.current = props.placed
   }, [props.placed, winner])
   const placed = props.placed && (
     <p class="hint" aria-live="polite">

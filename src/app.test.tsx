@@ -210,7 +210,7 @@ describe('begin zonder opslag', () => {
 
   // Dave, 5 oktober 2026: naast het oog een rapport met het uitgebreide advies, alleen bij een kaart waar je iets kiest.
   describe('het rapport naast het oog', () => {
-    const report = (title: string) => screen.queryByRole('button', { name: `Rapport: ${title}` })
+    const report = (title: string) => screen.queryByRole('button', { name: `Report: ${title}` })
     const openReport = (title: string) => {
       fireEvent.click(report(title)!)
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
@@ -244,7 +244,7 @@ describe('begin zonder opslag', () => {
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
       const dialog = openReport('Equip')
       expect(dialog.open).toBe(true)
-      expect(dialog.getAttribute('aria-label')).toBe('Rapport: Equip')
+      expect(dialog.getAttribute('aria-label')).toBe('Report: Equip')
       expect(Array.from(dialog.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF'])
       // De inhoud van de kaart zelf staat er niet in: die zit achter het oog.
       expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -261,6 +261,11 @@ describe('begin zonder opslag', () => {
       openReport('Equip')
       expect(document.querySelector('dialog.card-dialog')).toBeNull()
       expect(report('Equip')!.getAttribute('aria-expanded')).toBe('true')
+      fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
+      openHomeEquipment()
+      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
+      expect(document.querySelector('dialog.report-dialog')).toBeNull()
+      expect(report('Equip')!.getAttribute('aria-expanded')).toBe('false')
     })
   })
 
