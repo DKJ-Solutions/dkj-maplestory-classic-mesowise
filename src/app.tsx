@@ -478,7 +478,7 @@ function StatsCard(props: {
   lead?: ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
-  /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
+  /** Onder de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
 }) {
   const [open, setOpen] = useState(false)
@@ -490,8 +490,9 @@ function StatsCard(props: {
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
-          {props.note}
         </span>
+        {/* Op een eigen regel onder de kop: op de halve kaart past het niet achter de naam (Dave, 5 oktober 2026). */}
+        {props.note}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
@@ -1369,8 +1370,8 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
 
 /** "12 / 16 SP": hoeveel punten van de pot je hebt gezet; zonder geldig level alleen wat je zette. Boven het maximum in de foutkleur. */
 /**
- * Hoeveel AP of SP je nog te verdelen hebt, tussen haakjes achter de kop van de kaart: "Skillpoints (1)" (Dave, 5 oktober
- * 2026, #154). Een schermlezer hoort de hele zin.
+ * Hoeveel AP of SP je nog te verdelen hebt, tussen haakjes: achter de kop bij "Skillpoints (1)", op een eigen regel onder
+ * de kop bij de halve kaart Ability points (Dave, 5 oktober 2026, #154). Een schermlezer hoort de hele zin.
  */
 function ToDistribute(props: { count: number; unit: 'AP' | 'SP' }) {
   return (
