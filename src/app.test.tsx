@@ -2186,8 +2186,8 @@ describe('de menubalk bovenin (issue #86)', () => {
     it('is een paneel en geen popup in het midden', () => {
       openMenu()
       expect(drawer().classList.contains('menu-drawer')).toBe(true)
-      // Zonder titel en zonder kaarticoon (Dave, 5 oktober 2026); de naam staat nog op het paneel zelf.
-      expect(drawer().querySelector('.stat-dialog-name')).toBeNull()
+      // Met Instellingen in de kop en zonder kaarticoon (Dave, 5 oktober 2026).
+      expect(drawer().querySelector('.stat-dialog-head .stat-dialog-name')?.textContent).toBe('Instellingen')
       expect(drawer().querySelector('.card-icon')).toBeNull()
       expect(drawer().getAttribute('aria-label')).toBe('Instellingen')
     })

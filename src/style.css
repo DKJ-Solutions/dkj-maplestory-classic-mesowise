@@ -482,7 +482,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-drawer .stat-dialog-body { min-height: 100%; box-sizing: border-box; padding-top: calc(1rem + env(safe-area-inset-top)); }
 /* De kop van het paneel: even hoog als de menubalk, met een lijn eronder over de volle breedte en het kruisje in het
    midden (Dave, 5 oktober 2026). */
-.menu-drawer .stat-dialog-head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 1rem; padding: 0 1rem; border-bottom: 1px solid var(--border); }
+.menu-drawer .stat-dialog-head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 1rem; padding: 0 calc(1rem + 44px + 0.5rem) 0 1rem; border-bottom: 1px solid var(--border); }
+/* In de kop de titel Instellingen, in de letter van de naam in de menubalk (Dave, 5 oktober 2026). */
+.menu-drawer .stat-dialog-name { font-size: 1.125rem; font-weight: 700; }
 .menu-drawer .stat-dialog-close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); border: 0; }
 .menu-drawer::backdrop { animation: backdrop-in 220ms ease-out; }
 @keyframes drawer-in { from { transform: translateX(100%); } }
