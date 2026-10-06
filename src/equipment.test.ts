@@ -5,6 +5,7 @@ import {
   changeEquipment,
   displacedSlots,
   choosePick,
+  NONE,
   commitStat,
   databaseStat,
   defaultEquipment,
@@ -1729,5 +1730,14 @@ describe('familyName naast een ander stuk met dezelfde naam zonder kleur (#188)'
     const rows = searchCatalog('hat', 'thief', 'Metal Gear').map((i) => [familyName('hat', i.name), i.stat])
     expect(rows).toEqual(expect.arrayContaining([['Metal Gear', 18], ['Yellow Metal Gear', 19]]))
     expect(rows).toHaveLength(2)
+  })
+})
+
+describe('choosePick met "Niets dragen" (#188)', () => {
+  it('maakt een armorslot bekend leeg en een wapen of ammo weer nog niet ingevuld', () => {
+    const worn: EquipEntry = { pick: 'Pan Lid', name: '', stat: '' }
+    expect(choosePick('hat', worn, NONE)).toEqual({ pick: NONE, name: '', stat: '' })
+    expect(choosePick('claw', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
+    expect(choosePick('ammo', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
   })
 })
