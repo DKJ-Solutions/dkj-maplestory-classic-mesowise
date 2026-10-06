@@ -116,6 +116,24 @@ describe('searchCatalog', () => {
     expect(searchCatalog('top', 'thief', 'bestaat niet')).toEqual([])
   })
 
+  it('toont met een maxLevel alleen wat je op dat level kunt dragen, en een item zonder level altijd (#188)', () => {
+    const claws = (max?: number) => searchCatalog('claw', 'thief', '', false, '', max).map((i) => i.name)
+    expect(claws(10)).toContain('Garnier')
+    expect(claws(10)).not.toContain('Steel Igor')
+    expect(claws(19)).not.toContain('Steel Igor')
+    expect(claws(20)).toContain('Steel Igor') // het level zelf telt mee
+    for (const i of searchCatalog('claw', 'thief', '', false, '', 20)) expect(i.level ?? 0, i.name).toBeLessThanOrEqual(20)
+    // Pijlen vragen geen level en blijven dus bij elk level in de lijst.
+    const arrows = searchCatalog('ammo', 'bowman', '', false, '', 1)
+    expect(arrows.length).toBeGreaterThan(0)
+    expect(arrows.every((i) => i.level === undefined)).toBe(true)
+  })
+
+  it('filtert niets zonder maxLevel (een ongeldig level geeft undefined)', () => {
+    expect(searchCatalog('claw', 'thief', '', false, '', undefined)).toEqual(searchCatalog('claw', 'thief', ''))
+    expect(searchCatalog('claw', 'thief', '').map((i) => i.name)).toContain('Adamantium Guards')
+  })
+
   it('geeft elke naam in een slot één keer, en de NPC-stat wint bij dezelfde naam', () => {
     for (const { slot } of EQUIP_SLOTS) {
       const all = catalogItems(slot, 'thief').map((i) => i.name)

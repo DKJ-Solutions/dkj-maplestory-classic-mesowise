@@ -1172,7 +1172,7 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
  * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
  * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
  */
-function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weapon: string; helpfulStranger?: boolean; onPick: (pick: string, name?: string) => void }) {
+function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weapon: string; helpfulStranger?: boolean; level?: number; onPick: (pick: string, name?: string) => void }) {
   const { slot, entry } = props
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -1181,7 +1181,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   const [active, setActive] = useState(0)
   const open = text !== null
   const typed = (text ?? '').trim()
-  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger, props.weapon)
+  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger, props.weapon, props.level)
   const stat = statName(slot, props.job)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
@@ -1582,6 +1582,8 @@ function EquipmentCard(props: {
   error: string | null
   /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
   report?: ComponentChildren
+  /** Het level van je character: de zoekbalk toont alleen wat je daarop kunt dragen (#188); undefined bij een ongeldig level. */
+  level?: number
   /** Achter de knop Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
   cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
@@ -1652,7 +1654,7 @@ function EquipmentCard(props: {
               <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
-                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {slot === 'ammo' && props.job === 'bowman' && (
                     <label class="switch">
                       <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
@@ -2852,6 +2854,8 @@ export function App() {
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
   // De Cheapest-equip (#188) rekent alleen dit level: een stuk kopen loont als het op dit level meer bespaart dan het kost (Dave, 6 oktober 2026).
+  // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
+  const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
   const cheapestEquip = useMemo(
     () =>
       computed
@@ -3092,6 +3096,7 @@ export function App() {
         onDiscard={(slot) => setPendingFor(slot, undefined)}
         error={equipError}
         cheapest={cheapestEquip}
+        level={characterLevel}
         report={
           computed ? (
             <>

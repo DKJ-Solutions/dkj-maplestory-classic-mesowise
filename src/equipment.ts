@@ -254,9 +254,10 @@ export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Re
 }
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = ''): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = '', maxLevel?: number): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  return catalogItems(slot, job, helpfulStranger, weapon).filter((i) => i.name.toLowerCase().includes(q))
+  // Met `maxLevel` (je character-level, Dave, 6 oktober 2026, #188) alleen wat je op dat level kunt dragen; een item zonder level (pijlen) altijd.
+  return catalogItems(slot, job, helpfulStranger, weapon).filter((i) => i.name.toLowerCase().includes(q) && (maxLevel === undefined || (i.level ?? 0) <= maxLevel))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */
