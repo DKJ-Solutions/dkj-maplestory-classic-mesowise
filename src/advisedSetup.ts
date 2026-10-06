@@ -2,7 +2,7 @@
 // mob en potions hangen af van de equip. Dit rekent dat om en om uit tot het equip-advies niets meer koopt, zodat wie Overnemen tikt daarna
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, cheapestEquipment, type CheapestSlot, type Purchase } from './cheapestEquip'
+import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice } from './clawUpgrade'
 import { EQUIP_SLOTS, shownSlots, wornName, wornWdef, type EquipSlot, type Equipment } from './equipment'
@@ -23,6 +23,8 @@ export interface AdvisedSetup {
   shop: number
   /** Per slot wat je draagt en wat Advised heeft, voor de Equip-popup en de wijzigingsregels. */
   cheapest: Record<EquipSlot, CheapestSlot>
+  /** De munitie die de factuur van Advised telt (countedAmmo, #189), voor een leeg Ammo-slot in de Equip-popup; null als hij niets gooit. */
+  ammo: string | null
 }
 
 /**
@@ -40,11 +42,12 @@ export function advisedSetup(user: CheapestInput): AdvisedSetup {
   let advice: Record<EquipSlot, CheapestSlot> | null = null
   let result: CheapestResult
   let equipCapped = false
+  let profile: ReturnType<typeof profileOf>
   for (;;) {
     const input: CheapestInput = { ...user, equipment, profileDraft }
     result = cheapestSettings(input)
     const state: CheapestInput = { ...input, drafts: result.drafts, profileDraft: result.profileDraft, potionChoice: result.potionChoice }
-    const profile = profileOf(state)
+    profile = profileOf(state)
     advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, clawUpgradeAdvice(state.drafts, profile), armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)))
     const gear = advisedEquipment(job, profileDraft, equipment, advice)
     if (gear.purchases.length === 0) break
@@ -82,5 +85,6 @@ export function advisedSetup(user: CheapestInput): AdvisedSetup {
     purchases: final,
     shop: final.reduce((sum, p) => sum + p.price, 0),
     cheapest,
+    ammo: profile ? countedAmmo(profile, equipment.claw) : null,
   }
 }

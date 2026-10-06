@@ -3,6 +3,7 @@ import { advisedSetup, MAX_EQUIP_ROUNDS } from './advisedSetup'
 import type { CheapestInput } from './cheapestSettings'
 import { profileOf } from './cheapestSettings'
 import { MOBS, mobDraft } from './data/spots'
+import { SUBI } from './data/thief'
 import { defaultEquipment, wornName } from './equipment'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
@@ -73,6 +74,31 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
       expect(s.cheapest[p.slot]).toMatchObject({ cheapest: p.name, changed: true, price: p.price })
     }
     expect(MAX_EQUIP_ROUNDS).toBeGreaterThan(0)
+  })
+
+  it('noemt de stars die de factuur van Advised telt, voor een leeg Ammo-slot (#189)', () => {
+    const user = { ...input('thief', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Steel Igor', name: '', stat: '' } } }
+    const s = advisedSetup(user)
+    expect(s.ammo).toBe(SUBI.name)
+    const profile = profileOf(afterTake(user, s))
+    const inv = levelInvoice(s.result.drafts, profile)
+    const line = inv.kind === 'invoice' ? inv.lines.find((l) => l.why?.kind === 'ammo') : undefined
+    expect(line?.why).toMatchObject({ kind: 'ammo', pricePerStar: SUBI.rechargePerStar })
+    // Wie niets gooit, krijgt geen ammo.
+    expect(advisedSetup(input('warrior', 20, 'Snail')).ammo).toBeNull()
+  })
+
+  it('noemt bij een Bowman de pijl voor het wapen van Advised, en bij een Thief met een dagger niets, net als de factuur (#189)', () => {
+    // Met een Balanche koopt Advised op level 20 een War Bow: de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
+    const bowman = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Balanche', name: '', stat: '' } } }
+    const b = advisedSetup(bowman)
+    expect(b.equipment.claw.pick).toBe('War Bow')
+    expect(b.ammo).toBe('Arrows for Bows')
+    const thief = { ...input('thief', 20, 'Snail'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1' } }
+    const s = advisedSetup(thief)
+    expect(s.ammo).toBeNull()
+    const inv = levelInvoice(s.result.drafts, profileOf(afterTake(thief, s)))
+    expect(inv.kind === 'invoice' && inv.lines.some((l) => l.why?.kind === 'ammo')).toBe(false)
   })
 
   it('geeft zonder aankopen de eigen equip terug, dezelfde objecten', () => {

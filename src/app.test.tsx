@@ -437,6 +437,22 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(weapon.querySelector('.equip-value strong')?.textContent).toMatch(/^\d+$/)
   })
 
+  it('toont in een leeg Ammo-slot van Advised de stars die de factuur telt, zonder "Koop voor" (#189)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const ammo = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Ammo')!
+    expect(ammo.querySelector('.equip-fixed')?.textContent).toContain('Subi Throwing Stars')
+    expect(ammo.querySelector('.equip-buy')).toBeNull()
+    expect(ammo.classList.contains('empty')).toBe(false)
+    expect(ammo.textContent).toContain('Per star herladen, op de factuur')
+    expect(ammo.textContent).not.toContain('Koop voor')
+    expect(ammo.querySelector('.equip-value strong')?.textContent).toBe('15')
+  })
+
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
     const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')

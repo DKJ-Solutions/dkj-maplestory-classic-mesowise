@@ -1542,18 +1542,21 @@ function StatDialog(props: {
 /**
  * De rijen van de Equip-popup achter "Advised" (#188, #192): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
- * alles samen kost. Een streepje is een slot dat leeg blijft.
+ * alles samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
  */
-function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> }) {
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
       <p class="hint">
         De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
       </p>
       {props.slots.map((slot) => {
-        const c = props.cheapest[slot]
+        const slotAdvice = props.cheapest[slot]
+        // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen "Koop voor".
+        const counted = slot === 'ammo' && slotAdvice.cheapest === null && !slotAdvice.option && props.ammo !== null
+        const c: CheapestSlot = counted ? { ...slotAdvice, cheapest: props.ammo, changed: true } : slotAdvice
         // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
         const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
         const stat = statName(slot, props.job)
@@ -1565,7 +1568,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
             {c.option ? (
               <span class="equip-fixed equip-option">{nameWithLevel(slot, c.option.name)}</span>
             ) : (
-              <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
+              <span class={c.changed && c.cheapest !== null && !counted ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
             )}
             {value !== null && (
               <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
@@ -1576,6 +1579,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
               </div>
             )}
             {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
+            {counted && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
             {c.option && (
               <span class="equip-price">
                 Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
@@ -1661,6 +1665,8 @@ function EquipmentCard(props: {
   gender?: Gender | null
   /** Achter de knop Advised (#188, #192): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
   cheapest: Record<EquipSlot, CheapestSlot> | null
+  /** De stars of pijlen die de factuur van Advised telt, voor een leeg Ammo-slot achter Advised (#189). */
+  advisedAmmo: string | null
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -1697,7 +1703,7 @@ function EquipmentCard(props: {
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} /> : slots.map((slot) => {
+          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} ammo={props.advisedAmmo} /> : slots.map((slot) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)
@@ -3346,6 +3352,7 @@ export function App() {
         onDiscard={(slot) => setPendingFor(slot, undefined)}
         error={equipError}
         cheapest={cheapestEquip}
+        advisedAmmo={advisedSet?.ammo ?? null}
         level={characterLevel}
         gender={gender}
         report={
