@@ -2490,8 +2490,13 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
                 <tr key={`${i}-${l.label}`}>
                   <th scope="row">{l.label}</th>
                   <td class="invoice-qty">
-                    {l.qty === null ? '' : `× ${nfInt.format(l.qty)}`}
-                    {l.why && l.qty !== null && <InvoiceWhy line={{ ...l, why: l.why }} />}
+                    {l.qty !== null && (
+                      <>
+                        {`× ${nfInt.format(l.qty)}`}
+                        {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
+                        {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
+                      </>
+                    )}
                   </td>
                   <td class="invoice-meso cost">{meso(l.meso)}</td>
                 </tr>
