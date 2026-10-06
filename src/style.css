@@ -568,7 +568,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .ap-row .ap-group h3 { margin: 0; }
 .ap-row .btn { flex: none; width: auto; margin: 0; }
 
-/* Potions (Dave, 6 oktober 2026): onder Max HP en Max MP per soort een lijst, van goedkoop naar duur per punt herstel. De
+/* Potions (Dave, 6 oktober 2026): per soort een lijst, van goedkoop naar duur per punt herstel. De
    potion waarmee de app rekent, krijgt de accentrand van een gecorrigeerd vak (.equip-value.changed). */
 .potion-group { margin-top: 1rem; }
 .potion-group h3 { margin: 0 0 0.5rem; font-size: var(--fs-h4); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
