@@ -45,7 +45,7 @@
 
 - [x] `src/cheapestEquip.ts`: per slot what you wear and the cheapest equip, from the existing advice (Cody)
 - [x] `EquipColumns` in the Equip card, styled mobile-first (Cody, Gwen)
-- [x] A view button under each column: Your character opens the Equip popup, Cheapest a read-only list with shop prices and a total (Dave, #188)
+- [x] The table left the card (Dave): two labelled buttons, Your character and Cheapest, both open the Equip popup; Cheapest shows the cheapest equip read-only with shop prices and what it all costs (Dave, #188)
 
 ### TEST
 
@@ -55,17 +55,18 @@
 
 ### DEPLOY: app/188-equip-two-columns
 
-The Equip card now shows, without opening it, two columns per slot: **Your character** (what you wear in game) and
-**Cheapest** (the equip that levels most cheaply), each with a view button under it: Your character opens the Equip popup to change what you wear, and Cheapest opens a read-only list with the shop price of each piece to buy and the total. Cheapest takes the weapon the weapon advice says pays for itself, and
-every armor slot whose best piece pays for itself, skipping a piece that would clash with a better one (an overall
-against a top or bottom); a piece that differs from what you wear is shown in the accent color. A new pure module,
+The Equip card now has two buttons, **Your character** and **Cheapest**, and both open the Equip popup. Your character
+shows what you wear in game, to change it. Cheapest shows the same rows read-only, filled in automatically with the equip
+that levels most cheaply: the weapon the weapon advice says pays for itself, and every armor slot whose best piece pays
+for itself, skipping a piece that would clash with a better one (an overall against a top or bottom). A piece to buy is
+shown in the accent color with its shop price, and the popup ends with what it all costs. A new pure module,
 `src/cheapestEquip.ts`, does the work from the advice the app already computes.
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
-You see at a glance which equip to buy for the cheapest levelling, next to what you wear now.
+One tap shows which equip to buy for the cheapest levelling, in the same view as what you wear now.
 
 **Score:** 3
 

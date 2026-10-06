@@ -351,28 +351,24 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(headTitle('Equip')?.trim()).toBe('Equip')
   })
 
-  it('toont in de kaart twee kolommen: wat je character draagt en de goedkoopste equip (#188)', () => {
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
-    const table = cards()[0].querySelector<HTMLTableElement>('table.equip-columns')!
-    expect([...table.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Your character', 'Cheapest'])
-    const weapon = [...table.querySelectorAll('tbody tr')].find((tr) => tr.querySelector('th')?.textContent === 'Weapon')!
-    expect(weapon.querySelectorAll('td')[0].textContent).toBe(IGOR.name)
-    expect(weapon.querySelectorAll('td')[1].textContent).not.toBe('')
-  })
-
-  it('opent onder Your character de Equip-popup en onder Cheapest een leespopup met het totaal (#188)', () => {
+  it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character bekijken' }))
+    expect(cards()[0].querySelector('table')).toBeNull()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
     expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest bekijken' }))
-    const dialog = cards()[0].querySelector<HTMLElement>('dialog.report-dialog')!
-    expect(dialog.textContent).toContain(IGOR.name)
-    expect(within(dialog).getByText('Total')).toBeTruthy()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Cheapest')
+    // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
+    expect(dialog.querySelectorAll('.equip-row').length).toBeGreaterThan(0)
+    expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
+    expect(dialog.querySelector('.equip-edit')).toBeNull()
+    expect(dialog.textContent).toContain('Te kopen:')
   })
+
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
     const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })

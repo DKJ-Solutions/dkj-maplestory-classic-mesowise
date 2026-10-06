@@ -10,7 +10,7 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { DAGGER_SHOP_SOURCE } from './data/daggers'
@@ -338,7 +338,7 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
   )
 }
 
-/** Het oog: de knop die een kaart of een kolom bekijkt. */
+/** Het oog: de knop die een kaart of een deel ervan bekijkt. */
 const EyeIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
@@ -1430,110 +1430,62 @@ function StatDialog(props: {
 }
 
 /**
- * De twee kolommen in de Equip-kaart (Dave, 6 oktober 2026, #188): wat je character in game draagt, en per slot de goedkoopste
- * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide kolommen leeg is, staat er
- * niet; zonder goedkoopste equip (een job die de app niet doorrekent) alleen de eerste kolom.
+ * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188). Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
+ * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
+ * goedkoopste equip (een job die de app niet doorrekent) alleen de eerste.
  */
-function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null; onOpenWorn: (button: HTMLButtonElement) => void; wornOpen: boolean }) {
-  const [cheapestOpen, setCheapestOpen] = useState(false)
-  const cheapestButton = useRef<HTMLButtonElement>(null)
-  const rows = props.slots
-    .map((slot) => ({ slot, ...(props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false, price: null }) }))
-    .filter((r) => r.worn !== null || r.cheapest !== null)
-  const columns = props.cheapest ? 3 : 2
-  const closeCheapest = () => {
-    setCheapestOpen(false)
-    requestAnimationFrame(() => cheapestButton.current?.focus())
-  }
+function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen: (view: EquipView, button: HTMLButtonElement) => void }) {
+  const button = (view: EquipView, label: string) => (
+    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+      <EyeIcon />
+      {label}
+    </button>
+  )
   return (
-    <>
-      <table class="equip-columns">
-        <thead>
-          <tr>
-            <td />
-            <th scope="col">Your character</th>
-            {props.cheapest && <th scope="col">Cheapest</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns} class="equip-none equip-columns-none">
-                Nog geen equip ingevuld.
-              </td>
-            </tr>
-          ) : (
-            rows.map((r) => (
-              <tr key={r.slot}>
-                <th scope="row">{slotLabel(r.slot)}</th>
-                <td class={r.worn === null ? 'equip-none' : undefined}>{r.worn ?? '—'}</td>
-                {props.cheapest && <td class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</td>}
-              </tr>
-            ))
-          )}
-        </tbody>
-        {/* Onder elke kolom een knop die hem bekijkt (Dave, #188): je eigen equip in de popup om te wijzigen, de goedkoopste om te lezen. */}
-        <tfoot>
-          <tr>
-            <td />
-            <td>
-              <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.wornOpen} aria-label="Your character bekijken" onClick={(e) => props.onOpenWorn(e.currentTarget)}>
-                <EyeIcon />
-              </button>
-            </td>
-            {props.cheapest && (
-              <td>
-                <button ref={cheapestButton} type="button" class="card-action" aria-haspopup="dialog" aria-expanded={cheapestOpen} aria-label="Cheapest bekijken" onClick={() => setCheapestOpen(true)}>
-                  <EyeIcon />
-                </button>
-              </td>
-            )}
-          </tr>
-        </tfoot>
-      </table>
-      {cheapestOpen && props.cheapest && (
-        <StatDialog title="Cheapest" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={closeCheapest}>
-          <CheapestEquipList slots={props.slots} cheapest={props.cheapest} />
-        </StatDialog>
-      )}
-    </>
+    <div class="card-actions equip-buttons">
+      {button('worn', 'Your character')}
+      {props.cheapest && button('cheapest', 'Cheapest')}
+    </div>
   )
 }
+type EquipView = 'worn' | 'cheapest'
 
 /**
- * De popup achter "Cheapest bekijken" (#188): per slot de goedkoopste equip, met de winkelprijs van wat je moet kopen en het totaal.
- * Alleen om te lezen: de app koopt niets voor je.
+ * De rijen van de Equip-popup achter "Cheapest" (#188): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
+ * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
+ * alles samen kost. Een streepje is een slot dat leeg blijft.
  */
-function CheapestEquipList(props: { slots: readonly EquipSlot[]; cheapest: Record<EquipSlot, CheapestSlot> }) {
-  const rows = props.slots.map((slot) => ({ slot, ...props.cheapest[slot] })).filter((r) => r.worn !== null || r.cheapest !== null)
-  const total = rows.reduce((sum, r) => sum + (r.price ?? 0), 0)
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> }) {
+  const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
-    <div class="report-body">
-      <p class="hint">De equip waarmee je het goedkoopst levelt. Een stuk met een prijs koop je in de winkel, een streepje is een slot dat leeg blijft, de rest draag je al.</p>
-      {rows.length === 0 ? (
-        <p class="hint">Nog geen equip ingevuld.</p>
-      ) : (
-        <table class="invoice equip-cheapest">
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.slot}>
-                <th scope="row">
-                  <span class="equip-cheapest-slot">{slotLabel(r.slot)}</span>
-                  <span class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</span>
-                </th>
-                <td class="invoice-meso">{r.price !== null ? `${nfInt.format(r.price)} meso` : ''}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <td class="invoice-meso">{`${nfInt.format(total)} meso`}</td>
-            </tr>
-          </tfoot>
-        </table>
-      )}
-    </div>
+    <>
+      <p class="hint">De equip waarmee je het goedkoopst levelt. Een stuk met een prijs koop je in de winkel, de rest draag je al. De app koopt niets voor je.</p>
+      {props.slots.map((slot) => {
+        const c = props.cheapest[slot]
+        // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
+        const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
+        const stat = statName(slot, props.job)
+        const value = c.cheapest === null ? null : wornStat(slot, entry)
+        return (
+          <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
+            <span class="slot-name">{slotLabel(slot)}</span>
+            <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest ?? '—'}</span>
+            {value !== null && (
+              <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
+                <span class="equip-value-num">
+                  <strong>{value ?? '?'}</strong>
+                </span>
+                <span class="equip-value-head" aria-hidden="true">{stat}</span>
+              </div>
+            )}
+            {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
+          </div>
+        )
+      })}
+      <p class="equip-total">
+        Te kopen: <strong>{nfInt.format(total)} meso</strong>
+      </p>
+    </>
   )
 }
 
@@ -1562,12 +1514,14 @@ function EquipmentCard(props: {
   error: string | null
   /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
   report?: ComponentChildren
-  /** De kolom Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
+  /** Achter de knop Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
   cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
-  const [open, setOpen] = useState(false)
+  // Welke equip de popup toont (#188): wat je draagt of de goedkoopste; null is dicht.
+  const [view, setView] = useState<EquipView | null>(null)
+  const open = view !== null
   const head = useRef<HTMLButtonElement>(null)
-  // De knop die de popup opende (het oog in de kop of dat onder Your character): daar gaat de focus terug bij sluiten.
+  // De knop die de popup opende (het oog in de kop, Your character of Cheapest): daar gaat de focus terug bij sluiten.
   const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
   const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
@@ -1583,24 +1537,24 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title="Equip" head={opener} error={props.error} onClose={() => setOpen(false)}>
+      <CardPopup title={view === 'cheapest' ? 'Cheapest' : 'Equip'} head={opener} error={props.error} onClose={() => setView(null)}>
         {body}
       </CardPopup>
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip" head={head} open={open} onOpen={() => { opener.current = head.current; setOpen(true) }} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+      <CardHead label="Equip" head={head} open={open} onOpen={() => { opener.current = head.current; setView('worn') }} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} wornOpen={open} onOpenWorn={(button) => { opener.current = button; setOpen(true) }} />
+      <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => {
+          {view === 'cheapest' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} /> : slots.map((slot) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)

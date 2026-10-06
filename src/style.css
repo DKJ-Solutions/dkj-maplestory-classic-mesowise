@@ -640,20 +640,16 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
 .cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .cheapest-changes strong { color: var(--text); }
-/* De Equip-kaart (#188): per slot wat je character draagt en de goedkoopste equip. Een stuk dat anders is dan wat je draagt,
-   staat vet in de accentkleur; een leeg slot gedempt. Twee kolommen naast de slotnaam op 360px: namen breken af waar nodig. */
-.equip-columns { width: 100%; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.3; }
-.equip-columns thead th { padding: 0 0 0.5rem 0.5rem; font-size: 0.8125rem; font-weight: 700; color: var(--muted); text-align: left; vertical-align: bottom; }
-.equip-columns tbody th, .equip-columns tbody td { padding: 0.5rem 0 0.5rem 0.5rem; border-top: 1px solid var(--border); vertical-align: baseline; overflow-wrap: anywhere; }
-.equip-columns tbody th { padding-left: 0; font-weight: 400; color: var(--muted); text-align: left; white-space: nowrap; width: 1%; }
-.equip-columns .equip-buy { font-weight: 700; color: var(--accent); }
-.equip-columns .equip-none { color: var(--muted); }
-.equip-columns-none { text-align: center; }
-/* Onder elke kolom zijn bekijken-knop (#188), zo breed als de kolom: dezelfde donkere knop als het oog in de kop. */
-.equip-columns tfoot td { padding: 0.75rem 0 0 0.5rem; }
-.equip-columns tfoot .card-action { width: 100%; }
-/* De popup achter Cheapest bekijken: per regel het slot klein boven het stuk, rechts de prijs van wat je koopt. */
-.equip-cheapest { margin-top: 0; }
-.equip-cheapest-slot { display: block; font-size: 0.8125rem; color: var(--muted); }
-.equip-cheapest .equip-buy { font-weight: 700; color: var(--accent); }
-.equip-cheapest .equip-none { color: var(--muted); }
+/* De Equip-kaart (#188): twee knoppen met tekst, Your character en Cheapest, naast elkaar over de volle breedte. */
+.equip-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+/* De Equip-popup achter Cheapest (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
+   zoals bij wat je draagt, zonder vergrootglas. Een stuk om te kopen in de accentkleur, met zijn prijs eronder. */
+.equipment .equip-row.fixed { grid-template-columns: minmax(0, 1fr) auto; }
+.equip-row.fixed .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; }
+.equip-fixed { grid-row: 2; grid-column: 1; display: flex; align-items: center; min-height: 44px; min-width: 0; padding: 0.25rem 0.75rem; font-size: 0.9375rem;
+  font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
+.equip-row.fixed.empty .equip-fixed { grid-column: 1 / -1; font-weight: 400; color: var(--muted); }
+.equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
+.equip-total { margin: 0 0 0.75rem; text-align: right; }
+.equip-total strong { color: var(--accent); }
