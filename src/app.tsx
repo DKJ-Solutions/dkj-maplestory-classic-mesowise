@@ -2745,9 +2745,10 @@ export function App() {
         </button>
       </div>
       {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
-      {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Total cost. */}
+      {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Total cost. "your" en
+          niet "a": elke Lv. 18 Thief is anders, en dit gaat over de jouwe. */}
       <p class="app-question">
-        How much does it cost to level up a <strong>{totalCostWho(profileDraft.level, job)}</strong>?
+        How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
 
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
