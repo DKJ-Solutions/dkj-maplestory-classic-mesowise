@@ -47,10 +47,11 @@
 - [x] Invoice: a question mark behind the ammo count (`AmmoWhy`), and every explanation as a calculation table (`WhyTable`) that goes from EXP to the next level via EXP per kill to the kills needed, with the damage formula (max, min, level difference, mob defence, average) behind the stars
 - [x] Advised buys: `advisedEquipment` in `src/cheapestEquip.ts`, `cheapestSettings` run on that equip, one invoice line per purchased piece in `levelInvoice` (summed as Shop in Difference), Overnemen writes the equip and Ongedaan maken restores it (Dave chose this option, October 6, 2026)
 - [x] Victor's review of the numbers (a sweep of 1144 cases, no wrong number) and the leftovers it found
+- [x] One invoice row per purchased piece; write-off over the horizon up to the next upgrade (`writeOff`, `ShopWhy`), Dave's choice; the advised setup as a fixed point of equip and settings (`advisedSetup`), so Overnemen leaves nothing to buy; honest text when Advised costs more this level
 
 ### TEST
 
-- [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label, the six Total cost buttons and the sentence above them, the ammo explanation and the calculation tables, the Shop line, advisedEquipment and Overnemen/Ongedaan maken with equipment; Victor's test findings fixed (setup helper left the Monster popup open, a tautological test replaced); `npm test` (1789) and `npm run lint` green
+- [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label, the six Total cost buttons and the sentence above them, the ammo explanation and the calculation tables, the Shop line, advisedEquipment and Overnemen/Ongedaan maken with equipment; Victor's test findings fixed (setup helper left the Monster popup open, a tautological test replaced); `npm test` (1803) and `npm run lint` green
 - [ ] Dave looks at the preview at phone width before the merge (visible result)
 
 ### DEPLOY: app/192-advised-view-buttons
@@ -65,11 +66,14 @@ Difference column. Under both invoices in Total cost one sentence says the total
 six icon buttons, one per card, each opening that card's popup for that part. A shared `ViewButtons` component and a
 `CardViewContext` that holds which card popup is open replace the Equip-only buttons.
 
-The Advised setup now buys equipment as well: it wears the pieces the Equip card's Advised view says to buy (a piece is
-bought when it saves more than it costs on this level), and its mob, potions, skill points and base AP are the cheapest
-with that gear. Each piece it buys is a row of its own on the Advised invoice, with its name, × 1 and its shop
-price, counted in the total; Difference adds them up in one **Shop** row. Your character never has them. **Overnemen** now also puts the advised equip in your setup, and **Ongedaan
-maken** puts your old equip back.
+The Advised setup now buys equipment as well: it wears the pieces that save more than they cost up to the next upgrade
+in that slot (the horizon the Equip Report already uses), and its mob, potions, skill points and base AP are the
+cheapest with that gear; equip and settings are worked out in turn until neither changes, so after **Overnemen** there
+is nothing left to buy. A piece is worn for several levels, so the Advised invoice writes it off: each piece it buys is a
+row of its own, with its name, × 1 and only this level's share of the price (price × EXP of this level / EXP up to the
+next upgrade), and its question mark shows that sum. Difference adds the pieces up in one **Shop** row; Your character
+never has them. When a piece only pays for itself after this level, the text under Difference says so. **Overnemen**
+now also puts the advised equip in your setup, and **Ongedaan maken** puts your old equip back.
 
 The question mark behind an amount on the invoice now also sits behind the throwing stars or arrows, and every
 explanation is a table: one row per step, with the sum in small print under it and the outcome on the right, the count
@@ -83,7 +87,7 @@ difference when the mob is higher, the mob's defence, and the average the app co
 #### What makes this deploy extra special
 
 On every card you first see what the app advises and then compare it with your own setup, before you decide to copy it,
-Total cost shows which six cards its numbers come from, and the Advised invoice includes the upgrades worth buying.
+Total cost shows which six cards its numbers come from, and the Advised invoice includes the upgrades worth buying, written off fairly over the levels you wear them.
 
 **Score:** 3
 
