@@ -837,8 +837,6 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   )
 }
 
-const POTION_KIND_LABEL: Record<PotionKind, string> = { hp: 'HP potion', mp: 'MP potion' }
-
 /**
  * Potions (Dave, 6 oktober 2026), net als Monster: per soort kies je de potion die je gebruikt, en daaronder staan zijn prijs en
  * herstel uit de database. Een gekozen maar nog niet opgeslagen potion toont die getallen alleen om te lezen; na Opslaan corrigeer
@@ -857,6 +855,7 @@ function PotionsCard(props: {
   // De potions die je in de popup kiest zijn een concept; pas Opslaan legt ze vast, sluiten gooit ze weg (zoals bij Monster).
   const [concept, setConcept] = useState<Partial<Record<PotionKind, string>>>({})
   const head = useRef<HTMLButtonElement>(null)
+  const uid = useId()
   const used = resolvePotions(job, choice)
   const picked = (kind: PotionKind) => (concept[kind] !== undefined && concept[kind] !== used[kind].name ? databasePotion(job, kind, concept[kind]!) : undefined)
   const dirty = POTION_KINDS.some((k) => picked(k) !== undefined)
@@ -888,17 +887,17 @@ function PotionsCard(props: {
             return (
               <div class="potion-group" key={kind}>
                 {/* Een eigen kop per soort, met een lijn ertussen (Dave, 6 oktober 2026): zo lopen HP en MP niet in elkaar over. */}
-                <h3>{kind === 'hp' ? 'HP potions' : 'MP potions'}</h3>
-                <label class="field">
-                  <span>De {POTION_KIND_LABEL[kind]} die je gebruikt</span>
-                  <select value={shownPotion.name} onChange={(e) => setConcept({ ...concept, [kind]: (e.currentTarget as HTMLSelectElement).value })}>
+                {/* De kop is ook de naam van het keuzemenu; een eigen label erboven zei hetzelfde nog eens (Dave, 6 oktober 2026). */}
+                <h3 id={`${uid}-${kind}`}>{kind === 'hp' ? 'HP potions' : 'MP potions'}</h3>
+                <div class="field">
+                  <select aria-labelledby={`${uid}-${kind}`} value={shownPotion.name} onChange={(e) => setConcept({ ...concept, [kind]: (e.currentTarget as HTMLSelectElement).value })}>
                     {potionsOf(job, kind).map((p) => (
                       <option key={p.name} value={p.name}>
                         {p.name} ({nfInt.format(p.price)} meso)
                       </option>
                     ))}
                   </select>
-                </label>
+                </div>
                 {/* Een gekozen maar nog niet opgeslagen potion: zijn getallen uit de database, alleen om te lezen; aanpassen kan na Opslaan. */}
                 {potionFields(kind).map((f) =>
                   pick ? (

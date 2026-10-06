@@ -2874,7 +2874,7 @@ describe('de soort van een eigen wapen (#176)', () => {
 describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   const potionsCard = () => homeScreen().querySelector<HTMLElement>('section.potions')!
   const openPotions = () => fireEvent.click(screen.getByRole('button', { name: 'Potions bekijken' }))
-  const select = (kind: 'HP' | 'MP') => within(potionsCard()).getByLabelText(`De ${kind} potion die je gebruikt`) as HTMLSelectElement
+  const select = (kind: 'HP' | 'MP') => within(potionsCard()).getByLabelText(`${kind} potions`) as HTMLSelectElement
   const group = (kind: 'HP' | 'MP') => select(kind).closest<HTMLElement>('.potion-group')!
   /** De regels onder een keuze: naam, wat er staat, en of er een potlood is. */
   const lines = (kind: 'HP' | 'MP') =>
@@ -2906,6 +2906,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     openPotions()
     // HP en MP elk onder een eigen kop, met een lijn ertussen.
     expect(Array.from(potionsCard().querySelectorAll('.potion-group h3')).map((h) => h.textContent)).toEqual(['HP potions', 'MP potions'])
+    // Geen label boven het keuzemenu: de kop is zijn naam (Dave, 6 oktober 2026).
+    expect(potionsCard().textContent).not.toContain('die je gebruikt')
     expect(group('MP').previousElementSibling).toBe(group('HP'))
     expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
     expect(Array.from(select('MP').options).map((o) => o.textContent)).toEqual(['Blue Potion (220 meso)'])
