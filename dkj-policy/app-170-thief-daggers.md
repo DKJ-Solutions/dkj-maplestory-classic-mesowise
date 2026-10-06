@@ -43,7 +43,7 @@ Dave answered #170's open question on October 6, 2026 ("fix issue 170"): the app
 the Thief's hand decides the model -- a claw keeps Lucky Seven with stars, a dagger switches to Double Stab.
 
 - [x] Data: the nine NPC daggers for a Thief, level 10-30, read on MeowDB (item pages + Cutthroat Manny, npcs/408) and
-      re-read row by row (Rebecca, then Vera). The issue's "560" was the item id; the Triangular Zamadar costs 3,000.
+      re-read row by row (Rebecca, then Vera). Issue #170 gave 560 as the price; that is the item id of the Triangular Zamadar, which costs 3,000.
 
 ### CREATE
 
@@ -71,7 +71,7 @@ Lucky Seven.
 
 #### What makes this deploy extra special
 
-A dagger Thief gets a cost per level, a weapon advice and a skill advice for his own route instead of numbers for a claw
+A dagger Thief gets a cost per level, a weapon advice and a skill advice for their own route instead of numbers for a claw
 they do not carry.
 
 **Score:** 4
