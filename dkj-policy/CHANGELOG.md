@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**64 / 101 minor entries** <!-- pending-tally -->
+**64 / 102 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/123-remove-map-data · 20261006-081306Z
+
+The five training maps are gone from the app's data (#123). The app has only calculated with the mob you hunt since
+October 4, and a saved map was already dropped when the app loads, so nothing changes on screen. The repo now carries
+only the game data the app actually uses, and the tests that were built on the maps now run on single mobs, the way
+the app itself calculates.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Nothing a player notices: the maps had already left the screen on October 4.
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the map data (KNOWN_SPOTS) now that the app only uses mobs
+
+[PR #179](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/179)
+
+---
 
 ### DEPLOY: app/176-custom-weapon-kind · 20261006-075745Z
 
