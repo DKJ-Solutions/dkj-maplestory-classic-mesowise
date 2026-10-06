@@ -94,8 +94,8 @@ describe('resolvePotions, pickPotion en fixPotion', () => {
   })
 
   it('noemt de velden per soort: de prijs als kosten, het herstel als winst', () => {
-    expect(potionFields('hp').map((f) => [f.label, f.tone])).toEqual([['Price', 'cost'], ['Healing', 'gain']])
-    expect(potionFields('mp').map((f) => f.label)).toEqual(['Price', 'Healing'])
+    expect(potionFields('hp').map((f) => [f.label, f.tone])).toEqual([['Price', 'cost'], ['Recovery', 'gain']])
+    expect(potionFields('mp').map((f) => f.label)).toEqual(['Price', 'Recovery'])
     // De eenheid achter het getal (Dave, 6 oktober 2026).
     expect(potionFields('hp').map((f) => f.unit)).toEqual(['meso', 'HP'])
     expect(potionFields('mp').map((f) => f.unit)).toEqual(['meso', 'MP'])

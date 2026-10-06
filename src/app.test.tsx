@@ -2911,10 +2911,10 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(Array.from(select('MP').options).map((o) => o.textContent)).toEqual(['Blue Potion (220 meso)'])
     // Zonder keuze de goedkoopste.
     expect(select('HP').value).toBe('Orange Potion')
-    expect(lines('HP')).toEqual([['Price', '−150 meso', true], ['Healing', '+250 HP', true]])
-    expect(lines('MP')).toEqual([['Price', '−220 meso', true], ['Healing', '+200 MP', true]])
+    expect(lines('HP')).toEqual([['Price', '−150 meso', true], ['Recovery', '+250 HP', true]])
+    expect(lines('MP')).toEqual([['Price', '−220 meso', true], ['Recovery', '+200 MP', true]])
     expect(line('HP', 'Price').querySelector('strong.cost')).not.toBeNull()
-    expect(line('HP', 'Healing').querySelector('strong.gain')).not.toBeNull()
+    expect(line('HP', 'Recovery').querySelector('strong.gain')).not.toBeNull()
     // Geen Max HP of Max MP: die staan op Total stats.
     expect(cardNames('section.potions')).not.toContain('Max HP')
     // Wat een potion per punt kost en van je balk vult (250 van 444: 56%), staat in het rapport en niet op de kaart (Dave, 6 oktober 2026).
@@ -2929,7 +2929,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     openPotions()
     expect((within(potionsCard()).getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement).disabled).toBe(true)
     choose('HP', 'White Potion')
-    expect(lines('HP')).toEqual([['Price', '−350 meso', false], ['Healing', '+500 HP', false]])
+    expect(lines('HP')).toEqual([['Price', '−350 meso', false], ['Recovery', '+500 HP', false]])
     expect(stored(POTION_CHOICE_KEY)).toBeNull()
     save()
     expect(stored(POTION_CHOICE_KEY)).toEqual({ version: 1, hp: 'White Potion', mp: null, fix: { hp: {}, mp: {} } })
@@ -2941,7 +2941,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     // Weer open: de opgeslagen potion, nu met potlood.
     openPotions()
     expect(select('HP').value).toBe('White Potion')
-    expect(lines('HP')).toEqual([['Price', '−350 meso', true], ['Healing', '+500 HP', true]])
+    expect(lines('HP')).toEqual([['Price', '−350 meso', true], ['Recovery', '+500 HP', true]])
   })
 
   it('gooit een gekozen potion weg met Annuleren, zoals bij Monster', () => {

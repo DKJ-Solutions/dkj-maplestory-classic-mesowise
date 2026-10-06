@@ -59,7 +59,7 @@
 - [x] Dave (October 6, 2026): a clear split between HP and MP potions: a heading per kind and a line between them
 - [x] Dave (October 6, 2026): the unit after the value: "−150 meso", "+250 HP"
 - [x] Dave (October 6, 2026): the meso-per-point and bar-fill line leaves the card for the Potions report
-- [x] Dave (October 6, 2026): the labels read "Price" and "Healing"
+- [x] Dave (October 6, 2026): the labels read "Price" and "Recovery"
 
 ### TEST
 
