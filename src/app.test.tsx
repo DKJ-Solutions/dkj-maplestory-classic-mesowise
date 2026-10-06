@@ -241,14 +241,14 @@ describe('begin zonder opslag', () => {
 
     it('staat bij Equip in de bekijken-popup en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
       // De Equip-kaart heeft geen oog in de kop (#188): in de kaart alleen Your character en Cheapest, het rapport zit in hun popup.
-      const card = homeScreen().querySelector('section.equipment')!
+      const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
       expect(card.querySelector('.spot-head button')).toBeNull()
       expect([...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent)).toEqual(['Your character', 'Cheapest'])
       expect(report('Equip')).toBeNull()
       for (const view of ['Your character', 'Cheapest']) {
         fireEvent.click(within(card).getByRole('button', { name: view }))
         expect(report('Equip')!.closest('dialog.card-dialog'), view).not.toBeNull()
-        fireEvent.click(within(card.querySelector('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
+        fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
       }
       for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
