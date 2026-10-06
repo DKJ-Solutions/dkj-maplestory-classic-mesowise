@@ -611,3 +611,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .invoice dialog { white-space: normal; text-align: left; color: var(--text); font-weight: 400; font-size: 1rem; }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
+
+/* Goedkoopste instellingen (#183): de knop op volle breedte onder de vraag, met de uitkomst en Ongedaan maken eronder. */
+.cheapest { margin: 0 0 1rem; }
+.cheapest-result { margin-top: 0.75rem; }
+.cheapest-result .btn { width: 100%; }
+.cheapest-saving { margin: 0 0 0.5rem; font-weight: 700; color: var(--accent); overflow-wrap: anywhere; }
+.cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
+.cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+.cheapest-changes strong { color: var(--text); }

@@ -3123,3 +3123,66 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
     expect(step).not.toContain('maar je drinkt')
   })
 })
+
+describe('Goedkoopste instellingen (#183)', () => {
+  const cheapestButton = () => screen.getByRole('button', { name: 'Goedkoopste instellingen' })
+  const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
+  const tap = () => fireEvent.click(cheapestButton())
+  // Op level 10 is er alleen AP te verdelen; op level 20, met een mob gekozen, spelen mob, potions en skillpunten mee.
+  const toLevel20 = () => {
+    for (let i = 0; i < 10; i++) levelUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    chooseMob('Slime')
+  }
+
+  it('zet de instellingen en toont de besparing met wat er veranderde', () => {
+    toLevel20()
+    const before = JSON.stringify(profileFields())
+    tap()
+    expect(summary()).not.toBeNull()
+    expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
+    expect(document.querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
+    expect(within(summary()!).getByRole('button', { name: 'Ongedaan maken' })).toBeTruthy()
+    expect(JSON.stringify(profileFields())).not.toBe(before)
+  })
+
+  it('zet met Ongedaan maken alles terug: profiel, potions en de kosten van het level', () => {
+    toLevel20()
+    const profileBefore = profileFields()
+    const costBefore = levelCostText()
+    tap()
+    expect(levelCostText()).not.toBe(costBefore)
+    fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
+    expect(summary()).toBeNull()
+    expect(profileFields()).toEqual(profileBefore)
+    const potions = stored(POTION_CHOICE_KEY)
+    expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
+    expect(levelCostText()).toBe(costBefore)
+  })
+
+  it('zegt bij een tweede tik dat het al de goedkoopste is', () => {
+    toLevel20()
+    tap()
+    tap()
+    expect(summary()!.textContent).toContain('al de goedkoopste')
+    expect(document.querySelector('.cheapest-saving')).toBeNull()
+    expect(within(summary()!).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
+  })
+
+  it('laat de summary verdwijnen bij een ander level', () => {
+    toLevel20()
+    tap()
+    expect(summary()).not.toBeNull()
+    levelUp()
+    expect(summary()).toBeNull()
+  })
+
+  it('laat de summary verdwijnen bij een handmatige wijziging, zodat Ongedaan maken die niet wist', () => {
+    toLevel20()
+    tap()
+    expect(summary()).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    chooseMob('Snail')
+    expect(summary()).toBeNull()
+  })
+})

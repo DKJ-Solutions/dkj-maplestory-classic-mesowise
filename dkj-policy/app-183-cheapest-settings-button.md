@@ -51,7 +51,7 @@
 
 ### TEST
 
-- [ ] Unit tests on the module and app tests on apply, undo and the "already cheapest" message (Tycho). Code review
+- [x] Unit tests on the module and app tests on apply, undo and the "already cheapest" message (Tycho). Code review
   (Victor, findings applied and re-reviewed) and text review (Edith, nothing blocking).
 
 ### DEPLOY: app/183-cheapest-settings-button

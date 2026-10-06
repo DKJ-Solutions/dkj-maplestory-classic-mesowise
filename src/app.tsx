@@ -26,6 +26,7 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
+import { cheapestSettings, MAX_ROUNDS, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -2520,6 +2521,50 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
   )
 }
 
+/** "Goedkoopste instellingen" (#183): de knop, en na een tik wat er veranderde met een Ongedaan maken. */
+const CHANGE_LABEL = { mob: 'Monster:', potions: 'Potions:', skills: 'Skillpunten:', ap: 'AP:' } as const
+function CheapestSettings(props: { result: CheapestResult | null; onApply: () => void; onUndo: () => void }) {
+  const r = props.result
+  const saving = r?.saving ?? null
+  return (
+    <section class="cheapest" aria-label="Goedkoopste instellingen">
+      <button type="button" class="btn primary" onClick={props.onApply}>
+        Goedkoopste instellingen
+      </button>
+      {r && (
+        <div class="cheapest-result" role="status">
+          {r.changes.length === 0 ? (
+            <p class="hint">Je instellingen zijn al de goedkoopste voor dit level; er is niets veranderd.</p>
+          ) : (
+            <>
+              {saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} bespaard op dit level</p>}
+              {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
+              {saving === null && (
+                <p class="hint">
+                  {r.costBefore === null
+                    ? 'Je huidige mob geeft geen EXP, dus er is geen kost om mee te vergelijken. De instellingen zijn wel aangepast.'
+                    : 'Niet door te rekenen wat dit scheelt. De instellingen zijn wel aangepast.'}
+                </p>
+              )}
+              <ul class="cheapest-changes">
+                {r.changes.map((c) => (
+                  <li key={c.kind}>
+                    <strong>{CHANGE_LABEL[c.kind]}</strong> {c.text}
+                  </li>
+                ))}
+              </ul>
+              {r.capped && <p class="hint">Na {MAX_ROUNDS} rondes gestopt; tik nog eens voor eventueel meer.</p>}
+              <button type="button" class="btn" onClick={props.onUndo}>
+                Ongedaan maken
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
@@ -2602,6 +2647,38 @@ export function App() {
   }
   // De bevestiging na "Punt zetten", zodat een dubbele tik zichtbaar is.
   const [placed, setPlaced] = useState<string | null>(null)
+
+  // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
+  // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
+  // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput } | null>(null)
+  const cheapestShown =
+    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.job === job
+      ? cheapest.result
+      : null
+  const applyCheapest = () => {
+    commitAllEquipment()
+    const before: CheapestInput = { job, gender, equipment: equipmentRef.current, drafts, profileDraft: profileRef.current, potionChoice }
+    const result = cheapestSettings(before)
+    if (result.drafts !== before.drafts) {
+      dirty.current = true
+      setDrafts(result.drafts)
+    }
+    if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
+    if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
+    setPlaced(null)
+    setCheapest({ result, before })
+  }
+  const undoCheapest = () => {
+    if (!cheapestShown || !cheapest) return
+    const { before } = cheapest
+    dirty.current = true
+    setDrafts(before.drafts)
+    writeProfile(() => before.profileDraft)
+    writePotionChoice(before.potionChoice)
+    setPlaced(null)
+    setCheapest(null)
+  }
 
   const levelUp = () => {
     // Eerst een nog niet opgeslagen concept uit het corrigeervak, dan pas rekenen: alles uit de refs, niet uit deze render.
@@ -2757,6 +2834,8 @@ export function App() {
       <p class="app-question">
         How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
+
+      {computed && <CheapestSettings result={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />}
 
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
       {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
