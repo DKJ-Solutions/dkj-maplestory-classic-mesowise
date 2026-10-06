@@ -25,7 +25,7 @@ import { POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { MAX_ROUNDS, profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -2954,11 +2954,6 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
   return a !== null && b !== null ? a - b : fallback
 }
 /**
- * Onder de tabel van Difference (Dave, 6 oktober 2026, #183): wat er voor de goedkoopste setup verandert (mob, potions, skillpunten,
- * base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
- * "Ongedaan maken" terugzetten.
- */
-/**
  * Wat er staat als Advised dit level niets bespaart (Dave, 6 oktober 2026, #192): koopt het equipment, dan kan het over de levels tot je volgende upgrade
  * winnen en dit level toch meer kosten, want de factuur schrijft de prijs maar voor een deel af. Dan zeggen we dat, in plaats van "geen meso".
  */
@@ -2967,6 +2962,11 @@ export const noSavingText = (saving: number, bought: boolean): string =>
     ? `Dit level kost Advised ${formatMeso(-saving)} meer: de equip die het koopt verdient zich pas terug tot je volgende upgrade.`
     : 'Dit levert geen meso op voor dit level.'
 
+/**
+ * Onder de tabel van Difference (Dave, 6 oktober 2026, #183): wat er voor de goedkoopste setup verandert (mob, potions, skillpunten,
+ * base AP en sinds #192 de equip die het koopt), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
+ * "Ongedaan maken" terugzetten.
+ */
 function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equipTexts: EquipTexts; bought: boolean; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
@@ -2990,7 +2990,8 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
           </li>
         ))}
       </ul>
-      {r.capped && <p class="hint">Na {MAX_ROUNDS} rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
+      {/* Gestopt na de laatste toegestane ronde, van de instellingen of van de equip (#192): geen vast getal. */}
+      {r.capped && <p class="hint">Na het maximum aantal rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
       {props.applied ? (
         <button type="button" class="btn" onClick={props.onUndo}>
           Ongedaan maken
