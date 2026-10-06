@@ -273,8 +273,12 @@ export const itemLevel = (slot: EquipSlot, name: string): number | undefined => 
 export function familyName(slot: EquipSlot, name: string): string {
   const item = anyItem(slot, name)
   if (item?.variant === undefined) return name
-  const names = new Set((Object.keys(SHOP) as Job[]).flatMap((j) => catalogItems(slot, j, true).filter((i) => i.variant === item.variant).map((i) => i.name)))
-  return names.size < 2 ? name : colourless(name)
+  const all = (Object.keys(SHOP) as Job[]).flatMap((j) => catalogItems(slot, j, true))
+  const names = new Set(all.filter((i) => i.variant === item.variant).map((i) => i.name))
+  if (names.size < 2) return name
+  // Is de naam zonder kleur die van een ander stuk (Metal Gear, DEF 18, naast Yellow en Blue Metal Gear, DEF 19), dan blijft de kleur staan (#188).
+  const base = colourless(name)
+  return all.some((i) => i.name === base && i.variant !== item.variant) ? name : base
 }
 
 /** De kleurwoorden waarmee een itemnaam begint ("Dark Brown", "Silver / Black"); een materiaal (Bronze, Steel) is geen kleur. */

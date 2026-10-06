@@ -1721,3 +1721,13 @@ describe('soort en snelheid van een wapen in de catalogus (#188)', () => {
     for (const i of items) expect(i.type, i.name).toBeDefined()
   })
 })
+
+describe('familyName naast een ander stuk met dezelfde naam zonder kleur (#188)', () => {
+  it('noemt Yellow en Blue Metal Gear (DEF 19) niet "Metal Gear": dat is een ander stuk (DEF 18)', () => {
+    expect(familyName('hat', 'Yellow Metal Gear')).toBe('Yellow Metal Gear')
+    expect(familyName('hat', 'Metal Gear')).toBe('Metal Gear')
+    const rows = searchCatalog('hat', 'thief', 'Metal Gear').map((i) => [familyName('hat', i.name), i.stat])
+    expect(rows).toEqual(expect.arrayContaining([['Metal Gear', 18], ['Yellow Metal Gear', 19]]))
+    expect(rows).toHaveLength(2)
+  })
+})
