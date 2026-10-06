@@ -45,6 +45,7 @@
 
 - [x] `src/cheapestEquip.ts`: per slot what you wear and the cheapest equip, from the existing advice (Cody)
 - [x] `EquipColumns` in the Equip card, styled mobile-first (Cody, Gwen)
+- [x] A view button under each column: Your character opens the Equip popup, Cheapest a read-only list with shop prices and a total (Dave, #188)
 
 ### TEST
 
@@ -55,7 +56,7 @@
 ### DEPLOY: app/188-equip-two-columns
 
 The Equip card now shows, without opening it, two columns per slot: **Your character** (what you wear in game) and
-**Cheapest** (the equip that levels most cheaply). Cheapest takes the weapon the weapon advice says pays for itself, and
+**Cheapest** (the equip that levels most cheaply), each with a view button under it: Your character opens the Equip popup to change what you wear, and Cheapest opens a read-only list with the shop price of each piece to buy and the total. Cheapest takes the weapon the weapon advice says pays for itself, and
 every armor slot whose best piece pays for itself, skipping a piece that would clash with a better one (an overall
 against a top or bottom); a piece that differs from what you wear is shown in the accent color. A new pure module,
 `src/cheapestEquip.ts`, does the work from the advice the app already computes.

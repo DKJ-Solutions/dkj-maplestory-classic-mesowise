@@ -338,10 +338,6 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
   )
 }
 
-/**
- * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
- * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
- */
 /** Het oog: de knop die een kaart of een kolom bekijkt. */
 const EyeIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -350,6 +346,10 @@ const EyeIcon = () => (
   </svg>
 )
 
+/**
+ * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
+ * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
+ */
 function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
   return (
     <div class="spot-head">
@@ -1434,7 +1434,7 @@ function StatDialog(props: {
  * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide kolommen leeg is, staat er
  * niet; zonder goedkoopste equip (een job die de app niet doorrekent) alleen de eerste kolom.
  */
-function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null; onOpenWorn: (button: HTMLButtonElement) => void }) {
+function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null; onOpenWorn: (button: HTMLButtonElement) => void; wornOpen: boolean }) {
   const [cheapestOpen, setCheapestOpen] = useState(false)
   const cheapestButton = useRef<HTMLButtonElement>(null)
   const rows = props.slots
@@ -1477,7 +1477,7 @@ function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment
           <tr>
             <td />
             <td>
-              <button type="button" class="card-action" aria-haspopup="dialog" aria-label="Your character bekijken" onClick={(e) => props.onOpenWorn(e.currentTarget)}>
+              <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.wornOpen} aria-label="Your character bekijken" onClick={(e) => props.onOpenWorn(e.currentTarget)}>
                 <EyeIcon />
               </button>
             </td>
@@ -1509,7 +1509,7 @@ function CheapestEquipList(props: { slots: readonly EquipSlot[]; cheapest: Recor
   const total = rows.reduce((sum, r) => sum + (r.price ?? 0), 0)
   return (
     <div class="report-body">
-      <p class="hint">De equip waarmee je het goedkoopst levelt. Wat in de accentkleur staat, koop je in de winkel; de rest draag je al.</p>
+      <p class="hint">De equip waarmee je het goedkoopst levelt. Een stuk met een prijs koop je in de winkel, een streepje is een slot dat leeg blijft, de rest draag je al.</p>
       {rows.length === 0 ? (
         <p class="hint">Nog geen equip ingevuld.</p>
       ) : (
@@ -1528,7 +1528,7 @@ function CheapestEquipList(props: { slots: readonly EquipSlot[]; cheapest: Recor
           <tfoot>
             <tr>
               <th scope="row">Total</th>
-              <td class="invoice-meso">{total === 0 ? '0 meso' : `${nfInt.format(total)} meso`}</td>
+              <td class="invoice-meso">{`${nfInt.format(total)} meso`}</td>
             </tr>
           </tfoot>
         </table>
@@ -1595,7 +1595,7 @@ function EquipmentCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} onOpenWorn={(button) => { opener.current = button; setOpen(true) }} />
+      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} wornOpen={open} onOpenWorn={(button) => { opener.current = button; setOpen(true) }} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}

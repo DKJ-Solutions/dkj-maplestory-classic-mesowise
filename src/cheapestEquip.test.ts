@@ -96,6 +96,15 @@ describe('cheapestEquipment (#188)', () => {
     expect(r.bottom.cheapest).toBe('Pants P')
   })
 
+  it('geeft bij een paar elke helft zijn eigen prijs', () => {
+    const top = { ...piece('top', 'Shirt P'), price: 300 } as ArmorPiece
+    const bottom = { ...piece('bottom', 'Pants P'), price: 250 } as ArmorPiece
+    const r = cheapestEquipment(SLOTS, wearing({ overall: 'Robe' }), NONE, armorAdvice([choice(top, 90, { with: bottom })]))
+    expect(r.top.price).toBe(300)
+    expect(r.bottom.price).toBe(250)
+    expect(r.overall.price).toBeNull()
+  })
+
   it('geeft alleen de gevraagde slots terug', () => {
     expect(Object.keys(cheapestEquipment(['claw', 'hat'], wearing({}), NONE, NONE))).toEqual(['claw', 'hat'])
   })
