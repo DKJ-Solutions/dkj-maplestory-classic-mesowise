@@ -2881,7 +2881,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   it('toont de potions van een Thief van goedkoop naar duur per punt, met hun prijs, en geen Max HP of Max MP (die staan op Total stats)', () => {
     openPotions()
     expect(cardNames('section.potions')).toEqual([])
-    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['150 meso', '350 meso', '220 meso'])
+    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['Prijs: 150 meso', 'Prijs: 350 meso', 'Prijs: 220 meso'])
     expect(names('HP potions')).toEqual(['Orange Potion', 'White Potion'])
     expect(names('MP potions')).toEqual(['Blue Potion'])
     expect(usedName('HP potions')).toBe('Orange Potion')

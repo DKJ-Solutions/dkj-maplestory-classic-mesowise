@@ -49,6 +49,7 @@
 - [x] Victor: code review; tie-break order, Max MP bound and dead error routing fixed
 - [x] Edith: final read of the Dutch UI text and comments; four stale comments fixed
 - [x] Dave (October 6, 2026): Max HP and Max MP move to the top of Total stats
+- [x] Dave (October 6, 2026): the price gets its own line under the name ("Prijs: 150 meso")
 
 ### TEST
 

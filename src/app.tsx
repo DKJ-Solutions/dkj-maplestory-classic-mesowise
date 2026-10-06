@@ -838,10 +838,11 @@ function PotionRow(props: { option: PotionOption }) {
   const fill = fillPct === null ? null : fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(fillPct)}% van je Max ${unit}`
   return (
     <li class={used ? 'potion used' : 'potion'}>
-      <div class="potion-top">
-        <span class="potion-name">{potion.name}</span>
-        <span class="potion-price">{nfInt.format(potion.price)} meso</span>
-      </div>
+      {/* De prijs op een eigen regel onder de naam (Dave, 6 oktober 2026): rechts ernaast viel hij weg. */}
+      <p class="potion-name">{potion.name}</p>
+      <p class="potion-price">
+        Prijs: <strong>{nfInt.format(potion.price)} meso</strong>
+      </p>
       <p class="potion-meta">
         +{nfInt.format(restores)} {unit} · {nf.format(mesoPerPoint)} meso per {unit}
         {fill && <> · {fill}</>}
