@@ -584,7 +584,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 
 /* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
-.total-cost h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
+/* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Cheapest en Difference uitsteekt (Dave, #183). */
+.total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
 .total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
 .total-cost-sub strong { color: var(--text); }
 /* De drie delen van Total cost (#183): In game, Cheapest en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
