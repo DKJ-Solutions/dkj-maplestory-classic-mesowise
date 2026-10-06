@@ -2775,3 +2775,92 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     expect(part.querySelector('.verdict')!.textContent).toBe('Je hebt op dit level geen skillpunten meer over.')
   })
 })
+
+describe('de soort van een eigen wapen (#176)', () => {
+  const open = (job: string, claw: object = { pick: 'other', name: 'Mijn wapen', stat: '28' }) => {
+    cleanup()
+    localStorage.clear()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '20', luckySeven: '1', doubleStab: '1' } }))
+    localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: { claw } }))
+    render(<App />)
+    openHomeEquipment()
+  }
+  const group = () => within(cards()[0]).queryByRole('group', { name: 'Soort wapen' })
+  const kind = (name: 'Dagger' | 'Claw') => within(group()!).getByRole('button', { name }) as HTMLElement
+
+  it('toont de keuze bij een Thief met een eigen wapen, met Claw als standaard', () => {
+    open('thief')
+    expect(group()).not.toBeNull()
+    expect(kind('Claw').getAttribute('aria-pressed')).toBe('true')
+    expect(kind('Dagger').getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('toont de keuze niet bij een catalogusclaw, een leeg wapenslot of een NPC-dagger', () => {
+    open('thief', { pick: IGOR.name, name: '', stat: '' })
+    expect(group()).toBeNull()
+    open('thief', { pick: 'unknown', name: '', stat: '' })
+    expect(group()).toBeNull()
+    open('thief', { pick: 'Triangular Zamadar', name: '', stat: '' })
+    expect(group()).toBeNull()
+  })
+
+  it('toont de keuze niet bij een andere job, ook niet met een eigen wapen', () => {
+    for (const job of ['warrior', 'bowman', 'magician']) {
+      open(job)
+      expect(group(), job).toBeNull()
+    }
+  })
+
+  it('verschijnt als je als Thief een eigen item kiest, en verdwijnt als je een catalogusclaw kiest', () => {
+    open('thief', { pick: 'unknown', name: '', stat: '' })
+    pickOwn(cards()[0], 'Weapon', 'Mijn wapen')
+    expect(group()).not.toBeNull()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(group()).toBeNull()
+  })
+
+  it('Dagger zet dagger op 1 in het profiel en in de opslag, Claw weer op 0', () => {
+    open('thief')
+    expect(profileFields()?.dagger ?? '0').toBe('0')
+    fireEvent.click(kind('Dagger'))
+    expect(kind('Dagger').getAttribute('aria-pressed')).toBe('true')
+    expect(kind('Claw').getAttribute('aria-pressed')).toBe('false')
+    expect(profileFields().dagger).toBe('1')
+    expect(slots().claw.weaponKind).toBe('dagger')
+    fireEvent.click(kind('Claw'))
+    expect(kind('Claw').getAttribute('aria-pressed')).toBe('true')
+    expect(profileFields().dagger).toBe('0')
+    expect('weaponKind' in slots().claw).toBe(false)
+  })
+
+  it('onthoudt de keuze na een herstart', () => {
+    open('thief')
+    fireEvent.click(kind('Dagger'))
+    cleanup()
+    render(<App />)
+    openHomeEquipment()
+    expect(kind('Dagger').getAttribute('aria-pressed')).toBe('true')
+    expect(profileFields().dagger).toBe('1')
+  })
+
+  it('een dagger -> een ander eigen item zonder soort te kiezen: de keuze valt terug op Claw en dagger op 0', () => {
+    open('thief', { pick: 'other', name: 'Mijn dagger', stat: '28', weaponKind: 'dagger' })
+    expect(kind('Dagger').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(kind('Dagger'))
+    expect(profileFields().dagger).toBe('1')
+    pickOwn(cards()[0], 'Weapon', 'Ander wapen')
+    expect(kind('Claw').getAttribute('aria-pressed')).toBe('true')
+    expect(kind('Dagger').getAttribute('aria-pressed')).toBe('false')
+    expect(profileFields().dagger).toBe('0')
+    expect('weaponKind' in slots().claw).toBe(false)
+  })
+
+  it('een dagger -> een catalogusclaw zet dagger op 0 en laat geen soort achter', () => {
+    open('thief', { pick: 'other', name: 'Mijn dagger', stat: '28', weaponKind: 'dagger' })
+    fireEvent.click(kind('Dagger'))
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(profileFields().dagger).toBe('0')
+    expect('weaponKind' in slots().claw).toBe(false)
+  })
+})

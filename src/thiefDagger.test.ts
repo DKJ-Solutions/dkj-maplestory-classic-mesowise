@@ -215,6 +215,13 @@ describe('syncWithEquipment: dagger en pijlen volgen de equipment (#170)', () =>
     expect(syncWithEquipment({ ...DEFAULT_PROFILE, dagger: '1' }, withClaw(unknown)).dagger).toBe('0')
   })
 
+  it('een eigen item (OTHER) met de soort dagger zet dagger op 1, en alleen de soort omzetten volgt (#176)', () => {
+    const own: EquipEntry = { pick: OTHER, name: 'Cass', stat: '45', weaponKind: 'dagger' }
+    expect(syncWithEquipment({ ...DEFAULT_PROFILE, dagger: '0' }, withClaw(own)).dagger).toBe('1')
+    expect(applyEquipChange({ ...DEFAULT_PROFILE, dagger: '0' }, 'claw', { ...own, weaponKind: 'claw' }, own).dagger).toBe('1')
+    expect(applyEquipChange({ ...DEFAULT_PROFILE, dagger: '1' }, 'claw', own, { ...own, weaponKind: 'claw' }).dagger).toBe('0')
+  })
+
   it('een eigen item (OTHER) in het wapenslot zet dagger op 0', () => {
     expect(syncWithEquipment({ ...DEFAULT_PROFILE, dagger: '1' }, withClaw({ pick: OTHER, name: 'Cass', stat: '45' })).dagger).toBe('0')
   })
@@ -268,5 +275,51 @@ describe('isNpcDagger heeft geen jobcontrole nodig', () => {
   it('de Thief-catalogus heeft ze wel allemaal', () => {
     const names = new Set(catalogItems('claw', 'thief').map((i) => i.name))
     for (const d of NPC_DAGGERS) expect(names.has(d.name), d.name).toBe(true)
+  })
+})
+
+describe('een eigen wapen met de gekozen soort rekent als die soort (#176)', () => {
+  const own = (weaponKind?: 'dagger' | 'claw'): EquipEntry => ({ pick: OTHER, name: 'Mijn wapen', stat: '28', ...(weaponKind ? { weaponKind } : {}) })
+  /** Het profiel zoals de app het na de keuze van het eigen wapen bewaart: de claw-aanpassing, dan de sync met de equipment. */
+  const worn = (e: EquipEntry): Profile =>
+    parsed({
+      ...syncWithEquipment(applyEquipChange({ ...DEFAULT_PROFILE, level: '20', luckySeven: '1', doubleStab: '1', str: '60', dex: '60', luk: '100', starWatk: '15', starRecharge: '1', clawWatk: '28' }, 'claw', unknown, e), withClaw(e)),
+    })
+
+  it('als dagger: Double Stab, geen stars in de weapon attack, geen ammokosten', () => {
+    const p = worn(own('dagger'))
+    expect(p.dagger).toBe(1)
+    expect(thiefWithDagger('thief', p.dagger)).toBe(true)
+    expect(toCharacter(p).watk).toBe(p.clawWatk)
+    const s = suggestMonsters(p, subway)
+    expect(s.length).toBeGreaterThan(0)
+    for (const x of s) {
+      expect(x.rechargePerStar).toBe(0)
+      expect(x.estimate.mpPerKill).toBeCloseTo(x.estimate.attacksToKill * 8, 6)
+      expect(hourPlan(x, x.estimate.killsPerHour).ammo).toBe(0)
+    }
+  })
+
+  it('als claw: Lucky Seven, stars in de weapon attack en ammokosten', () => {
+    const p = worn(own('claw'))
+    expect(p.dagger).toBe(0)
+    expect(toCharacter(p).watk).toBe(p.clawWatk + 15)
+    const s = suggestMonsters(p, subway)
+    expect(s.length).toBeGreaterThan(0)
+    for (const x of s) {
+      expect(x.rechargePerStar).toBe(p.starRecharge)
+      expect(x.estimate.starsPerKill).toBeGreaterThan(0)
+    }
+  })
+
+  it('zonder gekozen soort geldt claw: precies de uitkomst van een eigen claw', () => {
+    expect(worn(own())).toEqual(worn(own('claw')))
+    expect(worn(own()).dagger).toBe(0)
+  })
+
+  it('dagger en claw geven een andere uitkomst voor dezelfde stat: het getal verandert met de keuze', () => {
+    const a = suggestMonsters(worn(own('dagger')), subway).map((x) => x.estimate.attacksToKill)
+    const b = suggestMonsters(worn(own('claw')), subway).map((x) => x.estimate.attacksToKill)
+    expect(a).not.toEqual(b)
   })
 })

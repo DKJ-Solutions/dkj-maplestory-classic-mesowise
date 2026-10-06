@@ -39,19 +39,33 @@
 
 ### PLAN
 
+Resolves #176. Dave chose "ask for the kind" (October 6, 2026, comment on #176).
+
+- [x] Model: `EquipEntry.weaponKind` (`'dagger' | 'claw'`, absent = claw) for a custom weapon in the claw slot, driving the profile's `dagger` flag
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `weaponKind` stored and loaded only for a Thief's custom weapon; `applyEquipChange` and `syncWithEquipment` read it, and a kind-only toggle updates the flag
+- [x] Cody: "Soort wapen" Dagger/Claw toggle in the equipment card, shown only for a Thief with a custom weapon
+- [x] Victor's finding fixed: a job switch or a load under another job drops the kind, so a Bowman is never calculated with a dagger
 
 ### TEST
 
+- [x] Tycho: persistence, the calculation end to end (Double Stab versus Lucky Seven and stars), the toggle in the UI, and the job switch; `npm run lint` clean, vitest 1623 passed
+- [x] Victor (code review) and Edith (Dutch text) read the diff; findings fixed
+- [ ] Dave looks at the toggle at phone width (visible result)
+
 ### DEPLOY: app/176-custom-weapon-kind
 
-**Score:**
+A Thief who wears a weapon the app does not know (a custom item) now chooses whether it is a dagger or a claw. Until now the app silently treated it as a claw, so after a dagger the player got Lucky Seven with stars added on top of the dagger's attack. The choice is saved with the equipment, and it is dropped when the character switches to another job.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Thief with an unlisted dagger now gets an honest EXP per meso number, calculated with Double Stab and no star costs, instead of an overstated one.
+
+**Score:** 3
 
 #### Pull Request
 
