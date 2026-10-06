@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App } from './app'
+import { App, totalCostWho } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
@@ -3018,9 +3018,17 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
   const rows = () => Array.from(card().querySelectorAll('tbody tr')).map((r) => Array.from(r.children).map((c) => c.textContent))
 
+  it('noemt in de ondertitel het level en de job, en zonder geldig level alleen de job', () => {
+    expect(totalCostWho('15', 'warrior')).toBe('level 15 Warrior')
+    for (const level of ['', ' ', 'abc', '10.5', '0']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
+  })
+
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
     expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
-    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much mesos you need to level')
+    // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
+    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much mesos a level 10 Thief needs to level')
+    // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
+    expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('level 10 Thief')
     expect(card().querySelector('table')).toBeNull()
     expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
   })

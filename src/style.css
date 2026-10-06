@@ -581,6 +581,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
 .total-cost h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 .total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
+.total-cost-sub strong { color: var(--text); }
 .invoice { width: 100%; margin-top: 0.75rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .invoice th, .invoice td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
 .invoice th { text-align: left; font-weight: 400; overflow-wrap: anywhere; }

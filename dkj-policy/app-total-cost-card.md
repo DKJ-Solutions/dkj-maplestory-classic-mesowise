@@ -39,7 +39,8 @@
 
 ### PLAN
 
-- [x] Dave (October 6, 2026): a Total cost card, subtitle "This is how much mesos you need to level", with an invoice of
+- [x] Dave (October 6, 2026): a Total cost card, subtitle "This is how much mesos a **level 18 Thief** needs to level"
+  (current level and job, in bold), with an invoice of
   the potions a level needs and the total price. Ammo and travel are lines too when they cost anything, so the total
   matches the level cost on the Report card.
 
@@ -58,12 +59,13 @@
 ### TEST
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
-  job, own potion costs) and app tests for the card; 1662 tests green, lint clean
+  job, own potion costs) and app tests for the card; 1663 tests green, lint clean
 - [ ] Dave looks at the card before the merge
 
 ### DEPLOY: app/total-cost-card
 
-A new Total cost card above the Report card shows, as an invoice, what your current level costs: how many of each potion
+A new Total cost card above the Report card ("This is how much mesos a **level 18 Thief** needs to level", with your
+own level and job) shows, as an invoice, what your current level costs: how many of each potion
 you need (the potions you picked on the Potions card), the stars or arrows, and travel when it costs anything, each with
 its price, and the total underneath. It calculates with the same mob, kills and potions as the Report card, so the total
 is the same amount, give or take rounding each count up to whole potions. A line above the invoice says which level, on

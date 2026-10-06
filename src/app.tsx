@@ -2457,13 +2457,24 @@ const formatHours = (hours: number): string => {
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job }) {
+/**
+ * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "level 10 Thief", vetgedrukt in "This is how much mesos a
+ * level 10 Thief needs to level". Zonder geldig level alleen de job.
+ */
+export const totalCostWho = (level: string, job: Job): string => {
+  const n = Number(level.trim())
+  return level.trim() !== '' && Number.isInteger(n) && n >= 1 ? `level ${n} ${jobLabel(job)}` : jobLabel(job)
+}
+
+function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
   const inv = props.invoice
   const meso = (n: number) => `−${nfInt.format(n)} meso`
   return (
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>
-      <p class="total-cost-sub">This is how much mesos you need to level</p>
+      <p class="total-cost-sub">
+        This is how much mesos a <strong>{totalCostWho(props.level, props.job)}</strong> needs to level
+      </p>
       {!props.computed ? (
         <NotComputed job={props.job} />
       ) : inv.kind === 'none' ? (
@@ -2793,7 +2804,7 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      <TotalCostCard invoice={invoice} computed={computed} job={job} />
+      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} />
 
       <LevelAdviceCard
         job={job}
