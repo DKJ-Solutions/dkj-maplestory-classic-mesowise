@@ -39,19 +39,34 @@
 
 ### PLAN
 
+- [x] Read the Equip card and the weapon and armor advice it can reuse (issue #188)
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/cheapestEquip.ts`: per slot what you wear and the cheapest equip, from the existing advice (Cody)
+- [x] `EquipColumns` in the Equip card, styled mobile-first (Cody, Gwen)
 
 ### TEST
 
+- [x] `src/cheapestEquip.test.ts` and an app test for the two columns; full suite and lint gate green (Tycho)
+- [ ] Code review (Victor) and text read (Edith)
+- [ ] Dave looks at the preview before the merge (visible result)
+
 ### DEPLOY: app/188-equip-two-columns
 
-**Score:**
+The Equip card now shows, without opening it, two columns per slot: **Your character** (what you wear in game) and
+**Cheapest** (the equip that levels most cheaply). Cheapest takes the weapon the weapon advice says pays for itself, and
+every armor slot whose best piece pays for itself, skipping a piece that would clash with a better one (an overall
+against a top or bottom); a piece that differs from what you wear is shown in the accent color. A new pure module,
+`src/cheapestEquip.ts`, does the work from the advice the app already computes.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+You see at a glance which equip to buy for the cheapest levelling, next to what you wear now.
+
+**Score:** 3
 
 #### Pull Request
 
