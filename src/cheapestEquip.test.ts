@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { cheapestEquipment } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
-import { defaultEquipment, EQUIP_SLOTS, type Equipment } from './equipment'
+import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, type Equipment } from './equipment'
+import { DEFAULT_PROFILE } from './profile'
 
 const SLOTS = EQUIP_SLOTS.map((s) => s.slot)
 const NONE = { kind: 'none' } as const
@@ -37,7 +38,7 @@ describe('cheapestEquipment (#188)', () => {
   it('neemt elk armorstuk dat zich terugverdient, en geen stuk met netto besparing 0, negatief of onbekend', () => {
     const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 0), choice(piece('gloves', 'Gloves A'), -10), choice(piece('cape', 'Cape A'), null)])
     const r = cheapestEquipment(SLOTS, wearing({ shoes: 'Old Shoes' }), NONE, advice)
-    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true, price: 100, option: null })
+    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false } })
     expect(r.shoes.cheapest).toBe('Old Shoes')
     expect(r.gloves.cheapest).toBeNull()
     expect(r.cape.cheapest).toBeNull()
@@ -45,7 +46,7 @@ describe('cheapestEquipment (#188)', () => {
 
   it('maakt top en bottom leeg voor een overall', () => {
     const r = cheapestEquipment(SLOTS, wearing({ top: 'Shirt', bottom: 'Pants' }), NONE, armorAdvice([choice(piece('overall', 'Robe'), 80)]))
-    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true, price: 100, option: null })
+    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false } })
     expect(r.top).toEqual({ worn: 'Shirt', cheapest: null, changed: true, price: null, option: null })
     expect(r.bottom).toEqual({ worn: 'Pants', cheapest: null, changed: true, price: null, option: null })
   })
@@ -123,5 +124,55 @@ describe('cheapestEquipment (#188)', () => {
 
   it('geeft alleen de gevraagde slots terug', () => {
     expect(Object.keys(cheapestEquipment(['claw', 'hat'], wearing({}), NONE, NONE))).toEqual(['claw', 'hat'])
+  })
+})
+
+describe('advisedEquipment (#192)', () => {
+  const profile = { ...DEFAULT_PROFILE }
+  const slotsOf = (eq: Equipment, claw: ClawUpgradeAdvice = NONE, armor: ArmorUpgradeAdvice = NONE) => cheapestEquipment(SLOTS, eq, claw, armor)
+
+  it('geeft zonder wijziging dezelfde objecten terug, en geen winkelprijs', () => {
+    const eq = wearing({ claw: 'Garnier', hat: 'White Bandana' })
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq))
+    expect(r.equipment).toBe(eq)
+    expect(r.profile).toBe(profile)
+    expect(r.shop).toBe(0)
+    expect(r.purchases).toEqual([])
+  })
+
+  it('zet het winkelstuk in het slot zoals een keuze op de Equip-kaart, met het profiel dat daarbij hoort, en telt de prijs', () => {
+    const eq = wearing({ claw: 'Garnier' })
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq, clawAdvice('Steel Titans')))
+    expect(r.equipment.claw).toEqual(choosePick('claw', eq.claw, 'Steel Titans'))
+    expect(r.shop).toBe(5000)
+    expect(r.purchases).toEqual([{ slot: 'claw', name: 'Steel Titans', price: 5000 }])
+    // Het profiel volgt exact wat een keuze op de kaart doet.
+    expect(r.profile).toEqual(changeEquipment(profile, eq, 'claw', choosePick('claw', eq.claw, 'Steel Titans'), 'thief').profile)
+    expect(r.profile.clawWatk).not.toBe(profile.clawWatk)
+    // Wat je niet koopt blijft je eigen entry.
+    expect(r.equipment.hat).toBe(eq.hat)
+  })
+
+  it('telt de prijzen van alle stukken op, en laat een slot dat leeg raakt bekend leeg worden', () => {
+    const eq = wearing({ overall: 'Sauna Robe' })
+    const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('top', 'Top A'), 40, { bare: 'bottom' })])
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq, NONE, advice))
+    expect(r.equipment.hat.pick).toBe('Hat A')
+    expect(r.equipment.top.pick).toBe('Top A')
+    expect(r.equipment.overall.pick).not.toBe('Sauna Robe')
+    expect(r.equipment.bottom.pick).toBe('empty')
+    expect(r.shop).toBe(200)
+    // Eén aankoop per stuk, en hun prijzen samen zijn de winkelprijs.
+    expect(r.purchases.map((p) => p.name)).toEqual(['Hat A', 'Top A'])
+    expect(r.purchases.reduce((s, p) => s + p.price, 0)).toBe(r.shop)
+  })
+})
+
+describe('buyTexts (#192)', () => {
+  it('noemt het wapen en de armor die je koopt, en geeft null als er niets te kopen valt', () => {
+    const eq = wearing({ claw: 'Garnier' })
+    const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 20)])
+    expect(buyTexts(cheapestEquipment(SLOTS, eq, clawAdvice('Steel Titans'), advice))).toEqual({ att: 'Koop Steel Titans', def: 'Koop Hat A, Shoes A' })
+    expect(buyTexts(cheapestEquipment(SLOTS, eq, NONE, NONE))).toEqual({ att: null, def: null })
   })
 })

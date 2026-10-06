@@ -23,7 +23,8 @@ export function horizonCost(from: number, to: number, epm: number | ((level: num
 
 /**
  * Over welke levels een upgrade-advies zijn besparing telt: tot je volgende upgrade in dat slot (het advies in het rapport, #25),
- * of alleen het level waarop je nu staat (de Cheapest-equip, Dave, 6 oktober 2026, #188: "het goedkoopst een level omhoog").
+ * of alleen het level waarop je nu staat (de equip van Advised was dit, Dave, 6 oktober 2026, #188: "het goedkoopst een level omhoog"; sinds #192
+ * is dat next-upgrade, met afschrijving op de factuur, writeOff.ts).
  */
 export type HorizonScope = 'next-upgrade' | 'this-level'
 
