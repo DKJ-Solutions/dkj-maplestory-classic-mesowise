@@ -55,7 +55,7 @@
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1650+ tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1646 tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card
