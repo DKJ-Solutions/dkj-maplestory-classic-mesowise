@@ -9,7 +9,8 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { advisedEquipment, buyTexts, cheapestEquipment, type CheapestSlot } from './cheapestEquip'
+import { advisedSetup } from './advisedSetup'
+import { buyTexts, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -24,7 +25,7 @@ import { POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { cheapestSettings, MAX_ROUNDS, profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { MAX_ROUNDS, profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -1592,7 +1593,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 /**
  * De zes knoppen onder de factuur van een deel van Total cost (Dave, 6 oktober 2026, #192): per kaart zijn icoon, in de volgorde van de pagina. Ze
  * laten zien dat het totaal uit de gegevens achter deze zes komt: in Your character opent een knop de popup van die kaart om te wijzigen, in Advised
- * zijn Advised-popup. Ook Equip: de factuur van Advised rekent met de equip die de Equip-kaart in Advised koopt, en de regel Shop is wat die kost.
+ * zijn Advised-popup. Ook Equip: de factuur van Advised rekent met de equip die de Equip-kaart in Advised koopt, en elk stuk dat het koopt staat als eigen regel op de factuur (in Difference samen als Shop).
  */
 function CostCardButtons(props: { part: 'worn' | 'advised' }) {
   const ctx = useContext(CardViewContext)
@@ -2855,7 +2856,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 
 /**
  * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
- * je speelt, "Advised" die van de goedkoopste setup (live berekend, met de equip die de Equip-kaart in Advised koopt en de regel Shop, #192), en "Difference" wat dat per regel scheelt, met daaronder
+ * je speelt, "Advised" die van de goedkoopste setup (live berekend, met de equip die de Equip-kaart in Advised koopt en een regel per gekocht stuk, in Difference samen als Shop, #192), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
 function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
@@ -2957,7 +2958,16 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
  * base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
  * "Ongedaan maken" terugzetten.
  */
-function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equipTexts: EquipTexts; onApply: () => void; onUndo: () => void }) {
+/**
+ * Wat er staat als Advised dit level niets bespaart (Dave, 6 oktober 2026, #192): koopt het equipment, dan kan het over de levels tot je volgende upgrade
+ * winnen en dit level toch meer kosten, want de factuur schrijft de prijs maar voor een deel af. Dan zeggen we dat, in plaats van "geen meso".
+ */
+export const noSavingText = (saving: number, bought: boolean): string =>
+  bought && saving < 0
+    ? `Dit level kost Advised ${formatMeso(-saving)} meer: de equip die het koopt verdient zich pas terug tot je volgende upgrade.`
+    : 'Dit levert geen meso op voor dit level.'
+
+function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equipTexts: EquipTexts; bought: boolean; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
   const saving = props.saving
@@ -2965,7 +2975,7 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
     <div class="cheapest-result">
       {/* Vóór Overnemen zegt het totaal van Difference wat het scheelt; daarna is dat 0, en dan staat hier wat je bespaarde. */}
       {props.applied && saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} bespaard op dit level</p>}
-      {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
+      {saving !== null && saving < 1 && <p class="hint">{noSavingText(saving, props.bought)}</p>}
       {saving === null && (
         <p class="hint">
           {r.costBefore === null
@@ -2996,7 +3006,7 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
     <>
       {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste, ook je equip.</p>}
       {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
-      {!props.applied && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
+      {!props.applied && !props.bought && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
   )
 }
@@ -3079,22 +3089,8 @@ export function App() {
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
-  // De equip van Advised (#188, was dit level): een stuk kopen loont als het tot je volgende upgrade in dat slot meer bespaart dan het kost, hetzelfde advies als het Report
-  // (Dave, 6 oktober 2026, #192); de factuur van Advised schrijft de prijs af over die levels (writeOff.ts).
   // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
   const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
-  const cheapestEquip = useMemo(
-    () =>
-      computed
-        ? cheapestEquipment(
-            shownSlots(job, equipment.claw),
-            equipment,
-            clawAdvice,
-            armorAdvice,
-          )
-        : null,
-    [computed, job, equipment, clawAdvice, armorAdvice],
-  )
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
   // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
@@ -3112,28 +3108,28 @@ export function App() {
   // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
   // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
   // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
-  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipment: Equipment; equipTexts: EquipTexts; saving: number | null } | null>(null)
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipment: Equipment; equipTexts: EquipTexts; bought: boolean; saving: number | null } | null>(null)
   const cheapestShown =
     cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.equipment === equipment && cheapest.before.job === job
       ? cheapest.result
       : null
   const appliedSaving = cheapestShown ? cheapest!.saving : null
-  // De equip van Advised (Dave, 6 oktober 2026, #192): wat je draagt plus de stukken die de Equip-kaart in Advised koopt, met het profiel dat daarbij
-  // hoort (dezelfde stap als een keuze op de kaart) en wat ze in de winkel kosten. Eén berekening voor alles: de goedkoopste instellingen rekenen met deze equip.
-  const advisedGear = useMemo(() => (cheapestEquip ? advisedEquipment(job, profileDraft, equipment, cheapestEquip) : { equipment, profile: profileDraft, shop: 0, purchases: [] }), [cheapestEquip, job, profileDraft, equipment])
   // Wat je nu hebt, voor Overnemen en Ongedaan maken; de berekening zelf krijgt de equip van Advised.
   const userInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
-  const cheapestInput = useMemo<CheapestInput>(
-    () => ({ ...userInput, equipment: advisedGear.equipment, profileDraft: advisedGear.profile }),
-    [userInput, advisedGear],
-  )
   // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
-  const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
+  // De setup van Advised (Dave, 6 oktober 2026, #192), één berekening voor alles: de goedkoopste instellingen met de equip die Advised koopt (tot je volgende upgrade
+  // in dat slot, zoals het Report; was dit level, #188), om en om uitgerekend tot het equip-advies niets meer koopt. Daaruit komen de Equip-popup, de factuur van
+  // Advised met zijn Shop-regels, Difference en Overnemen.
+  const advisedSet = useMemo(() => (computed ? advisedSetup(userInput) : null), [computed, userInput])
+  const cheapestLive = advisedSet?.result ?? null
+  const cheapestEquip = advisedSet?.cheapest ?? null
+  const advisedGear = advisedSet ?? { equipment, profile: profileDraft, shop: 0, purchases: [] }
+  const bought = advisedGear.purchases.length > 0
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
   const advisedProfile = cheapestLive?.profileDraft ?? null
   const cheapestInvoice = useMemo(
     () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price }))) : levelInvoice([], null)),
-    [cheapestLive, job, gender, advisedGear],
+    [cheapestLive, job, gender, advisedSet],
   )
   // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer, met de equip van Advised erbij (applyCheapest,
   // #192). Een nog niet bevestigd concept in een corrigeervak rekende de kaart niet mee; Overnemen gooit het weg als het de equip schrijft.
@@ -3159,7 +3155,7 @@ export function App() {
     if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
     if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
     setPlaced(null)
-    setCheapest({ result, before, equipment: advisedGear.equipment, equipTexts: liveEquipTexts, saving: cheapestSaving })
+    setCheapest({ result, before, equipment: advisedGear.equipment, equipTexts: liveEquipTexts, bought, saving: cheapestSaving })
   }
   const undoCheapest = () => {
     if (!cheapestShown || !cheapest) return
@@ -3398,7 +3394,7 @@ export function App() {
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
       <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
-        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} onApply={applyCheapest} onUndo={undoCheapest} />
+        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} bought={cheapestShown ? cheapest!.bought : bought} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 
       <LevelAdviceCard

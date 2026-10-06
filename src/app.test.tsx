@@ -1,13 +1,12 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, totalCostWho } from './app'
-import { armorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, cheapestEquipment } from './cheapestEquip'
-import { clawUpgradeAdvice } from './clawUpgrade'
-import { cheapestSettings, profileOf as cheapestProfile } from './cheapestSettings'
+import { App, noSavingText, totalCostWho } from './app'
+import { advisedSetup } from './advisedSetup'
+import { cheapestSettings } from './cheapestSettings'
+
 import { NPC_CLAWS } from './data/claws'
-import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog, shownSlots, wornWdef } from './equipment'
+import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
@@ -3619,11 +3618,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const profileDraft: ProfileDraft = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const choice = stored(POTION_CHOICE_KEY)
     const input = { job: 'thief' as const, gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } }
-    // De factuur van Advised koopt ook equip (#192): de berekening krijgt wat de Equip-kaart in Advised koopt, zoals de app het doet.
-    const profile = cheapestProfile(input)
-    const cheapest = cheapestEquipment(shownSlots('thief', input.equipment.claw), input.equipment, clawUpgradeAdvice(input.drafts, profile, 'this-level'), armorUpgradeAdvice(input.drafts, profile, wornWdef(input.equipment, 'thief'), 'this-level'))
-    const gear = advisedEquipment('thief', profileDraft, input.equipment, cheapest)
-    return cheapestSettings({ ...input, equipment: gear.equipment, profileDraft: gear.profile })
+    // De setup van Advised koopt ook equip (#192) en rekent er om en om mee, zoals de app het doet.
+    return advisedSetup(input).result
   }
 
   it('zet bij elke kaart eerst Advised en dan Your character, en geen oog of knop in de kop (#192)', () => {
@@ -3893,5 +3889,17 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(setup.querySelectorAll('.cost-cards button')).toHaveLength(6)
       }
     })
+  })
+})
+
+describe('noSavingText: Advised kost dit level meer door equipment (#192)', () => {
+  it('zegt hoeveel Advised dit level meer kost, en waarom, als het equipment koopt en negatief uitkomt', () => {
+    expect(noSavingText(-280, true)).toBe('Dit level kost Advised ± 280 meso meer: de equip die het koopt verdient zich pas terug tot je volgende upgrade.')
+  })
+
+  it('houdt de gewone tekst zonder aankoop of zonder negatieve besparing', () => {
+    expect(noSavingText(-280, false)).toBe('Dit levert geen meso op voor dit level.')
+    expect(noSavingText(0, true)).toBe('Dit levert geen meso op voor dit level.')
+    expect(noSavingText(0.4, true)).toBe('Dit levert geen meso op voor dit level.')
   })
 })
