@@ -10,14 +10,40 @@ import { levelCost, type LevelCost } from './levelCost'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { potionRestore, resolvePlan } from './suggest'
+import { writeOff } from './writeOff'
 
 /** De soort kost van equipment uit de winkel (Advised koopt, #192): de rij in Difference waarin alle gekochte stukken samen staan. */
 export const SHOP_LABEL = 'Shop'
 
-/** Een stuk dat de setup in de winkel koopt: zijn naam en prijs (Purchase in cheapestEquip.ts). */
+/**
+ * Een stuk dat de setup in de winkel koopt: zijn naam, prijs en de levels waarover het zich terugverdient (Purchase in cheapestEquip.ts).
+ * Zonder levels telt alleen dit level en staat de volle prijs op de factuur.
+ */
 export interface ShopPiece {
   name: string
   price: number
+  from?: number
+  to?: number
+  truncated?: boolean
+}
+
+/**
+ * Hoe de app op het bedrag van een gekocht stuk komt (Dave, 6 oktober 2026, #192): je draagt het meerdere levels, dus dit level betaalt zijn
+ * deel van de prijs: prijs × (EXP van dit level / EXP van alle levels tot je volgende upgrade), naar boven afgerond (writeOff.ts).
+ */
+export interface ShopWhy {
+  kind: 'shop'
+  name: string
+  price: number
+  /** Dit level, en de levels (van tot en met) waarover je het stuk draagt tot je volgende upgrade. */
+  level: number
+  from: number
+  to: number
+  /** True als de upgrade pas na de EXP-tabel komt: de app rekent tot het laatste level van de tabel. */
+  truncated: boolean
+  thisExp: number
+  sumExp: number
+  share: number
 }
 
 /**
@@ -98,7 +124,7 @@ export interface InvoiceLine {
   label: string
   qty: number | null
   meso: number
-  why?: PotionWhy | AmmoWhy
+  why?: PotionWhy | AmmoWhy | ShopWhy
   /** Een stuk equipment uit de winkel (#192): één regel per stuk, met × 1. */
   shop?: true
 }
@@ -152,7 +178,19 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
     // De munitie staat er alleen als ze iets kost; HP- en MP-potion altijd (zie boven).
     if (meso > 0 || (why && why.kind !== 'ammo')) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
-  for (const p of shop) lines.push({ label: p.name, qty: 1, meso: p.price, shop: true })
+  // Een gekocht stuk betaalt alleen het deel van dit level (#192): de rest van de prijs is voor de levels erna.
+  for (const p of shop) {
+    const from = p.from ?? cost.level
+    const to = p.to ?? cost.level
+    const w = writeOff(p.price, cost.level, from, to)
+    lines.push({
+      label: p.name,
+      qty: 1,
+      meso: w.meso,
+      shop: true,
+      why: { kind: 'shop', name: p.name, price: p.price, level: cost.level, from, to, truncated: p.truncated ?? false, thisExp: w.thisExp, sumExp: w.sumExp, share: w.share },
+    })
+  }
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
     const hpExact = plan.hpPotionsPerHour * hours

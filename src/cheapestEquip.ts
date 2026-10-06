@@ -1,4 +1,5 @@
-// De equip van Advised in de Equip-popup (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst één level omhoog gaat.
+// De equip van Advised in de Equip-popup (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst omhoog gaat. Was dit level
+// (#188); sinds #192 tot je volgende upgrade in dat slot, het advies uit het Report, met afschrijving op de factuur (writeOff.ts).
 // Puur, zonder UI-import; leest alleen wat het wapen- en armor-advies al uitrekenden. De factuur van Advised rekent met deze equip
 // (Dave, 6 oktober 2026, #192): advisedEquipment zet haar om in een Equipment en de winkelprijs van wat je koopt.
 import type { ArmorUpgradeAdvice } from './armorUpgrade'
@@ -7,6 +8,14 @@ import type { ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, isEmptyEntry, NONE, wornName, type EquipSlot, type Equipment } from './equipment'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
+
+/** De levels van een stuk om te kopen, uit het wapen- of armor-advies dat het koos. */
+export interface Horizon {
+  from: number
+  to: number
+  /** True als de upgrade pas na de EXP-tabel komt, en de app de horizon daar afkapt. */
+  truncated: boolean
+}
 
 export interface CheapestSlot {
   /** Wat je in dit slot draagt, of null als het leeg is. */
@@ -17,8 +26,10 @@ export interface CheapestSlot {
   changed: boolean
   /** Wat het stuk in de winkel kost als je het moet kopen; null als je hier niets koopt. */
   price: number | null
+  /** Bij een stuk om te kopen: de levels waarover het zich terugverdient, van je level tot je volgende upgrade in dat slot (#192). */
+  horizon?: Horizon
   /**
-   * Bij een slot dat leeg blijft: het beste stuk dat je hier kunt dragen, met zijn prijs en wat het dit level bespaart, maar dat
+   * Bij een slot dat leeg blijft: het beste stuk dat je hier kunt dragen, met zijn prijs en wat het tot je volgende upgrade bespaart, maar dat
    * zich niet terugverdient (Dave, 6 oktober 2026, #188). Null als het slot niet leeg blijft of de winkel hier niets heeft.
    */
   option: { name: string; price: number; saving: number | null } | null
@@ -34,6 +45,7 @@ export interface CheapestSlot {
 export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice): Record<EquipSlot, CheapestSlot> {
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   const price: Partial<Record<EquipSlot, number>> = {}
+  const horizon: Partial<Record<EquipSlot, Horizon>> = {}
   // Per slot het beste stuk dat niet gekocht wordt: de keuzes staan al per slot, van meeste naar minste netto besparing.
   const options: Partial<Record<EquipSlot, CheapestSlot['option']>> = {}
   if (claw.kind === 'advice' && !claw.winner && claw.choices[0]) {
@@ -48,6 +60,8 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
   if (claw.kind === 'advice' && claw.winner) {
     pick.claw = claw.winner.name
     price.claw = claw.winner.price
+    const won = claw.choices.find((c) => c.claw === claw.winner)
+    if (won) horizon.claw = { from: won.from, to: won.to, truncated: won.truncated }
   }
   if (armor.kind === 'advice') {
     // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
@@ -63,7 +77,10 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
       const clash = Object.keys(add).some((s) => fill[s as ArmorSlot] !== undefined) || (add.overall !== undefined && halves(fill)) || (fill.overall !== undefined && halves(add))
       if (clash) continue
       Object.assign(fill, add)
-      for (const p of pieces) price[p.slot] = p.price
+      for (const p of pieces) {
+        price[p.slot] = p.price
+        horizon[p.slot] = { from: c.from, to: c.to, truncated: c.truncated }
+      }
       if (c.bare) bare.add(c.bare)
     }
     for (const [s, name] of Object.entries(fill)) pick[s as ArmorSlot] = name
@@ -78,7 +95,8 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     const cheapest = slot in pick ? (pick[slot] ?? null) : worn
     const changed = cheapest !== worn
     const option = cheapest === null && !(slot in pick && pick[slot] === null) ? (options[slot] ?? null) : null
-    out[slot] = { worn, cheapest, changed, price: changed && cheapest !== null ? (price[slot] ?? null) : null, option }
+    const bought = changed && cheapest !== null
+    out[slot] = { worn, cheapest, changed, price: bought ? (price[slot] ?? null) : null, option, ...(bought && horizon[slot] ? { horizon: horizon[slot] } : {}) }
   }
   return out
 }
@@ -99,6 +117,8 @@ export interface Purchase {
   slot: EquipSlot
   name: string
   price: number
+  /** De levels waarover het stuk zich terugverdient (#192); ontbreekt als het advies ze niet gaf. */
+  horizon?: Horizon
 }
 
 /**
@@ -116,7 +136,7 @@ export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equ
     const c = cheapest[slot]
     if (!c.changed || c.cheapest === null) continue
     out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], c.cheapest), job)
-    purchases.push({ slot, name: c.cheapest, price: c.price ?? 0 })
+    purchases.push({ slot, name: c.cheapest, price: c.price ?? 0, ...(c.horizon ? { horizon: c.horizon } : {}) })
   }
   for (const slot of slots) {
     const c = cheapest[slot]

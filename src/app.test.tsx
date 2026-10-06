@@ -3472,16 +3472,39 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
       .map((row) => ({ name: row.querySelector('.equip-buy')!.textContent!.replace(/ \(Lv\. \d+\)$/, ''), price: mesoOf(row.querySelector('.equip-price')!.textContent) }))
     expect(bought.length).toBeGreaterThan(0)
     const rows = Array.from(cheapestCard().querySelectorAll('tbody tr')).slice(0, bought.length)
-    expect(rows.map((tr) => ({ name: tr.querySelector('th')!.textContent, qty: tr.querySelector('td.invoice-qty')!.textContent!.trim(), price: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))).toEqual(
-      bought.map((b) => ({ name: b.name, qty: '× 1', price: b.price })),
-    )
-    const shop = bought.reduce((s, b) => s + b.price, 0)
-    expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(shop)
-    // In Difference: jouw character betaalt niets in de winkel, Advised de prijs, en het verschil is die prijs.
+    const onInvoice = rows.map((tr) => ({ name: tr.querySelector('th')!.textContent, qty: tr.querySelector('td.invoice-qty')!.textContent!.trim().replace(/\s*\?$/, ''), price: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
+    expect(onInvoice.map((r) => [r.name, r.qty])).toEqual(bought.map((b) => [b.name, '× 1']))
+    // De winkel vraagt de volle prijs ("Koop voor", "Te kopen"); op de factuur staat alleen het deel van dit level (afgeschreven, #192).
+    onInvoice.forEach((r, i) => expect(r.price).toBeLessThanOrEqual(bought[i].price))
+    expect(onInvoice.some((r, i) => r.price < bought[i].price)).toBe(true)
+    const full = bought.reduce((s, b) => s + b.price, 0)
+    const shop = onInvoice.reduce((s, r) => s + r.price, 0)
+    expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(full)
+    // In Difference: jouw character betaalt niets in de winkel, Advised het afgeschreven deel, en het verschil is dat deel.
     const [mine, cheap, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
     expect(mine).toBe('0')
     expect(mesoOf(cheap)).toBe(shop)
     expect(mesoOf(d)).toBe(shop)
+  })
+
+  it('legt achter een gekocht stuk uit hoe het afgeschreven bedrag ontstaat: prijs, horizon, EXP van dit level en van de horizon, deel, en het bedrag op de factuur (#192)', () => {
+    toLevel20()
+    const row = cheapestCard().querySelector('tbody tr')!
+    const amount = row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, '')
+    const why = row.querySelector<HTMLButtonElement>('.invoice-why')!
+    expect(why.getAttribute('aria-label')).toMatch(/^Hoe komt de app op [\d.]+ meso voor /)
+    fireEvent.click(why)
+    const dialog = cheapestCard().querySelector<HTMLElement>('dialog')!
+    expect(dialog.getAttribute('aria-label')).toBe(`Hoezo ${amount} meso?`)
+    const rows = whyRows(dialog)
+    expect(rows.map((r) => r.label)).toEqual(['Prijs', 'Je draagt het tot', 'EXP van dit level', 'EXP tot je volgende upgrade', 'Deel van dit level', 'Op deze factuur'])
+    expect(rows[1].calc).toBe('tot je volgende upgrade in dat slot')
+    expect(rows[5]).toMatchObject({ result: `${amount} meso`, total: true })
+    const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
+    // Het bedrag is de prijs maal het deel, naar boven afgerond, en kleiner dan de volle prijs.
+    expect(n(rows[5].result)).toBeLessThan(n(rows[0].result))
+    expect(n(rows[3].result)).toBeGreaterThan(n(rows[2].result))
+    expect(rows[4].calc).toBe(`${rows[2].result} / ${rows[3].result}`)
   })
 
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {

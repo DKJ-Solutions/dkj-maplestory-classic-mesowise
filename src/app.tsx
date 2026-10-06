@@ -30,7 +30,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
+import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -1546,8 +1546,8 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
   return (
     <>
       <p class="hint">
-        De equip waarmee je het goedkoopst één level omhoog gaat, en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
-        het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+        De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
+        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
       </p>
       {props.slots.map((slot) => {
         const c = props.cheapest[slot]
@@ -1576,7 +1576,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
             {c.option && (
               <span class="equip-price">
                 Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
-                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart dit level ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
+                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart tot je volgende upgrade ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
               </span>
             )}
           </div>
@@ -2678,28 +2678,54 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
  * berekening in een popup toont, met de getallen die ze gebruikt. Bij een potion (PotionWhy) en sinds #192 ook bij de stars of
  * pijlen (AmmoWhy).
  */
-function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy } }) {
+function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy | ShopWhy } }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const { line } = props
   const w = line.why
   const qty = line.qty!
+  // Bij een gekocht stuk gaat de vraag over het bedrag op de factuur (afgeschreven, #192), bij de rest over het aantal.
+  const shop = w.kind === 'shop'
+  const what = shop ? `${nfInt.format(line.meso)} meso` : nfInt.format(qty)
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())
   }
   return (
     <>
-      <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${nfInt.format(qty)} ${line.label}?`} onClick={() => setOpen(true)}>
+      <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${what} ${shop ? 'voor ' : ''}${line.label}?`} onClick={() => setOpen(true)}>
         ?
       </button>
       {open && (
-        <StatDialog title={`Hoezo ${nfInt.format(qty)}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Hoezo ${what}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">
-            {w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} meso={line.meso} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
+            {w.kind === 'shop' ? <ShopSteps meso={line.meso} w={w} /> : w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} meso={line.meso} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
           </div>
         </StatDialog>
       )}
+    </>
+  )
+}
+
+/**
+ * Hoe de app op het bedrag van een gekocht stuk komt (Dave, 6 oktober 2026, #192): je draagt het tot je volgende upgrade in dat slot, dus dit
+ * level betaalt alleen zijn deel van de winkelprijs: de EXP van dit level gedeeld door de EXP van alle levels tot je volgende upgrade.
+ */
+function ShopSteps(props: { meso: number; w: ShopWhy }) {
+  const { w } = props
+  const levels = w.from === w.to ? `level ${w.from}` : `level ${w.from} – ${w.to}`
+  const rows: WhyRow[] = [
+    { label: 'Prijs', calc: w.name, result: `${nfInt.format(w.price)} meso` },
+    { label: 'Je draagt het tot', calc: 'tot je volgende upgrade in dat slot', result: levels },
+    { label: 'EXP van dit level', calc: `level ${w.level}`, result: nfInt.format(w.thisExp) },
+    { label: 'EXP tot je volgende upgrade', calc: levels, result: nfInt.format(w.sumExp) },
+    { label: 'Deel van dit level', calc: <>{nfInt.format(w.thisExp)} / {nfInt.format(w.sumExp)}</>, result: `${nf1.format(w.share * 100)}%` },
+    { label: 'Op deze factuur', calc: <>{nfInt.format(w.price)} × {nf1.format(w.share * 100)}%, naar boven afgerond</>, result: `${nfInt.format(props.meso)} meso`, total: true },
+  ]
+  return (
+    <>
+      <WhyTable rows={rows} />
+      {w.truncated && <p class="hint">De volgende upgrade komt pas na het laatste level van de EXP-tabel: de app rekent tot level {w.to}.</p>}
     </>
   )
 }
@@ -3053,7 +3079,8 @@ export function App() {
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
-  // De equip van Advised (#188) rekent alleen dit level: een stuk kopen loont als het op dit level meer bespaart dan het kost (Dave, 6 oktober 2026).
+  // De equip van Advised (#188, was dit level): een stuk kopen loont als het tot je volgende upgrade in dat slot meer bespaart dan het kost, hetzelfde advies als het Report
+  // (Dave, 6 oktober 2026, #192); de factuur van Advised schrijft de prijs af over die levels (writeOff.ts).
   // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
   const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
   const cheapestEquip = useMemo(
@@ -3062,11 +3089,11 @@ export function App() {
         ? cheapestEquipment(
             shownSlots(job, equipment.claw),
             equipment,
-            clawUpgradeAdvice(drafts, profile, 'this-level'),
-            armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job), 'this-level'),
+            clawAdvice,
+            armorAdvice,
           )
         : null,
-    [computed, job, equipment, drafts, profile],
+    [computed, job, equipment, clawAdvice, armorAdvice],
   )
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
@@ -3105,7 +3132,7 @@ export function App() {
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
   const advisedProfile = cheapestLive?.profileDraft ?? null
   const cheapestInvoice = useMemo(
-    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.purchases) : levelInvoice([], null)),
+    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price }))) : levelInvoice([], null)),
     [cheapestLive, job, gender, advisedGear],
   )
   // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer, met de equip van Advised erbij (applyCheapest,

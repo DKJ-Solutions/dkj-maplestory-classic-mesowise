@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { bestVerdict } from './best'
 import { mobDraft, POTIONS } from './data/spots'
 import { levelCost } from './levelCost'
-import { levelInvoice, type AmmoWhy, type InvoiceLine, type PotionWhy } from './levelInvoice'
+import { expToNextLevel } from './data/expTable'
+import { levelInvoice, type AmmoWhy, type InvoiceLine, type PotionWhy, type ShopWhy } from './levelInvoice'
+import { writeOff } from './writeOff'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
 import { NO_POTION_CHOICE, resolvePotions } from './potions'
 import type { Job } from './job'
@@ -206,12 +208,47 @@ describe('levelInvoice: een regel per stuk equipment uit de winkel voor Advised 
       { name: 'Brown Bandana', price: 2000 },
     ])
     if (inv.kind !== 'invoice') throw new Error('geen factuur')
-    expect(inv.lines.slice(0, 2)).toEqual([
+    // Zonder levels telt alleen dit level: de volle prijs.
+    expect(inv.lines.slice(0, 2)).toMatchObject([
       { label: 'Steel Titans', qty: 1, meso: 5000, shop: true },
       { label: 'Brown Bandana', qty: 1, meso: 2000, shop: true },
     ])
     expect(inv.lines.slice(2)).toEqual(plain.lines)
     expect(inv.total).toBe(plain.total + 7000)
+  })
+})
+
+describe('levelInvoice: afschrijven van equipment over de levels tot je volgende upgrade (Dave, 6 oktober 2026, #192)', () => {
+  const shopLine = (pieces: Parameters<typeof levelInvoice>[2]) => {
+    const inv = levelInvoice(drafts, thief, pieces)
+    if (inv.kind !== 'invoice') throw new Error('geen factuur')
+    return { inv, line: inv.lines[0] as InvoiceLine & { why: ShopWhy } }
+  }
+
+  it('zet alleen het deel van dit level op de factuur: prijs × EXP van dit level / EXP van de horizon, naar boven afgerond', () => {
+    const { inv, line } = shopLine([{ name: 'Steel Titans', price: 7000, from: 10, to: 14, truncated: false }])
+    const w = writeOff(7000, 10, 10, 14)
+    expect(line.meso).toBe(w.meso)
+    expect(line.meso).toBeLessThan(7000)
+    expect(line.qty).toBe(1)
+    expect(inv.total).toBe(inv.lines.reduce((s, l) => s + l.meso, 0))
+  })
+
+  it('geeft de uitleg (ShopWhy) met precies de getallen waarmee het bedrag van de regel volgt', () => {
+    const { line } = shopLine([{ name: 'Steel Titans', price: 7000, from: 10, to: 14, truncated: false }])
+    const w = line.why
+    expect(w).toMatchObject({ kind: 'shop', name: 'Steel Titans', price: 7000, level: 10, from: 10, to: 14, truncated: false })
+    let sum = 0
+    for (let l = w.from; l <= w.to; l++) sum += expToNextLevel(l)!
+    expect(w.thisExp).toBe(expToNextLevel(10))
+    expect(w.sumExp).toBe(sum)
+    expect(w.share).toBeCloseTo(w.thisExp / w.sumExp, 12)
+    expect(line.meso).toBe(Math.ceil(w.price * w.share - 1e-9))
+  })
+
+  it('geeft de volle prijs bij een horizon van alleen dit level, en neemt truncated over', () => {
+    expect(shopLine([{ name: 'X', price: 3000, from: 10, to: 10, truncated: false }]).line.meso).toBe(3000)
+    expect(shopLine([{ name: 'X', price: 3000, from: 10, to: 12, truncated: true }]).line.why.truncated).toBe(true)
   })
 })
 
@@ -223,7 +260,7 @@ describe('levelInvoice: kills in plaats van uren (Dave, 6 oktober 2026, #192)', 
       const inv = invoiceOf(p)
       for (const l of inv.lines) {
         const w = l.why
-        if (!w) continue
+        if (!w || w.kind === 'shop') continue
         expect(w.expToNext).toBe(inv.expToNext)
         expect(w.kills).toBeCloseTo(w.expToNext / w.expPerKill, 9)
         // Het aantal kills hangt niet van kills per uur af: kills per uur × uren geeft dezelfde kills.
