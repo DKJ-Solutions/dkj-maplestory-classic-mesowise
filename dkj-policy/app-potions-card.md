@@ -56,6 +56,7 @@
 - [x] Dave (October 6, 2026): price in red with a minus, recovery in green with a plus (the Skillpoints cost/gain colours)
 - [x] Dave (October 6, 2026): styled like Monster: pick a potion (a draft until Opslaan), its price and recovery below, correctable with the pencil; the list of all potions goes
 - [x] Victor and Edith: review of the Monster-style card; a correction is tied to its potion name (no longer follows a job switch), the advice weighs the cheapest other potion against a corrected one, labels "Prijs" and "Herstel HP"
+- [x] Dave (October 6, 2026): a clear split between HP and MP potions: a heading per kind and a line between them
 
 ### TEST
 

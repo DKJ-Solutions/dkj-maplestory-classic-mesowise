@@ -2902,6 +2902,9 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 
   it('toont per soort een keuzemenu en daaronder de prijs in rood en het herstel in groen, met een potlood, zoals Monster', () => {
     openPotions()
+    // HP en MP elk onder een eigen kop, met een lijn ertussen.
+    expect(Array.from(potionsCard().querySelectorAll('.potion-group h3')).map((h) => h.textContent)).toEqual(['HP potions', 'MP potions'])
+    expect(group('MP').previousElementSibling).toBe(group('HP'))
     expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
     expect(Array.from(select('MP').options).map((o) => o.textContent)).toEqual(['Blue Potion (220 meso)'])
     // Zonder keuze de goedkoopste.

@@ -568,9 +568,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .ap-row .ap-group h3 { margin: 0; }
 .ap-row .btn { flex: none; width: auto; margin: 0; }
 
-/* Potions (Dave, 6 oktober 2026): zoals Monster per soort een keuzemenu met de getallen eronder; tussen HP en MP wat ruimte.
+/* Potions (Dave, 6 oktober 2026): zoals Monster per soort een keuzemenu met de getallen eronder; HP en MP elk onder een eigen kop
+   (zoals een groep op Skillpoints), met een lijn ertussen.
    De regel eronder zegt wat de potion per punt kost en van je balk vult. */
-.potion-group + .potion-group { margin-top: 1.25rem; }
+.potion-group h3 { margin: 0.875rem 0 0.5rem; font-size: var(--fs-h4); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.potion-group + .potion-group { margin-top: 1.25rem; padding-top: 0.5rem; border-top: 2px solid var(--border); }
 .potion-info { margin: 0.5rem 0 0; }
 /* Een stat-regel met een toon (StatLine tone): kosten in rood met een min, winst in groen met een plus, zoals bij Skillpoints (#139). */
 .equip-value strong.cost { color: var(--cost); }

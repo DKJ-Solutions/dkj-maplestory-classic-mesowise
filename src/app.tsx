@@ -891,6 +891,8 @@ function PotionsCard(props: {
             const fill = info.fillPct === null ? null : info.fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(info.fillPct)}% van je Max ${unit}`
             return (
               <div class="potion-group" key={kind}>
+                {/* Een eigen kop per soort, met een lijn ertussen (Dave, 6 oktober 2026): zo lopen HP en MP niet in elkaar over. */}
+                <h3>{kind === 'hp' ? 'HP potions' : 'MP potions'}</h3>
                 <label class="field">
                   <span>De {POTION_KIND_LABEL[kind]} die je gebruikt</span>
                   <select value={shownPotion.name} onChange={(e) => setConcept({ ...concept, [kind]: (e.currentTarget as HTMLSelectElement).value })}>
