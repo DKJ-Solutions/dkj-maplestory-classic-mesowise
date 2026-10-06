@@ -2,9 +2,12 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App, totalCostWho } from './app'
-import { cheapestSettings } from './cheapestSettings'
+import { armorUpgradeAdvice } from './armorUpgrade'
+import { advisedEquipment, cheapestEquipment } from './cheapestEquip'
+import { clawUpgradeAdvice } from './clawUpgrade'
+import { cheapestSettings, profileOf as cheapestProfile } from './cheapestSettings'
 import { NPC_CLAWS } from './data/claws'
-import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
+import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog, shownSlots, wornWdef } from './equipment'
 import { JOB_KEY } from './job'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
@@ -398,18 +401,19 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
   })
 
-  it('toont in Total cost bij Advised de knop Equip van Advised met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
+  it('opent in Total cost bij Advised met de knop Equip van Advised de Advised-popup van de Equip-kaart: de stukken om te kopen (#188, #192)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
-    const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised equip')
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
+    expect(dialog.getAttribute('aria-label')).toBe('Advised: Equip')
     const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
-    expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
-    expect(dialog.textContent).not.toContain('Te kopen:')
+    expect(weapon.querySelector('.equip-fixed')).not.toBeNull()
+    expect(dialog.textContent).toContain('Te kopen:')
   })
 
   it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links het advies, rechts wat je draagt (#188, #192)', () => {
@@ -3287,27 +3291,36 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
     const rows = whyRows(dialog)
     expect(rows.map((r) => r.label)).toEqual([
+      'Max per star',
+      'Min per star',
+      'Verdediging van Ribbon Pig',
       'Schade per star',
       'Schade per aanval',
       'Aanvallen per kill',
       'Throwing stars per kill',
-      'Kills per uur',
-      'Throwing stars per uur',
-      'Duur van dit level',
+      'EXP tot volgend level',
+      'EXP per kill',
+      'Kills dit level',
       'Throwing stars dit level',
       'Herladen',
     ])
-    // Een star doet niet altijd hetzelfde: de tabel toont de spreiding en zegt dat hij met het gemiddelde rekent (Dave, #192).
-    expect(rows[0].calc).toMatch(/^schommelt per worp tussen [\d.]+ en [\d.]+; de app rekent met het gemiddelde$/)
-    expect(rows[0].result).toMatch(/^± [\d.]+$/)
-    expect(rows[1].calc).toMatch(/^\d × [\d.]+ gemiddeld × \d+% raakkans$/)
-    expect(rows[2].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
+    // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan de verdediging van de mob, dan het gemiddelde.
+    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
+    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
+    expect(rows[2].calc).toMatch(/^× 100 \/ \(WDEF [\d.]+ \+ 100\)$/)
+    expect(rows[2].result).toMatch(/^[\d.]+ – [\d.]+$/)
+    expect(rows[3].calc).toMatch(/^\([\d.]+ \+ [\d.]+\) \/ 2$/)
+    expect(rows[3].result).toMatch(/^± [\d.]+$/)
+    expect(rows[4].calc).toMatch(/^\d × [\d.]+ gemiddeld × \d+% raakkans$/)
+    expect(rows[5].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
     // De vette rij is het aantal op de factuur.
     expect(rows.filter((r) => r.total).map((r) => r.result)).toEqual([qty])
-    expect(rows[7].calc).toContain('naar boven afgerond')
+    expect(rows[10].calc).toContain('naar boven afgerond')
+    // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
+    expect(rows[9].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
     // Herladen: het aantal maal de prijs is het bedrag op de factuur.
-    expect(rows[8].calc.startsWith(`${qty} throwing stars × `) && rows[8].calc.endsWith(' meso'), rows[8].calc).toBe(true)
-    expect(rows[8].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    expect(rows[11].calc.startsWith(`${qty} throwing stars × `) && rows[11].calc.endsWith(' meso'), rows[11].calc).toBe(true)
+    expect(rows[11].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
@@ -3326,9 +3339,9 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
     expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
     const rows = whyRows(dialog)
-    expect(rows.map((r) => r.label)).toEqual(['HP kwijt per kill', 'Kills per uur', 'HP per uur', 'Duur van dit level', 'HP dit level', 'Herstel per Orange Potion', 'Orange Potion'])
+    expect(rows.map((r) => r.label)).toEqual(['HP kwijt per kill', 'EXP tot volgend level', 'EXP per kill', 'Kills dit level', 'HP dit level', 'Herstel per Orange Potion', 'Orange Potion'])
     expect(rows[0].calc).toMatch(/^Ribbon Pig raakt je ± [\d,]+ × voor ± [\d,]+ schade$/)
-    expect(rows[3].result).toMatch(/^\d+ min$/)
+    expect(rows[3].result).toMatch(/^[\d.,]+$/)
     // De laatste, vette rij is het aantal op de factuur.
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
     expect(rows[6]).toMatchObject({ result: qty, total: true })
@@ -3426,7 +3439,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
-    expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['HP Potions', 'MP Potions', 'Ammo'])
+    expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['Shop', 'HP Potions', 'MP Potions', 'Ammo'])
     const signed = (t: string) => (t.startsWith('−') ? -mesoOf(t) : mesoOf(t))
     for (const tr of rows) {
       const [mine, cheap, d] = Array.from(tr.querySelectorAll('td')).map((td) => td.textContent!)
@@ -3447,13 +3460,35 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(-mesoOf(diffTotal.textContent))
   })
 
+  it('zet wat de equip van Advised in de winkel kost als eerste regel Shop op de factuur van Advised en in Difference, en nooit op die van Your character (#192)', () => {
+    toLevel20()
+    const labels = (card: HTMLElement) => Array.from(card.querySelectorAll('tbody tr th')).map((th) => th.textContent)
+    expect(labels(yours())).not.toContain('Shop')
+    expect(labels(cheapestCard())[0]).toBe('Shop')
+    expect(labels(diffCard())[0]).toBe('Shop')
+    const shop = mesoOf(cheapestCard().querySelector('tbody tr td.invoice-meso')!.textContent)
+    expect(shop).toBeGreaterThan(0)
+    // In Difference: jouw character betaalt niets in de winkel, Advised de prijs, en het verschil is die prijs.
+    const [mine, cheap, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
+    expect(mine).toBe('0')
+    expect(mesoOf(cheap)).toBe(shop)
+    expect(mesoOf(d)).toBe(shop)
+    // De prijs staat ook in het totaal van Advised en komt overeen met "Te kopen" op de Equip-kaart.
+    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
+    expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(shop)
+  })
+
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {
     toLevel20()
     const first = mesoOf(total(yours()))
     const before = mesoOf(diffCard().querySelector('tfoot td.invoice-diff')!.textContent)
+    // Wat de equip van Advised in de winkel kost: Difference toont het op de rij Shop (#192).
+    const shop = mesoOf(diffCard().querySelector('tbody tr td.invoice-meso:nth-child(3)')!.textContent)
+    expect(shop).toBeGreaterThan(0)
     take()
     const shown = mesoOf(diffCard().querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
-    expect(shown).toBe(first - mesoOf(total(yours())))
+    // Na Overnemen draag je de equip, dus staat hij niet meer als Shop op je factuur; de besparing telt wat hij kostte wel mee.
+    expect(shown).toBe(first - mesoOf(total(yours())) - shop)
     expect(shown).toBe(before)
   })
 
@@ -3463,16 +3498,21 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const costBefore = levelCostText()
     const yoursBefore = total(yours())
     const cheaperTotal = total(cheapestCard())
+    const equipBefore = stored(EQUIPMENT_KEY)
     take()
-    expect(total(yours())).toBe(cheaperTotal)
+    // De equip van Advised staat nu in je setup (je koopt haar in het spel): zijn winkelprijs is geen kost van dit level meer op je eigen factuur.
+    expect(stored(EQUIPMENT_KEY)).not.toEqual(equipBefore)
+    expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(cheaperTotal))
     // Ook na Overnemen staat de volledige factuur op de kaart.
-    expect(total(cheapestCard())).toBe(cheaperTotal)
+    expect(total(cheapestCard())).toBe(total(yours()))
     expect(levelCostText()).not.toBe(costBefore)
     expect(diffCard().querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
     expect(profileFields()).toEqual(profileBefore)
     expect(levelCostText()).toBe(costBefore)
     expect(total(yours())).toBe(yoursBefore)
+    // Ongedaan maken zet ook je equip terug.
+    expect(stored(EQUIPMENT_KEY)?.slots ?? defaultEquipment()).toEqual(equipBefore?.slots ?? defaultEquipment())
     const potions = stored(POTION_CHOICE_KEY)
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
   })
@@ -3549,7 +3589,12 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     // Wat de knop Advised toont, rekent cheapestSettings uit op wat er nu is opgeslagen.
     const profileDraft: ProfileDraft = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const choice = stored(POTION_CHOICE_KEY)
-    return cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } })
+    const input = { job: 'thief' as const, gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } }
+    // De factuur van Advised koopt ook equip (#192): de berekening krijgt wat de Equip-kaart in Advised koopt, zoals de app het doet.
+    const profile = cheapestProfile(input)
+    const cheapest = cheapestEquipment(shownSlots('thief', input.equipment.claw), input.equipment, clawUpgradeAdvice(input.drafts, profile, 'this-level'), armorUpgradeAdvice(input.drafts, profile, wornWdef(input.equipment, 'thief'), 'this-level'))
+    const gear = advisedEquipment('thief', profileDraft, input.equipment, cheapest)
+    return cheapestSettings({ ...input, equipment: gear.equipment, profileDraft: gear.profile })
   }
 
   it('zet bij elke kaart eerst Advised en dan Your character, en geen oog of knop in de kop (#192)', () => {
@@ -3782,13 +3827,14 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(cardOf('Equip').querySelector('dialog.card-dialog .equip-edit, dialog.card-dialog [aria-label^="Zoek"]')).not.toBeNull()
     })
 
-    it('toont bij Equip van Advised de equip die je draagt, zonder Te kopen, en niet de Advised-popup van de Equip-kaart', () => {
+    it('opent bij Equip van Advised de Advised-popup van de Equip-kaart, met de stukken om te kopen en Te kopen, en geen eigen dialoog meer', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
-      const d = part('cheapest-cost').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised equip')
-      expect(d.textContent).not.toContain('Te kopen:')
-      expect(cardOf('Equip').querySelector('dialog')).toBeNull()
+      const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
+      expect(d.textContent).toContain('Koop voor')
+      expect(d.textContent).toContain('Te kopen:')
+      expect(part('cheapest-cost').querySelector('dialog')).toBeNull()
       expect(within(part('cheapest-cost')).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
     })
 

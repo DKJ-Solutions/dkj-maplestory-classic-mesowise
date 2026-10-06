@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { cheapestEquipment } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
-import { defaultEquipment, EQUIP_SLOTS, type Equipment } from './equipment'
+import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, type Equipment } from './equipment'
+import { DEFAULT_PROFILE } from './profile'
 
 const SLOTS = EQUIP_SLOTS.map((s) => s.slot)
 const NONE = { kind: 'none' } as const
@@ -123,5 +124,50 @@ describe('cheapestEquipment (#188)', () => {
 
   it('geeft alleen de gevraagde slots terug', () => {
     expect(Object.keys(cheapestEquipment(['claw', 'hat'], wearing({}), NONE, NONE))).toEqual(['claw', 'hat'])
+  })
+})
+
+describe('advisedEquipment (#192)', () => {
+  const profile = { ...DEFAULT_PROFILE }
+  const slotsOf = (eq: Equipment, claw: ClawUpgradeAdvice = NONE, armor: ArmorUpgradeAdvice = NONE) => cheapestEquipment(SLOTS, eq, claw, armor)
+
+  it('geeft zonder wijziging dezelfde objecten terug, en geen winkelprijs', () => {
+    const eq = wearing({ claw: 'Garnier', hat: 'White Bandana' })
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq))
+    expect(r.equipment).toBe(eq)
+    expect(r.profile).toBe(profile)
+    expect(r.shop).toBe(0)
+  })
+
+  it('zet het winkelstuk in het slot zoals een keuze op de Equip-kaart, met het profiel dat daarbij hoort, en telt de prijs', () => {
+    const eq = wearing({ claw: 'Garnier' })
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq, clawAdvice('Steel Titans')))
+    expect(r.equipment.claw).toEqual(choosePick('claw', eq.claw, 'Steel Titans'))
+    expect(r.shop).toBe(5000)
+    // Het profiel volgt exact wat een keuze op de kaart doet.
+    expect(r.profile).toEqual(changeEquipment(profile, eq, 'claw', choosePick('claw', eq.claw, 'Steel Titans'), 'thief').profile)
+    expect(r.profile.clawWatk).not.toBe(profile.clawWatk)
+    // Wat je niet koopt blijft je eigen entry.
+    expect(r.equipment.hat).toBe(eq.hat)
+  })
+
+  it('telt de prijzen van alle stukken op, en laat een slot dat leeg raakt bekend leeg worden', () => {
+    const eq = wearing({ overall: 'Sauna Robe' })
+    const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('top', 'Top A'), 40, { bare: 'bottom' })])
+    const r = advisedEquipment('thief', profile, eq, slotsOf(eq, NONE, advice))
+    expect(r.equipment.hat.pick).toBe('Hat A')
+    expect(r.equipment.top.pick).toBe('Top A')
+    expect(r.equipment.overall.pick).not.toBe('Sauna Robe')
+    expect(r.equipment.bottom.pick).toBe('empty')
+    expect(r.shop).toBe(200)
+  })
+})
+
+describe('buyTexts (#192)', () => {
+  it('noemt het wapen en de armor die je koopt, en geeft null als er niets te kopen valt', () => {
+    const eq = wearing({ claw: 'Garnier' })
+    const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 20)])
+    expect(buyTexts(cheapestEquipment(SLOTS, eq, clawAdvice('Steel Titans'), advice))).toEqual({ att: 'Koop Steel Titans', def: 'Koop Hat A, Shoes A' })
+    expect(buyTexts(cheapestEquipment(SLOTS, eq, NONE, NONE))).toEqual({ att: null, def: null })
   })
 })

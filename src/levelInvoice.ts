@@ -4,11 +4,15 @@
 // koopt hele potions, dus elk aantal is naar boven afgerond.
 import { bestVerdict } from './best'
 import { spotOf } from './data/spots'
+import type { DamageFormula } from './calc/mobModel'
 import type { Job } from './job'
 import { levelCost, type LevelCost } from './levelCost'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { potionRestore, resolvePlan } from './suggest'
+
+/** De regel van de winkelprijs van equipment op een factuur (Advised koopt, #192). */
+export const SHOP_LABEL = 'Shop'
 
 /**
  * Hoe de app op het aantal potions komt (Dave, 6 oktober 2026): de stappen van de berekening, met de getallen die ze gebruikt.
@@ -19,6 +23,11 @@ import { potionRestore, resolvePlan } from './suggest'
 export interface PotionWhy {
   kind: 'hp' | 'mp'
   mob: string
+  /** De EXP die je nog nodig hebt, en wat één kill van deze mob geeft (#192): het aantal kills dat het level kost is `kills`, zonder dat de uren ertussen hoeven. */
+  expToNext: number
+  expPerKill: number
+  /** Hoeveel kills het level kost, voor het afronden: expToNext / expPerKill. */
+  kills: number
   /** HP: hoe vaak de mob je per kill raakt (aanrakingen maal zijn raakkans) en de schade per aanraking. */
   hits?: number
   touch?: number
@@ -46,6 +55,10 @@ export interface PotionWhy {
 export interface AmmoWhy {
   kind: 'ammo'
   mob: string
+  /** De EXP die je nog nodig hebt, wat één kill geeft, en hoeveel kills het level dus kost (#192), net als bij PotionWhy. */
+  expToNext: number
+  expPerKill: number
+  kills: number
   /** De HP van de mob. */
   mobHp: number
   /** De gemiddelde schade van één star na de WDEF van de mob, vóór de raakkans: het midden van minHit en maxHit. */
@@ -53,6 +66,12 @@ export interface AmmoWhy {
   /** De laagste en hoogste schade van één star: elke worp valt daartussen, de app rekent met het gemiddelde. */
   minHit: number
   maxHit: number
+  /** Hoe min en max ontstaan (Dave, 6 oktober 2026, #192): de ruwe min en max uit de damage-formule, de levels die de mob hoger is, zijn WDEF en de getallen van de formule. */
+  rawMin: number
+  rawMax: number
+  levelsUp: number
+  mobWdef: number
+  formula?: DamageFormula
   /** Je raakkans op de mob (0 tot 1). */
   hitChance: number
   /** Stars per aanval: 2 met Lucky Seven, anders 1. */
@@ -99,9 +118,10 @@ export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : jo
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven
  * afgerond; reizen als bedrag. Heb je de potion- of munitiekosten van je plek zelf ingevuld, dan staat dat bedrag er als één
- * regel, want de app weet dan niet om hoeveel stuks het gaat.
+ * regel, want de app weet dan niet om hoeveel stuks het gaat. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
+ * staat daarvan de winkelprijs als eerste regel "Shop"; zonder prijs, zoals bij je character, staat die regel er niet.
  */
-export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | null): LevelInvoice {
+export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | null, shop = 0): LevelInvoice {
   const verdict = bestVerdict(drafts, profile)
   const cost = levelCost(profile, verdict)
   if (!profile || cost.kind !== 'cost' || cost.meso === null) return { kind: 'none', cost }
@@ -113,6 +133,9 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   const known = spotOf(draft)
   const resolved = known ? resolvePlan(draft, known, profile) : undefined
   const plan = resolved?.plan ?? null
+  // Wat één kill geeft: de EXP per uur van de plek gedeeld door je kills per uur, dus wat de uren eruit laat vallen (#192). Zonder kills per uur geen kills.
+  const expPerKill = plan && plan.killsPerHour > 0 ? spot.expPerHour / plan.killsPerHour : NaN
+  const kills = cost.expToNext / expPerKill
   const own = (text: string | undefined) => text !== undefined && text.trim() !== ''
   const lines: InvoiceLine[] = []
   // Alleen wat iets kost, behalve je HP- en MP-potion: die staan er altijd, ook met × 0 (Dave, 6 oktober 2026).
@@ -120,13 +143,14 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
     // De munitie staat er alleen als ze iets kost; HP- en MP-potion altijd (zie boven).
     if (meso > 0 || (why && why.kind !== 'ammo')) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
+  add(SHOP_LABEL, null, shop)
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
     const hpExact = plan.hpPotionsPerHour * hours
     const mpExact = plan.mpPotionsPerHour * hours
     const hp = wholeUp(hpExact)
     const mp = wholeUp(mpExact)
-    const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours }
+    const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours, expToNext: cost.expToNext, expPerKill, kills }
     add(hpPotion.name, hp, hp * hpPotion.price, {
       ...base,
       kind: 'hp',
@@ -159,10 +183,18 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
     add(ammoLabel(profile.job), stars, Math.ceil(stars * rechargePerStar), {
       kind: 'ammo',
       mob: spot.name,
+      expToNext: cost.expToNext,
+      expPerKill,
+      kills,
       mobHp: monster.hp,
       avgHit: estimate.avgHit,
       minHit: estimate.minHit,
       maxHit: estimate.maxHit,
+      rawMin: estimate.rawMin,
+      rawMax: estimate.rawMax,
+      levelsUp: estimate.levelsUp,
+      mobWdef: estimate.mobWdef,
+      formula: estimate.formula,
       hitChance: estimate.hitChance,
       starsPerAttack: estimate.starsPerAttack,
       attacksToKill: estimate.attacksToKill,

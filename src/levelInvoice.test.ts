@@ -191,3 +191,61 @@ describe('levelInvoice: de uitleg achter het aantal stars (Dave, 6 oktober 2026,
     expect(ammoLine(profileOf({ powerStrike: '0' }, 'warrior'))).toBeUndefined()
   })
 })
+
+describe('levelInvoice: de regel Shop voor equipment van Advised (Dave, 6 oktober 2026, #192)', () => {
+  it('zet zonder winkelprijs geen regel Shop op de factuur, ook niet bij 0', () => {
+    expect(invoiceOf(thief).lines.map((l) => l.label)).not.toContain('Shop')
+    const zero = levelInvoice(drafts, thief, 0)
+    expect(zero.kind === 'invoice' && zero.lines.some((l) => l.label === 'Shop')).toBe(false)
+  })
+
+  it('zet met een winkelprijs als eerste regel Shop, zonder stuks, en telt hem mee in het totaal', () => {
+    const plain = invoiceOf(thief)
+    const inv = levelInvoice(drafts, thief, 7000)
+    if (inv.kind !== 'invoice') throw new Error('geen factuur')
+    expect(inv.lines[0]).toEqual({ label: 'Shop', qty: null, meso: 7000 })
+    expect(inv.lines.slice(1)).toEqual(plain.lines)
+    expect(inv.total).toBe(plain.total + 7000)
+  })
+})
+
+describe('levelInvoice: kills in plaats van uren (Dave, 6 oktober 2026, #192)', () => {
+  const profiles = [thief, profileOf({ level: '15' }), profileOf({ level: '20', luckySeven: '10' })]
+
+  it('rekent het aantal stars en potions uit met kills = EXP tot het volgende level / EXP per kill, zonder de uren', () => {
+    for (const p of profiles) {
+      const inv = invoiceOf(p)
+      for (const l of inv.lines) {
+        const w = l.why
+        if (!w) continue
+        expect(w.expToNext).toBe(inv.expToNext)
+        expect(w.kills).toBeCloseTo(w.expToNext / w.expPerKill, 9)
+        // Het aantal kills hangt niet van kills per uur af: kills per uur × uren geeft dezelfde kills.
+        expect(w.kills).toBeCloseTo(w.killsPerHour * w.hours, 6)
+        if (w.kind === 'ammo') expect(w.exact).toBeCloseTo(w.perKill * w.kills, 6)
+        if (w.kind === 'hp') expect(w.need).toBeCloseTo(w.perKill * w.kills, 6)
+        // MP: wat je aanvallen kosten, plus je buffs per uur over de duur van het level.
+        if (w.kind === 'mp') expect(w.need).toBeCloseTo(w.perKill * w.kills + w.buffPerHour * w.hours, 6)
+      }
+    }
+  })
+})
+
+describe('levelInvoice: waar min en max per star vandaan komen (Dave, 6 oktober 2026, #192)', () => {
+  it('geeft de formule en rekent er precies minHit en maxHit mee uit', () => {
+    for (const p of [thief, profileOf({ level: '15' }), profileOf({ level: '20', luckySeven: '10' }), profileOf({}, 'bowman')]) {
+      const w = invoiceOf(p).lines.find((l): l is InvoiceLine & { why: AmmoWhy } => l.why?.kind === 'ammo')?.why
+      if (!w) continue
+      const f = w.formula!
+      expect(f).toBeDefined()
+      const max = f.k * f.watk * (1 + (f.primary * f.weaponMult + f.secondary) / 100)
+      const min = f.k * f.watk * (0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100)
+      expect(w.rawMax).toBeCloseTo(max, 9)
+      expect(w.rawMin).toBeCloseTo(min, 9)
+      const damped = (raw: number) => Math.max(1, (raw * (1 - 0.01 * w.levelsUp) * 100) / (w.mobWdef + 100))
+      expect(w.maxHit).toBeCloseTo(damped(max), 9)
+      expect(w.minHit).toBeCloseTo(damped(min), 9)
+      expect([f.primaryName, f.secondaryName]).toEqual(p.job === 'bowman' ? ['DEX', 'STR'] : ['LUK', 'STR + DEX'])
+    }
+  })
+})

@@ -45,6 +45,24 @@ export interface Attack {
    */
   stars: number
   mpPerAttack: number
+  /** De getallen achter min en max, zodat het scherm de som kan laten zien (Dave, 6 oktober 2026, #192); een spreuk heeft ze niet. */
+  formula?: DamageFormula
+}
+
+/**
+ * De invoer van de damage-formule (stap 1) met de namen van de stats: max = K·watk·(1 + (hoofd·W + secundair)/100) en
+ * min = K·watk·(0,8 + (hoofd·M·W + secundair)/100). Dit zijn precies de getallen waarmee damageRange rekent.
+ */
+export interface DamageFormula {
+  k: number
+  watk: number
+  primary: number
+  secondary: number
+  weaponMult: number
+  mastery: number
+  /** De naam van de hoofdstat en van de secundaire stat(s), zoals het statvenster: "LUK" en "STR + DEX" bij een claw. */
+  primaryName: string
+  secondaryName: string
 }
 
 /** Een spreuk-level: MP per cast, schade in procent en de spell mastery (data/magician.ts, SpellLevel). */
@@ -117,17 +135,19 @@ export function characterAttack(
   luckySeven: { stars: number; weaponMult: number; mastery: number },
 ): Attack {
   const { stars, weaponMult, mastery } = skill ? luckySeven : PLAIN_CLAW
-  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, mastery), stars, mpPerAttack: skill ? skill.mp : 0 }
+  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, mastery, LUK_STR_DEX), stars, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /** De min en max van de damage-formule (stap 1), voor een hoofdstat, een secundaire stat en een skill (null = de gewone aanval, K = 1). */
-function damageRange(skill: SkillStats | null, watk: number, primary: number, secondary: number, weaponMult: number, mastery: number) {
+function damageRange(skill: SkillStats | null, watk: number, primary: number, secondary: number, weaponMult: number, mastery: number, names: readonly [string, string]) {
   const k = skill ? skill.damagePct / 100 : 1
   return {
     max: k * watk * (1 + (primary * weaponMult + secondary) / 100),
     min: k * watk * (0.8 + (primary * mastery * weaponMult + secondary) / 100),
+    formula: { k, watk, primary, secondary, weaponMult, mastery, primaryName: names[0], secondaryName: names[1] },
   }
 }
+const LUK_STR_DEX = ['LUK', 'STR + DEX'] as const
 
 /**
  * De aanval van een Warrior met een melee-wapen: dezelfde formule als hierboven, met STR als hoofdstat en
@@ -137,7 +157,7 @@ function damageRange(skill: SkillStats | null, watk: number, primary: number, se
  * Strike op het gezette level, of null voor de gewone aanval. Eén klap per aanval, en geen munitie.
  */
 export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMult: number, skill: SkillStats | null): Attack {
-  return { ...damageRange(skill, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
+  return { ...damageRange(skill, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY, ['STR', 'DEX']), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**
@@ -149,7 +169,7 @@ export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMu
  */
 export function beginnerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>, weaponMult: number, dagger: boolean): Attack {
   if (dagger) return daggerAttack(c, weaponMult, null, 1)
-  return { ...damageRange(null, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY), stars: 1, mpPerAttack: 0 }
+  return { ...damageRange(null, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY, ['STR', 'DEX']), stars: 1, mpPerAttack: 0 }
 }
 
 /**
@@ -160,7 +180,7 @@ export function beginnerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'
  * het aantal klappen, en de munitiekosten zijn 0 omdat suggest.ts een dagger-Thief geen herlaadprijs geeft.
  */
 export function daggerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>, weaponMult: number, skill: SkillStats | null, hits: number): Attack {
-  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, BASE_MASTERY), stars: skill ? hits : 1, mpPerAttack: skill ? skill.mp : 0 }
+  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, BASE_MASTERY, LUK_STR_DEX), stars: skill ? hits : 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**
@@ -169,7 +189,7 @@ export function daggerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>,
  * `skill` is Arrow Blow op het gezette level, of null voor het gewone schot. Eén klap en één pijl per aanval.
  */
 export function bowAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, bow: { weaponMult: number; mastery: number }, skill: SkillStats | null): Attack {
-  return { ...damageRange(skill, c.watk, c.dex, c.str, bow.weaponMult, bow.mastery), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
+  return { ...damageRange(skill, c.watk, c.dex, c.str, bow.weaponMult, bow.mastery, ['DEX', 'STR']), stars: 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**
@@ -237,6 +257,12 @@ export interface MobEstimate {
   /** De laagste en hoogste schade van één star of klap, ook na levelverschil en WDEF: elke aanval valt daartussen (#192). */
   minHit: number
   maxHit: number
+  /** Hoe min en max ontstaan (#192): de damage-formule, de ruwe min en max, de levels die het monster hoger is en zijn WDEF. */
+  rawMin: number
+  rawMax: number
+  levelsUp: number
+  mobWdef: number
+  formula?: DamageFormula
   killsPerHour: number
   /** De gemiddelde schade per aanraking, na levelverschil en WDEF. */
   touchTaken: number
@@ -286,6 +312,11 @@ export function estimateMob(
     avgHit,
     minHit,
     maxHit,
+    rawMin: attack.min,
+    rawMax: attack.max,
+    levelsUp: up,
+    mobWdef: mob.wdef,
+    formula: attack.formula,
     killsPerHour,
     touchTaken: touch,
     hpLossPerKill,

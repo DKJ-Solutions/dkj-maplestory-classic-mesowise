@@ -9,7 +9,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -30,7 +30,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { ammoLabel, levelInvoice, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
+import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -1541,17 +1541,13 @@ function StatDialog(props: {
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
  * alles samen kost. Een streepje is een slot dat leeg blijft.
  */
-function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; hint?: ComponentChildren; total?: boolean }) {
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
       <p class="hint">
-        {props.hint ?? (
-          <>
-            De equip waarmee je het goedkoopst één level omhoog gaat. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
-            het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je.
-          </>
-        )}
+        De equip waarmee je het goedkoopst één level omhoog gaat, en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
+        het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
       </p>
       {props.slots.map((slot) => {
         const c = props.cheapest[slot]
@@ -1586,12 +1582,9 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
           </div>
         )
       })}
-      {/* De equip van de factuur koopt niets: daar staat "Te kopen" niet (total={false}). */}
-      {props.total !== false && (
-        <p class="equip-total">
-          Te kopen: <strong>{nfInt.format(total)} meso</strong>
-        </p>
-      )}
+      <p class="equip-total">
+        Te kopen: <strong>{nfInt.format(total)} meso</strong>
+      </p>
     </>
   )
 }
@@ -1599,22 +1592,12 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 /**
  * De zes knoppen onder de factuur van een deel van Total cost (Dave, 6 oktober 2026, #192): per kaart zijn icoon, in de volgorde van de pagina. Ze
  * laten zien dat het totaal uit de gegevens achter deze zes komt: in Your character opent een knop de popup van die kaart om te wijzigen, in Advised
- * zijn Advised-popup. Uitzondering is Equip in Advised: de factuur van Advised rekent met wat je nu draagt (de goedkoopste instellingen kopen geen
- * equipment, #183), dus die knop toont die equip, in dezelfde rijen als de Equip-popup, om te lezen (was "Equip bekijken", #188).
+ * zijn Advised-popup. Ook Equip: de factuur van Advised rekent met de equip die de Equip-kaart in Advised koopt, en de regel Shop is wat die kost.
  */
-function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment: Equipment }) {
+function CostCardButtons(props: { part: 'worn' | 'advised' }) {
   const ctx = useContext(CardViewContext)
-  const [equipOpen, setEquipOpen] = useState(false)
-  const equipButton = useRef<HTMLButtonElement>(null)
   const advised = props.part === 'advised'
   const label = advised ? 'Advised' : 'Your character'
-  const slots = shownSlots(props.job, props.equipment.claw)
-  // Zonder advies blijft elk slot wat je draagt: precies de equip van de factuur.
-  const rows = cheapestEquipment(slots, props.equipment, { kind: 'none' }, { kind: 'none' })
-  const closeEquip = () => {
-    setEquipOpen(false)
-    requestAnimationFrame(() => equipButton.current?.focus())
-  }
   return (
     <>
       {/* Boven de knoppen de zin wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. Zonder kopje (Dave). */}
@@ -1622,20 +1605,17 @@ function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment:
         <p class="total-cost-sub">The total cost above is calculated with this setup.</p>
         <div class="card-actions cost-cards">
           {COST_CARDS.map((c) => {
-            const ownEquip = advised && c.key === 'equip'
             const name = `${c.title} van ${label}`
-            const expanded = ownEquip ? equipOpen : ctx.open[c.key] === (advised ? 'advised' : 'worn')
             return (
               <button
                 key={c.key}
-                ref={ownEquip ? equipButton : undefined}
                 type="button"
                 class="card-action"
                 aria-haspopup="dialog"
-                aria-expanded={expanded}
+                aria-expanded={ctx.open[c.key] === props.part}
                 aria-label={name}
                 title={name}
-                onClick={(e) => (ownEquip ? setEquipOpen(true) : ctx.openCard(c.key, advised ? 'advised' : 'worn', e.currentTarget))}
+                onClick={(e) => ctx.openCard(c.key, props.part, e.currentTarget)}
               >
                 <CardIcon name={c.icon} />
               </button>
@@ -1643,20 +1623,6 @@ function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment:
           })}
         </div>
       </div>
-      {equipOpen && (
-        <StatDialog title="Advised equip" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={closeEquip}>
-          <div class="equipment">
-            <CheapestRows
-              job={props.job}
-              slots={slots}
-              equipment={props.equipment}
-              cheapest={rows}
-              hint="Met deze equip rekent de factuur van Advised: wat je character nu draagt. De goedkoopste instellingen kopen geen equipment."
-              total={false}
-            />
-          </div>
-        </StatDialog>
-      )}
     </>
   )
 }
@@ -2613,23 +2579,31 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 }
 
 /** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
+/** De rijen die het aantal kills van dit level geven: de EXP die je nog nodig hebt, wat één kill geeft, en hun deling (Dave, 6 oktober 2026, #192). */
+const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }): WhyRow[] => [
+  { label: 'EXP tot volgend level', result: nfInt.format(w.expToNext) },
+  { label: 'EXP per kill', calc: w.mob, result: nf.format(w.expPerKill) },
+  { label: 'Kills dit level', calc: <>{nfInt.format(w.expToNext)} / {nf.format(w.expPerKill)}</>, result: nf3.format(w.kills) },
+]
+
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
   const unit = w.kind === 'hp' ? 'HP' : 'MP'
-  const perHour = w.perKill * w.killsPerHour + w.buffPerHour
+  // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): kills per uur valt weg. Alleen de buffs van een MP potion lopen per uur, en dan staat de duur erbij.
+  const buffs = w.buffPerHour > 0
   const rows: WhyRow[] = [
     w.kind === 'hp'
       ? { label: 'HP kwijt per kill', calc: <>{w.mob} raakt je ± {oneDecimal(w.hits!)} × voor ± {oneDecimal(w.touch!)} schade</>, result: `${oneDecimal(w.perKill)} HP` }
       : { label: 'MP per kill', calc: 'wat je aanval kost', result: `${oneDecimal(w.perKill)} MP` },
-    { label: 'Kills per uur', calc: w.mob, result: nfInt.format(w.killsPerHour) },
-    ...(w.buffPerHour > 0 ? [{ label: 'Buffs per uur', result: `${nfInt.format(w.buffPerHour)} MP` }] : []),
-    {
-      label: `${unit} per uur`,
-      calc: <>{oneDecimal(w.perKill)} × {nfInt.format(w.killsPerHour)}{w.buffPerHour > 0 && <> + {nfInt.format(w.buffPerHour)}</>}</>,
-      result: `${nfInt.format(perHour)} ${unit}`,
-    },
-    { label: 'Duur van dit level', result: formatHours(w.hours) },
-    { label: `${unit} dit level`, calc: <>{nfInt.format(perHour)} × {nf.format(w.hours)} uur</>, result: `${nfInt.format(w.need)} ${unit}` },
+    ...killsRows(w),
+    ...(buffs
+      ? [
+          { label: 'MP van je aanvallen', calc: <>{oneDecimal(w.perKill)} × {nf3.format(w.kills)} kills</>, result: `${nfInt.format(w.perKill * w.kills)} MP` },
+          { label: 'Duur van dit level', calc: <>{nf3.format(w.kills)} kills / {nfInt.format(w.killsPerHour)} kills per uur</>, result: formatHours(w.hours) },
+          { label: 'Buffs dit level', calc: <>{nfInt.format(w.buffPerHour)} MP per uur × {nf.format(w.hours)} uur</>, result: `${nfInt.format(w.buffPerHour * w.hours)} MP` },
+          { label: `${unit} dit level`, calc: <>{nfInt.format(w.perKill * w.kills)} + {nfInt.format(w.buffPerHour * w.hours)}</>, result: `${nfInt.format(w.need)} ${unit}` },
+        ]
+      : [{ label: `${unit} dit level`, calc: <>{oneDecimal(w.perKill)} × {nf3.format(w.kills)} kills</>, result: `${nfInt.format(w.need)} ${unit}` }]),
     {
       label: `Herstel per ${props.label}`,
       calc: w.full > w.restores ? <>herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}</> : undefined,
@@ -2658,21 +2632,39 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const { w } = props
   const unit = props.label.toLowerCase()
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
-  const perHour = w.perKill * w.killsPerHour
+  const f = w.formula
+  // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
+  const damageRows: WhyRow[] = f
+    ? [
+        {
+          label: 'Max per star',
+          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          result: oneDecimal(w.rawMax),
+        },
+        {
+          label: 'Min per star',
+          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          result: oneDecimal(w.rawMin),
+        },
+        ...(w.levelsUp > 0
+          ? [{ label: 'Levelverschil', calc: <>{w.mob} is {w.levelsUp} {w.levelsUp === 1 ? 'level' : 'levels'} hoger: −{w.levelsUp}%</>, result: `${oneDecimal(w.rawMin * (1 - 0.01 * w.levelsUp))} – ${oneDecimal(w.rawMax * (1 - 0.01 * w.levelsUp))}` }]
+          : []),
+        { label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${nfInt.format(w.minHit)} – ${nfInt.format(w.maxHit)}` },
+      ]
+    : []
   const rows: WhyRow[] = [
+    ...damageRows,
     // Elke star doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
       label: 'Schade per star',
-      calc: <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
+      calc: f ? <>({nfInt.format(w.minHit)} + {nfInt.format(w.maxHit)}) / 2</> : <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
       result: `± ${nfInt.format(w.avgHit)}`,
     },
     { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {nfInt.format(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
-    { label: 'Kills per uur', calc: w.mob, result: nfInt.format(w.killsPerHour) },
-    { label: `${props.label} per uur`, calc: <>{nfInt.format(w.perKill)} × {nfInt.format(w.killsPerHour)}</>, result: nfInt.format(perHour) },
-    { label: 'Duur van dit level', result: formatHours(w.hours) },
-    { label: `${props.label} dit level`, calc: <>{nfInt.format(perHour)} × {nf.format(w.hours)} uur = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
+    ...killsRows(w),
+    { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
     { label: 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
   ]
   return <WhyTable rows={rows} />
@@ -2730,7 +2722,7 @@ export const totalCostWho = (level: string, job: Job): string => {
 const invoiceRowKey = (l: InvoiceLine): string => (l.why && l.why.kind !== 'ammo' ? l.why.kind : l.label)
 
 /**
- * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (HP Potions, MP Potions, Ammo, en reizen als
+ * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (Shop, HP Potions, MP Potions, Ammo, en reizen als
  * dat iets kost) wat je character betaalt, wat de goedkoopste setup betaalt, en het verschil: wat je laat liggen in rood met een min,
  * zoals de kosten op de facturen (Dave: groen las alsof je goed bezig was), en in groen met een plus als jouw setup goedkoper is. Welke potion en hoeveel staat op de twee facturen erboven. Een regel die één setup niet heeft,
  * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
@@ -2740,6 +2732,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const [ig, ch] = cols
   const keys: string[] = []
   for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
+  // De winkelprijs van de equip van Advised (#192) staat bovenaan, zoals op de factuur.
+  if (keys.includes(SHOP_LABEL)) keys.splice(0, keys.length, SHOP_LABEL, ...keys.filter((k) => k !== SHOP_LABEL))
   const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
   // De naam van een soort kost, los van welke potion of munitie (Dave): "HP Potions", "MP Potions", "Ammo".
   const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
@@ -2832,10 +2826,10 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 
 /**
  * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
- * je speelt, "Advised" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
+ * je speelt, "Advised" die van de goedkoopste setup (live berekend, met de equip die de Equip-kaart in Advised koopt en de regel Shop, #192), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; equipment: Equipment; children?: ComponentChildren }) {
+function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
   const who = totalCostWho(props.level, props.job)
   return (
     <section class="card total-cost" aria-live="polite">
@@ -2856,7 +2850,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
               This is how much it cost to level up your <strong>{who}</strong>
             </p>
             <InvoiceTable invoice={props.invoice} />
-            <CostCardButtons part="worn" job={props.job} equipment={props.equipment} />
+            <CostCardButtons part="worn" />
           </div>
           {props.cheapest && (
             <>
@@ -2866,7 +2860,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
                   This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
                 <InvoiceTable invoice={props.cheapest} />
-                <CostCardButtons part="advised" job={props.job} equipment={props.equipment} />
+                <CostCardButtons part="advised" />
               </div>
               <div class="total-cost-part cost-difference">
                 <h3>Difference</h3>
@@ -2901,10 +2895,15 @@ function armorAdviceText(a: ArmorUpgradeAdvice, gender: Gender | null): string {
 
 /**
  * De regels onder Difference (Dave, #183): het monster als dat verandert, dan altijd je HP Potion, je MP Potion en je skills, met het
- * verschil ("A → B") of wat blijft, en bij ATT en DEF wat het Equip-advies over je wapen en je armor zegt: Overnemen koopt geen equipment,
- * dus dat blijft advies. De base AP vult Overnemen wel in, maar staat niet als eigen regel in de lijst.
+ * verschil ("A → B") of wat blijft, en bij ATT en DEF wat het Equip-advies over je wapen en je armor zegt: Overnemen zet de stukken die de Equip-kaart in Advised koopt in je equip (#192),
+ * en anders blijft het advies. De base AP vult Overnemen wel in, maar staat niet als eigen regel in de lijst.
  */
-const changeLines = (r: CheapestResult, equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }): { label: string; text: string }[] => {
+/** Wat Overnemen in je equip zet, bij ATT (het wapen) en bij DEF (de armor). */
+interface EquipTexts {
+  att: string
+  def: string
+}
+const changeLines = (r: CheapestResult, equip: EquipTexts): { label: string; text: string }[] => {
   const of = (kind: ChangeKind) => r.changes.find((c) => c.kind === kind)?.text
   const mob = of('mob')
   return [
@@ -2912,8 +2911,8 @@ const changeLines = (r: CheapestResult, equip: { claw: ClawUpgradeAdvice; armor:
     { label: 'HP Potion:', text: of('hp') ?? r.potions.hp },
     { label: 'MP Potion:', text: of('mp') ?? r.potions.mp },
     { label: 'Skill:', text: of('skills') ?? 'geen verschil' },
-    { label: 'ATT:', text: weaponAdviceText(equip.claw) },
-    { label: 'DEF:', text: armorAdviceText(equip.armor, equip.gender) },
+    { label: 'ATT:', text: equip.att },
+    { label: 'DEF:', text: equip.def },
   ]
 }
 /** Het totaal van een factuur, of null zonder factuur. */
@@ -2929,7 +2928,7 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
  * base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
  * "Ongedaan maken" terugzetten.
  */
-function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }; onApply: () => void; onUndo: () => void }) {
+function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equipTexts: EquipTexts; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
   const saving = props.saving
@@ -2946,7 +2945,7 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
         </p>
       )}
       <ul class="cheapest-changes">
-        {changeLines(r, props.equip).map((c) => (
+        {changeLines(r, props.equipTexts).map((c) => (
           <li key={c.label}>
             <strong>{c.label}</strong> {c.text}
           </li>
@@ -2966,7 +2965,7 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
   )
   return (
     <>
-      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste.</p>}
+      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste, ook je equip.</p>}
       {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
       {!props.applied && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
@@ -3083,28 +3082,46 @@ export function App() {
   // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
   // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
   // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
-  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; saving: number | null } | null>(null)
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipment: Equipment; equipTexts: EquipTexts; saving: number | null } | null>(null)
   const cheapestShown =
-    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.job === job
+    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.equipment === equipment && cheapest.before.job === job
       ? cheapest.result
       : null
   const appliedSaving = cheapestShown ? cheapest!.saving : null
   // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
-  const cheapestInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
+  // De equip van Advised (Dave, 6 oktober 2026, #192): wat je draagt plus de stukken die de Equip-kaart in Advised koopt, met het profiel dat daarbij
+  // hoort (dezelfde stap als een keuze op de kaart) en wat ze in de winkel kosten. Eén berekening voor alles: de goedkoopste instellingen rekenen met deze equip.
+  const advisedGear = useMemo(() => (cheapestEquip ? advisedEquipment(job, profileDraft, equipment, cheapestEquip) : { equipment, profile: profileDraft, shop: 0 }), [cheapestEquip, job, profileDraft, equipment])
+  // Wat je nu hebt, voor Overnemen en Ongedaan maken; de berekening zelf krijgt de equip van Advised.
+  const userInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
+  const cheapestInput = useMemo<CheapestInput>(
+    () => ({ ...userInput, equipment: advisedGear.equipment, profileDraft: advisedGear.profile }),
+    [userInput, advisedGear],
+  )
   const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
   const advisedProfile = cheapestLive?.profileDraft ?? null
   const cheapestInvoice = useMemo(
-    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment })) : levelInvoice([], null)),
-    [cheapestLive, job, gender, equipment],
+    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.shop) : levelInvoice([], null)),
+    [cheapestLive, job, gender, advisedGear],
   )
   // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer. Een nog niet bevestigd concept in een
-  // corrigeervak blijft dus een concept (de kaart rekende er ook niet mee); de equipment verandert de knop nooit.
+  // corrigeervak blijft dus een concept (de kaart rekende er ook niet mee); de equip van Advised zet Overnemen er wel bij (applyCheapest, #192).
   const cheapestSaving = cheapestLive ? invoiceSaving(invoice, cheapestInvoice, cheapestLive.saving) : null
+  // Wat Overnemen in je equip zet, in woorden: wat de Equip-kaart in Advised koopt, of anders wat het wapen- en armor-advies zegt (#183, #192).
+  const liveEquipTexts = useMemo<EquipTexts>(() => {
+    const buys = cheapestEquip ? buyTexts(cheapestEquip) : { att: null, def: null }
+    return { att: buys.att ?? weaponAdviceText(clawAdvice), def: buys.def ?? armorAdviceText(armorAdvice, gender) }
+  }, [cheapestEquip, clawAdvice, armorAdvice, gender])
   const applyCheapest = () => {
     if (!cheapestLive) return
     const result = cheapestLive
-    const before = cheapestInput
+    const before = userInput
+    // De equip van Advised gaat in je setup (je koopt haar in het spel), met het profiel dat erbij hoort; de uitkomst van de berekening volgt daarna.
+    if (advisedGear.equipment !== before.equipment) {
+      clearPending()
+      writeEquipment(advisedGear.equipment)
+    }
     if (result.drafts !== before.drafts) {
       dirty.current = true
       setDrafts(result.drafts)
@@ -3112,7 +3129,7 @@ export function App() {
     if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
     if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
     setPlaced(null)
-    setCheapest({ result, before, saving: cheapestSaving })
+    setCheapest({ result, before, equipment: advisedGear.equipment, equipTexts: liveEquipTexts, saving: cheapestSaving })
   }
   const undoCheapest = () => {
     if (!cheapestShown || !cheapest) return
@@ -3121,6 +3138,10 @@ export function App() {
     setDrafts(before.drafts)
     writeProfile(() => before.profileDraft)
     writePotionChoice(before.potionChoice)
+    if (before.equipment !== equipmentRef.current) {
+      clearPending()
+      writeEquipment(before.equipment)
+    }
     setPlaced(null)
     setCheapest(null)
   }
@@ -3346,8 +3367,8 @@ export function App() {
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
-      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level} equipment={equipment}>
-        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equip={{ claw: clawAdvice, armor: armorAdvice, gender }} onApply={applyCheapest} onUndo={undoCheapest} />
+      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
+        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 
       <LevelAdviceCard
