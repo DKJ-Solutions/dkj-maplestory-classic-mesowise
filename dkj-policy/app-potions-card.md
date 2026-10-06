@@ -55,11 +55,11 @@
 - [x] Dave (October 6, 2026): the Potions card had extra padding; it now gets padding 0 like every other card with an eye
 - [x] Dave (October 6, 2026): price in red with a minus, recovery in green with a plus (the Skillpoints cost/gain colours)
 - [x] Dave (October 6, 2026): styled like Monster: pick a potion (a draft until Opslaan), its price and recovery below, correctable with the pencil; the list of all potions goes
-- [ ] Victor and Edith: review of the Monster-style card
+- [x] Victor and Edith: review of the Monster-style card; a correction is tied to its potion name (no longer follows a job switch), the advice weighs the cheapest other potion against a corrected one, labels "Prijs" and "Herstel HP"
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1649 tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1651 tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card

@@ -57,7 +57,7 @@ describe('resolvePotions, pickPotion en fixPotion', () => {
   it('geeft je keuze uit de database, met je correcties erover', () => {
     expect(resolvePotions('thief', choice('White Potion', null)).hp).toBe(potion('White Potion'))
     const fixed = fixPotion(fixPotion(choice('White Potion', null), 'thief', 'hp', 'price', '330')!, 'thief', 'hp', 'restores', '520')!
-    expect(fixed.fix.hp).toEqual({ price: 330, restores: 520 })
+    expect(fixed.fix.hp).toEqual({ name: 'White Potion', price: 330, restores: 520 })
     expect(resolvePotions('thief', fixed).hp).toMatchObject({ name: 'White Potion', price: 330, hp: 520, mp: 0 })
     // De correctie van de MP-potion staat los van die van de HP-potion.
     expect(resolvePotions('thief', fixed).mp).toBe(mpPotionFor('thief'))
@@ -81,12 +81,21 @@ describe('resolvePotions, pickPotion en fixPotion', () => {
     let c = fixPotion(choice('White Potion', null), 'thief', 'hp', 'price', '330')!
     c = fixPotion(c, 'thief', 'mp', 'price', '200')!
     const picked = pickPotion(c, 'hp', 'Orange Potion')
-    expect(picked).toEqual({ hp: 'Orange Potion', mp: null, fix: { hp: {}, mp: { price: 200 } } })
+    expect(picked).toEqual({ hp: 'Orange Potion', mp: null, fix: { hp: {}, mp: { name: 'Blue Potion', price: 200 } } })
+  })
+
+  it('laat een correctie niet meegaan naar een andere potion als je job wisselt (Victor, 6 oktober 2026)', () => {
+    // Een Magician corrigeert zijn Lemon; als Thief kent hij geen Lemon en rekent hij met de Blue Potion, zonder die correctie.
+    const lemon = fixPotion(choice(null, 'Lemon'), 'magician', 'mp', 'price', '500')!
+    expect(resolvePotions('magician', lemon).mp).toMatchObject({ name: 'Lemon', price: 500 })
+    expect(resolvePotions('thief', lemon).mp).toBe(mpPotionFor('thief'))
+    // Corrigeer je als Thief de Blue Potion, dan vervangt dat de correctie van de Lemon.
+    expect(fixPotion(lemon, 'thief', 'mp', 'restores', '210')!.fix.mp).toEqual({ name: 'Blue Potion', restores: 210 })
   })
 
   it('noemt de velden per soort: de prijs als kosten, het herstel als winst', () => {
-    expect(potionFields('hp').map((f) => [f.label, f.tone])).toEqual([['Prijs (meso)', 'cost'], ['Herstelt HP', 'gain']])
-    expect(potionFields('mp').map((f) => f.label)).toEqual(['Prijs (meso)', 'Herstelt MP'])
+    expect(potionFields('hp').map((f) => [f.label, f.tone])).toEqual([['Prijs', 'cost'], ['Herstel HP', 'gain']])
+    expect(potionFields('mp').map((f) => f.label)).toEqual(['Prijs', 'Herstel MP'])
   })
 })
 
@@ -143,11 +152,19 @@ describe('potionAdvice', () => {
     expect(a.mesoChosen!).toBeGreaterThan(a.mesoCheapest!)
   })
 
-  it('rekent met je correctie, en raadt geen wissel aan naar dezelfde potion', () => {
+  it('rekent met je correctie, en raadt geen wissel aan zolang je potion per punt het goedkoopst blijft', () => {
+    const dearer = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '160')!) }
+    expect(advice(dearer).mesoChosen).toBe(cost(dearer))
+    expect(advice(dearer).mesoChosen!).toBeGreaterThan(cost(profile)!)
+    // 160 / 250 = 0,64 per HP: nog goedkoper dan de White (0,7).
+    expect(advice(dearer).switchTo).toEqual([])
+  })
+
+  it('raadt de goedkoopste andere potion aan als je correctie de jouwe duurder maakt (Victor, 6 oktober 2026)', () => {
+    // Een Orange van 300 meso kost 1,2 per HP; de White kost 0,7.
     const dear = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '300')!) }
-    expect(advice(dear).mesoChosen).toBe(cost(dear))
-    expect(advice(dear).mesoChosen!).toBeGreaterThan(cost(profile)!)
-    expect(advice(dear).switchTo).toEqual([])
+    expect(advice(dear).switchTo).toEqual([potion('White Potion')])
+    expect(advice(dear).mesoCheapest!).toBeLessThan(advice(dear).mesoChosen!)
   })
 
   it('zegt blijven bij een Magician met de Lemon: even goedkoop per MP als de Orange', () => {
@@ -174,7 +191,7 @@ describe('loadPotionChoice en savePotionChoice', () => {
 
   it('bewaart en laadt de keuze en de correcties per soort', () => {
     const storage = memory()
-    const c: PotionChoice = { hp: 'White Potion', mp: null, fix: { hp: { price: 330 }, mp: {} } }
+    const c: PotionChoice = { hp: 'White Potion', mp: null, fix: { hp: { name: 'White Potion', price: 330 }, mp: {} } }
     expect(savePotionChoice(storage, c)).toBe(true)
     expect(loadPotionChoice(storage)).toEqual(c)
   })
@@ -188,7 +205,8 @@ describe('loadPotionChoice en savePotionChoice', () => {
     for (const raw of ['', '{', 'null', '[]', JSON.stringify({ version: 2, hp: 'White Potion' })]) {
       expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: raw })), raw).toEqual(NO_POTION_CHOICE)
     }
-    const odd = JSON.stringify({ version: 1, hp: 42, mp: 'x'.repeat(61), fix: { hp: { price: -1, restores: 2.5 }, mp: { price: '200' } } })
+    // Een correctie zonder de naam van zijn potion telt ook niet.
+    const odd = JSON.stringify({ version: 1, hp: 42, mp: 'x'.repeat(61), fix: { hp: { name: 'White Potion', price: -1, restores: 2.5 }, mp: { price: 200 } } })
     expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: odd }))).toEqual(NO_POTION_CHOICE)
   })
 })

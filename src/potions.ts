@@ -26,8 +26,12 @@ export interface PotionPair {
 /** Een eigenschap van een potion die je kunt corrigeren: de prijs of wat hij herstelt. */
 export type PotionStat = 'price' | 'restores'
 
-/** Je eigen getallen voor de gekozen potion van een soort; wat ontbreekt, komt uit de database. */
-export type PotionFix = Partial<Record<PotionStat, number>>
+/**
+ * Je eigen getallen voor een potion van een soort; wat ontbreekt, komt uit de database. `name` is de potion waarvoor ze gelden: een
+ * correctie telt alleen zolang je met die potion rekent, en gaat niet mee naar een andere (een Lemon van een Magician die nu Thief is
+ * en met de Blue Potion rekent).
+ */
+export type PotionFix = { name?: string } & Partial<Record<PotionStat, number>>
 
 /** De potions die je gekozen hebt, per soort bij naam (null is "nog niet gekozen": de goedkoopste), met je correcties. */
 export interface PotionChoice {
@@ -53,8 +57,8 @@ const MAX_BAR = Math.min(...PROFILE_FIELDS.filter((f) => f.key === 'hp' || f.key
 
 /** De eigenschappen van een potion van deze soort, in de volgorde van het scherm. */
 export const potionFields = (kind: PotionKind): readonly PotionField[] => [
-  { key: 'price', label: 'Prijs (meso)', min: 1, max: 9_999_999, integer: true, tone: 'cost' },
-  { key: 'restores', label: `Herstelt ${kind === 'hp' ? 'HP' : 'MP'}`, min: 1, max: MAX_BAR, integer: true, tone: 'gain' },
+  { key: 'price', label: 'Prijs', min: 1, max: 9_999_999, integer: true, tone: 'cost' },
+  { key: 'restores', label: `Herstel ${kind === 'hp' ? 'HP' : 'MP'}`, min: 1, max: MAX_BAR, integer: true, tone: 'gain' },
 ]
 
 /** De waarde van een eigenschap van een potion. */
@@ -83,7 +87,8 @@ export function resolvePotions(job: Job, choice: PotionChoice): PotionPair {
   const one = (kind: PotionKind): Potion => {
     const db = databasePotion(job, kind, choice[kind])
     const fix = choice.fix[kind]
-    return fix.price === undefined && fix.restores === undefined ? db : { ...db, price: fix.price ?? db.price, [kind]: fix.restores ?? db[kind] }
+    if (fix.name !== db.name || (fix.price === undefined && fix.restores === undefined)) return db
+    return { ...db, price: fix.price ?? db.price, [kind]: fix.restores ?? db[kind] }
   }
   return { hp: one('hp'), mp: one('mp') }
 }
@@ -101,14 +106,17 @@ export const pickPotion = (choice: PotionChoice, kind: PotionKind, name: string)
  */
 export function fixPotion(choice: PotionChoice, job: Job, kind: PotionKind, stat: PotionStat, text: string): PotionChoice | null {
   const field = potionFields(kind).find((f) => f.key === stat)!
-  const db = potionStat(databasePotion(job, kind, choice[kind]), kind, stat)
+  const potion = databasePotion(job, kind, choice[kind])
+  const db = potionStat(potion, kind, stat)
   const t = text.trim()
   const n = t === '' ? db : Number(t)
   if (!Number.isInteger(n) || n < field.min || n > field.max) return null
-  const fix: PotionFix = { ...choice.fix[kind] }
+  // Correcties van een andere potion vallen weg: ze golden niet voor deze.
+  const fix: PotionFix = choice.fix[kind].name === potion.name ? { ...choice.fix[kind] } : {}
+  fix.name = potion.name
   if (n === db) delete fix[stat]
   else fix[stat] = n
-  return { ...choice, fix: { ...choice.fix, [kind]: fix } }
+  return { ...choice, fix: { ...choice.fix, [kind]: fix.price === undefined && fix.restores === undefined ? {} : fix } }
 }
 
 /** Een max uit het profiel als getal, of null als hij leeg, geen geheel getal, 0 of boven wat het profiel toelaat is. */
@@ -140,15 +148,15 @@ export type PotionAdvice =
   | { kind: 'advice'; switchTo: readonly Potion[]; mesoChosen: number | null; mesoCheapest: number | null | undefined }
 
 /**
- * Loont een andere potion? Wat dit level kost met de potions in het profiel (met je correcties), tegenover de goedkoopste per punt
- * uit de database. Een wissel alleen naar een andere potion die per punt echt goedkoper is: even goedkoop (de Lemon naast de Orange
- * van een Magician) is geen wissel, want afronding zou de kosten een fractie laten verschillen, en een correctie van je eigen potion
- * is wat jij betaalt. De app rekent niet met verspild herstel (#181).
+ * Loont een andere potion? Wat dit level kost met de potions in het profiel (met je correcties), tegenover de goedkoopste andere
+ * potion per punt uit de database. Een wissel alleen als die per punt echt goedkoper is dan de jouwe: even goedkoop (de Lemon naast
+ * de Orange van een Magician) is geen wissel, want afronding zou de kosten een fractie laten verschillen. Corrigeer je je eigen
+ * potion naar een hogere prijs, dan kan een andere wel goedkoper worden (een duurdere Orange naast de White). De app rekent niet
+ * met verspild herstel (#181).
  */
 export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | null): PotionAdvice {
   if (!profile) return { kind: 'none' }
-  const cheapest = cheapestPotions(profile.job)
-  const chosen = profile.potions ?? cheapest
+  const chosen = profile.potions ?? cheapestPotions(profile.job)
   const costWith = (potions: PotionPair) => {
     const p = { ...profile, potions }
     const c = levelCost(p, bestVerdict(drafts, p))
@@ -156,9 +164,17 @@ export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | nu
   }
   const mesoChosen = costWith(chosen)
   if (mesoChosen === undefined) return { kind: 'none' }
-  const better = (kind: PotionKind) => cheapest[kind].name !== chosen[kind].name && perPoint(cheapest[kind], kind) < perPoint(chosen[kind], kind)
-  const alternative: PotionPair = { hp: better('hp') ? cheapest.hp : chosen.hp, mp: better('mp') ? cheapest.mp : chosen.mp }
-  const switchTo = POTION_KINDS.filter(better).map((k) => cheapest[k])
+  // Per soort de goedkoopste andere potion; bij gelijke prijs per punt de eerste, net als de keuze van de app.
+  const other = (kind: PotionKind): Potion | undefined =>
+    potionsOf(profile.job, kind)
+      .filter((p) => p.name !== chosen[kind].name)
+      .reduce<Potion | undefined>((best, p) => (best === undefined || perPoint(p, kind) < perPoint(best, kind) ? p : best), undefined)
+  const better = (kind: PotionKind): Potion | undefined => {
+    const o = other(kind)
+    return o && perPoint(o, kind) < perPoint(chosen[kind], kind) ? o : undefined
+  }
+  const alternative: PotionPair = { hp: better('hp') ?? chosen.hp, mp: better('mp') ?? chosen.mp }
+  const switchTo = POTION_KINDS.map(better).filter((p) => p !== undefined)
   return { kind: 'advice', switchTo, mesoChosen, mesoCheapest: switchTo.length === 0 ? mesoChosen : costWith(alternative) }
 }
 
@@ -168,12 +184,15 @@ const VERSION = 1
 /** Een bewaarde correctie: alleen een heel getal binnen de grenzen telt. */
 function loadFix(kind: PotionKind, v: unknown): PotionFix {
   if (typeof v !== 'object' || v === null) return {}
-  const out: PotionFix = {}
+  // Zonder de naam van zijn potion is een correctie niet toe te wijzen, en telt hij niet.
+  const name = (v as { name?: unknown }).name
+  if (typeof name !== 'string' || name.length > 60) return {}
+  const out: PotionFix = { name }
   for (const f of potionFields(kind)) {
     const n = (v as Record<string, unknown>)[f.key]
     if (typeof n === 'number' && Number.isInteger(n) && n >= f.min && n <= f.max) out[f.key] = n
   }
-  return out
+  return out.price === undefined && out.restores === undefined ? {} : out
 }
 
 /** De bewaarde keuze; wat niet klopt is "nog niet gekozen". Of een naam bij je job hoort, beslist databasePotion. */

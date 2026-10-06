@@ -2326,7 +2326,6 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
   )
 }
 
-/** De potions die je anders zou kiezen: per soort de goedkoopste waar die van jou verschilt. */
 /**
  * Loont een andere potion? (Dave, 6 oktober 2026): wat dit level kost met de potions die je gebruikt, tegenover de
  * goedkoopste per punt herstel, net als het mob-advies.
