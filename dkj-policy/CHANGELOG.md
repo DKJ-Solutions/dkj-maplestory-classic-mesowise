@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**63 / 100 minor entries** <!-- pending-tally -->
+**64 / 101 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/176-custom-weapon-kind · 20261006-075745Z
+
+A Thief who wears a weapon the app does not know (a custom item) now chooses whether it is a dagger or a claw. Until now the app silently treated it as a claw, so after a dagger the player got Lucky Seven with stars added on top of the dagger's attack. The choice is saved with the equipment, and it is dropped when the character switches to another job.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Thief with an unlisted dagger now gets an honest EXP per meso number, calculated with Double Stab and no star costs, instead of an overstated one.
+
+**Score:** 3
+
+#### Pull Request
+
+A Thief's custom weapon asks whether it is a dagger or a claw
+
+[PR #178](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/178)
+
+---
 
 ### DEPLOY: app/170-thief-daggers · 20261006-072613Z
 
