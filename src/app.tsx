@@ -2622,11 +2622,6 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
   )
 }
 
-/**
- * Onder de factuur van Total cost (Dave, 6 oktober 2026, #183): wat de kolom Cheapest scheelt, wat er daarvoor verandert (mob,
- * potions, skillpunten, base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat er veranderde
- * en kun je alles met "Ongedaan maken" terugzetten.
- */
 /** Wat het Equip-advies over je wapen zegt, in een paar woorden, zoals de chip bij ATT (#183). */
 function weaponAdviceText(a: ClawUpgradeAdvice): string {
   if (a.kind === 'none') return 'niet uit te rekenen'
@@ -2670,6 +2665,11 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
   const b = invoiceTotal(now)
   return a !== null && b !== null ? a - b : fallback
 }
+/**
+ * Onder de tabel van Difference (Dave, 6 oktober 2026, #183): wat er voor de goedkoopste setup verandert (mob, potions, skillpunten,
+ * base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
+ * "Ongedaan maken" terugzetten.
+ */
 function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
