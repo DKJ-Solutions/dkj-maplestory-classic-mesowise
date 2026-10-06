@@ -2410,7 +2410,7 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
         ?
       </button>
       {open && (
-        <StatDialog title={`${line.label} × ${nfInt.format(line.qty!)}`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Hoezo ${nfInt.format(line.qty!)}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">
             <ol class="why-steps">
               {w.kind === 'hp' ? (

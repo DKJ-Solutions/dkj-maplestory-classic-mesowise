@@ -3063,6 +3063,8 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     ])
     fireEvent.click(whys[0])
     const dialog = card().querySelector<HTMLElement>('dialog')!
+    // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
+    expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
     const steps = Array.from(dialog.querySelectorAll('.why-steps li')).map((li) => li.textContent!.replace(/\s+/g, ' '))
     expect(steps).toHaveLength(4)
     expect(steps[0]).toMatch(/^Ribbon Pig raakt je per kill ± [\d,]+ keer voor ± [\d,]+ schade: ± [\d,]+ HP per kill\.$/)

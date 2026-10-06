@@ -601,5 +601,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Klein om te zien, maar 44px om op te tikken: een onzichtbare rand rond het rondje (mobile-first). */
 .invoice-why { position: relative; }
 .invoice-why::after { content: ''; position: absolute; inset: -0.5rem; }
+/* De popup van het vraagteken staat in een cel van de factuur en erfde daarvan "nowrap", grijs en rechts uitlijnen: de stappen
+   liepen buiten de popup en hij scrolde (Dave, 6 oktober 2026). Hier krijgt hij de gewone tekst terug. */
+.invoice dialog { white-space: normal; text-align: left; color: var(--text); font-weight: 400; font-size: 1rem; }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }

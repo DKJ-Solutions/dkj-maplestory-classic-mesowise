@@ -56,6 +56,8 @@
   longer adds a potion, and the question mark has a 44 px tap area
 - [x] Dave (October 6, 2026): a tidier invoice: every count ends on the same line (rows without a question mark keep its
   space), and the total gets room above it under a grey rule (the text colour was near-white in dark mode)
+- [x] Dave (October 6, 2026): the question-mark popup is titled "Hoezo 15?" and no longer scrolls (it inherited the cell's
+  nowrap)
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
