@@ -2486,7 +2486,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
   // De naam van een soort kost, los van welke potion of munitie (Dave): "HP Potions", "MP Potions", "Ammo".
   const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
-  const cost = (n: number | null) => (n === null ? <span class="invoice-none">—</span> : <span class="cost">{n === 0 ? '0' : `−${nfInt.format(n)}`}</span>)
+  // Wat elke setup betaalt in de gewone tekstkleur: alleen het verschil heeft een kleur, zodat dat opvalt (Dave: "bijna alles rood").
+  const cost = (n: number | null) => (n === null ? <span class="invoice-none">—</span> : <span>{n === 0 ? '0' : `−${nfInt.format(n)}`}</span>)
   const diff = (d: number | null) =>
     d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="cost">−{nfInt.format(d)}</span> : d < 0 ? <span class="gain">+{nfInt.format(-d)}</span> : <span>0</span>
   // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
