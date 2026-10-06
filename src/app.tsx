@@ -2459,7 +2459,7 @@ const formatHours = (hours: number): string => {
  */
 /**
  * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "Lv. 10 Thief", vetgedrukt in "This is how much it cost
- * for a Lv. 10 Thief to level with the current settings". Zonder geldig level alleen de job.
+ * to level up your Lv. 10 Thief". Zonder geldig level alleen de job.
  */
 export const totalCostWho = (level: string, job: Job): string => {
   const n = Number(level.trim())
@@ -2473,7 +2473,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>
       <p class="total-cost-sub">
-        This is how much it cost for a <strong>{totalCostWho(props.level, props.job)}</strong> to level with the current settings
+        This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
       </p>
       {!props.computed ? (
         <NotComputed job={props.job} />

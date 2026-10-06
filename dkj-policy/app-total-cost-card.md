@@ -39,7 +39,7 @@
 
 ### PLAN
 
-- [x] Dave (October 6, 2026): a Total cost card, subtitle "This is how much it cost for a **Lv. 18 Thief** to level with the current settings"
+- [x] Dave (October 6, 2026): a Total cost card, subtitle "This is how much it cost to level up your **Lv. 18 Thief**"
   (current level and job, in bold), with an invoice of
   the potions a level needs and the total price. Ammo and travel are lines too when they cost anything, so the total
   matches the level cost on the Report card.
@@ -73,7 +73,7 @@
 
 ### DEPLOY: app/total-cost-card
 
-A new Total cost card above the Report card ("This is how much it cost for a **Lv. 18 Thief** to level with the current settings", with your
+A new Total cost card above the Report card ("This is how much it cost to level up your **Lv. 18 Thief**", with your
 own level and job) shows, as an invoice, what your current level costs: how many of each potion
 you need (the potions you picked on the Potions card), the stars or arrows, and travel when it costs anything, each with
 its price, and the total underneath. It calculates with the same mob, kills and potions as the Report card, so the total

@@ -3026,7 +3026,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
     expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
-    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost for a Lv. 10 Thief to level with the current settings')
+    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
     expect(card().querySelector('table')).toBeNull()
