@@ -3492,6 +3492,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     for (let i = 0; i < 10; i++) levelUp()
     fireEvent.click(viewButton('Monster'))
     chooseMob('Slime')
+    // chooseMob opent de Monster-popup na Opslaan weer; dicht, zodat elke test zonder open popup begint (in de app is er dan geen open).
+    if (cardOf('Monster').querySelector('dialog.card-dialog')) closeView('Monster')
     fireEvent.click(viewButton('Potions'))
     const potions = document.querySelector<HTMLElement>('section.potions dialog')!
     fireEvent.change(within(potions).getByLabelText('HP potions'), { target: { value: 'White Potion' } })
@@ -3759,8 +3761,14 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('laat in een job zonder advies alleen het deel Your character zien, zonder de knoppen van Advised', () => {
-      expect(document.querySelector('section.total-cost .cheapest-cost .cost-cards') !== null || document.querySelector('section.total-cost .cheapest-cost') === null).toBe(true)
+    it('zet boven de knoppen van elk deel het kopje Setup met de zin dat het totaal met deze setup is berekend (#192)', () => {
+      setUpAdvisedDiffers()
+      for (const which of ['cost-ingame', 'cheapest-cost'] as const) {
+        const setup = part(which).querySelector<HTMLElement>('.cost-setup')!
+        expect(setup.querySelector('h4')?.textContent, which).toBe('Setup')
+        expect(setup.querySelector('.total-cost-sub')?.textContent).toBe('The total cost above is calculated with this setup.')
+        expect(setup.querySelectorAll('.cost-cards button')).toHaveLength(6)
+      }
     })
   })
 })

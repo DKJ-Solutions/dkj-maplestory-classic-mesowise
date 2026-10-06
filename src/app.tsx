@@ -1617,27 +1617,32 @@ function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment:
   }
   return (
     <>
-      <div class="card-actions cost-cards">
-        {COST_CARDS.map((c) => {
-          const ownEquip = advised && c.key === 'equip'
-          const name = `${c.title} van ${label}`
-          const expanded = ownEquip ? equipOpen : ctx.open[c.key] === (advised ? 'advised' : 'worn')
-          return (
-            <button
-              key={c.key}
-              ref={ownEquip ? equipButton : undefined}
-              type="button"
-              class="card-action"
-              aria-haspopup="dialog"
-              aria-expanded={expanded}
-              aria-label={name}
-              title={name}
-              onClick={(e) => (ownEquip ? setEquipOpen(true) : ctx.openCard(c.key, advised ? 'advised' : 'worn', e.currentTarget))}
-            >
-              <CardIcon name={c.icon} />
-            </button>
-          )
-        })}
+      {/* Boven de knoppen het kopje Setup met wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. */}
+      <div class="cost-setup">
+        <h4>Setup</h4>
+        <p class="total-cost-sub">The total cost above is calculated with this setup.</p>
+        <div class="card-actions cost-cards">
+          {COST_CARDS.map((c) => {
+            const ownEquip = advised && c.key === 'equip'
+            const name = `${c.title} van ${label}`
+            const expanded = ownEquip ? equipOpen : ctx.open[c.key] === (advised ? 'advised' : 'worn')
+            return (
+              <button
+                key={c.key}
+                ref={ownEquip ? equipButton : undefined}
+                type="button"
+                class="card-action"
+                aria-haspopup="dialog"
+                aria-expanded={expanded}
+                aria-label={name}
+                title={name}
+                onClick={(e) => (ownEquip ? setEquipOpen(true) : ctx.openCard(c.key, advised ? 'advised' : 'worn', e.currentTarget))}
+              >
+                <CardIcon name={c.icon} />
+              </button>
+            )
+          })}
+        </div>
       </div>
       {equipOpen && (
         <StatDialog title="Advised equip" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={closeEquip}>
