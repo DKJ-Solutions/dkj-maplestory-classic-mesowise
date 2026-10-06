@@ -406,7 +406,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip bekijken' }))
     const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised equip')
     const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
     expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
     expect(dialog.textContent).not.toContain('Te kopen:')
