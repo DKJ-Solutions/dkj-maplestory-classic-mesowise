@@ -234,11 +234,14 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints, Monster en Potions in de kop (naast het oog), en niet bij Ability points en Total stats', () => {
-      // De Equip-kaart heeft geen oog in de kop (#188): het rapport staat er alleen.
+    it('staat bij Equip onderin en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
+      // De Equip-kaart heeft geen oog in de kop (#188): het rapport staat onderin de kaart, onder Your character en Cheapest.
       const equip = report('Equip')!
-      expect(equip.previousElementSibling).toBeNull()
-      expect(equip.closest('.spot-head')).not.toBeNull()
+      expect(equip.closest('.spot-head')).toBeNull()
+      const card = equip.closest('section')!
+      expect(card.querySelector('.spot-head button')).toBeNull()
+      const buttons = [...card.querySelectorAll(':scope > .card-actions button')].map((b) => b.textContent || b.getAttribute('aria-label'))
+      expect(buttons).toEqual(['Your character', 'Cheapest', 'Report: Equip'])
       for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
@@ -397,7 +400,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(head.tagName).toBe('DIV')
     fireEvent.click(head.querySelector('.spot-name')!)
     expect(cards()[0].querySelector('dialog')).toBeNull()
-    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual(['Report: Equip'])
+    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual([])
   })
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {

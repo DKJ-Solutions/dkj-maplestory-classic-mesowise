@@ -354,15 +354,17 @@ function CardHead(props: { label: string; head?: Ref<HTMLButtonElement>; open?: 
   return (
     <div class="spot-head">
       {props.children}
-      <div class="card-actions">
-        {/* Zonder onOpen geen oog: de Equip-kaart opent zijn popup met eigen knoppen onder de kop (Dave, #188). */}
-        {props.onOpen && (
-          <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
-            <EyeIcon />
-          </button>
-        )}
-        {props.report}
-      </div>
+      {/* Zonder onOpen geen oog, zonder knoppen geen rij: de Equip-kaart heeft zijn knoppen onder de kop (Dave, #188). */}
+      {(props.onOpen || props.report) && (
+        <div class="card-actions">
+          {props.onOpen && (
+            <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
+              <EyeIcon />
+            </button>
+          )}
+          {props.report}
+        </div>
+      )}
     </div>
   )
 }
@@ -1547,13 +1549,19 @@ function EquipmentCard(props: {
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip" report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+      <CardHead label="Equip">
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
       <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
+      {/* Het rapport onderin de kaart, onder de twee knoppen (Dave, #188). */}
+      {props.report && (
+        <div class="card-actions equip-report">
+          <CardReport title="Equip">{props.report}</CardReport>
+        </div>
+      )}
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
