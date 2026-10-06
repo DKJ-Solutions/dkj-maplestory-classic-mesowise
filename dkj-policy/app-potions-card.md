@@ -66,7 +66,7 @@
 
 - [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1651 tests green, lint clean
 - [x] Dave looked at the card in the preview and said "ship it" (October 6, 2026)
-- [ ] Victor: final review of the last commits (headings, units, report line, labels)
+- [x] Victor: final review of the last commits (headings, units, report line, labels); no findings
 
 ### DEPLOY: app/potions-card
 

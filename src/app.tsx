@@ -909,7 +909,8 @@ function PotionsCard(props: {
                       value={String(potionStat(used[kind], kind, f.key))}
                       expected={potionStat(db, kind, f.key)}
                       from="de database"
-                      tone={f.tone} unit={f.unit}
+                      tone={f.tone}
+                      unit={f.unit}
                       onSave={(text) => props.onFix(kind, f.key, text)}
                     />
                   ),
