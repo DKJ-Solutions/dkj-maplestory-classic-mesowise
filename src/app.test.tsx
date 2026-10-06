@@ -229,19 +229,27 @@ describe('begin zonder opslag', () => {
   // Dave, 5 oktober 2026: naast het oog een rapport met het uitgebreide advies, alleen bij een kaart waar je iets kiest.
   describe('het rapport naast het oog', () => {
     const report = (title: string) => screen.queryByRole('button', { name: `Report: ${title}` })
+    // Het rapport van Equip zit in de bekijken-popup (#188): die gaat eerst open.
+    const reportButton = (title: string) => {
+      if (title === 'Equip' && !document.querySelector('dialog.card-dialog')) openHomeEquipment()
+      return report(title)!
+    }
     const openReport = (title: string) => {
-      fireEvent.click(report(title)!)
+      fireEvent.click(reportButton(title))
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip onderin en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
-      // De Equip-kaart heeft geen oog in de kop (#188): het rapport staat onderin de kaart, onder Your character en Cheapest.
-      const equip = report('Equip')!
-      expect(equip.closest('.spot-head')).toBeNull()
-      const card = equip.closest('section')!
+    it('staat bij Equip in de bekijken-popup en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
+      // De Equip-kaart heeft geen oog in de kop (#188): in de kaart alleen Your character en Cheapest, het rapport zit in hun popup.
+      const card = homeScreen().querySelector('section.equipment')!
       expect(card.querySelector('.spot-head button')).toBeNull()
-      const buttons = [...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent || b.getAttribute('aria-label'))
-      expect(buttons).toEqual(['Your character', 'Cheapest', 'Report: Equip'])
+      expect([...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent)).toEqual(['Your character', 'Cheapest'])
+      expect(report('Equip')).toBeNull()
+      for (const view of ['Your character', 'Cheapest']) {
+        fireEvent.click(within(card).getByRole('button', { name: view }))
+        expect(report('Equip')!.closest('dialog.card-dialog'), view).not.toBeNull()
+        fireEvent.click(within(card.querySelector('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
+      }
       for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
@@ -253,12 +261,12 @@ describe('begin zonder opslag', () => {
       }
       expect(report('Ability points')).toBeNull()
       expect(report('Total stats')).toBeNull()
-      expect(document.querySelectorAll('.card-report')).toHaveLength(4)
+      expect(document.querySelectorAll('.card-report')).toHaveLength(3)
     })
 
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
-      const equip = report('Equip')!.closest('section')!
+      const equip = homeScreen().querySelector('section.equipment')!
       const skills = report('Skillpoints')!.closest('section')!
       const mob = report('Monster')!.closest('section')!
       const potions = report('Potions')!.closest('section')!
@@ -277,7 +285,7 @@ describe('begin zonder opslag', () => {
       expect(dialog.open).toBe(true)
       expect(dialog.getAttribute('aria-label')).toBe('Report: Equip')
       expect(Array.from(dialog.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF'])
-      // De inhoud van de kaart zelf staat er niet in: die zit achter het oog.
+      // De inhoud van de kaart zelf staat er niet in: die zit in de popup eronder.
       expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     })
 
@@ -302,17 +310,18 @@ describe('begin zonder opslag', () => {
           expect(within(dialog).queryByRole('heading', { level: 3, name: t }), card + ' toont ' + t + ' niet').toBeNull()
         }
         fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+        const popup = document.querySelector<HTMLElement>('dialog.card-dialog')
+        if (popup) fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' })[0])
       }
     })
 
-    it('opent het rapport zonder de popup achter het oog, en andersom', () => {
+    it('opent het rapport van Equip vanuit de bekijken-popup, en die blijft open als je het rapport sluit (#188)', () => {
       openReport('Equip')
-      expect(document.querySelector('dialog.card-dialog')).toBeNull()
+      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(report('Equip')!.getAttribute('aria-expanded')).toBe('true')
       fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
-      openHomeEquipment()
-      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(document.querySelector('dialog.report-dialog')).toBeNull()
+      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(report('Equip')!.getAttribute('aria-expanded')).toBe('false')
     })
   })

@@ -1545,6 +1545,12 @@ function EquipmentCard(props: {
     open && (
       <CardPopup title={view === 'cheapest' ? 'Cheapest' : 'Equip'} head={opener} error={props.error} onClose={() => setView(null)}>
         {body}
+        {/* Het rapport in de popup, onderaan (Dave, #188): in beide, wat je draagt en de goedkoopste. */}
+        {props.report && (
+          <div class="card-actions equip-report">
+            <CardReport title="Equip">{props.report}</CardReport>
+          </div>
+        )}
       </CardPopup>
     )
   return (
@@ -1555,14 +1561,9 @@ function EquipmentCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {/* De twee knoppen en daaronder het rapport, onderin de kaart (Dave, #188), met dezelfde ruimte als de kop. */}
+      {/* De twee knoppen onderin de kaart (Dave, #188), met dezelfde ruimte als de kop. */}
       <div class="equip-actions">
         <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
-        {props.report && (
-          <div class="card-actions">
-            <CardReport title="Equip">{props.report}</CardReport>
-          </div>
-        )}
       </div>
       {shell(
         <>
