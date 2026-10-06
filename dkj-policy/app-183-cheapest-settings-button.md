@@ -48,6 +48,8 @@
   skill-point and AP advice in rounds (at most 5) and keeps the cheapest state seen (Cody).
 - [x] "Goedkoopste instellingen" button, summary and "Ongedaan maken" in `src/app.tsx`; the summary and undo disappear
   as soon as you edit anything yourself (Cody).
+- [x] Reworked after Dave's look (October 6, 2026): two Total cost cards, "jouw setup" and "goedkoopste setup", with
+  "Overnemen" on the second; the loose button is gone (Cody).
 
 ### TEST
 
@@ -56,18 +58,20 @@
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-A new "Goedkoopste instellingen" button under the level-cost banner applies the cheapest settings that cost nothing for
-the current level: it switches to the cheapest safe mob, the cheapest potion per point, puts your skill points where they
-save the most and fills your AP. Because those choices affect each other, it repeats until nothing changes (at most five
-rounds) and never applies a state that costs more than where you started. Equipment is never bought; upgrade advice
-stays advice. Afterwards it shows "± X meso bespaard op dit level" and what changed per card, and "Ongedaan maken" puts
-everything back in one tap, until you change something yourself.
+There are now two Total cost cards. "Total cost — jouw setup" is the level's cost as you play it now. Below it,
+"Total cost — goedkoopste setup" shows what the same level costs with the cheapest settings that cost nothing: the
+cheapest safe mob, the cheapest potion per point, your skill points where they save the most and your AP filled in.
+Because those choices affect each other, it repeats until nothing changes (at most five rounds) and never picks a setup
+that costs more than yours. Equipment is never bought; upgrade advice stays advice. The second card shows "± X meso
+goedkoper" and what is different per card, and "Overnemen" applies it; "Ongedaan maken" puts everything back in one
+tap, until you change something yourself. When your setup already is the cheapest, the second card says so in one line.
 
 **Score:** 4
 
 #### What makes this deploy extra special
 
-At every level-up one tap now does what used to be four cards of reading and applying advice by hand.
+At every level-up you see at once what your setup costs against the cheapest one, and one tap does what used to be four
+cards of reading and applying advice by hand.
 
 **Score:** 4
 
