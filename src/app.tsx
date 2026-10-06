@@ -2602,7 +2602,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
               <div class="total-cost-part cheapest-cost">
                 <h3>Cheapest</h3>
                 <p class="total-cost-sub">
-                  This is how much it cost to level up a <strong>{who}</strong> the cheapest way
+                  This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
                 <InvoiceTable invoice={props.cheapest} />
               </div>

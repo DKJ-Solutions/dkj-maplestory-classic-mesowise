@@ -3154,7 +3154,7 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
     // Onder de h3 van In game en Cheapest de zin over hun factuur (Dave, #183).
     expect(yours().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 20 Thief')
-    expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up a Lv. 20 Thief the cheapest way')
+    expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
     expect(diffCard().querySelector('.cheapest-saving')?.textContent).toMatch(/goedkoper$/)
     expect(diffCard().querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
