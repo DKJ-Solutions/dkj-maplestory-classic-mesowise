@@ -413,14 +413,34 @@ function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement |
 /** Welke weergave de popup van een kaart toont (Dave, 6 oktober 2026, #192): wat de app adviseert, of wat je character nu heeft. */
 type CardView = 'advised' | 'worn'
 
+/** De zes kaarten met twee weergaven, in de volgorde van de pagina (Dave, 6 oktober 2026, #192). */
+type CardKey = 'equip' | 'skills' | 'mob' | 'potions' | 'ap' | 'total'
+const COST_CARDS: readonly { key: CardKey; title: string; icon: keyof typeof ICON_PATHS }[] = [
+  { key: 'equip', title: 'Equip', icon: 'sword' },
+  { key: 'skills', title: 'Skillpoints', icon: 'book' },
+  { key: 'mob', title: 'Monster', icon: 'target' },
+  { key: 'potions', title: 'Potions', icon: 'flask' },
+  { key: 'ap', title: 'Ability points', icon: 'person' },
+  { key: 'total', title: 'Total stats', icon: 'chart' },
+]
+
 /**
- * De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende, waar de focus naar
- * teruggaat bij sluiten (CardPopup).
+ * Welke popup van welke kaart openstaat, en de knop die hem opende (Dave, 6 oktober 2026, #192). Het staat in App, niet in de kaart, zodat
+ * ook Total cost een kaart in zijn weergave kan openen (CostCardButtons); de focus gaat bij sluiten terug naar de knop die is aangetikt (CardPopup).
  */
-function useCardView() {
-  const [view, setView] = useState<CardView | null>(null)
-  const opener = useRef<HTMLButtonElement | null>(null)
-  return { view, opener, open: (v: CardView, button: HTMLButtonElement) => { opener.current = button; setView(v) }, close: () => setView(null) }
+interface CardViewState {
+  /** Per kaart de weergave die openstaat; ontbreekt de kaart, dan is zijn popup dicht. */
+  open: Partial<Record<CardKey, CardView>>
+  opener: { current: HTMLButtonElement | null }
+  openCard: (card: CardKey, view: CardView, button: HTMLButtonElement) => void
+  close: (card: CardKey) => void
+}
+const CardViewContext = createContext<CardViewState>({ open: {}, opener: { current: null }, openCard: () => {}, close: () => {} })
+
+/** De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende. */
+function useCardView(card: CardKey) {
+  const ctx = useContext(CardViewContext)
+  return { view: ctx.open[card] ?? null, opener: ctx.opener, open: (v: CardView, button: HTMLButtonElement) => ctx.openCard(card, v, button), close: () => ctx.close(card) }
 }
 
 /**
@@ -635,6 +655,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
  */
 function StatsCard(props: {
   className: string
+  card: CardKey
   icon: keyof typeof ICON_PATHS
   title: string
   fields: readonly ProfileField[]
@@ -653,7 +674,7 @@ function StatsCard(props: {
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
 }) {
-  const { view, opener, open, close } = useCardView()
+  const { view, opener, open, close } = useCardView(props.card)
   const { job } = props
   // In het advies het profiel van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
   const showAdvised = view === 'advised' && props.advised !== null
@@ -773,7 +794,7 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
       </>
     )
   }
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute(draft)} titleNote={toDistribute} />
+  return <StatsCard {...props} className="profile" card="ap" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute(draft)} titleNote={toDistribute} />
 }
 
 /**
@@ -895,7 +916,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   )
   const mdef = wornMdef(props.equipment, job)
   return (
-    <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
+    <StatsCard {...props} className="total-stats" card="total" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
   )
 }
 
@@ -915,7 +936,7 @@ function PotionsCard(props: {
   report: ComponentChildren
 }) {
   const { job, choice } = props
-  const { view, opener, open: openView, close: closeView } = useCardView()
+  const { view, opener, open: openView, close: closeView } = useCardView('potions')
   // De potions die je in de popup kiest zijn een concept; pas Opslaan legt ze vast, sluiten gooit ze weg (zoals bij Monster).
   const [concept, setConcept] = useState<Partial<Record<PotionKind, string>>>({})
   const uid = useId()
@@ -1576,30 +1597,50 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 }
 
 /**
- * De knop "Equip bekijken" in het deel Advised van Total cost (Dave, 6 oktober 2026, #188): de equip waarmee die factuur rekent,
- * om te lezen, in dezelfde rijen als de Equip-popup. De goedkoopste gratis instellingen (#183) kopen geen equipment, dus dat is wat
- * je character nu draagt.
+ * De zes knoppen onder de factuur van een deel van Total cost (Dave, 6 oktober 2026, #192): per kaart zijn icoon, in de volgorde van de pagina. Ze
+ * laten zien dat het totaal uit de gegevens achter deze zes komt: in Your character opent een knop de popup van die kaart om te wijzigen, in Advised
+ * zijn Advised-popup. Uitzondering is Equip in Advised: de factuur van Advised rekent met wat je nu draagt (de goedkoopste instellingen kopen geen
+ * equipment, #183), dus die knop toont die equip, in dezelfde rijen als de Equip-popup, om te lezen (was "Equip bekijken", #188).
  */
-function InvoiceEquipButton(props: { job: Job; equipment: Equipment }) {
-  const [open, setOpen] = useState(false)
-  const button = useRef<HTMLButtonElement>(null)
+function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment: Equipment }) {
+  const ctx = useContext(CardViewContext)
+  const [equipOpen, setEquipOpen] = useState(false)
+  const equipButton = useRef<HTMLButtonElement>(null)
+  const advised = props.part === 'advised'
+  const label = advised ? 'Advised' : 'Your character'
   const slots = shownSlots(props.job, props.equipment.claw)
   // Zonder advies blijft elk slot wat je draagt: precies de equip van de factuur.
   const rows = cheapestEquipment(slots, props.equipment, { kind: 'none' }, { kind: 'none' })
-  const close = () => {
-    setOpen(false)
-    requestAnimationFrame(() => button.current?.focus())
+  const closeEquip = () => {
+    setEquipOpen(false)
+    requestAnimationFrame(() => equipButton.current?.focus())
   }
   return (
     <>
-      <div class="card-actions invoice-equip">
-        <button ref={button} type="button" class="card-action" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-          <EyeIcon />
-          Equip bekijken
-        </button>
+      <div class="card-actions cost-cards">
+        {COST_CARDS.map((c) => {
+          const ownEquip = advised && c.key === 'equip'
+          const name = `${c.title} van ${label}`
+          const expanded = ownEquip ? equipOpen : ctx.open[c.key] === (advised ? 'advised' : 'worn')
+          return (
+            <button
+              key={c.key}
+              ref={ownEquip ? equipButton : undefined}
+              type="button"
+              class="card-action"
+              aria-haspopup="dialog"
+              aria-expanded={expanded}
+              aria-label={name}
+              title={name}
+              onClick={(e) => (ownEquip ? setEquipOpen(true) : ctx.openCard(c.key, advised ? 'advised' : 'worn', e.currentTarget))}
+            >
+              <CardIcon name={c.icon} />
+            </button>
+          )
+        })}
       </div>
-      {open && (
-        <StatDialog title="Advised equip" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+      {equipOpen && (
+        <StatDialog title="Advised equip" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={closeEquip}>
           <div class="equipment">
             <CheapestRows
               job={props.job}
@@ -1649,7 +1690,7 @@ function EquipmentCard(props: {
   cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
-  const { view, opener, open: openView, close } = useCardView()
+  const { view, opener, open: openView, close } = useCardView('equip')
   const open = view !== null
   const computed = isComputed(props.job)
   const slots = shownSlots(props.job, props.equipment.claw)
@@ -1824,7 +1865,7 @@ function SkillsCard(props: {
   advised: ProfileDraft | null
   report?: ComponentChildren
 }) {
-  const { view, opener, open, close } = useCardView()
+  const { view, opener, open, close } = useCardView('skills')
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   // In het advies de skillpunten van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
   const advised = view === 'advised' && props.advised !== null
@@ -1986,7 +2027,7 @@ function HuntedMobCard(props: {
   report?: ComponentChildren
 }) {
   const { result, draft, profile } = props
-  const { view, opener, open: openView, close: closeView } = useCardView()
+  const { view, opener, open: openView, close: closeView } = useCardView('mob')
   // De mob die je in de popup kiest is een concept; pas Opslaan legt hem vast, sluiten gooit hem weg (Dave, 5 oktober 2026).
   const [choice, setChoice] = useState<string | null>(null)
   const mob = huntedMob(draft)
@@ -2749,6 +2790,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
               This is how much it cost to level up your <strong>{who}</strong>
             </p>
             <InvoiceTable invoice={props.invoice} />
+            <CostCardButtons part="worn" job={props.job} equipment={props.equipment} />
           </div>
           {props.cheapest && (
             <>
@@ -2758,7 +2800,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
                   This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
                 <InvoiceTable invoice={props.cheapest} />
-                <InvoiceEquipButton job={props.job} equipment={props.equipment} />
+                <CostCardButtons part="advised" job={props.job} equipment={props.equipment} />
               </div>
               <div class="total-cost-part cost-difference">
                 <h3>Difference</h3>
@@ -2866,6 +2908,15 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
 }
 
 export function App() {
+  // De popup van een kaart die openstaat (#192): hier, zodat Total cost er een kan openen.
+  const [openCard, setOpenCard] = useState<CardViewState['open']>({})
+  const cardOpener = useRef<HTMLButtonElement | null>(null)
+  const cardViews: CardViewState = {
+    open: openCard,
+    opener: cardOpener,
+    openCard: (card, view, button) => { cardOpener.current = button; setOpenCard((o) => ({ ...o, [card]: view })) },
+    close: (card) => setOpenCard(({ [card]: _, ...rest }) => rest),
+  }
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
     // De pijlkeuze volgt het ammo-slot: profiel en equipment staan in aparte opslag en kunnen uiteen lopen (#64).
@@ -3140,7 +3191,7 @@ export function App() {
   }
 
   return (
-    <>
+    <CardViewContext.Provider value={cardViews}>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
@@ -3267,6 +3318,6 @@ export function App() {
         </a>
       </footer>
       </main>
-    </>
+    </CardViewContext.Provider>
   )
 }

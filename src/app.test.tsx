@@ -398,13 +398,13 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
   })
 
-  it('toont in Total cost onder Advised een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
+  it('toont in Total cost bij Advised de knop Equip van Advised met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
-    fireEvent.click(within(part).getByRole('button', { name: 'Equip bekijken' }))
+    fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
     const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
     expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised equip')
     const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
@@ -3686,9 +3686,81 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
     // Koppen, knoppen, kolomkoppen en namen van popups, met alle Advised-popups open.
     for (const title of CARDS) openView(title, 'Advised')
-    fireEvent.click(within(card).getByRole('button', { name: 'Equip bekijken' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Equip van Advised' }))
     const named = [...document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, button, th, dialog, [aria-label], .stat-dialog-name')].flatMap((e) => [e.getAttribute('aria-label'), e.matches('dialog, [aria-label]') ? null : e.textContent]).filter((t): t is string => !!t)
     expect(named.length).toBeGreaterThan(20)
     expect(named.filter((t) => /cheapest/i.test(t))).toEqual([])
+  })
+
+  // Dave, 6 oktober 2026, #192: onder de factuur van Your character en van Advised zes icoonknoppen, een per kaart.
+  describe('de zes kaartknoppen in Total cost', () => {
+    const OWN = ['Equip', 'Skillpoints', 'Monster', 'Potions', 'Ability points', 'Total stats'] as const
+    const part = (which: 'cost-ingame' | 'cheapest-cost') => document.querySelector<HTMLElement>(`section.total-cost .${which}`)!
+    const row = (which: 'cost-ingame' | 'cheapest-cost') => [...part(which).querySelectorAll<HTMLButtonElement>('.cost-cards button')]
+
+    it('zet onder elke factuur zes knoppen met een icoon, in de volgorde van de pagina, met een naam en een title', () => {
+      setUpAdvisedDiffers()
+      for (const [which, label] of [['cost-ingame', 'Your character'], ['cheapest-cost', 'Advised']] as const) {
+        const buttons = row(which)
+        expect(buttons.map((b) => b.getAttribute('aria-label')), which).toEqual(OWN.map((t) => `${t} van ${label}`))
+        for (const b of buttons) {
+          expect(b.getAttribute('title')).toBe(b.getAttribute('aria-label'))
+          expect(b.querySelector('svg.card-icon')).not.toBeNull()
+          expect(b.getAttribute('aria-haspopup')).toBe('dialog')
+        }
+        // Direct onder de factuur.
+        expect(part(which).querySelector('table')!.compareDocumentPosition(buttons[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      }
+    })
+
+    it('opent in Your character de popup van die kaart om te wijzigen, en in Advised zijn Advised-popup om te lezen', () => {
+      setUpAdvisedDiffers()
+      for (const title of OWN.filter((t) => t !== 'Equip')) {
+        fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Your character` }))
+        const own = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
+        expect(own.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + title))
+        expect(own.querySelector('.equip-edit') ?? own.querySelector('select'), title + ' wijzigbaar').not.toBeNull()
+        closeView(title)
+        fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Advised` }))
+        const adv = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
+        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(/^Advised/)
+        expect(adv.getAttribute('aria-label')).toBe(`Advised: ${title}`)
+        expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
+        closeView(title)
+      }
+      fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: 'Equip van Your character' }))
+      expect(cardOf('Equip').querySelector('dialog.card-dialog .equip-edit, dialog.card-dialog [aria-label^="Zoek"]')).not.toBeNull()
+    })
+
+    it('toont bij Equip van Advised de equip die je draagt, zonder Te kopen, en niet de Advised-popup van de Equip-kaart', () => {
+      setUpAdvisedDiffers()
+      fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
+      const d = part('cheapest-cost').querySelector<HTMLElement>('dialog.card-dialog')!
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised equip')
+      expect(d.textContent).not.toContain('Te kopen:')
+      expect(cardOf('Equip').querySelector('dialog')).toBeNull()
+      expect(within(part('cheapest-cost')).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
+    })
+
+    it('zet aria-expanded op de aangetikte knop en brengt de focus na sluiten terug naar die knop', async () => {
+      setUpAdvisedDiffers()
+      for (const which of ['cost-ingame', 'cheapest-cost'] as const) {
+        const label = which === 'cost-ingame' ? 'Your character' : 'Advised'
+        for (const title of OWN) {
+          const b = within(part(which)).getByRole('button', { name: `${title} van ${label}` })
+          fireEvent.click(b)
+          expect(b.getAttribute('aria-expanded'), title).toBe('true')
+          const d = document.querySelector<HTMLElement>('dialog[open], dialog.card-dialog')!
+          fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' })[0])
+          await frame()
+          expect(document.activeElement, which + ' ' + title).toBe(b)
+          expect(b.getAttribute('aria-expanded')).toBe('false')
+        }
+      }
+    })
+
+    it('laat in een job zonder advies alleen het deel Your character zien, zonder de knoppen van Advised', () => {
+      expect(document.querySelector('section.total-cost .cheapest-cost .cost-cards') !== null || document.querySelector('section.total-cost .cheapest-cost') === null).toBe(true)
+    })
   })
 })

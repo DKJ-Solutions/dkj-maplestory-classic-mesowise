@@ -127,6 +127,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
 .spot-name.with-icon { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
+/* In een knop volgt het icoon de voorgrond van de knop, zoals het oog (#192): zwart op de witte knop, wit op de donkere. */
+.card-action .card-icon { color: inherit; }
 /* Onder de naam de knoppen van de kaart (Dave, 5 oktober 2026): de actieknoppen (ViewButtons) en het rapport (#106, in de popup). Alleen deze knoppen zijn te tikken,
    niet de kop; donker gevuld (--edit-bg), 44px hoog en samen de volle breedte. Het potlood naast een waardevak is juist licht, als dat vak. */
 .card-actions { display: flex; gap: 0.625rem; width: 100%; }
@@ -657,7 +659,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
 .equip-total { margin: 0 0 0.75rem; text-align: right; }
-/* De knop Equip bekijken onder de factuur van Advised (#188), over de volle breedte van het deel. */
-.invoice-equip { margin-top: 0.75rem; }
-.invoice-equip .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+/* De zes icoonknoppen onder de factuur van elk deel van Total cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
+.cost-cards { margin-top: 0.75rem; gap: 0.375rem; }
 .equip-total strong { color: var(--accent); }
