@@ -48,7 +48,7 @@
   skill-point and AP advice in rounds (at most 5) and keeps the cheapest state seen (Cody).
 - [x] "Goedkoopste instellingen" button, summary and "Ongedaan maken" in `src/app.tsx`; the summary and undo disappear
   as soon as you edit anything yourself (Cody).
-- [x] Reworked after Dave's look (October 6, 2026): two Total cost cards, "jouw setup" and "goedkoopste setup", with
+- [x] Reworked after Dave's look (October 6, 2026): two Total cost cards, "(in game)" and "(cheapest)", with
   "Overnemen" on the second; the loose button is gone (Cody).
 
 ### TEST
@@ -58,13 +58,14 @@
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-There are now two Total cost cards. "Total cost — jouw setup" is the level's cost as you play it now. Below it,
-"Total cost — goedkoopste setup" shows what the same level costs with the cheapest settings that cost nothing: the
+There are now two Total cost cards. "Total cost (in game)" is the level's cost as you play it now. Below it,
+"Total cost (cheapest)" shows what the same level costs with the cheapest settings that cost nothing: the
 cheapest safe mob, the cheapest potion per point, your skill points where they save the most and your AP filled in.
 Because those choices affect each other, it repeats until nothing changes (at most five rounds) and never picks a setup
 that costs more than yours. Equipment is never bought; upgrade advice stays advice. The second card shows "± X meso
 goedkoper" and what is different per card, and "Overnemen" applies it; "Ongedaan maken" puts everything back in one
-tap, until you change something yourself. When your setup already is the cheapest, the second card says so in one line.
+tap, until you change something yourself. The second card always shows the full invoice, also when your setup already
+is the cheapest; it then says so in one line.
 
 **Score:** 4
 

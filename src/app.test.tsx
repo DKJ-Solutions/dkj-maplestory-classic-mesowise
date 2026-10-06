@@ -3027,7 +3027,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   })
 
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
-    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost — jouw setup')
+    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost (in game)')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
     expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
@@ -3142,7 +3142,7 @@ describe('Total cost: goedkoopste setup (#183)', () => {
   it('toont de goedkoopste setup live, vóór je iets toepast: een lager totaal, de besparing en de wijzigingen', () => {
     toLevel20()
     const profileBefore = profileFields()
-    expect(cheapestCard().querySelector('h2')!.textContent).toBe('Total cost — goedkoopste setup')
+    expect(cheapestCard().querySelector('h2')!.textContent).toBe('Total cost (cheapest)')
     expect(total(cheapestCard())).toBeTruthy()
     expect(total(cheapestCard())).not.toBe(total(yours()))
     expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/goedkoper$/)
@@ -3170,6 +3170,8 @@ describe('Total cost: goedkoopste setup (#183)', () => {
     const cheaperTotal = total(cheapestCard())
     take()
     expect(total(yours())).toBe(cheaperTotal)
+    // Ook na Overnemen staat de volledige factuur op de kaart.
+    expect(total(cheapestCard())).toBe(cheaperTotal)
     expect(levelCostText()).not.toBe(costBefore)
     expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
@@ -3180,14 +3182,15 @@ describe('Total cost: goedkoopste setup (#183)', () => {
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
   })
 
-  it('zegt kort dat je setup al de goedkoopste is als er niets te winnen valt, zonder tweede factuur', () => {
+  it('zegt dat je setup al de goedkoopste is als er niets te winnen valt, en toont ook dan de volledige factuur', () => {
     toLevel20()
     take()
     // Na herladen (de gekozen setup staat in de opslag) is er niets meer te winnen.
     cleanup()
     render(<App />)
     expect(cheapestCard().textContent).toContain('al de goedkoopste')
-    expect(cheapestCard().querySelector('table')).toBeNull()
+    expect(total(cheapestCard())).toBe(total(yours()))
+    expect(total(cheapestCard())).toBeTruthy()
     expect(within(cheapestCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
   })
 

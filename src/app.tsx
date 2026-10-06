@@ -2536,7 +2536,7 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
   const b = invoiceTotal(now)
   return a !== null && b !== null ? a - b : fallback
 }
-const CHEAPEST_TITLE = 'Total cost — goedkoopste setup'
+const CHEAPEST_TITLE = 'Total cost (cheapest)'
 function CheapestCostCard(props: { live: CheapestResult | null; invoice: LevelInvoice; saving: number | null; applied: CheapestResult | null; job: Job; level: string; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
@@ -2571,26 +2571,11 @@ function CheapestCostCard(props: { live: CheapestResult | null; invoice: LevelIn
       )}
     </div>
   )
-  if (props.applied) {
-    return (
-      <section class="card total-cost cheapest-cost" aria-live="polite">
-        <h2>{CHEAPEST_TITLE}</h2>
-        <p class="hint">Overgenomen: je setup hierboven is nu de goedkoopste.</p>
-        {details}
-      </section>
-    )
-  }
-  if (r.changes.length === 0) {
-    return (
-      <section class="card total-cost cheapest-cost" aria-live="polite">
-        <h2>{CHEAPEST_TITLE}</h2>
-        <p class="hint">Je setup is al de goedkoopste voor dit level.</p>
-      </section>
-    )
-  }
+  // De factuur staat er altijd, ook als je setup al de goedkoopste is en na Overnemen; eronder wat dat betekent.
   return (
     <TotalCostCard invoice={props.invoice} computed job={props.job} level={props.level} title={CHEAPEST_TITLE} className="card total-cost cheapest-cost">
-      {details}
+      {props.applied && <p class="hint">Overgenomen: je setup hierboven is nu de goedkoopste.</p>}
+      {!props.applied && r.changes.length === 0 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </TotalCostCard>
   )
 }
@@ -2936,7 +2921,7 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} title="Total cost — jouw setup" />
+      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} title="Total cost (in game)" />
       {computed && <CheapestCostCard live={cheapestLive} invoice={cheapestInvoice} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} job={job} level={profileDraft.level} onApply={applyCheapest} onUndo={undoCheapest} />}
 
       <LevelAdviceCard
