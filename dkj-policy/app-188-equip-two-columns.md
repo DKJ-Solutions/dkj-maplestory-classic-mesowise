@@ -63,33 +63,36 @@
 
 - [x] `src/cheapestEquip.test.ts` and an app test for the two columns; full suite and lint gate green (Tycho)
 - [x] Code review (Victor: a lone top and a lone bottom blocked each other, fixed with tests) and text read (Edith)
-- [ ] Dave looks at the preview before the merge (visible result)
+- [x] Dave looked at the preview and said "ship it" (visible result)
 
 ### DEPLOY: app/188-equip-two-columns
 
-The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom; the per-shop NiaMeowDB source lines are gone from it, and the app's footer still credits NiaMeowDB. The equip search only lists items your character's level can wear and your gender can wear, highest level first, and
-shows colours of the same piece once ("Rubber Boots" instead of three colours); each weapon in the list says what it is, as
-in "Steel Titans (CLAW, LV 15, ATT 13, FAST)". "Empty" at the top of the list empties a slot again. Every item from the catalog now shows the level it needs to be worn, as in "Steel Titans (Lv. 15)". Under the Cheapest invoice in Total cost, an **Equip bekijken** button shows, read-only, the equip that invoice is
-computed with: what your character wears, since the cheapest free settings never buy equipment. A Thief holding a claw no longer has a Shield slot (a claw takes both hands, like a bow), so neither view nor the
-armor advice offers a wristguard next to a claw. Both views hide the Ammo slot until a ranged weapon (a claw, a bow or a
-crossbow) is chosen. Your character
-shows what you wear in game, to change it. Cheapest shows the same rows read-only, filled in automatically with the equip
-that takes you one level up most cheaply: what you wear is free, and a piece is bought only when it saves more than it
-costs on this level alone (the Report advice still counts the saving until your next upgrade). That is the weapon that
-pays for itself on this level, and every armor slot whose best piece does, skipping a piece that would clash with a better one (an overall against a top or bottom). A piece to buy is
-shown in the accent color with its shop price; a slot that stays empty shows the best piece you could wear there, with
-its price and what it would save this level, marked as not paying for itself; and the popup ends with what it all costs. A new pure module,
-`src/cheapestEquip.ts`, does the work from the advice the app already computes.
+The Equip card has two buttons, **Your character** and **Cheapest**, in place of the eye in its head; both open the Equip
+popup, which carries the Report button at its bottom. Your character shows what you wear in game, to change it. Cheapest
+shows the same rows read-only, filled in with the equip that takes you one level up most cheaply: what you wear is free,
+and a piece is bought only when it saves more than it costs on this level alone (the Report advice still counts the
+saving until your next upgrade). A piece to buy shows its shop price; a slot that stays empty shows the best piece you
+could wear there, with its price and what it would save, marked as not paying for itself. A new pure module,
+`src/cheapestEquip.ts`, does this from the advice the app already computes. Under the Cheapest invoice in Total cost, an
+**Equip bekijken** button shows the equip that invoice uses: what you wear, since the cheapest free settings never buy
+equipment.
 
-**Score:** 2
+The equip search lists only what your level and gender can wear, highest level first, and shows colours of one piece
+once ("Rubber Boots"). Each row says what the piece is, as in "Steel Titans (CLAW, LV 15, ATT 13, FAST)", and **Empty**
+at the top empties a slot again. Every item shows the level it needs, as in "Steel Titans (Lv. 15)". A Thief holding a
+claw has no Shield slot (a claw takes both hands), and the Ammo slot only shows next to a claw, bow or crossbow. 63 worn
+tops, bottoms and an overall got their gender from NiaMeowDB, and the per-shop source lines left the popup; the footer
+still credits NiaMeowDB.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-One tap shows which equip to buy for the cheapest levelling, in the same view as what you wear now.
+One tap shows which equip to buy for the cheapest level, next to what you wear, and the equip search only offers what
+your character can actually wear.
 
 **Score:** 3
 
 #### Pull Request
 
-Equip card shows what you wear and the cheapest equip side by side
-
+Equip card: Your character and Cheapest views, and an equip search that only offers what you can wear
