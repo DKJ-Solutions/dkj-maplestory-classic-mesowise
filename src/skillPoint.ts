@@ -37,7 +37,7 @@ import {
 } from './data/warrior'
 import type { Job } from './job'
 import { horizonCost } from './horizonCost'
-import { bestExpPerMeso } from './mesoCostAt'
+import { bestExpPerMeso } from './bestExpPerMeso'
 import { profileFieldsFor, skillPointsLeft, STAT_FIELDS, type Profile, type ProfileDraft } from './profile'
 import { maxHpAfterPoint, maxHpBeforePoint } from './skillEffects'
 import type { SpotDraft } from './spotDraft'

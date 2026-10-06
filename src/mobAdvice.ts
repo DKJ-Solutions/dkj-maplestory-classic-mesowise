@@ -5,7 +5,7 @@ import { bestVerdict } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { expToNextLevel } from './data/expTable'
 import { huntedMob, mobDraft, MOBS } from './data/spots'
-import { expPerMesoOf } from './mesoCostAt'
+import { expPerMesoOf } from './bestExpPerMeso'
 import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 

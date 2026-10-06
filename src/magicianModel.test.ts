@@ -38,7 +38,7 @@ import { expectedStat } from './expectedStats'
 import { isComputed } from './job'
 import { applyLevelUp, applySkillPoint } from './levelUp'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
-import { bestExpPerMeso } from './mesoCostAt'
+import { bestExpPerMeso } from './bestExpPerMeso'
 import {
   DEFAULT_PROFILE,
   DRAFT_FIELDS,
