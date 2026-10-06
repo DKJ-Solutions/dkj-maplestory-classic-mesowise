@@ -150,17 +150,16 @@ describe('searchCatalog', () => {
     expect(familyName('shoes', 'Red Rubber Boots')).toBe('Rubber Boots')
   })
 
-  it('houdt Blue Cloth Pants (DEX 10) en Black Cloth Pants (LUK 10) uit elkaar: andere stats, andere variant (#188)', () => {
+  it('toont Blue, Black en Red Cloth Pants als één rij Cloth Pants, ook al vraagt de blauwe DEX en de rest LUK (Dave, #188)', () => {
     const all = catalogItems('bottom', 'thief')
-    const blue = all.find((i) => i.name === 'Blue Cloth Pants')!
-    const black = all.find((i) => i.name === 'Black Cloth Pants')!
-    expect(blue.variant).not.toBe(black.variant)
-    const found = (q: string) => searchCatalog('bottom', 'thief', q).map((i) => i.variant)
-    expect(found('Blue Cloth')).toContain(blue.variant)
-    expect(found('Blue Cloth')).not.toContain(black.variant)
-    expect(found('Black Cloth')).toContain(black.variant)
-    expect(found('Black Cloth')).not.toContain(blue.variant)
+    const variantOf = (n: string) => all.find((i) => i.name === n)!.variant
+    expect(variantOf('Blue Cloth Pants')).toBe(variantOf('Black Cloth Pants'))
+    expect(variantOf('Red Cloth Pants')).toBe(variantOf('Blue Cloth Pants'))
+    const rows = searchCatalog('bottom', 'thief', 'Cloth Pants').filter((i) => i.variant === variantOf('Red Cloth Pants'))
+    expect(rows.map((i) => i.name)).toEqual(['Red Cloth Pants']) // de winkelregel gaat voor
+    expect(familyName('bottom', 'Blue Cloth Pants')).toBe('Cloth Pants')
   })
+
 
   it('toont met een maxLevel alleen wat je op dat level kunt dragen, en een item zonder level altijd (#188)', () => {
     const claws = (max?: number) => searchCatalog('claw', 'thief', '', false, '', max).map((i) => i.name)

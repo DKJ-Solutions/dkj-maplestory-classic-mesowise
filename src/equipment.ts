@@ -173,9 +173,10 @@ export interface CatalogItem {
   /** Alleen armor voor één geslacht (#55, #188): de zoekbalk toont hem dan alleen bij dat geslacht. */
   gender?: Gender
   /**
-   * Alleen armor: alles wat het stuk in de app doet (slot, level, WDEF, MDEF, stat-eisen) en zijn naam zonder kleur (colourless). Kleuren
-   * van hetzelfde stuk hebben dezelfde sleutel; de zoekbalk toont ze als één (Dave, 6 oktober 2026, #188). Een ander stuk met dezelfde
-   * stats (Leather Sandals naast Rubber Boots) of een ander materiaal (Bronze en Steel Grieves) blijft apart.
+   * Alleen armor: slot, level, WDEF, MDEF en de naam zonder kleur (colourless). Kleuren van hetzelfde stuk hebben dezelfde sleutel,
+   * ook als hun stat-eis verschilt (Blue Cloth Pants vraagt DEX, Black Cloth Pants LUK); de zoekbalk toont ze als één, en je kiest de
+   * eerste, met zijn eis (Dave, 6 oktober 2026, #188). Een ander stuk met dezelfde stats (Leather Sandals naast Rubber Boots) of een
+   * ander materiaal (Bronze en Steel Grieves) blijft apart.
    */
   variant?: string
 }
@@ -240,7 +241,7 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false,
           stat: a.wdef,
           mdef: a.mdef ?? 0,
           ...(a.gender ? { gender: a.gender } : {}),
-          variant: [a.slot, a.level, a.wdef, a.mdef ?? 0, a.str ?? 0, a.dex ?? 0, a.int ?? 0, a.luk ?? 0, colourless(a.name)].join('|'),
+          variant: [a.slot, a.level, a.wdef, a.mdef ?? 0, colourless(a.name)].join('|'),
         }))
     : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
         name: c.name,
