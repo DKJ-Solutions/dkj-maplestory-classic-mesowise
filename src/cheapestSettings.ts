@@ -2,12 +2,11 @@
 // maakt: mob, potions, skillpunten en base AP. Equipment kopen doet de knop nooit; een upgrade die loont blijft advies.
 // Puur, zonder UI-import; hergebruikt de adviezen van de app, het scherm toont alleen wat hier uitkomt.
 import { autoFillAp, autoFillPatch } from './autoFillAp'
-import { bestVerdict } from './best'
 import { mobDraft } from './data/spots'
 import type { Equipment } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
-import { levelCost } from './levelCost'
+import { levelInvoice } from './levelInvoice'
 import { applySkillPoint } from './levelUp'
 import { mobAdvice } from './mobAdvice'
 import { parseProfile, type Profile, type ProfileDraft } from './profile'
@@ -45,7 +44,7 @@ export interface CheapestResult {
   changes: Change[]
   /** De HP- en MP-potion van de nieuwe stand, zodat het scherm ook een potion kan noemen die niet veranderde. */
   potions: Record<'hp' | 'mp', string>
-  /** Wat het level kostte voor en na (null: geen EXP, undefined: niet uit te rekenen). */
+  /** Wat het level kostte voor en na, als factuurtotaal (null: geen EXP, undefined: niet uit te rekenen). */
   costBefore: number | null | undefined
   costAfter: number | null | undefined
   /** Voor min na, alleen als beide een getal zijn; anders null. */
@@ -68,10 +67,14 @@ export function profileOf(s: CheapestInput): Profile | null {
 /** De potions die een stand gebruikt: zonder keuze de goedkoopste voor de balk van zijn profiel (#185), net als profileOf. */
 const usedPotions = (s: CheapestInput): PotionPair => profileOf(s)?.potions ?? resolvePotions(s.job, s.potionChoice)
 
+/**
+ * Wat het level kost zoals de factuur het toont: hele potions, dus naar boven afgerond (#195). Op de kosten zonder afronding kan
+ * een stand goedkoper lijken en op de factuur toch duurder uitkomen. Zonder factuur de kosten van het level.
+ */
 function costOf(s: CheapestInput): number | null | undefined {
-  const profile = profileOf(s)
-  const c = levelCost(profile, bestVerdict(s.drafts, profile))
-  return c.kind === 'cost' ? c.meso : undefined
+  const invoice = levelInvoice(s.drafts, profileOf(s))
+  if (invoice.kind === 'invoice') return invoice.total
+  return invoice.cost.kind === 'cost' ? invoice.cost.meso : undefined
 }
 
 /**

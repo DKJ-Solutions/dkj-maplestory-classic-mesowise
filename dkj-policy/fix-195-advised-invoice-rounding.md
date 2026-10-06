@@ -52,7 +52,7 @@
 - [x] Two tests in `cheapestSettings.test.ts` (Tycho): the measured case, and a sweep over every computed job at six
   levels and every mob holding Advised to never dearer than Your character on the invoice. Both fail on the old code.
 - [x] Full suite and typecheck green.
-- [ ] Victor's review.
+- [x] Victor's review: no bugs; the profile match with app.tsx and the tie handling (an equal invoice keeps the start) hold.
 
 ### DEPLOY: fix/195-advised-invoice-rounding
 
