@@ -2,7 +2,7 @@
 // referentie voor issue #15), met de hand na te rekenen. Ze controleren dat de code de formules
 // goed uitvoert, niet dat de formules de waarheid over het spel zijn.
 import { describe, expect, it } from 'vitest'
-import { ASSUMPTIONS, bowAttack, characterAttack, DANGER_SHARE, dampedTouch, defended, estimateMob, hitChance, meleeAttack, spellAttack, touchTaken, type Character, type MobStats } from './mobModel'
+import { ASSUMPTIONS, bowAttack, characterAttack, DANGER_SHARE, dampedTouch, defended, effectiveRestore, estimateMob, hitChance, meleeAttack, spellAttack, touchTaken, type Character, type MobStats } from './mobModel'
 
 const LS = { stars: 2, weaponMult: 3.0, mastery: 0.5 }
 const LS_LV1 = { mp: 8, damagePct: 60 }
@@ -108,7 +108,7 @@ describe('estimateMob', () => {
   })
 
   it('gebruikt de aannames, en die zijn te vervangen', () => {
-    expect(ASSUMPTIONS).toEqual({ timeEfficiency: 0.6, contactsPerKill: 0.3 })
+    expect(ASSUMPTIONS).toEqual({ timeEfficiency: 0.6, contactsPerKill: 0.3, drinkAtPct: 0.5 })
     const half = estimateMob(char(), plainAttack, mob(), { timeEfficiency: 0.3, contactsPerKill: 0.3 })
     expect(half.killsPerHour).toBeCloseTo(estimateMob(char(), plainAttack, mob()).killsPerHour / 2, 9)
   })
@@ -428,5 +428,48 @@ describe('bowAttack', () => {
     expect(e.starsPerKill).toBe(5)
     expect(e.mpPerKill).toBe(70)
     expect(e.killsPerHour).toBeCloseTo(576, 9)
+  })
+})
+
+describe('effectiveRestore (#181): een potion telt hoogstens wat er mist als je drinkt', () => {
+  // Drinken bij de helft (ASSUMPTIONS.drinkAtPct = 0,5): bij Max 400 mist er 200.
+  it('heeft de aanname drinkAtPct 0,5 (een halve balk), zonder bron', () => {
+    expect(ASSUMPTIONS.drinkAtPct).toBe(0.5)
+  })
+
+  it('telt het volle herstel onder het plafond', () => {
+    expect(effectiveRestore(150, 400)).toBe(150)
+    expect(effectiveRestore(1, 400)).toBe(1)
+  })
+
+  it('telt precies het plafond als het herstel er gelijk aan is (geen verspilling)', () => {
+    expect(effectiveRestore(200, 400)).toBe(200)
+  })
+
+  it('kapt het herstel af op wat er mist als het erboven komt', () => {
+    expect(effectiveRestore(500, 400)).toBe(200)
+    expect(effectiveRestore(200.5, 400)).toBe(200)
+    // Max 444: er mist 222, dus de Orange (250) en de White (500) tellen allebei voor 222.
+    expect(effectiveRestore(250, 444)).toBe(222)
+    expect(effectiveRestore(500, 444)).toBe(222)
+    // Een oneven Max geeft een halve punt: 363 / 2 = 181,5.
+    expect(effectiveRestore(200, 363)).toBe(181.5)
+  })
+
+  it('telt het volle herstel zonder bruikbare max (0 of negatief): geen plafond', () => {
+    expect(effectiveRestore(500, 0)).toBe(500)
+    expect(effectiveRestore(500, -10)).toBe(500)
+  })
+
+  it('laat Improved Recovery een potion over het plafond tillen: 250 · 1,2 = 300 telt bij Max 500 voor 250, bij Max 700 voor 300', () => {
+    expect(effectiveRestore(250, 500)).toBe(250) // zonder punten precies op het plafond
+    expect(effectiveRestore(250 * 1.2, 500)).toBe(250) // met punten: 50 verspild, het plafond houdt hem vast
+    expect(effectiveRestore(250 * 1.2, 700)).toBeCloseTo(300, 9) // nog onder het plafond van 350
+  })
+
+  it('is het kleinste van het herstel en het plafond (1 - drinkAtPct) × max', () => {
+    for (const restores of [1, 100, 250, 500, 1_000]) {
+      for (const max of [1, 100, 444, 5_000]) expect(effectiveRestore(restores, max)).toBe(Math.min(restores, (1 - ASSUMPTIONS.drinkAtPct) * max))
+    }
   })
 })

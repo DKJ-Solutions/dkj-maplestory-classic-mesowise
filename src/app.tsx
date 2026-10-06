@@ -2375,6 +2375,7 @@ function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: 
           <p class="hint potion-info" key={kind}>
             {p.name}: {nf.format(info.mesoPerPoint)} meso per {unit}
             {fill && <> · {fill}</>}
+            {info.capped && <> · telt alleen wat er mist bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk</>}
           </p>
         )
       })}
@@ -2429,8 +2430,13 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
                 Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
               </li>
               <li>
-                Eén {line.label} herstelt {nfInt.format(w.restores)} {unit}: {nfInt.format(w.need)} / {nfInt.format(w.restores)} = {quotient}, naar boven
-                afgerond {nfInt.format(line.qty!)}.
+                Eén {line.label} herstelt {nf.format(w.full)} {unit}
+                {w.full > w.restores && (
+                  <>
+                    , maar je drinkt bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk en dan mist er maar {nf.format(w.restores)} {unit}
+                  </>
+                )}
+                : {nfInt.format(w.need)} / {nf.format(w.restores)} = {quotient}, naar boven afgerond {nfInt.format(line.qty!)}.
               </li>
             </ol>
             {w.kind === 'hp' && (

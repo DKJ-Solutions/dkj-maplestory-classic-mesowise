@@ -112,7 +112,7 @@ describe('clawUpgradeAdvice: het profiel met de claw in de hand', () => {
     // Steel Titans is Fast (4); de aanvalssnelheid van je huidige claw wordt overschreven.
     const slow = advice(drafts, strong({ level: 15, clawWatk: 12, attackMs: ATTACK_MS.fast5 })).choices[0]
     const fast = advice(drafts, strong({ level: 15, clawWatk: 12, attackMs: ATTACK_MS.faster3 })).choices[0]
-    expect(slow.saving).toBe(fast.saving)
+    expect(slow.saving).toBeCloseTo(fast.saving!, 6)
   })
 
   it('wijst de snelheid niets toe in EXP per meso: sneller slaan geeft meer EXP per uur, niet per meso', () => {
@@ -165,7 +165,7 @@ describe('clawUpgradeAdvice: de besparing', () => {
     const withIt = EXP_15_19 / epm(withClaw(p, claw('Steel Titans')))
     const c = advice(drafts, p).choices[0]
     expect(c.saving).toBeCloseTo(without - withIt, 6)
-    expect(c.saving).toBeCloseTo(41_451, 0) // een los getal ter controle van de som zelf
+    expect(c.saving).toBeCloseTo(45_406.5, 0) // een los getal ter controle van de som zelf (sinds #181 telt een potion alleen wat er mist)
     expect(c.net).toBeCloseTo(without - withIt - 7_000, 6)
   })
 
@@ -196,8 +196,8 @@ describe('clawUpgradeAdvice: de besparing', () => {
 
   it('geeft een claw die niets oplevert besparing 0 en een negatieve netto (prijs gaat verloren)', () => {
     const c = advice(drafts, strong({ level: 15, clawWatk: 12 })).choices[0]
-    expect(c.saving).toBe(0)
-    expect(c.net).toBe(-7_000)
+    expect(c.saving).toBeCloseTo(0, 6)
+    expect(c.net).toBeCloseTo(-7_000, 6)
   })
 
   it('geeft besparing en netto null als het "zonder"-scenario onhaalbaar is (0 EXP op de beste plek)', () => {
@@ -235,8 +235,8 @@ describe('clawUpgradeAdvice: winnaar en robuustheid', () => {
   })
 
   it('heeft geen winnaar als geen enkele claw zich terugverdient (netto onder 0)', () => {
-    // Lv 24 met 12 in de hand op Bubblings: Steel Igor spaart 13.600, maar kost 14.100.
-    const a = advice([{ ...mobDraft('Bubbling')!, id: 'a' }, own('b', 1_000, 10_000)], strong({ level: 24, clawWatk: 12 }))
+    // Lv 24 met 12 in de hand op Axe Stumps: Steel Igor spaart ongeveer 13.036, maar kost 14.100.
+    const a = advice([{ ...mobDraft('Axe Stump')!, id: 'a' }, own('b', 1_000, 10_000)], strong({ level: 24, clawWatk: 12 }))
     const igor = a.choices.find((c) => c.claw.name === 'Steel Igor')!
     expect(igor.saving!).toBeGreaterThan(0)
     expect(igor.net!).toBeLessThan(0)
@@ -252,9 +252,9 @@ describe('clawUpgradeAdvice: winnaar en robuustheid', () => {
   })
 
   it('meldt robust false als een andere claw wint zodra één aanname naar de rand gaat', () => {
-    // Lv 30 met 10 in de hand wint Steel Titans (netto 8.076) op de Pig. De eigen plek (10.000 EXP voor 10.500 aan
+    // Lv 30 met 10 in de hand wint Steel Titans (netto ongeveer 4.213) op de Pig. De eigen plek (10.000 EXP voor 11.000 aan
     // potions) ligt er net onder; als je vaker geraakt wordt (contactsPerKill 0,6) wint die, en spaart geen claw iets.
-    const a = advice([{ ...mobDraft('Pig')!, id: 'a' }, own('b', 10_000, 10_500)], strong({ level: 30, clawWatk: 10 }))
+    const a = advice([{ ...mobDraft('Pig')!, id: 'a' }, own('b', 10_000, 11_000)], strong({ level: 30, clawWatk: 10 }))
     expect(a.winner).toBe(claw('Steel Titans'))
     expect(a.robust).toBe(false)
   })

@@ -253,27 +253,27 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
   it('is volledig met de hand uit te rekenen: lv 20, Red Ninja Sandals (WDEF 12, 1.800 mesos), 20 t/m 30', () => {
     // EXP 148.430 + 322.582 + 95.700 = 566.712; EXP per meso zonder en met de sandalen (WDEF 72 en 84) als losse getallen.
     expect(EXP_20_24 + EXP_25_29 + EXP_30).toBe(EXP_20_30)
-    const e0 = 0.811766602598203
-    const e1 = 0.8163425463624694
+    const e0 = 0.7369886709185443
+    const e1 = 0.7412366443758266
     const p = strong({ level: 20 })
     expect(epm(p)).toBeCloseTo(e0, 12)
     expect(epm({ ...p, wdef: p.wdef + 12 })).toBeCloseTo(e1, 12)
     const saving = EXP_20_30 / e0 - EXP_20_30 / e1
-    expect(saving).toBeCloseTo(3_913.3, 1)
+    expect(saving).toBeCloseTo(4_406.8, 1)
     const c = choice(advice(drafts, p), 'Red Ninja Sandals')
     expect(c.saving).toBeCloseTo(saving, 6)
     expect(c.net).toBeCloseTo(saving - 1_800, 6)
-    expect(c.net).toBeCloseTo(2_113.3, 1)
+    expect(c.net).toBeCloseTo(2_606.8, 1)
   })
 
   it('is volledig met de hand uit te rekenen: lv 25, Red Cloth Vest (WDEF 24, 2.000 mesos), 25 t/m 29', () => {
-    const e0 = 0.8189959910591013
-    const e1 = 0.8272487131223927
+    const e0 = 0.7437004007666398
+    const e1 = 0.7513654618582168
     const p = strong({ level: 25 })
     expect(epm(p)).toBeCloseTo(e0, 12)
     expect(epm({ ...p, wdef: p.wdef + 24 })).toBeCloseTo(e1, 12)
     const saving = EXP_25_29 / e0 - EXP_25_29 / e1
-    expect(saving).toBeCloseTo(3_929.3, 1)
+    expect(saving).toBeCloseTo(4_424.9, 1)
     const c = choice(advice(drafts, p), 'Red Cloth Vest')
     expect(c.saving).toBeCloseTo(saving, 6)
     expect(c.net).toBeCloseTo(saving - 2_000, 6)
@@ -479,10 +479,12 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     expect(a.winner).toBeNull()
   })
 
-  it('meldt robust true als dezelfde uitkomst geldt onder elke aannamevariant (lv 15: nergens een winnaar)', () => {
-    expect(advice(drafts, strong({ level: 15 })).robust).toBe(true)
+  it('meldt robust true als dezelfde uitkomst geldt onder elke aannamevariant (lv 16: nergens een winnaar)', () => {
+    // Op lv 15 is dat sinds #181 niet meer zo: bij 0,6 contacten verdienen de Beanie en de Bandana zich dan net terug (ongeveer +19).
+    expect(advice(drafts, strong({ level: 15 })).robust).toBe(false)
+    expect(advice(drafts, strong({ level: 16 })).robust).toBe(true)
     // Handcontrole: onder geen enkele variant verdient een van de stukken zich terug.
-    const p = strong({ level: 15 })
+    const p = strong({ level: 16 })
     for (const v of ASSUMPTION_VARIANTS) {
       for (const x of wearableNets(p, v)) expect(x.net, x.armor.name).toBeLessThan(0)
     }
@@ -493,7 +495,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     const a = advice(drafts, p)
     expect(a.winner).toBe(armor('Red Ninja Sandals'))
     expect(V_FEW_CONTACTS.contactsPerKill).toBe(0.15)
-    // Met de hand: bij 0,15 contacten is Gidder (ongeveer 438 netto) beter dan Sandals (ongeveer 157), beide nog boven 0.
+    // Met de hand: bij 0,15 contacten is Gidder (ongeveer 645 netto) beter dan Sandals (ongeveer 403), beide nog boven 0.
     const gidder = handNet(p, armor('Blue Gidder Shoes'), V_FEW_CONTACTS)
     const sandals = handNet(p, armor('Red Ninja Sandals'), V_FEW_CONTACTS)
     expect(gidder).toBeGreaterThan(0)
@@ -503,28 +505,28 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     expect(a.robust).toBe(false)
   })
 
-  it('meldt robust false op lv 25 omdat bij minder contacten (0,15) alleen de goedkope Red Ghetto Beanie zich nog terugverdient, terwijl Red Cloth Vest nu wint (de White Bandana is daarbij gelijk aan de Beanie)', () => {
+  it('meldt robust true op lv 25: ook bij minder contacten (0,15) wint Red Cloth Vest, en op lv 26 niet meer (daar is er dan geen winnaar)', () => {
     const p = strong({ level: 25 })
     const a = advice(drafts, p)
     expect(a.winner).toBe(armor('Red Cloth Vest'))
-    // Met de hand, EXP per meso als losse getallen bij 0,15 contacten: zonder 0,9047805, met de Vest (WDEF 24) 0,9097939.
-    expect(epm(p, V_FEW_CONTACTS)).toBeCloseTo(0.9047805, 6)
-    expect(epm({ ...p, wdef: p.wdef + 24 }, V_FEW_CONTACTS)).toBeCloseTo(0.9097939, 6)
-    const vestNet = EXP_25_29 / 0.9047805 - EXP_25_29 / 0.9097939 - 2_000
-    expect(vestNet).toBeCloseTo(-35, -1) // net onder 0: de Vest verdient zich dan niet terug
-    expect(vestNet).toBeLessThan(0)
-    // Met de hand, de Beanie (WDEF 15, 1.200 mesos): EXP per meso bij 0,15 contacten 0,9079706, dus ongeveer +53 netto.
-    expect(epm({ ...p, wdef: p.wdef + 15 }, V_FEW_CONTACTS)).toBeCloseTo(0.9079706, 6)
-    const beanieNet = EXP_25_29 / 0.9047805 - EXP_25_29 / 0.9079706 - 1_200
-    expect(beanieNet).toBeCloseTo(52.6, 0)
+    // Met de hand, EXP per meso als losse getallen bij 0,15 contacten: zonder 0,8235472, met de Vest (WDEF 24) 0,8282253 en met de Beanie (WDEF 15) 0,8265237.
+    // (Voor #181 verdiende bij 0,15 alleen de Beanie zich terug; nu verspilt een potion minder, dus de Vest ook.)
+    expect(epm(p, V_FEW_CONTACTS)).toBeCloseTo(0.8235472, 6)
+    expect(epm({ ...p, wdef: p.wdef + 24 }, V_FEW_CONTACTS)).toBeCloseTo(0.8282253, 6)
+    expect(epm({ ...p, wdef: p.wdef + 15 }, V_FEW_CONTACTS)).toBeCloseTo(0.8265237, 6)
+    const vestNet = EXP_25_29 / 0.8235472 - EXP_25_29 / 0.8282253 - 2_000
+    expect(vestNet).toBeCloseTo(212, -1) // ongeveer +212: de Vest verdient zich terug
+    const beanieNet = EXP_25_29 / 0.8235472 - EXP_25_29 / 0.8265237 - 1_200
+    expect(beanieNet).toBeCloseTo(211, -1)
     expect(handNet(p, armor('Red Ghetto Beanie'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
-    // De White Bandana (#55, WDEF 15, 1.200, zelfde horizon 25 t/m 29) is een kopie van de Beanie: dezelfde netto, ongeveer +53.
-    // Bij gelijkspel wint de eerste van de lijst, dus de Beanie.
-    expect(handNet(p, armor('White Bandana'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
-    // Geen enkel ander stuk doet het dan wel: alleen de Beanie en de Bandana staan boven 0, dus de Beanie wint onder deze aanname.
-    for (const x of wearableNets(p, V_FEW_CONTACTS).filter((y) => !['Red Ghetto Beanie', 'White Bandana'].includes(y.armor.name))) expect(x.net, x.armor.name).toBeLessThan(0)
-    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Ghetto Beanie'))
-    expect(a.robust).toBe(false)
+    // De Vest wint nipt van de Beanie en de Bandana (ongeveer +212 tegen +211), dus onder elke variant dezelfde winnaar.
+    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Cloth Vest'))
+    expect(a.robust).toBe(true)
+    // Lv 26: bij 0,15 contacten verdient geen stuk zich nog terug, terwijl de Vest bij de standaardwaarden wint.
+    const p26 = strong({ level: 26 })
+    expect(advice(drafts, p26).winner).toBe(armor('Red Cloth Vest'))
+    expect(bruteWinner(p26, V_FEW_CONTACTS)).toBeNull()
+    expect(advice(drafts, p26).robust).toBe(false)
   })
 
   it('meldt robust precies dan als elke variant dezelfde winnaar heeft als de standaard (brute force, lv 10 t/m 30)', () => {
@@ -544,32 +546,32 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
 })
 
 describe('armorUpgradeAdvice: wat de standaardwaarden geven (Cody, luk/dex 100)', () => {
-  it('geeft op lv 15 geen winnaar: het beste stuk (Red Ghetto Beanie) staat op ongeveer -659', () => {
+  it('geeft op lv 15 geen winnaar: het beste stuk (Red Ghetto Beanie) staat op ongeveer -590', () => {
     const a = advice(drafts, strong({ level: 15 }))
     expect(a.winner).toBeNull()
     const top = a.choices[0]
     expect(top.armor.name).toBe('Red Ghetto Beanie')
-    expect(top.net!).toBeCloseTo(-658.7, 0)
-    // Met de hand: EXP 15 t/m 19 (57.326) bij EXP per meso 0,8050842 zonder en 0,8112513 met WDEF 15, min 1.200 mesos.
-    expect(EXP_15_19 / 0.8050842 - EXP_15_19 / 0.8112513 - 1_200).toBeCloseTo(-658.7, 0)
-    // De Blue Gidder Shoes, tot nu toe de beste, komen er net achter (ongeveer -835).
-    expect(choice(a, 'Blue Gidder Shoes').net!).toBeCloseTo(-834.6, 0)
+    expect(top.net!).toBeCloseTo(-590.4, 0)
+    // Met de hand: EXP 15 t/m 19 (57.326) bij EXP per meso 0,7307872 zonder en 0,7365103 met WDEF 15, min 1.200 mesos.
+    expect(EXP_15_19 / 0.7307872 - EXP_15_19 / 0.7365103 - 1_200).toBeCloseTo(-590.4, 0)
+    // De Blue Gidder Shoes, tot nu toe de beste, komen er net achter (ongeveer -788).
+    expect(choice(a, 'Blue Gidder Shoes').net!).toBeCloseTo(-788.5, 0)
   })
 
-  it('geeft op lv 20 Red Ninja Sandals als winnaar met ongeveer +2.113', () => {
+  it('geeft op lv 20 Red Ninja Sandals als winnaar met ongeveer +2.607', () => {
     const a = advice(drafts, strong({ level: 20 }))
     expect(a.winner).toBe(armor('Red Ninja Sandals'))
-    expect(a.choices[0].net!).toBeCloseTo(2_113.3, 0)
+    expect(a.choices[0].net!).toBeCloseTo(2_606.8, 0)
     expect(a.robust).toBe(false)
   })
 
-  it('geeft op lv 25 Red Cloth Vest als winnaar met ongeveer +1.929, en elk slot is positief', () => {
+  it('geeft op lv 25 Red Cloth Vest als winnaar met ongeveer +2.425, en elk slot is positief', () => {
     const a = advice(drafts, strong({ level: 25 }))
     expect(a.winner).toBe(armor('Red Cloth Vest'))
-    expect(a.choices[0].net!).toBeCloseTo(1_929.3, 0)
+    expect(a.choices[0].net!).toBeCloseTo(2_424.9, 0)
     expect(a.choices.every((c) => c.net! > 0)).toBe(true)
     expect(a.choices).toHaveLength(4)
-    expect(a.robust).toBe(false)
+    expect(a.robust).toBe(true)
   })
 })
 

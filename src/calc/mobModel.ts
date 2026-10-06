@@ -74,9 +74,23 @@ export const ASSUMPTIONS = {
    * dichtbij en wordt waarschijnlijk vaker geraakt, maar daar is geen bron voor: hij rekent met dezelfde waarde.
    */
   contactsPerKill: 0.3,
+  /**
+   * Bij welk deel van je Max HP en Max MP je een potion drinkt (0 tot 1): bij 0,5 drink je bij een halve balk, dus mist er dan
+   * de helft van je Max. Een potion die meer herstelt dan er mist, verspilt de rest (#181). Geen bron: een aanname die in #20
+   * wordt gemeten. Eén waarde voor HP en MP.
+   */
+  drinkAtPct: 0.5,
 } as const
 
 export type Assumptions = { timeEfficiency: number; contactsPerKill: number }
+
+/**
+ * Wat één potion echt oplevert (#181): wat hij herstelt (met Improved HP of MP Recovery erin), hoogstens wat er mist op het
+ * moment dat je drinkt, `(1 − drinkAtPct) × max`. De rest is betaald en verspild. `max` is de Max HP of Max MP uit het profiel
+ * (het totaal uit je statvenster, dat de app als je balk behandelt); zonder bruikbare max (0, leeg) telt het volle herstel.
+ */
+export const effectiveRestore = (restores: number, max: number): number =>
+  max > 0 ? Math.min(restores, (1 - ASSUMPTIONS.drinkAtPct) * max) : restores
 
 /**
  * Een monster is "gevaarlijk" als één tik dit deel van je max HP of meer kost. Zo'n plek krijgt het

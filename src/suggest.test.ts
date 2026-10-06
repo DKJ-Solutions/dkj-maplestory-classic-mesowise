@@ -76,8 +76,9 @@ describe('hourPlan', () => {
   it('rekent de kosten met de prijzen uit de gegevens (handmatig na te rekenen)', () => {
     const p = hourPlan(s, 100)
     expect(p.expPerHour).toBe(2_800) // Bubbling: 28 EXP · 100
-    expect(p.hpPotionsPerHour).toBeCloseTo((100 * s.estimate.hpLossPerKill) / 250, 9)
-    expect(p.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 200, 9)
+    // Max HP 444 en Max MP 363, drinken bij een halve balk: er mist 222 HP en 181,5 MP, dus de Orange (250) en de Blue (200) tellen daarvoor (#181).
+    expect(p.hpPotionsPerHour).toBeCloseTo((100 * s.estimate.hpLossPerKill) / 222, 9)
+    expect(p.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 181.5, 9)
     expect(p.potions).toBeCloseTo(p.hpPotionsPerHour * 150 + p.mpPotionsPerHour * 220, 9)
     expect(p.ammo).toBeCloseTo(100 * s.estimate.starsPerKill * 0.3, 9)
   })
@@ -188,7 +189,8 @@ describe('Improved HP en MP Recovery: meer herstel per potion (#141)', () => {
   })
 
   it('deelt het potionverbruik door de factor: op level 15 een zesde minder potions en potion-meso (handmatig na te rekenen)', () => {
-    const plain = suggestMonsters(profile, bubbling)[0]
+    // Een grote balk (er mist 1000), zodat geen potion zijn herstel verspilt: hier gaat het om de factor, niet om het plafond (#181).
+    const plain = { ...suggestMonsters(profile, bubbling)[0], bar: { hp: 2000, mp: 2000 } }
     const boosted = { ...plain, potionFactor: { hp: 1.2, mp: 1.2 } }
     const a = hourPlan(plain, 100)
     const b = hourPlan(boosted, 100)
@@ -201,7 +203,7 @@ describe('Improved HP en MP Recovery: meer herstel per potion (#141)', () => {
   })
 
   it('telt de HP-factor alleen bij HP-potions en de MP-factor alleen bij MP-potions', () => {
-    const plain = suggestMonsters(profile, bubbling)[0]
+    const plain = { ...suggestMonsters(profile, bubbling)[0], bar: { hp: 2000, mp: 2000 } }
     const a = hourPlan(plain, 100)
     const hpOnly = hourPlan({ ...plain, potionFactor: { hp: 1.2, mp: 1 } }, 100)
     expect(hpOnly.hpPotionsPerHour).toBeCloseTo(a.hpPotionsPerHour / 1.2, 9)
@@ -272,7 +274,7 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
     const s = suggestMonsters(p, mixedMobs)[0]
     expect(s.estimate.mpPerKill).toBe(s.estimate.attacksToKill * 12)
     const plan = hourPlan(s, 100)
-    expect(plan.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 200, 9)
+    expect(plan.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 181.5, 9) // Max MP 363: er mist 181,5 van de 200 (#181)
     expect(plan.mpPotionsPerHour).toBeGreaterThan(0)
     expect(plan.potions).toBeCloseTo(plan.hpPotionsPerHour * 150 + plan.mpPotionsPerHour * 220, 9)
     // Zonder de skill geen MP-potions.
@@ -369,5 +371,72 @@ describe('statWindowRange: de Attack uit het statvenster (#108)', () => {
 
   it('is null voor een Magician: zijn gewone wand-aanval staat niet in de gegevens', () => {
     expect(statWindowRange(as('magician'))).toBeNull()
+  })
+})
+
+describe('hourPlan en het plafond op het herstel van een potion (#181)', () => {
+  const s = suggestMonsters(profile, bubbling)[0]
+  const kills = 100
+  const hpLoss = kills * s.estimate.hpLossPerKill
+  const mpNeed = kills * s.estimate.mpPerKill + s.buffMpPerHour
+
+  it('neemt Max HP en Max MP van het profiel mee als `bar`', () => {
+    expect(s.bar).toEqual({ hp: profile.hp, mp: profile.mp })
+    expect(s.bar).toEqual({ hp: 444, mp: 363 })
+  })
+
+  it('deelt door wat er mist, niet door wat de potion herstelt, als de potion meer herstelt (Orange 250 bij Max HP 444: 222)', () => {
+    const plan = hourPlan(s, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 222, 9)
+    expect(plan.hpPotionsPerHour).toBeGreaterThan(hpLoss / 250)
+    expect(plan.mpPotionsPerHour).toBeCloseTo(mpNeed / 181.5, 9)
+  })
+
+  it('deelt door het volle herstel als de potion er onder blijft (Max 2000: er mist 1000)', () => {
+    const plan = hourPlan({ ...s, bar: { hp: 2000, mp: 2000 } }, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 250, 9)
+    expect(plan.mpPotionsPerHour).toBeCloseTo(mpNeed / 200, 9)
+  })
+
+  it('deelt door het volle herstel zonder Max (0: onbekend)', () => {
+    const plan = hourPlan({ ...s, bar: { hp: 0, mp: 0 } }, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 250, 9)
+    expect(plan.mpPotionsPerHour).toBeCloseTo(mpNeed / 200, 9)
+  })
+
+  it('kapt HP en MP los van elkaar af: alleen de HP-potion is te groot', () => {
+    const plan = hourPlan({ ...s, bar: { hp: 444, mp: 2000 } }, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 222, 9)
+    expect(plan.mpPotionsPerHour).toBeCloseTo(mpNeed / 200, 9)
+  })
+
+  it('geeft op het plafond zelf geen verspilling: Max HP 500 en Orange 250 geven hetzelfde als zonder plafond', () => {
+    const atCap = hourPlan({ ...s, bar: { hp: 500, mp: 400 } }, kills)
+    const none = hourPlan({ ...s, bar: { hp: 0, mp: 0 } }, kills)
+    expect(atCap.hpPotionsPerHour).toBeCloseTo(none.hpPotionsPerHour, 9)
+    expect(atCap.mpPotionsPerHour).toBeCloseTo(none.mpPotionsPerHour, 9)
+  })
+
+  it('laat Improved HP Recovery over het plafond heen: 300 herstel bij Max HP 500 telt voor 250, niet voor 300', () => {
+    const plan = hourPlan({ ...s, bar: { hp: 500, mp: 0 }, potionFactor: { hp: 1.2, mp: 1 } }, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 250, 9)
+    expect(plan.hpPotionsPerHour).toBeGreaterThan(hpLoss / 300)
+  })
+
+  it('telt een White (500 HP) bij Max HP 444 voor 222, en rekent de kosten met zijn prijs', () => {
+    const white = { ...s, hpPotion: { ...s.hpPotion, name: 'White Potion', hp: 500, price: 350 } }
+    const plan = hourPlan(white, kills)
+    expect(plan.hpPotionsPerHour).toBeCloseTo(hpLoss / 222, 9)
+    expect(plan.potions).toBeCloseTo(plan.hpPotionsPerHour * 350 + plan.mpPotionsPerHour * 220, 9)
+  })
+
+  it('geeft via suggestMonsters een grote Max in het profiel minder potions per uur dan een kleine (het plafond werkt door tot in het voorstel)', () => {
+    const big = parseProfile({ ...DEFAULT_PROFILE, hp: '2000', mp: '2000' })
+    if (!('profile' in big)) throw new Error(big.error)
+    const sBig = suggestMonsters(big.profile, bubbling)[0]
+    expect(sBig.bar).toEqual({ hp: 2000, mp: 2000 })
+    // Zelfde kills per uur: alleen het plafond verschilt.
+    expect(hourPlan(sBig, kills).hpPotionsPerHour).toBeCloseTo(hpLoss / 250, 9)
+    expect(hourPlan(sBig, kills).potions).toBeLessThan(hourPlan(s, kills).potions)
   })
 })

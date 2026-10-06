@@ -290,7 +290,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     const c = toCharacter(p)
     const attack = spell === 'bolt' ? spellAttack(c, energyBoltAt(p.energyBolt)!, 1) : spellAttack(c, magicClawAt(p.magicClaw)!, MAGIC_CLAW_HITS)
     const estimate = estimateMob(c, attack, monster)
-    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, hpPotion: HP_POTION, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
+    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, hpPotion: HP_POTION, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p), bar: { hp: 0, mp: 0 } }
     const plan = hourPlan(s, estimate.killsPerHour)
     return { estimate, epm: plan.potions > 0 ? plan.expPerHour / plan.potions : Infinity }
   }

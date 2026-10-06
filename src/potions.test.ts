@@ -105,13 +105,17 @@ describe('resolvePotions, pickPotion en fixPotion', () => {
 describe('potionInfo', () => {
   it('rekent meso per punt en het deel van je balk', () => {
     const info = potionInfo(potion('Orange Potion'), 'hp', '444')
-    expect(info.mesoPerPoint).toBe(0.6)
+    // Er mist 222 HP bij een halve balk van 444, dus de Orange (250) telt voor 222 en kost 150 / 222 per HP (#181).
+    expect(info.mesoPerPoint).toBeCloseTo(150 / 222, 12)
     expect(info.fillPct).toBeCloseTo((250 / 444) * 100)
     expect(potionInfo(potion('White Potion'), 'hp', '444').fillPct).toBe(100)
   })
 
   it('telt Improved Recovery mee', () => {
-    expect(potionInfo(potion('Orange Potion'), 'hp', '500', 1.2)).toEqual({ mesoPerPoint: 0.5, fillPct: 60 })
+    // 250 · 1,2 = 300 HP herstel; bij Max HP 500 mist er 250, dus 300 telt voor 250: 150 / 250 per HP (#181).
+    expect(potionInfo(potion('Orange Potion'), 'hp', '500', 1.2)).toEqual({ mesoPerPoint: 0.6, fillPct: 60, capped: true })
+    // Bij een grote balk telt het volle herstel: 150 / 300.
+    expect(potionInfo(potion('Orange Potion'), 'hp', '2000', 1.2).mesoPerPoint).toBe(0.5)
   })
 
   it('laat het deel van je balk weg zonder bruikbare max: leeg, 0, negatief, geen geheel getal, geen getal of boven 30.000', () => {
@@ -159,13 +163,13 @@ describe('potionAdvice', () => {
     const dearer = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '160')!) }
     expect(advice(dearer).mesoChosen).toBe(cost(dearer))
     expect(advice(dearer).mesoChosen!).toBeGreaterThan(cost(profile)!)
-    // 160 / 250 = 0,64 per HP: nog goedkoper dan de White (0,7).
+    // 160 / 222 = 0,72 per gebruikte HP (er mist 222 bij een halve balk van 444): nog goedkoper dan de White (350 / 222 = 1,58).
     expect(advice(dearer).switchTo).toEqual([])
   })
 
   it('raadt de goedkoopste andere potion aan als je correctie de jouwe duurder maakt (Victor, 6 oktober 2026)', () => {
-    // Een Orange van 300 meso kost 1,2 per HP; de White kost 0,7.
-    const dear = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '300')!) }
+    // Een Orange van 400 meso kost 400 / 222 = 1,8 per gebruikte HP; de White kost 350 / 222 = 1,58 (er mist 222 HP bij een halve balk van 444).
+    const dear = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '400')!) }
     expect(advice(dear).switchTo).toEqual([potion('White Potion')])
     expect(advice(dear).mesoCheapest!).toBeLessThan(advice(dear).mesoChosen!)
   })
@@ -211,5 +215,44 @@ describe('loadPotionChoice en savePotionChoice', () => {
     // Een correctie zonder de naam van zijn potion telt ook niet.
     const odd = JSON.stringify({ version: 1, hp: 42, mp: 'x'.repeat(61), fix: { hp: { name: 'White Potion', price: -1, restores: 2.5 }, mp: { price: 200 } } })
     expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: odd }))).toEqual(NO_POTION_CHOICE)
+  })
+})
+
+describe('potionAdvice en verspild herstel (#181)', () => {
+  const profileWith = (hp: string, potions?: ReturnType<typeof resolvePotions>): Profile => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, hp })
+    if (!('profile' in r)) throw new Error(r.error)
+    return potions ? { ...r.profile, potions } : r.profile
+  }
+  const drafts = [mobDraft('Ribbon Pig')!]
+  const advice = (p: Profile) => {
+    const a = potionAdvice(drafts, p)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    return a
+  }
+  // De White met een eigen prijs van 200: 0,4 per HP op de verpakking, goedkoper dan de Orange (0,6).
+  const cheapWhite = (hp: string) =>
+    profileWith(hp, resolvePotions('thief', fixPotion(pickPotion(NO_POTION_CHOICE, 'hp', 'White Potion'), 'thief', 'hp', 'price', '200')!))
+  const chosen = (hp: string, name: string) => profileWith(hp, resolvePotions('thief', pickPotion(NO_POTION_CHOICE, 'hp', name)))
+
+  it('raadt de kleinere Orange aan als de grote White bij jouw Max HP overvult, ook al is de White per punt op de verpakking goedkoper', () => {
+    // Max HP 444: er mist 222. De White (500, nu 200 meso) telt voor 222: 200 / 222 = 0,9 per HP; de Orange (250) ook voor 222: 150 / 222 = 0,68.
+    const a = advice(cheapWhite('444'))
+    expect(a.switchTo).toEqual([potion('Orange Potion')])
+    expect(a.mesoCheapest!).toBeLessThan(a.mesoChosen!)
+  })
+
+  it('blijft bij de White als Max HP groot genoeg is dat hij niets verspilt (Max 2000: er mist 1000, de White telt voor 500)', () => {
+    // 200 / 500 = 0,4 per HP tegen 150 / 250 = 0,6 voor de Orange.
+    expect(advice(cheapWhite('2000')).switchTo).toEqual([])
+  })
+
+  it('raadt een White-keuze zonder correctie de Orange aan (bij Max HP 444 kost de White 350 / 222 = 1,58 per HP tegen 0,68), en een Orange-keuze blijft', () => {
+    expect(advice(chosen('444', 'White Potion')).switchTo).toEqual([potion('Orange Potion')])
+    expect(advice(chosen('444', 'Orange Potion')).switchTo).toEqual([])
+  })
+
+  it('laat een Orange-keuze ook bij een grote balk blijven (0,6 tegen 0,7 voor de White)', () => {
+    expect(advice(chosen('2000', 'Orange Potion')).switchTo).toEqual([])
   })
 })

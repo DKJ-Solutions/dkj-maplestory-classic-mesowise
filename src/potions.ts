@@ -6,12 +6,13 @@
 import { bestVerdict } from './best'
 import { MAGICIAN_MP_POTIONS } from './data/magician'
 import { POTIONS } from './data/spots'
+import { effectiveRestore } from './calc/mobModel'
 import type { Potion } from './data/types'
 import type { Job } from './job'
 import { levelCost } from './levelCost'
 import { PROFILE_FIELDS, type Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
-import { HP_POTION, mpPotionFor } from './suggest'
+import { HP_POTION, mpPotionFor, potionFactorOf } from './suggest'
 
 /** Wat herstelt: HP of MP (de potions in de app herstellen er één van). */
 export type PotionKind = 'hp' | 'mp'
@@ -131,15 +132,19 @@ const maxOf = (text: string): number | null => {
 
 /**
  * Wat een potion per punt kost en hoeveel van je balk hij vult, met het extra herstel van Improved HP en MP Recovery (`factor`,
- * potionFactorOf). Niet afgerond, net als in de berekening; `fillPct` hoogstens 100, en null zonder bruikbare Max HP of MP.
+ * potionFactorOf). `mesoPerPoint` telt alleen wat je gebruikt (effectiveRestore: hoogstens wat er mist als je drinkt, #181); `fillPct`
+ * is wat hij vult van je balk. Niet afgerond, net als in de berekening; `fillPct` hoogstens 100, en null zonder bruikbare Max HP of MP.
  */
-export function potionInfo(p: Potion, kind: PotionKind, max: string, factor = 1): { mesoPerPoint: number; fillPct: number | null } {
+export function potionInfo(p: Potion, kind: PotionKind, max: string, factor = 1): { mesoPerPoint: number; fillPct: number | null; capped: boolean } {
   const restores = p[kind] * factor
   const m = maxOf(max)
-  return { mesoPerPoint: p.price / restores, fillPct: m === null ? null : Math.min(100, (restores / m) * 100) }
+  const used = effectiveRestore(restores, m ?? 0)
+  return { mesoPerPoint: p.price / used, capped: used < restores, fillPct: m === null ? null : Math.min(100, (restores / m) * 100) }
 }
 
-const perPoint = (p: Potion, kind: PotionKind) => p.price / p[kind]
+/** Wat een potion kost per punt die je echt gebruikt, voor dit profiel: met Improved Recovery en hoogstens wat er mist (#181). */
+const perPoint = (p: Potion, kind: PotionKind, profile: Profile) =>
+  p.price / effectiveRestore(p[kind] * potionFactorOf(profile)[kind], profile[kind])
 
 export type PotionAdvice =
   /** Niet uit te rekenen: geen profiel of geen kosten voor dit level. */
@@ -152,10 +157,10 @@ export type PotionAdvice =
 
 /**
  * Loont een andere potion? Wat dit level kost met de potions in het profiel (met je correcties), tegenover de goedkoopste andere
- * potion per punt uit de database. Een wissel alleen als die per punt echt goedkoper is dan de jouwe: even goedkoop (de Lemon naast
+ * potion per punt uit de database, per punt die je echt gebruikt (een potion die meer herstelt dan er mist als je drinkt,
+ * verspilt de rest, #181). Een wissel alleen als die per punt echt goedkoper is dan de jouwe: even goedkoop (de Lemon naast
  * de Orange van een Magician) is geen wissel, want afronding zou de kosten een fractie laten verschillen. Corrigeer je je eigen
- * potion naar een hogere prijs, dan kan een andere wel goedkoper worden (een duurdere Orange naast de White). De app rekent niet
- * met verspild herstel (#181).
+ * potion naar een hogere prijs, dan kan een andere wel goedkoper worden (een duurdere Orange naast de White).
  */
 export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | null): PotionAdvice {
   if (!profile) return { kind: 'none' }
@@ -171,10 +176,10 @@ export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | nu
   const other = (kind: PotionKind): Potion | undefined =>
     potionsOf(profile.job, kind)
       .filter((p) => p.name !== chosen[kind].name)
-      .reduce<Potion | undefined>((best, p) => (best === undefined || perPoint(p, kind) < perPoint(best, kind) ? p : best), undefined)
+      .reduce<Potion | undefined>((best, p) => (best === undefined || perPoint(p, kind, profile) < perPoint(best, kind, profile) ? p : best), undefined)
   const better = (kind: PotionKind): Potion | undefined => {
     const o = other(kind)
-    return o && perPoint(o, kind) < perPoint(chosen[kind], kind) ? o : undefined
+    return o && perPoint(o, kind, profile) < perPoint(chosen[kind], kind, profile) ? o : undefined
   }
   const alternative: PotionPair = { hp: better('hp') ?? chosen.hp, mp: better('mp') ?? chosen.mp }
   const switchTo = POTION_KINDS.map(better).filter((p) => p !== undefined)

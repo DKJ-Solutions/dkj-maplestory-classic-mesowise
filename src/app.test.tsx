@@ -2921,8 +2921,9 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     // Geen Max HP of Max MP: die staan op Total stats.
     expect(cardNames('section.potions')).not.toContain('Max HP')
     // Wat een potion per punt kost en van je balk vult (250 van 444: 56%), staat in het rapport en niet op de kaart (Dave, 6 oktober 2026).
+    // Per punt telt alleen wat er mist bij een halve balk (#181): 150 / 222 = 0,68 voor de Orange, 220 / 181,5 = 1,2 voor de Blue.
     expect(potionsCard().querySelector('.potion-info')).toBeNull()
-    expect(potionInfoLines()).toEqual(['Orange Potion: 0,6 meso per HP · vult 56% van je Max HP', 'Blue Potion: 1,1 meso per MP · vult 55% van je Max MP'])
+    expect(potionInfoLines()).toEqual(['Orange Potion: 0,68 meso per HP · vult 56% van je Max HP · telt alleen wat er mist bij 50% van je balk', 'Blue Potion: 1,21 meso per MP · vult 55% van je Max MP · telt alleen wat er mist bij 50% van je balk'])
   })
 
   it('toont een gekozen potion eerst als concept, alleen om te lezen, en legt hem pas met Opslaan vast', () => {
@@ -2960,12 +2961,12 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     withMob()
     const before = levelCostText()
     openPotions()
-    fix('HP', 'Price', '300')
-    expect(stored(POTION_CHOICE_KEY).fix).toEqual({ hp: { name: 'Orange Potion', price: 300 }, mp: {} })
+    fix('HP', 'Price', '400')
+    expect(stored(POTION_CHOICE_KEY).fix).toEqual({ hp: { name: 'Orange Potion', price: 400 }, mp: {} })
     expect(line('HP', 'Price').querySelector('.equip-value-db')!.textContent).toBe('−150 meso')
-    expect(line('HP', 'Price').querySelector('.equip-value strong')!.textContent).toBe('−300 meso')
+    expect(line('HP', 'Price').querySelector('.equip-value strong')!.textContent).toBe('−400 meso')
     expect(levelCostText()).not.toBe(before)
-    // Voor 300 meso kost de Orange 1,2 per HP, meer dan de White (0,7): het rapport raadt de White aan.
+    // Voor 400 meso kost de Orange 1,8 per gebruikte HP, meer dan de White (1,58; er mist 222 HP bij een halve balk van 444): het rapport raadt de White aan.
     expect(potionPart().querySelector('.chip')!.textContent).toBe('Wisselen')
     expect(potionPart().textContent).toContain('Wissel naar White Potion.')
   })
@@ -3073,7 +3074,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(steps[2]).toMatch(/^Dit level duurt ± \d+ min: ± [\d.]+ HP in totaal\.$/)
     // Het laatste getal is het aantal op de factuur.
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
-    expect(steps[3]).toMatch(new RegExp(`^Eén Orange Potion herstelt 250 HP: [\\d.]+ / 250 = [\\d,]+, naar boven afgerond ${qty}\\.$`))
+    expect(steps[3]).toMatch(new RegExp(`^Eén Orange Potion herstelt 250 HP, maar je drinkt bij 50% van je balk en dan mist er maar 222 HP: [\\d.]+ / 222 = [\\d,]+, naar boven afgerond ${qty}\\.$`))
     expect(dialog.textContent).toContain('aanname zonder bron')
   })
 })
@@ -3089,5 +3090,36 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
   it('gaat mee met Level up', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Level up' }))
     expect(homeScreen().querySelector('.app-question strong')!.textContent).toBe('Lv. 11 Thief')
+  })
+})
+
+describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181)', () => {
+  const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
+  const lastStep = (fields: Partial<ProfileDraft>) => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
+    render(<App />)
+    fireEvent.click(card().querySelector<HTMLButtonElement>('.invoice-why')!)
+    const steps = Array.from(card().querySelectorAll('dialog .why-steps li'), (li) => li.textContent!.replace(/\s+/g, ' '))
+    return steps[steps.length - 1]
+  }
+
+  it('zegt bij een potion die overvult dat je bij 50% van je balk drinkt en er maar 222 van de 250 meetelt', () => {
+    expect(lastStep({ hp: '444' })).toMatch(
+      /^Eén Orange Potion herstelt 250 HP, maar je drinkt bij 50% van je balk en dan mist er maar 222 HP: [\d.]+ \/ 222 = [\d,]+, naar boven afgerond \d+\.$/,
+    )
+  })
+
+  it('laat de capped-zin weg als de potion binnen het plafond blijft (Max HP 2000): gewoon 250 en delen door 250', () => {
+    const step = lastStep({ hp: '2000' })
+    expect(step).toMatch(/^Eén Orange Potion herstelt 250 HP: [\d.]+ \/ 250 = [\d,]+, naar boven afgerond \d+\.$/)
+    expect(step).not.toContain('maar je drinkt')
+  })
+
+  it('laat de capped-zin weg als de potion het plafond precies haalt (Max HP 500: er mist 250 en de Orange herstelt 250)', () => {
+    const step = lastStep({ hp: '500' })
+    expect(step).toMatch(/^Eén Orange Potion herstelt 250 HP: [\d.]+ \/ 250 = /)
+    expect(step).not.toContain('maar je drinkt')
   })
 })
