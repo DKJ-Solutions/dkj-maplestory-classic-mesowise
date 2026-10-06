@@ -240,7 +240,7 @@ describe('begin zonder opslag', () => {
       expect(equip.closest('.spot-head')).toBeNull()
       const card = equip.closest('section')!
       expect(card.querySelector('.spot-head button')).toBeNull()
-      const buttons = [...card.querySelectorAll(':scope > .card-actions button')].map((b) => b.textContent || b.getAttribute('aria-label'))
+      const buttons = [...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent || b.getAttribute('aria-label'))
       expect(buttons).toEqual(['Your character', 'Cheapest', 'Report: Equip'])
       for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!

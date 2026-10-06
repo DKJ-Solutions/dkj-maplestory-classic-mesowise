@@ -1555,13 +1555,15 @@ function EquipmentCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
-      {/* Het rapport onderin de kaart, onder de twee knoppen (Dave, #188). */}
-      {props.report && (
-        <div class="card-actions equip-report">
-          <CardReport title="Equip">{props.report}</CardReport>
-        </div>
-      )}
+      {/* De twee knoppen en daaronder het rapport, onderin de kaart (Dave, #188), met dezelfde ruimte als de kop. */}
+      <div class="equip-actions">
+        <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
+        {props.report && (
+          <div class="card-actions">
+            <CardReport title="Equip">{props.report}</CardReport>
+          </div>
+        )}
+      </div>
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
