@@ -2481,9 +2481,6 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
         <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
       ) : (
         <>
-          <p class="hint">
-            Van lv {inv.level} naar {inv.level + 1} op {inv.mob}: {nfInt.format(inv.expToNext)} EXP, ± {formatHours(inv.hours)}.
-          </p>
           <table class="invoice">
             <tbody>
               {inv.lines.map((l, i) => (

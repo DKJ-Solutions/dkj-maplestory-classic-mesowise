@@ -3049,7 +3049,8 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     // Het totaal is de som van de regels.
     const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
     expect(n(total)).toBe(rows().reduce((s, r) => s + n(r[2]!), 0))
-    expect(card().textContent).toMatch(/Van lv 10 naar 11 op Ribbon Pig: 1\.716 EXP, ± \d+ min\./)
+    // Geen regel met het level, de mob en de duur boven de factuur (Dave, 6 oktober 2026).
+    expect(card().textContent).not.toContain('Van lv')
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
