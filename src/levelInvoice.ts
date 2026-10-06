@@ -11,8 +11,14 @@ import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { potionRestore, resolvePlan } from './suggest'
 
-/** De regel van de winkelprijs van equipment op een factuur (Advised koopt, #192). */
+/** De soort kost van equipment uit de winkel (Advised koopt, #192): de rij in Difference waarin alle gekochte stukken samen staan. */
 export const SHOP_LABEL = 'Shop'
+
+/** Een stuk dat de setup in de winkel koopt: zijn naam en prijs (Purchase in cheapestEquip.ts). */
+export interface ShopPiece {
+  name: string
+  price: number
+}
 
 /**
  * Hoe de app op het aantal potions komt (Dave, 6 oktober 2026): de stappen van de berekening, met de getallen die ze gebruikt.
@@ -93,6 +99,8 @@ export interface InvoiceLine {
   qty: number | null
   meso: number
   why?: PotionWhy | AmmoWhy
+  /** Een stuk equipment uit de winkel (#192): één regel per stuk, met × 1. */
+  shop?: true
 }
 
 export type LevelInvoice =
@@ -119,9 +127,10 @@ export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : jo
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven
  * afgerond; reizen als bedrag. Heb je de potion- of munitiekosten van je plek zelf ingevuld, dan staat dat bedrag er als één
  * regel, want de app weet dan niet om hoeveel stuks het gaat. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
- * staat daarvan de winkelprijs als eerste regel "Shop"; zonder prijs, zoals bij je character, staat die regel er niet.
+ * staat elk gekocht stuk bovenaan als eigen regel, met zijn naam, × 1 en zijn winkelprijs (Dave, 6 oktober 2026); zonder aankopen, zoals bij je
+ * character, staan die regels er niet.
  */
-export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | null, shop = 0): LevelInvoice {
+export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | null, shop: readonly ShopPiece[] = []): LevelInvoice {
   const verdict = bestVerdict(drafts, profile)
   const cost = levelCost(profile, verdict)
   if (!profile || cost.kind !== 'cost' || cost.meso === null) return { kind: 'none', cost }
@@ -143,7 +152,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
     // De munitie staat er alleen als ze iets kost; HP- en MP-potion altijd (zie boven).
     if (meso > 0 || (why && why.kind !== 'ammo')) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
-  add(SHOP_LABEL, null, shop)
+  for (const p of shop) lines.push({ label: p.name, qty: 1, meso: p.price, shop: true })
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
     const hpExact = plan.hpPotionsPerHour * hours

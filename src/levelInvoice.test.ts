@@ -192,19 +192,25 @@ describe('levelInvoice: de uitleg achter het aantal stars (Dave, 6 oktober 2026,
   })
 })
 
-describe('levelInvoice: de regel Shop voor equipment van Advised (Dave, 6 oktober 2026, #192)', () => {
-  it('zet zonder winkelprijs geen regel Shop op de factuur, ook niet bij 0', () => {
-    expect(invoiceOf(thief).lines.map((l) => l.label)).not.toContain('Shop')
-    const zero = levelInvoice(drafts, thief, 0)
-    expect(zero.kind === 'invoice' && zero.lines.some((l) => l.label === 'Shop')).toBe(false)
+describe('levelInvoice: een regel per stuk equipment uit de winkel voor Advised (Dave, 6 oktober 2026, #192)', () => {
+  it('zet zonder aankopen geen winkelregel op de factuur', () => {
+    expect(invoiceOf(thief).lines.some((l) => l.shop)).toBe(false)
+    const none = levelInvoice(drafts, thief, [])
+    expect(none.kind === 'invoice' && none.lines.some((l) => l.shop)).toBe(false)
   })
 
-  it('zet met een winkelprijs als eerste regel Shop, zonder stuks, en telt hem mee in het totaal', () => {
+  it('zet elk gekocht stuk bovenaan als eigen regel, met zijn naam, × 1 en zijn prijs, en telt ze mee in het totaal', () => {
     const plain = invoiceOf(thief)
-    const inv = levelInvoice(drafts, thief, 7000)
+    const inv = levelInvoice(drafts, thief, [
+      { name: 'Steel Titans', price: 5000 },
+      { name: 'Brown Bandana', price: 2000 },
+    ])
     if (inv.kind !== 'invoice') throw new Error('geen factuur')
-    expect(inv.lines[0]).toEqual({ label: 'Shop', qty: null, meso: 7000 })
-    expect(inv.lines.slice(1)).toEqual(plain.lines)
+    expect(inv.lines.slice(0, 2)).toEqual([
+      { label: 'Steel Titans', qty: 1, meso: 5000, shop: true },
+      { label: 'Brown Bandana', qty: 1, meso: 2000, shop: true },
+    ])
+    expect(inv.lines.slice(2)).toEqual(plain.lines)
     expect(inv.total).toBe(plain.total + 7000)
   })
 })

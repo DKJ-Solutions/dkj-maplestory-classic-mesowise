@@ -137,6 +137,7 @@ describe('advisedEquipment (#192)', () => {
     expect(r.equipment).toBe(eq)
     expect(r.profile).toBe(profile)
     expect(r.shop).toBe(0)
+    expect(r.purchases).toEqual([])
   })
 
   it('zet het winkelstuk in het slot zoals een keuze op de Equip-kaart, met het profiel dat daarbij hoort, en telt de prijs', () => {
@@ -144,6 +145,7 @@ describe('advisedEquipment (#192)', () => {
     const r = advisedEquipment('thief', profile, eq, slotsOf(eq, clawAdvice('Steel Titans')))
     expect(r.equipment.claw).toEqual(choosePick('claw', eq.claw, 'Steel Titans'))
     expect(r.shop).toBe(5000)
+    expect(r.purchases).toEqual([{ slot: 'claw', name: 'Steel Titans', price: 5000 }])
     // Het profiel volgt exact wat een keuze op de kaart doet.
     expect(r.profile).toEqual(changeEquipment(profile, eq, 'claw', choosePick('claw', eq.claw, 'Steel Titans'), 'thief').profile)
     expect(r.profile.clawWatk).not.toBe(profile.clawWatk)
@@ -160,6 +162,9 @@ describe('advisedEquipment (#192)', () => {
     expect(r.equipment.overall.pick).not.toBe('Sauna Robe')
     expect(r.equipment.bottom.pick).toBe('empty')
     expect(r.shop).toBe(200)
+    // Eén aankoop per stuk, en hun prijzen samen zijn de winkelprijs.
+    expect(r.purchases.map((p) => p.name)).toEqual(['Hat A', 'Top A'])
+    expect(r.purchases.reduce((s, p) => s + p.price, 0)).toBe(r.shop)
   })
 })
 

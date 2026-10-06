@@ -45,7 +45,7 @@
 - [x] Review fixes from Victor and Edith (no card error in Advised, accessible name `Advised: <card>`, "Advised equip", stale comments, small cleanups)
 - [x] Total cost: six card icon buttons under both invoices with one sentence above them, set apart from the invoice total by a thin line, opening the card's own popup (state lifted into `CardViewContext`); icons in a button follow the button colour; a "Setup" heading was tried and removed (Dave, October 6, 2026)
 - [x] Invoice: a question mark behind the ammo count (`AmmoWhy`), and every explanation as a calculation table (`WhyTable`) that goes from EXP to the next level via EXP per kill to the kills needed, with the damage formula (max, min, level difference, mob defence, average) behind the stars
-- [x] Advised buys: `advisedEquipment` in `src/cheapestEquip.ts`, `cheapestSettings` run on that equip, a Shop line in `levelInvoice`, Overnemen writes the equip and Ongedaan maken restores it (Dave chose this option, October 6, 2026)
+- [x] Advised buys: `advisedEquipment` in `src/cheapestEquip.ts`, `cheapestSettings` run on that equip, one invoice line per purchased piece in `levelInvoice` (summed as Shop in Difference), Overnemen writes the equip and Ongedaan maken restores it (Dave chose this option, October 6, 2026)
 - [x] Victor's review of the numbers (a sweep of 1144 cases, no wrong number) and the leftovers it found
 
 ### TEST
@@ -67,8 +67,8 @@ six icon buttons, one per card, each opening that card's popup for that part. A 
 
 The Advised setup now buys equipment as well: it wears the pieces the Equip card's Advised view says to buy (a piece is
 bought when it saves more than it costs on this level), and its mob, potions, skill points and base AP are the cheapest
-with that gear. The Advised invoice gets a **Shop** row with what those pieces cost, counted in its total and in
-Difference; Your character never has one. **Overnemen** now also puts the advised equip in your setup, and **Ongedaan
+with that gear. Each piece it buys is a row of its own on the Advised invoice, with its name, × 1 and its shop
+price, counted in the total; Difference adds them up in one **Shop** row. Your character never has them. **Overnemen** now also puts the advised equip in your setup, and **Ongedaan
 maken** puts your old equip back.
 
 The question mark behind an amount on the invoice now also sits behind the throwing stars or arrows, and every

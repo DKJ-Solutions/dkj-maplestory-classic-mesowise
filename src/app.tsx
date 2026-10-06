@@ -2722,7 +2722,8 @@ export const totalCostWho = (level: string, job: Job): string => {
 
 /** De rij van een factuurregel in de vergelijking: een potion naar zijn soort (HP of MP), de rest naar zijn naam. */
 // De munitie houdt haar label als sleutel, met of zonder uitleg (#192): zo valt ze in Difference op dezelfde rij als een eigen munitiebedrag.
-const invoiceRowKey = (l: InvoiceLine): string => (l.why && l.why.kind !== 'ammo' ? l.why.kind : l.label)
+// De gekochte stukken (#192) vallen samen onder Shop: Difference vergelijkt per soort kost, niet per stuk.
+const invoiceRowKey = (l: InvoiceLine): string => (l.shop ? SHOP_LABEL : l.why && l.why.kind !== 'ammo' ? l.why.kind : l.label)
 
 /**
  * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (Shop, HP Potions, MP Potions, Ammo, en reizen als
@@ -2737,7 +2738,6 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
   // De winkelprijs van de equip van Advised (#192) staat bovenaan, zoals op de factuur.
   if (keys.includes(SHOP_LABEL)) keys.splice(0, keys.length, SHOP_LABEL, ...keys.filter((k) => k !== SHOP_LABEL))
-  const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
   // De naam van een soort kost, los van welke potion of munitie (Dave): "HP Potions", "MP Potions", "Ammo".
   const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
   // Wat elke setup betaalt in de gewone tekstkleur: alleen het verschil heeft een kleur, zodat dat opvalt (Dave: "bijna alles rood").
@@ -2745,7 +2745,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const diff = (d: number | null) =>
     d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="cost">−{nfInt.format(d)}</span> : d < 0 ? <span class="gain">+{nfInt.format(-d)}</span> : <span>0</span>
   // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
-  const paid = (col: number, key: string) => (cols[col] ? (lineOf(col, key)?.meso ?? 0) : null)
+  const paid = (col: number, key: string) => (cols[col] ? cols[col]!.lines.filter((l) => invoiceRowKey(l) === key).reduce((sum, l) => sum + l.meso, 0) : null)
   return ig || ch ? (
     <>
       <table class="invoice invoice-difference">
@@ -3093,7 +3093,7 @@ export function App() {
   const appliedSaving = cheapestShown ? cheapest!.saving : null
   // De equip van Advised (Dave, 6 oktober 2026, #192): wat je draagt plus de stukken die de Equip-kaart in Advised koopt, met het profiel dat daarbij
   // hoort (dezelfde stap als een keuze op de kaart) en wat ze in de winkel kosten. Eén berekening voor alles: de goedkoopste instellingen rekenen met deze equip.
-  const advisedGear = useMemo(() => (cheapestEquip ? advisedEquipment(job, profileDraft, equipment, cheapestEquip) : { equipment, profile: profileDraft, shop: 0 }), [cheapestEquip, job, profileDraft, equipment])
+  const advisedGear = useMemo(() => (cheapestEquip ? advisedEquipment(job, profileDraft, equipment, cheapestEquip) : { equipment, profile: profileDraft, shop: 0, purchases: [] }), [cheapestEquip, job, profileDraft, equipment])
   // Wat je nu hebt, voor Overnemen en Ongedaan maken; de berekening zelf krijgt de equip van Advised.
   const userInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
   const cheapestInput = useMemo<CheapestInput>(
@@ -3105,7 +3105,7 @@ export function App() {
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
   const advisedProfile = cheapestLive?.profileDraft ?? null
   const cheapestInvoice = useMemo(
-    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.shop) : levelInvoice([], null)),
+    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.purchases) : levelInvoice([], null)),
     [cheapestLive, job, gender, advisedGear],
   )
   // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer, met de equip van Advised erbij (applyCheapest,

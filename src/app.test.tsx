@@ -3460,22 +3460,28 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(-mesoOf(diffTotal.textContent))
   })
 
-  it('zet wat de equip van Advised in de winkel kost als eerste regel Shop op de factuur van Advised en in Difference, en nooit op die van Your character (#192)', () => {
+  it('zet elk stuk dat Advised in de winkel koopt als eigen regel op de factuur van Advised, samen als Shop in Difference, en nooit op die van Your character (#192)', () => {
     toLevel20()
     const labels = (card: HTMLElement) => Array.from(card.querySelectorAll('tbody tr th')).map((th) => th.textContent)
     expect(labels(yours())).not.toContain('Shop')
-    expect(labels(cheapestCard())[0]).toBe('Shop')
     expect(labels(diffCard())[0]).toBe('Shop')
-    const shop = mesoOf(cheapestCard().querySelector('tbody tr td.invoice-meso')!.textContent)
-    expect(shop).toBeGreaterThan(0)
+    // De stukken die de Equip-kaart in Advised koopt, met "Koop voor": elk een regel met × 1 en die prijs.
+    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
+    const bought = Array.from(homeScreen().querySelectorAll('section.equipment dialog .equip-row'))
+      .filter((row) => row.querySelector('.equip-buy'))
+      .map((row) => ({ name: row.querySelector('.equip-buy')!.textContent!.replace(/ \(Lv\. \d+\)$/, ''), price: mesoOf(row.querySelector('.equip-price')!.textContent) }))
+    expect(bought.length).toBeGreaterThan(0)
+    const rows = Array.from(cheapestCard().querySelectorAll('tbody tr')).slice(0, bought.length)
+    expect(rows.map((tr) => ({ name: tr.querySelector('th')!.textContent, qty: tr.querySelector('td.invoice-qty')!.textContent!.trim(), price: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))).toEqual(
+      bought.map((b) => ({ name: b.name, qty: '× 1', price: b.price })),
+    )
+    const shop = bought.reduce((s, b) => s + b.price, 0)
+    expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(shop)
     // In Difference: jouw character betaalt niets in de winkel, Advised de prijs, en het verschil is die prijs.
     const [mine, cheap, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
     expect(mine).toBe('0')
     expect(mesoOf(cheap)).toBe(shop)
     expect(mesoOf(d)).toBe(shop)
-    // De prijs staat ook in het totaal van Advised en komt overeen met "Te kopen" op de Equip-kaart.
-    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
-    expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(shop)
   })
 
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {

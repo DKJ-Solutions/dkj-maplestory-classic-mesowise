@@ -90,6 +90,15 @@ export interface AdvisedEquipment {
   profile: ProfileDraft
   /** Wat de stukken samen in de winkel kosten; 0 als je niets koopt. */
   shop: number
+  /** Elk stuk dat je koopt, met zijn winkelprijs: één regel per stuk op de factuur van Advised (Dave, 6 oktober 2026, #192). */
+  purchases: Purchase[]
+}
+
+/** Eén stuk uit de winkel: het slot, de naam en wat het kost. */
+export interface Purchase {
+  slot: EquipSlot
+  name: string
+  price: number
 }
 
 /**
@@ -100,21 +109,21 @@ export interface AdvisedEquipment {
  */
 export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equipment, cheapest: Record<EquipSlot, CheapestSlot>): AdvisedEquipment {
   let out = { equipment, profile }
-  let shop = 0
+  const purchases: Purchase[] = []
   const slots = Object.keys(cheapest) as EquipSlot[]
   // Eerst wat je koopt, dan wat daardoor leeg blijft: een overall maakt top en bottom al leeg, die staan dan niet meer vol.
   for (const slot of slots) {
     const c = cheapest[slot]
     if (!c.changed || c.cheapest === null) continue
     out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], c.cheapest), job)
-    shop += c.price ?? 0
+    purchases.push({ slot, name: c.cheapest, price: c.price ?? 0 })
   }
   for (const slot of slots) {
     const c = cheapest[slot]
     if (!c.changed || c.cheapest !== null || isEmptyEntry(out.equipment[slot])) continue
     out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], NONE), job)
   }
-  return { equipment: out.equipment, profile: out.profile, shop }
+  return { equipment: out.equipment, profile: out.profile, shop: purchases.reduce((sum, p) => sum + p.price, 0), purchases }
 }
 
 /**
