@@ -40,6 +40,19 @@ describe('potionOptions', () => {
     for (const p of [...POTIONS, ...MAGICIAN_MP_POTIONS]) expect(p.source.url, p.name).toMatch(/^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/)
   })
 
+  it('houdt bij een gelijkspel de volgorde van de app, ook met Improved MP Recovery (factor 1,1 en 1,15)', () => {
+    for (const mp of [1, 1.05, 1.1, 1.15, 1.2]) {
+      const o = potionOptions('magician', '200', '500', { hp: 1, mp })
+      expect(names(o.mp), String(mp)).toEqual(['Orange', 'Lemon', 'Blue Potion'])
+      expect(o.mp[0].used, String(mp)).toBe(true)
+    }
+  })
+
+  it('laat het deel van je balk weg boven de 30.000 die het profiel toelaat', () => {
+    expect(potionOptions('thief', '30000', '30001').hp[0].fillPct).toBeCloseTo((250 / 30000) * 100)
+    expect(potionOptions('thief', '30000', '30001').mp[0].fillPct).toBeNull()
+  })
+
   it('vult nooit meer dan je hele balk', () => {
     expect(potionOptions('thief', '100', '50').hp.map((x) => x.fillPct)).toEqual([100, 100])
   })

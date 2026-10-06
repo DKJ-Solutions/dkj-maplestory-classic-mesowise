@@ -356,8 +356,8 @@ function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: bo
 
 /**
  * Het rapport van een kaart (Dave, 5 oktober 2026): een icoon naast het oog dat het uitgebreide advies over die kaart
- * in een popup toont. Alleen bij een kaart waar je iets kiest (Equip, Skillpoints, Monster); Ability points en
- * Total stats zijn vaste feiten en krijgen er geen.
+ * in een popup toont. Alleen bij een kaart waar je iets kiest (Equip, Skillpoints, Monster); Ability points,
+ * Total stats en Potions zijn vaste feiten en krijgen er geen.
  */
 function CardReport(props: { title: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
@@ -406,8 +406,8 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
 }
 
 /**
- * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
- * weapon attack volgt uit wat je bij je equipment kiest. Max HP en Max MP staan op de Potions-kaart. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
+ * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level, Max HP en Max MP gaan omhoog met Level up (en Max HP
+ * en Max MP staan op de Potions-kaart), weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
 const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'mp', 'clawWatk', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
@@ -855,6 +855,8 @@ function PotionsCard(props: StatsCardProps & { profile: Profile | null }) {
   const { draft, job } = props
   const fields = statFieldsFor(job)
   const field = (key: 'hp' | 'mp') => fields.find((f) => f.key === key)!
+  // Zonder geldig profiel geen Improved Recovery: dan toont de kaart het herstel dat op de potion staat, net als de berekening
+  // dan niets toont.
   const options = potionOptions(job, draft.hp, draft.mp, props.profile ? potionFactorOf(props.profile) : undefined)
   const lead = (
     <>
@@ -2285,8 +2287,8 @@ export function App() {
   // Total stats heeft zijn eigen kaart; het level staat niet op een stat-kaart en meldt zich bij Ability points.
   const totalKey = 'key' in parsed && !ABILITY_KEYS.includes(parsed.key) && !HIDDEN_STATS.has(parsed.key) && !isSkillKey(parsed.key)
   const totalError = equipError === null && totalKey ? statError : null
-  // Max HP en Max MP staan op de Potions-kaart, en hun melding ook.
-  const potionKey = 'key' in parsed && (parsed.key === 'hp' || parsed.key === 'mp')
+  // Max HP staat op de Potions-kaart, en zijn melding ook. Max MP is alleen ter info en geeft nooit een melding.
+  const potionKey = 'key' in parsed && parsed.key === 'hp'
   const potionsError = equipError === null && potionKey ? statError : null
   const characterError = equipError === null && !totalKey && !potionKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
@@ -2527,7 +2529,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
 
-      {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
+      {/* Ability points, Total stats en Potions zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster, zodat de kaarten met een rapport (Equip, Skillpoints, Monster) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
         <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />

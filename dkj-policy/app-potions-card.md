@@ -46,12 +46,12 @@
 
 - [x] Vera: the Thief's MP per level (+17, advancement +250) from the HP/MP guide the other jobs already cite
 - [x] Cody + Gwen: Max MP profile field, Level up raises it, `src/potions.ts`, the Potions card and its styles
-- [ ] Victor: code review
-- [ ] Edith: final read of the Dutch UI text and comments
+- [x] Victor: code review; tie-break order, Max MP bound and dead error routing fixed
+- [x] Edith: final read of the Dutch UI text and comments; four stale comments fixed
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1632 tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1634 tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card

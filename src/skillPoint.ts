@@ -303,7 +303,7 @@ export const WARRIOR_NOT_MODELLED: readonly string[] = ['Slash Blast']
 
 /**
  * Wat het model van een Magician niet kan doorrekenen, met de reden. Magic Guard zet een deel van de schade om in MP-verlies;
- * het model kent geen schade die naar MP gaat. Max MP Increase werkt op Max MP, en het profiel kent geen Max MP.
+ * het model kent geen schade die naar MP gaat. Max MP Increase werkt op Max MP, en de berekening gebruikt Max MP niet (alleen de Potions-kaart toont hem).
  */
 export const MAGICIAN_NOT_MODELLED: readonly string[] = ['Magic Guard', 'Max MP Increase']
 

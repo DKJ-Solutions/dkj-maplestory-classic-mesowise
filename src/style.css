@@ -447,7 +447,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De hint boven de velden van Total stats: wat de app niet voor je bijhoudt. */
 .total-stats-hint { margin: 0.5rem 0 0.75rem; }
-/* Ability points en Total stats elk op een eigen rij: naast elkaar paste "Ability points (5)" niet (Dave, 5 oktober 2026, #154). */
+/* Ability points, Total stats en Potions elk op een eigen rij: naast elkaar paste "Ability points (5)" niet (Dave, 5 oktober 2026, #154). */
 /* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
 .stats-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
 .stats-group > .card { margin: 0; }
