@@ -14,7 +14,7 @@ import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileD
 import { buffBonus, ironBodyDef, maxHpAfterPoint, maxHpBeforePoint, skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
-import { hourPlan, MP_POTION, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { HP_POTION, hourPlan, MP_POTION, suggestMonsters, type MonsterSuggestion } from './suggest'
 
 const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
@@ -137,6 +137,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
         estimate,
         expPerHour: 0,
         rechargePerStar: 0,
+        hpPotion: HP_POTION,
         mpPotion: MP_POTION,
         buffMpPerHour: buffBonus(p).mpPerHour,
         potionFactor: { hp: 1, mp: 1 },

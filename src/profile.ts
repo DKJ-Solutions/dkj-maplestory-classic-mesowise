@@ -7,7 +7,7 @@ import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { FIRST_JOB_LEVEL, SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { ATTACK_MS, STARTING_AP, SUBI } from './data/thief'
-import type { Requires, Stat } from './data/types'
+import type { Potion, Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
@@ -149,7 +149,11 @@ export type ProfileDraft = Record<ProfileKey, string>
  * Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent) en het geslacht
  * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen).
  */
-export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender }
+/**
+ * Het profiel als getallen. `potions` zijn de potions die je gebruikt (potions.ts, Dave, 6 oktober 2026); zonder rekent de
+ * berekening met de goedkoopste per punt (HP_POTION en mpPotionFor in suggest.ts).
+ */
+export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender; potions?: { hp: Potion; mp: Potion } }
 
 /**
  * De velden die een job invult: elke job heeft de skills van zijn eigen 1e job, de Beginner-skills heeft elke job.

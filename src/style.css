@@ -447,7 +447,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De hint boven de velden van Total stats: wat de app niet voor je bijhoudt. */
 .total-stats-hint { margin: 0.5rem 0 0.75rem; }
-/* Ability points, Total stats en Potions elk op een eigen rij: naast elkaar paste "Ability points (5)" niet (Dave, 5 oktober 2026, #154). */
+/* Ability points en Total stats elk op een eigen rij: naast elkaar paste "Ability points (5)" niet (Dave, 5 oktober 2026, #154). */
 /* De groep heeft geen kop; de padding boven geeft extra ruimte onder Monster (een margin zou samenvallen met die van de kaart erboven). */
 .stats-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding-top: 1rem; margin-bottom: 1rem; }
 .stats-group > .card { margin: 0; }
@@ -568,11 +568,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .ap-row .ap-group h3 { margin: 0; }
 .ap-row .btn { flex: none; width: auto; margin: 0; }
 
-/* Potions (Dave, 6 oktober 2026): per soort een lijst, van goedkoop naar duur per punt herstel. De
-   potion waarmee de app rekent, krijgt de accentrand van een gecorrigeerd vak (.equip-value.changed). */
+/* Potions (Dave, 6 oktober 2026): per soort een keuzemenu en een lijst, van goedkoop naar duur per punt herstel. De
+   potion die je gebruikt, krijgt de accentrand van een gecorrigeerd vak (.equip-value.changed). */
 .potion-group { margin-top: 1rem; }
-.potion-group h3 { margin: 0 0 0.5rem; font-size: var(--fs-h4); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.potion-list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.potion-list { display: grid; gap: 0.5rem; margin: 0.75rem 0 0; padding: 0; list-style: none; }
 .potion { padding: 0.625rem 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; }
 .potion.used { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .potion-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

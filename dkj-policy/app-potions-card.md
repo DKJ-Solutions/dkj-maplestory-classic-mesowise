@@ -50,25 +50,29 @@
 - [x] Edith: final read of the Dutch UI text and comments; four stale comments fixed
 - [x] Dave (October 6, 2026): Max HP and Max MP move to the top of Total stats
 - [x] Dave (October 6, 2026): the price gets its own line under the name ("Prijs: 150 meso")
+- [x] Dave (October 6, 2026): pick the HP and MP potion you use, like the mob; the calculation uses it, a report compares it with the cheapest, and the card moves up with the other report cards. Wasted recovery split off as #181
+- [ ] Victor and Edith: review of the potion choice
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1634 tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1650+ tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card
 
-A new Potions card in the Stats block shows every potion your job can buy: what it restores, its price, what it costs
-per HP or MP, how much of your bar one potion fills, and which potion the app calculates with. Potions have no level
-requirement in Classic, so they are all there at every level. Max HP and Max MP now head the Total stats card. Max MP
+A new Potions card, under Monster, lets you pick the HP and MP potion you actually use, the way you pick your mob. The
+level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the cheapest
+potion per point would save. The card lists every potion your job can buy with what it restores, its price, what it
+costs per HP or MP and how much of your bar one potion fills. Potions have no level requirement in Classic, so they are
+all there at every level. Without a choice the app keeps using the cheapest. Max HP and Max MP now head the Total stats card. Max MP
 is a new field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
 before it starts empty until you fill it in. It is shown only and never blocks the calculation.
 
-**Score:** 3
+**Score:** 4
 
 #### What makes this deploy extra special
 
-A player sees at a glance which potion is cheapest per point and how many it takes to refill, and now keeps Max HP and
+A player tells the app which potions they really buy, so the level's cost matches how they play, and sees what switching would save, and now keeps Max HP and
 Max MP on Total stats, as in the game's stat window.
 
 **Score:** 3

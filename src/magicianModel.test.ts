@@ -54,7 +54,7 @@ import {
 } from './profile'
 import { NOT_MODELLED, notModelled, skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
-import { energyBoltAt, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, potionFactorOf, resolveSpot, suggestMonsters } from './suggest'
+import { energyBoltAt, HP_POTION, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, potionFactorOf, resolveSpot, suggestMonsters } from './suggest'
 
 const mDraft: ProfileDraft = {
   ...DEFAULT_PROFILE,
@@ -290,7 +290,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     const c = toCharacter(p)
     const attack = spell === 'bolt' ? spellAttack(c, energyBoltAt(p.energyBolt)!, 1) : spellAttack(c, magicClawAt(p.magicClaw)!, MAGIC_CLAW_HITS)
     const estimate = estimateMob(c, attack, monster)
-    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
+    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, hpPotion: HP_POTION, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
     const plan = hourPlan(s, estimate.killsPerHour)
     return { estimate, epm: plan.potions > 0 ? plan.expPerHour / plan.potions : Infinity }
   }

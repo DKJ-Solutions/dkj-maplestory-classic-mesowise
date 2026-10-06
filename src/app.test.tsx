@@ -5,6 +5,7 @@ import { App } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
+import { POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
 import { mobDraft } from './data/spots'
@@ -233,8 +234,8 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints en Monster naast het oog, en niet bij Ability points en Total stats', () => {
-      for (const title of ['Equip', 'Skillpoints', 'Monster']) {
+    it('staat bij Equip, Skillpoints, Monster en Potions naast het oog, en niet bij Ability points en Total stats', () => {
+      for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
@@ -245,17 +246,19 @@ describe('begin zonder opslag', () => {
       }
       expect(report('Ability points')).toBeNull()
       expect(report('Total stats')).toBeNull()
-      expect(document.querySelectorAll('.card-report')).toHaveLength(3)
+      expect(document.querySelectorAll('.card-report')).toHaveLength(4)
     })
 
-    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Monster en boven de Report-kaart', () => {
+    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions en boven de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = report('Equip')!.closest('section')!
       const skills = report('Skillpoints')!.closest('section')!
       const mob = report('Monster')!.closest('section')!
+      const potions = report('Potions')!.closest('section')!
       expect(equip.nextElementSibling).toBe(skills)
       expect(skills.nextElementSibling).toBe(mob)
-      expect(mob.nextElementSibling).toBe(stats)
+      expect(mob.nextElementSibling).toBe(potions)
+      expect(potions.nextElementSibling).toBe(stats)
       expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
@@ -1563,10 +1566,10 @@ describe('een Warrior in de app', () => {
       expect(profileFields().luk).toBe('4')
     })
 
-    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
@@ -1912,10 +1915,10 @@ describe('een Bowman in de app', () => {
       expect(profileFields().luk).toBe('4')
     })
 
-    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -2055,14 +2058,14 @@ describe('een Magician in de app', () => {
       expect(equip.textContent).not.toMatch(/claw/i)
     })
 
-    it('zet de kosten en de vier adviezen in één kaart Report: ATT, DEF, Skill en Mob (#126)', () => {
+    it('zet de kosten en de vijf adviezen in één kaart Report: ATT, DEF, Skill, Mob en Potions (#126)', () => {
       const home = homeScreen()
       expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
       const card = within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
       const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-      expect(questions).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+      expect(questions).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
       // Elk advies heeft een antwoord, en het skilladvies noemt de mana die de skill kost.
-      expect(card.querySelectorAll('.chip')).toHaveLength(4)
+      expect(card.querySelectorAll('.chip')).toHaveLength(5)
       expect(card.textContent).not.toMatch(NOT_YET)
       expect(card.textContent).toMatch(/MP/)
     })
@@ -2081,10 +2084,10 @@ describe('een Magician in de app', () => {
       expect(profileFields().luk).toBe('10')
     })
 
-    it('toont alle vier de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -2553,9 +2556,9 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
   }
   const card = (h: HTMLElement) => within(h).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
 
-  it('zet onder Report de koppen ATT, DEF, Skill en Mob in die volgorde, en niets van de oude vraag over equipment', () => {
+  it('zet onder Report de koppen ATT, DEF, Skill, Mob en Potions in die volgorde, en niets van de oude vraag over equipment', () => {
     const c = card(home())
-    expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob'])
+    expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
     // ATT en DEF zijn afkortingen met hun volle naam als tooltip.
     expect(Array.from(c.querySelectorAll('h3 abbr')).map((a) => [a.textContent, a.getAttribute('title')])).toEqual([['ATT', 'Attack'], ['DEF', 'Defense']])
     expect(c.textContent).not.toContain('Moet ik mijn equipment nu upgraden?')
@@ -2574,26 +2577,28 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
       'Betere armor: de prijs tegenover de HP potions die je daardoor minder nodig hebt.',
       'Welke skill het meeste bespaart: sneller killen tegenover de extra mana potions.',
       'Welke mob dit level het goedkoopst is: hoe snel je killt tegenover wat je aan potions kwijt bent.',
+      'Welke potion dit level het goedkoopst is: de prijs tegenover wat hij herstelt.',
     ])
   })
 
   it('zet de chip in dezelfde .question-head als zijn kop', () => {
     const c = card(home())
     const heads = Array.from(c.querySelectorAll('h3')).map((h) => h.closest('.question-head')!)
-    expect(heads).toHaveLength(4)
+    expect(heads).toHaveLength(5)
     for (const head of heads) {
       expect(head.querySelectorAll('h3')).toHaveLength(1)
       expect(head.querySelectorAll('.chip')).toHaveLength(1)
     }
   })
 
-  it('geeft ATT, DEF en Mob een label in plaats van Ja of Nee', () => {
+  it('geeft ATT, DEF, Mob en Potions een label in plaats van Ja of Nee', () => {
     const c = card(home())
     const chips = Array.from(c.querySelectorAll('.chip')).map((x) => x.textContent!)
-    expect(chips).toHaveLength(4)
+    expect(chips).toHaveLength(5)
     expect(chips[0]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
     expect(chips[1]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
     expect(chips[3]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
+    expect(chips[4]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
     for (const t of chips) expect(t).not.toMatch(/^(Ja|Nee)$/)
   })
 
@@ -2610,20 +2615,18 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     expect(mob.textContent!.includes('Wissel naar ')).toBe(chipOf('Mob') === 'Wisselen')
   })
 
-  it('zet Ability points, Total stats en Potions in één blok Stats zonder zichtbare kop, en alleen die drie', () => {
+  it('zet Ability points en Total stats in één blok Stats zonder zichtbare kop, en alleen die twee', () => {
     const h = home()
     const group = h.querySelector('section.stats-group')!
     expect(group.getAttribute('aria-label')).toBe('Stats')
     expect(group.querySelector('h2')).toBeNull()
     expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
-    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats|Potions/ })).toHaveLength(3)
+    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats/ })).toHaveLength(2)
     expect(within(group as HTMLElement).getByRole('button', { name: 'Ability points bekijken' })).toBeTruthy()
     expect(within(group as HTMLElement).getByRole('button', { name: 'Total stats bekijken' })).toBeTruthy()
-    expect(within(group as HTMLElement).getByRole('button', { name: 'Potions bekijken' })).toBeTruthy()
-    // Geen andere kaart in het blok: de drie kaarten zijn de enige kinderen, Potions als laatste.
-    expect(group.children).toHaveLength(3)
-    expect(group.lastElementChild!.classList.contains('potions')).toBe(true)
-    expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip/ })).toBeNull()
+    // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen. Potions heeft een rapport en staat erboven.
+    expect(group.children).toHaveLength(2)
+    expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip|Potions/ })).toBeNull()
   })
 
   it('noemt bij een Thief op lv 10 wat hij draagt en vanaf welk level de eerstvolgende betere claw te dragen is', () => {
@@ -2871,24 +2874,56 @@ describe('de soort van een eigen wapen (#176)', () => {
 describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   const potionsCard = () => homeScreen().querySelector<HTMLElement>('section.potions')!
   const openPotions = () => fireEvent.click(screen.getByRole('button', { name: 'Potions bekijken' }))
-  const potionNames = (group: string) =>
-    Array.from(potionsCard().querySelectorAll('.potion-group'))
-      .find((g) => g.querySelector('h3')?.textContent === group)!
-      .querySelectorAll('.potion-name')
-  const names = (group: string) => Array.from(potionNames(group)).map((n) => n.textContent)
-  const usedName = (group: string) => Array.from(potionNames(group)).find((n) => n.closest('.potion')!.classList.contains('used'))?.textContent
+  const select = (kind: 'HP' | 'MP') => within(potionsCard()).getByLabelText(`De ${kind} potion die je gebruikt`) as HTMLSelectElement
+  const group = (kind: 'HP' | 'MP') => select(kind).closest<HTMLElement>('.potion-group')!
+  const names = (kind: 'HP' | 'MP') => Array.from(group(kind).querySelectorAll('.potion-name')).map((n) => n.textContent)
+  const usedName = (kind: 'HP' | 'MP') => group(kind).querySelector('.potion.used .potion-name')?.textContent
+  const pickPotion = (kind: 'HP' | 'MP', name: string) => fireEvent.change(select(kind), { target: { value: name } })
+  const potionPart = () =>
+    within(homeScreen().querySelector<HTMLElement>('section.level-cost')!).getByRole('heading', { level: 3, name: 'Potions' }).closest<HTMLElement>('.advice-part')!
 
-  it('toont de potions van een Thief van goedkoop naar duur per punt, met hun prijs, en geen Max HP of Max MP (die staan op Total stats)', () => {
+  it('toont per soort een keuzemenu en de potions van een Thief van goedkoop naar duur, met hun prijs, en geen Max HP of Max MP', () => {
     openPotions()
     expect(cardNames('section.potions')).toEqual([])
+    expect(names('HP')).toEqual(['Orange Potion', 'White Potion'])
+    expect(names('MP')).toEqual(['Blue Potion'])
+    expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
     expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['Prijs: 150 meso', 'Prijs: 350 meso', 'Prijs: 220 meso'])
-    expect(names('HP potions')).toEqual(['Orange Potion', 'White Potion'])
-    expect(names('MP potions')).toEqual(['Blue Potion'])
-    expect(usedName('HP potions')).toBe('Orange Potion')
-    expect(usedName('MP potions')).toBe('Blue Potion')
+    // Zonder keuze de goedkoopste.
+    expect(select('HP').value).toBe('Orange Potion')
+    expect(usedName('HP')).toBe('Orange Potion')
+    expect(usedName('MP')).toBe('Blue Potion')
     // 250 HP van 444: 56%; 200 MP van 363: 55%.
     expect(potionsCard().textContent).toContain('+250 HP · 0,6 meso per HP · vult 56% van je Max HP')
     expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP · vult 55% van je Max MP')
+  })
+
+  it('bewaart de gekozen potion, rekent er het level mee, en zegt in het rapport dat de goedkoopste bespaart', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const before = levelCostText()
+    expect(potionPart().querySelector('.chip')!.textContent).toBe('Blijven')
+    expect(potionPart().textContent).toContain('Je gebruikt al de goedkoopste potions.')
+    openPotions()
+    pickPotion('HP', 'White Potion')
+    expect(stored(POTION_CHOICE_KEY)).toEqual({ version: 1, hp: 'White Potion', mp: null })
+    expect(usedName('HP')).toBe('White Potion')
+    expect(group('HP').querySelector('.potion.used .potion-used')!.textContent).toBe('Je gebruikt deze potion')
+    // Duurder per HP: het level kost meer, en het rapport raadt de Orange aan.
+    expect(levelCostText()).not.toBe(before)
+    expect(potionPart().querySelector('.chip')!.textContent).toBe('Wisselen')
+    expect(potionPart().textContent).toContain('Wissel naar Orange Potion.')
+    expect(potionPart().textContent).toMatch(/Met jouw potions kost dit level je ± [\d.]+ meso, met de goedkoopste kost het je ± [\d.]+ meso\./)
+  })
+
+  it('valt terug op de goedkoopste als de bewaarde keuze niet bij je job hoort', () => {
+    cleanup()
+    localStorage.setItem(POTION_CHOICE_KEY, JSON.stringify({ version: 1, hp: 'Lemon', mp: 'Lemon' }))
+    render(<App />)
+    openPotions()
+    expect(select('HP').value).toBe('Orange Potion')
+    expect(select('MP').value).toBe('Blue Potion')
   })
 
   it('zet Max HP en Max MP bovenaan Total stats; een aangepaste Max MP telt na Opslaan, en Level up verhoogt beide', () => {
@@ -2911,8 +2946,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
     render(<App />)
     openPotions()
-    expect(names('MP potions')).toEqual(['Orange', 'Lemon', 'Blue Potion'])
-    expect(usedName('MP potions')).toBe('Orange')
+    expect(names('MP')).toEqual(['Orange', 'Lemon', 'Blue Potion'])
+    expect(usedName('MP')).toBe('Orange')
   })
 
   it('laat het deel van je balk weg zolang Max MP leeg is', () => {
