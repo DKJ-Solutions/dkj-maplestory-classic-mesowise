@@ -2468,7 +2468,7 @@ export const totalCostWho = (level: string, job: Job): string => {
 
 function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
   const inv = props.invoice
-  const meso = (n: number) => `−${nfInt.format(n)} meso`
+  const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
   return (
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>

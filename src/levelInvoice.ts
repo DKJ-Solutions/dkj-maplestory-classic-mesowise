@@ -47,7 +47,7 @@ export type LevelInvoice =
   /** Geen factuur: de kosten van het level zijn niet uit te rekenen (zie `cost` voor waarom), of het level is niet haalbaar. */
   | { kind: 'none'; cost: LevelCost }
   /**
-   * De factuur: de regels (alleen wat iets kost), het totaal, de mob, en hoeveel uur het level duurt. `level` en `expToNext`
+   * De factuur: de regels (je HP- en MP-potion altijd, de rest alleen als het iets kost), het totaal, de mob, en hoeveel uur het level duurt. `level` en `expToNext`
    * komen uit de kosten van het level.
    */
   | { kind: 'invoice'; level: number; expToNext: number; mob: string; hours: number; lines: readonly InvoiceLine[]; total: number }
@@ -56,7 +56,8 @@ export type LevelInvoice =
  * Naar boven afronden tot hele stuks, zonder dat rekenruis een stuk erbij geeft: 3,0000000000000004 is 3, geen 4. Een echte rest
  * (3,0016) rondt wel naar boven af.
  */
-const wholeUp = (x: number): number => Math.ceil(x - 1e-9)
+// Nooit onder 0: Math.ceil(0 - 1e-9) is -0, en dat zou als "× -0" op de factuur staan.
+const wholeUp = (x: number): number => Math.max(0, Math.ceil(x - 1e-9))
 
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
 const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
@@ -80,8 +81,9 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   const plan = resolved?.plan ?? null
   const own = (text: string | undefined) => text !== undefined && text.trim() !== ''
   const lines: InvoiceLine[] = []
+  // Alleen wat iets kost, behalve je HP- en MP-potion: die staan er altijd, ook met × 0 (Dave, 6 oktober 2026).
   const add = (label: string, qty: number | null, meso: number, why?: PotionWhy) => {
-    if (meso > 0) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
+    if (meso > 0 || why) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour, potionFactor } = resolved.suggestion

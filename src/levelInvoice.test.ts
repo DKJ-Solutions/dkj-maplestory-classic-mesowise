@@ -50,7 +50,7 @@ describe('levelInvoice', () => {
       const meso = levelMeso(p)
       expect(inv.total).toBeGreaterThanOrEqual(Math.floor(meso))
       // Elke regel rondt hoogstens één stuk (of één meso) naar boven af.
-      const slack = inv.lines.reduce((s, l) => s + (l.qty === null ? 1 : l.meso / l.qty + 1), 0)
+      const slack = inv.lines.reduce((s, l) => s + (l.qty === null ? 1 : l.qty === 0 ? 0 : l.meso / l.qty + 1), 0)
       expect(inv.total - meso).toBeLessThanOrEqual(slack)
     }
   })
@@ -60,7 +60,7 @@ describe('levelInvoice', () => {
       for (const line of invoiceOf(p).lines.filter((l) => l.why)) {
         const w = line.why!
         // Het aantal is het exacte getal naar boven afgerond, en dat getal is wat je kwijt bent gedeeld door één potion.
-        expect(line.qty).toBe(Math.ceil(w.exact - 1e-9))
+        expect(line.qty).toBe(Math.max(0, Math.ceil(w.exact - 1e-9)))
         expect(w.exact).toBeCloseTo(w.need / w.restores, 9)
         expect(w.need).toBeCloseTo((w.perKill * w.killsPerHour + w.buffPerHour) * w.hours, 6)
         if (w.kind === 'hp') expect(w.hits! * w.touch!).toBeCloseTo(w.perKill, 9)
@@ -74,6 +74,15 @@ describe('levelInvoice', () => {
     expect(inv.lines[0].label).toBe('White Potion')
     expect(inv.lines[0].meso).toBe(inv.lines[0].qty! * 350)
     expect(inv.total).toBeGreaterThan(invoiceOf(thief).total)
+  })
+
+  it('zet je MP-potion er ook op als je dit level geen MP gebruikt, met × 0 (Dave, 6 oktober 2026)', () => {
+    // Een Warrior zonder Power Strike slaat zonder MP.
+    const inv = invoiceOf(profileOf({ powerStrike: '0' }, 'warrior'))
+    const blue = inv.lines.find((l) => l.label === 'Blue Potion')!
+    expect(blue).toMatchObject({ qty: 0, meso: 0 })
+    expect(blue.why).toMatchObject({ kind: 'mp', perKill: 0, need: 0, exact: 0 })
+    expect(inv.lines.map((l) => l.label).slice(0, 2)).toEqual(['Orange Potion', 'Blue Potion'])
   })
 
   it('geeft een Warrior geen munitie, en een Bowman pijlen', () => {
