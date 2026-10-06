@@ -3,7 +3,7 @@ import { pickUnder } from './best'
 import { isInvalid } from './calc/rankSpots'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { expToNextLevel } from './data/expTable'
-import { knownSpotPatch, mobDraft } from './data/spots'
+import { mobDraft } from './data/spots'
 import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ALL_SKILLS, THIEF_SKILLS, WARRIOR_SKILLS, type SkillKey } from './data/skills'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS, PRECISE_STRIKES_LEVELS } from './data/warrior'
@@ -22,10 +22,10 @@ const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   expPerHour: String(expPerHour),
   potions: String(potions),
 })
-const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...knownSpotPatch(spotId) })
+const known = (id: string, mob: string): SpotDraft => ({ ...mobDraft(mob)!, id })
 
 // Een bekende plek wint van een eigen plek met weinig EXP per uur, dus het profiel doet ertoe.
-const drafts = [known('a', 'henesys-rain-forest-east'), own('b', 1_000, 10_000)]
+const drafts = [known('a', 'Ribbon Pig'), own('b', 1_000, 10_000)]
 
 /** De mesokosten van één level op de beste plek van dat level, rechtstreeks uitgerekend. */
 const levelCostOf = (p: Profile, d: readonly SpotDraft[] = drafts) => {
@@ -136,7 +136,7 @@ describe('skillPointAdvice', () => {
   })
 
   it('laat Nimble Body bij besparing 0 winnen van Lucky Seven als die extra kost, en toont beide', () => {
-    const advice = skillPointAdvice([known('a', 'henesys-rain-forest-east')], profile)
+    const advice = skillPointAdvice([known('a', 'Ribbon Pig')], profile)
     if (advice.kind !== 'advice') throw new Error('geen advies')
     const nimble = advice.choices.find((c) => c.id === 'nimbleBody')!
     const lucky = advice.choices.find((c) => c.id === 'luckySeven')!
@@ -149,7 +149,7 @@ describe('skillPointAdvice', () => {
   it('kiest bij alleen negatieve besparingen de minst negatieve als winnaar', () => {
     // Nimble Body op het maximum: alleen Lucky Seven blijft over, en die kost op deze plek extra.
     const only = { ...profile, level: 30, nimbleBody: NIMBLE_BODY.maxLevel }
-    const advice = skillPointAdvice([known('a', 'henesys-rain-forest-east')], only)
+    const advice = skillPointAdvice([known('a', 'Ribbon Pig')], only)
     if (advice.kind !== 'advice') throw new Error('geen advies')
     expect(advice.left).toBeGreaterThan(0)
     expect(advice.choices.map((c) => c.id)).toEqual(['luckySeven'])
@@ -158,7 +158,7 @@ describe('skillPointAdvice', () => {
   })
 
   it('rondt een besparing onder een halve meso af op precies 0, zodat gelijke skills allemaal "scheelt niets" zijn', () => {
-    const sets = [[own('a', 40_000, 10_000), own('b', 30_000, 10_000)], drafts, [known('a', 'henesys-rain-forest-east')]]
+    const sets = [[own('a', 40_000, 10_000), own('b', 30_000, 10_000)], drafts, [known('a', 'Ribbon Pig')]]
     for (const d of sets) {
       const advice = skillPointAdvice(d, profile)
       if (advice.kind !== 'advice') throw new Error('geen advies')

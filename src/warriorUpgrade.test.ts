@@ -7,7 +7,7 @@ import { ASSUMPTIONS } from './calc/mobModel'
 import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
-import { knownSpotPatch } from './data/spots'
+import { mobDraft } from './data/spots'
 import type { ArmorPiece, Claw } from './data/types'
 import { bestExpPerMeso } from './mesoCostAt'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
@@ -24,11 +24,14 @@ const parseW = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
 const strong = (over: Partial<Profile> = {}): Profile => ({ ...parseW({}), ...over })
 
 const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
-const drafts = [{ ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') }, own('b', 1_000, 10_000)]
+// De mob waarop je jaagt (#123): Stump. Waar een sterke Warrior een Stump met elk wapen in één klap velt, telt de schade
+// niet en rekent de test op de taaiere Dark Stump (toughDrafts).
+const drafts = [{ ...mobDraft('Stump')!, id: 'a' }, own('b', 1_000, 10_000)]
+const toughDrafts = [{ ...mobDraft('Dark Stump')!, id: 'a' }, own('b', 1_000, 10_000)]
 
 /** EXP per meso op de beste plek, via bestExpPerMeso (niet via de module onder test). */
-const epm = (p: Profile) => {
-  const v = bestExpPerMeso(drafts, p, ASSUMPTIONS)
+const epm = (p: Profile, d: readonly SpotDraft[] = drafts) => {
+  const v = bestExpPerMeso(d, p, ASSUMPTIONS)
   if (v === undefined) throw new Error('geen beste plek')
   return v
 }
@@ -46,8 +49,8 @@ const expSum = (from: number, to: number) => {
 
 describe('Warrior-wapens: de winkel', () => {
   type Advice = Extract<ClawUpgradeAdvice, { kind: 'advice' }>
-  const advice = (p: Profile): Advice => {
-    const a = clawUpgradeAdvice(drafts, p)
+  const advice = (p: Profile, d: readonly SpotDraft[] = drafts): Advice => {
+    const a = clawUpgradeAdvice(d, p)
     if (a.kind !== 'advice') throw new Error('advies verwacht')
     return a
   }
@@ -55,7 +58,7 @@ describe('Warrior-wapens: de winkel', () => {
   const weapon = (name: string) => WARRIOR_WEAPONS.find((w) => w.name === name)!
 
   it('rekent met de wapens van de Warrior en nooit met Thief-claws', () => {
-    const a = advice(strong({ level: 30 }))
+    const a = advice(strong({ level: 30 }), toughDrafts)
     const all = [...a.choices.map((c) => c.claw), ...a.notWearable.map((u) => u.claw)]
     expect(all.length).toBeGreaterThan(0)
     for (const c of all) {
@@ -93,8 +96,8 @@ describe('Warrior-wapens: de winkel', () => {
     const p = strong({ level: 30, str: 125, dex: 60, clawWatk: 40, weaponMult: 2.6 })
     const gladius = weapon('Gladius')
     expect(gladius.watk).toBeGreaterThan(40)
-    expect(epm(withClaw(p, gladius))).toBeLessThan(epm(p))
-    expect(names(advice(p))).not.toContain('Gladius')
+    expect(epm(withClaw(p, gladius), toughDrafts)).toBeLessThan(epm(p, toughDrafts))
+    expect(names(advice(p, toughDrafts))).not.toContain('Gladius')
   })
 
   it('zet een wapen zonder genoeg STR of DEX bij de niet-draagbare, met het tekort in STR (de hoofdstat eerst)', () => {

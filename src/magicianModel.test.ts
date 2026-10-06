@@ -17,7 +17,8 @@ import {
   SPELL_CAST_MS,
 } from './data/magician'
 import { ALL_SKILLS, isSkillKey, MAGICIAN_SKILLS, mpPerUse, THIEF_SKILLS } from './data/skills'
-import { findKnownSpot, knownSpotPatch } from './data/spots'
+import { findKnownSpot, mobDraft } from './data/spots'
+import { mobGroup } from './testing/mobGroup'
 import { NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
@@ -77,9 +78,9 @@ const parseM = (over: Partial<ProfileDraft> = {}): Profile => {
 }
 const magician = parseM()
 
-const perionEast = findKnownSpot('perion-east-domain')!
+const mixedMobs = mobGroup('Snail', 'Blue Snail', 'Red Snail', 'Stump', 'Dark Stump', 'Green Mushroom', 'Axe Stump', 'Dark Axe Stump')
 const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
-const drafts = [{ ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') }, own('b', 1_000, 10_000)]
+const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 const epm = (p: Profile) => {
   const v = bestExpPerMeso(drafts, p, ASSUMPTIONS)
   if (v === undefined) throw new Error('geen beste plek')
@@ -277,7 +278,7 @@ describe('Magician: de spreuken en het voorstel', () => {
   it('rekent met Energy Bolt op het gezette level: de aanval van spellAttack, één klap, geen munitie', () => {
     const c = toCharacter(magician)
     const attack = spellAttack(c, energyBoltAt(20)!, 1)
-    for (const s of suggestMonsters(magician, perionEast)) {
+    for (const s of suggestMonsters(magician, mixedMobs)) {
       expect(s.estimate).toEqual(estimateMob(c, attack, s.monster))
       expect(s.estimate.starsPerKill).toBe(s.estimate.attacksToKill)
       expect(s.rechargePerStar).toBe(0)
@@ -285,7 +286,7 @@ describe('Magician: de spreuken en het voorstel', () => {
   })
 
   /** De EXP per meso aan potions van één spreuk op één monster, via hourPlan (niet via de keuze in suggestMonsters). */
-  const epmOf = (p: Profile, spell: 'bolt' | 'claw', monster: (typeof perionEast.monsters)[number]) => {
+  const epmOf = (p: Profile, spell: 'bolt' | 'claw', monster: (typeof mixedMobs.monsters)[number]) => {
     const c = toCharacter(p)
     const attack = spell === 'bolt' ? spellAttack(c, energyBoltAt(p.energyBolt)!, 1) : spellAttack(c, magicClawAt(p.magicClaw)!, MAGIC_CLAW_HITS)
     const estimate = estimateMob(c, attack, monster)
@@ -297,7 +298,7 @@ describe('Magician: de spreuken en het voorstel', () => {
   it('kiest per monster de spreuk met de meeste EXP per meso aan potions, voor elke combinatie van levels', () => {
     for (const [eb, mc] of [[1, 20], [20, 1], [10, 10], [19, 20], [20, 19], [5, 3]]) {
       const p = parseM({ energyBolt: String(eb), magicClaw: String(mc) })
-      for (const s of suggestMonsters(p, perionEast)) {
+      for (const s of suggestMonsters(p, mixedMobs)) {
         const bolt = epmOf(p, 'bolt', s.monster)
         const claw = epmOf(p, 'claw', s.monster)
         const want = claw.epm > bolt.epm ? claw : bolt
@@ -308,34 +309,34 @@ describe('Magician: de spreuken en het voorstel', () => {
 
   it('casts Magic Claw (2 klappen, 20 MP) waar die goedkoper in potions is dan Energy Bolt, en anders Energy Bolt (1 klap)', () => {
     const p = parseM({ energyBolt: '1', magicClaw: '20' })
-    for (const s of suggestMonsters(p, perionEast)) {
+    for (const s of suggestMonsters(p, mixedMobs)) {
       const claw = s.estimate.starsPerKill === s.estimate.attacksToKill * 2
       expect(s.estimate.mpPerKill, s.monster.name).toBe(s.estimate.attacksToKill * (claw ? 20 : 8))
     }
   })
 
   it('heeft geen voorstel zonder spreuk: de gewone wand-aanval staat niet in de gegevens', () => {
-    expect(suggestMonsters(parseM({ energyBolt: '0', magicClaw: '0' }), perionEast)).toEqual([])
+    expect(suggestMonsters(parseM({ energyBolt: '0', magicClaw: '0' }), mixedMobs)).toEqual([])
     expect(pickMonster([], undefined)).toBeUndefined()
   })
 
   it('rekent met de M.ATT van het wapen en niet met zijn weapon attack: dezelfde Magician met meer M.ATT haalt minder klappen per kill', () => {
-    const low = suggestMonsters(parseM({ clawWatk: '10' }), perionEast).reduce((n, s) => n + s.estimate.attacksToKill, 0)
-    const high = suggestMonsters(parseM({ clawWatk: '100' }), perionEast).reduce((n, s) => n + s.estimate.attacksToKill, 0)
+    const low = suggestMonsters(parseM({ clawWatk: '10' }), mixedMobs).reduce((n, s) => n + s.estimate.attacksToKill, 0)
+    const high = suggestMonsters(parseM({ clawWatk: '100' }), mixedMobs).reduce((n, s) => n + s.estimate.attacksToKill, 0)
     expect(high).toBeLessThan(low)
   })
 
   it('negeert de tijd-per-aanval in het profiel: een cast duurt 810 ms', () => {
-    const a = suggestMonsters(parseM({ attackMs: '100' }), perionEast).map((s) => s.expPerHour)
-    const b = suggestMonsters(parseM({ attackMs: '5000' }), perionEast).map((s) => s.expPerHour)
+    const a = suggestMonsters(parseM({ attackMs: '100' }), mixedMobs).map((s) => s.expPerHour)
+    const b = suggestMonsters(parseM({ attackMs: '5000' }), mixedMobs).map((s) => s.expPerHour)
     expect(a).toEqual(b)
     expect(SPELL_CAST_MS.normal).toBe(810)
   })
 
   it('gebruikt de raakkans uit de accuracy van het profiel, zoals de andere jobs', () => {
-    const lo = suggestMonsters(parseM({ accuracy: '1' }), perionEast)
-    const hi = suggestMonsters(parseM({ accuracy: '999' }), perionEast)
-    for (const m of perionEast.monsters) {
+    const lo = suggestMonsters(parseM({ accuracy: '1' }), mixedMobs)
+    const hi = suggestMonsters(parseM({ accuracy: '999' }), mixedMobs)
+    for (const m of mixedMobs.monsters) {
       const a = lo.find((s) => s.monster.name === m.name)!.estimate.hitChance
       const b = hi.find((s) => s.monster.name === m.name)!.estimate.hitChance
       expect(b, m.name).toBeGreaterThanOrEqual(a)
@@ -354,7 +355,7 @@ describe('Magician: de spreuken en het voorstel', () => {
   })
 
   it('telt de MP van de spreuk mee: MP per kill = casts · 16, en het kost Orange-potions van 50 MP à 50 meso', () => {
-    const s = suggestMonsters(magician, perionEast)[0]
+    const s = suggestMonsters(magician, mixedMobs)[0]
     expect(s.mpPotion).toBe(MAGICIAN_MP_POTION)
     expect(s.estimate.mpPerKill).toBe(s.estimate.attacksToKill * 16)
     const plan = hourPlan(s, 100)
@@ -364,7 +365,7 @@ describe('Magician: de spreuken en het voorstel', () => {
   })
 
   it('heeft geen munitiekosten', () => {
-    const s = suggestMonsters(magician, perionEast)[0]
+    const s = suggestMonsters(magician, mixedMobs)[0]
     expect(hourPlan(s, 100).ammo).toBe(0)
     expect(hourPlan(s, 12_345).ammo).toBe(0)
   })
@@ -372,14 +373,14 @@ describe('Magician: de spreuken en het voorstel', () => {
   it('laat de Thief en de Warrior zonder Magician-spullen: dezelfde Blue Potion voor MP, en de Thief laadt nog steeds stars', () => {
     const t = parseProfile(DEFAULT_PROFILE)
     if (!('profile' in t)) throw new Error('ongeldig')
-    const s = suggestMonsters(t.profile, perionEast)[0]
+    const s = suggestMonsters(t.profile, mixedMobs)[0]
     expect(s.mpPotion).toBe(MP_POTION)
     expect(s.rechargePerStar).toBe(0.3)
   })
 
   it('vult bij resolveSpot de munitie met 0 en de potions met het voorstel, en laat de reiskosten en een ingevulde munitie staan', () => {
-    const chosen = { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east'), travel: '100' }
-    const known = findKnownSpot('henesys-rain-forest-east')!
+    const chosen = { ...mobDraft('Ribbon Pig')!, id: 'a', travel: '100' }
+    const known = findKnownSpot('mob:Ribbon Pig')!
     const s = pickMonster(suggestMonsters(magician, known), undefined)!
     const plan = hourPlan(s, s.estimate.killsPerHour)
     const spot = resolveSpot(chosen, known, magician)
@@ -389,8 +390,8 @@ describe('Magician: de spreuken en het voorstel', () => {
   })
 
   it('laat bij een Magician zonder spreuk een bekende plek zoals de speler hem invulde (geen voorstel)', () => {
-    const known = findKnownSpot('henesys-rain-forest-east')!
-    const chosen = { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east'), expPerHour: '500' }
+    const known = findKnownSpot('mob:Ribbon Pig')!
+    const chosen = { ...mobDraft('Ribbon Pig')!, id: 'a', expPerHour: '500' }
     expect(resolveSpot(chosen, known, parseM({ energyBolt: '0' })).expPerHour).toBe(500)
   })
 })
@@ -735,7 +736,7 @@ describe('Magician: equipment', () => {
 describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () => {
   const hand = (p: Profile) => toCharacter(p)
   const mpPerCast = (p: Profile) => {
-    const s = suggestMonsters(p, perionEast)[0]
+    const s = suggestMonsters(p, mixedMobs)[0]
     return { attacks: s.estimate.attacksToKill, mpPerCast: s.estimate.mpPerKill / s.estimate.attacksToKill, stars: s.estimate.starsPerKill / s.estimate.attacksToKill }
   }
 
@@ -743,7 +744,7 @@ describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () =>
     // MagicTotal = 50 + 55 = 105; max = 1,3 · 105 · 2 = 273; min = 1,3 · 105 · (1 + 100 · 0,88 / 100) = 256,62.
     const by = { min: 256.62, max: 273, stars: 1, mpPerAttack: 16, magic: true as const }
     const c = hand(magician)
-    for (const s of suggestMonsters(magician, perionEast)) {
+    for (const s of suggestMonsters(magician, mixedMobs)) {
       const e = estimateMob(c, by, s.monster)
       expect(s.estimate.attacksToKill, s.monster.name).toBe(e.attacksToKill)
       expect(s.estimate.mpPerKill, s.monster.name).toBe(e.mpPerKill)
@@ -757,14 +758,14 @@ describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () =>
   })
 
   it('negeert Magic Claw als Energy Bolt op 0 staat (je kunt hem dan niet leren, ook als een opgeslagen profiel hem heeft): geen voorstel', () => {
-    expect(suggestMonsters(parseM({ energyBolt: '0', magicClaw: '5' }), perionEast)).toEqual([])
-    expect(suggestMonsters(parseM({ energyBolt: '1', magicClaw: '5' }), perionEast).length).toBeGreaterThan(0)
+    expect(suggestMonsters(parseM({ energyBolt: '0', magicClaw: '5' }), mixedMobs)).toEqual([])
+    expect(suggestMonsters(parseM({ energyBolt: '1', magicClaw: '5' }), mixedMobs).length).toBeGreaterThan(0)
   })
 
   it('geeft bij INT 0 en M.ATT 0 wel een voorstel (de schade is dan 0, dus minimaal 1 per klap) in plaats van te crashen', () => {
     // Het profiel laat INT niet onder 4 (het minimum van elke stat); het model zelf moet INT 0 nog steeds aankunnen.
     const p = { ...parseM({ clawWatk: '0' }), int: 0 }
-    const out = suggestMonsters(p, perionEast)
+    const out = suggestMonsters(p, mixedMobs)
     expect(out.length).toBeGreaterThan(0)
     for (const s of out) {
       expect(Number.isFinite(s.estimate.killsPerHour), s.monster.name).toBe(true)
@@ -775,7 +776,7 @@ describe('Magician: de keuze tussen Energy Bolt en Magic Claw, de randen', () =>
   it('geeft meer INT een hogere of gelijke schade per cast: de klappen per kill dalen nooit als INT stijgt', () => {
     let previous = Infinity
     for (const int of ['4', '5', '50', '99', '100', '500']) {
-      const total = suggestMonsters(parseM({ int }), perionEast).reduce((n, s) => n + s.estimate.attacksToKill, 0)
+      const total = suggestMonsters(parseM({ int }), mixedMobs).reduce((n, s) => n + s.estimate.attacksToKill, 0)
       expect(total, `INT ${int}`).toBeLessThanOrEqual(previous)
       previous = total
     }

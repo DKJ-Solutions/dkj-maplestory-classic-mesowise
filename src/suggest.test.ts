@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { estimateMob, meleeAttack } from './calc/mobModel'
 import { rankSpots } from './calc/rankSpots'
-import { findKnownSpot, knownSpotPatch } from './data/spots'
+import { findKnownSpot, mobDraft } from './data/spots'
+import { mobGroup } from './testing/mobGroup'
 import { LUCKY_SEVEN_LEVELS } from './data/thief'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile } from './profile'
 import { newDraft, toSpot } from './spotDraft'
@@ -11,8 +12,8 @@ const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
 const profile: Profile = parsed.profile
 
-const subway = findKnownSpot('kerning-subway-line-1-area-1')!
-const perionEast = findKnownSpot('perion-east-domain')!
+const bubbling = findKnownSpot('mob:Bubbling')!
+const mixedMobs = mobGroup('Snail', 'Blue Snail', 'Red Snail', 'Stump', 'Dark Stump', 'Green Mushroom', 'Axe Stump', 'Dark Axe Stump')
 
 describe('luckySevenAt', () => {
   it('geeft de waarden van de skillpagina, niet geïnterpoleerd', () => {
@@ -43,8 +44,8 @@ describe('de goedkoopste potions', () => {
 
 describe('suggestMonsters en pickMonster', () => {
   it('rekent elk monster van de plek door, van meeste naar minste EXP per uur', () => {
-    const s = suggestMonsters(profile, perionEast)
-    expect(s).toHaveLength(perionEast.monsters.length)
+    const s = suggestMonsters(profile, mixedMobs)
+    expect(s).toHaveLength(mixedMobs.monsters.length)
     for (let i = 1; i < s.length; i++) expect(s[i].expPerHour).toBeLessThanOrEqual(s[i - 1].expPerHour)
     for (const x of s) {
       expect(Number.isFinite(x.estimate.killsPerHour)).toBe(true)
@@ -53,7 +54,7 @@ describe('suggestMonsters en pickMonster', () => {
   })
 
   it('kiest het gevraagde monster, en anders het beste', () => {
-    const s = suggestMonsters(profile, perionEast)
+    const s = suggestMonsters(profile, mixedMobs)
     expect(pickMonster(s, 'Stump')?.monster.name).toBe('Stump')
     expect(pickMonster(s, undefined)).toBe(s[0])
     expect(pickMonster(s, 'bestaat niet')).toBe(s[0])
@@ -62,7 +63,7 @@ describe('suggestMonsters en pickMonster', () => {
 })
 
 describe('hourPlan', () => {
-  const s = suggestMonsters(profile, subway)[0]
+  const s = suggestMonsters(profile, bubbling)[0]
 
   it('schaalt het verbruik mee met de kills per uur', () => {
     const one = hourPlan(s, 100)
@@ -86,66 +87,66 @@ describe('hourPlan', () => {
   })
 
   it('rekent het herladen met de prijs van je eigen stars', () => {
-    const tobi = suggestMonsters({ ...profile, starRecharge: 0.7 }, subway)[0]
+    const tobi = suggestMonsters({ ...profile, starRecharge: 0.7 }, bubbling)[0]
     expect(tobi.rechargePerStar).toBe(0.7)
     expect(hourPlan(tobi, 100).ammo).toBeCloseTo(100 * tobi.estimate.starsPerKill * 0.7, 9)
   })
 
   it('doodt een monster met sterkere stars in minder aanvallen, dus met minder stars per kill', () => {
-    const subi = suggestMonsters(profile, subway)[0]
-    const ilbi = suggestMonsters({ ...profile, starWatk: 27 }, subway).find((x) => x.monster.name === subi.monster.name)!
+    const subi = suggestMonsters(profile, bubbling)[0]
+    const ilbi = suggestMonsters({ ...profile, starWatk: 27 }, bubbling).find((x) => x.monster.name === subi.monster.name)!
     expect(ilbi.estimate.starsPerKill).toBeLessThanOrEqual(subi.estimate.starsPerKill)
     expect(ilbi.estimate.killsPerHour).toBeGreaterThan(subi.estimate.killsPerHour)
   })
 })
 
 describe('resolveSpot', () => {
-  const chosen = { ...newDraft('a'), ...knownSpotPatch(subway.id), travel: '100' }
+  const chosen = { ...mobDraft('Bubbling')!, id: 'a', travel: '100' }
 
   it('is gewoon toSpot bij een eigen plek of zonder profiel', () => {
     const own = { ...newDraft('b'), expPerHour: '5000', potions: '10' }
     expect(resolveSpot(own, undefined, profile)).toEqual(toSpot(own))
-    expect(resolveSpot(chosen, subway, null)).toEqual(toSpot(chosen))
+    expect(resolveSpot(chosen, bubbling, null)).toEqual(toSpot(chosen))
   })
 
   it('vult bij een bekende plek de lege velden met het voorstel', () => {
-    const s = pickMonster(suggestMonsters(profile, subway), undefined)!
+    const s = pickMonster(suggestMonsters(profile, bubbling), undefined)!
     const plan = hourPlan(s, s.estimate.killsPerHour)
-    const spot = resolveSpot(chosen, subway, profile)
+    const spot = resolveSpot(chosen, bubbling, profile)
     expect(spot.expPerHour).toBeCloseTo(plan.expPerHour, 6)
     expect(spot.cost).toEqual({ potions: plan.potions, ammo: plan.ammo, travel: 100 })
   })
 
   it('laat de kills per uur van de speler winnen, en alles schaalt mee', () => {
-    const spot = resolveSpot({ ...chosen, kills: '300' }, subway, profile)
+    const spot = resolveSpot({ ...chosen, kills: '300' }, bubbling, profile)
     expect(spot.expPerHour).toBe(28 * 300)
   })
 
   it('laat een ingevuld veld winnen boven het voorstel', () => {
-    const spot = resolveSpot({ ...chosen, expPerHour: '1234', ammo: '0' }, subway, profile)
+    const spot = resolveSpot({ ...chosen, expPerHour: '1234', ammo: '0' }, bubbling, profile)
     expect(spot.expPerHour).toBe(1234)
     expect(spot.cost.ammo).toBe(0)
   })
 
   it('maakt de plek ongeldig bij onzinnige kills per uur, maar een ingevuld veld blijft winnen', () => {
-    expect(resolveSpot({ ...chosen, kills: '-5' }, subway, profile).expPerHour).toBeNaN()
-    expect(resolveSpot({ ...chosen, kills: 'abc' }, subway, profile).cost.potions).toBeNaN()
-    const typed = resolveSpot({ ...chosen, kills: '-5', expPerHour: '900', potions: '10', ammo: '0' }, subway, profile)
+    expect(resolveSpot({ ...chosen, kills: '-5' }, bubbling, profile).expPerHour).toBeNaN()
+    expect(resolveSpot({ ...chosen, kills: 'abc' }, bubbling, profile).cost.potions).toBeNaN()
+    const typed = resolveSpot({ ...chosen, kills: '-5', expPerHour: '900', potions: '10', ammo: '0' }, bubbling, profile)
     expect(typed).toMatchObject({ expPerHour: 900, cost: { potions: 10, ammo: 0, travel: 100 } })
   })
 
   it('noemt de EXP alleen een schatting als de app hem zelf invult', () => {
-    expect(isEstimated(chosen, subway, profile)).toBe(true)
-    expect(isEstimated({ ...chosen, expPerHour: '900' }, subway, profile)).toBe(false)
-    expect(isEstimated(chosen, subway, null)).toBe(false)
+    expect(isEstimated(chosen, bubbling, profile)).toBe(true)
+    expect(isEstimated({ ...chosen, expPerHour: '900' }, bubbling, profile)).toBe(false)
+    expect(isEstimated(chosen, bubbling, null)).toBe(false)
     expect(isEstimated(chosen, undefined, profile)).toBe(false)
   })
 
   it('van begin tot eind: bekende plekken met invoer komen in de juiste volgorde', () => {
     // Zelfde kosten, andere kills: de plek met meer EXP per uur wint.
-    const a = { ...newDraft('veel'), ...knownSpotPatch(subway.id), kills: '400', potions: '1000', ammo: '0' }
-    const b = { ...newDraft('weinig'), ...knownSpotPatch(subway.id), kills: '100', potions: '1000', ammo: '0' }
-    const ranked = rankSpots([b, a].map((d) => resolveSpot(d, subway, profile)))
+    const a = { ...mobDraft('Bubbling')!, id: 'veel', kills: '400', potions: '1000', ammo: '0' }
+    const b = { ...mobDraft('Bubbling')!, id: 'weinig', kills: '100', potions: '1000', ammo: '0' }
+    const ranked = rankSpots([b, a].map((d) => resolveSpot(d, bubbling, profile)))
     expect(ranked.map((r) => r.spot.id)).toEqual(['veel', 'weinig'])
     expect('expPerMeso' in ranked[0] && ranked[0].expPerMeso).toBeCloseTo((28 * 400) / 1000, 9)
   })
@@ -183,11 +184,11 @@ describe('Improved HP en MP Recovery: meer herstel per potion (#141)', () => {
   })
 
   it('heeft zonder punten in die skills geen effect: een Thief rekent zoals altijd', () => {
-    expect(suggestMonsters(profile, subway)[0].potionFactor).toEqual({ hp: 1, mp: 1 })
+    expect(suggestMonsters(profile, bubbling)[0].potionFactor).toEqual({ hp: 1, mp: 1 })
   })
 
   it('deelt het potionverbruik door de factor: op level 15 een zesde minder potions en potion-meso (handmatig na te rekenen)', () => {
-    const plain = suggestMonsters(profile, subway)[0]
+    const plain = suggestMonsters(profile, bubbling)[0]
     const boosted = { ...plain, potionFactor: { hp: 1.2, mp: 1.2 } }
     const a = hourPlan(plain, 100)
     const b = hourPlan(boosted, 100)
@@ -200,7 +201,7 @@ describe('Improved HP en MP Recovery: meer herstel per potion (#141)', () => {
   })
 
   it('telt de HP-factor alleen bij HP-potions en de MP-factor alleen bij MP-potions', () => {
-    const plain = suggestMonsters(profile, subway)[0]
+    const plain = suggestMonsters(profile, bubbling)[0]
     const a = hourPlan(plain, 100)
     const hpOnly = hourPlan({ ...plain, potionFactor: { hp: 1.2, mp: 1 } }, 100)
     expect(hpOnly.hpPotionsPerHour).toBeCloseTo(a.hpPotionsPerHour / 1.2, 9)
@@ -236,7 +237,7 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
     const c = toCharacter(p)
     expect(c.watk).toBe(47) // geen Subi
     const attack = meleeAttack(c, 1.8, powerStrikeAt(20))
-    for (const s of suggestMonsters(p, perionEast)) {
+    for (const s of suggestMonsters(p, mixedMobs)) {
       const e = estimateMob(c, attack, s.monster)
       expect(s.estimate).toEqual(e)
       expect(s.estimate.starsPerKill).toBe(s.estimate.attacksToKill)
@@ -247,17 +248,17 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
   it('rekent zonder Power Strike (level 0) met de gewone aanval, en die kost geen MP', () => {
     const p = wp({ powerStrike: '0' })
     const c = toCharacter(p)
-    for (const s of suggestMonsters(p, perionEast)) {
+    for (const s of suggestMonsters(p, mixedMobs)) {
       expect(s.estimate).toEqual(estimateMob(c, meleeAttack(c, 1.8, null), s.monster))
       expect(s.estimate.mpPerKill).toBe(0)
     }
   })
 
   it('haalt met Power Strike lv 20 nooit meer klappen per kill dan met de gewone aanval, en meestal minder', () => {
-    const plain = suggestMonsters(wp({ powerStrike: '0' }), perionEast)
-    const ps = suggestMonsters(wp(), perionEast)
+    const plain = suggestMonsters(wp({ powerStrike: '0' }), mixedMobs)
+    const ps = suggestMonsters(wp(), mixedMobs)
     let fewer = 0
-    for (const m of perionEast.monsters) {
+    for (const m of mixedMobs.monsters) {
       const a = plain.find((s) => s.monster.name === m.name)!.estimate.attacksToKill
       const b = ps.find((s) => s.monster.name === m.name)!.estimate.attacksToKill
       expect(b, m.name).toBeLessThanOrEqual(a)
@@ -268,32 +269,32 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
 
   it('telt de MP van Power Strike mee: MP per kill = klappen · 12, en het kost potions', () => {
     const p = wp()
-    const s = suggestMonsters(p, perionEast)[0]
+    const s = suggestMonsters(p, mixedMobs)[0]
     expect(s.estimate.mpPerKill).toBe(s.estimate.attacksToKill * 12)
     const plan = hourPlan(s, 100)
     expect(plan.mpPotionsPerHour).toBeCloseTo((100 * s.estimate.mpPerKill) / 200, 9)
     expect(plan.mpPotionsPerHour).toBeGreaterThan(0)
     expect(plan.potions).toBeCloseTo(plan.hpPotionsPerHour * 150 + plan.mpPotionsPerHour * 220, 9)
     // Zonder de skill geen MP-potions.
-    const free = hourPlan(suggestMonsters(wp({ powerStrike: '0' }), perionEast)[0], 100)
+    const free = hourPlan(suggestMonsters(wp({ powerStrike: '0' }), mixedMobs)[0], 100)
     expect(free.mpPotionsPerHour).toBe(0)
   })
 
   it('heeft geen munitiekosten, hoeveel kills per uur ook', () => {
-    const s = suggestMonsters(wp(), perionEast)[0]
+    const s = suggestMonsters(wp(), mixedMobs)[0]
     expect(hourPlan(s, 100).ammo).toBe(0)
     expect(hourPlan(s, 12_345).ammo).toBe(0)
   })
 
   it('zet de Thief-munitie niet op nul: dezelfde plek met een Thief kost wel herlaad-meso', () => {
-    const t = suggestMonsters(profile, perionEast)[0]
+    const t = suggestMonsters(profile, mixedMobs)[0]
     expect(t.rechargePerStar).toBe(0.3)
     expect(hourPlan(t, 100).ammo).toBeGreaterThan(0)
   })
 
   it('neemt Improved HP Recovery mee: dezelfde kills, minder potion-meso per uur (#141)', () => {
-    const plain = suggestMonsters(wp(), perionEast)[0]
-    const s = suggestMonsters(wp({ improvedHpRecovery: '15' }), perionEast).find((x) => x.monster.name === plain.monster.name)!
+    const plain = suggestMonsters(wp(), mixedMobs)[0]
+    const s = suggestMonsters(wp({ improvedHpRecovery: '15' }), mixedMobs).find((x) => x.monster.name === plain.monster.name)!
     expect(s.potionFactor.hp).toBeCloseTo(1.2, 12)
     expect(s.estimate).toEqual(plain.estimate)
     expect(hourPlan(s, 100).hpPotionsPerHour).toBeCloseTo(hourPlan(plain, 100).hpPotionsPerHour / 1.2, 9)
@@ -301,14 +302,14 @@ describe('een Warrior: suggestMonsters en hourPlan', () => {
   })
 
   it('rekent Slash Blast niet mee: zijn level verandert niets aan de uitkomst', () => {
-    const a = suggestMonsters(wp({ slashBlast: '0' }), perionEast).map((s) => s.expPerHour)
-    const b = suggestMonsters(wp({ slashBlast: '20' }), perionEast).map((s) => s.expPerHour)
+    const a = suggestMonsters(wp({ slashBlast: '0' }), mixedMobs).map((s) => s.expPerHour)
+    const b = suggestMonsters(wp({ slashBlast: '20' }), mixedMobs).map((s) => s.expPerHour)
     expect(b).toEqual(a)
   })
 
   it('gebruikt de weapon multiplier van het profiel', () => {
-    const low = suggestMonsters(wp({ weaponMult: '1' }), perionEast)
-    const high = suggestMonsters(wp({ weaponMult: '3' }), perionEast)
+    const low = suggestMonsters(wp({ weaponMult: '1' }), mixedMobs)
+    const high = suggestMonsters(wp({ weaponMult: '3' }), mixedMobs)
     const sum = (l: typeof low) => l.reduce((n, s) => n + s.estimate.attacksToKill, 0)
     expect(sum(high)).toBeLessThanOrEqual(sum(low))
   })
@@ -318,20 +319,20 @@ describe('resolveSpot voor een Warrior', () => {
   const r = parseProfile({ ...DEFAULT_PROFILE, lukExtra: '0', level: '30', hp: '1000', str: '132', dex: '30', luk: '4', clawWatk: '47', weaponMult: '1.8', attackMs: '720', accuracy: '80', powerStrike: '20' }, 'warrior')
   if (!('profile' in r)) throw new Error('Warrior-profiel ongeldig')
   const warrior = r.profile
-  const chosen = { ...newDraft('a'), ...knownSpotPatch(subway.id), travel: '100' }
+  const chosen = { ...mobDraft('Bubbling')!, id: 'a', travel: '100' }
 
   it('vult de munitie met 0 en de potions met het voorstel, en laat de reiskosten staan', () => {
-    const s = pickMonster(suggestMonsters(warrior, subway), undefined)!
+    const s = pickMonster(suggestMonsters(warrior, bubbling), undefined)!
     const plan = hourPlan(s, s.estimate.killsPerHour)
-    const spot = resolveSpot(chosen, subway, warrior)
+    const spot = resolveSpot(chosen, bubbling, warrior)
     expect(spot.cost).toEqual({ potions: plan.potions, ammo: 0, travel: 100 })
     expect(spot.cost.potions).toBeGreaterThan(0)
     // Dezelfde plek voor de Thief kost wel munitie.
-    expect(resolveSpot(chosen, subway, profile).cost.ammo).toBeGreaterThan(0)
+    expect(resolveSpot(chosen, bubbling, profile).cost.ammo).toBeGreaterThan(0)
   })
 
   it('laat een ingevulde munitie winnen, ook bij een Warrior', () => {
-    expect(resolveSpot({ ...chosen, ammo: '55' }, subway, warrior).cost.ammo).toBe(55)
+    expect(resolveSpot({ ...chosen, ammo: '55' }, bubbling, warrior).cost.ammo).toBe(55)
   })
 })
 

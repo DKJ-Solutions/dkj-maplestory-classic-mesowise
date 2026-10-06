@@ -50,7 +50,10 @@ export interface ThrowingStar {
   source: Source
 }
 
-/** Een bekende trainingsplek: een map (naam en pagina) en zijn monsters. */
+/**
+ * Een bekende plek: in de app één mob (naam en pagina) als enig monster (#123). De rekenmodules nemen een lijst
+ * monsters, zodat een test ze over meerdere mobs tegelijk kan draaien.
+ */
 export interface KnownSpot {
   id: string
   name: string

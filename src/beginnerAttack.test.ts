@@ -24,7 +24,7 @@ function parsed(d: ProfileDraft, job: Job): Profile {
   return r.profile
 }
 
-const subway = findKnownSpot('kerning-subway-line-1-area-1')!
+const bubbling = findKnownSpot('mob:Bubbling')!
 
 describe('beginnerAttack: de damage-formule per wapenfamilie', () => {
   it('rekent een zwaard, bijl of stomp met STR als hoofdstat en DEX als secundaire, basis-mastery 0,08', () => {
@@ -72,7 +72,7 @@ describe('een Thief of Bowman op level 9 met een wapen onder level 10', () => {
     })
 
     it(`${job}: geen munitie en geen MP per kill, dus geen ammokosten`, () => {
-      const s = suggestMonsters(parsed(beginner('Sword'), job), subway)
+      const s = suggestMonsters(parsed(beginner('Sword'), job), bubbling)
       expect(s.length).toBeGreaterThan(0)
       for (const x of s) {
         expect(x.rechargePerStar).toBe(0)

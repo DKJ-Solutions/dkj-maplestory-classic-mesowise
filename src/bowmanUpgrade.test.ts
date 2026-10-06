@@ -10,7 +10,7 @@ import { clawUpgradeAdvice, withClaw, type ClawUpgradeAdvice } from './clawUpgra
 import { NPC_ARMOR } from './data/armor'
 import { GENDERED_WORN_BOWMAN_ARMOR, HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
-import { knownSpotPatch } from './data/spots'
+import { mobDraft } from './data/spots'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
 import { bestExpPerMeso } from './mesoCostAt'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
@@ -26,7 +26,7 @@ const parseB = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
 const strong = (over: Partial<Profile> = {}): Profile => ({ ...parseB({}), ...over })
 
 const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
-const drafts = [{ ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') }, own('b', 1_000, 10_000)]
+const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 
 /** EXP per meso op de beste plek, via bestExpPerMeso (niet via de module onder test). */
 const epm = (p: Profile) => {

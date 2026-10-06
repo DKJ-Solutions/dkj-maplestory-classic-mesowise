@@ -39,21 +39,37 @@
 
 ### PLAN
 
+Issue #123: the app has only used mobs since October 4, 2026, so the five maps in `src/data/spots.ts` (`KNOWN_SPOTS`, with
+`knownSpotPatch` and `monsterLevels`) are data the app no longer uses. Move the test fixtures that still build on them to
+`mobDraft(...)` and delete the map data. Saved map drafts are already dropped at load (`src/app.tsx`), so nothing visible changes.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Delete `KNOWN_SPOTS`, `knownSpotPatch` and `monsterLevels` from `src/data/spots.ts`; `findKnownSpot` now looks up mobs only
+- [x] Drafts in the tests use `mobDraft(...)`: the Rain-Forest map becomes the Ribbon Pig (the monster the model already picked there), the subway map the Bubbling
+- [x] Tests that run the model over several monsters at once get `mobGroup(...)` (`src/testing/mobGroup.ts`), names only, no map data
+- [x] `spots.test.ts` checks the mobs themselves (sources, finite numbers) instead of the maps
 
 ### TEST
 
+- [x] Claw and Warrior upgrade scenarios that leaned on the switch between Pig and Ribbon Pig are re-set on one mob: claw on the Pig (the "no winner" case on Bubblings, the "not robust" case with an own spot just below the Pig), Warrior on the Stump, with the Dark Stump where damage has to count
+- [x] `npm run lint` clean, `vitest run`: 51 files, 1614 tests green
+
 ### DEPLOY: app/123-remove-map-data
 
-**Score:**
+The five training maps are gone from the app's data (#123). The app has only calculated with the mob you hunt since
+October 4, and a saved map was already dropped when the app loads, so nothing changes on screen. The repo now carries
+only the game data the app actually uses, and the tests that were built on the maps now run on single mobs, the way
+the app itself calculates.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Nothing a player notices: the maps had already left the screen on October 4.
+
+**Score:** N/A
 
 #### Pull Request
 
 Remove the map data (KNOWN_SPOTS) now that the app only uses mobs
-
