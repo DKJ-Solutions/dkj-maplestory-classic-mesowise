@@ -31,7 +31,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionStat } from './potions'
+import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -843,18 +843,16 @@ const POTION_KIND_LABEL: Record<PotionKind, string> = { hp: 'HP potion', mp: 'MP
  * Potions (Dave, 6 oktober 2026), net als Monster: per soort kies je de potion die je gebruikt, en daaronder staan zijn prijs en
  * herstel uit de database. Een gekozen maar nog niet opgeslagen potion toont die getallen alleen om te lezen; na Opslaan corrigeer
  * je ze met het potlood als de winkel of het spel iets anders zegt, en dan rekent de app met jouw getal. Het rapport zegt wat de
- * goedkoopste bespaart. Onder elke potion wat hij per punt kost en van je balk vult (Max HP en Max MP staan op Total stats).
+ * goedkoopste bespaart, en per potion wat hij per punt kost en van je balk vult (Dave, 6 oktober 2026: niet meer op de kaart).
  */
 function PotionsCard(props: {
   job: Job
-  draft: ProfileDraft
-  profile: Profile | null
   choice: PotionChoice
   onPick: (picks: Partial<Record<PotionKind, string>>) => void
   onFix: (kind: PotionKind, stat: PotionStat, text: string) => void
   report: ComponentChildren
 }) {
-  const { draft, job, choice } = props
+  const { job, choice } = props
   const [open, setOpen] = useState(false)
   // De potions die je in de popup kiest zijn een concept; pas Opslaan legt ze vast, sluiten gooit ze weg (zoals bij Monster).
   const [concept, setConcept] = useState<Partial<Record<PotionKind, string>>>({})
@@ -872,8 +870,6 @@ function PotionsCard(props: {
     close()
     requestAnimationFrame(() => head.current?.focus())
   }
-  // Zonder geldig profiel geen Improved Recovery: dan rekent de regel eronder met het herstel dat op de potion staat.
-  const factor = props.profile ? potionFactorOf(props.profile) : { hp: 1, mp: 1 }
   const title = 'Potions'
   return (
     <section class="card potions">
@@ -889,9 +885,6 @@ function PotionsCard(props: {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
             const db = databasePotion(job, kind, choice[kind])
-            const unit = kind === 'hp' ? 'HP' : 'MP'
-            const info = potionInfo(shownPotion, kind, kind === 'hp' ? draft.hp : draft.mp, factor[kind])
-            const fill = info.fillPct === null ? null : info.fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(info.fillPct)}% van je Max ${unit}`
             return (
               <div class="potion-group" key={kind}>
                 {/* Een eigen kop per soort, met een lijn ertussen (Dave, 6 oktober 2026): zo lopen HP en MP niet in elkaar over. */}
@@ -922,10 +915,6 @@ function PotionsCard(props: {
                     />
                   ),
                 )}
-                <p class="hint potion-info">
-                  {nf.format(info.mesoPerPoint)} meso per {unit}
-                  {fill && <> · {fill}</>}
-                </p>
               </div>
             )
           })}
@@ -961,6 +950,8 @@ function LevelAdviceCard(props: {
   gender: Gender | null
   mobAdvice: MobAdvice
   potionAdvice: PotionAdvice
+  /** Per potion wat hij per punt kost en van je balk vult (PotionInfo). */
+  potionInfo: ComponentChildren
   skillAdvice: SkillPointAdvice
   placed: string | null
   onApply: (choice: SkillChoice) => void
@@ -977,7 +968,7 @@ function LevelAdviceCard(props: {
             <SkillSources job={props.job} dagger={props.dagger} />
           </SkillQuestion>
           <MobQuestion advice={props.mobAdvice} cost={props.cost} part />
-          <PotionQuestion advice={props.potionAdvice} cost={props.cost} part />
+          <PotionQuestion advice={props.potionAdvice} cost={props.cost} info={props.potionInfo} part />
         </>
       ) : (
         <NotComputed job={props.job} />
@@ -2335,13 +2326,14 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
  * Loont een andere potion? (Dave, 6 oktober 2026): wat dit level kost met de potions die je gebruikt, tegenover de
  * goedkoopste per punt herstel, net als het mob-advies.
  */
-function PotionQuestion(props: { advice: PotionAdvice; cost: LevelCost; part?: boolean }) {
+function PotionQuestion(props: { advice: PotionAdvice; cost: LevelCost; info: ComponentChildren; part?: boolean }) {
   const a = props.advice
   const title = QUESTION_TITLE.potion
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown" lead={QUESTION_LEAD.potion} part={props.part}>
         <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen potion afwegen.</p>
+        {props.info}
       </Question>
     )
   }
@@ -2358,7 +2350,32 @@ function PotionQuestion(props: { advice: PotionAdvice; cost: LevelCost; part?: b
           Met jouw potions {costClause(a.mesoChosen, true)}, met de goedkoopste {costClause(a.mesoCheapest, false)}.
         </p>
       )}
+      {props.info}
     </Question>
+  )
+}
+
+/**
+ * Per potion die je gebruikt wat hij per punt kost en hoeveel van je balk hij vult, in het rapport (Dave, 6 oktober 2026). Met het
+ * extra herstel van Improved HP en MP Recovery; zonder geldig profiel met het herstel dat op de potion staat.
+ */
+function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: Profile | null }) {
+  const factor = props.profile ? potionFactorOf(props.profile) : { hp: 1, mp: 1 }
+  return (
+    <>
+      {POTION_KINDS.map((kind) => {
+        const p = props.potions[kind]
+        const unit = kind === 'hp' ? 'HP' : 'MP'
+        const info = potionInfo(p, kind, kind === 'hp' ? props.draft.hp : props.draft.mp, factor[kind])
+        const fill = info.fillPct === null ? null : info.fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(info.fillPct)}% van je Max ${unit}`
+        return (
+          <p class="hint potion-info" key={kind}>
+            {p.name}: {nf.format(info.mesoPerPoint)} meso per {unit}
+            {fill && <> · {fill}</>}
+          </p>
+        )
+      })}
+    </>
   )
 }
 
@@ -2428,6 +2445,7 @@ export function App() {
   const nextWeapon = useMemo(() => (profile ? nextBetterWeapon(profile) : undefined), [profile])
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
   const potionAdvice = useMemo(() => advisePotions(drafts, profile), [drafts, profile])
+  const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
@@ -2644,7 +2662,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} draft={profileDraft} profile={parsedProfile} choice={potionChoice} onPick={pickPotions} onFix={fixPotionStat} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} onPick={pickPotions} onFix={fixPotionStat} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
@@ -2664,6 +2682,7 @@ export function App() {
         gender={gender}
         mobAdvice={mobAdvice}
         potionAdvice={potionAdvice}
+        potionInfo={potionLines}
         skillAdvice={skillAdvice}
         placed={placed}
         onApply={applyPoint}

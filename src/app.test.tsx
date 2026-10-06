@@ -2894,6 +2894,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   }
   const potionPart = () =>
     within(homeScreen().querySelector<HTMLElement>('section.level-cost')!).getByRole('heading', { level: 3, name: 'Potions' }).closest<HTMLElement>('.advice-part')!
+  /** De regels onderaan het Potions-rapport op de Report-kaart: per potion de prijs per punt en wat hij van je balk vult. */
+  const potionInfoLines = () => Array.from(potionPart().querySelectorAll('.potion-info')).map((p) => p.textContent)
   const withMob = () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
@@ -2913,10 +2915,11 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(lines('MP')).toEqual([['Prijs', '−220 meso', true], ['Herstel MP', '+200 MP', true]])
     expect(line('HP', 'Prijs').querySelector('strong.cost')).not.toBeNull()
     expect(line('HP', 'Herstel HP').querySelector('strong.gain')).not.toBeNull()
-    // Geen Max HP of Max MP: die staan op Total stats. Wel wat een potion per punt kost en van je balk vult (250 van 444: 56%).
+    // Geen Max HP of Max MP: die staan op Total stats.
     expect(cardNames('section.potions')).not.toContain('Max HP')
-    expect(group('HP').querySelector('.potion-info')!.textContent).toBe('0,6 meso per HP · vult 56% van je Max HP')
-    expect(group('MP').querySelector('.potion-info')!.textContent).toBe('1,1 meso per MP · vult 55% van je Max MP')
+    // Wat een potion per punt kost en van je balk vult (250 van 444: 56%), staat in het rapport en niet op de kaart (Dave, 6 oktober 2026).
+    expect(potionsCard().querySelector('.potion-info')).toBeNull()
+    expect(potionInfoLines()).toEqual(['Orange Potion: 0,6 meso per HP · vult 56% van je Max HP', 'Blue Potion: 1,1 meso per MP · vult 55% van je Max MP'])
   })
 
   it('toont een gekozen potion eerst als concept, alleen om te lezen, en legt hem pas met Opslaan vast', () => {
@@ -3004,6 +3007,6 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     expect(statShown('Max MP')).toBe('?')
     openPotions()
-    expect(group('MP').querySelector('.potion-info')!.textContent).toBe('1,1 meso per MP')
+    expect(potionInfoLines()[1]).toBe('Blue Potion: 1,1 meso per MP')
   })
 })

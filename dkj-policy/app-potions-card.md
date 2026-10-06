@@ -58,6 +58,7 @@
 - [x] Victor and Edith: review of the Monster-style card; a correction is tied to its potion name (no longer follows a job switch), the advice weighs the cheapest other potion against a corrected one, labels "Prijs" and "Herstel HP"
 - [x] Dave (October 6, 2026): a clear split between HP and MP potions: a heading per kind and a line between them
 - [x] Dave (October 6, 2026): the unit after the value: "−150 meso", "+250 HP"
+- [x] Dave (October 6, 2026): the meso-per-point and bar-fill line leaves the card for the Potions report
 
 ### TEST
 
@@ -70,7 +71,7 @@ A new Potions card, under Monster, lets you pick the HP and MP potion you actual
 level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the cheapest
 potion per point would save. Like the Monster card, the chosen potion's price and recovery from the database show below
 the choice, and the pencil corrects them when the shop or the game says otherwise; the calculation then uses your
-number. A line under each potion says what it costs per HP or MP and how much of your bar one fills. Potions have no level requirement in Classic, so they are
+number. The report also says, per potion you use, what it costs per HP or MP and how much of your bar one fills. Potions have no level requirement in Classic, so they are
 all there at every level. Without a choice the app keeps using the cheapest. Max HP and Max MP now head the Total stats card. Max MP
 is a new field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
 before it starts empty until you fill it in. It is shown only and never blocks the calculation.
