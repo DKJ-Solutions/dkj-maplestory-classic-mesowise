@@ -588,12 +588,13 @@ describe('bewaren na elke wijziging', () => {
     expect(homeScreen().querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
-  it('toont geen level, Max HP, ATT en DEF: die liggen elders vast', () => {
+  it('toont geen level, ATT en DEF: die liggen elders vast; Max HP en Max MP alleen op Total stats (Dave, 6 oktober 2026)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     const names = [...cardNames('section.profile'), ...cardNames('section.total-stats')]
     expect(names).not.toContain('Level')
-    expect(names).not.toContain('Max HP')
+    expect(cardNames('section.profile')).not.toContain('Max HP')
+    expect(names.filter((n) => n === 'Max HP' || n === 'Max MP')).toEqual(['Max HP', 'Max MP'])
     expect(names).not.toContain('ATT van je wapen')
     expect(names).not.toContain('DEF')
     expect(names).toContain('Tijd per aanval (ms)')
@@ -603,7 +604,7 @@ describe('bewaren na elke wijziging', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-    expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
+    expect(cardNames('section.total-stats')).toEqual(['Max HP', 'Max MP', 'Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
   it('toont in de popup van Ability points je gezette base AP van wat je level geeft, en in die van een stat wat er over is (#157)', () => {
@@ -1484,7 +1485,7 @@ describe('een Warrior in de app', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
       fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
       expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
-      expect(cardNames('section.total-stats')).toEqual(['Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
+      expect(cardNames('section.total-stats')).toEqual(['Max HP', 'Max MP', 'Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
@@ -2877,11 +2878,10 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   const names = (group: string) => Array.from(potionNames(group)).map((n) => n.textContent)
   const usedName = (group: string) => Array.from(potionNames(group)).find((n) => n.closest('.potion')!.classList.contains('used'))?.textContent
 
-  it('toont Max HP en Max MP van het profiel, en de potions van een Thief van goedkoop naar duur per punt', () => {
+  it('toont de potions van een Thief van goedkoop naar duur per punt, met hun prijs, en geen Max HP of Max MP (die staan op Total stats)', () => {
     openPotions()
-    expect(cardNames('section.potions')).toEqual(['Max HP', 'Max MP'])
-    expect(statShown('Max HP')).toBe(DEFAULT_PROFILE.hp)
-    expect(statShown('Max MP')).toBe(DEFAULT_PROFILE.mp)
+    expect(cardNames('section.potions')).toEqual([])
+    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['150 meso', '350 meso', '220 meso'])
     expect(names('HP potions')).toEqual(['Orange Potion', 'White Potion'])
     expect(names('MP potions')).toEqual(['Blue Potion'])
     expect(usedName('HP potions')).toBe('Orange Potion')
@@ -2891,8 +2891,11 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP · vult 55% van je Max MP')
   })
 
-  it('bewaart een aangepaste Max MP na Opslaan, en verhoogt Max HP en Max MP met Level up', () => {
-    openPotions()
+  it('zet Max HP en Max MP bovenaan Total stats; een aangepaste Max MP telt na Opslaan, en Level up verhoogt beide', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    expect(cardNames('section.total-stats').slice(0, 3)).toEqual(['Max HP', 'Max MP', 'Attack'])
+    expect(statShown('Max HP')).toBe(DEFAULT_PROFILE.hp)
+    expect(statShown('Max MP')).toBe(DEFAULT_PROFILE.mp)
     const h = openStat('Max MP')
     h.type('400')
     h.save()
@@ -2916,8 +2919,9 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, mp: '' } }))
     render(<App />)
-    openPotions()
+    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     expect(statShown('Max MP')).toBe('?')
+    openPotions()
     expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP')
     expect(potionsCard().textContent).not.toContain('van je Max MP')
   })

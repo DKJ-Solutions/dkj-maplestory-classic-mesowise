@@ -32,7 +32,7 @@ export interface ProfileField {
 const STATS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
-  // Max MP staat alleen op de Potions-kaart; de berekening gebruikt hem niet, dus leeg of fout blokkeert niets.
+  // Max MP staat alleen ter info op Total stats (de Potions-kaart rekent er de balk mee); de berekening gebruikt hem niet, dus leeg of fout blokkeert niets.
   { key: 'mp', label: 'Max MP', min: 0, max: 30_000, integer: true, informative: true },
   // Je base AP in een stat kan niet onder 4: daar begint elk karakter (STARTING_AP).
   { key: 'str', label: 'STR', min: STARTING_AP.perStat, max: 999, integer: true },

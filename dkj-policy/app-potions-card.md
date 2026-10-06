@@ -48,6 +48,7 @@
 - [x] Cody + Gwen: Max MP profile field, Level up raises it, `src/potions.ts`, the Potions card and its styles
 - [x] Victor: code review; tie-break order, Max MP bound and dead error routing fixed
 - [x] Edith: final read of the Dutch UI text and comments; four stale comments fixed
+- [x] Dave (October 6, 2026): Max HP and Max MP move to the top of Total stats
 
 ### TEST
 
@@ -56,18 +57,18 @@
 
 ### DEPLOY: app/potions-card
 
-A new Potions card in the Stats block shows your Max HP and Max MP, and every potion your job can buy: what it
-restores, its price, what it costs per HP or MP, how much of your bar one potion fills, and which potion the app
-calculates with. Potions have no level requirement in Classic, so they are all there at every level. Max MP is a new
-field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
+A new Potions card in the Stats block shows every potion your job can buy: what it restores, its price, what it costs
+per HP or MP, how much of your bar one potion fills, and which potion the app calculates with. Potions have no level
+requirement in Classic, so they are all there at every level. Max HP and Max MP now head the Total stats card. Max MP
+is a new field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
 before it starts empty until you fill it in. It is shown only and never blocks the calculation.
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
-A player sees at a glance which potion is cheapest per point and how many it takes to refill, and now keeps Max MP
-next to Max HP.
+A player sees at a glance which potion is cheapest per point and how many it takes to refill, and now keeps Max HP and
+Max MP on Total stats, as in the game's stat window.
 
 **Score:** 3
 
