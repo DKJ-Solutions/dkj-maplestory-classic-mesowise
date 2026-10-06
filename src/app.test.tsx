@@ -3076,3 +3076,17 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(dialog.textContent).toContain('aanname zonder bron')
   })
 })
+
+describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
+  it('staat direct onder de level-rij, met het level en de job vetgedrukt', () => {
+    const q = homeScreen().querySelector('.level-row')!.nextElementSibling!
+    expect(q.classList.contains('app-question')).toBe(true)
+    expect(q.textContent).toBe('How much does it cost to level up a Lv. 10 Thief?')
+    expect(q.querySelector('strong')!.textContent).toBe('Lv. 10 Thief')
+  })
+
+  it('gaat mee met Level up', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Level up' }))
+    expect(homeScreen().querySelector('.app-question strong')!.textContent).toBe('Lv. 11 Thief')
+  })
+})

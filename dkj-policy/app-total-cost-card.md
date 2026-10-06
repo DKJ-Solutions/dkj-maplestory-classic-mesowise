@@ -60,12 +60,14 @@
   nowrap)
 - [x] Dave (October 6, 2026): the HP and MP potion lines are always on the invoice, "× 0" and "0 meso" when the level
   needs none (never "-0")
+- [x] Dave (October 6, 2026): the question "How much does it cost to level up a **Lv. 18 Thief**?" under the level row at the
+  top of the app
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
-  job, own potion costs) and app tests for the card; 1664 tests green, lint clean
+  job, own potion costs) and app tests for the card; 1666 tests green, lint clean
 - [ ] Dave looks at the card before the merge
 
 ### DEPLOY: app/total-cost-card
@@ -74,7 +76,8 @@ A new Total cost card above the Report card ("How much mesos it cost to level up
 own level and job) shows, as an invoice, what your current level costs: how many of each potion
 you need (the potions you picked on the Potions card), the stars or arrows, and travel when it costs anything, each with
 its price, and the total underneath. It calculates with the same mob, kills and potions as the Report card, so the total
-is the same amount, give or take rounding each count up to whole potions. A line above the invoice says which level, on
+is the same amount, give or take rounding each count up to whole potions. Under the level row at the top, the app now asks "How much does it cost to level up a **Lv. 18 Thief**?", with your
+own level and job. A line above the invoice says which level, on
 which mob, and roughly how long it takes; a question mark after a potion's count explains, step by step, how the app
 arrives at that number.
 
