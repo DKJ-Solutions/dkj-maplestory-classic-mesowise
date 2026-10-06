@@ -59,8 +59,9 @@ const MAX_BAR = Math.min(...PROFILE_FIELDS.filter((f) => f.key === 'hp' || f.key
 
 /** De eigenschappen van een potion van deze soort, in de volgorde van het scherm. */
 export const potionFields = (kind: PotionKind): readonly PotionField[] => [
-  { key: 'price', label: 'Prijs', min: 1, max: 9_999_999, integer: true, tone: 'cost', unit: 'meso' },
-  { key: 'restores', label: `Herstel ${kind === 'hp' ? 'HP' : 'MP'}`, min: 1, max: MAX_BAR, integer: true, tone: 'gain', unit: kind === 'hp' ? 'HP' : 'MP' },
+  // Price en Healing (Dave, 6 oktober 2026); de eenheid erachter zegt of het HP of MP is.
+  { key: 'price', label: 'Price', min: 1, max: 9_999_999, integer: true, tone: 'cost', unit: 'meso' },
+  { key: 'restores', label: 'Healing', min: 1, max: MAX_BAR, integer: true, tone: 'gain', unit: kind === 'hp' ? 'HP' : 'MP' },
 ]
 
 /** De waarde van een eigenschap van een potion. */
