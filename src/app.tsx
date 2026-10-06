@@ -2578,7 +2578,6 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
   )
 }
 
-/** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 /** De rijen die het aantal kills van dit level geven: de EXP die je nog nodig hebt, wat één kill geeft, en hun deling (Dave, 6 oktober 2026, #192). */
 const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }): WhyRow[] => [
   { label: 'EXP tot volgend level', result: nfInt.format(w.expToNext) },
@@ -2586,6 +2585,7 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
   { label: 'Kills dit level', calc: <>{nfInt.format(w.expToNext)} / {nf.format(w.expPerKill)}</>, result: nf3.format(w.kills) },
 ]
 
+/** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
   const unit = w.kind === 'hp' ? 'HP' : 'MP'
@@ -2626,23 +2626,26 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
 
 /**
  * De berekening achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een
- * kill kost, hoeveel stars dat zijn, dan per uur en voor het hele level, en wat herladen kost.
+ * kill kost, hoeveel stars dat zijn, hoeveel kills het level kost, en wat herladen (of bij een Bowman kopen) kost.
  */
 function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy }) {
   const { w } = props
   const unit = props.label.toLowerCase()
+  // Een Bowman schiet pijlen en koopt ze; een Thief gooit stars en herlaadt ze.
+  const arrows = props.label === ammoLabel('bowman')
+  const piece = arrows ? 'pijl' : 'star'
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
         {
-          label: 'Max per star',
+          label: `Max per ${piece}`,
           calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
           result: oneDecimal(w.rawMax),
         },
         {
-          label: 'Min per star',
+          label: `Min per ${piece}`,
           calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
           result: oneDecimal(w.rawMin),
         },
@@ -2654,9 +2657,9 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     : []
   const rows: WhyRow[] = [
     ...damageRows,
-    // Elke star doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+    // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
-      label: 'Schade per star',
+      label: `Schade per ${piece}`,
       calc: f ? <>({nfInt.format(w.minHit)} + {nfInt.format(w.maxHit)}) / 2</> : <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
       result: `± ${nfInt.format(w.avgHit)}`,
     },
@@ -2665,7 +2668,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
     ...killsRows(w),
     { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
-    { label: 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
+    { label: arrows ? 'Kopen' : 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
   ]
   return <WhyTable rows={rows} />
 }
@@ -3088,7 +3091,6 @@ export function App() {
       ? cheapest.result
       : null
   const appliedSaving = cheapestShown ? cheapest!.saving : null
-  // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
   // De equip van Advised (Dave, 6 oktober 2026, #192): wat je draagt plus de stukken die de Equip-kaart in Advised koopt, met het profiel dat daarbij
   // hoort (dezelfde stap als een keuze op de kaart) en wat ze in de winkel kosten. Eén berekening voor alles: de goedkoopste instellingen rekenen met deze equip.
   const advisedGear = useMemo(() => (cheapestEquip ? advisedEquipment(job, profileDraft, equipment, cheapestEquip) : { equipment, profile: profileDraft, shop: 0 }), [cheapestEquip, job, profileDraft, equipment])
@@ -3098,6 +3100,7 @@ export function App() {
     () => ({ ...userInput, equipment: advisedGear.equipment, profileDraft: advisedGear.profile }),
     [userInput, advisedGear],
   )
+  // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
   const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
   const advisedProfile = cheapestLive?.profileDraft ?? null
@@ -3105,8 +3108,8 @@ export function App() {
     () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment: advisedGear.equipment }), advisedGear.shop) : levelInvoice([], null)),
     [cheapestLive, job, gender, advisedGear],
   )
-  // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer. Een nog niet bevestigd concept in een
-  // corrigeervak blijft dus een concept (de kaart rekende er ook niet mee); de equip van Advised zet Overnemen er wel bij (applyCheapest, #192).
+  // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer, met de equip van Advised erbij (applyCheapest,
+  // #192). Een nog niet bevestigd concept in een corrigeervak rekende de kaart niet mee; Overnemen gooit het weg als het de equip schrijft.
   const cheapestSaving = cheapestLive ? invoiceSaving(invoice, cheapestInvoice, cheapestLive.saving) : null
   // Wat Overnemen in je equip zet, in woorden: wat de Equip-kaart in Advised koopt, of anders wat het wapen- en armor-advies zegt (#183, #192).
   const liveEquipTexts = useMemo<EquipTexts>(() => {

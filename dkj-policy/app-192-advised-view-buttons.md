@@ -44,10 +44,13 @@
 - [x] Cody: shared `ViewButtons` (Advised first, then Your character) on Equip, Skillpoints, Monster, Potions, Ability points and Total stats; Advised popups read-only from the live `cheapestSettings` result; report inside the popup; Cheapest renamed to Advised
 - [x] Review fixes from Victor and Edith (no card error in Advised, accessible name `Advised: <card>`, "Advised equip", stale comments, small cleanups)
 - [x] Total cost: six card icon buttons under both invoices with one sentence above them, set apart from the invoice total by a thin line, opening the card's own popup (state lifted into `CardViewContext`); icons in a button follow the button colour; a "Setup" heading was tried and removed (Dave, October 6, 2026)
+- [x] Invoice: a question mark behind the ammo count (`AmmoWhy`), and every explanation as a calculation table (`WhyTable`) that goes from EXP to the next level via EXP per kill to the kills needed, with the damage formula (max, min, level difference, mob defence, average) behind the stars
+- [x] Advised buys: `advisedEquipment` in `src/cheapestEquip.ts`, `cheapestSettings` run on that equip, a Shop line in `levelInvoice`, Overnemen writes the equip and Ongedaan maken restores it (Dave chose this option, October 6, 2026)
+- [x] Victor's review of the numbers (a sweep of 1144 cases, no wrong number) and the leftovers it found
 
 ### TEST
 
-- [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label, the six Total cost buttons and the sentence above them; Victor's test findings fixed (setup helper left the Monster popup open, a tautological test replaced); `npm test` (1776) and `npm run lint` green
+- [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label, the six Total cost buttons and the sentence above them, the ammo explanation and the calculation tables, the Shop line, advisedEquipment and Overnemen/Ongedaan maken with equipment; Victor's test findings fixed (setup helper left the Monster popup open, a tautological test replaced); `npm test` (1789) and `npm run lint` green
 - [ ] Dave looks at the preview at phone width before the merge (visible result)
 
 ### DEPLOY: app/192-advised-view-buttons
@@ -59,20 +62,32 @@ its base AP on Ability points, and the stats that follow from that AP on Total s
 before, to change your own setup. The card's Report button moved into the popup, at its bottom, in both views. The label
 **Cheapest** is now **Advised** everywhere it meant that setup: the Equip button, the Total cost heading and the
 Difference column. Under both invoices in Total cost one sentence says the total is calculated with this setup, above
-six icon buttons, one per card, each opening that card's popup for that part; the Advised part's Equip button
-shows the equip that invoice uses (what you wear, as **Advised equip**). A shared `ViewButtons` component and a
+six icon buttons, one per card, each opening that card's popup for that part. A shared `ViewButtons` component and a
 `CardViewContext` that holds which card popup is open replace the Equip-only buttons.
+
+The Advised setup now buys equipment as well: it wears the pieces the Equip card's Advised view says to buy (a piece is
+bought when it saves more than it costs on this level), and its mob, potions, skill points and base AP are the cheapest
+with that gear. The Advised invoice gets a **Shop** row with what those pieces cost, counted in its total and in
+Difference; Your character never has one. **Overnemen** now also puts the advised equip in your setup, and **Ongedaan
+maken** puts your old equip back.
+
+The question mark behind an amount on the invoice now also sits behind the throwing stars or arrows, and every
+explanation is a table: one row per step, with the sum in small print under it and the outcome on the right, the count
+on the invoice as the bold last row. The count goes from the EXP to the next level, via the EXP per kill, to the kills
+you need, so it no longer passes through how long the level takes (only MP buffs still depend on time). Behind the stars
+the table shows where the damage comes from: the max and min of the damage formula with your own numbers, the level
+difference when the mob is higher, the mob's defence, and the average the app counts with (± 76 out of 57 – 95).
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
 On every card you first see what the app advises and then compare it with your own setup, before you decide to copy it,
-and Total cost shows which six cards its numbers come from.
+Total cost shows which six cards its numbers come from, and the Advised invoice includes the upgrades worth buying.
 
 **Score:** 3
 
 #### Pull Request
 
-Advised and Your character buttons on every card
+Advised and Your character buttons on every card, a Shop row for advised upgrades, and calculation tables behind the invoice
 
