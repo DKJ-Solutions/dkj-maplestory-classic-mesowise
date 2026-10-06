@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**71 / 111 minor entries** <!-- pending-tally -->
+**72 / 112 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/189-advised-ammo-slot · 20261006-203149Z
+
+The Advised view of the Equip popup now fills an empty Ammo slot with the throwing stars or arrows the Advised invoice
+counts (Subi by default), so the popup and Total cost no longer disagree about what a Thief or Bowman uses. It is shown
+without a price, with "Per star herladen, op de factuur", because ammo is paid per piece on the invoice and not bought once.
+Resolves #189.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A Thief or Bowman who opens Advised on Equip now sees which stars or arrows the Advised total counts, instead of an empty
+slot next to a Total cost that charges for them; picking a cheaper star is left to #198.
+
+**Score:** 2
+
+#### Pull Request
+
+Advised equip popup: fill the Ammo slot with the ammo the invoice counts
+
+[PR #200](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/200)
+
+---
 
 ### DEPLOY: app/192-advised-view-buttons · 20261006-170933Z
 
