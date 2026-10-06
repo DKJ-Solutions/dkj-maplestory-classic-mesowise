@@ -2,7 +2,43 @@
 
 ## [Unreleased]
 
-**68 / 107 minor entries** <!-- pending-tally -->
+**69 / 108 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/188-equip-two-columns · 20261006-144339Z
+
+The Equip card has two buttons, **Your character** and **Cheapest**, in place of the eye in its head; both open the Equip
+popup, which carries the Report button at its bottom. Your character shows what you wear in game, to change it. Cheapest
+shows the same rows read-only, filled in with the equip that takes you one level up most cheaply: what you wear is free,
+and a piece is bought only when it saves more than it costs on this level alone (the Report advice still counts the
+saving until your next upgrade). A piece to buy shows its shop price; a slot that stays empty shows the best piece you
+could wear there, with its price and what it would save, marked as not paying for itself. A new pure module,
+`src/cheapestEquip.ts`, does this from the advice the app already computes. Under the Cheapest invoice in Total cost, an
+**Equip bekijken** button shows the equip that invoice uses: what you wear, since the cheapest free settings never buy
+equipment.
+
+The equip search lists only what your level and gender can wear, highest level first, and shows colours of one piece
+once ("Rubber Boots"). Each row says what the piece is, as in "Steel Titans (CLAW, LV 15, ATT 13, FAST)", and **Empty**
+at the top empties a slot again. Every item shows the level it needs, as in "Steel Titans (Lv. 15)". A Thief holding a
+claw has no Shield slot (a claw takes both hands), and the Ammo slot only shows next to a claw, bow or crossbow. 63 worn
+tops, bottoms and an overall got their gender from NiaMeowDB, and the per-shop source lines left the popup; the footer
+still credits NiaMeowDB.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+One tap shows which equip to buy for the cheapest level, next to what you wear, and the equip search only offers what
+your character can actually wear.
+
+**Score:** 3
+
+#### Pull Request
+
+Equip card: Your character and Cheapest views, and an equip search that only offers what you can wear
+
+[PR #191](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/191)
+
+---
 
 ### DEPLOY: app/183-cheapest-settings-button · 20261006-124125Z
 
