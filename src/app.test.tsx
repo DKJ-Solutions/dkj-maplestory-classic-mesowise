@@ -3157,7 +3157,7 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
     // Vóór Overnemen zegt het totaal van Difference wat het scheelt, zonder een tweede regel eronder.
-    expect(diffCard().querySelector('tfoot td.invoice-diff .gain')).not.toBeNull()
+    expect(diffCard().querySelector('tfoot td.invoice-diff .cost')).not.toBeNull()
     expect(diffCard().querySelector('.cheapest-saving')).toBeNull()
     expect(diffCard().querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
     // Nog niets toegepast.
@@ -3176,18 +3176,19 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
       const [mine, cheap, d] = Array.from(tr.querySelectorAll('td')).map((td) => td.textContent!)
       expect(mine).toMatch(/^(−[\d.]+|0)$/)
       expect(cheap).toMatch(/^(−[\d.]+|0)$/)
-      // Wat je bespaart in groen met een plus, wat meer kost in rood met een min.
+      // Wat je laat liggen in rood met een min, zoals de kosten; is jouw setup goedkoper, dan groen met een plus.
       expect(d).toMatch(/^(\+[\d.]+|−[\d.]+|0)$/)
-      expect(signed(d)).toBe(mesoOf(mine) - mesoOf(cheap))
+      expect(signed(d)).toBe(mesoOf(cheap) - mesoOf(mine))
     }
     const [mineTotal, cheapTotal, diffTotal] = Array.from(diffCard().querySelectorAll('tfoot td'))
     // De totalen zijn die van de twee facturen erboven, en het verschil is hun verschil.
     expect(mesoOf(mineTotal.textContent)).toBe(mesoOf(total(yours())))
     expect(mesoOf(cheapTotal.textContent)).toBe(mesoOf(total(cheapestCard())))
-    expect(diffTotal.querySelector('.gain')).not.toBeNull()
+    expect(diffTotal.querySelector('.cost')).not.toBeNull()
+    expect(diffTotal.textContent).toMatch(/^−/)
     expect(mesoOf(diffTotal.textContent)).toBe(mesoOf(total(yours())) - mesoOf(total(cheapestCard())))
     // De rijen tellen op tot het totaal.
-    expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(mesoOf(diffTotal.textContent))
+    expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(-mesoOf(diffTotal.textContent))
   })
 
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {

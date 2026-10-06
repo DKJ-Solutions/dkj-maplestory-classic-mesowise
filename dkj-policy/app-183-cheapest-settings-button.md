@@ -69,7 +69,7 @@ The Total cost card now has three parts, each in its own tinted panel. "Your cha
 now. "Cheapest" is the invoice of the same level with the cheapest settings that cost nothing: the cheapest safe mob,
 the cheapest potion per point, your skill points where they save the most and your AP filled in. "Difference" shows per
 kind of cost (HP Potions, MP Potions, Ammo, and travel when it costs anything) what your character pays, what the
-cheapest setup pays and the difference, a saving in green and an extra cost in red, with the two invoices' totals and
+cheapest setup pays and the difference: what you leave on the table in red, as costs are, with the two invoices' totals and
 their difference below.
 Because the choices affect each other, the cheapest setup is found in rounds until nothing changes (at most five) and is
 never one that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the difference the

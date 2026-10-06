@@ -2474,8 +2474,8 @@ const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
 
 /**
  * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (HP Potions, MP Potions, Ammo, en reizen als
- * dat iets kost) wat je character betaalt, wat de goedkoopste setup betaalt, en het verschil: groen met een plus wat je bespaart,
- * rood met een min wat het meer kost. Welke potion en hoeveel staat op de twee facturen erboven. Een regel die één setup niet heeft,
+ * dat iets kost) wat je character betaalt, wat de goedkoopste setup betaalt, en het verschil: wat je laat liggen in rood met een min,
+ * zoals de kosten op de facturen (Dave: groen las alsof je goed bezig was), en in groen met een plus als jouw setup goedkoper is. Welke potion en hoeveel staat op de twee facturen erboven. Een regel die één setup niet heeft,
  * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
  */
 function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; job: Job }) {
@@ -2488,7 +2488,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
   const cost = (n: number | null) => (n === null ? <span class="invoice-none">—</span> : <span class="cost">{n === 0 ? '0' : `−${nfInt.format(n)}`}</span>)
   const diff = (d: number | null) =>
-    d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="gain">+{nfInt.format(d)}</span> : d < 0 ? <span class="cost">−{nfInt.format(-d)}</span> : <span>0</span>
+    d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="cost">−{nfInt.format(d)}</span> : d < 0 ? <span class="gain">+{nfInt.format(-d)}</span> : <span>0</span>
   // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
   const paid = (col: number, key: string) => (cols[col] ? (lineOf(col, key)?.meso ?? 0) : null)
   return ig || ch ? (
@@ -2707,7 +2707,8 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
   return (
     <>
       {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste.</p>}
-      {!props.applied && r.changes.length === 0 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
+      {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
+      {!props.applied && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
   )
 }

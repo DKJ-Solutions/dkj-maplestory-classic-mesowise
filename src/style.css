@@ -625,8 +625,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
 
-/* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, groen met een plus
-   wat je bespaart. Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */
+/* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, rood met een min
+   wat je laat liggen (groen met een plus als jouw setup goedkoper is). Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */
 .invoice-difference thead th { padding: 0 0 0.5rem 0.5rem; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--muted); text-align: right; vertical-align: bottom; }
 .invoice-difference thead td { padding: 0; }
 .invoice-difference td.invoice-meso { padding-left: 0.5rem; }
