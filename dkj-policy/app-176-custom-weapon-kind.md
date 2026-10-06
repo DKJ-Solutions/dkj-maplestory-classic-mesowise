@@ -53,7 +53,7 @@ Resolves #176. Dave chose "ask for the kind" (October 6, 2026, comment on #176).
 
 - [x] Tycho: persistence, the calculation end to end (Double Stab versus Lucky Seven and stars), the toggle in the UI, and the job switch; `npm run lint` clean, vitest 1623 passed
 - [x] Victor (code review) and Edith (Dutch text) read the diff; findings fixed
-- [ ] Dave looks at the toggle at phone width (visible result)
+- [x] Dave looks at the toggle at phone width (visible result): approved, October 6, 2026
 
 ### DEPLOY: app/176-custom-weapon-kind
 
