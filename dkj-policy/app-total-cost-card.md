@@ -49,12 +49,12 @@
   above Report
 - [x] Gwen: invoice layout (amounts right-aligned, red with a minus, total under a line), duration in minutes under an
   hour; checked at 360 px
-- [ ] Victor and Edith: review
+- [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
-  job, own potion costs) and app tests for the card; 1659 tests green, lint clean
+  job, own potion costs) and app tests for the card; 1660 tests green, lint clean
 - [ ] Dave looks at the card before the merge
 
 ### DEPLOY: app/total-cost-card

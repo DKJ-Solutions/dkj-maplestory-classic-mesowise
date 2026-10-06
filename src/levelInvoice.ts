@@ -26,8 +26,8 @@ export type LevelInvoice =
    */
   | { kind: 'invoice'; level: number; expToNext: number; mob: string; hours: number; lines: readonly InvoiceLine[]; total: number }
 
-/** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen. */
-const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : 'Throwing stars')
+/** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
+const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
 
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven

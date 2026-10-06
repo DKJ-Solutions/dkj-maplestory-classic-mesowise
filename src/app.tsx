@@ -2380,15 +2380,17 @@ function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: 
   )
 }
 
+/** Hoe lang een level duurt, leesbaar: onder het uur in minuten (minstens 1), anders in uren met één decimaal. */
+const formatHours = (hours: number): string => {
+  const minutes = Math.max(1, Math.round(hours * 60))
+  return minutes < 60 ? `${minutes} min` : `${new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 }).format(minutes / 60)} uur`
+}
+
 /**
  * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-/** Hoe lang een level duurt, leesbaar: onder het uur in minuten (minstens 1), anders in uren met één decimaal. */
-const formatHours = (hours: number): string =>
-  hours < 1 ? `${Math.max(1, Math.round(hours * 60))} min` : `${new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 }).format(hours)} uur`
-
 function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job }) {
   const inv = props.invoice
   const meso = (n: number) => `−${nfInt.format(n)} meso`
@@ -2407,8 +2409,8 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
           </p>
           <table class="invoice">
             <tbody>
-              {inv.lines.map((l) => (
-                <tr key={l.label}>
+              {inv.lines.map((l, i) => (
+                <tr key={`${i}-${l.label}`}>
                   <th scope="row">{l.label}</th>
                   <td class="invoice-qty">{l.qty === null ? '' : `× ${nfInt.format(l.qty)}`}</td>
                   <td class="invoice-meso cost">{meso(l.meso)}</td>
@@ -2419,7 +2421,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
               <tr>
                 <th scope="row">Total</th>
                 <td />
-                <td class="invoice-meso cost">{inv.lines.length === 0 ? 'niets' : meso(inv.total)}</td>
+                <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
               </tr>
             </tfoot>
           </table>
