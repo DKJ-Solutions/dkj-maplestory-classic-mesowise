@@ -18,6 +18,7 @@ import {
   slotLabel,
   slotsFor,
   hasRangedWeapon,
+  nameWithLevel,
   OTHER,
   UNKNOWN,
   shownSlots,
@@ -1638,5 +1639,13 @@ describe('het shield-slot van de Thief (#188)', () => {
     const eq: Equipment = { ...defaultEquipment(), claw: entry(NPC_CLAWS[0].name), shield: entry('Pan Lid') }
     expect(wornWdef(eq, 'thief')).toEqual({ noShield: true })
     expect(wornWdef({ ...eq, claw: entry(NPC_DAGGERS[0].name) }, 'thief')).toEqual({ shield: 44 })
+  })
+})
+
+describe('nameWithLevel (#188)', () => {
+  it('zet het level dat een item vraagt erachter, en laat een naam zonder level of buiten de catalogus staan', () => {
+    expect(nameWithLevel('claw', NPC_CLAWS[0].name)).toBe(`${NPC_CLAWS[0].name} (Lv. ${NPC_CLAWS[0].level})`)
+    expect(nameWithLevel('ammo', 'Arrows for Bows')).toBe('Arrows for Bows')
+    expect(nameWithLevel('hat', 'Mijn hoed')).toBe('Mijn hoed')
   })
 })

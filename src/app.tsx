@@ -10,7 +10,7 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -1213,6 +1213,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
     }
   }
   const picked = wornName(entry)
+  // Achter een item uit de catalogus het level dat hij vraagt (#188); een eigen item heeft er geen.
+  const shown = picked !== null && entry.pick !== OTHER ? nameWithLevel(slot, picked) : picked
   const label = slotLabel(slot)
   return (
     <div class="equip-search">
@@ -1220,8 +1222,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
       {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
           de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
       {!open && picked !== null && (
-        <button type="button" class="equip-picked" aria-label={`${label}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
-          {picked}
+        <button type="button" class="equip-picked" aria-label={`${label}: ${shown}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+          {shown}
         </button>
       )}
       <input
@@ -1482,9 +1484,9 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
             <span class="slot-name">{slotLabel(slot)}</span>
             {/* Een leeg slot met een stuk dat zich dit level niet terugverdient: dat stuk, gedempt, met wat het kost en bespaart (#188). */}
             {c.option ? (
-              <span class="equip-fixed equip-option">{c.option.name}</span>
+              <span class="equip-fixed equip-option">{nameWithLevel(slot, c.option.name)}</span>
             ) : (
-              <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest ?? '—'}</span>
+              <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
             )}
             {value !== null && (
               <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>

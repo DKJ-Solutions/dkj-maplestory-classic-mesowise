@@ -88,7 +88,8 @@ const pickOwn = (card: HTMLElement, slot: string, text: string) => {
   fireEvent.click(option)
 }
 /** De naam op de knop van een ingevuld slot; null als het slot nog niet is ingevuld. */
-const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent ?? null
+/** De naam van wat in een slot staat, zonder het level dat erachter staat (#188: "Steel Igor (Lv. 20)"). */
+const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent?.replace(/ \(Lv\. \d+\)$/, '') ?? null
 
 /** Opent de popup achter het potlood van een slot en geeft de handvatten ervan. */
 const openDialog = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF') => {
@@ -367,6 +368,14 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(cards()[0].querySelector('.spot-head .spot-name')?.textContent?.trim()).toBe('Equip')
   })
 
+  it('zet achter een item uit de catalogus het level dat hij vraagt, en niet achter een eigen item (#188)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-picked')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
+    pickOwn(cards()[0], 'Hat', 'Mijn hoed')
+    expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
+  })
+
   it('toont in Total cost onder Cheapest een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -376,7 +385,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
     expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Cheapest')
     const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
-    expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(IGOR.name)
+    expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
     expect(dialog.textContent).not.toContain('Te kopen:')
   })
 
@@ -447,7 +456,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('toont na de keuze de naam als knop en de ATT in het waardevak', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(within(cards()[0]).getByRole('button', { name: `Weapon: ${IGOR.name}. Tik om te zoeken.` })).toBeTruthy()
+    expect(within(cards()[0]).getByRole('button', { name: `Weapon: ${IGOR.name} (Lv. ${IGOR.level}). Tik om te zoeken.` })).toBeTruthy()
     expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-value')!.getAttribute('aria-label')).toBe(`ATT ${IGOR.watk}`)
   })
 

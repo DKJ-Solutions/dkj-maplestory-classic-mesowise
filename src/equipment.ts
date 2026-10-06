@@ -223,6 +223,15 @@ const catalogItem = (slot: EquipSlot, name: string, job: Job, weapon = '') => ca
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
 // zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
 // we dus in de lijsten van alle jobs.
+/** Het level dat een item uit de catalogus vraagt om het te dragen (#188); undefined bij een eigen item of een item zonder level (pijlen). */
+export const itemLevel = (slot: EquipSlot, name: string): number | undefined => anyItem(slot, name)?.level
+
+/** Een itemnaam met het level dat hij vraagt erachter, zoals het scherm hem toont: "Steel Titans (Lv. 15)" (Dave, 6 oktober 2026, #188). */
+export const nameWithLevel = (slot: EquipSlot, name: string): string => {
+  const level = itemLevel(slot, name)
+  return level === undefined ? name : `${name} (Lv. ${level})`
+}
+
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
