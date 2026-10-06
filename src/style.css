@@ -588,8 +588,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .invoice td.invoice-qty { padding-left: 0.75rem; color: var(--muted); text-align: right; white-space: nowrap; }
 .invoice td.invoice-meso { padding-left: 0.75rem; text-align: right; white-space: nowrap; }
 .invoice .cost { color: var(--cost); }
-/* Het totaal met lucht erboven, zodat het los staat van de regels (Dave, 6 oktober 2026). */
-.invoice tfoot th, .invoice tfoot td { padding-top: 0.875rem; border-bottom: 0; border-top: 2px solid var(--text); font-weight: 700; font-size: 1.125rem; }
+/* Het totaal met lucht erboven, zodat het los staat van de regels (Dave, 6 oktober 2026). De lijn erboven is grijs, tussen de
+   lijn van een regel en grijze tekst in: in dark mode was de tekstkleur bijna wit en veel te fel. */
+.invoice tfoot th, .invoice tfoot td { padding-top: 0.875rem; border-bottom: 0; border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); font-weight: 700; font-size: 1.125rem; }
 .invoice tbody tr:last-child th, .invoice tbody tr:last-child td { padding-bottom: 0.75rem; border-bottom: 0; }
 /* Het vraagteken achter een aantal op de factuur (Dave, 6 oktober 2026): een klein rondje dat de berekening in een popup toont. */
 .invoice-why { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; margin-left: 0.375rem; padding: 0;

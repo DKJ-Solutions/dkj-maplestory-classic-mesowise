@@ -55,7 +55,7 @@
 - [x] Victor: the explanation shows the exact quotient the invoice rounds up (never "= 3, rounded up 4"), float noise no
   longer adds a potion, and the question mark has a 44 px tap area
 - [x] Dave (October 6, 2026): a tidier invoice: every count ends on the same line (rows without a question mark keep its
-  space), and the total gets room above it
+  space), and the total gets room above it under a grey rule (the text colour was near-white in dark mode)
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
