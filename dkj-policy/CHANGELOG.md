@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**69 / 109 minor entries** <!-- pending-tally -->
+**70 / 110 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/195-advised-invoice-rounding · 20261006-160821Z
+
+The "Goedkoopste instellingen" button now picks the setup that is cheapest on the invoice you see, where every potion
+line is rounded up to whole pieces. Before, it picked on the unrounded cost, so in rare cases the Advised invoice came
+out a few dozen meso dearer than Your character.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The Advised column can no longer advise a setup that costs more than the one you already have.
+
+**Score:** 2
+
+#### Pull Request
+
+The Advised invoice is never dearer than Your character
+
+[PR #196](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/196)
+
+---
 
 ### DEPLOY: app/185-default-potion-per-effective-point · 20261006-152007Z
 
