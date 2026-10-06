@@ -263,8 +263,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
 .equipment, .skills { padding: 0; overflow: hidden; }
 .equipment .spot-body, .skills .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint of meteen met het eerste veld */
-.equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.equipment .spot-body .source a { color: var(--accent); }
 /* Per slot: de slotnaam gecentreerd bovenaan, en daaronder op één rij de naam (zoekbalk),
    het getal dat telt (met ATT/DEF) en het potlood. De wrappers (equip-head, equip-search, equip-stats) doen niet mee
    aan de opmaak (display: contents), zodat hun delen rechtstreeks in dit raster staan: zo klapt de zoeklijst

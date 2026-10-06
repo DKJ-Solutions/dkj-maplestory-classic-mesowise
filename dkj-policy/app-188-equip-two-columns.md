@@ -46,6 +46,7 @@
 - [x] `src/cheapestEquip.ts`: per slot what you wear and the cheapest equip, from the existing advice (Cody)
 - [x] `EquipColumns` in the Equip card, styled mobile-first (Cody, Gwen)
 - [x] The table left the card (Dave): two labelled buttons, Your character and Cheapest, both open the Equip popup; Cheapest shows the cheapest equip read-only with shop prices and what it all costs (Dave, #188)
+- [x] The NiaMeowDB source lines left the Equip popup (Dave); the footer credit stays
 - [x] The eye left the Equip card's head (Dave): the two buttons open the popup, the report button moves into that popup, at the bottom (Dave)
 
 ### TEST
@@ -56,7 +57,7 @@
 
 ### DEPLOY: app/188-equip-two-columns
 
-The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom. Your character
+The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom; the per-shop NiaMeowDB source lines are gone from it, and the app's footer still credits NiaMeowDB. Your character
 shows what you wear in game, to change it. Cheapest shows the same rows read-only, filled in automatically with the equip
 that levels most cheaply: the weapon the weapon advice says pays for itself, and every armor slot whose best piece pays
 for itself, skipping a piece that would clash with a better one (an overall against a top or bottom). A piece to buy is

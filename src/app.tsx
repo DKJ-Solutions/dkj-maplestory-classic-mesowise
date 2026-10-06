@@ -11,19 +11,16 @@ import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
-import { NPC_ARMOR } from './data/armor'
-import { NPC_CLAWS } from './data/claws'
-import { DAGGER_SHOP_SOURCE } from './data/daggers'
-import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
+import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, SKILL_HORIZON_LEVELS, skillLevels, skillPoolUsage, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
-import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import { apAtLevel, DOUBLE_STAB_SOURCE, NIMBLE_BODY, SUBI } from './data/thief'
-import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
+import { ARROW_BLOW_SOURCE } from './data/bowman'
+import { apAtLevel, DOUBLE_STAB_SOURCE, NIMBLE_BODY } from './data/thief'
+import { POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
@@ -1648,89 +1645,6 @@ function EquipmentCard(props: {
               </div>
             )
           })}
-          {props.job === 'warrior' && (
-            <p class="source">
-              Wapens:{' '}
-              <a href={NPC_WARRIOR_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_WARRIOR_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_WARRIOR_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_WARRIOR_ARMOR[0].source.retrieved)}.
-            </p>
-          )}
-          {props.job === 'bowman' && (
-            <p class="source">
-              Wapens:{' '}
-              <a href={NPC_BOWMAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_BOWMAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_BOWMAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_BOWMAN_ARMOR[0].source.retrieved)}. Pijlen:{' '}
-              <a href={NPC_ARROWS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
-              {props.helpfulStranger && (
-                <>
-                  {' '}
-                  {([
-                    ['Bronze pijlen (bogen)', HELPFUL_STRANGER_ARROWS[0].source],
-                    ['Bronze pijlen (kruisbogen)', HELPFUL_STRANGER_ARROWS[1].source],
-                    ['Raymonds winkel', HELPFUL_STRANGER_SOURCES[0]],
-                    ['De rang Helpful Stranger', HELPFUL_STRANGER_SOURCES[1]],
-                  ] as const).map(([label, s]) => (
-                    <span key={s.url}>
-                      {label}:{' '}
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
-                        NiaMeowDB
-                      </a>
-                      , opgehaald op {formatDate(s.retrieved)}.{' '}
-                    </span>
-                  ))}
-                </>
-              )}
-            </p>
-          )}
-          {props.job === 'magician' && (
-            <p class="source">
-              Wands en staffs:{' '}
-              <a href={NPC_MAGICIAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_MAGICIAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_MAGICIAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_MAGICIAN_ARMOR[0].source.retrieved)}.
-            </p>
-          )}
-          {props.job === 'thief' && (
-            <p class="source">
-              Claws:{' '}
-              <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Daggers:{' '}
-              <a href={DAGGER_SHOP_SOURCE.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(DAGGER_SHOP_SOURCE.retrieved)}. Armor:{' '}
-              <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
-              <a href={SUBI.source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>{' '}
-              (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
-            </p>
-          )}
         </>,
       )}
     </section>
