@@ -52,7 +52,7 @@
 ### TEST
 
 - [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label, the six Total cost buttons and the sentence above them, the ammo explanation and the calculation tables, the Shop line, advisedEquipment and Overnemen/Ongedaan maken with equipment; Victor's test findings fixed (setup helper left the Monster popup open, a tautological test replaced); `npm test` (1803) and `npm run lint` green
-- [ ] Dave looks at the preview at phone width before the merge (visible result)
+- [x] Dave looked at the preview and approved ("ship it", October 6, 2026)
 
 ### DEPLOY: app/192-advised-view-buttons
 
