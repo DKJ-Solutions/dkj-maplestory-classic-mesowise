@@ -1,5 +1,6 @@
-// De bekende trainingsplekken: alleen de maps achter het levelplan voor lv 10–20, per plek
+// De mobs om op te jagen: alleen de monsters achter het levelplan voor lv 10–20, per monster
 // opgehaald bij NiaMeowDB (meowdb.com), met per rij de pagina en de datum. Geen hele tabellen.
+// Maps staan er niet meer in (#123): de app rekent sinds 4 oktober 2026 alleen met de mob waarop je jaagt.
 // De getallen zijn die van de tweede gesloten testfase (COT2, closed operations test 2) en
 // kunnen bij de lancering nog veranderen.
 // Prijzen: de NPC-winkel van Dr. Faymus in Kerning City (COT2-prijzen volgens de itempagina).
@@ -49,39 +50,6 @@ const MONSTERS = {
   darkAxeStump: m('Dark Axe Stump', 23, 547, 43, 30, 11, 87, 128, 175, 20),
 }
 
-export const KNOWN_SPOTS: readonly KnownSpot[] = [
-  {
-    id: 'henesys-rain-forest-east',
-    name: 'The Rain-Forest East of Henesys',
-    source: { url: 'https://meowdb.com/msclassic/maps/010001070', retrieved: R },
-    monsters: [MONSTERS.pig, MONSTERS.ribbonPig],
-  },
-  {
-    id: 'kerning-subway-line-1-area-1',
-    name: 'Line 1 <Area 1>',
-    source: { url: 'https://meowdb.com/msclassic/maps/010003061', retrieved: R },
-    monsters: [MONSTERS.bubbling],
-  },
-  {
-    id: 'kerning-middle-forest-3',
-    name: 'Kerning City Middle Forest III',
-    source: { url: 'https://meowdb.com/msclassic/maps/010003052', retrieved: R },
-    monsters: [MONSTERS.snail, MONSTERS.blueSnail, MONSTERS.redSnail, MONSTERS.slime, MONSTERS.pig, MONSTERS.orangeMushroom, MONSTERS.ribbonPig, MONSTERS.greenMushroom],
-  },
-  {
-    id: 'perion-west-domain',
-    name: 'West Domain of Perion',
-    source: { url: 'https://meowdb.com/msclassic/maps/010004030', retrieved: R },
-    monsters: [MONSTERS.snail, MONSTERS.blueSnail, MONSTERS.redSnail, MONSTERS.stump, MONSTERS.darkStump, MONSTERS.greenMushroom],
-  },
-  {
-    id: 'perion-east-domain',
-    name: 'East Domain of Perion',
-    source: { url: 'https://meowdb.com/msclassic/maps/010004090', retrieved: R },
-    monsters: [MONSTERS.snail, MONSTERS.blueSnail, MONSTERS.redSnail, MONSTERS.stump, MONSTERS.darkStump, MONSTERS.greenMushroom, MONSTERS.axeStump, MONSTERS.darkAxeStump],
-  },
-]
-
 /** De goedkope potions uit het levelplan (HP) en de Blue Potion (MP), met de NPC-prijs in Kerning. */
 export const POTIONS: readonly Potion[] = [
   { name: 'Orange Potion', hp: 250, mp: 0, price: 150, source: { url: 'https://meowdb.com/msclassic/item-db/271', retrieved: R } },
@@ -98,28 +66,11 @@ export const MOBS: readonly Monster[] = Object.values(MONSTERS)
  */
 const MOB_SPOTS: readonly KnownSpot[] = MOBS.map((m) => ({ id: `mob:${m.name}`, name: m.name, source: m.source, monsters: [m] }))
 
-const byId = new Map([...KNOWN_SPOTS, ...MOB_SPOTS].map((k) => [k.id, k]))
-
-/** Het laagste en hoogste level van de monsters op een plek. */
-export function monsterLevels(spot: KnownSpot): { min: number; max: number } {
-  const levels = spot.monsters.map((m) => m.level)
-  return { min: Math.min(...levels), max: Math.max(...levels) }
-}
+const byId = new Map(MOB_SPOTS.map((k) => [k.id, k]))
 
 /** De bekende plek met deze id, of undefined (leeg, onbekend of uit een oudere versie). */
 export function findKnownSpot(id: string | undefined): KnownSpot | undefined {
   return id ? byId.get(id) : undefined
-}
-
-/**
- * Wat er in een plek verandert als je een bekende plek kiest: de naam en de verwijzing, en de velden
- * die de app dan zelf voorstelt worden leeg (leeg = het voorstel). Een lege of onbekende id maakt er
- * weer een eigen plek van; de naam en de ingevulde getallen blijven dan staan.
- */
-export function knownSpotPatch(id: string): Partial<SpotDraft> {
-  const spot = findKnownSpot(id)
-  if (!spot) return { known: undefined, monster: undefined, kills: undefined }
-  return { known: spot.id, name: spot.name, monster: undefined, kills: '', expPerHour: '', potions: '', ammo: '' }
 }
 
 /** De plek voor een mob: alleen dat monster, en de velden die de app zelf voorstelt leeg. Undefined bij een onbekende naam. */

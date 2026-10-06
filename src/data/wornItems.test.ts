@@ -5,7 +5,7 @@ import { DEFAULT_PROFILE, parseProfile } from '../profile'
 import { newDraft } from '../spotDraft'
 import { NPC_ARMOR } from './armor'
 import { NPC_CLAWS } from './claws'
-import { knownSpotPatch } from './spots'
+import { mobDraft } from './spots'
 import { ATTACK_MS } from './thief'
 import { WORN_ARMOR, WORN_CLAWS } from './wornItems'
 
@@ -122,7 +122,7 @@ describe('items zonder prijs in het upgrade-advies', () => {
   const parsed = parseProfile(DEFAULT_PROFILE)
   if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
   const spots = [
-    { ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') },
+    { ...mobDraft('Ribbon Pig')!, id: 'a' },
     { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
   ]
 

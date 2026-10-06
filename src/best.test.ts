@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ASSUMPTION_VARIANTS, bestVerdict, isDangerousSpot, resolveAll } from './best'
 import { expPerMeso } from './calc/expPerMeso'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
-import { findKnownSpot, knownSpotPatch, mobDraft } from './data/spots'
+import { mobDraft } from './data/spots'
+import { mobGroup } from './testing/mobGroup'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { suggestMonsters } from './suggest'
@@ -11,8 +12,7 @@ const parsed = parseProfile(DEFAULT_PROFILE)
 if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
 const profile: Profile = parsed.profile
 
-const subway = findKnownSpot('kerning-subway-line-1-area-1')!
-const perionEast = findKnownSpot('perion-east-domain')!
+const mixedMobs = mobGroup('Snail', 'Blue Snail', 'Red Snail', 'Stump', 'Dark Stump', 'Green Mushroom', 'Axe Stump', 'Dark Axe Stump')
 
 const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   ...newDraft(id),
@@ -20,9 +20,9 @@ const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   expPerHour: String(expPerHour),
   potions: String(potions),
 })
-const known = (id: string, spotId: string, over: Partial<SpotDraft> = {}): SpotDraft => ({
-  ...newDraft(id),
-  ...knownSpotPatch(spotId),
+const known = (id: string, mob: string, over: Partial<SpotDraft> = {}): SpotDraft => ({
+  ...mobDraft(mob)!,
+  id,
   ...over,
 })
 const ratio = (d: SpotDraft, a: Assumptions = ASSUMPTIONS) => {
@@ -43,14 +43,14 @@ describe('ASSUMPTION_VARIANTS', () => {
 
 describe('isDangerousSpot', () => {
   it('volgt het gekozen monster, en is false bij een eigen plek of zonder profiel', () => {
-    const options = suggestMonsters(profile, perionEast)
+    const options = suggestMonsters(profile, mixedMobs)
     const dangerous = options.find((s) => s.estimate.dangerous)
     const safe = options.find((s) => !s.estimate.dangerous)
     expect(dangerous).toBeDefined()
     expect(safe).toBeDefined()
-    expect(isDangerousSpot(known('x', perionEast.id, { monster: dangerous!.monster.name }), profile)).toBe(true)
-    expect(isDangerousSpot(known('x', perionEast.id, { monster: safe!.monster.name }), profile)).toBe(false)
-    expect(isDangerousSpot(known('x', perionEast.id, { monster: dangerous!.monster.name }), null)).toBe(false)
+    expect(isDangerousSpot(known('x', dangerous!.monster.name), profile)).toBe(true)
+    expect(isDangerousSpot(known('x', safe!.monster.name), profile)).toBe(false)
+    expect(isDangerousSpot(known('x', dangerous!.monster.name), null)).toBe(false)
     expect(isDangerousSpot(own('x', 1, 1), profile)).toBe(false)
   })
 })
@@ -64,7 +64,7 @@ describe('bestVerdict', () => {
   it('is niet robuust als een andere plek wint zodra één aanname naar de rand gaat', () => {
     // Een bekende plek met vaste kills: timeEfficiency doet dan niets, maar vaker geraakt worden
     // (contactsPerKill 0,6) maakt de potions duurder. De eigen plek zit daar precies tussenin.
-    const k = known('bekend', subway.id, { kills: '300' })
+    const k = known('bekend', 'Bubbling', { kills: '300' })
     const base = ratio(k)
     const worse = ratio(k, { ...ASSUMPTIONS, contactsPerKill: 0.6 })
     expect(worse).toBeLessThan(base)
@@ -80,7 +80,7 @@ describe('bestVerdict', () => {
     // Bij een geschatte plek schalen EXP en kosten samen mee met de kills, dus EXP per meso blijft
     // gelijk. Maar bij timeEfficiency 0,4 zakt de EXP per uur naar 2/3, en dan onder de helft van
     // de eigen plek (1,7 keer zoveel EXP per uur, maar een tiende van de EXP per meso).
-    const k = known('bekend', subway.id)
+    const k = known('bekend', 'Bubbling')
     const exp = resolveAll([k], profile)[0].expPerHour
     const slow = resolveAll([k], profile, { ...ASSUMPTIONS, timeEfficiency: 0.4 })[0].expPerHour
     expect(slow).toBeCloseTo((exp * 2) / 3, 6)
@@ -91,15 +91,15 @@ describe('bestVerdict', () => {
   })
 
   it('blijft robuust als de winnaar onder elke variant ruim voorligt', () => {
-    const k = known('bekend', subway.id, { kills: '300' })
+    const k = known('bekend', 'Bubbling', { kills: '300' })
     const exp = resolveAll([k], profile)[0].expPerHour
     const v = bestVerdict([k, own('duur', exp, (exp / ratio(k)) * 100)], profile)
     expect(v).toMatchObject({ bestId: 'bekend', robust: true })
   })
 
   it('geeft een gevaarlijke plek het label niet, ook als hij bovenaan staat', () => {
-    const dangerous = suggestMonsters(profile, perionEast).find((s) => s.estimate.dangerous)!
-    const k = known('eng', perionEast.id, { monster: dangerous.monster.name, expPerHour: '10000', potions: '1', ammo: '0' })
+    const dangerous = suggestMonsters(profile, mixedMobs).find((s) => s.estimate.dangerous)!
+    const k = known('eng', dangerous.monster.name, { expPerHour: '10000', potions: '1', ammo: '0' })
     const v = bestVerdict([k, own('veilig', 10_000, 1_000)], profile)
     expect(v.ranked[0].spot.id).toBe('eng')
     expect(v.bestId).toBe('veilig')

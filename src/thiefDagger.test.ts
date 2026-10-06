@@ -7,7 +7,7 @@ import { clawUpgradeAdvice, nextBetterWeapon } from './clawUpgrade'
 import { NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { NPC_DAGGERS } from './data/daggers'
-import { findKnownSpot, knownSpotPatch } from './data/spots'
+import { findKnownSpot, mobDraft } from './data/spots'
 import { DOUBLE_STAB_LEVELS } from './data/thief'
 import { applyEquipChange, catalogItems, defaultEquipment, equipmentForJob, OTHER, syncArrow, syncWithEquipment, type EquipEntry, type Equipment } from './equipment'
 import { applySkillPoint } from './levelUp'
@@ -32,8 +32,8 @@ const daggerDraft = (over: Partial<ProfileDraft> = {}): ProfileDraft => ({
   ...over,
 })
 
-const subway = findKnownSpot('kerning-subway-line-1-area-1')!
-const drafts = [{ ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') }, { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' }]
+const bubbling = findKnownSpot('mob:Bubbling')!
+const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' }]
 
 describe('thiefWithDagger en de weapon attack', () => {
   it('geldt alleen voor een Thief met dagger = 1', () => {
@@ -57,7 +57,7 @@ describe('suggestMonsters: een Thief met een dagger', () => {
   it('gooit niets: geen ammokosten, wel MP per kill van Double Stab, en het statvenster is de gewone dagger-aanval', () => {
     const p = parsed(daggerDraft())
     expect(p).toMatchObject({ dagger: 1, doubleStab: 1, weaponMult: 1.4, clawWatk: 28 })
-    const s = suggestMonsters(p, subway)
+    const s = suggestMonsters(p, bubbling)
     expect(s.length).toBeGreaterThan(0)
     for (const x of s) {
       expect(x.rechargePerStar).toBe(0)
@@ -75,13 +75,13 @@ describe('suggestMonsters: een Thief met een dagger', () => {
   })
 
   it('rekent de MP per kill uit Double Stab: aanvallen per kill x 8 MP op skill-level 1', () => {
-    for (const x of suggestMonsters(parsed(daggerDraft({ doubleStab: '1' })), subway)) {
+    for (const x of suggestMonsters(parsed(daggerDraft({ doubleStab: '1' })), bubbling)) {
       expect(x.estimate.mpPerKill).toBeCloseTo(x.estimate.attacksToKill * 8, 6)
     }
   })
 
   it('zonder punten in Double Stab telt de gewone aanval: geen MP, nog steeds geen ammokosten', () => {
-    const s = suggestMonsters(parsed(daggerDraft({ doubleStab: '0' })), subway)
+    const s = suggestMonsters(parsed(daggerDraft({ doubleStab: '0' })), bubbling)
     expect(s.length).toBeGreaterThan(0)
     for (const x of s) {
       expect(x.estimate.mpPerKill).toBe(0)
@@ -91,15 +91,15 @@ describe('suggestMonsters: een Thief met een dagger', () => {
   })
 
   it('Double Stab verandert de aanval ten opzichte van de gewone: andere aantallen aanvallen per kill', () => {
-    const plain = suggestMonsters(parsed(daggerDraft({ doubleStab: '0' })), subway)
-    const stab = suggestMonsters(parsed(daggerDraft({ doubleStab: '1' })), subway)
+    const plain = suggestMonsters(parsed(daggerDraft({ doubleStab: '0' })), bubbling)
+    const stab = suggestMonsters(parsed(daggerDraft({ doubleStab: '1' })), bubbling)
     expect(stab.map((x) => x.estimate.attacksToKill)).not.toEqual(plain.map((x) => x.estimate.attacksToKill))
   })
 
   it('regressie: met een claw (dagger = 0) gooit de Thief nog Lucky Seven, met ammokosten en MP', () => {
     const p = parsed({ ...daggerDraft(), dagger: '0', luckySeven: '1', starWatk: '15', starRecharge: '1' })
     expect(p.dagger).toBe(0)
-    const s = suggestMonsters(p, subway)
+    const s = suggestMonsters(p, bubbling)
     expect(s.length).toBeGreaterThan(0)
     for (const x of s) {
       expect(x.rechargePerStar).toBe(p.starRecharge)
@@ -291,7 +291,7 @@ describe('een eigen wapen met de gekozen soort rekent als die soort (#176)', () 
     expect(p.dagger).toBe(1)
     expect(thiefWithDagger('thief', p.dagger)).toBe(true)
     expect(toCharacter(p).watk).toBe(p.clawWatk)
-    const s = suggestMonsters(p, subway)
+    const s = suggestMonsters(p, bubbling)
     expect(s.length).toBeGreaterThan(0)
     for (const x of s) {
       expect(x.rechargePerStar).toBe(0)
@@ -304,7 +304,7 @@ describe('een eigen wapen met de gekozen soort rekent als die soort (#176)', () 
     const p = worn(own('claw'))
     expect(p.dagger).toBe(0)
     expect(toCharacter(p).watk).toBe(p.clawWatk + 15)
-    const s = suggestMonsters(p, subway)
+    const s = suggestMonsters(p, bubbling)
     expect(s.length).toBeGreaterThan(0)
     for (const x of s) {
       expect(x.rechargePerStar).toBe(p.starRecharge)
@@ -318,8 +318,8 @@ describe('een eigen wapen met de gekozen soort rekent als die soort (#176)', () 
   })
 
   it('dagger en claw geven een andere uitkomst voor dezelfde stat: het getal verandert met de keuze', () => {
-    const a = suggestMonsters(worn(own('dagger')), subway).map((x) => x.estimate.attacksToKill)
-    const b = suggestMonsters(worn(own('claw')), subway).map((x) => x.estimate.attacksToKill)
+    const a = suggestMonsters(worn(own('dagger')), bubbling).map((x) => x.estimate.attacksToKill)
+    const b = suggestMonsters(worn(own('claw')), bubbling).map((x) => x.estimate.attacksToKill)
     expect(a).not.toEqual(b)
   })
 })

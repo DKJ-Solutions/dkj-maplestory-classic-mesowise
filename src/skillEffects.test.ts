@@ -8,7 +8,7 @@ import { isInvalid } from './calc/rankSpots'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
 import { expToNextLevel } from './data/expTable'
 import { MAGIC_CLAW_LEVELS } from './data/magician'
-import { findKnownSpot, knownSpotPatch } from './data/spots'
+import { findKnownSpot, mobDraft } from './data/spots'
 import type { Job } from './job'
 import { DEFAULT_PROFILE, parseProfile, toCharacter, type Profile, type ProfileDraft } from './profile'
 import { buffBonus, ironBodyDef, maxHpAfterPoint, maxHpBeforePoint, skillEffectText, skillExtraCostText } from './skillEffects'
@@ -98,15 +98,15 @@ describe('toCharacter telt de buffs erbij', () => {
 })
 
 describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
-  const subway = findKnownSpot('kerning-subway-line-1-area-1')!
+  const bubbling = findKnownSpot('mob:Bubbling')!
 
   it('zet de MP per uur van de buffs op elk voorstel, en 0 zonder buffs', () => {
-    expect(suggestMonsters(profile, subway)[0].buffMpPerHour).toBe(0)
-    for (const s of suggestMonsters({ ...profile, ironBody: 5, magicArmor: 6, focus: 20 }, subway)) expect(s.buffMpPerHour).toBe(438)
+    expect(suggestMonsters(profile, bubbling)[0].buffMpPerHour).toBe(0)
+    for (const s of suggestMonsters({ ...profile, ironBody: 5, magicArmor: 6, focus: 20 }, bubbling)) expect(s.buffMpPerHour).toBe(438)
   })
 
   it('telt de upkeep bij de MP-potions: 200 MP per uur extra is precies één Blue Potion (200 MP) per uur', () => {
-    const s = suggestMonsters(profile, subway)[0]
+    const s = suggestMonsters(profile, bubbling)[0]
     const without = hourPlan({ ...s, buffMpPerHour: 0 }, 100)
     const withBuff = hourPlan({ ...s, buffMpPerHour: 200 }, 100)
     expect(MP_POTION.mp).toBe(200)
@@ -118,7 +118,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
   })
 
   it('kost de upkeep ook als je niets killt: de buff blijft aan staan', () => {
-    const s = suggestMonsters(profile, subway)[0]
+    const s = suggestMonsters(profile, bubbling)[0]
     const idle = hourPlan({ ...s, buffMpPerHour: 100 }, 0)
     expect(idle.mpPotionsPerHour).toBe(0.5) // 100 MP / 200 MP per potion
     expect(idle.potions).toBeCloseTo(110, 9) // 0,5 x 220
@@ -285,7 +285,7 @@ describe('maxHpAfterPoint', () => {
 
 describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
-  const known = (id: string, spotId: string): SpotDraft => ({ ...newDraft(id), ...knownSpotPatch(spotId) })
+  const known = (id: string, mob: string): SpotDraft => ({ ...mobDraft(mob)!, id })
   // De kosten van de horizon van een skillpunt (#145): je level plus de 4 erna, elk level op dat level doorgerekend.
   const costOf = (drafts: readonly SpotDraft[], p: Profile) => {
     let sum = 0
@@ -352,8 +352,8 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   })
 
   it('laat Magic Armor de kosten van het level dalen op een plek waar monsters hard raken, en rekent ze als het model van toCharacter', () => {
-    // Een Magician op level 20 op de Rain-Forest East of Henesys: Magic Armor 1 (+40 DEF) bespaart meer aan HP-potions dan 96 MP per uur kost.
-    const drafts = [known('a', 'henesys-rain-forest-east')]
+    // Een Magician op level 20 op Ribbon Pigs: Magic Armor 1 (+40 DEF) bespaart meer aan HP-potions dan 96 MP per uur kost.
+    const drafts = [known('a', 'Ribbon Pig')]
     const m = parse('magician', { ...magicianDraft, magicGuard: '3' })
     const advice = skillPointAdvice(drafts, m)
     if (advice.kind !== 'advice') throw new Error('geen advies')
@@ -369,7 +369,7 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   })
 
   it('laat Iron Body en Focus de kosten stijgen waar hun upkeep zwaarder weegt dan wat ze geven (negatieve besparing; ze winnen alleen als niets beters is)', () => {
-    const drafts = [known('a', 'henesys-rain-forest-east')]
+    const drafts = [known('a', 'Ribbon Pig')]
     const w = parse('warrior', { ...warriorDraft, improvedHpRecovery: '3', maxHpIncrease: '3' })
     const wAdvice = skillPointAdvice(drafts, w)
     const b = parse('bowman', { ...bowmanDraft, eyeOfAmazon: '3' })
@@ -396,7 +396,7 @@ describe('het skillpunt-advies telt de nieuwe skills mee', () => {
   })
 
   it('telt Max HP Increase als Max HP: op een plek waar niets gevaarlijk is, verandert het de kosten niet', () => {
-    const drafts = [known('a', 'henesys-rain-forest-east')]
+    const drafts = [known('a', 'Ribbon Pig')]
     const w = parse('warrior', { ...warriorDraft, improvedHpRecovery: '3' })
     const advice = skillPointAdvice(drafts, w)
     if (advice.kind !== 'advice') throw new Error('geen advies')

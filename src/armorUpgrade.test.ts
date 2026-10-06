@@ -3,7 +3,7 @@ import { armorUpgradeAdvice, replacedWdef, withArmor, type ArmorUpgradeAdvice } 
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
-import { knownSpotPatch } from './data/spots'
+import { mobDraft } from './data/spots'
 import type { ArmorPiece } from './data/types'
 import { horizonCost } from './horizonCost'
 import { MAGICIAN_ARMOR } from './magicianGear'
@@ -25,7 +25,7 @@ const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   potions: String(potions),
 })
 // "Beste" vraagt minstens twee plekken: een bekende plek en een eigen plek met weinig EXP per uur.
-const drafts = [{ ...newDraft('a'), ...knownSpotPatch('henesys-rain-forest-east') }, own('b', 1_000, 10_000)]
+const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 
 type Advice = Extract<ArmorUpgradeAdvice, { kind: 'advice' }>
 const advice = (d: readonly SpotDraft[], p: Profile | null): Advice => {
