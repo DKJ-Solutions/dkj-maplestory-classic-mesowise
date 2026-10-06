@@ -32,6 +32,8 @@ export interface ProfileField {
 const STATS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
+  // Max MP staat alleen op de Potions-kaart; de berekening gebruikt hem niet, dus leeg of fout blokkeert niets.
+  { key: 'mp', label: 'Max MP', min: 0, max: 30_000, integer: true, informative: true },
   // Je base AP in een stat kan niet onder 4: daar begint elk karakter (STARTING_AP).
   { key: 'str', label: 'STR', min: STARTING_AP.perStat, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: STARTING_AP.perStat, max: 999, integer: true },
@@ -200,6 +202,8 @@ export const statFieldsFor = (job: Job): readonly ProfileField[] =>
 export const DEFAULT_PROFILE: ProfileDraft = {
   level: '10',
   hp: '444',
+  // 113 MP van een Beginner op level 10 plus de +250 MP van de Thief-advancement (MP_PER_LEVEL).
+  mp: '363',
   str: '4',
   dex: '25',
   int: '4',
@@ -404,7 +408,8 @@ export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
       const v = (fields as Record<string, unknown>)[f.key]
       // Een veld dat een bewaard profiel niet heeft, krijgt de waarde van het voorbeeldprofiel, behalve de extra AP van
       // items: een profiel van vóór die velden typte zijn totale stats, dus daar komt niets bij.
-      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : isExtraKey(f.key) ? '0' : DEFAULT_PROFILE[f.key]
+      // Max MP is nieuwer dan het bewaarde profiel: dat van het voorbeeld past niet bij jouw level, dus leeg tot je hem invult.
+      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : isExtraKey(f.key) ? '0' : f.key === 'mp' ? '' : DEFAULT_PROFILE[f.key]
     }
     return out
   } catch {

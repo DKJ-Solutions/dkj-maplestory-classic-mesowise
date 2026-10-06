@@ -97,6 +97,21 @@ export const HP_PER_LEVEL = {
 export const hpPerLevelFrom = (level: number): number =>
   level >= HP_PER_LEVEL.thiefFromLevel ? HP_PER_LEVEL.thief : HP_PER_LEVEL.beginner
 
+/**
+ * Max MP per level-up is ook vast: de Beginner +12, de Thief +17; de job-advancement geeft eenmalig +250 MP (dezelfde
+ * HP/MP-gids als HP_PER_LEVEL, met hetzelfde eerste Thief-level).
+ */
+export const MP_PER_LEVEL = {
+  beginner: 12,
+  thief: 17,
+  advancement: 250,
+  source: HP_PER_LEVEL.source,
+} as const
+
+/** De Max MP die een level-up geeft, vanaf dit level. (De eenmalige +250 MP van de job-advancement zit er niet in.) */
+export const mpPerLevelFrom = (level: number): number =>
+  level >= HP_PER_LEVEL.thiefFromLevel ? MP_PER_LEVEL.thief : MP_PER_LEVEL.beginner
+
 /** AP per level voor STR, DEX, INT en LUK. */
 export const AP_PER_LEVEL = {
   amount: 5,

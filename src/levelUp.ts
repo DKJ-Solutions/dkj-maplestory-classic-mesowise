@@ -1,12 +1,12 @@
 // De level-up: een snapshot van het huidige level, waarna alles meegaat naar het volgende level (issue #154). Puur, zonder
 // UI-import; het scherm toont alleen wat hier uitkomt. De app past alleen aan wat uit een bronregel volgt: level +1, Max HP
-// (vaste waarde per level, data/thief.ts, data/warrior.ts, data/bowman.ts, data/magician.ts) en het level-deel van de accuracy.
+// en Max MP (vaste waarden per level, data/thief.ts, data/warrior.ts, data/bowman.ts, data/magician.ts) en het level-deel van de accuracy.
 // De AP en de skillpunten verdeelt de speler zelf: hoeveel er nog te verdelen zijn, staat in apToDistribute en spToDistribute.
 // Evasion, equipment en mob blijven staan tot de speler ze wijzigt; het advies zegt wanneer een wissel goedkoper is.
-import { magicianAccuracy, magicianHpPerLevelFrom } from './data/magician'
-import { apAtLevel, baseAccuracy, hpPerLevelFrom } from './data/thief'
-import { bowmanAccuracy, bowmanHpPerLevelFrom } from './data/bowman'
-import { warriorAccuracy, warriorHpPerLevelFrom } from './data/warrior'
+import { magicianAccuracy, magicianHpPerLevelFrom, magicianMpPerLevelFrom } from './data/magician'
+import { apAtLevel, baseAccuracy, hpPerLevelFrom, mpPerLevelFrom } from './data/thief'
+import { bowmanAccuracy, bowmanHpPerLevelFrom, bowmanMpPerLevelFrom } from './data/bowman'
+import { warriorAccuracy, warriorHpPerLevelFrom, warriorMpPerLevelFrom } from './data/warrior'
 import { isComputed, type Job } from './job'
 import { baseApSpent, DRAFT_FIELDS, draftStatTotal, parseProfile, PROFILE_FIELDS, skillPointsLeft, type ProfileDraft } from './profile'
 import { skillPoolUsage, skillsOf, type SkillId } from './skillPoint'
@@ -32,18 +32,18 @@ const wholeOf = (text: string): number | null => {
 }
 
 /**
- * Wat een level-up bijwerkt voor een Warrior, Bowman en Magician: zijn eigen Max HP per level en het stat-deel van zijn
+ * Wat een level-up bijwerkt voor een Warrior, Bowman en Magician: zijn eigen Max HP en Max MP per level en het stat-deel van zijn
  * accuracy (dat van het level afhangt), met `stat` als de stat waaruit dat deel volgt (DEX; bij een Magician INT).
  * De Thief heeft zijn eigen formules in applyLevelUp.
  */
-const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number) => number; accuracy: (stat: number, level: number, luk: number) => number }>> = {
-  warrior: { stat: 'dex', hpFrom: warriorHpPerLevelFrom, accuracy: warriorAccuracy },
-  bowman: { stat: 'dex', hpFrom: bowmanHpPerLevelFrom, accuracy: bowmanAccuracy },
-  magician: { stat: 'int', hpFrom: magicianHpPerLevelFrom, accuracy: magicianAccuracy },
+const OWN_AP: Partial<Record<Job, { stat: 'dex' | 'int'; hpFrom: (level: number) => number; mpFrom: (level: number) => number; accuracy: (stat: number, level: number, luk: number) => number }>> = {
+  warrior: { stat: 'dex', hpFrom: warriorHpPerLevelFrom, mpFrom: warriorMpPerLevelFrom, accuracy: warriorAccuracy },
+  bowman: { stat: 'dex', hpFrom: bowmanHpPerLevelFrom, mpFrom: bowmanMpPerLevelFrom, accuracy: bowmanAccuracy },
+  magician: { stat: 'int', hpFrom: magicianHpPerLevelFrom, mpFrom: magicianMpPerLevelFrom, accuracy: magicianAccuracy },
 }
 
 /**
- * Het profiel na een level-up: level +1, Max HP + de vaste waarde van die job en de accuracy die het nieuwe level geeft
+ * Het profiel na een level-up: level +1, Max HP en Max MP + de vaste waarden van die job en de accuracy die het nieuwe level geeft
  * (alleen het verschil van het level-deel, want de accuracy in het profiel is het totaal uit het statvenster). De AP plaatst de
  * app niet (#154): de speler verdeelt ze zelf. Een veld dat geen geheel getal is, blijft zoals getypt. Is het level geen
  * heel getal of al het hoogste, dan blijft het profiel zoals het was (de speler ziet de melding van parseProfile).
@@ -55,6 +55,7 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
   const next: ProfileDraft = { ...draft, level: String(level + 1) }
   if (!isComputed(job)) return next
   const hp = wholeOf(draft.hp)
+  const mp = wholeOf(draft.mp)
   // De accuracy rekent met je totale stats (base AP plus items).
   const dex = draftStatTotal(draft, 'dex')
   const luk = draftStatTotal(draft, 'luk')
@@ -64,12 +65,14 @@ export function applyLevelUp(draft: ProfileDraft, job: Job): ProfileDraft {
     // Alleen het level telt in de accuracy; de AP verdeelt de speler.
     const stat = draftStatTotal(draft, own.stat)
     if (hp !== null) next.hp = String(hp + own.hpFrom(level))
+    if (mp !== null) next.mp = String(mp + own.mpFrom(level))
     if (stat !== null && luk !== null && accuracy !== null) {
       next.accuracy = String(accuracy + own.accuracy(stat, level + 1, luk) - own.accuracy(stat, level, luk))
     }
     return next
   }
   if (hp !== null) next.hp = String(hp + hpPerLevelFrom(level))
+  if (mp !== null) next.mp = String(mp + mpPerLevelFrom(level))
   if (dex !== null && luk !== null && accuracy !== null) {
     next.accuracy = String(accuracy + baseAccuracy(dex, level + 1, luk) - baseAccuracy(dex, level, luk))
   }

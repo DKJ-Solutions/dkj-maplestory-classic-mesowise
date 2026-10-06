@@ -21,7 +21,7 @@ const profile: Profile = parsed.profile
 
 describe('applyLevelUp', () => {
   it('zet het level er één bij, als tekst, en laat de rest staan', () => {
-    expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', accuracy: '34' })
+    expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', mp: '380', accuracy: '34' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, level: ' 42 ' }, 'thief').level).toBe('43')
     expect(applyLevelUp({ ...DEFAULT_PROFILE, level: '199' }, 'thief').level).toBe('200')
   })
@@ -77,19 +77,20 @@ describe('applyLevelUp', () => {
 
   it('past hp en accuracy alleen aan als het hele getallen zijn; een decimaal blijft zoals getypt', () => {
     expect(applyLevelUp({ ...DEFAULT_PROFILE, hp: '444.5' }, 'thief').hp).toBe('444.5')
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '40.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', luk: '40.5', accuracy: '33' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '40.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', mp: '380', luk: '40.5', accuracy: '33' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, accuracy: '33.5' }, 'thief').accuracy).toBe('33.5')
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: '25.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', dex: '25.5', accuracy: '33' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: '25.5' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', mp: '380', dex: '25.5', accuracy: '33' })
   })
 
   it('laat een veld dat geen getal is zoals getypt, en past de rest wel aan', () => {
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, hp: 'abc' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: 'abc', accuracy: '34' })
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', luk: '', accuracy: '33' })
-    expect(applyLevelUp({ ...DEFAULT_PROFILE, accuracy: 'x' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', accuracy: 'x' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, hp: 'abc' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: 'abc', mp: '380', accuracy: '34' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, lukExtra: '0', luk: '' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', level: '11', hp: '466', mp: '380', luk: '', accuracy: '33' })
+    expect(applyLevelUp({ ...DEFAULT_PROFILE, accuracy: 'x' }, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', mp: '380', accuracy: 'x' })
     expect(applyLevelUp({ ...DEFAULT_PROFILE, dex: 'Infinity' }, 'thief')).toEqual({
       ...DEFAULT_PROFILE,
       level: '11',
       hp: '466',
+      mp: '380',
       dex: 'Infinity',
       accuracy: '33',
     })
@@ -104,7 +105,7 @@ describe('applyLevelUp', () => {
 
   it('komt na een level-up nog door parseProfile, met de verwachte getallen', () => {
     expect(parseProfile(applyLevelUp(DEFAULT_PROFILE, 'thief'))).toEqual({
-      profile: { ...profile, level: 11, hp: 466, accuracy: 34 },
+      profile: { ...profile, level: 11, hp: 466, mp: 380, accuracy: 34 },
     })
   })
 })
@@ -153,7 +154,7 @@ describe('applySkillPoint', () => {
 describe('applyLevelUp per job', () => {
   it('geeft voor de Thief hetzelfde als zonder job', () => {
     expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual(applyLevelUp(DEFAULT_PROFILE, 'thief'))
-    expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', accuracy: '34' })
+    expect(applyLevelUp(DEFAULT_PROFILE, 'thief')).toEqual({ ...DEFAULT_PROFILE, level: '11', hp: '466', mp: '380', accuracy: '34' })
   })
 
   it('houdt het hoogste level en een ongeldig level ongewijzigd, voor elke job', () => {
@@ -214,7 +215,7 @@ describe('een Warrior: applyLevelUp', () => {
 
   it('laat HP en accuracy zoals getypt als een van de velden geen geheel getal is', () => {
     const out = applyLevelUp({ ...w, hp: 'x', accuracy: '33.5' }, 'warrior')
-    expect(out).toEqual({ ...w, hp: 'x', accuracy: '33.5', level: '11' })
+    expect(out).toEqual({ ...w, hp: 'x', mp: '375', accuracy: '33.5', level: '11' })
     expect(applyLevelUp({ ...w, dex: '' }, 'warrior').accuracy).toBe('33')
   })
 
@@ -391,6 +392,20 @@ describe('applyLevelUp: HP en accuracy per job over de drempel en de floor (#154
     expect([hp(10), hp(11), hp(199)]).toEqual([jobHp, jobHp, jobHp])
   })
 
+  // De HP/MP-gids (meowdb.com/msclassic/guides/hp-mp-gain-explained): Beginner +12 MP, Warrior +12, Bowman +17, Thief +17, Magician +22.
+  it.each(['thief', 'warrior', 'bowman', 'magician'] as Job[])('%s: +12 MP tot en met level 9, de job-waarde vanaf level 10', (job) => {
+    const mp = (level: number) => Number(applyLevelUp({ ...base, mp: '100', level: String(level) }, job).mp) - 100
+    const jobMp = { thief: 17, warrior: 12, bowman: 17, magician: 22 }[job]
+    expect([mp(1), mp(8), mp(9)]).toEqual([12, 12, 12])
+    expect([mp(10), mp(11), mp(199)]).toEqual([jobMp, jobMp, jobMp])
+  })
+
+  it('laat Max MP leeg of zoals getypt als het geen geheel getal is', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as Job[]) {
+      for (const mp of ['', 'abc', '300.5']) expect(applyLevelUp({ ...DEFAULT_PROFILE, mp }, job).mp, `${job} ${mp}`).toBe(mp)
+    }
+  })
+
   it.each(['thief', 'warrior', 'bowman', 'magician'] as Job[])('%s: de accuracy-stap is op elk level het verschil van zijn eigen formule, en 0 of 1', (job) => {
     for (let level = 1; level < 200; level++) {
       const out = applyLevelUp({ ...base, level: String(level) }, job)
@@ -423,10 +438,10 @@ describe('applyLevelUp: HP en accuracy per job over de drempel en de floor (#154
     expect(Number(applyLevelUp(l, 'bowman').accuracy) - 100).toBe(bowmanAccuracy(25, 31, 210) - bowmanAccuracy(25, 30, 210))
   })
 
-  it('raakt per job alleen level, hp en accuracy aan', () => {
+  it('raakt per job alleen level, hp, mp en accuracy aan', () => {
     for (const job of ['thief', 'warrior', 'bowman', 'magician'] as Job[]) {
       const out = applyLevelUp({ ...base, level: '30' }, job)
-      expect({ ...out, level: '', hp: '', accuracy: '' }, job).toEqual({ ...base, level: '', hp: '', accuracy: '' })
+      expect({ ...out, level: '', hp: '', mp: '', accuracy: '' }, job).toEqual({ ...base, level: '', hp: '', mp: '', accuracy: '' })
     }
   })
 })

@@ -137,7 +137,21 @@ describe('loadProfile en saveProfile', () => {
 
   it('geeft een bewaard profiel van vóór INT (#82) INT 4, zonder dat de rest verandert', () => {
     const raw = JSON.stringify({ version: 1, fields: { str: '50', luk: '60' } })
-    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', str: '50', luk: '60', int: '4' })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: raw }))).toEqual({ ...DEFAULT_PROFILE, lukExtra: '0', mp: '', str: '50', luk: '60', int: '4' })
+  })
+
+  it('laat Max MP leeg bij een bewaard profiel van vóór dat veld, en bewaart en laadt hem daarna gewoon', () => {
+    const old = JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, mp: undefined } })
+    expect(loadProfile(fakeStorage({ [PROFILE_KEY]: old })).mp).toBe('')
+    const storage = fakeStorage({})
+    saveProfile(storage, { ...DEFAULT_PROFILE, mp: '512' })
+    expect(loadProfile(storage).mp).toBe('512')
+  })
+
+  it('blokkeert de berekening niet met een lege of foute Max MP: hij staat er alleen ter info', () => {
+    for (const mp of ['', 'abc', '-3']) expect('profile' in parseProfile({ ...DEFAULT_PROFILE, mp }), mp).toBe(true)
+    const parsed = parseProfile(DEFAULT_PROFILE)
+    expect('profile' in parsed && parsed.profile.mp).toBe(363)
   })
 
   it('rekent de Attack uit je equipment: bij een Thief claw plus stars, bij een Warrior alleen het wapen (#82)', () => {

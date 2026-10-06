@@ -131,7 +131,7 @@ describe('profiel: de velden van een Magician', () => {
   it('toont de stats van het statvenster met de M.ATT van het wapen, en geen tijd per aanval, multiplier of stars', () => {
     const keys = profileFieldsFor('magician').map((f) => f.key)
     // Dezelfde stats en volgorde als de Warrior (kaarten Ability points en Total stats, #82), zonder de tijd per aanval.
-    expect(keys.slice(0, 5)).toEqual(['level', 'hp', 'str', 'dex', 'int'])
+    expect(keys.slice(0, 6)).toEqual(['level', 'hp', 'mp', 'str', 'dex', 'int'])
     expect(keys).toContain('luk')
     for (const k of ['attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
     // De extra AP van items staat niet als eigen stat op de kaart: die staat in de popup van zijn stat.

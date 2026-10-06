@@ -30,7 +30,8 @@ import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
-import { statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { potionOptions, type PotionOption } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -316,6 +317,8 @@ const ICON_PATHS = {
   person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
   // Een staafdiagram: Total stats
   chart: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
+  // Een flesje: je potions
+  flask: ['M9 3h6', 'M10 3v5.5L5 17a2.5 2.5 0 0 0 2.2 4h9.6a2.5 2.5 0 0 0 2.2-4l-5-8.5V3', 'M7 14h10'],
   // Een vizier: de mob waarop je jaagt
   target: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 1v4', 'M12 19v4', 'M1 12h4', 'M19 12h4'],
 } as const
@@ -404,9 +407,9 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
 
 /**
  * De stats die de karakterkaart niet toont (Dave, 4 oktober 2026): het level en Max HP gaan omhoog met Level up,
- * weapon attack volgt uit wat je bij je equipment kiest. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
+ * weapon attack volgt uit wat je bij je equipment kiest. Max HP en Max MP staan op de Potions-kaart. Hier voegt het niets toe. De DEF staat er wel, maar alleen om te lezen (READ_ONLY_STATS).
  */
-const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'clawWatk', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'])
+const HIDDEN_STATS: ReadonlySet<keyof ProfileDraft> = new Set<keyof ProfileDraft>(['level', 'hp', 'mp', 'clawWatk', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'])
 /** De Attack uit het statvenster: geen opgeslagen veld, maar je schadebereik uit je ability points en je equipment (attackText). */
 const ATTACK_FIELD: ProfileField = { key: 'clawWatk', label: 'Attack', min: 0, max: 9_999, integer: true }
 /** W.ATT en M.ATT uit het statvenster: wat je equipment geeft (totalAttack en totalMagicAttack). Elke job ziet ze allebei; een van de twee staat op 0 (Dave, #100). */
@@ -821,6 +824,54 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   return (
     <StatsCard {...props} className="total-stats" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
   )
+}
+
+/** Eén potion op de Potions-kaart: naam en prijs, en wat hij herstelt, per punt kost en van je balk vult. */
+function PotionRow(props: { option: PotionOption }) {
+  const { potion, kind, restores, mesoPerPoint, fillPct, used } = props.option
+  const unit = kind === 'hp' ? 'HP' : 'MP'
+  const fill = fillPct === null ? null : fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(fillPct)}% van je Max ${unit}`
+  return (
+    <li class={used ? 'potion used' : 'potion'}>
+      <div class="potion-top">
+        <span class="potion-name">{potion.name}</span>
+        <span class="potion-price">{nfInt.format(potion.price)} meso</span>
+      </div>
+      <p class="potion-meta">
+        +{nfInt.format(restores)} {unit} · {nf.format(mesoPerPoint)} meso per {unit}
+        {fill && <> · {fill}</>}
+      </p>
+      {used && <p class="potion-used">De app rekent met deze potion</p>}
+    </li>
+  )
+}
+
+/**
+ * Potions: je Max HP en Max MP, en de potions die je job kan kopen (Dave, 6 oktober 2026). Een potion heeft geen levelvereiste,
+ * dus op elk level staan ze er allemaal, van goedkoop naar duur per punt herstel (zie potions.ts). Max HP en Max MP gaan omhoog
+ * met Level up; klopt een van de twee niet met het spel, dan pas je hem hier aan.
+ */
+function PotionsCard(props: StatsCardProps & { profile: Profile | null }) {
+  const { draft, job } = props
+  const fields = statFieldsFor(job)
+  const field = (key: 'hp' | 'mp') => fields.find((f) => f.key === key)!
+  const options = potionOptions(job, draft.hp, draft.mp, props.profile ? potionFactorOf(props.profile) : undefined)
+  const lead = (
+    <>
+      {(['hp', 'mp'] as const).map((key) => (
+        <StatLine key={key} field={field(key)} value={draft[key]} onSave={(text) => props.onChange({ [key]: text })} />
+      ))}
+      <div class="potion-group">
+        <h3>HP potions</h3>
+        <ul class="potion-list">{options.hp.map((o) => <PotionRow key={o.potion.name} option={o} />)}</ul>
+      </div>
+      <div class="potion-group">
+        <h3>MP potions</h3>
+        <ul class="potion-list">{options.mp.map((o) => <PotionRow key={o.potion.name} option={o} />)}</ul>
+      </div>
+    </>
+  )
+  return <StatsCard {...props} className="potions" icon="flask" title="Potions" lead={lead} fields={[]} />
 }
 
 /**
@@ -2231,10 +2282,13 @@ export function App() {
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
   const equipError = statError !== null && 'key' in parsed && EQUIPMENT_STATS.has(parsed.key) ? statError : null
-  // Total stats heeft zijn eigen kaart; level en Max HP staan niet op een stat-kaart en melden zich bij Ability points.
+  // Total stats heeft zijn eigen kaart; het level staat niet op een stat-kaart en meldt zich bij Ability points.
   const totalKey = 'key' in parsed && !ABILITY_KEYS.includes(parsed.key) && !HIDDEN_STATS.has(parsed.key) && !isSkillKey(parsed.key)
   const totalError = equipError === null && totalKey ? statError : null
-  const characterError = equipError === null && !totalKey ? statError : null
+  // Max HP en Max MP staan op de Potions-kaart, en hun melding ook.
+  const potionKey = 'key' in parsed && (parsed.key === 'hp' || parsed.key === 'mp')
+  const potionsError = equipError === null && potionKey ? statError : null
+  const characterError = equipError === null && !totalKey && !potionKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
@@ -2477,6 +2531,7 @@ export function App() {
       <section class="stats-group" aria-label="Stats">
         <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+        <PotionsCard job={job} draft={profileDraft} profile={parsedProfile} error={potionsError} onChange={updateProfile} />
       </section>
 
       <LevelAdviceCard

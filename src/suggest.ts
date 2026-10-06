@@ -151,7 +151,7 @@ function itemRecoveryFactor(pct: readonly number[], level: number): number {
  * Hoeveel meer HP en MP een potion herstelt dan er op staat (issue #141): Improved HP Recovery van een Warrior en Improved MP
  * Recovery van een Magician verhogen het herstel van items met 5% tot 20%. Dat geldt voor elke potion, dus de goedkoopste per
  * punt herstel blijft dezelfde. Het herstel per 10 seconden telt niet mee: bij HP staat er geen getal op de pagina, en bij MP
- * is het een deel van je Max MP, die het profiel niet kent. Een andere job heeft 0 in die velden (parseProfile), dus 1.
+ * is het een deel van je Max MP, die de berekening niet gebruikt (alleen de Potions-kaart toont hem). Een andere job heeft 0 in die velden (parseProfile), dus 1.
  */
 export const potionFactorOf = (profile: Profile): { hp: number; mp: number } => ({
   hp: itemRecoveryFactor(IMPROVED_HP_RECOVERY.itemRecoveryPct, profile.improvedHpRecovery),

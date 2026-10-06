@@ -567,3 +567,16 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .ap-row .ap-group { min-width: 0; margin: 0; }
 .ap-row .ap-group h3 { margin: 0; }
 .ap-row .btn { flex: none; width: auto; margin: 0; }
+
+/* Potions (Dave, 6 oktober 2026): onder Max HP en Max MP per soort een lijst, van goedkoop naar duur per punt herstel. De
+   potion waarmee de app rekent, krijgt de accentrand van een gecorrigeerd vak (.equip-value.changed). */
+.potion-group { margin-top: 1rem; }
+.potion-group h3 { margin: 0 0 0.5rem; font-size: var(--fs-h4); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.potion-list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.potion { padding: 0.625rem 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; }
+.potion.used { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.potion-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; }
+.potion-name { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.potion-price { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.potion-meta { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.potion-used { margin: 0.25rem 0 0; font-size: 0.875rem; font-weight: 600; color: var(--text); }

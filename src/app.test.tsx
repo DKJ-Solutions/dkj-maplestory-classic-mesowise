@@ -2609,17 +2609,19 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     expect(mob.textContent!.includes('Wissel naar ')).toBe(chipOf('Mob') === 'Wisselen')
   })
 
-  it('zet Ability points en Total stats in één blok Stats zonder zichtbare kop, en alleen die twee', () => {
+  it('zet Ability points, Total stats en Potions in één blok Stats zonder zichtbare kop, en alleen die drie', () => {
     const h = home()
     const group = h.querySelector('section.stats-group')!
     expect(group.getAttribute('aria-label')).toBe('Stats')
     expect(group.querySelector('h2')).toBeNull()
     expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
-    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats/ })).toHaveLength(2)
+    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats|Potions/ })).toHaveLength(3)
     expect(within(group as HTMLElement).getByRole('button', { name: 'Ability points bekijken' })).toBeTruthy()
     expect(within(group as HTMLElement).getByRole('button', { name: 'Total stats bekijken' })).toBeTruthy()
-    // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen.
-    expect(group.children).toHaveLength(2)
+    expect(within(group as HTMLElement).getByRole('button', { name: 'Potions bekijken' })).toBeTruthy()
+    // Geen andere kaart in het blok: de drie kaarten zijn de enige kinderen, Potions als laatste.
+    expect(group.children).toHaveLength(3)
+    expect(group.lastElementChild!.classList.contains('potions')).toBe(true)
     expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip/ })).toBeNull()
   })
 
@@ -2862,5 +2864,61 @@ describe('de soort van een eigen wapen (#176)', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
     expect(profileFields().dagger).toBe('0')
     expect('weaponKind' in slots().claw).toBe(false)
+  })
+})
+
+describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
+  const potionsCard = () => homeScreen().querySelector<HTMLElement>('section.potions')!
+  const openPotions = () => fireEvent.click(screen.getByRole('button', { name: 'Potions bekijken' }))
+  const potionNames = (group: string) =>
+    Array.from(potionsCard().querySelectorAll('.potion-group'))
+      .find((g) => g.querySelector('h3')?.textContent === group)!
+      .querySelectorAll('.potion-name')
+  const names = (group: string) => Array.from(potionNames(group)).map((n) => n.textContent)
+  const usedName = (group: string) => Array.from(potionNames(group)).find((n) => n.closest('.potion')!.classList.contains('used'))?.textContent
+
+  it('toont Max HP en Max MP van het profiel, en de potions van een Thief van goedkoop naar duur per punt', () => {
+    openPotions()
+    expect(cardNames('section.potions')).toEqual(['Max HP', 'Max MP'])
+    expect(statShown('Max HP')).toBe(DEFAULT_PROFILE.hp)
+    expect(statShown('Max MP')).toBe(DEFAULT_PROFILE.mp)
+    expect(names('HP potions')).toEqual(['Orange Potion', 'White Potion'])
+    expect(names('MP potions')).toEqual(['Blue Potion'])
+    expect(usedName('HP potions')).toBe('Orange Potion')
+    expect(usedName('MP potions')).toBe('Blue Potion')
+    // 250 HP van 444: 56%; 200 MP van 363: 55%.
+    expect(potionsCard().textContent).toContain('+250 HP · 0,6 meso per HP · vult 56% van je Max HP')
+    expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP · vult 55% van je Max MP')
+  })
+
+  it('bewaart een aangepaste Max MP na Opslaan, en verhoogt Max HP en Max MP met Level up', () => {
+    openPotions()
+    const h = openStat('Max MP')
+    h.type('400')
+    h.save()
+    expect(profileFields().mp).toBe('400')
+    fireEvent.click(screen.getByRole('button', { name: 'Level up' }))
+    // Een Thief van level 10 naar 11: +22 HP en +17 MP (de HP/MP-gids).
+    expect(profileFields().hp).toBe('466')
+    expect(profileFields().mp).toBe('417')
+  })
+
+  it('geeft een Magician de MP-potions van Len the Fairy erbij, en rekent met de Orange', () => {
+    cleanup()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
+    render(<App />)
+    openPotions()
+    expect(names('MP potions')).toEqual(['Orange', 'Lemon', 'Blue Potion'])
+    expect(usedName('MP potions')).toBe('Orange')
+  })
+
+  it('laat het deel van je balk weg zolang Max MP leeg is', () => {
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, mp: '' } }))
+    render(<App />)
+    openPotions()
+    expect(statShown('Max MP')).toBe('?')
+    expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP')
+    expect(potionsCard().textContent).not.toContain('van je Max MP')
   })
 })
