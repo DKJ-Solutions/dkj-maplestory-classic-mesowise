@@ -2317,13 +2317,13 @@ function PotionQuestion(props: { advice: PotionAdvice; cost: LevelCost; part?: b
       </Question>
     )
   }
-  // Vul je de potionkosten van je plek zelf in, dan telt je keuze niet in de kosten, en is er niets te winnen.
+  // Gelijke kosten: de potion waarin je keuze verschilt, heb je op deze mob niet nodig (hij raakt je niet, of je gebruikt geen MP).
   const same = !a.stay && a.mesoChosen === a.mesoCheapest
   const stay = a.stay || same
   return (
     <Question title={title} chip={stay ? 'no' : 'yes'} chipText={stay ? 'Blijven' : 'Wisselen'} lead={QUESTION_LEAD.potion} part={props.part}>
       <h4 class="verdict">{a.stay ? 'Je gebruikt al de goedkoopste potions.' : same ? 'Je keuze verandert de kosten van dit level niet.' : `Wissel naar ${switchNames(a)}.`}</h4>
-      {same && <p class="hint">Op je mob tellen je potions niet in de kosten: je hebt de potionkosten zelf ingevuld, of je hebt ze daar niet nodig.</p>}
+      {same && <p class="hint">Op deze mob heb je de potion waarin je keuze verschilt niet nodig, dus hij kost je niets extra.</p>}
       {!stay && a.mesoCheapest !== undefined && (
         <p class="hint">
           Met jouw potions {costClause(a.mesoChosen, true)}, met de goedkoopste {costClause(a.mesoCheapest, false)}.

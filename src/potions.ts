@@ -119,7 +119,7 @@ export type PotionAdvice =
   /** Niet uit te rekenen: geen profiel of geen kosten voor dit level. */
   | { kind: 'none' }
   /**
-   * Je keuze naast de goedkoopste. `stay` als je per soort al de goedkoopste gebruikt. `meso` is wat dit level kost met je
+   * Je keuze naast de goedkoopste. `stay` als je per soort al een potion gebruikt die per punt even goedkoop is als de goedkoopste. `meso` is wat dit level kost met je
    * keuze en met de goedkoopste (undefined niet uit te rekenen, null geen EXP).
    */
   | { kind: 'advice'; stay: boolean; chosen: PotionPair; cheapest: PotionPair; mesoChosen: number | null; mesoCheapest: number | null | undefined }
@@ -140,7 +140,10 @@ export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | nu
   }
   const mesoChosen = costWith(chosen)
   if (mesoChosen === undefined) return { kind: 'none' }
-  const stay = chosen.hp === cheapest.hp && chosen.mp === cheapest.mp
+  // Even goedkoop per punt telt als de goedkoopste (de Lemon naast de Orange van een Magician): anders kan afronding de twee
+  // kosten een fractie laten verschillen, en raadt het advies een wissel aan die niets bespaart.
+  const perPoint = (p: Potion, kind: PotionKind) => p.price / p[kind]
+  const stay = perPoint(chosen.hp, 'hp') === perPoint(cheapest.hp, 'hp') && perPoint(chosen.mp, 'mp') === perPoint(cheapest.mp, 'mp')
   return { kind: 'advice', stay, chosen, cheapest, mesoChosen, mesoCheapest: stay ? mesoChosen : costWith(cheapest) }
 }
 

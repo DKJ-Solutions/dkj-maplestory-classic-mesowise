@@ -51,11 +51,11 @@
 - [x] Dave (October 6, 2026): Max HP and Max MP move to the top of Total stats
 - [x] Dave (October 6, 2026): the price gets its own line under the name ("Prijs: 150 meso")
 - [x] Dave (October 6, 2026): pick the HP and MP potion you use, like the mob; the calculation uses it, a report compares it with the cheapest, and the card moves up with the other report cards. Wasted recovery split off as #181
-- [ ] Victor and Edith: review of the potion choice
+- [x] Victor and Edith: review of the potion choice; equally cheap potions count as cheapest (Magician Lemon), equal-cost hint reworded
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1646 tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1647 tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card

@@ -147,11 +147,9 @@ export type ProfileDraft = Record<ProfileKey, string>
 
 /**
  * Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent) en het geslacht
- * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen).
- */
-/**
- * Het profiel als getallen. `potions` zijn de potions die je gebruikt (potions.ts, Dave, 6 oktober 2026); zonder rekent de
- * berekening met de goedkoopste per punt (HP_POTION en mpPotionFor in suggest.ts).
+ * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen). `potions` zijn de potions die
+ * je gebruikt (potions.ts, Dave, 6 oktober 2026); zonder rekent de berekening met de goedkoopste per punt (HP_POTION en
+ * mpPotionFor in suggest.ts).
  */
 export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender; potions?: { hp: Potion; mp: Potion } }
 

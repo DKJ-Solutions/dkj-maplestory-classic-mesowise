@@ -137,6 +137,16 @@ describe('potionAdvice', () => {
     }
   })
 
+  it('zegt blijven bij een Magician met de Lemon: even goedkoop per MP als de Orange, ook als afronding de kosten laat verschillen', () => {
+    const p = parseProfile({ ...DEFAULT_PROFILE, level: '15', int: '60', luk: '4' }, 'magician')
+    if (!('profile' in p)) throw new Error(p.error)
+    const lemon = { ...p.profile, potions: resolvePotions('magician', { hp: null, mp: 'Lemon' }) }
+    const a = potionAdvice(drafts, lemon)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    expect(a.stay).toBe(true)
+    expect(a.mesoCheapest).toBe(a.mesoChosen)
+  })
+
   it('rekent met je keuze, en zet de goedkoopste ernaast die dit level minder kost', () => {
     const white = { ...profile, potions: resolvePotions('thief', { hp: 'White Potion', mp: null }) }
     const a = potionAdvice(drafts, white)
