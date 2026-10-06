@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**65 / 104 minor entries** <!-- pending-tally -->
+**66 / 105 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/total-cost-card · 20261006-102405Z
+
+A new Total cost card above the Report card ("This is how much it cost to level up your **Lv. 18 Thief**", with
+your own level and job) shows, as an invoice, what your current level costs: how many of your HP and MP potion you need
+(the ones you picked on the Potions card, "× 0" when the level needs none), the stars or arrows, and travel when it
+costs anything, each with its price, and the total underneath. It calculates with the same mob, kills and potions as the
+Report card, so the total is the same amount, give or take rounding each count up to whole potions. A question mark
+after a potion's count ("Hoezo 3?") explains, step by step and with the model's own numbers, how the app arrives at it.
+Under the level row at the top, the app now asks "How much does it cost to level up your **Lv. 18 Thief**?" in a soft
+accent banner.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player sees before levelling exactly what to buy and what it costs in total.
+
+**Score:** 3
+
+#### Pull Request
+
+Total cost card: an invoice of the potions and mesos a level needs
+
+[PR #184](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/184)
+
+---
 
 ### DEPLOY: app/potions-card · 20261006-093248Z
 
