@@ -70,7 +70,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 /* Een kaart waarvan de popup openstaat, krijgt een fellere rand. :where houdt de regel zwak, zodat "Beste" (vol
    accent met dubbele rand) en een fout (rood) altijd voorgaan. */
-.card:where(:has(> .spot-head [aria-expanded='true'])) {
+.card:where(:has(> .view-actions [aria-expanded='true'])) {
   border-color: var(--muted);
   border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
 }
@@ -127,9 +127,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Een kaartkop met een icoon ervoor, in de accentkleur */
 .spot-name.with-icon { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
-/* Onder de naam de knoppen van de kaart (Dave, 5 oktober 2026): het oog toont de inhoud in een popup (#106), het
-   rapport het advies. Alleen deze knoppen zijn te tikken, niet de kop; donker gevuld (--edit-bg), 44px hoog en samen
-   de volle breedte. Het potlood naast een waardevak is juist licht, als dat vak. */
+/* Onder de naam de knoppen van de kaart (Dave, 5 oktober 2026): het rapport (#106) en de actieknoppen. Alleen deze knoppen zijn te tikken,
+   niet de kop; donker gevuld (--edit-bg), 44px hoog en samen de volle breedte. Het potlood naast een waardevak is juist licht, als dat vak. */
 .card-actions { display: flex; gap: 0.625rem; width: 100%; }
 .card-action { flex: 1; min-width: 0; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--edit-fg); background: var(--edit-bg); border: 0; border-radius: 0.5rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -582,11 +581,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 
 /* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
-/* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Cheapest en Difference uitsteekt (Dave, #183). */
+/* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Advised en Difference uitsteekt (Dave, #183). */
 .total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
 .total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
 .total-cost-sub strong { color: var(--text); }
-/* De drie delen van Total cost (#183): In game, Cheapest en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
+/* De drie delen van Total cost (#183): In game, Advised en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
    ze los van elkaar staan (Dave): grijs voor in game, de accentkleur voor de goedkoopste setup, groen voor wat je bespaart. De
    tinten mengen met de achtergrond van de kaart, dus ze volgen dark mode vanzelf. */
 .total-cost-part { --part: var(--muted); margin-top: 0.75rem; padding: 0.75rem; border: 1px solid color-mix(in srgb, var(--part) 35%, var(--border));
@@ -638,12 +637,16 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
 .cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .cheapest-changes strong { color: var(--text); }
-/* De Equip-kaart (#188): twee knoppen met tekst, Your character en Cheapest, naast elkaar over de volle breedte, met dezelfde
-   ruimte als de kop: 1rem opzij en onder. Het rapport staat in de popup, onderaan over de volle breedte. */
-.equip-actions { padding: 0 1rem 1rem; }
-.equip-report { margin-top: 1rem; }
-.equip-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
-/* De Equip-popup achter Cheapest (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
+/* De twee knoppen onder de kop van elke kaart met een popup (#188, #192): Advised en Your character, naast elkaar over de volle
+   breedte, met dezelfde ruimte als de kop: 1rem opzij en onder. Het rapport staat in de popup, onderaan over de volle breedte. */
+.view-actions { padding: 0 1rem 1rem; }
+.view-report { margin-top: 1rem; }
+.view-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+/* Een vast getal of een vaste naam in de popup van het advies (#192), in het vak van een keuzemenu maar zonder pijltje. */
+.field-fixed { margin: 0; display: flex; align-items: center; min-height: 44px; padding: 0.25rem 0.75rem; font-size: 0.9375rem; font-weight: 600; line-height: 1.2;
+  overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
+.potion-group .field-fixed { margin-bottom: 0.5rem; }
+/* De Equip-popup achter Advised (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
    zoals bij wat je draagt, zonder vergrootglas. Een stuk om te kopen in de accentkleur, met zijn prijs eronder. */
 .equipment .equip-row.fixed { grid-template-columns: minmax(0, 1fr) auto; }
 .equip-row.fixed .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
@@ -654,7 +657,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
 .equip-total { margin: 0 0 0.75rem; text-align: right; }
-/* De knop Equip bekijken onder de factuur van Cheapest (#188), over de volle breedte van het deel. */
+/* De knop Equip bekijken onder de factuur van Advised (#188), over de volle breedte van het deel. */
 .invoice-equip { margin-top: 0.75rem; }
 .invoice-equip .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
 .equip-total strong { color: var(--accent); }

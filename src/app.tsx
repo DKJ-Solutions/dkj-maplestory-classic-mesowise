@@ -344,32 +344,17 @@ const EyeIcon = () => (
 )
 
 /**
- * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
- * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
+ * De kop van een kaart met een popup: alleen de titel. Het oog is weg (Dave, 6 oktober 2026, #192): de kaart heeft twee knoppen
+ * onder de kop (ViewButtons), en het rapport staat in de popup.
  */
-function CardHead(props: { label: string; head?: Ref<HTMLButtonElement>; open?: boolean; onOpen?: () => void; report?: ComponentChildren; children: ComponentChildren }) {
-  return (
-    <div class="spot-head">
-      {props.children}
-      {/* Zonder onOpen geen oog, zonder knoppen geen rij: de Equip-kaart heeft zijn knoppen onder de kop (Dave, #188). */}
-      {(props.onOpen || props.report) && (
-        <div class="card-actions">
-          {props.onOpen && (
-            <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
-              <EyeIcon />
-            </button>
-          )}
-          {props.report}
-        </div>
-      )}
-    </div>
-  )
+function CardHead(props: { children: ComponentChildren }) {
+  return <div class="spot-head">{props.children}</div>
 }
 
 /**
- * Het rapport van een kaart (Dave, 5 oktober 2026): een icoon naast het oog dat het uitgebreide advies over die kaart
- * in een popup toont. Alleen bij een kaart waar je iets kiest (Equip, Skillpoints, Monster, Potions); Ability points
- * en Total stats zijn vaste feiten en krijgen er geen.
+ * Het rapport van een kaart (Dave, 5 oktober 2026): een icoon dat het uitgebreide advies over die kaart in een popup toont.
+ * Alleen bij een kaart waar je iets kiest (Equip, Skillpoints, Monster, Potions); Ability points en Total stats zijn vaste
+ * feiten en krijgen er geen. Het staat onderaan de popup van de kaart, in beide weergaven (Dave, 6 oktober 2026, #188, #192).
  */
 function CardReport(props: { title: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
@@ -403,7 +388,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; children: ComponentChildren }) {
+function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.head.current?.focus())
@@ -412,8 +397,52 @@ function CardPopup(props: { title: string; head: RefObject<HTMLButtonElement | n
   return (
     <StatDialog title={props.title} titleNote={props.titleNote} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
-      <div class="spot-body">{props.children}</div>
+      <div class="spot-body">
+        {props.children}
+        {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
+        {props.report && (
+          <div class="card-actions view-report">
+            <CardReport title={props.reportTitle ?? props.title}>{props.report}</CardReport>
+          </div>
+        )}
+      </div>
     </StatDialog>
+  )
+}
+
+/** Welke weergave de popup van een kaart toont (Dave, 6 oktober 2026, #192): wat de app adviseert, of wat je character nu heeft. */
+type CardView = 'advised' | 'worn'
+
+/**
+ * De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende, waar de focus naar
+ * teruggaat bij sluiten (CardPopup).
+ */
+function useCardView() {
+  const [view, setView] = useState<CardView | null>(null)
+  const opener = useRef<HTMLButtonElement | null>(null)
+  return { view, opener, open: (v: CardView, button: HTMLButtonElement) => { opener.current = button; setView(v) }, close: () => setView(null) }
+}
+
+/**
+ * De twee knoppen onder de kop van elke kaart met een popup (Dave, 6 oktober 2026, #188, #192), in plaats van het oog in de kop. Ze openen
+ * dezelfde popup: "Advised" toont wat de app verwacht (om te lezen), "Your character" wat je character in game heeft (om te wijzigen).
+ * Eerst het advies, dan jij: je kijkt eerst wat de app verwacht en bepaalt dan of je het overneemt. Zonder advies (een job die de
+ * app niet doorrekent) alleen "Your character".
+ */
+function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
+  const button = (view: CardView, label: string) => (
+    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+      <EyeIcon />
+      {label}
+    </button>
+  )
+  return (
+    <div class="view-actions">
+      <div class="card-actions view-buttons">
+        {props.advised && button('advised', 'Advised')}
+        {button('worn', 'Your character')}
+      </div>
+    </div>
   )
 }
 
@@ -613,21 +642,25 @@ function StatsCard(props: {
   draft: ProfileDraft
   error: string | null
   onChange: (patch: Partial<ProfileDraft>) => void
-  /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). */
-  lead?: ComponentChildren
+  /** Het profiel van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
+  advised: ProfileDraft | null
+  /** Regels vóór de velden: wat de app zelf afleidt (alleen om te lezen). Krijgt het profiel van de weergave, en of dat het advies is (dan zonder knoppen). */
+  lead?: (draft: ProfileDraft, advised: boolean) => ComponentChildren
   /** Velden die de app zelf afleidt: dit getal staat er in plaats van het opgeslagen veld, alleen om te lezen. Ontbreekt een veld, dan vul je het zelf in. */
   derived?: Partial<Record<keyof ProfileDraft, string>>
-  /** Achter de titel van de popup, zoals de AP die je nog te verdelen hebt (zie StatDialog). */
-  titleNote?: ComponentChildren
+  /** Achter de titel van de popup, zoals de AP die je nog te verdelen hebt (zie StatDialog); krijgt het profiel van de weergave. */
+  titleNote?: (draft: ProfileDraft) => ComponentChildren
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
 }) {
-  const [open, setOpen] = useState(false)
-  const head = useRef<HTMLButtonElement>(null)
-  const { draft, job } = props
+  const { view, opener, open, close } = useCardView()
+  const { job } = props
+  // In het advies het profiel van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
+  const advised = view === 'advised' && props.advised !== null
+  const draft = advised ? props.advised! : props.draft
   return (
     <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
-      <CardHead label={props.title} head={head} open={open} onOpen={() => setOpen(true)}>
+      <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
           {props.title}
@@ -637,15 +670,16 @@ function StatsCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {open && (
-        <CardPopup title={props.title} titleNote={props.titleNote} head={head} error={props.error} onClose={() => setOpen(false)}>
-          {props.lead}
+      <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
+      {view !== null && (
+        <CardPopup title={advised ? 'Advised' : props.title} titleNote={props.titleNote?.(draft)} head={opener} error={advised ? null : props.error} onClose={close}>
+          {props.lead?.(draft, advised)}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
             return derived !== undefined ? (
               <StatLine key={f.key} field={f} value={derived} readOnly onSave={() => {}} />
             ) : (
-              <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={expectedStat(f.key, draft, job)} readOnly={READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
+              <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={advised ? undefined : expectedStat(f.key, draft, job)} readOnly={advised || READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
             )
           })}
         </CardPopup>
@@ -665,7 +699,7 @@ function attackText(draft: ProfileDraft, job: Job): string {
   return range ? `${nfInt.format(range.min)} – ${nfInt.format(range.max)}` : ''
 }
 
-type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void }
+type StatsCardProps = { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void; advised: ProfileDraft | null }
 const shownStats = (job: Job) => statFieldsFor(job).filter((f) => !HIDDEN_STATS.has(f.key))
 
 /** Je Ability points (STR, DEX, INT, LUK), zoals in het statvenster van het spel. */
@@ -687,50 +721,59 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     props.onChange(patch)
   }
   const filledShown = filled !== null && filled.equipment === props.equipment && filled.job === props.job && (Object.entries(pick(draft)) as [keyof typeof filled.fields, string][]).every(([k, v]) => filled.fields[k] === v)
-  const level = Number(draft.level.trim())
-  const cap = draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
-  // Wat je level aan base AP geeft min wat er al staat: het aantal (n) op de kaart (#154, #157).
-  const balance = apBalance(draft)
-  const lead = (
-    <>
-      {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
-      <div class="stat-line ability-line ability-head" aria-hidden="true">
-        <span />
-        <span>Base</span>
-        <span />
-        <span>Extra</span>
-        <span />
-        <span>Totaal</span>
-        <span />
-      </div>
-      {shownStats(props.job)
-        .filter((f) => ABILITY_KEYS.includes(f.key))
-        .map((f) => (
-          <AbilityLine key={f.key} field={f} draft={draft} cap={cap} onSave={props.onChange} flash={flash.keys.includes(f.key as Stat) ? flash.n : 0} />
-        ))}
-      {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
-          ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis van wat je draagt of
-          op je level mag dragen, de rest naar de hoofdstat). De melding staat eronder. */}
-      <div class="ap-autofill">
-        <div class="ap-row">
-          {cap !== null && (
-            <div class="skill-group ap-group">
-              <h3>
-                <PoolCount usage={{ spent: baseApSpent(draft), cap }} unit="BASE AP" />
-              </h3>
-            </div>
-          )}
-          {/* Fel zolang er AP te verdelen is, dan doet de knop iets; zonder AP over is hij de gewone knop (Dave, 5 oktober 2026). */}
-          <button type="button" class={balance !== null && balance > 0 ? 'btn auto-assign ready' : 'btn auto-assign'} onClick={fill}>Auto assign</button>
-        </div>
-        {filledShown && <p class="hint" role="status">{filled.text}</p>}
-      </div>
-    </>
-  )
+  // Wat je level aan base AP geeft (apAtLevel), voor het profiel van de weergave.
+  const capOf = (d: ProfileDraft) => {
+    const level = Number(d.level.trim())
+    return d.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
+  }
   // Na een level-up plaatst de app geen AP: dit zijn de punten die je nog zelf moet verdelen (#154). Altijd zichtbaar, ook (0), en onder 0 als er meer staat dan je level geeft (#157).
-  // Op de kaart en achter de titel van zijn popup: "Ability points (6)" (Dave, 5 oktober 2026, #157).
-  const toDistribute = balance !== null && <ToDistribute count={balance} unit="AP" />
-  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute} titleNote={toDistribute} />
+  // Op de kaart en achter de titel van zijn popup: "Ability points (6)" (Dave, 5 oktober 2026, #157). Wat je level aan base AP geeft min wat er al staat is het aantal (n).
+  const toDistribute = (d: ProfileDraft) => {
+    const balance = apBalance(d)
+    return balance !== null && <ToDistribute count={balance} unit="AP" />
+  }
+  // In het advies (Dave, 6 oktober 2026, #192) dezelfde rijen met de base AP van het advies, om te lezen: geen potlood, geen Auto assign.
+  const lead = (d: ProfileDraft, advised: boolean) => {
+    const cap = capOf(d)
+    const balance = apBalance(d)
+    return (
+      <>
+        {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
+        <div class="stat-line ability-line ability-head" aria-hidden="true">
+          <span />
+          <span>Base</span>
+          <span />
+          <span>Extra</span>
+          <span />
+          <span>Totaal</span>
+          <span />
+        </div>
+        {shownStats(props.job)
+          .filter((f) => ABILITY_KEYS.includes(f.key))
+          .map((f) => (
+            <AbilityLine key={f.key} field={f} draft={d} cap={cap} readOnly={advised} onSave={props.onChange} flash={!advised && flash.keys.includes(f.key as Stat) ? flash.n : 0} />
+          ))}
+        {/* Onderaan één rij (Dave, 5 oktober 2026, #157): links zoals een groep in Skillpoints wat je gezet hebt van wat je level geeft
+            ("73 / 80 BASE AP"), rechts de knop die de base AP op je equipment zet (de secundaire stat precies op de hoogste eis van wat je draagt of
+            op je level mag dragen, de rest naar de hoofdstat). De melding staat eronder. */}
+        <div class="ap-autofill">
+          <div class="ap-row">
+            {cap !== null && (
+              <div class="skill-group ap-group">
+                <h3>
+                  <PoolCount usage={{ spent: baseApSpent(d), cap }} unit="BASE AP" />
+                </h3>
+              </div>
+            )}
+            {/* Fel zolang er AP te verdelen is, dan doet de knop iets; zonder AP over is hij de gewone knop (Dave, 5 oktober 2026). */}
+            {!advised && <button type="button" class={balance !== null && balance > 0 ? 'btn auto-assign ready' : 'btn auto-assign'} onClick={fill}>Auto assign</button>}
+          </div>
+          {!advised && filledShown && <p class="hint" role="status">{filled.text}</p>}
+        </div>
+      </>
+    )
+  }
+  return <StatsCard {...props} className="profile" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute(draft)} titleNote={toDistribute} />
 }
 
 /**
@@ -741,6 +784,8 @@ function AbilityLine(props: {
   field: ProfileField
   draft: ProfileDraft
   cap: number | null
+  /** Het advies (#192): alleen de getallen, zonder potlood. */
+  readOnly?: boolean
   onSave: (patch: Partial<ProfileDraft>) => void
   /** Boven 0: Auto assign veranderde deze base; elke nieuwe waarde laat het vak opnieuw oplichten (#157). */
   flash?: number
@@ -794,9 +839,13 @@ function AbilityLine(props: {
           <strong>{total === null ? '?' : nfInt.format(total)}</strong>
         </span>
       </div>
-      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-      </button>
+      {props.readOnly ? (
+        <span />
+      ) : (
+        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setEdit({ base: draft[stat], extra: draft[extraKey] })}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      )}
       {edit !== null && (
         <StatDialog title={f.label} className="ability-dialog" onCancel={() => setEdit(null)} onSave={dirty ? save : undefined}>
           {cap !== null && <p class="stat-dialog-db">{apLeftLabel(leftInEdit)}: <strong>{nfInt.format(Math.abs(leftInEdit))}</strong> van {cap}</p>}
@@ -832,15 +881,16 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
   // Max HP en Max MP bovenaan, zoals in het statvenster van het spel (Dave, 6 oktober 2026); Level up verhoogt ze, het potlood corrigeert.
   const bars = statFieldsFor(job).filter((f) => f.key === 'hp' || f.key === 'mp')
-  const lead = (
+  // In het advies (Dave, 6 oktober 2026, #192) dezelfde afleiding, gevoed met het profiel van het advies en je huidige equipment, alleen om te lezen.
+  const lead = (d: ProfileDraft, advised: boolean) => (
     <>
       {bars.map((f) => (
-        <StatLine key={f.key} field={f} value={props.draft[f.key]} onSave={(text) => props.onChange({ [f.key]: text })} />
+        <StatLine key={f.key} field={f} value={d[f.key]} readOnly={advised} onSave={(text) => props.onChange({ [f.key]: text })} />
       ))}
-      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(props.draft, job)} readOnly onSave={() => {}} />
-      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(props.draft, job))} readOnly onSave={() => {}} />
-      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(props.draft, job))} readOnly onSave={() => {}} />
-      {isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
+      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(d, job)} readOnly onSave={() => {}} />
+      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(d, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(d, job))} readOnly onSave={() => {}} />
+      {!advised && isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
     </>
   )
   const mdef = wornMdef(props.equipment, job)
@@ -860,38 +910,59 @@ function PotionsCard(props: {
   choice: PotionChoice
   onPick: (picks: Partial<Record<PotionKind, string>>) => void
   onFix: (kind: PotionKind, stat: PotionStat, text: string) => void
+  /** De potions van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
+  advised: PotionChoice | null
   report: ComponentChildren
 }) {
   const { job, choice } = props
-  const [open, setOpen] = useState(false)
+  const { view, opener, open: openView, close: closeView } = useCardView()
   // De potions die je in de popup kiest zijn een concept; pas Opslaan legt ze vast, sluiten gooit ze weg (zoals bij Monster).
   const [concept, setConcept] = useState<Partial<Record<PotionKind, string>>>({})
-  const head = useRef<HTMLButtonElement>(null)
   const uid = useId()
   const used = resolvePotions(job, choice)
   const picked = (kind: PotionKind) => (concept[kind] !== undefined && concept[kind] !== used[kind].name ? databasePotion(job, kind, concept[kind]!) : undefined)
   const dirty = POTION_KINDS.some((k) => picked(k) !== undefined)
   const close = () => {
     setConcept({})
-    setOpen(false)
+    closeView()
   }
   const save = () => {
     const picks = Object.fromEntries(POTION_KINDS.filter((k) => picked(k)).map((k) => [k, picked(k)!.name]))
     if (Object.keys(picks).length > 0) props.onPick(picks)
     close()
-    requestAnimationFrame(() => head.current?.focus())
+    requestAnimationFrame(() => opener.current?.focus())
   }
   const title = 'Potions'
   return (
     <section class="card potions">
-      <CardHead label={title} head={head} open={open} onOpen={() => setOpen(true)} report={<CardReport title={title}>{props.report}</CardReport>}>
+      <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="flask" />
           {title}
         </span>
       </CardHead>
-      {open && (
-        <CardPopup title={title} head={head} onClose={close} onSave={dirty ? save : undefined}>
+      <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
+      {view === 'advised' && props.advised && (
+        <CardPopup title="Advised" head={opener} onClose={close} report={props.report} reportTitle={title}>
+          {/* De potions van het advies, om te lezen (Dave, 6 oktober 2026, #192): de naam met zijn prijs als vaste tekst, zonder keuzemenu. */}
+          {POTION_KINDS.map((kind) => {
+            const potion = resolvePotions(job, props.advised!)[kind]
+            return (
+              <div class="potion-group" key={kind}>
+                <h3>{kind === 'hp' ? 'HP potions' : 'MP potions'}</h3>
+                <p class="field-fixed">
+                  {potion.name} ({nfInt.format(potion.price)} meso)
+                </p>
+                {potionFields(kind).map((f) => (
+                  <StatLine key={f.key} field={f} value={String(potionStat(potion, kind, f.key))} tone={f.tone} unit={f.unit} readOnly onSave={() => {}} />
+                ))}
+              </div>
+            )
+          })}
+        </CardPopup>
+      )}
+      {view === 'worn' && (
+        <CardPopup title={title} head={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -1441,31 +1512,8 @@ function StatDialog(props: {
   )
 }
 
-/** Welke equip de Equip-popup toont (#188). */
-type EquipView = 'worn' | 'cheapest'
-
 /**
- * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188), in plaats van het oog in de kop. Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
- * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
- * goedkoopste equip (een job die de app niet doorrekent) alleen de eerste.
- */
-function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen: (view: EquipView, button: HTMLButtonElement) => void }) {
-  const button = (view: EquipView, label: string) => (
-    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
-      <EyeIcon />
-      {label}
-    </button>
-  )
-  return (
-    <div class="card-actions equip-buttons">
-      {button('worn', 'Your character')}
-      {props.cheapest && button('cheapest', 'Cheapest')}
-    </div>
-  )
-}
-
-/**
- * De rijen van de Equip-popup achter "Cheapest" (#188): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
+ * De rijen van de Equip-popup achter "Advised" (#188, #192): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
  * alles samen kost. Een streepje is een slot dat leeg blijft.
  */
@@ -1525,7 +1573,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 }
 
 /**
- * De knop "Equip bekijken" in het deel Cheapest van Total cost (Dave, 6 oktober 2026, #188): de equip waarmee die factuur rekent,
+ * De knop "Equip bekijken" in het deel Advised van Total cost (Dave, 6 oktober 2026, #188): de equip waarmee die factuur rekent,
  * om te lezen, in dezelfde rijen als de Equip-popup. De goedkoopste gratis instellingen (#183) kopen geen equipment, dus dat is wat
  * je character nu draagt.
  */
@@ -1548,14 +1596,14 @@ function InvoiceEquipButton(props: { job: Job; equipment: Equipment }) {
         </button>
       </div>
       {open && (
-        <StatDialog title="Equip van Cheapest" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+        <StatDialog title="Equip van Advised" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
           <div class="equipment">
             <CheapestRows
               job={props.job}
               slots={slots}
               equipment={props.equipment}
               cheapest={rows}
-              hint="Met deze equip rekent de factuur van Cheapest: wat je character nu draagt. De goedkoopste instellingen kopen geen equipment."
+              hint="Met deze equip rekent de factuur van Advised: wat je character nu draagt. De goedkoopste instellingen kopen geen equipment."
               total={false}
             />
           </div>
@@ -1594,14 +1642,12 @@ function EquipmentCard(props: {
   level?: number
   /** Je geslacht: de zoekbalk toont geen stuk dat alleen voor het andere is (#188); null zolang je het niet koos. */
   gender?: Gender | null
-  /** Achter de knop Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
+  /** Achter de knop Advised (#188, #192): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
   cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
-  // Welke equip de popup toont (#188): wat je draagt of de goedkoopste; null is dicht.
-  const [view, setView] = useState<EquipView | null>(null)
+  // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
+  const { view, opener, open: openView, close } = useCardView()
   const open = view !== null
-  // De knop die de popup opende (Your character of Cheapest): daar gaat de focus terug bij sluiten.
-  const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
   const slots = shownSlots(props.job, props.equipment.claw)
   const uid = useId()
@@ -1616,33 +1662,25 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'cheapest' ? 'Cheapest' : 'Equip'} head={opener} error={props.error} onClose={() => setView(null)}>
+      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} head={opener} error={props.error} onClose={close} report={props.report} reportTitle="Equip">
         {body}
-        {/* Het rapport in de popup, onderaan (Dave, #188): in beide, wat je draagt en de goedkoopste. */}
-        {props.report && (
-          <div class="card-actions equip-report">
-            <CardReport title="Equip">{props.report}</CardReport>
-          </div>
-        )}
       </CardPopup>
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip">
+      <CardHead>
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {/* De twee knoppen onderin de kaart (Dave, #188), met dezelfde ruimte als de kop. */}
-      <div class="equip-actions">
-        <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
-      </div>
+      {/* De twee knoppen onder de kop (Dave, #188, #192), met dezelfde ruimte als de kop. */}
+      <ViewButtons view={view} advised={props.cheapest !== null} onOpen={openView} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {view === 'cheapest' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} /> : slots.map((slot) => {
+          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} /> : slots.map((slot) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)
@@ -1774,19 +1812,30 @@ interface SkillLinePart {
  * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent (de Magician) ziet
  * alleen de Beginner-skills: die van zijn eigen 1e job kent de app nog niet.
  */
-function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null; onChange: (patch: Partial<ProfileDraft>) => void; report?: ComponentChildren }) {
-  const [open, setOpen] = useState(false)
-  const head = useRef<HTMLButtonElement>(null)
+function SkillsCard(props: {
+  job: Job
+  draft: ProfileDraft
+  error: string | null
+  onChange: (patch: Partial<ProfileDraft>) => void
+  /** Het profiel van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
+  advised: ProfileDraft | null
+  report?: ComponentChildren
+}) {
+  const { view, opener, open, close } = useCardView()
   const shown = profileFieldsFor(props.job).map((f) => f.key)
-  const levels = skillLevels(props.draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  // In het advies de skillpunten van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
+  const advised = view === 'advised' && props.advised !== null
+  const draft = advised ? props.advised! : props.draft
+  const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
   // De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de kaart alleen het procent.
-  const wdefNumber = Number(props.draft.wdef.trim())
-  const wdef = props.draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
-  // De punten van de pot van je 1e job die je nog niet hebt gezet (#154).
+  const wdefNumber = Number(draft.wdef.trim())
+  const wdef = draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
+  // De punten van de pot van je 1e job die je nog niet hebt gezet (#154); in de popup die van de weergave.
   const spLeft = spToDistribute(props.draft, props.job)
+  const spLeftShown = advised ? spToDistribute(draft, props.job) : spLeft
   return (
     <section class={`card skills${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Skillpoints" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Skillpoints">{props.report}</CardReport>}>
+      <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
           Skillpoints
@@ -1796,18 +1845,19 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {open && (
-        <CardPopup title="Skillpoints" titleNote={spLeft !== null && <ToDistribute count={spLeft} unit="SP" />} head={head} error={props.error} onClose={() => setOpen(false)}>
+      <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
+      {view !== null && (
+        <CardPopup title={advised ? 'Advised' : 'Skillpoints'} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} head={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>
                 {title}
-                <PoolCount usage={skillPoolUsage(props.draft, props.job, skillPoolOf(job))} />
+                <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />
               </h3>
               {levels
                 .filter((s) => s.job === job)
                 .map((s) => (
-                  <SkillLine key={s.key} skill={s} draft={props.draft} job={props.job} wdef={wdef} onChange={props.onChange} />
+                  <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={advised} onChange={props.onChange} />
                 ))}
             </div>
           ))}
@@ -1822,7 +1872,7 @@ function SkillsCard(props: { job: Job; draft: ProfileDraft; error: string | null
  * level dat er nu staat en het potlood, net als bij equipment. Wijzigen gaat in een eigen popup met − en +; hoger dan het
  * maximum van de skill of dan wat de pot nog over laat kan niet.
  */
-function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wdef: number | null; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wdef: number | null; readOnly?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const { skill: s, draft } = props
   const uid = useId()
   const [edit, setEdit] = useState<string | null>(null)
@@ -1860,9 +1910,13 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
           <strong>{value.trim() || '?'}</strong>
         </span>
       </div>
-      <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${s.name} wijzigen`} onClick={() => setEdit(value)}>
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-      </button>
+      {props.readOnly ? (
+        <span />
+      ) : (
+        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${s.name} wijzigen`} onClick={() => setEdit(value)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      )}
       {edit !== null && (
         <StatDialog title={s.name} onCancel={() => setEdit(null)} onSave={edit !== value ? save : undefined}>
           {cap !== null && <p class="stat-dialog-db">SP over: <strong>{nfInt.format(Math.max(0, cap - spent))}</strong> van {cap}</p>}
@@ -1923,27 +1977,30 @@ function HuntedMobCard(props: {
   profile: Profile | null
   onPick: (name: string) => void
   onChange: (patch: Partial<SpotDraft>) => void
-  /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
+  /** De mob van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
+  advised: SpotDraft | undefined | null
+  /** Het uitgebreide advies in de popup (CardReport); zonder: geen icoon. */
   report?: ComponentChildren
 }) {
   const { result, draft, profile } = props
-  const [open, setOpen] = useState(false)
+  const { view, opener, open: openView, close: closeView } = useCardView()
   // De mob die je in de popup kiest is een concept; pas Opslaan legt hem vast, sluiten gooit hem weg (Dave, 5 oktober 2026).
   const [choice, setChoice] = useState<string | null>(null)
-  const head = useRef<HTMLButtonElement>(null)
   const mob = huntedMob(draft)
   const chosen = choice !== null && choice !== (mob?.name ?? '') ? MOBS.find((m) => m.name === choice) : undefined
   // Opslaan sluit de popup, net als bij de andere popups (Dave, 5 oktober 2026); de focus gaat terug naar de kop.
   const save = () => {
     if (chosen) props.onPick(chosen.name)
     setChoice(null)
-    setOpen(false)
-    requestAnimationFrame(() => head.current?.focus())
+    closeView()
+    requestAnimationFrame(() => opener.current?.focus())
   }
   const close = () => {
     setChoice(null)
-    setOpen(false)
+    closeView()
   }
+  // Zonder mob in het advies (undefined) toont de popup een streepje.
+  const advisedMob = props.advised ? huntedMob(props.advised) : undefined
   const known = draft ? spotOf(draft) : undefined
   const picked = useMemo(() => (known && profile ? suggestMonsters(profile, known)[0] : undefined), [known, profile])
   const invalid = result !== undefined && isInvalid(result)
@@ -1951,7 +2008,7 @@ function HuntedMobCard(props: {
   const onMob = (e: Event) => setChoice((e.currentTarget as HTMLSelectElement).value)
   return (
     <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
-      <CardHead label={title} head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title={title}>{props.report}</CardReport>}>
+      <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="target" />
           {title}
@@ -1960,8 +2017,19 @@ function HuntedMobCard(props: {
       <p class="error" aria-live="polite">
         {invalid ? result.error : null}
       </p>
-      {open && (
-        <CardPopup title={title} head={head} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined}>
+      <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
+      {view === 'advised' && props.advised !== null && (
+        <CardPopup title="Advised" head={opener} onClose={close} report={props.report} reportTitle={title}>
+          {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
+          <div class="field">
+            <span>De mob die je het meest killt</span>
+            <p class="field-fixed">{advisedMob ? `${advisedMob.name} (lv ${advisedMob.level})` : '—'}</p>
+          </div>
+          {advisedMob && MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={props.advised?.[f.key] ?? String(f.get(advisedMob))} readOnly onSave={() => {}} />)}
+        </CardPopup>
+      )}
+      {view === 'worn' && (
+        <CardPopup title={title} head={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
@@ -2578,7 +2646,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
           <tr>
             <td />
             <th scope="col">Your character</th>
-            <th scope="col">Cheapest</th>
+            <th scope="col">Advised</th>
             <th scope="col">Difference</th>
           </tr>
         </thead>
@@ -2608,7 +2676,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
       {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
       {props.inGame.kind === 'none' && <p class="hint">Your character: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
     </>
-  ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Cheapest; hier niet nog eens.
+  ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Advised; hier niet nog eens.
   null
 }
 
@@ -2654,7 +2722,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 
 /**
  * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
- * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
+ * je speelt, "Advised" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
 function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; equipment: Equipment; children?: ComponentChildren }) {
@@ -2682,7 +2750,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
           {props.cheapest && (
             <>
               <div class="total-cost-part cheapest-cost">
-                <h3>Cheapest</h3>
+                <h3>Advised</h3>
                 <p class="total-cost-sub">
                   This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
@@ -2904,6 +2972,8 @@ export function App() {
   // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
   const cheapestInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
   const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
+  // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
+  const advisedProfile = cheapestLive?.profileDraft ?? null
   const cheapestInvoice = useMemo(
     () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment })) : levelInvoice([], null)),
     [cheapestLive, job, gender, equipment],
@@ -3125,6 +3195,7 @@ export function App() {
         draft={profileDraft}
         error={skillError}
         onChange={updateProfile}
+        advised={advisedProfile}
         report={
           computed ? (
             <SkillQuestion advice={skillAdvice} cost={cost} job={job} dagger={dagger} placed={placed} onApply={applyPoint} part>
@@ -3141,15 +3212,16 @@ export function App() {
         profile={profile}
         onPick={pickMob}
         onChange={(patch) => update(drafts[0].id, patch)}
+        advised={cheapestLive ? cheapestLive.drafts[0] : null}
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} choice={potionChoice} onPick={pickPotions} onFix={fixPotionStat} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
-        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
-        <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
+        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
+        <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}

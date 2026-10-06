@@ -37,8 +37,12 @@ const levelCostText = () => {
   const value = document.querySelector('.level-cost-value')
   return value ? `${value.textContent} ${value.nextElementSibling?.textContent}` : undefined
 }
-/** De titel in de kop van een kaart; de kop zelf is geen knop meer, alleen het oog en het rapport (Dave, 5 oktober 2026). */
-const headTitle = (card: string) => screen.getByRole('button', { name: `${card} bekijken` }).closest('.spot-head')!.querySelector('.spot-name')!.textContent
+/** De kaartklassen op het scherm, per titel (#192): de kaarten hebben geen oog meer, maar twee knoppen onder de kop. */
+const CARD_CLASS = { Equip: '.equipment', Skillpoints: '.skills', Monster: '.hunted', Potions: '.potions', 'Ability points': '.profile', 'Total stats': '.total-stats' } as const
+/** De knop "Your character" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
+const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Your character' })
+/** De titel in de kop van een kaart (Dave, 5 oktober 2026). */
+const headTitle = (card: keyof typeof CARD_CLASS) => viewButton(card).closest('.card')!.querySelector('.spot-head .spot-name')!.textContent
 /** Zet een skill via zijn potlood en de popup (Dave, 5 oktober 2026): typ het level en sla op met Enter. */
 const setSkill = (within_: HTMLElement, name: string, value: string) => {
   fireEvent.click(within(within_).getByRole('button', { name: `${name} wijzigen` }))
@@ -161,7 +165,7 @@ const openAbility = (label: string) => {
 
 /** Opent de Skillpoints-kaart van het beginscherm en geeft de kaart terug (de popup zit erin). */
 const openHomeSkills = () => {
-  const head = within(homeScreen()).getByRole('button', { name: 'Skillpoints bekijken' })
+  const head = viewButton('Skillpoints')
   fireEvent.click(head)
   return head.closest('section')!
 }
@@ -173,7 +177,7 @@ const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dial
 const chooseMob = (name: string) => {
   fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: name } })
   fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+  fireEvent.click(viewButton('Monster'))
 }
 
 /** Het scherm opnieuw opbouwen op een hoger character-level: de zoekbalk toont alleen wat je op je level kunt dragen (#188). Wat al is opgeslagen blijft staan. */
@@ -232,17 +236,17 @@ describe('begin zonder opslag', () => {
 
   // Dave, 4 oktober 2026: de kaart staat onder Skillpoints, en net als de andere kaarten toont de kop alleen de titel.
   it('zet de kaart Monster direct onder Skillpoints', () => {
-    const skills = screen.getByRole('button', { name: 'Skillpoints bekijken' }).closest('section')!
-    const mob = screen.getByRole('button', { name: 'Monster bekijken' }).closest('section')!
+    const skills = viewButton('Skillpoints').closest('section')!
+    const mob = viewButton('Monster').closest('section')!
     expect(skills.nextElementSibling).toBe(mob)
   })
 
   // Dave, 5 oktober 2026: naast het oog een rapport met het uitgebreide advies, alleen bij een kaart waar je iets kiest.
   describe('het rapport naast het oog', () => {
     const report = (title: string) => screen.queryByRole('button', { name: `Report: ${title}` })
-    // Het rapport van Equip zit in de bekijken-popup (#188): die gaat eerst open.
+    // Het rapport zit in de popup van zijn kaart (#188, #192): die gaat eerst open.
     const reportButton = (title: string) => {
-      if (title === 'Equip' && !document.querySelector('dialog.card-dialog')) openHomeEquipment()
+      if (!document.querySelector('dialog.card-dialog')) fireEvent.click(viewButton(title as keyof typeof CARD_CLASS))
       return report(title)!
     }
     const openReport = (title: string) => {
@@ -250,43 +254,44 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip in de bekijken-popup en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
-      // De Equip-kaart heeft geen oog in de kop (#188): in de kaart alleen Your character en Cheapest, het rapport zit in hun popup.
-      const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
-      expect(card.querySelector('.spot-head button')).toBeNull()
-      expect([...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent)).toEqual(['Your character', 'Cheapest'])
-      expect(report('Equip')).toBeNull()
-      for (const view of ['Your character', 'Cheapest']) {
-        fireEvent.click(within(card).getByRole('button', { name: view }))
-        expect(report('Equip')!.closest('dialog.card-dialog'), view).not.toBeNull()
+    it('staat bij Equip, Skillpoints, Monster en Potions in de popup van de kaart, in beide weergaven, en niet bij Ability points en Total stats', () => {
+      // Geen kaart heeft een oog in de kop (#188, #192): onder de kop Advised en Your character, het rapport zit in hun popup.
+      for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
+        const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
+        expect(card.querySelector('.spot-head button'), title).toBeNull()
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Your character'])
+        expect(report(title), title).toBeNull()
+        for (const view of ['Advised', 'Your character']) {
+          fireEvent.click(within(card).getByRole('button', { name: view }))
+          const button = report(title)!
+          expect(button, title + ' ' + view).not.toBeNull()
+          expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+          expect(button.closest('dialog.card-dialog'), title + ' ' + view).not.toBeNull()
+          fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
+        }
+      }
+      for (const title of ['Ability points', 'Total stats'] as const) {
+        const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Your character'])
+        fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
+        expect(report(title)).toBeNull()
         fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
       }
-      for (const title of ['Skillpoints', 'Monster', 'Potions']) {
-        const button = report(title)!
-        expect(button, title).not.toBeNull()
-        expect(button.getAttribute('aria-haspopup')).toBe('dialog')
-        // Een knop na het oog, allebei in de kop van de kaart.
-        const eye = button.previousElementSibling as HTMLElement
-        expect(eye.getAttribute('aria-label')).toBe(`${title} bekijken`)
-        expect(eye.closest('.spot-head')).toBe(button.closest('.spot-head'))
-      }
-      expect(report('Ability points')).toBeNull()
-      expect(report('Total stats')).toBeNull()
-      expect(document.querySelectorAll('.card-report')).toHaveLength(3)
+      expect(document.querySelectorAll('.card-report')).toHaveLength(0)
     })
 
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = homeScreen().querySelector('section.equipment')!
-      const skills = report('Skillpoints')!.closest('section')!
-      const mob = report('Monster')!.closest('section')!
-      const potions = report('Potions')!.closest('section')!
+      const skills = homeScreen().querySelector('section.skills')!
+      const mob = homeScreen().querySelector('section.hunted')!
+      const potions = homeScreen().querySelector('section.potions')!
       expect(equip.nextElementSibling).toBe(skills)
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
       expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
-      // Eén Total cost-kaart, ook met Cheapest en Difference erin (#183), dan het Report.
+      // Eén Total cost-kaart, ook met Advised en Difference erin (#183), dan het Report.
       expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
       expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
@@ -304,6 +309,8 @@ describe('begin zonder opslag', () => {
       expect(Array.from(openReport('Skillpoints').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill'])
       fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
       expect(document.querySelector('dialog.report-dialog')).toBeNull()
+      // Het rapport van Skillpoints sluit de popup van Skillpoints niet: die van Monster gaat pas open als die dicht is.
+      fireEvent.click(within(document.querySelector('dialog.card-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
       expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
     })
 
@@ -370,7 +377,7 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(statShown('Tijd per aanval (ms)')).toBe(String(IGOR.speed.attackMs))
   })
 
@@ -390,7 +397,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
   })
 
-  it('toont in Total cost onder Cheapest een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
+  it('toont in Total cost onder Advised een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -398,13 +405,13 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip bekijken' }))
     const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Cheapest')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Advised')
     const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
     expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
     expect(dialog.textContent).not.toContain('Te kopen:')
   })
 
-  it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
+  it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links het advies, rechts wat je draagt (#188, #192)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -413,9 +420,9 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
     expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Cheapest')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.equip-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -707,7 +714,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('bewaart een profielveld pas na Opslaan in de popup van het potlood', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     h.typeExtra('15')
     expect(profileFields()?.lukExtra ?? DEFAULT_PROFILE.lukExtra).toBe(DEFAULT_PROFILE.lukExtra)
@@ -718,13 +725,13 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('heeft op de karakterkaart geen invoerveld buiten de popup', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     expect(homeScreen().querySelector('section.profile')!.querySelectorAll('input')).toHaveLength(0)
   })
 
   it('toont geen level, ATT en DEF: die liggen elders vast; Max HP en Max MP alleen op Total stats (Dave, 6 oktober 2026)', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
+    fireEvent.click(viewButton('Ability points'))
     const names = [...cardNames('section.profile'), ...cardNames('section.total-stats')]
     expect(names).not.toContain('Level')
     expect(cardNames('section.profile')).not.toContain('Max HP')
@@ -735,33 +742,33 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('zet de stats in twee kaarten zoals het statvenster: Ability points (STR, DEX, INT, LUK) en Total stats (#82)', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
+    fireEvent.click(viewButton('Total stats'))
     expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
     expect(cardNames('section.total-stats')).toEqual(['Max HP', 'Max MP', 'Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)'])
   })
 
   it('toont in de popup van Ability points je gezette base AP van wat je level geeft, en in die van een stat wat er over is (#157)', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     expect(homeScreen().querySelector('section.profile dialog .ap-group .skill-sp')?.textContent).toBe('70 / 70 BASE AP')
     // Het beginprofiel verdeelt precies de 70 base AP van level 10.
     expect(openAbility('STR').d.getByText(/Base AP over:/).textContent).toBe('Base AP over: 0 van 70')
   })
 
   it('zet per stat op de kaart de base AP, plus de extra AP van items, is het totaal', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const head = homeScreen().querySelector('section.profile .ability-head')!
     expect(Array.from(head.children).map((c) => c.textContent)).toEqual(['', 'Base', '', 'Extra', '', 'Totaal', ''])
     expect(Array.from(statLine('LUK').children).slice(1, 6).map((c) => c.textContent)).toEqual(['37', '+', '3', '=', '40'])
   })
 
   it('toont ook bij een stat zonder extra AP van items de plus en een extra-vak met 0', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     expect(Array.from(statLine('DEX').children).slice(1, 6).map((c) => c.textContent)).toEqual(['25', '+', '0', '=', '25'])
   })
 
   it('bewaart een leeg extra-veld als 0, zonder foutmelding', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     h.typeExtra('')
     h.save()
@@ -771,7 +778,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont in de popup het totaal van base en extra, en rekent mee terwijl je typt', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     const total = () => h.d.getByLabelText('Totaal').textContent
     expect(total()).toBe('40')
@@ -784,7 +791,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont Opslaan in de popup altijd, maar uitgeschakeld zolang er niets gewijzigd is', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     const save = () => h.d.getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement
     expect(save().disabled).toBe(true)
@@ -795,7 +802,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('heeft in de popup twee manieren om AP toe te voegen: base AP en de extra AP van items', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     expect(h.base().value).toBe('37')
     expect(h.extra().value).toBe('3')
@@ -808,7 +815,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('laat de base AP niet hoger gaan dan je nog over hebt; de extra AP is vrij', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     fireEvent.click(h.d.getByRole('button', { name: 'Base LUK plus 1' }))
     expect(h.base().value).toBe('37')
@@ -822,7 +829,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('laat de base AP in de popup niet onder 4 gaan, het minimum van elke stat', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('STR')
     expect(h.base().value).toBe('4')
     fireEvent.click(h.d.getByRole('button', { name: 'Base STR min 1' }))
@@ -836,7 +843,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('geeft base AP vrij die je uit een andere stat haalt', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const dex = openAbility('DEX')
     dex.typeBase('20')
     dex.save()
@@ -850,7 +857,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('toont in de popup hoeveel base AP te veel staat als je level omlaag gaat', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     expect(h.d.getByText(/Base AP te veel:/).textContent).toBe('Base AP te veel: 5 van 65')
     // Wat je in de popup lager zet, telt meteen mee.
@@ -861,7 +868,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont een ongeldige STR bij Ability points en niet bij Total stats (#82)', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('STR')
     h.typeExtra('5000')
     h.save()
@@ -870,7 +877,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('slaat een decimale aanvalstijd op; dat vak heeft geen - en +', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     const h = openStat('Tijd per aanval (ms)')
     expect(h.d.queryByRole('button', { name: /plus 1/ })).toBeNull()
     h.type('812.5')
@@ -880,7 +887,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont de verwachte accuracy pas doorgestreept als het getal ervan afwijkt', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(statLine('Accuracy').querySelector('s')).toBeNull()
     const h = openStat('Accuracy')
     expect(h.d.getByText(/Verwacht volgens de formule/).textContent).toContain(DEFAULT_PROFILE.accuracy)
@@ -892,13 +899,13 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont bij het voorbeeldprofiel de verwachte evasion doorgestreept: 23 in het spel, 22 volgens de formule', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(statShown('Evasion')).toBe(DEFAULT_PROFILE.avoid)
     expect(statLine('Evasion').querySelector('s')?.textContent).toBe('22')
   })
 
   it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     const first = openStat('Accuracy')
     first.type('40')
     first.save()
@@ -910,7 +917,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont een ongeldige tijd per aanval op de karakterkaart, niet op de equipment-kaart', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     const h = openStat('Tijd per aanval (ms)')
     h.type('50')
     h.save()
@@ -922,7 +929,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('gooit een gewijzigde stat weg bij sluiten zonder opslaan', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     h.typeExtra('77')
     // Met een wijziging is het kruisje een vinkje; weggooien gaat met Escape (of een tik naast de popup).
@@ -932,7 +939,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('verhoogt een stat met + en slaat op met Enter', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const h = openAbility('LUK')
     fireEvent.click(h.d.getByRole('button', { name: 'Extra LUK plus 1' }))
     expect(h.extra().value).toBe('4')
@@ -942,7 +949,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('bewaart de gekozen mob als enige plek, en een andere mob vervangt hem', () => {
     expect(stored(STORAGE_KEY)).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     const dialog = document.querySelector('section.hunted dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
     chooseMob('Pig')
@@ -954,7 +961,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont in de keuzelijst alleen naam en level, en de HP, EXP, schade en WDEF van de gekozen mob als regels', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     const select = screen.getByLabelText('De mob die je het meest killt') as HTMLSelectElement
     // Pig op MeowDB: 128 HP, 13 EXP, Touch DMG 16–22, P.DEF 0 (src/data/spots.ts).
     expect(Array.from(select.options).map((o) => o.textContent)).toContain('Pig (lv 7)')
@@ -970,7 +977,7 @@ describe('bewaren na elke wijziging', () => {
 
   // Dave, 4 oktober 2026: net als bij equipment pas je de monsterinfo aan als het spel iets anders zegt.
   it('past een eigenschap van de mob aan met het potlood, bewaart hem en rekent ermee', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Pig')
     const before = levelCostText()
     const hp = openStat('HP')
@@ -1001,7 +1008,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('zet de aanpassingen terug als je een andere mob kiest', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Pig')
     const wdef = openStat('WDEF')
     wdef.type('5')
@@ -1014,7 +1021,7 @@ describe('bewaren na elke wijziging', () => {
 
   // Dave, 5 oktober 2026: de mobkeuze telt pas na Opslaan; sluiten zonder opslaan houdt de vorige mob.
   it('legt een gekozen mob pas vast met Opslaan, dat de popup sluit; sluiten zonder opslaan gooit de keuze weg', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Pig')
     const dialog = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
     const save = within(dialog).getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement
@@ -1031,7 +1038,7 @@ describe('bewaren na elke wijziging', () => {
     // Met een gekozen mob is het kruisje een vinkje, met Annuleren ernaast dat de keuze weggooit.
     expect(within(dialog).queryByRole('button', { name: 'Sluiten' })).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Annuleren' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     expect((within(mobDialog()).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
     // Opslaan legt de mob vast en sluit de popup (Dave, 5 oktober 2026).
@@ -1040,19 +1047,19 @@ describe('bewaren na elke wijziging', () => {
     expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Slime' }])
     // Het vinkje rechtsboven doet hetzelfde als Opslaan onderin.
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: 'Pig' } })
     fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan en sluiten' }))
     expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
     expect(stored(STORAGE_KEY).spots).toMatchObject([{ known: 'mob:Pig' }])
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     const again = document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
     expect((within(again).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Pig')
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
     expect(document.querySelector('.level-cost-value')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Pig')
     expect(levelCostText()).toMatch(/^± [\d.]+ meso.*Op Pig\.$/)
   })
@@ -1077,7 +1084,7 @@ describe('bewaren na elke wijziging', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
     expect(statShown('Attack')).toBe(rangeOf('thief'))
     expect(statShown('Attack')).not.toBe(String(IGOR.watk + 17))
@@ -1089,7 +1096,7 @@ describe('bewaren na elke wijziging', () => {
   it('toont bij Total stats de Magic Def uit je equipment, alleen om te lezen; zolang een slot open is vul je hem zelf in (#91)', () => {
     atLevel('30')
     openHomeEquipment()
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     const h = openStat('Magic Def')
     h.type('5')
     h.save()
@@ -1290,7 +1297,7 @@ describe('level-up en Back (#154)', () => {
   it('gooit een stat die je na de level-up zette weg bij Back, en zet de equipment van het level eronder terug', () => {
     atLevel('25')
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const luk = openAbility('LUK')
     luk.typeBase('40')
     luk.save()
@@ -1341,7 +1348,7 @@ describe('level-up en Back (#154)', () => {
   })
 
   it('toont bij Total stats een hint dat de app het effect van je AP niet meetelt', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(homeScreen().querySelector('.total-stats-hint')?.textContent).toMatch(/Accuracy en Avoid/)
   })
 
@@ -1393,7 +1400,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
 
   it('toont in de popup van Ability points een kop zoals een groep in Skillpoints: 70 / 75 BASE AP', () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
     expect(homeScreen().querySelector('dialog .stat-dialog-head > h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
     expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
@@ -1404,13 +1411,13 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
 
   it('zet ook achter de titel van de popup van Skillpoints de SP die nog vrij zijn: Skillpoints (3)', () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Skillpoints bekijken' }))
+    fireEvent.click(viewButton('Skillpoints'))
     expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head > h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
   })
 
   it('kleurt het aantal als fout als er meer base AP staan dan je level geeft', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const count = homeScreen().querySelector('dialog .ap-group .skill-sp')!
     expect(count.textContent).toBe('70 / 65 BASE AP')
     expect(count.classList.contains('over')).toBe(true)
@@ -1426,7 +1433,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     levelUp()
     expect(apNote()).toBe('5 AP te verdelen')
     expect(spNote()).toBe('3 SP te verdelen')
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const luk = openAbility('LUK')
     luk.typeBase('40')
     luk.save()
@@ -1461,7 +1468,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
 
   it('telt de extra AP van items niet mee: een item met +50 LUK verlaagt het aantal AP te verdelen niet', () => {
     levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     const luk = openAbility('LUK')
     luk.typeExtra('50')
     luk.save()
@@ -1491,7 +1498,7 @@ describe('Auto assign (#157)', () => {
     expect(headingText()).toBe('Ability points(5)5 AP te verdelen')
     wear(GARNIER.name)
     const before = { ...profileFields() }
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     // Level 11 = 75 AP: DEX op het minimum dat de Garnier en de skills vragen (10), LUK de rest (75 - 4 - 4 - 10 = 57), STR en INT 4.
     expect(homeScreen().querySelector('.ap-autofill .hint')).toBeNull()
@@ -1513,7 +1520,7 @@ describe('Auto assign (#157)', () => {
     wear(IGOR.name)
     atLevel('9')
     const before = { ...profileFields() }
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     expect(screen.getByText('Je level geeft te weinig AP voor je equipment: je hebt er 65 en je equipment vraagt er 73. Er is niets ingevuld.')).toBeTruthy()
     const after = profileFields()
@@ -1525,7 +1532,7 @@ describe('Auto assign (#157)', () => {
     atLevel('20')
     wear(IGOR.name)
     atLevel('9')
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()
     const luk = openAbility('LUK')
@@ -1538,7 +1545,7 @@ describe('Auto assign (#157)', () => {
     cleanup()
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '' } }))
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+    fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     expect(screen.getByText('Vul eerst een geldig level in. Er is niets ingevuld.')).toBeTruthy()
   })
@@ -1655,33 +1662,33 @@ describe('een Warrior in de app', () => {
     })
 
     it('toont bij je karakter de weapon multiplier en STR, zonder uitleg eronder', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       const home = homeScreen()
       expect(statShown('Weapon multiplier van je wapen')).toBe('1.8')
       // Geen uitleg in de popup: die leest een speler toch niet (Dave, 4 oktober 2026).
       expect(home.querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
       expect(home.textContent).not.toMatch(/Subi|stars|rekent met Power Strike|geen munitie|per soort wapen/)
       fireEvent.click(within(home.querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
+      fireEvent.click(viewButton('Ability points'))
       expect(statShown('STR')).toBe('90')
     })
 
     it('toont bij Total stats de Attack als schadebereik van het wapen en je STR, zonder stars (#82, #108)', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       expect(statShown('Attack')).toBe(rangeOf('warrior'))
       expect(statShown('W.ATT')).toBe('40')
       expect(statShown('M.ATT')).toBe('0')
     })
 
     it('zet de stats in twee kaarten, met de weapon multiplier als laatste onder Total stats (#82)', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Ability points'))
+      fireEvent.click(viewButton('Total stats'))
       expect(cardNames('section.profile')).toEqual(['STR', 'DEX', 'INT', 'LUK'])
       expect(cardNames('section.total-stats')).toEqual(['Max HP', 'Max MP', 'Attack', 'W.ATT', 'M.ATT', 'Weapon Def', 'Magic', 'Magic Def', 'Accuracy', 'Evasion', 'Crit. Rate (%)', 'Crit. Damage (%)', 'Speed (%)', 'Jump (%)', 'Tijd per aanval (ms)', 'Weapon multiplier van je wapen'])
     })
 
     it('past de weapon multiplier aan via het potlood, en toont geen Ammo-slot', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       const editor = openStat('Weapon multiplier van je wapen')
       editor.type('2.4')
       editor.save()
@@ -1693,7 +1700,7 @@ describe('een Warrior in de app', () => {
     })
 
     it('toont de verwachte Warrior-accuracy en -evasion doorgestreept als je getal afwijkt (#77)', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       // floor((1,2 x 20 + 2 x 20 + 0,6 x 4) / 2,5 + 10) = floor(36,56) = 36; avoid floor(4 / 3) + floor(20 / 6) + 5 = 9
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('36')
       expect(statLine('Evasion').querySelector('s')?.textContent).toBe('9')
@@ -1794,7 +1801,7 @@ describe('een Warrior in de app', () => {
     afterLevelUp()
     expect(reportCard().textContent).toContain('Niet doorgerekend: Keen Eyes, Double Stab, Disorder en Dark Sight')
     expect(reportCard().textContent).not.toMatch(NOT_YET)
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(homeScreen().querySelector('dialog .hint:not(.total-stats-hint)')).toBeNull()
     expect(homeScreen().textContent).not.toMatch(/Weapon multiplier|De app rekent met de stars/)
   })
@@ -2067,8 +2074,8 @@ describe('een Bowman in de app', () => {
     })
 
     it('toont bij Ability points DEX en STR, en bij Total stats geen uitleg, weapon multiplier, Subi of stars', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Ability points'))
+      fireEvent.click(viewButton('Total stats'))
       const home = homeScreen()
       expect(statShown('DEX')).toBe('80')
       expect(statShown('STR')).toBe('20')
@@ -2077,7 +2084,7 @@ describe('een Bowman in de app', () => {
     })
 
     it('toont de verwachte Bowman-accuracy en -evasion doorgestreept als je getal afwijkt', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       // floor((1,2 x 80 + 2 x 20 + 0,6 x 4) / 4,8 + 20) = floor(138,4 / 4,8 + 20) = floor(48,83) = 48; avoid floor(4 / 3) + floor(80 / 6) + 5 = 1 + 13 + 5 = 19
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('48')
       expect(statLine('Evasion').querySelector('s')?.textContent).toBe('19')
@@ -2219,8 +2226,8 @@ describe('een Magician in de app', () => {
     })
 
     it('toont bij Ability points INT (het veld van alle jobs) en bij Total stats geen tijd per aanval, multiplier of Subi-zin, en W.ATT 0 naast M.ATT (#100)', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Ability points'))
+      fireEvent.click(viewButton('Total stats'))
       const home = homeScreen()
       expect(statShown('INT')).toBe('60')
       expect(statShown('LUK')).toBe('10')
@@ -2239,7 +2246,7 @@ describe('een Magician in de app', () => {
     })
 
     it('toont de verwachte Magician-accuracy en -avoid doorgestreept als je getal afwijkt (#77)', () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+      fireEvent.click(viewButton('Total stats'))
       // Accuracy: (12 x 60 + 20 x 20 + 6 x 10 + 1020) / 51 = 2200 / 51 = 43,1, dus 43. Avoid: floor(10 / 3) + floor(20 / 6) + 5 = 11.
       expect(statLine('Accuracy').querySelector('s')?.textContent).toBe('43')
       expect(statLine('Evasion').querySelector('s')?.textContent).toBe('11')
@@ -2631,7 +2638,7 @@ describe('skillpunten per level (issue #136)', () => {
     // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
     expect(section.textContent).not.toContain('geen skillpunten meer over')
     // Zet de pot vol via de Skillpoints-kaart van het beginscherm.
-    fireEvent.click(within(homeScreen()).getByRole('button', { name: 'Skillpoints bekijken' }))
+    fireEvent.click(viewButton('Skillpoints'))
     setSkill(homeScreen(), 'Lucky Seven', '4')
     // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.
     expect(section.querySelector('.chip')!.textContent).toBe('Goed gezet')
@@ -2820,9 +2827,9 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     expect(group.getAttribute('aria-label')).toBe('Stats')
     expect(group.querySelector('h2')).toBeNull()
     expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
-    expect(within(group as HTMLElement).getAllByRole('button', { name: /Ability points|Total stats/ })).toHaveLength(2)
-    expect(within(group as HTMLElement).getByRole('button', { name: 'Ability points bekijken' })).toBeTruthy()
-    expect(within(group as HTMLElement).getByRole('button', { name: 'Total stats bekijken' })).toBeTruthy()
+    expect(within(group as HTMLElement).getAllByRole('button', { name: 'Your character' })).toHaveLength(2)
+    expect(viewButton('Ability points')).toBeTruthy()
+    expect(viewButton('Total stats')).toBeTruthy()
     // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen. Potions heeft een rapport en staat erboven.
     expect(group.children).toHaveLength(2)
     expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip|Potions/ })).toBeNull()
@@ -3076,7 +3083,7 @@ describe('de soort van een eigen wapen (#176)', () => {
 
 describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   const potionsCard = () => homeScreen().querySelector<HTMLElement>('section.potions')!
-  const openPotions = () => fireEvent.click(screen.getByRole('button', { name: 'Potions bekijken' }))
+  const openPotions = () => fireEvent.click(viewButton('Potions'))
   const select = (kind: 'HP' | 'MP') => within(potionsCard()).getByLabelText(`${kind} potions`) as HTMLSelectElement
   const group = (kind: 'HP' | 'MP') => select(kind).closest<HTMLElement>('.potion-group')!
   /** De regels onder een keuze: naam, wat er staat, en of er een potlood is. */
@@ -3183,7 +3190,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   })
 
   it('zet Max HP en Max MP bovenaan Total stats; een aangepaste Max MP telt na Opslaan, en Level up verhoogt beide', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(cardNames('section.total-stats').slice(0, 3)).toEqual(['Max HP', 'Max MP', 'Attack'])
     expect(statShown('Max HP')).toBe(DEFAULT_PROFILE.hp)
     expect(statShown('Max MP')).toBe(DEFAULT_PROFILE.mp)
@@ -3210,7 +3217,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, mp: '' } }))
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
+    fireEvent.click(viewButton('Total stats'))
     expect(statShown('Max MP')).toBe('?')
     openPotions()
     expect(potionInfoLines()[1]).toBe('Blue Potion: 1,1 meso per MP')
@@ -3328,7 +3335,7 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', () => {
+describe('Total cost: In game, Advised en Difference in één kaart (#183)', () => {
   const cheapestCard = () => document.querySelector<HTMLElement>('.total-cost .cheapest-cost')!
   const diffCard = () => document.querySelector<HTMLElement>('.total-cost .cost-difference')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
@@ -3338,21 +3345,21 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
   // Op level 20, met een mob gekozen, spelen mob, potions en skillpunten mee.
   const toLevel20 = () => {
     for (let i = 0; i < 10; i++) levelUp()
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Slime')
   }
   const mesoOf = (text: string | null | undefined) => Number(text!.replace(/\D/g, ''))
 
-  it('toont In game, Cheapest en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
+  it('toont In game, Advised en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
     toLevel20()
     const profileBefore = profileFields()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
     expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Cheapest', 'Difference'])
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
     expect(yours().nextElementSibling).toBe(cheapestCard())
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
-    // Onder de h3 van In game en Cheapest de zin over hun factuur (Dave, #183).
+    // Onder de h3 van In game en Advised de zin over hun factuur (Dave, #183).
     expect(yours().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 20 Thief')
     expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
@@ -3366,8 +3373,8 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
 
   it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
-    // Kolommen: de soort, Your character, Cheapest en Difference (Dave, #183).
-    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Your character', 'Cheapest', 'Difference'])
+    // Kolommen: de soort, Your character, Advised en Difference (Dave, #183).
+    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
     expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['HP Potions', 'MP Potions', 'Ammo'])
@@ -3459,7 +3466,7 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
   it('laat Ongedaan maken verdwijnen bij een handmatige wijziging, zodat die niet gewist wordt', () => {
     toLevel20()
     take()
-    fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+    fireEvent.click(viewButton('Monster'))
     chooseMob('Snail')
     expect(within(diffCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
   })
