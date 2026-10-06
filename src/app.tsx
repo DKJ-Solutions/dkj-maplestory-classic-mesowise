@@ -2587,39 +2587,59 @@ const roundedUpText = (exact: number, qty: number): string => {
 /** Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP; onder de 0,1 met twee, zodat er geen "± 0" staat. */
 const oneDecimal = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
 
-/** De stappen achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
+/** Eén rij van de rekentabel: wat, hoe (de som, klein eronder) en wat eruit komt; `total` is de laatste rij, het aantal op de factuur. */
+type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?: boolean }
+
+/**
+ * De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): per rij wat er berekend wordt met de som eronder, en
+ * rechts de uitkomst, zodat je van boven naar beneden ziet hoe het aantal ontstaat. De laatste rij is het aantal van de factuur.
+ */
+function WhyTable(props: { rows: readonly WhyRow[] }) {
+  return (
+    <table class="why-table">
+      <tbody>
+        {props.rows.map((r) => (
+          <tr key={r.label} class={r.total ? 'why-total' : undefined}>
+            <th scope="row">
+              {r.label}
+              {r.calc && <small>{r.calc}</small>}
+            </th>
+            <td>{r.result}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+/** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
   const unit = w.kind === 'hp' ? 'HP' : 'MP'
   const perHour = w.perKill * w.killsPerHour + w.buffPerHour
+  const rows: WhyRow[] = [
+    w.kind === 'hp'
+      ? { label: 'HP kwijt per kill', calc: <>{w.mob} raakt je ± {oneDecimal(w.hits!)} × voor ± {oneDecimal(w.touch!)} schade</>, result: `${oneDecimal(w.perKill)} HP` }
+      : { label: 'MP per kill', calc: 'wat je aanval kost', result: `${oneDecimal(w.perKill)} MP` },
+    { label: 'Kills per uur', calc: w.mob, result: nfInt.format(w.killsPerHour) },
+    ...(w.buffPerHour > 0 ? [{ label: 'Buffs per uur', result: `${nfInt.format(w.buffPerHour)} MP` }] : []),
+    {
+      label: `${unit} per uur`,
+      calc: <>{oneDecimal(w.perKill)} × {nfInt.format(w.killsPerHour)}{w.buffPerHour > 0 && <> + {nfInt.format(w.buffPerHour)}</>}</>,
+      result: `${nfInt.format(perHour)} ${unit}`,
+    },
+    { label: 'Duur van dit level', result: formatHours(w.hours) },
+    { label: `${unit} dit level`, calc: <>{nfInt.format(perHour)} × {nf.format(w.hours)} uur</>, result: `${nfInt.format(w.need)} ${unit}` },
+    {
+      label: `Herstel per ${props.label}`,
+      calc: w.full > w.restores ? <>herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}</> : undefined,
+      result: `${nf.format(w.restores)} ${unit}`,
+    },
+    { label: props.label, calc: <>{nfInt.format(w.need)} / {nf.format(w.restores)} = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
+  ]
   return (
     <>
-      <ol class="why-steps">
-        {w.kind === 'hp' ? (
-          <li>
-            {w.mob} raakt je per kill ± {oneDecimal(w.hits!)} keer voor ± {oneDecimal(w.touch!)} schade: ± {oneDecimal(w.perKill)} HP per kill.
-          </li>
-        ) : (
-          <li>
-            Je aanval kost ± {oneDecimal(w.perKill)} MP per kill{w.buffPerHour > 0 && <>, en je buffs ± {nfInt.format(w.buffPerHour)} MP per uur</>}.
-          </li>
-        )}
-        <li>
-          Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(perHour)} {unit} per uur.
-        </li>
-        <li>
-          Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
-        </li>
-        <li>
-          Eén {props.label} herstelt {nf.format(w.full)} {unit}
-          {w.full > w.restores && (
-            <>
-              , maar je drinkt bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk en dan mist er maar {nf.format(w.restores)} {unit}
-            </>
-          )}
-          : {nfInt.format(w.need)} / {nf.format(w.restores)} = {roundedUpText(w.exact, props.qty)}, naar boven afgerond {nfInt.format(props.qty)}.
-        </li>
-      </ol>
+      <WhyTable rows={rows} />
       {w.kind === 'hp' && (
         <p class="hint">
           Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
@@ -2631,34 +2651,31 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
 }
 
 /**
- * De stappen achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een kill
- * kost, hoeveel stars dat zijn, en dan per uur en voor het hele level, met wat herladen kost.
+ * De berekening achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een
+ * kill kost, hoeveel stars dat zijn, dan per uur en voor het hele level, en wat herladen kost.
  */
 function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy }) {
   const { w } = props
   const unit = props.label.toLowerCase()
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
-  return (
-    <ol class="why-steps">
-      <li>
-        Eén aanval gooit {w.starsPerAttack === 1 ? '1 star' : `${w.starsPerAttack} stars`}, elk voor ± {nfInt.format(w.avgHit)} schade na de verdediging van {w.mob}, en je
-        raakt {nfPct.format(w.hitChance)}: ± {oneDecimal(perAttack)} schade per aanval.
-      </li>
-      <li>
-        {w.mob} heeft {nfInt.format(w.mobHp)} HP: {nfInt.format(w.mobHp)} / {oneDecimal(perAttack)}, naar boven afgerond {nfInt.format(w.attacksToKill)}{' '}
-        {w.attacksToKill === 1 ? 'aanval' : 'aanvallen'} per kill, dus {nfInt.format(w.perKill)} {unit} per kill.
-      </li>
-      <li>
-        Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(w.perKill * w.killsPerHour)} {unit} per uur.
-      </li>
-      <li>
-        Dit level duurt ± {formatHours(w.hours)}: {roundedUpText(w.exact, props.qty)}, naar boven afgerond {nfInt.format(props.qty)}.
-      </li>
-      <li>
-        Herladen kost {nf.format(w.pricePerStar)} meso per stuk: {nfInt.format(props.qty)} × {nf.format(w.pricePerStar)} = {nfInt.format(props.meso)} meso.
-      </li>
-    </ol>
-  )
+  const perHour = w.perKill * w.killsPerHour
+  const rows: WhyRow[] = [
+    // Elke star doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+    {
+      label: 'Schade per star',
+      calc: <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
+      result: `± ${nfInt.format(w.avgHit)}`,
+    },
+    { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {nfInt.format(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
+    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
+    { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
+    { label: 'Kills per uur', calc: w.mob, result: nfInt.format(w.killsPerHour) },
+    { label: `${props.label} per uur`, calc: <>{nfInt.format(w.perKill)} × {nfInt.format(w.killsPerHour)}</>, result: nfInt.format(perHour) },
+    { label: 'Duur van dit level', result: formatHours(w.hours) },
+    { label: `${props.label} dit level`, calc: <>{nfInt.format(perHour)} × {nf.format(w.hours)} uur = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
+    { label: 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
+  ]
+  return <WhyTable rows={rows} />
 }
 
 /**

@@ -48,8 +48,11 @@ export interface AmmoWhy {
   mob: string
   /** De HP van de mob. */
   mobHp: number
-  /** De gemiddelde schade van één star na de WDEF van de mob, vóór de raakkans. */
+  /** De gemiddelde schade van één star na de WDEF van de mob, vóór de raakkans: het midden van minHit en maxHit. */
   avgHit: number
+  /** De laagste en hoogste schade van één star: elke worp valt daartussen, de app rekent met het gemiddelde. */
+  minHit: number
+  maxHit: number
   /** Je raakkans op de mob (0 tot 1). */
   hitChance: number
   /** Stars per aanval: 2 met Lucky Seven, anders 1. */
@@ -158,6 +161,8 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       mob: spot.name,
       mobHp: monster.hp,
       avgHit: estimate.avgHit,
+      minHit: estimate.minHit,
+      maxHit: estimate.maxHit,
       hitChance: estimate.hitChance,
       starsPerAttack: estimate.starsPerAttack,
       attacksToKill: estimate.attacksToKill,

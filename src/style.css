@@ -621,8 +621,15 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De popup van het vraagteken staat in een cel van de factuur en erfde daarvan "nowrap", grijs en rechts uitlijnen: de stappen
    liepen buiten de popup en hij scrolde (Dave, 6 oktober 2026). Hier krijgt hij de gewone tekst terug. */
 .invoice dialog { white-space: normal; text-align: left; color: var(--text); font-weight: 400; font-size: 1rem; }
-.why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
-.why-steps li + li { margin-top: 0.5rem; }
+/* De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): links wat, met de som klein en gedempt eronder, rechts de
+   uitkomst; de rij met het aantal van de factuur vet, met de dikke lijn van het totaal op de factuur. */
+.why-table { width: 100%; margin: 0 0 0.75rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.why-table th, .why-table td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.why-table th { text-align: left; font-weight: 600; overflow-wrap: anywhere; }
+.why-table th small { display: block; margin-top: 0.125rem; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+.why-table td { padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
+.why-table .why-total th, .why-table .why-total td { border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); font-weight: 700; font-size: 1.125rem; }
+.why-table .why-total td { color: var(--accent); }
 
 /* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, rood met een min
    wat je laat liggen (groen met een plus als jouw setup goedkoper is). Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */

@@ -170,6 +170,10 @@ describe('levelInvoice: de uitleg achter het aantal stars (Dave, 6 oktober 2026,
       // Aanvallen per kill: de HP van de mob gedeeld door de verwachte schade per aanval, naar boven afgerond.
       expect(w.attacksToKill).toBe(Math.ceil(w.mobHp / (w.starsPerAttack * w.avgHit * w.hitChance)))
       expect(w.perKill).toBe(w.attacksToKill * w.starsPerAttack)
+      // De schade schommelt per worp tussen min en max; het gemiddelde ligt in het midden.
+      expect(w.minHit).toBeLessThanOrEqual(w.avgHit)
+      expect(w.maxHit).toBeGreaterThanOrEqual(w.avgHit)
+      expect(w.avgHit).toBeCloseTo((w.minHit + w.maxHit) / 2, 9)
       expect(w.exact).toBeCloseTo(w.perKill * w.killsPerHour * w.hours, 6)
       expect(line.qty).toBe(Math.max(0, Math.ceil(w.exact - 1e-9)))
       expect(line.meso).toBe(Math.ceil(line.qty! * w.pricePerStar))

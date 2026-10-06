@@ -3225,6 +3225,15 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   })
 })
 
+/** De rijen van een rekentabel (WhyTable, #192): wat, de som eronder en de uitkomst, met witruimte samengevoegd. */
+const whyRows = (root: ParentNode) =>
+  Array.from(root.querySelectorAll('.why-table tr'), (tr) => {
+    const th = tr.querySelector('th')!
+    const calc = th.querySelector('small')?.textContent ?? ''
+    const clean = (t: string) => t.replace(/\s+/g, ' ').trim()
+    return { label: clean(th.textContent!.slice(0, th.textContent!.length - calc.length)), calc: clean(calc), result: clean(tr.querySelector('td')!.textContent!), total: tr.classList.contains('why-total') }
+  })
+
 describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
   // De factuur van je setup in game, het eerste deel van de kaart (#183).
@@ -3276,15 +3285,29 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     fireEvent.click(why)
     const dialog = inGame().querySelector<HTMLElement>('dialog')!
     expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
-    const steps = Array.from(dialog.querySelectorAll('.why-steps li'), (li) => li.textContent!.replace(/\s+/g, ' '))
-    expect(steps).toHaveLength(5)
-    expect(steps[0]).toMatch(/^Eén aanval gooit \d stars?, elk voor ± [\d.]+ schade na de verdediging van Ribbon Pig, en je raakt \d+%/)
-    expect(steps[1]).toMatch(/^Ribbon Pig heeft [\d.]+ HP: .* aanvall?e?n? per kill, dus \d+ throwing stars per kill\.$/)
-    expect(steps[3]).toContain(`naar boven afgerond ${qty}.`)
-    expect(steps[4]).toMatch(/^Herladen kost [\d,]+ meso per stuk: /)
-    // Het aantal en het bedrag in de uitleg zijn die van de factuur.
-    expect(steps[4]).toContain(`: ${qty} × `)
-    expect(steps[4].match(/= ([\d.]+) meso\.$/)![1]).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    const rows = whyRows(dialog)
+    expect(rows.map((r) => r.label)).toEqual([
+      'Schade per star',
+      'Schade per aanval',
+      'Aanvallen per kill',
+      'Throwing stars per kill',
+      'Kills per uur',
+      'Throwing stars per uur',
+      'Duur van dit level',
+      'Throwing stars dit level',
+      'Herladen',
+    ])
+    // Een star doet niet altijd hetzelfde: de tabel toont de spreiding en zegt dat hij met het gemiddelde rekent (Dave, #192).
+    expect(rows[0].calc).toMatch(/^schommelt per worp tussen [\d.]+ en [\d.]+; de app rekent met het gemiddelde$/)
+    expect(rows[0].result).toMatch(/^± [\d.]+$/)
+    expect(rows[1].calc).toMatch(/^\d × [\d.]+ gemiddeld × \d+% raakkans$/)
+    expect(rows[2].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
+    // De vette rij is het aantal op de factuur.
+    expect(rows.filter((r) => r.total).map((r) => r.result)).toEqual([qty])
+    expect(rows[7].calc).toContain('naar boven afgerond')
+    // Herladen: het aantal maal de prijs is het bedrag op de factuur.
+    expect(rows[8].calc.startsWith(`${qty} throwing stars × `) && rows[8].calc.endsWith(' meso'), rows[8].calc).toBe(true)
+    expect(rows[8].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
@@ -3302,14 +3325,15 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     const dialog = card().querySelector<HTMLElement>('dialog')!
     // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
     expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
-    const steps = Array.from(dialog.querySelectorAll('.why-steps li')).map((li) => li.textContent!.replace(/\s+/g, ' '))
-    expect(steps).toHaveLength(4)
-    expect(steps[0]).toMatch(/^Ribbon Pig raakt je per kill ± [\d,]+ keer voor ± [\d,]+ schade: ± [\d,]+ HP per kill\.$/)
-    expect(steps[1]).toMatch(/^Je killt ± [\d.]+ Ribbon Pig per uur: ± [\d.]+ HP per uur\.$/)
-    expect(steps[2]).toMatch(/^Dit level duurt ± \d+ min: ± [\d.]+ HP in totaal\.$/)
-    // Het laatste getal is het aantal op de factuur.
+    const rows = whyRows(dialog)
+    expect(rows.map((r) => r.label)).toEqual(['HP kwijt per kill', 'Kills per uur', 'HP per uur', 'Duur van dit level', 'HP dit level', 'Herstel per Orange Potion', 'Orange Potion'])
+    expect(rows[0].calc).toMatch(/^Ribbon Pig raakt je ± [\d,]+ × voor ± [\d,]+ schade$/)
+    expect(rows[3].result).toMatch(/^\d+ min$/)
+    // De laatste, vette rij is het aantal op de factuur.
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
-    expect(steps[3]).toMatch(new RegExp(`^Eén Orange Potion herstelt 250 HP, maar je drinkt bij 50% van je balk en dan mist er maar 222 HP: [\\d.]+ / 222 = [\\d,]+, naar boven afgerond ${qty}\\.$`))
+    expect(rows[6]).toMatchObject({ result: qty, total: true })
+    expect(rows[5]).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
+    expect(rows[6].calc).toMatch(/^[\d.]+ \/ 222 = [\d,]+, naar boven afgerond$/)
     expect(dialog.textContent).toContain('aanname zonder bron')
   })
 })
@@ -3330,32 +3354,33 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
 
 describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
-  const lastStep = (fields: Partial<ProfileDraft>) => {
+  /** De laatste twee rijen van de rekentabel: het herstel per potion en het aantal. */
+  const lastRows = (fields: Partial<ProfileDraft>) => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     render(<App />)
     fireEvent.click(card().querySelector<HTMLButtonElement>('.invoice-why')!)
-    const steps = Array.from(card().querySelectorAll('dialog .why-steps li'), (li) => li.textContent!.replace(/\s+/g, ' '))
-    return steps[steps.length - 1]
+    const rows = whyRows(card().querySelector('dialog')!)
+    return { restore: rows[rows.length - 2], count: rows[rows.length - 1] }
   }
 
   it('zegt bij een potion die overvult dat je bij 50% van je balk drinkt en er maar 222 van de 250 meetelt', () => {
-    expect(lastStep({ hp: '444' })).toMatch(
-      /^Eén Orange Potion herstelt 250 HP, maar je drinkt bij 50% van je balk en dan mist er maar 222 HP: [\d.]+ \/ 222 = [\d,]+, naar boven afgerond \d+\.$/,
-    )
+    const { restore, count } = lastRows({ hp: '444' })
+    expect(restore).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
+    expect(count.calc).toMatch(/^[\d.]+ \/ 222 = [\d,]+, naar boven afgerond$/)
   })
 
   it('laat de capped-zin weg als de potion binnen het plafond blijft (Max HP 2000): gewoon 250 en delen door 250', () => {
-    const step = lastStep({ hp: '2000' })
-    expect(step).toMatch(/^Eén Orange Potion herstelt 250 HP: [\d.]+ \/ 250 = [\d,]+, naar boven afgerond \d+\.$/)
-    expect(step).not.toContain('maar je drinkt')
+    const { restore, count } = lastRows({ hp: '2000' })
+    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
+    expect(count.calc).toMatch(/^[\d.]+ \/ 250 = [\d,]+, naar boven afgerond$/)
   })
 
   it('laat de capped-zin weg als de potion het plafond precies haalt (Max HP 500: er mist 250 en de Orange herstelt 250)', () => {
-    const step = lastStep({ hp: '500' })
-    expect(step).toMatch(/^Eén Orange Potion herstelt 250 HP: [\d.]+ \/ 250 = /)
-    expect(step).not.toContain('maar je drinkt')
+    const { restore, count } = lastRows({ hp: '500' })
+    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
+    expect(count.calc).toMatch(/^[\d.]+ \/ 250 = /)
   })
 })
 

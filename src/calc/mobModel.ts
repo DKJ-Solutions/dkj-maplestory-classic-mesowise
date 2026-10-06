@@ -234,6 +234,9 @@ export interface MobEstimate {
   starsPerAttack: number
   /** De gemiddelde schade van één star of klap na het levelverschil en de WDEF van het monster, vóór de raakkans (#192). */
   avgHit: number
+  /** De laagste en hoogste schade van één star of klap, ook na levelverschil en WDEF: elke aanval valt daartussen (#192). */
+  minHit: number
+  maxHit: number
   killsPerHour: number
   /** De gemiddelde schade per aanraking, na levelverschil en WDEF. */
   touchTaken: number
@@ -281,6 +284,8 @@ export function estimateMob(
     attacksToKill,
     starsPerAttack: attack.stars,
     avgHit,
+    minHit,
+    maxHit,
     killsPerHour,
     touchTaken: touch,
     hpLossPerKill,
