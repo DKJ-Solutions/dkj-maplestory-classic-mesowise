@@ -2,7 +2,36 @@
 
 ## [Unreleased]
 
-**64 / 103 minor entries** <!-- pending-tally -->
+**65 / 104 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/potions-card · 20261006-093248Z
+
+A new Potions card, under Monster, lets you pick the HP and MP potion you actually use, the way you pick your mob.
+The level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the
+cheapest potion per point would save, and what each potion you use costs per HP or MP and how much of your bar one
+fills. Like the Monster card, the chosen potion's price and recovery from the database show below the choice, and the
+pencil corrects them when the shop or the game says otherwise; the calculation then uses your number. Potions have no
+level requirement in Classic, so every one is a choice at every level, and without a choice the app keeps using the
+cheapest. Max HP and Max MP now head the Total stats card. Max MP is a new field: Level up raises it by your job's
+fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved before it starts empty until you fill
+it in. It is shown only and never blocks the calculation.
+
+**Score:** 4
+
+#### What makes this deploy extra special
+
+A player tells the app which potions they really buy, so the level's cost matches how they play, and sees what
+switching would save. Max HP and Max MP now sit on Total stats, as in the game's stat window.
+
+**Score:** 3
+
+#### Pull Request
+
+Potions card: pick the potions you use, with Max HP and Max MP on Total stats
+
+[PR #182](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/182)
+
+---
 
 ### DEPLOY: app/161-rename-meso-cost-module · 20261006-081528Z
 
