@@ -61,20 +61,21 @@
 ### TEST
 
 - [x] Unit tests on the module and app tests on apply, undo, the "already cheapest" message, the three parts and the
-  difference rows adding up to the difference of the two invoices (Tycho). Code review (Victor, findings applied and re-reviewed on each design) and text review (Edith, nothing blocking).
+  difference rows adding up to the difference of the two invoices (Tycho). Code review (Victor, findings applied and
+  re-reviewed on each design) and text review (Edith).
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-The Total cost card now has three parts, each in its own tinted panel. "Your character" is the level's invoice as you play it
-now. "Cheapest" is the invoice of the same level with the cheapest settings that cost nothing: the cheapest safe mob,
-the cheapest potion per point, your skill points where they save the most and your AP filled in. "Difference" shows per
-kind of cost (HP Potions, MP Potions, Ammo, and travel when it costs anything) what your character pays, what the
-cheapest setup pays and the difference: what you leave on the table in red, as costs are, with the two invoices' totals and
-their difference below.
-Because the choices affect each other, the cheapest setup is found in rounds until nothing changes (at most five) and is
-never one that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the difference the
-card lists the monster when it changes, then always your HP Potion, MP Potion and skills (the change, or what stays),
-and under ATT and DEF what the Equip advice says about your weapon and armor (buy, don't upgrade, or complete); "Overnemen" applies it and "Ongedaan maken" puts everything back in one tap, until you
+The Total cost card now compares your setup with the cheapest one, in three tinted panels. "Your character" is the
+level's invoice as you play it now. "Cheapest" is the invoice of the same level with the cheapest settings that cost
+nothing: the cheapest safe mob, the cheapest potion per point, your skill points where they save the most and your AP
+filled in. Because those choices affect each other, the cheapest setup is found in rounds until nothing changes (at most
+five), and it never costs more than yours. "Difference" shows per kind of cost (HP Potions, MP Potions, Ammo, and travel
+when it costs anything) what your character pays, what the cheapest setup pays, and what you leave on the table, in red.
+
+Below that, the card lists the monster when it changes, your HP Potion, MP Potion and skill points (the change, or what
+stays), and under ATT and DEF what the Equip advice says about your weapon and armor. Equipment is never bought: that
+stays advice. "Overnemen" applies the cheapest setup and "Ongedaan maken" puts everything back in one tap, until you
 change something yourself. When your setup already is the cheapest, the card says so in one line.
 
 **Score:** 4
@@ -88,5 +89,5 @@ cards of reading and applying advice by hand.
 
 #### Pull Request
 
-One button that applies the cheapest free settings for the current level
+Compare your setup with the cheapest one on the Total cost card
 
