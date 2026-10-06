@@ -39,19 +39,37 @@
 
 ### PLAN
 
+- [x] Dave's answers to the four open questions (October 6, 2026, on #183): apply in capped rounds until nothing
+  changes, free settings only (no gear bought), one-tap undo through a snapshot, and show the saving plus what changed.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `cheapestSettings` in `src/cheapestSettings.ts`, a pure module that applies the existing mob, potion,
+  skill-point and AP advice in rounds (at most 5) and keeps the cheapest state seen (Cody).
+- [x] "Goedkoopste instellingen" button, summary and "Ongedaan maken" in `src/app.tsx`; the summary and undo disappear
+  as soon as you edit anything yourself (Cody).
 
 ### TEST
 
+- [ ] Unit tests on the module and app tests on apply, undo and the "already cheapest" message (Tycho). Code review
+  (Victor, findings applied and re-reviewed) and text review (Edith, nothing blocking).
+
 ### DEPLOY: app/183-cheapest-settings-button
 
-**Score:**
+A new "Goedkoopste instellingen" button under the level-cost banner applies the cheapest settings that cost nothing for
+the current level: it switches to the cheapest safe mob, the cheapest potion per point, puts your skill points where they
+save the most and fills your AP. Because those choices affect each other, it repeats until nothing changes (at most five
+rounds) and never applies a state that costs more than where you started. Equipment is never bought; upgrade advice
+stays advice. Afterwards it shows "± X meso bespaard op dit level" and what changed per card, and "Ongedaan maken" puts
+everything back in one tap, until you change something yourself.
+
+**Score:** 4
 
 #### What makes this deploy extra special
 
-**Score:**
+At every level-up one tap now does what used to be four cards of reading and applying advice by hand.
+
+**Score:** 4
 
 #### Pull Request
 
