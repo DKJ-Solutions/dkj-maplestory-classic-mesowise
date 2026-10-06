@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { bestVerdict } from './best'
 import { mobDraft, POTIONS } from './data/spots'
 import { levelCost } from './levelCost'
-import { levelInvoice } from './levelInvoice'
+import { levelInvoice, type AmmoWhy, type InvoiceLine, type PotionWhy } from './levelInvoice'
 import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
 import { NO_POTION_CHOICE, resolvePotions } from './potions'
 import type { Job } from './job'
@@ -13,6 +13,8 @@ const profileOf = (draft: Partial<ProfileDraft> = {}, job: Job = 'thief'): Profi
   return r.profile
 }
 const thief = profileOf()
+/** Een regel met de uitleg van een potion; de munitie heeft sinds #192 een eigen uitleg (AmmoWhy). */
+const isPotionLine = (l: InvoiceLine): l is InvoiceLine & { why: PotionWhy } => l.why !== undefined && l.why.kind !== 'ammo'
 const drafts = [mobDraft('Ribbon Pig')!]
 const invoiceOf = (p: Profile, d = drafts) => {
   const inv = levelInvoice(d, p)
@@ -57,7 +59,7 @@ describe('levelInvoice', () => {
 
   it('legt bij elke potion uit hoe het aantal ontstaat, met precies het getal dat naar boven wordt afgerond (Victor, 6 oktober 2026)', () => {
     for (const p of [thief, profileOf({ level: '15' }), profileOf({}, 'warrior'), { ...thief, potions: resolvePotions('thief', { ...NO_POTION_CHOICE, hp: 'White Potion' }) }]) {
-      for (const line of invoiceOf(p).lines.filter((l) => l.why)) {
+      for (const line of invoiceOf(p).lines.filter(isPotionLine)) {
         const w = line.why!
         // Het aantal is het exacte getal naar boven afgerond, en dat getal is wat je kwijt bent gedeeld door één potion.
         expect(line.qty).toBe(Math.max(0, Math.ceil(w.exact - 1e-9)))
@@ -108,7 +110,7 @@ describe('levelInvoice', () => {
 })
 
 describe('levelInvoice en het plafond op het herstel van een potion (#181)', () => {
-  const potionLines = (p: Profile) => invoiceOf(p).lines.filter((l) => l.why)
+  const potionLines = (p: Profile) => invoiceOf(p).lines.filter(isPotionLine)
   const big = profileOf({ hp: '2000', mp: '2000' })
 
   it('zet bij een kleine balk het effectieve herstel in `restores` en het volle in `full` (Orange 250 bij Max HP 444: 222; Blue 200 bij Max MP 363: 181,5)', () => {
@@ -154,5 +156,34 @@ describe('levelInvoice en het plafond op het herstel van een potion (#181)', () 
   it('maakt het level duurder met een kleine balk dan met een grote: het plafond doet er echt iets', () => {
     expect(levelMeso(thief)).toBeGreaterThan(levelMeso(big))
     expect(invoiceOf(thief).total).toBeGreaterThan(invoiceOf(big).total)
+  })
+})
+
+describe('levelInvoice: de uitleg achter het aantal stars (Dave, 6 oktober 2026, #192)', () => {
+  const ammoLine = (p: Profile) => invoiceOf(p).lines.find((l): l is InvoiceLine & { why: AmmoWhy } => l.why?.kind === 'ammo')
+
+  it('rekent het aantal stars uit met precies de getallen die de uitleg toont, en het bedrag met de herlaadprijs', () => {
+    for (const p of [thief, profileOf({ level: '15' }), profileOf({ level: '20', luckySeven: '10' })]) {
+      const line = ammoLine(p)!
+      const w = line.why
+      expect(line.label).toBe('Throwing stars')
+      // Aanvallen per kill: de HP van de mob gedeeld door de verwachte schade per aanval, naar boven afgerond.
+      expect(w.attacksToKill).toBe(Math.ceil(w.mobHp / (w.starsPerAttack * w.avgHit * w.hitChance)))
+      expect(w.perKill).toBe(w.attacksToKill * w.starsPerAttack)
+      expect(w.exact).toBeCloseTo(w.perKill * w.killsPerHour * w.hours, 6)
+      expect(line.qty).toBe(Math.max(0, Math.ceil(w.exact - 1e-9)))
+      expect(line.meso).toBe(Math.ceil(line.qty! * w.pricePerStar))
+      expect(w.mob).toBe(invoiceOf(p).mob)
+      expect(w.hours).toBeCloseTo(invoiceOf(p).hours, 9)
+    }
+  })
+
+  it('geeft Lucky Seven twee stars per aanval en een gewone aanval één', () => {
+    expect(ammoLine(profileOf({ level: '20', luckySeven: '10' }))!.why.starsPerAttack).toBe(2)
+    expect(ammoLine(profileOf({ luckySeven: '0' }))!.why.starsPerAttack).toBe(1)
+  })
+
+  it('zet geen munitie en dus geen uitleg op de factuur van een job die niets gooit', () => {
+    expect(ammoLine(profileOf({ powerStrike: '0' }, 'warrior'))).toBeUndefined()
   })
 })

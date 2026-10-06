@@ -230,6 +230,10 @@ export interface MobEstimate {
   /** Kans dat jouw aanval raakt (0 tot 1). */
   hitChance: number
   attacksToKill: number
+  /** Hoeveel stars (of pijlen) één aanval gooit: 2 met Lucky Seven, anders 1 (#192). */
+  starsPerAttack: number
+  /** De gemiddelde schade van één star of klap na het levelverschil en de WDEF van het monster, vóór de raakkans (#192). */
+  avgHit: number
   killsPerHour: number
   /** De gemiddelde schade per aanraking, na levelverschil en WDEF. */
   touchTaken: number
@@ -275,6 +279,8 @@ export function estimateMob(
   return {
     hitChance: hit,
     attacksToKill,
+    starsPerAttack: attack.stars,
+    avgHit,
     killsPerHour,
     touchTaken: touch,
     hpLossPerKill,

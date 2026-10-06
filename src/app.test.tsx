@@ -3266,6 +3266,27 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(card().textContent).not.toContain('Van lv')
   })
 
+  it('legt achter het aantal throwing stars uit hoe de app eraan komt, tot en met wat herladen kost (#192)', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const row = Array.from(inGame().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('th')!.textContent!.startsWith('Throwing stars'))!
+    const why = row.querySelector<HTMLButtonElement>('.invoice-why')!
+    const qty = why.getAttribute('aria-label')!.match(/op (\d[\d.]*) Throwing/)![1]
+    fireEvent.click(why)
+    const dialog = inGame().querySelector<HTMLElement>('dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
+    const steps = Array.from(dialog.querySelectorAll('.why-steps li'), (li) => li.textContent!.replace(/\s+/g, ' '))
+    expect(steps).toHaveLength(5)
+    expect(steps[0]).toMatch(/^Eén aanval gooit \d stars?, elk voor ± [\d.]+ schade na de verdediging van Ribbon Pig, en je raakt \d+%/)
+    expect(steps[1]).toMatch(/^Ribbon Pig heeft [\d.]+ HP: .* aanvall?e?n? per kill, dus \d+ throwing stars per kill\.$/)
+    expect(steps[3]).toContain(`naar boven afgerond ${qty}.`)
+    expect(steps[4]).toMatch(/^Herladen kost [\d,]+ meso per stuk: /)
+    // Het aantal en het bedrag in de uitleg zijn die van de factuur.
+    expect(steps[4]).toContain(`: ${qty} × `)
+    expect(steps[4].match(/= ([\d.]+) meso\.$/)![1]).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+  })
+
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
@@ -3274,6 +3295,8 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(whys.map((b) => b.getAttribute('aria-label'))).toEqual([
       expect.stringMatching(/^Hoe komt de app op \d+ Orange Potion\?$/),
       expect.stringMatching(/^Hoe komt de app op \d+ Blue Potion\?$/),
+      // Sinds #192 ook achter de throwing stars.
+      expect.stringMatching(/^Hoe komt de app op \d+ Throwing stars\?$/),
     ])
     fireEvent.click(whys[0])
     const dialog = card().querySelector<HTMLElement>('dialog')!

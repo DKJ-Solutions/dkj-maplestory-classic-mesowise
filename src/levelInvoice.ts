@@ -38,12 +38,39 @@ export interface PotionWhy {
   exact: number
 }
 
-/** Eén regel van de factuur: wat, hoeveel stuks (null bij een bedrag zonder stuks, zoals reizen), wat het kost, en bij een potion hoe. */
+/**
+ * Hoe de app op het aantal stars of pijlen komt (Dave, 6 oktober 2026, #192): hoeveel aanvallen een kill kost (de HP van de mob
+ * gedeeld door wat één aanval gemiddeld doet, naar boven afgerond) maal de stars per aanval, dan maal kills per uur en de duur van
+ * het level, naar boven afgerond. Elk getal komt uit dezelfde schatting (estimateMob) als de kosten van het level.
+ */
+export interface AmmoWhy {
+  kind: 'ammo'
+  mob: string
+  /** De HP van de mob. */
+  mobHp: number
+  /** De gemiddelde schade van één star na de WDEF van de mob, vóór de raakkans. */
+  avgHit: number
+  /** Je raakkans op de mob (0 tot 1). */
+  hitChance: number
+  /** Stars per aanval: 2 met Lucky Seven, anders 1. */
+  starsPerAttack: number
+  attacksToKill: number
+  /** attacksToKill × starsPerAttack. */
+  perKill: number
+  killsPerHour: number
+  hours: number
+  /** Wat het herladen van één star kost (bij een Bowman de prijs van één pijl). */
+  pricePerStar: number
+  /** Hoeveel stars dat precies is, voor het afronden: perKill × killsPerHour × hours. */
+  exact: number
+}
+
+/** Eén regel van de factuur: wat, hoeveel stuks (null bij een bedrag zonder stuks, zoals reizen), wat het kost, en bij een potion of munitie hoe. */
 export interface InvoiceLine {
   label: string
   qty: number | null
   meso: number
-  why?: PotionWhy
+  why?: PotionWhy | AmmoWhy
 }
 
 export type LevelInvoice =
@@ -86,8 +113,9 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   const own = (text: string | undefined) => text !== undefined && text.trim() !== ''
   const lines: InvoiceLine[] = []
   // Alleen wat iets kost, behalve je HP- en MP-potion: die staan er altijd, ook met × 0 (Dave, 6 oktober 2026).
-  const add = (label: string, qty: number | null, meso: number, why?: PotionWhy) => {
-    if (meso > 0 || why) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
+  const add = (label: string, qty: number | null, meso: number, why?: PotionWhy | AmmoWhy) => {
+    // De munitie staat er alleen als ze iets kost; HP- en MP-potion altijd (zie boven).
+    if (meso > 0 || (why && why.kind !== 'ammo')) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
@@ -122,8 +150,23 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
     add('Potions', null, Math.ceil(spot.cost.potions * hours))
   }
   if (resolved && plan && !own(draft.ammo) && resolved.suggestion.rechargePerStar > 0) {
-    const stars = wholeUp(plan.killsPerHour * resolved.suggestion.estimate.starsPerKill * hours)
-    add(ammoLabel(profile.job), stars, Math.ceil(stars * resolved.suggestion.rechargePerStar))
+    const { estimate, rechargePerStar, monster } = resolved.suggestion
+    const exact = plan.killsPerHour * estimate.starsPerKill * hours
+    const stars = wholeUp(exact)
+    add(ammoLabel(profile.job), stars, Math.ceil(stars * rechargePerStar), {
+      kind: 'ammo',
+      mob: spot.name,
+      mobHp: monster.hp,
+      avgHit: estimate.avgHit,
+      hitChance: estimate.hitChance,
+      starsPerAttack: estimate.starsPerAttack,
+      attacksToKill: estimate.attacksToKill,
+      perKill: estimate.starsPerKill,
+      killsPerHour: plan.killsPerHour,
+      hours,
+      pricePerStar: rechargePerStar,
+      exact,
+    })
   } else {
     add(ammoLabel(profile.job), null, Math.ceil(spot.cost.ammo * hours))
   }

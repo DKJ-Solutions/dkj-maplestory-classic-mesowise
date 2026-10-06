@@ -30,7 +30,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { ammoLabel, levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
+import { ammoLabel, levelInvoice, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -2579,68 +2579,112 @@ function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: 
   )
 }
 
+/** Het getal dat de factuur naar boven afrondt, zo dat het niet tegenspreekt wat eruit komt: ziet het er heel uit terwijl er een rest is (3,0004 bij drie decimalen), dan staat er "iets meer dan 3". */
+const roundedUpText = (exact: number, qty: number): string => {
+  const text = nf3.format(exact)
+  return Number.isInteger(Number(exact.toFixed(3))) && qty > Math.round(exact) ? `iets meer dan ${text}` : text
+}
+/** Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP; onder de 0,1 met twee, zodat er geen "± 0" staat. */
+const oneDecimal = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
+
+/** De stappen achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
+function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
+  const { w } = props
+  const unit = w.kind === 'hp' ? 'HP' : 'MP'
+  const perHour = w.perKill * w.killsPerHour + w.buffPerHour
+  return (
+    <>
+      <ol class="why-steps">
+        {w.kind === 'hp' ? (
+          <li>
+            {w.mob} raakt je per kill ± {oneDecimal(w.hits!)} keer voor ± {oneDecimal(w.touch!)} schade: ± {oneDecimal(w.perKill)} HP per kill.
+          </li>
+        ) : (
+          <li>
+            Je aanval kost ± {oneDecimal(w.perKill)} MP per kill{w.buffPerHour > 0 && <>, en je buffs ± {nfInt.format(w.buffPerHour)} MP per uur</>}.
+          </li>
+        )}
+        <li>
+          Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(perHour)} {unit} per uur.
+        </li>
+        <li>
+          Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
+        </li>
+        <li>
+          Eén {props.label} herstelt {nf.format(w.full)} {unit}
+          {w.full > w.restores && (
+            <>
+              , maar je drinkt bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk en dan mist er maar {nf.format(w.restores)} {unit}
+            </>
+          )}
+          : {nfInt.format(w.need)} / {nf.format(w.restores)} = {roundedUpText(w.exact, props.qty)}, naar boven afgerond {nfInt.format(props.qty)}.
+        </li>
+      </ol>
+      {w.kind === 'hp' && (
+        <p class="hint">
+          Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
+          spel iets anders, pas dan de mob aan op de Monster-kaart.
+        </p>
+      )}
+    </>
+  )
+}
+
 /**
- * Hoe de app op het aantal potions op de factuur komt (Dave, 6 oktober 2026): een vraagteken achter het aantal, dat de stappen van
- * de berekening in een popup toont, met de getallen die ze gebruikt (PotionWhy in levelInvoice.ts).
+ * De stappen achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een kill
+ * kost, hoeveel stars dat zijn, en dan per uur en voor het hele level, met wat herladen kost.
  */
-function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
+function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy }) {
+  const { w } = props
+  const unit = props.label.toLowerCase()
+  const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
+  return (
+    <ol class="why-steps">
+      <li>
+        Eén aanval gooit {w.starsPerAttack === 1 ? '1 star' : `${w.starsPerAttack} stars`}, elk voor ± {nfInt.format(w.avgHit)} schade na de verdediging van {w.mob}, en je
+        raakt {nfPct.format(w.hitChance)}: ± {oneDecimal(perAttack)} schade per aanval.
+      </li>
+      <li>
+        {w.mob} heeft {nfInt.format(w.mobHp)} HP: {nfInt.format(w.mobHp)} / {oneDecimal(perAttack)}, naar boven afgerond {nfInt.format(w.attacksToKill)}{' '}
+        {w.attacksToKill === 1 ? 'aanval' : 'aanvallen'} per kill, dus {nfInt.format(w.perKill)} {unit} per kill.
+      </li>
+      <li>
+        Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(w.perKill * w.killsPerHour)} {unit} per uur.
+      </li>
+      <li>
+        Dit level duurt ± {formatHours(w.hours)}: {roundedUpText(w.exact, props.qty)}, naar boven afgerond {nfInt.format(props.qty)}.
+      </li>
+      <li>
+        Herladen kost {nf.format(w.pricePerStar)} meso per stuk: {nfInt.format(props.qty)} × {nf.format(w.pricePerStar)} = {nfInt.format(props.meso)} meso.
+      </li>
+    </ol>
+  )
+}
+
+/**
+ * Hoe de app op een aantal op de factuur komt (Dave, 6 oktober 2026): een vraagteken achter het aantal, dat de stappen van de
+ * berekening in een popup toont, met de getallen die ze gebruikt. Bij een potion (PotionWhy) en sinds #192 ook bij de stars of
+ * pijlen (AmmoWhy).
+ */
+function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy } }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const { line } = props
   const w = line.why
-  const unit = w.kind === 'hp' ? 'HP' : 'MP'
+  const qty = line.qty!
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())
   }
-  const perHour = w.perKill * w.killsPerHour + w.buffPerHour
-  // Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP; onder de 0,1 met twee, zodat er geen "± 0" staat.
-  const one = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
-  // Het getal dat de factuur naar boven afrondt, zo dat het niet tegenspreekt wat eruit komt: ziet het er heel uit terwijl er
-  // een rest is (3,0004 bij drie decimalen), dan staat er "iets meer dan 3".
-  const exact = nf3.format(w.exact)
-  const looksWhole = Number.isInteger(Number(w.exact.toFixed(3)))
-  const quotient = looksWhole && line.qty! > Math.round(w.exact) ? `iets meer dan ${exact}` : exact
   return (
     <>
-      <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${nfInt.format(line.qty!)} ${line.label}?`} onClick={() => setOpen(true)}>
+      <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${nfInt.format(qty)} ${line.label}?`} onClick={() => setOpen(true)}>
         ?
       </button>
       {open && (
-        <StatDialog title={`Hoezo ${nfInt.format(line.qty!)}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        <StatDialog title={`Hoezo ${nfInt.format(qty)}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">
-            <ol class="why-steps">
-              {w.kind === 'hp' ? (
-                <li>
-                  {w.mob} raakt je per kill ± {one(w.hits!)} keer voor ± {one(w.touch!)} schade: ± {one(w.perKill)} HP per kill.
-                </li>
-              ) : (
-                <li>
-                  Je aanval kost ± {one(w.perKill)} MP per kill{w.buffPerHour > 0 && <>, en je buffs ± {nfInt.format(w.buffPerHour)} MP per uur</>}.
-                </li>
-              )}
-              <li>
-                Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(perHour)} {unit} per uur.
-              </li>
-              <li>
-                Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
-              </li>
-              <li>
-                Eén {line.label} herstelt {nf.format(w.full)} {unit}
-                {w.full > w.restores && (
-                  <>
-                    , maar je drinkt bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk en dan mist er maar {nf.format(w.restores)} {unit}
-                  </>
-                )}
-                : {nfInt.format(w.need)} / {nf.format(w.restores)} = {quotient}, naar boven afgerond {nfInt.format(line.qty!)}.
-              </li>
-            </ol>
-            {w.kind === 'hp' && (
-              <p class="hint">
-                Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
-                spel iets anders, pas dan de mob aan op de Monster-kaart.
-              </p>
-            )}
+            {w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} meso={line.meso} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
           </div>
         </StatDialog>
       )}
@@ -2665,7 +2709,8 @@ export const totalCostWho = (level: string, job: Job): string => {
 }
 
 /** De rij van een factuurregel in de vergelijking: een potion naar zijn soort (HP of MP), de rest naar zijn naam. */
-const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
+// De munitie houdt haar label als sleutel, met of zonder uitleg (#192): zo valt ze in Difference op dezelfde rij als een eigen munitiebedrag.
+const invoiceRowKey = (l: InvoiceLine): string => (l.why && l.why.kind !== 'ammo' ? l.why.kind : l.label)
 
 /**
  * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (HP Potions, MP Potions, Ammo, en reizen als
