@@ -1,4 +1,4 @@
-// De kolom "Cheapest" in de Equip-kaart (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst levelt.
+// De Cheapest-equip in de Equip-popup (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst één level omhoog gaat.
 // Puur, zonder UI-import; leest alleen wat het wapen- en armor-advies al uitrekenden.
 import type { ArmorUpgradeAdvice } from './armorUpgrade'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
@@ -20,7 +20,7 @@ export interface CheapestSlot {
  * Per slot wat je draagt en wat de goedkoopste equip heeft. Het wapen: de winnaar van het wapenadvies. Armor: elk slot
  * waarvan het beste stuk zich terugverdient (netto besparing boven 0), van grootste naar kleinste netto besparing; een
  * stuk dat een slot vult dat een eerder stuk al vulde, of een overall naast een top of bottom, valt af. Elk stuk is
- * doorgerekend tegen wat je nu draagt, dus de kolom is het advies per slot naast elkaar, geen nieuwe berekening van
+ * doorgerekend tegen wat je nu draagt, dus dit is het advies per slot naast elkaar, geen nieuwe berekening van
  * alles samen. Zonder advies blijft elk slot wat je draagt.
  */
 export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice): Record<EquipSlot, CheapestSlot> {

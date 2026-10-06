@@ -18,7 +18,7 @@ import { NPC_CLAWS } from './data/claws'
 import { NPC_DAGGERS } from './data/daggers'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { Weapon } from './data/types'
-import { byNet, horizonCost } from './horizonCost'
+import { byNet, horizonCost, type HorizonScope } from './horizonCost'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { MAGICIAN_WEAPONS } from './magicianGear'
 import { shortfall, thiefWithDagger, type Profile, type StatNeed } from './profile'
@@ -97,7 +97,8 @@ const firstBetterAbove = (profile: Profile, better: (c: Weapon) => boolean): Wea
   shopOf(profile).weapons.find((c) => c.level > profile.level && better(c)) ?? null
 
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
-function horizon(profile: Profile, claw: Weapon): { from: number; to: number; truncated: boolean } {
+function horizon(profile: Profile, claw: Weapon, scope: HorizonScope): { from: number; to: number; truncated: boolean } {
+  if (scope === 'this-level') return { from: profile.level, to: profile.level, truncated: false }
   const next = firstBetterAbove(profile, (c) => shopOf(profile).better(c, claw))
   const end = next ? next.level - 1 : Infinity
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
@@ -115,12 +116,12 @@ export function nextBetterWeapon(profile: Profile): Weapon | null {
   return firstBetterAbove(profile, (c) => power(c) > wornPower)
 }
 
-function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions) {
+function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions, scope: HorizonScope) {
   const baseEpm = bestExpPerMeso(drafts, profile, a)
   if (baseEpm === undefined) return null
   const choices = candidates
     .map((claw): ClawChoice => {
-      const h = horizon(profile, claw)
+      const h = horizon(profile, claw, scope)
       const epm = bestExpPerMeso(drafts, withClaw(profile, claw), a)
       const without = horizonCost(h.from, h.to, baseEpm)
       const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
@@ -146,13 +147,13 @@ function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly W
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)
 }
 
-export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null): ClawUpgradeAdvice {
+export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, scope: HorizonScope = 'next-upgrade'): ClawUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const better = betterClaws(drafts, profile)
   const notWearable = better.map((c): UnwearableClaw => ({ claw: c, needs: shortfall(c, profile) })).filter((u) => u.needs.length > 0)
   const wearable = better.filter((c) => !notWearable.some((u) => u.claw === c))
-  const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS)
+  const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS, scope)
   if (!main) return { kind: 'none' }
-  const robust = ASSUMPTION_VARIANTS.every((v) => (adviseUnder(drafts, profile, wearable, v)?.winner ?? null) === main.winner)
+  const robust = ASSUMPTION_VARIANTS.every((v) => (adviseUnder(drafts, profile, wearable, v, scope)?.winner ?? null) === main.winner)
   return { kind: 'advice', level: profile.level, ...main, notWearable, robust }
 }

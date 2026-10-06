@@ -33,7 +33,7 @@ import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { ArmorPiece, ArmorSlot } from './data/types'
-import { byNet, horizonCost } from './horizonCost'
+import { byNet, horizonCost, type HorizonScope } from './horizonCost'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { MAGICIAN_ARMOR } from './magicianGear'
 import { fitsGender } from './gender'
@@ -133,7 +133,8 @@ const isHalf = (slot: ArmorSlot): slot is 'top' | 'bottom' => slot === 'top' || 
 const otherHalf = (slot: 'top' | 'bottom'): 'top' | 'bottom' => (slot === 'top' ? 'bottom' : 'top')
 
 /** De horizon van een kandidaat: van je level tot net vóór de volgende upgrade van dat slot of van het lijf (zie de kop), hoogstens de hele tabel. */
-function horizon(profile: Profile, c: Candidate): { from: number; to: number; truncated: boolean } {
+function horizon(profile: Profile, c: Candidate, scope: HorizonScope): { from: number; to: number; truncated: boolean } {
+  if (scope === 'this-level') return { from: profile.level, to: profile.level, truncated: false }
   const shop = shopOf(profile)
   /** De hoogste WDEF in `slot` tot en met `level`, of 0 als de winkel daar niets heeft. */
   const bestUpTo = (slot: ArmorSlot, level: number) => Math.max(0, ...shop.filter((a) => a.slot === slot && a.level <= level).map((a) => a.wdef))
@@ -152,12 +153,12 @@ function horizon(profile: Profile, c: Candidate): { from: number; to: number; tr
 /** Twee keuzes zijn dezelfde als ze dezelfde stukken kopen (een paar is niet dezelfde keuze als zijn losse top). */
 const sameChoice = (x: ArmorChoice | undefined, y: ArmorChoice | undefined) => x?.armor === y?.armor && x?.with === y?.with
 
-function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Candidate[], worn: WornWdef, a: Assumptions) {
+function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Candidate[], worn: WornWdef, a: Assumptions, scope: HorizonScope) {
   const baseEpm = bestExpPerMeso(drafts, profile, a)
   if (baseEpm === undefined) return null
   const all = candidates
     .map((c): ArmorChoice => {
-      const h = horizon(profile, c)
+      const h = horizon(profile, c, scope)
       const replaces = replacedWdef(c.with ? 'overall' : c.armor.slot, worn)
       const added: ArmorPiece = c.with ? { ...c.armor, wdef: c.armor.wdef + c.with.wdef } : c.armor
       const epm = bestExpPerMeso(drafts, withArmor(profile, added, replaces), a)
@@ -178,7 +179,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
   return { choices, win, winner: win?.armor ?? null }
 }
 
-export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, worn: WornWdef = {}): ArmorUpgradeAdvice {
+export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, worn: WornWdef = {}, scope: HorizonScope = 'next-upgrade'): ArmorUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const canWear = (a: ArmorPiece) => shortfall(a, profile).length === 0
   const available = shopOf(profile).filter((a) => a.level <= profile.level)
@@ -205,8 +206,8 @@ export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profil
       notWearable.push({ armor: blocked, needs: shortfall(blocked, profile) })
     }
   }
-  const main = adviseUnder(drafts, profile, wearable, worn, ASSUMPTIONS)
+  const main = adviseUnder(drafts, profile, wearable, worn, ASSUMPTIONS, scope)
   if (!main) return { kind: 'none' }
-  const robust = ASSUMPTION_VARIANTS.every((v) => sameChoice(adviseUnder(drafts, profile, wearable, worn, v)?.win, main.win))
+  const robust = ASSUMPTION_VARIANTS.every((v) => sameChoice(adviseUnder(drafts, profile, wearable, worn, v, scope)?.win, main.win))
   return { kind: 'advice', level: profile.level, choices: main.choices, notWearable, winner: main.winner, robust }
 }

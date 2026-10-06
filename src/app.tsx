@@ -2786,9 +2786,18 @@ export function App() {
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
+  // De Cheapest-equip (#188) rekent alleen dit level: een stuk kopen loont als het op dit level meer bespaart dan het kost (Dave, 6 oktober 2026).
   const cheapestEquip = useMemo(
-    () => (computed ? cheapestEquipment(slotsFor(job, equipment.claw.pick).map(({ slot }) => slot), equipment, clawAdvice, armorAdvice) : null),
-    [computed, job, equipment, clawAdvice, armorAdvice],
+    () =>
+      computed
+        ? cheapestEquipment(
+            slotsFor(job, equipment.claw.pick).map(({ slot }) => slot),
+            equipment,
+            clawUpgradeAdvice(drafts, profile, 'this-level'),
+            armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job), 'this-level'),
+          )
+        : null,
+    [computed, job, equipment, drafts, profile],
   )
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
