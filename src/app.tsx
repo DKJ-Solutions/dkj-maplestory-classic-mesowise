@@ -32,7 +32,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
+import { ammoLabel, levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -2473,44 +2473,45 @@ export const totalCostWho = (level: string, job: Job): string => {
 const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
 
 /**
- * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): wat de goedkoopste setup per regel scheelt tegenover je
- * setup in game. Een rij is een soort regel (je HP-potion, je MP-potion, stars, reizen), zodat een andere potion in de goedkoopste
- * setup op dezelfde rij staat; zijn naam staat dan klein onder die van de rij. Per rij het aantal (één keer "× 16", of "× 4 → 3") en
- * het verschil: groen met een plus wat je bespaart, rood met een min wat het meer kost. Een regel die één setup niet heeft, kost daar
- * niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
+ * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (HP Potions, MP Potions, Ammo, en reizen als
+ * dat iets kost) wat je character betaalt, wat de goedkoopste setup betaalt, en het verschil: groen met een plus wat je bespaart,
+ * rood met een min wat het meer kost. Welke potion en hoeveel staat op de twee facturen erboven. Een regel die één setup niet heeft,
+ * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
  */
-function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice }) {
+function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; job: Job }) {
   const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
   const [ig, ch] = cols
   const keys: string[] = []
   for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
   const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
-  const qty = (l: InvoiceLine | undefined) => (l && l.qty !== null ? nfInt.format(l.qty) : null)
+  // De naam van een soort kost, los van welke potion of munitie (Dave): "HP Potions", "MP Potions", "Ammo".
+  const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
+  const cost = (n: number | null) => (n === null ? <span class="invoice-none">—</span> : <span class="cost">{n === 0 ? '0' : `−${nfInt.format(n)}`}</span>)
   const diff = (d: number | null) =>
     d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="gain">+{nfInt.format(d)}</span> : d < 0 ? <span class="cost">−{nfInt.format(-d)}</span> : <span>0</span>
+  // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
+  const paid = (col: number, key: string) => (cols[col] ? (lineOf(col, key)?.meso ?? 0) : null)
   return ig || ch ? (
     <>
-      <table class="invoice invoice-compare">
+      <table class="invoice invoice-difference">
+        <thead>
+          <tr>
+            <td />
+            <th scope="col">Your character</th>
+            <th scope="col">Cheapest</th>
+            <th scope="col">Difference</th>
+          </tr>
+        </thead>
         <tbody>
           {keys.map((key) => {
-            const a = lineOf(0, key)
-            const b = lineOf(1, key)
-            const row = a ?? b!
-            const qa = qty(a)
-            const qb = qty(b)
-            // Eén keer het aantal als beide setups evenveel kopen; anders van in game naar cheapest. Harde spaties binnen "× 4" en
-            // "→ 3": op een smal scherm breekt het alleen bij de pijl.
-            const count = qa && qb ? (qa === qb ? `× ${qa}` : `× ${qa} → ${qb}`) : qa || qb ? `× ${qa ?? qb}` : null
-            // Gebruikt de goedkoopste setup een andere potion, dan staat die onder de naam.
-            const other = a && b && b.label !== a.label ? b.label : null
+            const a = paid(0, key)
+            const b = paid(1, key)
             return (
               <tr key={key}>
-                <th scope="row">
-                  {row.label}
-                  {other && <span class="invoice-sub">→ {other}</span>}
-                </th>
-                <td class="invoice-qty">{count}</td>
-                <td class="invoice-meso invoice-diff">{diff(ig && ch ? (a?.meso ?? 0) - (b?.meso ?? 0) : null)}</td>
+                <th scope="row">{name(key)}</th>
+                <td class="invoice-meso">{cost(a)}</td>
+                <td class="invoice-meso">{cost(b)}</td>
+                <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
               </tr>
             )
           })}
@@ -2518,7 +2519,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice }
         <tfoot>
           <tr>
             <th scope="row">Total</th>
-            <td />
+            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
+            <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
             <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
           </tr>
         </tfoot>
@@ -2608,7 +2610,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
               </div>
               <div class="total-cost-part cost-difference">
                 <h3>Difference</h3>
-                <DifferenceTable inGame={props.invoice} cheapest={props.cheapest} />
+                <DifferenceTable inGame={props.invoice} cheapest={props.cheapest} job={props.job} />
                 {props.children}
               </div>
             </>
@@ -2639,7 +2641,8 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
   const saving = props.saving
   const details = (
     <div class="cheapest-result">
-      {saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} {props.applied ? 'bespaard op dit level' : 'goedkoper'}</p>}
+      {/* Vóór Overnemen zegt het totaal van Difference wat het scheelt; daarna is dat 0, en dan staat hier wat je bespaarde. */}
+      {props.applied && saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} bespaard op dit level</p>}
       {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
       {saving === null && (
         <p class="hint">

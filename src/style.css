@@ -625,14 +625,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
 
-/* Difference (#183): per rij het aantal ("× 4 → 3") en wat de goedkoopste setup scheelt, groen met een plus wat je bespaart. Een
-   andere potion in de goedkoopste setup staat klein onder de naam van de rij. */
-.invoice-compare tbody th { overflow-wrap: break-word; }
-.invoice-sub { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--muted); }
-.invoice-compare td.invoice-qty { width: 1%; padding-left: 0.5rem; font-size: 0.875rem; white-space: nowrap; }
-.invoice-compare td.invoice-meso { padding-left: 0.5rem; }
-.invoice-diff .gain { color: var(--gain); }
-.invoice-diff .cost { color: var(--cost); }
+/* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, groen met een plus
+   wat je bespaart. Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */
+.invoice-difference thead th { padding: 0 0 0.5rem 0.5rem; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--muted); text-align: right; vertical-align: bottom; }
+.invoice-difference thead td { padding: 0; }
+.invoice-difference td.invoice-meso { padding-left: 0.5rem; }
+.invoice-difference .gain { color: var(--gain); }
+.invoice-difference .cost { color: var(--cost); }
 .invoice-none { color: var(--muted); }
 /* Onder de tabel van Difference (#183): de besparing, wat er verandert en Overnemen of Ongedaan maken. */
 .cheapest-result { margin-top: 0.75rem; }

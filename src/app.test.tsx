@@ -3156,41 +3156,48 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(yours().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 20 Thief')
     expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
-    expect(diffCard().querySelector('.cheapest-saving')?.textContent).toMatch(/goedkoper$/)
+    // Vóór Overnemen zegt het totaal van Difference wat het scheelt, zonder een tweede regel eronder.
+    expect(diffCard().querySelector('tfoot td.invoice-diff .gain')).not.toBeNull()
+    expect(diffCard().querySelector('.cheapest-saving')).toBeNull()
     expect(diffCard().querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
     // Nog niets toegepast.
     expect(profileFields()).toEqual(profileBefore)
   })
 
-  it('zet in Difference per rij het aantal en het verschil, en als totaal het verschil van de twee Total cost-kaarten', () => {
+  it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
+    // Kolommen: de soort, Your character, Cheapest en Difference (Dave, #183).
+    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Your character', 'Cheapest', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
-    expect(rows.length).toBeGreaterThan(0)
+    // Een soort kost, niet de naam van de potion of de munitie.
+    expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['HP Potions', 'MP Potions', 'Ammo'])
+    const signed = (t: string) => (t.startsWith('−') ? -mesoOf(t) : mesoOf(t))
     for (const tr of rows) {
-      // "× 4", of "× 4 → 3" als de goedkoopste setup er anders veel koopt; een gelijk aantal één keer.
-      const count = tr.querySelector('td.invoice-qty')!.textContent!
-      expect(count).toMatch(/^(× [\d.]+( → [\d.]+)?)?$/)
-      const m = /^× ([\d.]+) → ([\d.]+)$/.exec(count)
-      if (m) expect(m[1]).not.toBe(m[2])
+      const [mine, cheap, d] = Array.from(tr.querySelectorAll('td')).map((td) => td.textContent!)
+      expect(mine).toMatch(/^(−[\d.]+|0)$/)
+      expect(cheap).toMatch(/^(−[\d.]+|0)$/)
       // Wat je bespaart in groen met een plus, wat meer kost in rood met een min.
-      expect(tr.querySelector('td.invoice-diff')!.textContent).toMatch(/^(\+[\d.]+|−[\d.]+|0)$/)
+      expect(d).toMatch(/^(\+[\d.]+|−[\d.]+|0)$/)
+      expect(signed(d)).toBe(mesoOf(mine) - mesoOf(cheap))
     }
-    const diffTotal = diffCard().querySelector('tfoot td.invoice-diff')!
+    const [mineTotal, cheapTotal, diffTotal] = Array.from(diffCard().querySelectorAll('tfoot td'))
+    // De totalen zijn die van de twee facturen erboven, en het verschil is hun verschil.
+    expect(mesoOf(mineTotal.textContent)).toBe(mesoOf(total(yours())))
+    expect(mesoOf(cheapTotal.textContent)).toBe(mesoOf(total(cheapestCard())))
     expect(diffTotal.querySelector('.gain')).not.toBeNull()
     expect(mesoOf(diffTotal.textContent)).toBe(mesoOf(total(yours())) - mesoOf(total(cheapestCard())))
     // De rijen tellen op tot het totaal.
-    const signed = (t: string) => (t.startsWith('−') ? -mesoOf(t) : mesoOf(t))
     expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(mesoOf(diffTotal.textContent))
   })
 
-  it('toont een besparing die gelijk is aan het verschil van de twee getoonde totalen, ook na Overnemen', () => {
+  it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {
     toLevel20()
     const first = mesoOf(total(yours()))
-    const second = mesoOf(total(cheapestCard()))
-    const shown = () => mesoOf(diffCard().querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
-    expect(shown()).toBe(first - second)
+    const before = mesoOf(diffCard().querySelector('tfoot td.invoice-diff')!.textContent)
     take()
-    expect(shown()).toBe(first - mesoOf(total(yours())))
+    const shown = mesoOf(diffCard().querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
+    expect(shown).toBe(first - mesoOf(total(yours())))
+    expect(shown).toBe(before)
   })
 
   it('zet met Overnemen de setup toe: jouw Total cost krijgt het totaal van de kaart, en Ongedaan maken zet alles terug', () => {
