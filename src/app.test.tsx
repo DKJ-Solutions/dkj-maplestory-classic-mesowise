@@ -260,7 +260,9 @@ describe('begin zonder opslag', () => {
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
       expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
-      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
+      // Daaronder de kaart met de goedkoopste setup (#183), dan het Report.
+      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.cheapest-cost'))
+      expect(stats.nextElementSibling!.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -3025,7 +3027,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   })
 
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
-    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
+    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost — jouw setup')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
     expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
@@ -3124,65 +3126,84 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Goedkoopste instellingen (#183)', () => {
-  const cheapestButton = () => screen.getByRole('button', { name: 'Goedkoopste instellingen' })
+describe('Total cost: goedkoopste setup (#183)', () => {
+  const cheapestCard = () => document.querySelector<HTMLElement>('section.cheapest-cost')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
-  const tap = () => fireEvent.click(cheapestButton())
-  // Op level 10 is er alleen AP te verdelen; op level 20, met een mob gekozen, spelen mob, potions en skillpunten mee.
+  const yours = () => homeScreen().querySelector<HTMLElement>('section.total-cost:not(.cheapest-cost)')!
+  const total = (card: HTMLElement) => card.querySelector('tfoot')?.textContent
+  const take = () => fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Overnemen' }))
+  // Op level 20, met een mob gekozen, spelen mob, potions en skillpunten mee.
   const toLevel20 = () => {
     for (let i = 0; i < 10; i++) levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     chooseMob('Slime')
   }
 
-  it('zet de instellingen en toont de besparing met wat er veranderde', () => {
+  it('toont de goedkoopste setup live, vóór je iets toepast: een lager totaal, de besparing en de wijzigingen', () => {
     toLevel20()
-    const before = JSON.stringify(profileFields())
-    tap()
-    expect(summary()).not.toBeNull()
-    expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
+    const profileBefore = profileFields()
+    expect(cheapestCard().querySelector('h2')!.textContent).toBe('Total cost — goedkoopste setup')
+    expect(total(cheapestCard())).toBeTruthy()
+    expect(total(cheapestCard())).not.toBe(total(yours()))
+    expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/goedkoper$/)
     expect(document.querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
-    expect(within(summary()!).getByRole('button', { name: 'Ongedaan maken' })).toBeTruthy()
-    expect(JSON.stringify(profileFields())).not.toBe(before)
+    // Nog niets toegepast.
+    expect(profileFields()).toEqual(profileBefore)
   })
 
-  it('zet met Ongedaan maken alles terug: profiel, potions en de kosten van het level', () => {
+  const mesoOf = (text: string | undefined) => Number(text!.replace(/D/g, ''))
+  it('toont een besparing die gelijk is aan het verschil van de twee getoonde totalen, ook na Overnemen', () => {
+    toLevel20()
+    const first = mesoOf(total(yours()))
+    const second = mesoOf(total(cheapestCard()))
+    const shown = () => mesoOf(document.querySelector('.cheapest-saving')!.textContent!.replace(/^[^d]*/, ''))
+    expect(shown()).toBe(first - second)
+    take()
+    expect(shown()).toBe(first - mesoOf(total(yours())))
+  })
+
+  it('zet met Overnemen de setup toe: jouw Total cost krijgt het totaal van de kaart, en Ongedaan maken zet alles terug', () => {
     toLevel20()
     const profileBefore = profileFields()
     const costBefore = levelCostText()
-    tap()
+    const yoursBefore = total(yours())
+    const cheaperTotal = total(cheapestCard())
+    take()
+    expect(total(yours())).toBe(cheaperTotal)
     expect(levelCostText()).not.toBe(costBefore)
+    expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
-    expect(summary()).toBeNull()
     expect(profileFields()).toEqual(profileBefore)
+    expect(levelCostText()).toBe(costBefore)
+    expect(total(yours())).toBe(yoursBefore)
     const potions = stored(POTION_CHOICE_KEY)
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
-    expect(levelCostText()).toBe(costBefore)
   })
 
-  it('zegt bij een tweede tik dat het al de goedkoopste is', () => {
+  it('zegt kort dat je setup al de goedkoopste is als er niets te winnen valt, zonder tweede factuur', () => {
     toLevel20()
-    tap()
-    tap()
-    expect(summary()!.textContent).toContain('al de goedkoopste')
-    expect(document.querySelector('.cheapest-saving')).toBeNull()
-    expect(within(summary()!).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
+    take()
+    // Na herladen (de gekozen setup staat in de opslag) is er niets meer te winnen.
+    cleanup()
+    render(<App />)
+    expect(cheapestCard().textContent).toContain('al de goedkoopste')
+    expect(cheapestCard().querySelector('table')).toBeNull()
+    expect(within(cheapestCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
   })
 
-  it('laat de summary verdwijnen bij een ander level', () => {
+  it('laat de uitkomst van Overnemen verdwijnen bij een ander level', () => {
     toLevel20()
-    tap()
-    expect(summary()).not.toBeNull()
+    take()
+    expect(within(summary()!).queryByRole('button', { name: 'Ongedaan maken' })).not.toBeNull()
     levelUp()
-    expect(summary()).toBeNull()
+    expect(within(cheapestCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
   })
 
-  it('laat de summary verdwijnen bij een handmatige wijziging, zodat Ongedaan maken die niet wist', () => {
+  it('laat Ongedaan maken verdwijnen bij een handmatige wijziging, zodat die niet gewist wordt', () => {
     toLevel20()
-    tap()
-    expect(summary()).not.toBeNull()
+    take()
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     chooseMob('Snail')
-    expect(summary()).toBeNull()
+    expect(within(cheapestCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
   })
 })

@@ -26,7 +26,7 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { cheapestSettings, MAX_ROUNDS, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { cheapestSettings, MAX_ROUNDS, profileOf as cheapestProfile, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -2474,12 +2474,12 @@ export const totalCostWho = (level: string, job: Job): string => {
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
+function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string; title: string; className?: string; children?: ComponentChildren }) {
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
   return (
-    <section class="card total-cost" aria-live="polite">
-      <h2>Total cost</h2>
+    <section class={props.className ?? 'card total-cost'} aria-live="polite">
+      <h2>{props.title}</h2>
       <p class="total-cost-sub">
         This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
       </p>
@@ -2517,51 +2517,81 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
           </table>
         </>
       )}
+      {props.children}
     </section>
   )
 }
 
-/** "Goedkoopste instellingen" (#183): de knop, en na een tik wat er veranderde met een Ongedaan maken. */
+/**
+ * De tweede Total cost-kaart (Dave, 6 oktober 2026, #183): wat het level kost met de goedkoopste gratis instellingen (mob, potions,
+ * skillpunten, base AP), live berekend en nog niet toegepast. "Overnemen" past ze toe; daarna staat hier wat er veranderde en
+ * kun je alles met "Ongedaan maken" terugzetten. Zonder verschil blijft de kaart kort.
+ */
 const CHANGE_LABEL = { mob: 'Monster:', potions: 'Potions:', skills: 'Skillpunten:', ap: 'AP:' } as const
-function CheapestSettings(props: { result: CheapestResult | null; onApply: () => void; onUndo: () => void }) {
-  const r = props.result
-  const saving = r?.saving ?? null
-  return (
-    <section class="cheapest" aria-label="Goedkoopste instellingen">
-      <button type="button" class="btn primary" onClick={props.onApply}>
-        Goedkoopste instellingen
-      </button>
-      {r && (
-        <div class="cheapest-result" role="status">
-          {r.changes.length === 0 ? (
-            <p class="hint">Je instellingen zijn al de goedkoopste voor dit level; er is niets veranderd.</p>
-          ) : (
-            <>
-              {saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} bespaard op dit level</p>}
-              {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
-              {saving === null && (
-                <p class="hint">
-                  {r.costBefore === null
-                    ? 'Je huidige mob geeft geen EXP, dus er is geen kost om mee te vergelijken. De instellingen zijn wel aangepast.'
-                    : 'Niet door te rekenen wat dit scheelt. De instellingen zijn wel aangepast.'}
-                </p>
-              )}
-              <ul class="cheapest-changes">
-                {r.changes.map((c) => (
-                  <li key={c.kind}>
-                    <strong>{CHANGE_LABEL[c.kind]}</strong> {c.text}
-                  </li>
-                ))}
-              </ul>
-              {r.capped && <p class="hint">Na {MAX_ROUNDS} rondes gestopt; tik nog eens voor eventueel meer.</p>}
-              <button type="button" class="btn" onClick={props.onUndo}>
-                Ongedaan maken
-              </button>
-            </>
-          )}
-        </div>
+/** Het totaal van een factuur, of null zonder factuur. */
+const invoiceTotal = (i: LevelInvoice): number | null => (i.kind === 'invoice' ? i.total : null)
+/** De besparing zoals de twee kaarten haar tonen (factuurtotaal min factuurtotaal); zonder twee facturen die van de berekening. */
+const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | null): number | null => {
+  const a = invoiceTotal(was)
+  const b = invoiceTotal(now)
+  return a !== null && b !== null ? a - b : fallback
+}
+const CHEAPEST_TITLE = 'Total cost — goedkoopste setup'
+function CheapestCostCard(props: { live: CheapestResult | null; invoice: LevelInvoice; saving: number | null; applied: CheapestResult | null; job: Job; level: string; onApply: () => void; onUndo: () => void }) {
+  const r = props.applied ?? props.live
+  if (!r) return null
+  const saving = props.saving
+  const details = (
+    <div class="cheapest-result">
+      {saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} {props.applied ? 'bespaard op dit level' : 'goedkoper'}</p>}
+      {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
+      {saving === null && (
+        <p class="hint">
+          {r.costBefore === null
+            ? 'Je huidige mob geeft geen EXP, dus er is geen kost om mee te vergelijken.'
+            : 'Niet door te rekenen wat dit scheelt.'}
+        </p>
       )}
-    </section>
+      <ul class="cheapest-changes">
+        {r.changes.map((c) => (
+          <li key={c.kind}>
+            <strong>{CHANGE_LABEL[c.kind]}</strong> {c.text}
+          </li>
+        ))}
+      </ul>
+      {r.capped && <p class="hint">Na {MAX_ROUNDS} rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
+      {props.applied ? (
+        <button type="button" class="btn" onClick={props.onUndo}>
+          Ongedaan maken
+        </button>
+      ) : (
+        <button type="button" class="btn primary" onClick={props.onApply}>
+          Overnemen
+        </button>
+      )}
+    </div>
+  )
+  if (props.applied) {
+    return (
+      <section class="card total-cost cheapest-cost" aria-live="polite">
+        <h2>{CHEAPEST_TITLE}</h2>
+        <p class="hint">Overgenomen: je setup hierboven is nu de goedkoopste.</p>
+        {details}
+      </section>
+    )
+  }
+  if (r.changes.length === 0) {
+    return (
+      <section class="card total-cost cheapest-cost" aria-live="polite">
+        <h2>{CHEAPEST_TITLE}</h2>
+        <p class="hint">Je setup is al de goedkoopste voor dit level.</p>
+      </section>
+    )
+  }
+  return (
+    <TotalCostCard invoice={props.invoice} computed job={props.job} level={props.level} title={CHEAPEST_TITLE} className="card total-cost cheapest-cost">
+      {details}
+    </TotalCostCard>
   )
 }
 
@@ -2651,15 +2681,26 @@ export function App() {
   // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
   // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
   // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
-  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput } | null>(null)
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; saving: number | null } | null>(null)
   const cheapestShown =
     cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.job === job
       ? cheapest.result
       : null
+  const appliedSaving = cheapestShown ? cheapest!.saving : null
+  // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
+  const cheapestInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
+  const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
+  const cheapestInvoice = useMemo(
+    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment })) : levelInvoice([], null)),
+    [cheapestLive, job, gender, equipment],
+  )
+  // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer. Een nog niet bevestigd concept in een
+  // corrigeervak blijft dus een concept (de kaart rekende er ook niet mee); de equipment verandert de knop nooit.
+  const cheapestSaving = cheapestLive ? invoiceSaving(invoice, cheapestInvoice, cheapestLive.saving) : null
   const applyCheapest = () => {
-    commitAllEquipment()
-    const before: CheapestInput = { job, gender, equipment: equipmentRef.current, drafts, profileDraft: profileRef.current, potionChoice }
-    const result = cheapestSettings(before)
+    if (!cheapestLive) return
+    const result = cheapestLive
+    const before = cheapestInput
     if (result.drafts !== before.drafts) {
       dirty.current = true
       setDrafts(result.drafts)
@@ -2667,7 +2708,7 @@ export function App() {
     if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
     if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
     setPlaced(null)
-    setCheapest({ result, before })
+    setCheapest({ result, before, saving: cheapestSaving })
   }
   const undoCheapest = () => {
     if (!cheapestShown || !cheapest) return
@@ -2835,8 +2876,6 @@ export function App() {
         How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
 
-      {computed && <CheapestSettings result={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />}
-
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
       {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
 
@@ -2897,7 +2936,8 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} />
+      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} title="Total cost — jouw setup" />
+      {computed && <CheapestCostCard live={cheapestLive} invoice={cheapestInvoice} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} job={job} level={profileDraft.level} onApply={applyCheapest} onUndo={undoCheapest} />}
 
       <LevelAdviceCard
         job={job}

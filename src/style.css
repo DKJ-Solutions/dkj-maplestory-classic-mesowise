@@ -612,8 +612,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
 
-/* Goedkoopste instellingen (#183): de knop op volle breedte onder de vraag, met de uitkomst en Ongedaan maken eronder. */
-.cheapest { margin: 0 0 1rem; }
+/* De tweede Total cost-kaart, goedkoopste setup (#183): onder de factuur de besparing, wat er verandert en Overnemen of Ongedaan maken. */
 .cheapest-result { margin-top: 0.75rem; }
 .cheapest-result .btn { width: 100%; }
 .cheapest-saving { margin: 0 0 0.5rem; font-weight: 700; color: var(--accent); overflow-wrap: anywhere; }

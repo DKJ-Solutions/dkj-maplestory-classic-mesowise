@@ -58,7 +58,7 @@ const STAT_LABEL = { str: 'STR', dex: 'DEX', int: 'INT', luk: 'LUK' } as const
 const STATS = Object.keys(STAT_LABEL) as (keyof typeof STAT_LABEL)[]
 
 /** Het profiel zoals de app het doorrekent: het concept, met de potions die je gebruikt. Null als het niet klopt. */
-function profileOf(s: CheapestInput): Profile | null {
+export function profileOf(s: CheapestInput): Profile | null {
   const parsed = parseProfile(s.profileDraft, s.job, s.gender)
   return 'profile' in parsed ? { ...parsed.profile, potions: resolvePotions(s.job, s.potionChoice) } : null
 }
