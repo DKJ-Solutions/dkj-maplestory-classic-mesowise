@@ -39,19 +39,34 @@
 
 ### PLAN
 
+- [x] Reproduce #195 and verify its inferred reason: on today's trunk one case remains (Warrior 26 on Blue Snail,
+  unrounded 8,547 → 8,433 but invoice 8,550 → 8,670), so the reason holds: the button judged on the unrounded cost.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `cheapestSettings` judges each round on the invoice total (whole pieces) instead of the unrounded level cost
+  (Cody). The missing potion bar the first read suspected had already landed on main with #185.
 
 ### TEST
 
+- [x] Two tests in `cheapestSettings.test.ts` (Tycho): the measured case, and a sweep over every computed job at six
+  levels and every mob holding Advised to never dearer than Your character on the invoice. Both fail on the old code.
+- [x] Full suite and typecheck green.
+- [ ] Victor's review.
+
 ### DEPLOY: fix/195-advised-invoice-rounding
 
-**Score:**
+The "Goedkoopste instellingen" button now picks the setup that is cheapest on the invoice you see, where every potion
+line is rounded up to whole pieces. Before, it picked on the unrounded cost, so in rare cases the Advised invoice came
+out a few dozen meso dearer than Your character.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+The Advised column can no longer advise a setup that costs more than the one you already have.
+
+**Score:** 2
 
 #### Pull Request
 
