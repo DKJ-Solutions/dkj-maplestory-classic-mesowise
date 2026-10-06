@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isDangerousSpot } from './best'
 import { MOBS, mobDraft } from './data/spots'
-import { mobAdvice, type MobAdvice } from './mobAdvice'
+import { cheapestMob, mobAdvice, type MobAdvice } from './mobAdvice'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft } from './spotDraft'
 
@@ -59,5 +59,23 @@ describe('mobAdvice: je mob naast de andere mobs (#122)', () => {
     const pig = mobDraft('Pig')!
     const a = advice(mobAdvice([{ ...pig, mobExp: '100000' }], profile))
     expect(a).toMatchObject({ hunted: 'Pig', stay: true, best: 'Pig' })
+  })
+})
+
+describe('cheapestMob: de mob voor wie er nog geen koos (#193)', () => {
+  it('is dezelfde mob die mobAdvice de beste noemt, vanuit welke mob je ook vertrekt', () => {
+    const best = cheapestMob(profile)
+    expect(best).not.toBeNull()
+    expect(MOBS.map((m) => m.name)).toContain(best)
+    expect(isDangerousSpot(mobDraft(best!)!, profile)).toBe(false)
+    for (const m of MOBS.slice(0, 6)) expect(advice(mobAdvice(hunt(m.name), profile)).best).toBe(best)
+  })
+
+  it('is de mob waarbij mobAdvice zegt: blijf', () => {
+    expect(advice(mobAdvice(hunt(cheapestMob(profile)!), profile))).toMatchObject({ stay: true })
+  })
+
+  it('stelt op een level buiten de EXP-tabel niets voor (zoals mobAdvice: none)', () => {
+    expect(cheapestMob({ ...profile, level: 200 })).toBeNull()
   })
 })

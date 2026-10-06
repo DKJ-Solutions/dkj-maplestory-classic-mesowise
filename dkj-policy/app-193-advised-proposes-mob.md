@@ -39,19 +39,37 @@
 
 ### PLAN
 
+Dave's decision on #193 (2026-10-06): with no mob chosen, the advised setup picks the cheapest mob for the level and
+places the skill points from it. Only an empty spot list counts as "no mob chosen"; a custom spot is the player's own
+choice and stays untouched (review finding, Victor and Tycho).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `cheapestMob(profile)` in `src/mobAdvice.ts`: the same `bestVerdict` ranking over every mob, null outside the EXP table; `bestName` shared with `mobAdvice`
+- [x] `cheapestSettings` proposes that mob at the start of a round when the spot list is empty; the change line reads "— → <mob>"
 
 ### TEST
 
+- [x] Unit tests in `src/cheapestSettings.test.ts` and `src/mobAdvice.test.ts`; the two app tests that pinned "—" updated
+- [x] `npx vitest run`: 58 files, 1828 tests pass; `npm run lint` clean
+- [x] Review by Victor: no main-path bug; his medium (custom spots replaced) and two lows fixed on this branch
+
 ### DEPLOY: app/193-advised-proposes-mob
 
-**Score:**
+With no mob chosen (the app's default state), the Advised setup now proposes one: the cheapest mob for your level, the same
+ranking the Monster card uses, and from it the potions, skill points and base AP. So a new player who opens Advised sees a
+full setup and a real Advised invoice in Total cost, where it used to show "—" and an empty skill point list; Overnemen
+then sets that mob too. The change list names it as "Monster: — → <mob>". A custom spot you entered yourself is left alone,
+and outside the EXP table nothing is proposed. Resolves #193.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A new player gets advice before choosing anything: Advised starts from the cheapest mob for the level instead of asking
+them to pick one first.
+
+**Score:** 3
 
 #### Pull Request
 

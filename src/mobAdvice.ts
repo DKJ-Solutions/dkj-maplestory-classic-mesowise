@@ -19,6 +19,14 @@ export type MobAdvice =
    */
   | { kind: 'advice'; hunted: string; stay: boolean; best: string | null; mesoHunted: number | null | undefined; mesoBest: number | null | undefined; robust: boolean }
 
+/** De goedkoopste veilige mob uit de data voor dit profiel, voor wie nog geen mob heeft gekozen (#193); null als geen enkele mob een getal geeft of het level niet in de EXP-tabel staat. */
+export function cheapestMob(profile: Profile): string | null {
+  if (expToNextLevel(profile.level) === undefined) return null
+  return bestName(bestVerdict(MOBS.map((m) => mobDraft(m.name)!), profile))
+}
+
+const bestName = (verdict: ReturnType<typeof bestVerdict>): string | null => verdict.ranked.find((r) => r.spot.id === verdict.bestId)?.spot.name ?? null
+
 export function mobAdvice(drafts: readonly SpotDraft[], profile: Profile | null): MobAdvice {
   const own = drafts.find((d) => huntedMob(d) !== undefined)
   const hunted = huntedMob(own)
@@ -31,6 +39,6 @@ export function mobAdvice(drafts: readonly SpotDraft[], profile: Profile | null)
     const epm = expPerMesoOf(verdict.ranked, id)
     return epm === undefined ? undefined : mesoCostOfLevel(expToNext, epm)
   }
-  const best = verdict.ranked.find((r) => r.spot.id === verdict.bestId)?.spot.name ?? null
+  const best = bestName(verdict)
   return { kind: 'advice', hunted: hunted.name, stay: verdict.bestId === own.id, best, mesoHunted: costOf(own.id), mesoBest: costOf(verdict.bestId), robust: verdict.robust }
 }
