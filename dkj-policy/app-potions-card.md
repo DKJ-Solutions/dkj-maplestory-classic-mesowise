@@ -39,8 +39,8 @@
 
 ### PLAN
 
-- [x] Decided with Dave (October 6, 2026): potions have no level requirement in Classic (MeowDB "Lv 0"), so the card
-  shows every potion the job can buy; Max MP becomes a field that rises on Level up.
+- [x] Decided with Dave (October 6, 2026): potions have no level requirement in Classic (MeowDB "Lv 0"), so every potion
+  the job can buy is a choice at every level; Max MP becomes a field that rises on Level up.
 
 ### CREATE
 
@@ -65,28 +65,30 @@
 ### TEST
 
 - [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1651 tests green, lint clean
-- [ ] Dave looks at the card at phone width before the merge
+- [x] Dave looked at the card in the preview and said "ship it" (October 6, 2026)
+- [ ] Victor: final review of the last commits (headings, units, report line, labels)
 
 ### DEPLOY: app/potions-card
 
-A new Potions card, under Monster, lets you pick the HP and MP potion you actually use, the way you pick your mob. The
-level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the cheapest
-potion per point would save. Like the Monster card, the chosen potion's price and recovery from the database show below
-the choice, and the pencil corrects them when the shop or the game says otherwise; the calculation then uses your
-number. The report also says, per potion you use, what it costs per HP or MP and how much of your bar one fills. Potions have no level requirement in Classic, so they are
-all there at every level. Without a choice the app keeps using the cheapest. Max HP and Max MP now head the Total stats card. Max MP
-is a new field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
-before it starts empty until you fill it in. It is shown only and never blocks the calculation.
+A new Potions card, under Monster, lets you pick the HP and MP potion you actually use, the way you pick your mob.
+The level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the
+cheapest potion per point would save, and what each potion you use costs per HP or MP and how much of your bar one
+fills. Like the Monster card, the chosen potion's price and recovery from the database show below the choice, and the
+pencil corrects them when the shop or the game says otherwise; the calculation then uses your number. Potions have no
+level requirement in Classic, so every one is a choice at every level, and without a choice the app keeps using the
+cheapest. Max HP and Max MP now head the Total stats card. Max MP is a new field: Level up raises it by your job's
+fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved before it starts empty until you fill
+it in. It is shown only and never blocks the calculation.
 
 **Score:** 4
 
 #### What makes this deploy extra special
 
-A player tells the app which potions they really buy, so the level's cost matches how they play, and sees what switching would save, and now keeps Max HP and
-Max MP on Total stats, as in the game's stat window.
+A player tells the app which potions they really buy, so the level's cost matches how they play, and sees what
+switching would save. Max HP and Max MP now sit on Total stats, as in the game's stat window.
 
 **Score:** 3
 
 #### Pull Request
 
-Potions card with Max HP and Max MP
+Potions card: pick the potions you use, with Max HP and Max MP on Total stats
