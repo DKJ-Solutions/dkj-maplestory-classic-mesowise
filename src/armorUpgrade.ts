@@ -69,7 +69,7 @@ export interface ArmorChoice {
  * Wat je per slot aan WDEF draagt; een slot dat ontbreekt is onbekend. `overallWorn` zegt dat je een overall draagt
  * ook als zijn WDEF onbekend is (issue #118): dan ontbreekt `overall`, maar vervangt een top of bottom hem toch.
  */
-export type WornWdef = Partial<Record<ArmorSlot, number>> & { overallWorn?: boolean }
+export type WornWdef = Partial<Record<ArmorSlot, number>> & { overallWorn?: boolean; noShield?: boolean }
 
 /** Of je een overall draagt, met bekende of onbekende WDEF. */
 export const wearsOverall = (worn: WornWdef): boolean => worn.overall !== undefined || worn.overallWorn === true
@@ -182,7 +182,8 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
 export function armorUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, worn: WornWdef = {}, scope: HorizonScope = 'next-upgrade'): ArmorUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const canWear = (a: ArmorPiece) => shortfall(a, profile).length === 0
-  const available = shopOf(profile).filter((a) => a.level <= profile.level)
+  // Zonder shield-slot (een Thief met een claw, een Bowman met een boog: `noShield`, #188) geen shield in het advies.
+  const available = shopOf(profile).filter((a) => a.level <= profile.level && !(a.slot === 'shield' && worn.noShield))
   // Een stuk dat niet meer WDEF geeft dan wat je in dat slot draagt, is geen upgrade.
   const betterThanWorn = (a: ArmorPiece) => a.wdef > (replacedWdef(a.slot, worn) ?? -Infinity)
   const wearable: Candidate[] = available.filter((a) => canWear(a) && betterThanWorn(a)).map((armor) => ({ armor }))

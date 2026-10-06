@@ -249,7 +249,7 @@ describe('wornWdef en wornName', () => {
   }
 
   it('geeft alleen de armorslots waarvan de WDEF bekend is, en nooit de claw', () => {
-    expect(wornWdef(eq, 'thief')).toEqual({ top: 32, shoes: 7 })
+    expect(wornWdef(eq, 'thief')).toEqual({ top: 32, shoes: 7, noShield: true })
   })
 
   it('noemt wat je draagt, en niets bij een slot dat nog niet is ingevuld', () => {
@@ -687,7 +687,7 @@ describe('equipment per job', () => {
   it('geeft na een jobwissel geen stat meer voor een item dat de job niet heeft', () => {
     const after = equipmentForJob(thiefGear, 'bowman')
     for (const s of slots) expect(wornStat(s, after[s]), s).toBeUndefined()
-    expect(wornWdef(after, 'bowman')).toEqual({})
+    expect(wornWdef(after, 'bowman')).toEqual({ noShield: true })
   })
 })
 
@@ -1255,7 +1255,7 @@ describe('equipment voor een Bowman', () => {
     expect(wornStat('claw', shop('Balanche'))).toBe(39)
     expect(wornStat('hat', shop('Hunter'))).toBe(24)
     expect(wornStat('shoes', shop('Hard Leather Boots'))).toBe(10)
-    expect(wornWdef(bowmanGear, 'bowman')).toEqual({ hat: 24, shoes: 10 })
+    expect(wornWdef(bowmanGear, 'bowman')).toEqual({ hat: 24, shoes: 10, noShield: true })
     expect(wornStat('ammo', shop('Arrows for Crossbows'))).toBe(0)
   })
 
@@ -1314,7 +1314,7 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
   it('telt het shield van een Bowman niet mee zodra hij een boog vasthoudt (#172)', () => {
     const eq: Equipment = { ...defaultEquipment(), claw: shop('Sword'), shield: shop('Pan Lid') }
     expect(wornWdef(eq, 'bowman')).toEqual({ shield: 44 })
-    expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'bowman')).toEqual({})
+    expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'bowman')).toEqual({ noShield: true })
     expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'warrior')).toEqual({ shield: 44 })
     expect(loadEquipment(stored({ claw: { pick: 'Sword' }, shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(shop('Pan Lid'))
     expect(loadEquipment(stored({ claw: { pick: 'Balanche' }, shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(unknown)
@@ -1351,10 +1351,10 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
       const eq = (claw: EquipEntry): Equipment => ({ ...defaultEquipment(), claw, shield: shop('Stolen Fence') })
       for (const w of hand) expect(wornWdef(eq(shop(w)), 'bowman'), w).toEqual({ shield: 40 })
       for (const claw of [shop('Balanche'), unknown, other('20', 'Eigen boog')]) {
-        expect(wornWdef(eq(claw), 'bowman'), claw.pick).toEqual({})
+        expect(wornWdef(eq(claw), 'bowman'), claw.pick).toEqual({ noShield: true })
       }
       // Een eigen shield met getal volgt dezelfde regel.
-      expect(wornWdef({ ...eq(shop('Balanche')), shield: other('12', 'Schild') }, 'bowman')).toEqual({})
+      expect(wornWdef({ ...eq(shop('Balanche')), shield: other('12', 'Schild') }, 'bowman')).toEqual({ noShield: true })
       expect(wornWdef({ ...eq(shop('Sword')), shield: other('12', 'Schild') }, 'bowman')).toEqual({ shield: 12 })
     })
 
@@ -1421,7 +1421,8 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     })
 
     it('laat de slots en catalogi van andere jobs ongemoeid, met elk wapen', () => {
-      for (const job of ['thief', 'warrior', 'magician'] as const) {
+      // De Thief niet: die verliest zijn shield-slot naast een claw (#188, eigen test).
+      for (const job of ['warrior', 'magician'] as const) {
         const base = slotsFor(job).map((s) => s.slot)
         for (const w of ['Sword', 'Balanche', 'other', '']) {
           expect(slotsFor(job, w).map((s) => s.slot), `${job} ${w}`).toEqual(base)
@@ -1431,8 +1432,8 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
       }
       // De Bowman zonder wapen-argument: alle andere slots zijn er, ook met een boog.
       expect(slotsFor('bowman', 'Balanche').map((s) => s.slot)).toEqual(slotsFor('bowman', 'Sword').map((s) => s.slot).filter((s) => s !== 'shield'))
-      // wornWdef/wornMdef met job voor Thief en Warrior tellen hun shield ook met een boog.
-      for (const job of ['thief', 'warrior'] as const) expect(wornWdef({ ...defaultEquipment(), claw: shop('Balanche'), shield: shop('Pan Lid') }, job)).toEqual({ shield: 44 })
+      // wornWdef/wornMdef met job voor de Warrior tellen zijn shield ook met een boog (een Thief niet meer: Balanche telt daar als claw, #188).
+      for (const job of ['warrior'] as const) expect(wornWdef({ ...defaultEquipment(), claw: shop('Balanche'), shield: shop('Pan Lid') }, job)).toEqual({ shield: 44 })
     })
   })
 
@@ -1478,7 +1479,7 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     expect(wornWdef(eq, 'thief')).toEqual({ shield: 44 })
     const bowman = equipmentForJob(eq, 'bowman')
     expect(bowman.shield).toEqual(unknown)
-    expect(wornWdef(bowman, 'bowman')).toEqual({})
+    expect(wornWdef(bowman, 'bowman')).toEqual({ noShield: true })
     expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(unknown)
     expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'warrior').shield).toEqual(shop('Pan Lid'))
   })
@@ -1616,5 +1617,26 @@ describe('hasRangedWeapon en shownSlots (#188)', () => {
     expect(shownSlots('thief', entry(UNKNOWN))).not.toContain('ammo')
     expect(shownSlots('thief', entry(NPC_CLAWS[0].name))).toContain('ammo')
     expect(shownSlots('thief', entry(UNKNOWN)).length).toBe(slotsFor('thief').length - 1)
+  })
+})
+
+describe('het shield-slot van de Thief (#188)', () => {
+  const entry = (pick: string, extra: Partial<EquipEntry> = {}): EquipEntry => ({ pick, name: '', stat: '', ...extra })
+  const hasShield = (weapon: EquipEntry) => shownSlots('thief', weapon).includes('shield')
+  it('heeft geen shield naast een claw, wel naast een dagger, een wapen onder level 10 of een leeg wapenslot', () => {
+    expect(hasShield(entry(NPC_CLAWS[0].name))).toBe(false)
+    expect(hasShield(entry(NPC_DAGGERS[0].name))).toBe(true)
+    expect(hasShield(entry('Sword'))).toBe(true)
+    expect(hasShield(entry(UNKNOWN))).toBe(true)
+  })
+  it('volgt bij een eigen wapen de keuze dagger of claw; zonder keuze is het een claw (#176)', () => {
+    expect(hasShield(entry(OTHER))).toBe(false)
+    expect(hasShield(entry(OTHER, { weaponKind: 'claw' }))).toBe(false)
+    expect(hasShield(entry(OTHER, { weaponKind: 'dagger' }))).toBe(true)
+  })
+  it('telt een bewaard shield niet mee naast een claw, en zegt het armor-advies dat er geen shield-slot is', () => {
+    const eq: Equipment = { ...defaultEquipment(), claw: entry(NPC_CLAWS[0].name), shield: entry('Pan Lid') }
+    expect(wornWdef(eq, 'thief')).toEqual({ noShield: true })
+    expect(wornWdef({ ...eq, claw: entry(NPC_DAGGERS[0].name) }, 'thief')).toEqual({ shield: 44 })
   })
 })

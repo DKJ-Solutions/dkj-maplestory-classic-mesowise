@@ -49,6 +49,7 @@
 - [x] Cheapest counts this level only (Dave): `HorizonScope` 'this-level' in the weapon and armor advice, the Report advice keeps 'next-upgrade' (#25); tests in both suites (Tycho)
 - [x] A slot that stays empty shows the best piece you can wear, its price and what it saves this level, marked "Loont niet" (Dave)
 - [x] The Ammo slot only shows next to a ranged weapon (a claw, a bow or crossbow): `hasRangedWeapon` and `shownSlots` in equipment.ts, with tests (Dave)
+- [x] No shield next to a claw (Dave): the Thief's shield slot only with a dagger, a weapon under level 10 or an empty weapon slot; `noShield` keeps wristguards out of the armor advice; tests updated (#133's "one-handed claw" is not on NiaMeowDB)
 - [x] The NiaMeowDB source lines left the Equip popup (Dave); the footer credit stays
 - [x] The eye left the Equip card's head (Dave): the two buttons open the popup, the report button moves into that popup, at the bottom (Dave)
 
@@ -60,7 +61,8 @@
 
 ### DEPLOY: app/188-equip-two-columns
 
-The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom; the per-shop NiaMeowDB source lines are gone from it, and the app's footer still credits NiaMeowDB. Both views hide the Ammo slot until a ranged weapon (a claw, a bow or a
+The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom; the per-shop NiaMeowDB source lines are gone from it, and the app's footer still credits NiaMeowDB. A Thief holding a claw no longer has a Shield slot (a claw takes both hands, like a bow), so neither view nor the
+armor advice offers a wristguard next to a claw. Both views hide the Ammo slot until a ranged weapon (a claw, a bow or a
 crossbow) is chosen. Your character
 shows what you wear in game, to change it. Cheapest shows the same rows read-only, filled in automatically with the equip
 that takes you one level up most cheaply: what you wear is free, and a piece is bought only when it saves more than it
