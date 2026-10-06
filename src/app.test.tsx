@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App, totalCostWho } from './app'
 import { NPC_CLAWS } from './data/claws'
-import { EQUIPMENT_KEY, searchCatalog } from './equipment'
+import { EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
@@ -18,10 +18,11 @@ const claw = (name: string) => {
 }
 const IGOR = claw('Steel Igor')
 const MEBA = claw('Meba')
+const GARNIER = claw('Garnier')
 
-/** Twee items uit de catalogus van een slot met een verschillende stat en een naam die niet in de ander zit. */
+/** Twee items uit de catalogus van een slot met een verschillende stat en een naam die niet in de ander zit, allebei te dragen op lv 10 (#188: de lijst staat met het hoogste level bovenaan). */
 const twoItems = (slot: 'hat' | 'top' | 'shoes') => {
-  const items = searchCatalog(slot, 'thief', '')
+  const items = searchCatalog(slot, 'thief', '', false, '', 10)
   const a = items[0]
   const b = items.find((i) => i.stat !== a.stat && !i.name.includes(a.name) && !a.name.includes(i.name))
   if (!b) throw new Error(`geen tweede ${slot} met een andere WDEF`)
@@ -75,9 +76,10 @@ const typeIn = (card: HTMLElement, slot: string, text: string) => {
   return rowOf(card, slot)
 }
 const options = (row: HTMLElement) => Array.from(row.querySelectorAll<HTMLElement>('li[role="option"]'))
-/** Kies een catalogusitem: typ de naam in de zoekbalk en tik de optie aan. */
+/** Kies een catalogusitem: typ de naam in de zoekbalk en tik de optie aan; de lijst toont kleuren als één rij onder hun gedeelde naam (#188). */
 const pick = (card: HTMLElement, slot: string, name: string) => {
-  const option = options(typeIn(card, slot, name)).find((o) => o.querySelector('.equip-name')?.textContent === name)
+  const isFamilyOf = (label: string | null | undefined) => !!label && (label === name || name.endsWith(` ${label}`))
+  const option = options(typeIn(card, slot, name)).find((o) => isFamilyOf(o.querySelector('.equip-name')?.textContent))
   if (!option) throw new Error(`${name} staat niet in de lijst van ${slot}`)
   fireEvent.click(option)
 }
@@ -88,7 +90,8 @@ const pickOwn = (card: HTMLElement, slot: string, text: string) => {
   fireEvent.click(option)
 }
 /** De naam op de knop van een ingevuld slot; null als het slot nog niet is ingevuld. */
-const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent ?? null
+/** De naam van wat in een slot staat, zonder het level dat erachter staat (#188: "Steel Igor (Lv. 20)"). */
+const worn = (card: HTMLElement, slot: string) => rowOf(card, slot).querySelector('.equip-picked')?.textContent?.replace(/ \(Lv\. \d+\)$/, '') ?? null
 
 /** Opent de popup achter het potlood van een slot en geeft de handvatten ervan. */
 const openDialog = (card: HTMLElement, slot: string, stat: 'ATT' | 'DEF') => {
@@ -162,7 +165,7 @@ const openHomeSkills = () => {
   fireEvent.click(head)
   return head.closest('section')!
 }
-const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip bekijken' }))
+const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 /** De open Monster-popup. */
 const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
@@ -171,6 +174,14 @@ const chooseMob = (name: string) => {
   fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: name } })
   fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
   fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
+}
+
+/** Het scherm opnieuw opbouwen op een hoger character-level: de zoekbalk toont alleen wat je op je level kunt dragen (#188). Wat al is opgeslagen blijft staan. */
+const atLevel = (level: string) => {
+  const fields = { ...DEFAULT_PROFILE, ...(profileFields() ?? {}), level }
+  cleanup()
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields }))
+  render(<App />)
 }
 
 beforeEach(() => {
@@ -229,13 +240,28 @@ describe('begin zonder opslag', () => {
   // Dave, 5 oktober 2026: naast het oog een rapport met het uitgebreide advies, alleen bij een kaart waar je iets kiest.
   describe('het rapport naast het oog', () => {
     const report = (title: string) => screen.queryByRole('button', { name: `Report: ${title}` })
+    // Het rapport van Equip zit in de bekijken-popup (#188): die gaat eerst open.
+    const reportButton = (title: string) => {
+      if (title === 'Equip' && !document.querySelector('dialog.card-dialog')) openHomeEquipment()
+      return report(title)!
+    }
     const openReport = (title: string) => {
-      fireEvent.click(report(title)!)
+      fireEvent.click(reportButton(title))
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints, Monster en Potions naast het oog, en niet bij Ability points en Total stats', () => {
-      for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions']) {
+    it('staat bij Equip in de bekijken-popup en bij Skillpoints, Monster en Potions in de kop naast het oog, en niet bij Ability points en Total stats', () => {
+      // De Equip-kaart heeft geen oog in de kop (#188): in de kaart alleen Your character en Cheapest, het rapport zit in hun popup.
+      const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
+      expect(card.querySelector('.spot-head button')).toBeNull()
+      expect([...card.querySelectorAll('.equip-actions button')].map((b) => b.textContent)).toEqual(['Your character', 'Cheapest'])
+      expect(report('Equip')).toBeNull()
+      for (const view of ['Your character', 'Cheapest']) {
+        fireEvent.click(within(card).getByRole('button', { name: view }))
+        expect(report('Equip')!.closest('dialog.card-dialog'), view).not.toBeNull()
+        fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
+      }
+      for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
@@ -246,12 +272,12 @@ describe('begin zonder opslag', () => {
       }
       expect(report('Ability points')).toBeNull()
       expect(report('Total stats')).toBeNull()
-      expect(document.querySelectorAll('.card-report')).toHaveLength(4)
+      expect(document.querySelectorAll('.card-report')).toHaveLength(3)
     })
 
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
-      const equip = report('Equip')!.closest('section')!
+      const equip = homeScreen().querySelector('section.equipment')!
       const skills = report('Skillpoints')!.closest('section')!
       const mob = report('Monster')!.closest('section')!
       const potions = report('Potions')!.closest('section')!
@@ -270,7 +296,7 @@ describe('begin zonder opslag', () => {
       expect(dialog.open).toBe(true)
       expect(dialog.getAttribute('aria-label')).toBe('Report: Equip')
       expect(Array.from(dialog.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF'])
-      // De inhoud van de kaart zelf staat er niet in: die zit achter het oog.
+      // De inhoud van de kaart zelf staat er niet in: die zit in de popup eronder.
       expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     })
 
@@ -295,17 +321,18 @@ describe('begin zonder opslag', () => {
           expect(within(dialog).queryByRole('heading', { level: 3, name: t }), card + ' toont ' + t + ' niet').toBeNull()
         }
         fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+        const popup = document.querySelector<HTMLElement>('dialog.card-dialog')
+        if (popup) fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' })[0])
       }
     })
 
-    it('opent het rapport zonder de popup achter het oog, en andersom', () => {
+    it('opent het rapport van Equip vanuit de bekijken-popup, en die blijft open als je het rapport sluit (#188)', () => {
       openReport('Equip')
-      expect(document.querySelector('dialog.card-dialog')).toBeNull()
+      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(report('Equip')!.getAttribute('aria-expanded')).toBe('true')
       fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
-      openHomeEquipment()
-      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(document.querySelector('dialog.report-dialog')).toBeNull()
+      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
       expect(report('Equip')!.getAttribute('aria-expanded')).toBe('false')
     })
   })
@@ -329,16 +356,18 @@ describe('begin zonder opslag', () => {
 
 describe('equipment: de claw past het profiel aan', () => {
   it('zet weapon attack en aanvalssnelheid van de gekozen claw in het bewaarde profiel', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
     expect(profileFields().attackMs).toBe(String(IGOR.speed.attackMs))
     // de rest van het profiel is onaangeroerd
-    expect(profileFields().level).toBe(DEFAULT_PROFILE.level)
+    expect(profileFields().level).toBe('20')
     expect(profileFields().wdef).toBe(DEFAULT_PROFILE.wdef)
   })
 
   it('toont de nieuwe aanvalstijd op de karakterkaart', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
@@ -346,13 +375,59 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('houdt in de kaartkop alleen de titel, ook als je iets draagt', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(headTitle('Equip')?.trim()).toBe('Equip')
+    expect(cards()[0].querySelector('.spot-head .spot-name')?.textContent?.trim()).toBe('Equip')
+  })
+
+  it('zet achter een item uit de catalogus het level dat hij vraagt, en niet achter een eigen item (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-picked')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
+    pickOwn(cards()[0], 'Hat', 'Mijn hoed')
+    expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
+  })
+
+  it('toont in Total cost onder Cheapest een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
+    fireEvent.click(within(part).getByRole('button', { name: 'Equip bekijken' }))
+    const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Cheapest')
+    const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
+    expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(`${IGOR.name} (Lv. ${IGOR.level})`)
+    expect(dialog.textContent).not.toContain('Te kopen:')
+  })
+
+  it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    expect(cards()[0].querySelector('table')).toBeNull()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
+    expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Cheapest')
+    // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
+    expect(dialog.querySelectorAll('.equip-row').length).toBeGreaterThan(0)
+    expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
+    expect(dialog.querySelector('.equip-edit')).toBeNull()
+    expect(dialog.textContent).toContain('Te kopen:')
+    // Het wapen heeft zijn ATT, ook als het een winkelstuk is dat je nog moet kopen.
+    const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
+    expect(weapon.querySelector('.equip-value strong')?.textContent).toMatch(/^\d+$/)
   })
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
-    const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
     expect(head.querySelector('svg')).not.toBeNull()
     // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
@@ -372,12 +447,12 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(head.tagName).toBe('DIV')
     fireEvent.click(head.querySelector('.spot-name')!)
     expect(cards()[0].querySelector('dialog')).toBeNull()
-    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual(['Equip bekijken', 'Report: Equip'])
+    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual([])
   })
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
-    const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
     expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')
@@ -387,6 +462,7 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('houdt een keuze uit de popup vast nadat je hem sluit en weer opent (#106)', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
@@ -395,9 +471,10 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('toont na de keuze de naam als knop en de ATT in het waardevak', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(within(cards()[0]).getByRole('button', { name: `Weapon: ${IGOR.name}. Tik om te zoeken.` })).toBeTruthy()
+    expect(within(cards()[0]).getByRole('button', { name: `Weapon: ${IGOR.name} (Lv. ${IGOR.level}). Tik om te zoeken.` })).toBeTruthy()
     expect(rowOf(cards()[0], 'Weapon').querySelector('.equip-value')!.getAttribute('aria-label')).toBe(`ATT ${IGOR.watk}`)
   })
 
@@ -413,7 +490,34 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(profileFields().attackMs).toBe(DEFAULT_PROFILE.attackMs)
   })
 
+  it('maakt een slot weer leeg met "Empty": armor telt dan als 0 DEF, een wapen is weer nog niet ingevuld (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    const card = cards()[0]
+    pick(card, 'Hat', HAT_A.name)
+    pick(card, 'Hat', HAT_B.name)
+    const withHat = Number(profileFields().wdef)
+    pick(card, 'Hat', 'Empty')
+    expect(slots().hat.pick).toBe('empty')
+    expect(worn(card, 'Hat')).toBeNull()
+    expect(Number(profileFields().wdef)).toBe(withHat - HAT_B.stat)
+    pick(card, 'Weapon', IGOR.name)
+    const watk = profileFields().clawWatk
+    pick(card, 'Weapon', 'Empty')
+    expect(slots().claw.pick).toBe('unknown')
+    expect(profileFields().clawWatk).toBe(watk)
+  })
+
+  it('biedt "Empty" alleen aan als er iets in het slot staat (#188)', () => {
+    openHomeEquipment()
+    const labels = () => options(typeIn(cards()[0], 'Hat', '')).map((o) => o.querySelector('.equip-name')?.textContent)
+    expect(labels()).not.toContain('Empty')
+    pick(cards()[0], 'Hat', HAT_A.name)
+    expect(labels()[0]).toBe('Empty')
+  })
+
   it('past bij een armorstuk alleen het verschil in WDEF toe', () => {
+    atLevel('20')
     openHomeEquipment()
     const before = profileFields()?.wdef ?? DEFAULT_PROFILE.wdef
     // van nog niet ingevuld naar een stuk verandert de WDEF niet: dat stuk zat er al in
@@ -425,6 +529,7 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('laat je een overall invullen die top en bottom leegt, en andersom (issue #50)', () => {
+    atLevel('30')
     openHomeEquipment()
     const card = cards()[0]
     expect(rowOf(card, 'Overall').querySelector('.slot-name')?.textContent).toBe('Overall')
@@ -440,6 +545,17 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(slots().overall.pick).toBe('unknown')
     expect(profileFields().wdef).toBe(String(wdef - 75 + TOP_A.stat))
   })
+
+  it('biedt in de zoekbalk alleen wat je op je level kunt dragen: op lv 10 de Garnier maar niet de Steel Igor (lv 20), op lv 20 beide (#188)', () => {
+    openHomeEquipment()
+    const offered = (text: string) => options(typeIn(cards()[0], 'Weapon', text)).map((o) => o.querySelector('.equip-name')?.textContent)
+    expect(offered('Garnier')).toContain('Garnier')
+    expect(offered('Steel Igor')).not.toContain('Steel Igor')
+    atLevel('20')
+    openHomeEquipment()
+    expect(offered('Steel Igor')).toContain('Steel Igor')
+    expect(offered('Garnier')).toContain('Garnier')
+  })
 })
 
 describe('equipment: de popup achter het potlood', () => {
@@ -449,6 +565,7 @@ describe('equipment: de popup achter het potlood', () => {
   }
 
   it('toont de ATT voor het wapen en de DEF voor armor op de potloodknop', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Hat', HAT_A.name)
@@ -457,6 +574,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('past niets toe zolang je in de popup typt, ook niet met − en +', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     expect(h.dialog.open).toBe(true)
@@ -468,6 +586,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('past met Opslaan de claw-WATK aan, maar niet de aanvalssnelheid', () => {
+    atLevel('20')
     fillIgor()
     correct(cards()[0], 'Weapon', 'ATT', '31')
     expect(profileFields().clawWatk).toBe('31')
@@ -478,6 +597,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('legt het concept ook vast met Enter in het getal', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     h.type('33')
@@ -487,6 +607,7 @@ describe('equipment: de popup achter het potlood', () => {
 
   // Dave, 5 oktober 2026: zodra er iets gewijzigd is, wordt het kruisje een vinkje dat opslaat; Opslaan onderin blijft.
   it('maakt van ✕ een vinkje dat opslaat zodra het concept afwijkt', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     expect(h.d.getByRole('button', { name: 'Sluiten zonder opslaan' })).toBeTruthy()
@@ -503,6 +624,7 @@ describe('equipment: de popup achter het potlood', () => {
 
   // Dave, 5 oktober 2026: naast het vinkje een rode terugdraai-pijl Annuleren, die de wijziging weggooit.
   it('gooit het concept weg met Annuleren naast het vinkje', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     expect(h.d.queryByRole('button', { name: 'Annuleren' })).toBeNull()
@@ -516,6 +638,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('zet het vinkje terug naar ✕ als het concept weer gelijk is aan wat er staat', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     h.type('31')
@@ -526,6 +649,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('gooit het concept weg met Escape', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     h.type('31')
@@ -535,6 +659,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('gooit het concept weg met een tik op de achtergrond van de popup', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     h.type('31')
@@ -544,6 +669,7 @@ describe('equipment: de popup achter het potlood', () => {
   })
 
   it('biedt Opslaan alleen aan als het concept afwijkt, en Reset alleen bij een correctie', () => {
+    atLevel('20')
     fillIgor()
     const h = openDialog(cards()[0], 'Weapon', 'ATT')
     expect(h.d.queryByRole('button', { name: 'Opslaan' })).toBeNull()
@@ -561,6 +687,7 @@ describe('equipment: de popup achter het potlood', () => {
 
 describe('bewaren na elke wijziging', () => {
   it('bewaart de equipment per slot', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Shoes', SHOE_A.name)
@@ -570,6 +697,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('bewaart een tweede wissel in hetzelfde slot meteen daarna', () => {
+    atLevel('25')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Weapon', MEBA.name)
@@ -935,7 +1063,9 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('bewaart de gekozen stars en zet hun weapon attack en herlaadprijs in het profiel', () => {
+    atLevel('20')
     openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
     expect(slots().ammo.pick).toBe('Wolbi Throwing Stars')
     expect(profileFields().starWatk).toBe('17')
@@ -943,6 +1073,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont bij Total stats de Attack als schadebereik uit je ability points en je equipment: claw plus stars (#82, #108)', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
@@ -956,6 +1087,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont bij Total stats de Magic Def uit je equipment, alleen om te lezen; zolang een slot open is vul je hem zelf in (#91)', () => {
+    atLevel('30')
     openHomeEquipment()
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     const h = openStat('Magic Def')
@@ -971,8 +1103,19 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
   })
 
-  it('toont het ammo-slot zonder "optioneel", net als elk slot (#117): leeg blijft het advies gewoon rekenen', () => {
+  it('verbergt bij een Thief het ammo-slot zonder wapen en met een dagger, en toont het met een claw (#188)', () => {
+    atLevel('20')
     openHomeEquipment()
+    const ammo = () => within(cards()[0]).queryByLabelText('Zoek je Ammo')
+    expect(ammo()).toBeNull()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(ammo()).not.toBeNull()
+  })
+
+  it('toont het ammo-slot zonder "optioneel", net als elk slot (#117): leeg blijft het advies gewoon rekenen', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
     const row = rowOf(cards()[0], 'Ammo')
     expect(row.querySelector('.slot-name')?.textContent).toBe('Ammo')
     expect(searchBox(cards()[0], 'Ammo').placeholder).toBe('Zoek wat je draagt')
@@ -981,8 +1124,10 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('biedt bij een Bowman pijlen aan in het ammo-slot', () => {
+    atLevel('20')
     fireEvent.click(screen.getByRole('button', { name: 'Bowman' }))
     openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Balanche')
     const row = typeIn(cards()[0], 'Ammo', 'Arrows')
     expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toContain('Arrows for Bows')
   })
@@ -996,6 +1141,7 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('kiest met Enter de gemarkeerde rij in de zoeklijst', () => {
+    atLevel('25')
     openHomeEquipment()
     typeIn(cards()[0], 'Weapon', MEBA.name)
     fireEvent.keyDown(searchBox(cards()[0], 'Weapon'), { key: 'Enter' })
@@ -1003,16 +1149,44 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('biedt in de slots van #117 de items met een bron aan (#125): Gloves voor een Thief, zonder die van een andere job', () => {
+    atLevel('20')
     openHomeEquipment()
     const row = typeIn(cards()[0], 'Gloves', 'Duo')
-    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toEqual(['Brown Duo', 'Blue Duo', 'Black Duo', 'Gebruik "Duo" als eigen item'])
+    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toEqual(['Duo']) // de drie kleuren staan als één rij (#188)
     expect(options(typeIn(cards()[0], 'Gloves', 'Juno')).map((o) => o.textContent)).toEqual(['Gebruik "Juno" als eigen item'])
     pick(cards()[0], 'Gloves', 'Work Gloves')
     expect(worn(cards()[0], 'Gloves')).toBe('Work Gloves')
     expect(slots().gloves.pick).toBe('Work Gloves')
   })
 
+  it('biedt bij Bottom het Red Miniskirt aan zonder gekozen geslacht, en niet meer met Male gekozen (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    const labels = () => options(typeIn(cards()[0], 'Bottom', 'Miniskirt')).map((o) => o.querySelector('.equip-name')?.textContent)
+    expect(labels()).toContain('Red Miniskirt')
+    localStorage.setItem('mesowise.gender.v1', JSON.stringify({ version: 1, gender: 'male' }))
+    atLevel('20')
+    openHomeEquipment()
+    expect(labels()).not.toContain('Red Miniskirt')
+  })
+
+  it('toont bij een wapen in de zoeklijst de soort, het level, de ATT en de snelheid: Steel Titans (CLAW, LV 15, ATT 13, FAST) (#188)', () => {
+    atLevel('15')
+    openHomeEquipment()
+    const row = options(typeIn(cards()[0], 'Weapon', 'Steel Titans')).find((o) => o.querySelector('.equip-name')?.textContent === 'Steel Titans')!
+    expect(row.querySelector('.equip-meta')?.textContent).toBe('(CLAW, LV 15, ATT 13, FAST)')
+  })
+
+  it('toont in de Shoes-lijst "LV 0" in de meta van Rubber Boots (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    const list = options(typeIn(cards()[0], 'Shoes', 'Rubber')).filter((o) => !o.textContent?.startsWith('Gebruik "'))
+    expect(list).toHaveLength(1)
+    expect(list[0].querySelector('.equip-meta')?.textContent).toBe('(LV 0, DEF 2)')
+  })
+
   it('biedt geen eigen-item-rij als je precies een naam uit de lijst typt', () => {
+    atLevel('20')
     openHomeEquipment()
     const row = typeIn(cards()[0], 'Weapon', IGOR.name)
     expect(options(row).some((o) => o.textContent?.startsWith('Gebruik "'))).toBe(false)
@@ -1043,6 +1217,7 @@ describe('level-up en Back (#154)', () => {
   })
 
   it('laat equipment en wat je draagt staan', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     levelUp()
@@ -1059,6 +1234,7 @@ describe('level-up en Back (#154)', () => {
   })
 
   it('zet equipment en profiel allebei terug, ook na wissels op het beginscherm', () => {
+    atLevel('25')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Hat', HAT_A.name)
@@ -1074,12 +1250,12 @@ describe('level-up en Back (#154)', () => {
 
     fireEvent.click(backButton())
     expect(profileFields()).toEqual(profileBefore)
-    expect(profileFields().level).toBe('10')
+    expect(profileFields().level).toBe('25')
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
     expect(profileFields().attackMs).toBe(String(IGOR.speed.attackMs))
     expect(slots()).toEqual(slotsBefore)
     expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
-    expect(worn(cards()[0], 'Hat')).toBe(HAT_B.name)
+    expect(worn(cards()[0], 'Hat')).toBe(familyName('hat', HAT_B.name)) // de knop toont de naam zonder kleur (#188)
     expect(worn(cards()[0], 'Shoes')).toBeNull()
   })
 
@@ -1112,6 +1288,7 @@ describe('level-up en Back (#154)', () => {
   })
 
   it('gooit een stat die je na de level-up zette weg bij Back, en zet de equipment van het level eronder terug', () => {
+    atLevel('25')
     levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     const luk = openAbility('LUK')
@@ -1121,33 +1298,35 @@ describe('level-up en Back (#154)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', MEBA.name)
     fireEvent.click(backButton())
-    expect(profileFields()).toEqual(DEFAULT_PROFILE)
+    expect(profileFields()).toEqual({ ...DEFAULT_PROFILE, level: '25' })
     expect(worn(cards()[0], 'Weapon')).toBeNull()
   })
 
   it('zet bij twee level-ups achter elkaar alleen de equipment van het tweede level terug, niet die van het eerste', () => {
+    atLevel('25')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     levelUp()
     pick(cards()[0], 'Weapon', MEBA.name)
     levelUp()
     pick(cards()[0], 'Hat', HAT_A.name)
-    expect(level()).toBe('LV. 12')
+    expect(level()).toBe('LV. 27')
     fireEvent.click(backButton())
-    expect(level()).toBe('LV. 11')
+    expect(level()).toBe('LV. 26')
     expect(worn(cards()[0], 'Weapon')).toBe(MEBA.name)
     expect(worn(cards()[0], 'Hat')).toBeNull()
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
   })
 
   it('zet na de herstelde snapshot een tweede Back alleen het level een terug: stats en equipment blijven', () => {
+    atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     levelUp()
     fireEvent.click(backButton())
     const before = profileFields()
     fireEvent.click(backButton())
-    expect(profileFields()).toEqual({ ...before, level: '9' })
+    expect(profileFields()).toEqual({ ...before, level: '19' })
     expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
   })
 
@@ -1186,6 +1365,7 @@ describe('level-up en Back (#154)', () => {
   })
 
   it('legt een nog open concept in de popup vast als vangnet bij de level-up', () => {
+    atLevel('20')
     // In de echte app zit de level-up-knop achter de modal; levelUp() in app.tsx legt een open concept toch vast
     // (commitAllEquipment), zodat een getal nooit stil verloren gaat. fireEvent omzeilt de modal.
     openHomeEquipment()
@@ -1195,7 +1375,7 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().clawWatk).toBe(String(IGOR.watk))
     levelUp()
     expect(profileFields().clawWatk).toBe('44')
-    expect(profileFields().level).toBe('11')
+    expect(profileFields().level).toBe('21')
   })
 })
 
@@ -1301,35 +1481,37 @@ describe('Auto assign (#157)', () => {
   const apNote = () => homeScreen().querySelector('section.profile .spot-head .to-distribute .sr-only')?.textContent ?? null
   const headingText = () => homeScreen().querySelector('section.profile .spot-head .spot-name')?.textContent
   const fillButton = () => screen.getByRole('button', { name: 'Auto assign' })
-  const wearIgor = () => {
+  const wear = (item: string) => {
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Weapon', item)
   }
 
   it('schrijft de base AP van het level zonder melding, laat de veranderde vakken oplichten en zet (0) in de kop; extra AP en accuracy blijven staan', () => {
     levelUp()
     expect(headingText()).toBe('Ability points(5)5 AP te verdelen')
-    wearIgor()
+    wear(GARNIER.name)
     const before = { ...profileFields() }
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
-    // Level 11 = 75 AP: DEX op de eis van Steel Igor (20), LUK de rest (75 - 4 - 4 - 20 = 47), STR en INT 4.
+    // Level 11 = 75 AP: DEX op het minimum dat de Garnier en de skills vragen (10), LUK de rest (75 - 4 - 4 - 10 = 57), STR en INT 4.
     expect(homeScreen().querySelector('.ap-autofill .hint')).toBeNull()
     // DEX en LUK veranderden en lichten op; STR en INT bleven 4.
     const flashing = (label: string) => statLine(label).querySelector('.ap-base')!.classList.contains('flash')
     expect(['STR', 'DEX', 'INT', 'LUK'].map(flashing)).toEqual([false, true, false, true])
-    expect(profileFields()).toMatchObject({ str: '4', dex: '20', int: '4', luk: '47', level: '11' })
+    expect(profileFields()).toMatchObject({ str: '4', dex: '10', int: '4', luk: '57', level: '11' })
     expect(profileFields().lukExtra).toBe(before.lukExtra)
     expect(profileFields().accuracy).toBe(before.accuracy)
-    expect(statShown('DEX')).toBe('20')
-    expect(statShown('LUK')).toBe('47')
+    expect(statShown('DEX')).toBe('10')
+    expect(statShown('LUK')).toBe('57')
     expect(apNote()).toBe('0 AP te verdelen')
     expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
   })
 
   it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    wearIgor()
+    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
+    atLevel('20')
+    wear(IGOR.name)
+    atLevel('9')
     const before = { ...profileFields() }
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
@@ -1339,8 +1521,10 @@ describe('Auto assign (#157)', () => {
   })
 
   it('past de speler daarna een stat aan, dan verdwijnt de melding van een mislukte poging', () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Back (naar LV. 9)' }))
-    wearIgor()
+    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
+    atLevel('20')
+    wear(IGOR.name)
+    atLevel('9')
     fireEvent.click(screen.getByRole('button', { name: 'Ability points bekijken' }))
     fireEvent.click(fillButton())
     expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()
@@ -1440,13 +1624,14 @@ describe('een Warrior in de app', () => {
     })
 
     it('zoekt bij Weapon in de Warrior-wapens en niet in Thief-claws, en bij Hat en Shoes in Warrior-armor', () => {
+      atLevel('30')
       openHomeEquipment()
       const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
       expect(found('Weapon', 'Gladius')).toContain('Gladius')
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Hat', 'Bronze Full Helm')).toContain('Bronze Full Helm')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
-      expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
+      expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves') // een ander materiaal dan Steel Grieves, geen kleur: een eigen rij (#188)
     })
 
     it('toont geen uitleg boven de slots (net als de Thief) en laat bij Top en Bottom zoeken', () => {
@@ -1456,6 +1641,7 @@ describe('een Warrior in de app', () => {
     })
 
     it('zet bij een gekozen wapen weapon attack, aanvalssnelheid en weapon multiplier in het bewaarde profiel', () => {
+      atLevel('30')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Gladius')
       expect(profileFields().clawWatk).toBe('47')
@@ -1803,6 +1989,7 @@ describe('een Bowman in de app', () => {
     const hasShieldRow = () => within(cards()[0]).queryByLabelText('Zoek je Shield') !== null
 
     it('toont het shield-slot met een Sword in de hand, laat het weg met een boog en haalt een gekozen shield eraf', () => {
+      atLevel('30')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Sword')
       expect(hasShieldRow()).toBe(true)
@@ -1840,6 +2027,7 @@ describe('een Bowman in de app', () => {
     it('biedt de bronze pijlen pas aan met "Ik heb Helpful Stranger" aan, rekent ermee, en valt bij uitzetten terug (#64)', () => {
       openHomeEquipment()
       const card = cards()[0]
+      pick(card, 'Weapon', 'Balanche')
       const sw = within(card).getByLabelText(/Ik heb Helpful Stranger/) as HTMLInputElement
       expect(sw.checked).toBe(false)
       expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual([])
@@ -1852,17 +2040,20 @@ describe('een Bowman in de app', () => {
       fireEvent.click(within(card).getByLabelText(/Ik heb Helpful Stranger/))
       expect(profileFields()).toMatchObject({ helpfulStranger: '0', bronzeArrows: '0' })
       expect(slots().ammo.pick).toBe('Arrows for Bows')
-      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual([])
+      // Alleen "Empty" (er staat iets in het slot, #188) en het eigen item; geen bronze pijl meer.
+      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual(['Empty'])
     })
 
     it('zoekt bij Weapon in de bogen en kruisbogen, bij Ammo in de pijlen, en niet in claws of Warrior-wapens', () => {
+      atLevel('25')
       openHomeEquipment()
       expect(found('Weapon', 'Balanche')).toContain('Balanche')
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
+      pick(cards()[0], 'Weapon', 'Balanche')
       expect(found('Ammo', 'Arrows')).toEqual(expect.arrayContaining(['Arrows for Bows', 'Arrows for Crossbows']))
       expect(found('Hat', 'Hunter')).toContain('Hunter')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
     })
 
     it('zet bij een gekozen boog weapon attack en aanvalssnelheid in het bewaarde profiel (Balanche: 39 en 840 ms) en laat de rest staan', () => {
@@ -1898,9 +2089,11 @@ describe('een Bowman in de app', () => {
       for (const name of ['Lucky Seven', 'Power Strike', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('toont het ammo-slot', () => {
+    it('toont het ammo-slot pas naast een boog of kruisboog (#188)', () => {
       openHomeEquipment()
-      expect(cards()[0].textContent).toMatch(/Ammo/)
+      expect(within(cards()[0]).queryByLabelText('Zoek je Ammo')).toBeNull()
+      pick(cards()[0], 'Weapon', 'Balanche')
+      expect(within(cards()[0]).queryByLabelText('Zoek je Ammo')).not.toBeNull()
     })
   })
 
@@ -1987,13 +2180,14 @@ describe('een Magician in de app', () => {
     })
 
     it('zoekt bij Weapon in de wands en staffs en niet in Thief-claws of Warrior-wapens, en bij Hat en Shoes in Magician-armor', () => {
+      atLevel('30')
       openHomeEquipment()
       const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
       expect(found('Weapon', 'Mithril Wand')).toContain('Mithril Wand')
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
       expect(found('Hat', 'Wizardry Hat')).toContain('Wizardry Hat')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
       expect(found('Shoes', 'Wind Shoes')).toContain('Wind Shoes')
     })
 
@@ -2003,6 +2197,7 @@ describe('een Magician in de app', () => {
     })
 
     it('noemt de stat van het wapen M.ATT, zet hem bij een gekozen wand in het profiel, met 810 ms, en laat de rest staan', () => {
+      atLevel('30')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Mithril Wand')
       expect(profileFields().clawWatk).toBe('55')
@@ -2013,6 +2208,7 @@ describe('een Magician in de app', () => {
     })
 
     it('laat de M.ATT van het wapen via het potlood corrigeren', () => {
+      atLevel('30')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Mithril Wand')
       const row = rowOf(cards()[0], 'Weapon')
@@ -2665,6 +2861,10 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
       const h = homeWith({ level: '9', clawWatk: '5', luckySeven: '0', nimbleBody: '0' })
       expect(part(h, 'ATT').textContent).toContain('De eerstvolgende betere claw, Garnier, kun je vanaf lv 10 dragen.')
       expect(part(h, 'ATT').textContent).not.toContain('Je draagt')
+      // Op lv 9 biedt de zoekbalk de Garnier nog niet aan (hij vraagt lv 10, #188); op lv 10 wel.
+      openHomeEquipment()
+      expect(options(typeIn(cards()[0], 'Weapon', 'Garnier')).map((o) => o.querySelector('.equip-name')?.textContent)).not.toContain('Garnier')
+      atLevel('10')
       openHomeEquipment()
       pick(cards()[0], 'Weapon', 'Garnier')
       expect(part(homeScreen(), 'ATT').textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)

@@ -645,8 +645,8 @@ describe('Magician: equipment', () => {
   it('geeft bij Weapon de wands en staffs met M.ATT als stat en een vaste 810 ms, zonder multiplier', () => {
     const items = catalogItems('claw', 'magician')
     expect(items.map((i) => i.name)).toEqual(NPC_MAGICIAN_WEAPONS.map((w) => w.name))
-    expect(items.find((i) => i.name === 'Mithril Wand')).toEqual({ name: 'Mithril Wand', level: 30, stat: 55, attackMs: 810 })
-    expect(items.find((i) => i.name === 'Wooden Staff')).toEqual({ name: 'Wooden Staff', level: 10, stat: 24, attackMs: 810 })
+    expect(items.find((i) => i.name === 'Mithril Wand')).toEqual({ name: 'Mithril Wand', level: 30, stat: 55, attackMs: 810, type: 'WAND', speed: 'NORMAL' })
+    expect(items.find((i) => i.name === 'Wooden Staff')).toEqual({ name: 'Wooden Staff', level: 10, stat: 24, attackMs: 810, type: 'STAFF', speed: 'SLOW' })
     for (const i of items) expect(i.mult, i.name).toBeUndefined()
   })
 
@@ -656,7 +656,7 @@ describe('Magician: equipment', () => {
       expect(names, slot).toEqual([...NPC_MAGICIAN_ARMOR, ...WORN_MAGICIAN_ARMOR].filter((a) => a.slot === slot).map((a) => a.name))
       expect(names.length, slot).toBeGreaterThan(0)
     }
-    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
+    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toMatchObject({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
     // Doros Robe / Doroness Robe (#76) is zijn eigen overall; de Sauna Robe heeft geen jobregel en geldt voor elke klas.
     expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
   })

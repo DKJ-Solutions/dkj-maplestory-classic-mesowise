@@ -1197,3 +1197,19 @@ describe('armorUpgradeAdvice: niets beters meer (de basis van "Upgrade complete"
     expect(a.choices.length + a.notWearable.length).toBeGreaterThan(0)
   })
 })
+
+describe('armorUpgradeAdvice over alleen dit level (#188)', () => {
+  it('telt de besparing alleen op je huidige level, en nooit meer dan tot je volgende upgrade', () => {
+    const p = strong({ level: 15 })
+    const upgrade = armorUpgradeAdvice(drafts, p) as Advice
+    const level = armorUpgradeAdvice(drafts, p, {}, 'this-level') as Advice
+    expect(level.kind).toBe('advice')
+    expect(level.choices.length).toBeGreaterThan(0)
+    for (const c of level.choices) {
+      expect([c.from, c.to, c.truncated]).toEqual([15, 15, false])
+      const same = upgrade.choices.find((u) => u.armor === c.armor && u.with === c.with)
+      if (same && same.saving !== null && c.saving !== null) expect(c.saving).toBeLessThanOrEqual(same.saving)
+      if (c.saving !== null) expect(c.net).toBe(c.saving - c.price)
+    }
+  })
+})

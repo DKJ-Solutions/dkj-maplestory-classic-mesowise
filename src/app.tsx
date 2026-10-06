@@ -9,20 +9,18 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
-import { NPC_ARMOR } from './data/armor'
-import { NPC_CLAWS } from './data/claws'
-import { DAGGER_SHOP_SOURCE } from './data/daggers'
-import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
+import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
 import { notModelled, SKILL_HORIZON_LEVELS, skillLevels, skillPoolUsage, skillPointAdvice, type SkillChoice, type SkillLevel, type SkillPointAdvice } from './skillPoint'
 import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
-import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import { apAtLevel, DOUBLE_STAB_SOURCE, NIMBLE_BODY, SUBI } from './data/thief'
-import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
+import { ARROW_BLOW_SOURCE } from './data/bowman'
+import { apAtLevel, DOUBLE_STAB_SOURCE, NIMBLE_BODY } from './data/thief'
+import { POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
@@ -337,23 +335,33 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
   )
 }
 
+/** Het oog: de knop die een kaart of een deel ervan bekijkt. */
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+  </svg>
+)
+
 /**
  * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
  * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
  */
-function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
+function CardHead(props: { label: string; head?: Ref<HTMLButtonElement>; open?: boolean; onOpen?: () => void; report?: ComponentChildren; children: ComponentChildren }) {
   return (
     <div class="spot-head">
       {props.children}
-      <div class="card-actions">
-        <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-          </svg>
-        </button>
-        {props.report}
-      </div>
+      {/* Zonder onOpen geen oog, zonder knoppen geen rij: de Equip-kaart heeft zijn knoppen onder de kop (Dave, #188). */}
+      {(props.onOpen || props.report) && (
+        <div class="card-actions">
+          {props.onOpen && (
+            <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
+              <EyeIcon />
+            </button>
+          )}
+          {props.report}
+        </div>
+      )}
     </div>
   )
 }
@@ -1164,7 +1172,7 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
  * Eén slot: een zoekbalk (combobox met lijst) waarin je zoekt wat je draagt. Typen filtert de catalogus op
  * naam; past er niets, dan kun je de getypte tekst als eigen item gebruiken. Pijltjes, Enter en Escape werken.
  */
-function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weapon: string; helpfulStranger?: boolean; onPick: (pick: string, name?: string) => void }) {
+function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weapon: string; helpfulStranger?: boolean; level?: number; gender?: Gender | null; onPick: (pick: string, name?: string) => void }) {
   const { slot, entry } = props
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -1173,12 +1181,20 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   const [active, setActive] = useState(0)
   const open = text !== null
   const typed = (text ?? '').trim()
-  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger, props.weapon)
+  const found = searchCatalog(slot, props.job, typed, props.helpfulStranger, props.weapon, props.level, props.gender ?? null)
   const stat = statName(slot, props.job)
   // Een eigen item kan altijd, tenzij je precies een naam uit de lijst typt: "Thief Hood" vindt ook "Green Thief Hood".
-  const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase())
+  const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase() || familyName(slot, i.name).toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: i.name, meta: !i.level ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
+    // Wat je draagt weer weghalen (Dave, #188): bovenaan, zolang er iets in het slot staat.
+    ...(isEmptyEntry(props.entry) ? [] : [{ pick: NONE, label: 'Empty' }]),
+    // Een stuk met kleuren staat er één keer, onder de naam die ze delen (#188); level 0 telt als level, alleen pijlen hebben er geen.
+    // Achter de naam wat het stuk is (Dave, #188): bij een wapen de soort, het level, de ATT en de snelheid: "(CLAW, LV 15, ATT 13, FAST)".
+    ...found.slice(0, MAX_RESULTS).map((i) => ({
+      pick: i.name,
+      label: familyName(slot, i.name),
+      meta: `(${[i.type, i.level === undefined ? undefined : `LV ${i.level}`, `${stat} ${i.stat}`, i.speed].filter((p) => p !== undefined).join(', ')})`,
+    })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {
@@ -1205,6 +1221,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
     }
   }
   const picked = wornName(entry)
+  // Achter een item uit de catalogus het level dat hij vraagt (#188); een eigen item heeft er geen.
+  const shown = picked !== null && entry.pick !== OTHER ? nameWithLevel(slot, picked) : picked
   const label = slotLabel(slot)
   return (
     <div class="equip-search">
@@ -1212,8 +1230,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
       {/* Ingevuld en niet aan het zoeken: de naam als knop boven op de zoekbalk. De zoekbalk blijft eronder staan, zodat
           de tik hem meteen kan focussen: iOS opent het toetsenbord alleen bij een focus binnen de tik zelf. */}
       {!open && picked !== null && (
-        <button type="button" class="equip-picked" aria-label={`${label}: ${picked}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
-          {picked}
+        <button type="button" class="equip-picked" aria-label={`${label}: ${shown}. Tik om te zoeken.`} onClick={() => input.current?.focus()}>
+          {shown}
         </button>
       )}
       <input
@@ -1423,6 +1441,130 @@ function StatDialog(props: {
   )
 }
 
+/** Welke equip de Equip-popup toont (#188). */
+type EquipView = 'worn' | 'cheapest'
+
+/**
+ * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188), in plaats van het oog in de kop. Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
+ * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
+ * goedkoopste equip (een job die de app niet doorrekent) alleen de eerste.
+ */
+function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen: (view: EquipView, button: HTMLButtonElement) => void }) {
+  const button = (view: EquipView, label: string) => (
+    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+      <EyeIcon />
+      {label}
+    </button>
+  )
+  return (
+    <div class="card-actions equip-buttons">
+      {button('worn', 'Your character')}
+      {props.cheapest && button('cheapest', 'Cheapest')}
+    </div>
+  )
+}
+
+/**
+ * De rijen van de Equip-popup achter "Cheapest" (#188): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
+ * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
+ * alles samen kost. Een streepje is een slot dat leeg blijft.
+ */
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; hint?: ComponentChildren; total?: boolean }) {
+  const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
+  return (
+    <>
+      <p class="hint">
+        {props.hint ?? (
+          <>
+            De equip waarmee je het goedkoopst één level omhoog gaat. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
+            het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je.
+          </>
+        )}
+      </p>
+      {props.slots.map((slot) => {
+        const c = props.cheapest[slot]
+        // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
+        const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
+        const stat = statName(slot, props.job)
+        const value = c.cheapest === null ? null : wornStat(slot, entry)
+        return (
+          <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
+            <span class="slot-name">{slotLabel(slot)}</span>
+            {/* Een leeg slot met een stuk dat zich dit level niet terugverdient: dat stuk, gedempt, met wat het kost en bespaart (#188). */}
+            {c.option ? (
+              <span class="equip-fixed equip-option">{nameWithLevel(slot, c.option.name)}</span>
+            ) : (
+              <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
+            )}
+            {value !== null && (
+              <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
+                <span class="equip-value-num">
+                  <strong>{value ?? '?'}</strong>
+                </span>
+                <span class="equip-value-head" aria-hidden="true">{stat}</span>
+              </div>
+            )}
+            {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
+            {c.option && (
+              <span class="equip-price">
+                Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
+                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart dit level ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
+              </span>
+            )}
+          </div>
+        )
+      })}
+      {/* De equip van de factuur koopt niets: daar staat "Te kopen" niet (total={false}). */}
+      {props.total !== false && (
+        <p class="equip-total">
+          Te kopen: <strong>{nfInt.format(total)} meso</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+/**
+ * De knop "Equip bekijken" in het deel Cheapest van Total cost (Dave, 6 oktober 2026, #188): de equip waarmee die factuur rekent,
+ * om te lezen, in dezelfde rijen als de Equip-popup. De goedkoopste gratis instellingen (#183) kopen geen equipment, dus dat is wat
+ * je character nu draagt.
+ */
+function InvoiceEquipButton(props: { job: Job; equipment: Equipment }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const slots = shownSlots(props.job, props.equipment.claw)
+  // Zonder advies blijft elk slot wat je draagt: precies de equip van de factuur.
+  const rows = cheapestEquipment(slots, props.equipment, { kind: 'none' }, { kind: 'none' })
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  return (
+    <>
+      <div class="card-actions invoice-equip">
+        <button ref={button} type="button" class="card-action" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+          <EyeIcon />
+          Equip bekijken
+        </button>
+      </div>
+      {open && (
+        <StatDialog title="Equip van Cheapest" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+          <div class="equipment">
+            <CheapestRows
+              job={props.job}
+              slots={slots}
+              equipment={props.equipment}
+              cheapest={rows}
+              hint="Met deze equip rekent de factuur van Cheapest: wat je character nu draagt. De goedkoopste instellingen kopen geen equipment."
+              total={false}
+            />
+          </div>
+        </StatDialog>
+      )}
+    </>
+  )
+}
+
 /**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
  * WDEF aan (zie equipment.ts).
@@ -1448,10 +1590,20 @@ function EquipmentCard(props: {
   error: string | null
   /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
   report?: ComponentChildren
+  /** Het level van je character: de zoekbalk toont alleen wat je daarop kunt dragen (#188); undefined bij een ongeldig level. */
+  level?: number
+  /** Je geslacht: de zoekbalk toont geen stuk dat alleen voor het andere is (#188); null zolang je het niet koos. */
+  gender?: Gender | null
+  /** Achter de knop Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
+  cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
-  const [open, setOpen] = useState(false)
-  const head = useRef<HTMLButtonElement>(null)
+  // Welke equip de popup toont (#188): wat je draagt of de goedkoopste; null is dicht.
+  const [view, setView] = useState<EquipView | null>(null)
+  const open = view !== null
+  // De knop die de popup opende (Your character of Cheapest): daar gaat de focus terug bij sluiten.
+  const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
+  const slots = shownSlots(props.job, props.equipment.claw)
   const uid = useId()
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
@@ -1464,23 +1616,33 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title="Equip" head={head} error={props.error} onClose={() => setOpen(false)}>
+      <CardPopup title={view === 'cheapest' ? 'Cheapest' : 'Equip'} head={opener} error={props.error} onClose={() => setView(null)}>
         {body}
+        {/* Het rapport in de popup, onderaan (Dave, #188): in beide, wat je draagt en de goedkoopste. */}
+        {props.report && (
+          <div class="card-actions equip-report">
+            <CardReport title="Equip">{props.report}</CardReport>
+          </div>
+        )}
       </CardPopup>
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+      <CardHead label="Equip">
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
+      {/* De twee knoppen onderin de kaart (Dave, #188), met dezelfde ruimte als de kop. */}
+      <div class="equip-actions">
+        <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
+      </div>
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => {
+          {view === 'cheapest' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} /> : slots.map((slot) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)
@@ -1502,7 +1664,7 @@ function EquipmentCard(props: {
               <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
                 <div class="field equip-head">
                   <span class="slot-name">{label}</span>
-                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} gender={props.gender} onPick={(pick, name) => props.onPick(slot, pick, name)} />
                   {slot === 'ammo' && props.job === 'bowman' && (
                     <label class="switch">
                       <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
@@ -1559,89 +1721,6 @@ function EquipmentCard(props: {
               </div>
             )
           })}
-          {props.job === 'warrior' && (
-            <p class="source">
-              Wapens:{' '}
-              <a href={NPC_WARRIOR_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_WARRIOR_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_WARRIOR_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_WARRIOR_ARMOR[0].source.retrieved)}.
-            </p>
-          )}
-          {props.job === 'bowman' && (
-            <p class="source">
-              Wapens:{' '}
-              <a href={NPC_BOWMAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_BOWMAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_BOWMAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_BOWMAN_ARMOR[0].source.retrieved)}. Pijlen:{' '}
-              <a href={NPC_ARROWS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_ARROWS[0].source.retrieved)}.
-              {props.helpfulStranger && (
-                <>
-                  {' '}
-                  {([
-                    ['Bronze pijlen (bogen)', HELPFUL_STRANGER_ARROWS[0].source],
-                    ['Bronze pijlen (kruisbogen)', HELPFUL_STRANGER_ARROWS[1].source],
-                    ['Raymonds winkel', HELPFUL_STRANGER_SOURCES[0]],
-                    ['De rang Helpful Stranger', HELPFUL_STRANGER_SOURCES[1]],
-                  ] as const).map(([label, s]) => (
-                    <span key={s.url}>
-                      {label}:{' '}
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
-                        NiaMeowDB
-                      </a>
-                      , opgehaald op {formatDate(s.retrieved)}.{' '}
-                    </span>
-                  ))}
-                </>
-              )}
-            </p>
-          )}
-          {props.job === 'magician' && (
-            <p class="source">
-              Wands en staffs:{' '}
-              <a href={NPC_MAGICIAN_WEAPONS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_MAGICIAN_WEAPONS[0].source.retrieved)}. Armor:{' '}
-              <a href={NPC_MAGICIAN_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_MAGICIAN_ARMOR[0].source.retrieved)}.
-            </p>
-          )}
-          {props.job === 'thief' && (
-            <p class="source">
-              Claws:{' '}
-              <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Daggers:{' '}
-              <a href={DAGGER_SHOP_SOURCE.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(DAGGER_SHOP_SOURCE.retrieved)}. Armor:{' '}
-              <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>
-              , opgehaald op {formatDate(NPC_ARMOR[0].source.retrieved)}. Stars:{' '}
-              <a href={SUBI.source.url} target="_blank" rel="noopener noreferrer">
-                NiaMeowDB
-              </a>{' '}
-              (items 294 tot 300), opgehaald op {formatDate(SUBI.source.retrieved)}.
-            </p>
-          )}
         </>,
       )}
     </section>
@@ -2578,7 +2657,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
  * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
+function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; equipment: Equipment; children?: ComponentChildren }) {
   const who = totalCostWho(props.level, props.job)
   return (
     <section class="card total-cost" aria-live="polite">
@@ -2608,6 +2687,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
                   This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
                 <InvoiceTable invoice={props.cheapest} />
+                <InvoiceEquipButton job={props.job} equipment={props.equipment} />
               </div>
               <div class="total-cost-part cost-difference">
                 <h3>Difference</h3>
@@ -2783,6 +2863,21 @@ export function App() {
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
+  // De Cheapest-equip (#188) rekent alleen dit level: een stuk kopen loont als het op dit level meer bespaart dan het kost (Dave, 6 oktober 2026).
+  // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
+  const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
+  const cheapestEquip = useMemo(
+    () =>
+      computed
+        ? cheapestEquipment(
+            shownSlots(job, equipment.claw),
+            equipment,
+            clawUpgradeAdvice(drafts, profile, 'this-level'),
+            armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job), 'this-level'),
+          )
+        : null,
+    [computed, job, equipment, drafts, profile],
+  )
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
   // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
@@ -3010,6 +3105,9 @@ export function App() {
         onCommit={commitEquipment}
         onDiscard={(slot) => setPendingFor(slot, undefined)}
         error={equipError}
+        cheapest={cheapestEquip}
+        level={characterLevel}
+        gender={gender}
         report={
           computed ? (
             <>
@@ -3056,7 +3154,7 @@ export function App() {
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
-      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
+      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level} equipment={equipment}>
         <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equip={{ claw: clawAdvice, armor: armorAdvice, gender }} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 

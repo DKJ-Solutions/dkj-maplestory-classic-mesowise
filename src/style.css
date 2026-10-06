@@ -263,8 +263,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
 .equipment, .skills { padding: 0; overflow: hidden; }
 .equipment .spot-body, .skills .spot-body { padding-top: 0.875rem; } /* de kaart begint met een hint of meteen met het eerste veld */
-.equipment .spot-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.equipment .spot-body .source a { color: var(--accent); }
 /* Per slot: de slotnaam gecentreerd bovenaan, en daaronder op één rij de naam (zoekbalk),
    het getal dat telt (met ATT/DEF) en het potlood. De wrappers (equip-head, equip-search, equip-stats) doen niet mee
    aan de opmaak (display: contents), zodat hun delen rechtstreeks in dit raster staan: zo klapt de zoeklijst
@@ -640,3 +638,23 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
 .cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .cheapest-changes strong { color: var(--text); }
+/* De Equip-kaart (#188): twee knoppen met tekst, Your character en Cheapest, naast elkaar over de volle breedte, met dezelfde
+   ruimte als de kop: 1rem opzij en onder. Het rapport staat in de popup, onderaan over de volle breedte. */
+.equip-actions { padding: 0 1rem 1rem; }
+.equip-report { margin-top: 1rem; }
+.equip-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+/* De Equip-popup achter Cheapest (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
+   zoals bij wat je draagt, zonder vergrootglas. Een stuk om te kopen in de accentkleur, met zijn prijs eronder. */
+.equipment .equip-row.fixed { grid-template-columns: minmax(0, 1fr) auto; }
+.equip-row.fixed .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
+.equip-fixed { grid-row: 2; grid-column: 1; display: flex; align-items: center; min-height: 44px; min-width: 0; padding: 0.25rem 0.75rem; font-size: 0.9375rem;
+  font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
+.equip-row.fixed.empty .equip-fixed { grid-column: 1 / -1; font-weight: 400; color: var(--muted); }
+.equip-row.fixed.empty .equip-fixed.equip-option { font-weight: 600; color: var(--muted); border-style: dashed; }
+.equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
+.equip-total { margin: 0 0 0.75rem; text-align: right; }
+/* De knop Equip bekijken onder de factuur van Cheapest (#188), over de volle breedte van het deel. */
+.invoice-equip { margin-top: 0.75rem; }
+.invoice-equip .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+.equip-total strong { color: var(--accent); }

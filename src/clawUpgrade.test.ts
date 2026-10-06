@@ -353,3 +353,20 @@ describe('nextBetterWeapon (rechtstreeks, uit het profiel alleen)', () => {
     expect(nextBetterWeapon(huge)).toBeNull()
   })
 })
+
+describe('clawUpgradeAdvice over alleen dit level (#188)', () => {
+  it('telt de besparing alleen op je huidige level, en nooit meer dan tot je volgende upgrade', () => {
+    const p = strong({ level: 15 })
+    const upgrade = clawUpgradeAdvice(drafts, p) as Extract<ClawUpgradeAdvice, { kind: 'advice' }>
+    const level = clawUpgradeAdvice(drafts, p, 'this-level') as Extract<ClawUpgradeAdvice, { kind: 'advice' }>
+    expect(level.kind).toBe('advice')
+    expect(level.choices.length).toBeGreaterThan(0)
+    for (const c of level.choices) {
+      expect([c.from, c.to, c.truncated]).toEqual([15, 15, false])
+      const same = upgrade.choices.find((u) => u.claw === c.claw)!
+      if (same.saving !== null && c.saving !== null) expect(c.saving).toBeLessThanOrEqual(same.saving)
+    }
+    // Een winnaar over één level is er alleen als die op dat level al meer bespaart dan hij kost.
+    if (level.winner) expect(level.choices[0].net!).toBeGreaterThan(0)
+  })
+})

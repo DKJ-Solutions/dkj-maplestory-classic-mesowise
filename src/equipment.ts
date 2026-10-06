@@ -10,16 +10,19 @@
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import type { WornWdef } from './armorUpgrade'
 import { accessoriesFor } from './data/accessories'
-import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
+import { BEGINNER_WEAPONS, BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
-import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { isNpcDagger, NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
-import type { ArmorPiece, ArmorSlot, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
+import type { ArmorPiece, ArmorSlot, Gender, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
+import { fitsGender } from './gender'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
-import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
+import { NPC_MAGICIAN_WEAPONS } from './data/magician'
+import { NPC_WARRIOR_WEAPONS } from './data/warrior'
+import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
@@ -52,23 +55,40 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
 /** De wapens voor één hand die een Bowman kan vasthouden (de wapens onder level 10): met zo'n wapen past er een shield bij (#172). */
 const isOneHanded = (weapon: string): boolean => BEGINNER_WORN_WEAPONS.some((w) => w.name === weapon)
 
-/** Of een job het slot heeft; `weapon` is de pick in het wapenslot (claw): voor het shield-slot van de Bowman telt wat hij vasthoudt. */
-const hasSlot = (job: Job, slot: EquipSlot, weapon = ''): boolean => {
+/**
+ * Of de Thief een claw vasthoudt (#188): een wapen in zijn wapenslot dat geen dagger is en geen wapen onder level 10, of een eigen
+ * wapen dat hij een claw noemt (`kind`, #176). Een leeg slot of een onbekend wapen is geen claw.
+ */
+const holdsClaw = (weapon: string, kind?: WeaponKind): boolean => {
+  if (weapon === OTHER) return kind === 'claw'
+  return weapon !== '' && weapon !== UNKNOWN && weapon !== NONE && !isDaggerPick(weapon) && !isOneHanded(weapon)
+}
+
+/**
+ * Of een job het slot heeft; `weapon` is de pick in het wapenslot (claw): voor het shield-slot van de Bowman en de Thief telt wat
+ * hij vasthoudt. `kind` zegt bij een eigen wapen van een Thief of het een dagger of een claw is (#176); zonder `kind` is het onbekend.
+ */
+const hasSlot = (job: Job, slot: EquipSlot, weapon = '', kind?: WeaponKind): boolean => {
   // Ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets.
   if (slot === 'ammo') return job === 'thief' || job === 'bowman'
   // Een shield (issue #117) alleen naast een wapen voor één hand: een boog of kruisboog vraagt beide handen. Een claw niet:
   // de Thief draagt in het shield-slot zijn wristguards (issue #133; Seclusion, Nimble en Jurgen Wristguard op NiaMeowDB).
   // De Bowman heeft het slot dus alleen met een wapen onder level 10 (Sword, Hand Axe, Wooden Club, Razor, Fruit Knife; #172).
   // Met een boog, een leeg wapenslot of een eigen wapen heeft hij het niet.
-  if (slot === 'shield') return job !== 'bowman' || isOneHanded(weapon)
+  // Ook een claw vraagt beide handen (Dave, 6 oktober 2026, #188; claws hebben itemnummers 147xxxx, de reeks van de wapens voor twee
+  // handen, net als bogen en kruisbogen): de Thief draagt zijn wristguards alleen naast een dagger of een wapen onder level 10.
+  if (slot === 'shield') return job === 'bowman' ? isOneHanded(weapon) : job !== 'thief' || !holdsClaw(weapon, kind)
   return true
 }
 
 /** Of een job het slot heeft met het wapen dat in `eq` staat (#172): het shield van een Bowman hangt af van zijn wapen. */
-const hasSlotFor = (eq: Equipment, job: Job, slot: EquipSlot): boolean => hasSlot(job, slot, eq.claw.pick)
+const hasSlotFor = (eq: Equipment, job: Job, slot: EquipSlot): boolean => hasSlot(job, slot, eq.claw.pick, effectiveKind(eq.claw))
+
+/** De soort van een eigen wapen zoals de app ermee rekent: zonder keuze een claw (#176). Alleen bij een eigen wapen. */
+const effectiveKind = (weapon: EquipEntry): WeaponKind | undefined => (weapon.pick === OTHER ? (weapon.weaponKind ?? 'claw') : undefined)
 
 /** De slots die een job heeft, in de volgorde van het scherm; `weapon` is de pick in het wapenslot (voor het shield van de Bowman, #172). */
-export const slotsFor = (job: Job, weapon = ''): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot, weapon))
+export const slotsFor = (job: Job, weapon = '', kind?: WeaponKind): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot, weapon, kind))
 
 /** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
 export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
@@ -146,6 +166,19 @@ export interface CatalogItem {
   mult?: number
   /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
   mdef?: number
+  /** Alleen een wapen: de soort zoals de zoekbalk hem toont, "CLAW", "DAGGER", "BOW", "1H SWORD" (Dave, 6 oktober 2026, #188). */
+  type?: string
+  /** Alleen een wapen: de snelheid uit het spel zonder getal, "FAST", "FASTER", "NORMAL" (#188). */
+  speed?: string
+  /** Alleen armor voor één geslacht (#55, #188): de zoekbalk toont hem dan alleen bij dat geslacht. */
+  gender?: Gender
+  /**
+   * Alleen armor: slot, level, WDEF, MDEF en de naam zonder kleur (colourless). Kleuren van hetzelfde stuk hebben dezelfde sleutel,
+   * ook als hun stat-eis verschilt (Blue Cloth Pants vraagt DEX, Black Cloth Pants LUK); de zoekbalk toont ze als één, en je kiest de
+   * eerste, met zijn eis (Dave, 6 oktober 2026, #188). Een ander stuk met dezelfde stats (Leather Sandals naast Rubber Boots) of een
+   * ander materiaal (Bronze en Steel Grieves) blijft apart.
+   */
+  variant?: string
 }
 
 /** Hoeveel zoekresultaten het scherm toont. */
@@ -169,6 +202,20 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
 }
 
 /**
+ * De soort en de snelheid van elk wapen zoals het spel ze noemt, op naam (#188): de bronlijsten dragen ze (`kind`, `speed`); de claws
+ * en de daggers van de Thief staan in hun eigen lijst. Zo blijven ze bij een wapen ook waar een winkellijst alleen de rekenvelden
+ * overhoudt (een wand rekent met de vaste cast van een spreuk, maar zijn eigen snelheid staat op de itempagina).
+ */
+const speedWord = (label: string): string => label.split(' ')[0].toUpperCase()
+const WEAPON_INFO: ReadonlyMap<string, { type: string; speed: string }> = new Map([
+  ...[...NPC_CLAWS, ...WORN_CLAWS].map((c) => [c.name, { type: 'CLAW', speed: speedWord(c.speed.label) }] as const),
+  ...NPC_DAGGERS.map((d) => [d.name, { type: 'DAGGER', speed: speedWord(d.speed.label) }] as const),
+  ...[...BEGINNER_WEAPONS, ...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS, ...NPC_BOWMAN_WEAPONS, ...NPC_MAGICIAN_WEAPONS].map(
+    (w) => [w.name, { type: w.kind.replace('-', ' ').toUpperCase(), speed: speedWord(w.speed.label) }] as const,
+  ),
+])
+
+/**
  * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
  * dan wint de NPC-regel. De bronze pijlen van een Bowman staan er alleen in met `helpfulStranger` (#64): zonder die
  * rang kan hij ze niet kopen, dus de lijst biedt ze dan niet aan.
@@ -186,12 +233,22 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false,
   const shop = SHOP[job]
   if (!shop) return []
   const items: CatalogItem[] = isArmorSlot(slot)
-    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef, mdef: a.mdef ?? 0 }))
+    ? [...shop.armor, ...shop.wornArmor]
+        .filter((a) => a.slot === slot)
+        .map((a) => ({
+          name: a.name,
+          level: a.level,
+          stat: a.wdef,
+          mdef: a.mdef ?? 0,
+          ...(a.gender ? { gender: a.gender } : {}),
+          variant: [a.slot, a.level, a.wdef, a.mdef ?? 0, colourless(a.name)].join('|'),
+        }))
     : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
         name: c.name,
         level: c.level,
         stat: c.watk,
         attackMs: c.speed.attackMs,
+        ...(WEAPON_INFO.get(c.name) ?? { speed: speedWord(c.speed.label) }),
         ...(c.mult !== undefined ? { mult: c.mult } : {}),
       }))
   const unique = items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)
@@ -206,6 +263,42 @@ const catalogItem = (slot: EquipSlot, name: string, job: Job, weapon = '') => ca
 // Een catalogusitem in een slot bestaat alleen voor de job waarvoor hij geldt (loadEquipment en equipmentForJob
 // zorgen daarvoor), en een naam die bij twee jobs staat is hetzelfde item (een test bewaakt dat): bij het rekenen zoeken
 // we dus in de lijsten van alle jobs.
+/** Het level dat een item uit de catalogus vraagt om het te dragen (#188); undefined bij een eigen item of een item zonder level (pijlen). */
+export const itemLevel = (slot: EquipSlot, name: string): number | undefined => anyItem(slot, name)?.level
+
+/**
+ * De naam van een stuk zonder zijn kleur (#188): heeft het kleuren met precies dezelfde stats en dezelfde naam zonder kleurwoorden
+ * (dezelfde `variant`), dan die naam ("Red Rubber Boots", "Blue Rubber Boots" → "Rubber Boots"); anders de naam zelf.
+ */
+export function familyName(slot: EquipSlot, name: string): string {
+  const item = anyItem(slot, name)
+  if (item?.variant === undefined) return name
+  const all = (Object.keys(SHOP) as Job[]).flatMap((j) => catalogItems(slot, j, true))
+  const names = new Set(all.filter((i) => i.variant === item.variant).map((i) => i.name))
+  if (names.size < 2) return name
+  // Is de naam zonder kleur die van een ander stuk (Metal Gear, DEF 18, naast Yellow en Blue Metal Gear, DEF 19), dan blijft de kleur staan (#188).
+  const base = colourless(name)
+  return all.some((i) => i.name === base && i.variant !== item.variant) ? name : base
+}
+
+/** De kleurwoorden waarmee een itemnaam begint ("Dark Brown", "Silver / Black"); een materiaal (Bronze, Steel) is geen kleur. */
+const COLOURS = new Set(['red', 'blue', 'yellow', 'green', 'black', 'white', 'brown', 'dark', 'pink', 'purple', 'grey', 'gray', 'gold', 'sky', 'blood', 'silver', 'orange', 'light', 'navy', '/'])
+
+/** Een itemnaam zonder de kleurwoorden vooraan: "Dark Brown Stealer Pants" → "Stealer Pants". Blijft er niets over, dan de naam zelf. */
+const colourless = (name: string): string => {
+  const words = name.split(' ')
+  let i = 0
+  while (i < words.length - 1 && COLOURS.has(words[i].toLowerCase())) i++
+  return words.slice(i).join(' ')
+}
+
+/** Een itemnaam zonder kleur en met het level dat hij vraagt erachter, zoals het scherm hem toont: "Steel Titans (Lv. 15)" (Dave, 6 oktober 2026, #188). */
+export const nameWithLevel = (slot: EquipSlot, name: string): string => {
+  const level = itemLevel(slot, name)
+  const shown = familyName(slot, name)
+  return level === undefined ? shown : `${shown} (Lv. ${level})`
+}
+
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
@@ -228,9 +321,29 @@ export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Re
 }
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = ''): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = '', maxLevel?: number, gender: Gender | null = null): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  return catalogItems(slot, job, helpfulStranger, weapon).filter((i) => i.name.toLowerCase().includes(q))
+  const items = catalogItems(slot, job, helpfulStranger, weapon)
+  // Kleuren van hetzelfde stuk (dezelfde `variant`) staan als één in de lijst, onder hun gedeelde naam (#188); de eerste
+  // (een winkelitem gaat voor) is wat je kiest. Je vindt het stuk ook met de naam van een andere kleur.
+  const out: CatalogItem[] = []
+  const seen = new Set<string>()
+  for (const i of items) {
+    // Met `maxLevel` (je character-level, #188) alleen wat je op dat level kunt dragen; een item zonder level (pijlen) altijd.
+    if (maxLevel !== undefined && (i.level ?? 0) > maxLevel) continue
+    // Met een gekozen geslacht (#188) geen stuk dat alleen voor het andere is.
+    if (gender !== null && !fitsGender(i, gender)) continue
+    if (i.variant !== undefined) {
+      if (seen.has(i.variant)) continue
+      const colours = items.filter((j) => j.variant === i.variant)
+      if (!colours.some((j) => j.name.toLowerCase().includes(q)) && !familyName(slot, i.name).toLowerCase().includes(q)) continue
+      seen.add(i.variant)
+      out.push(i)
+    } else if (i.name.toLowerCase().includes(q)) out.push(i)
+  }
+  // Hoogste level bovenaan (Dave, 6 oktober 2026, #188): het beste wat je kunt dragen staat eerst. Stabiel, dus bij gelijk level blijft de
+  // volgorde van de catalogus (een winkelitem eerst); een item zonder level (pijlen) onderaan.
+  return [...out].sort((a, b) => (b.level ?? -1) - (a.level ?? -1))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */
@@ -272,6 +385,7 @@ export function wornWdef(eq: Equipment, job: Job): WornWdef {
     if (w !== undefined) out[slot] = w
   }
   if (isFilled(eq.overall)) out.overallWorn = true
+  if (!hasSlotFor(eq, job, 'shield')) out.noShield = true
   return out
 }
 
@@ -322,6 +436,23 @@ const isDaggerPick = (pick: string): boolean => isBeginnerDagger(pick) || isNpcD
 const isDaggerEntry = (e: EquipEntry): boolean => (e.pick === OTHER ? e.weaponKind === 'dagger' : isDaggerPick(e.pick))
 
 /** Het eigen wapen met de gekozen soort (#176); de rest van het slot blijft. */
+/**
+ * Of je een wapen voor afstand vasthoudt (Dave, 6 oktober 2026, #188): een claw (Thief) of een boog of kruisboog (Bowman). Een leeg
+ * wapenslot, een dagger, een wapen onder level 10 en een eigen wapen dat een Thief een dagger noemt (#176) zijn het niet; een eigen
+ * wapen van een Bowman wel (zoals bij het shield, #172). Alleen dan heeft het scherm een Ammo-slot.
+ */
+export function hasRangedWeapon(job: Job, weapon: EquipEntry): boolean {
+  if (job === 'thief') return holdsClaw(weapon.pick, effectiveKind(weapon))
+  if (job !== 'bowman' || isEmptyEntry(weapon)) return false
+  return weapon.pick === OTHER || !isOneHanded(weapon.pick)
+}
+
+/** De slots die het scherm toont: die van de job (slotsFor), met Ammo alleen naast een wapen voor afstand (#188). */
+export const shownSlots = (job: Job, weapon: EquipEntry): readonly EquipSlot[] =>
+  slotsFor(job, weapon.pick, effectiveKind(weapon))
+    .map(({ slot }) => slot)
+    .filter((slot) => slot !== 'ammo' || hasRangedWeapon(job, weapon))
+
 export const withWeaponKind = (e: EquipEntry, kind: WeaponKind): EquipEntry => ({ ...e, weaponKind: kind })
 
 /**
@@ -454,6 +585,9 @@ export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: Equi
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.
  */
 export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string, name = ''): EquipEntry {
+  // "Empty" (Dave, 6 oktober 2026, #188): een armorslot is dan bekend leeg (0 DEF, de DEF van het stuk gaat eraf); een wapen of
+  // ammo is weer nog niet ingevuld, zodat het profiel zijn weapon attack en stars houdt (een leeg ammo-slot rekent met Subi, #117).
+  if (pick === NONE) return isArmorSlot(slot) ? { ...emptyEntry(), pick: NONE } : emptyEntry()
   if (pick !== OTHER) return { pick, name: '', stat: '' }
   const known = wornStat(slot, current)
   return { pick, name: name.trim().slice(0, MAX_NAME_LENGTH), stat: known === undefined ? '' : String(known) }

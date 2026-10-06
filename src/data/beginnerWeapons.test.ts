@@ -40,12 +40,13 @@ describe('de wapens onder level 10', () => {
     for (const w of BEGINNER_WEAPONS) expect(names('magician')).not.toContain(w.name)
   })
 
-  it('zet de wapenlijst op level, laagste eerst, zodat de lege zoekbalk ze laat zien', () => {
+  it('zet de catalogus op level, laagste eerst; de zoekbalk toont het hoogste level bovenaan, en een beginner ziet zo de wapens onder level 10 (#188)', () => {
     for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
       const levels = catalogItems('claw', job).map((i) => i.level ?? 0)
       expect(levels, job).toEqual([...levels].sort((a, b) => a - b))
     }
-    expect(searchCatalog('claw', 'thief', '').slice(0, 5).map((i) => i.level)).toEqual([0, 0, 0, 5, 8])
+    // Op lv 9 alleen wat je kunt dragen, hoogste eerst: de vijf wapens onder level 10.
+    expect(searchCatalog('claw', 'thief', '', false, '', 9).map((i) => i.level)).toEqual([8, 5, 0, 0, 0])
   })
 
   it('zijn bij elke job hetzelfde item', () => {

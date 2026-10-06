@@ -5,6 +5,7 @@ import {
   changeEquipment,
   displacedSlots,
   choosePick,
+  NONE,
   commitStat,
   databaseStat,
   defaultEquipment,
@@ -17,6 +18,12 @@ import {
   syncArrow,
   slotLabel,
   slotsFor,
+  hasRangedWeapon,
+  nameWithLevel,
+  familyName,
+  OTHER,
+  UNKNOWN,
+  shownSlots,
   statName,
   statOverride,
   wornName,
@@ -33,6 +40,7 @@ import { NPC_ARMOR } from './data/armor'
 import { BEGINNER_WEAPONS } from './data/beginnerWeapons'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
+import { NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR, WORN_ARMOR } from './data/wornItems'
@@ -94,20 +102,82 @@ describe('searchCatalog', () => {
 
   it('zoekt op een deel van de naam, zonder hoofdletters en met spaties eromheen', () => {
     const pao = names('top', 'pao')
-    expect(pao[0]).toBe('Red Pao') // de NPC-regel staat voor de items zonder prijs
-    expect(pao).toEqual(expect.arrayContaining(['Blue Pao', 'Black Pao', 'Red Qi Pao', 'Pink Qi Pao', 'Blue Qi Pao']))
+    expect(pao[0]).toBe('Red Pao') // de NPC-regel staat voor de items zonder prijs; de kleuren met dezelfde stats staan als één rij (#188)
+    expect(pao).not.toContain('Blue Pao')
+    expect(names('top', 'blue pao')).toEqual(['Red Pao']) // een andere kleur vindt dezelfde rij
     for (const n of pao) expect(n.toLowerCase(), n).toContain('pao')
     expect(names('top', '  RED  ')).toEqual(names('top', 'red'))
-    expect(names('top', 'red').slice(0, 2)).toEqual(['Red Cloth Vest', 'Red Pao'])
-    expect(names('claw', 'gu')).toEqual(['Triangular Zamadar', 'Steel Guards', 'Adamantium Guards', 'Mithril Guards']) // ook de dagger Trian-gu-lar Zamadar heeft 'gu' in de naam
+    // Hoogste level bovenaan (#188); Dark Silver Stealer staat erin omdat zijn kleur Red Gold Stealer 'red' in de naam heeft.
+    const red = names('top', 'red')
+    expect(red.slice(0, 3)).toEqual(['Dark Silver Stealer', 'Red Steal', 'Red Pao'])
+    expect(red).toContain('Red Cloth Vest')
+    expect(names('claw', 'gu')).toEqual(['Steel Guards', 'Adamantium Guards', 'Mithril Guards', 'Triangular Zamadar']) // ook de dagger Trian-gu-lar Zamadar heeft 'gu' in de naam
   })
 
   it('zoekt alleen in het eigen slot, en een lege tekst geeft het hele slot', () => {
     expect(searchCatalog('hat', 'thief', 'pao')).toEqual([])
-    expect(searchCatalog('shoes', 'thief', '')).toEqual(catalogItems('shoes', 'thief'))
+    // Een lege tekst geeft het hele slot, met kleuren van hetzelfde stuk als één rij (#188): elke `variant` één keer, elk stuk zonder variant er altijd in.
+    const shoes = catalogItems('shoes', 'thief')
+    expect(new Set(searchCatalog('shoes', 'thief', '').map((i) => i.variant))).toEqual(new Set(shoes.map((i) => i.variant)))
+    expect(searchCatalog('shoes', 'thief', '').length).toBe(new Set(shoes.map((i) => i.variant)).size)
+    // Het hoogste level bovenaan (#188).
+    const levels = searchCatalog('shoes', 'thief', '').map((i) => i.level ?? -1)
+    expect(levels).toEqual([...levels].sort((a, b) => b - a))
     expect(catalogItems('shoes', 'thief').length).toBeGreaterThan(3)
-    expect(names('bottom', 'qi pao skirt')).toEqual(['Red Qi Pao Skirt', 'Blue Qi Pao Skirt'])
+    expect(names('bottom', 'qi pao skirt')).toEqual(['Red Qi Pao Skirt']) // de kleuren met dezelfde stats staan als één rij (#188)
     expect(searchCatalog('top', 'thief', 'bestaat niet')).toEqual([])
+  })
+
+  it('laat met een gekozen geslacht geen stuk van het andere zien (#188): Red Miniskirt is voor Female', () => {
+    const minis = (gender: 'male' | 'female' | null) => searchCatalog('bottom', 'thief', 'Miniskirt', false, '', undefined, gender).map((i) => i.name)
+    expect(minis('male')).not.toContain('Red Miniskirt')
+    expect(minis('female')).toContain('Red Miniskirt')
+    // Zonder gekozen geslacht staat het stuk in de lijst, onder zijn eigen naam: een ander stuk met dezelfde stats (Blue Jean Shorts) is geen kleur ervan.
+    expect(minis(null)).toEqual(['Red Miniskirt'])
+    expect(minis('female')[0]).toBe('Red Miniskirt')
+  })
+
+  it('toont de drie Rubber Boots als één rij en vindt die ook met de naam van een kleur (#188)', () => {
+    const variantOf = (n: string) => catalogItems('shoes', 'thief').find((i) => i.name === n)!.variant
+    for (const colour of ['Red', 'Yellow', 'Blue']) expect(variantOf(`${colour} Rubber Boots`)).toBe(variantOf('Red Rubber Boots'))
+    const rows = (q: string) => searchCatalog('shoes', 'thief', q).filter((i) => i.variant === variantOf('Red Rubber Boots'))
+    expect(rows('Rubber')).toHaveLength(1)
+    expect(rows('Yellow')).toHaveLength(1)
+    expect(searchCatalog('shoes', 'thief', 'Rubber')).toHaveLength(1)
+  })
+
+  it('geeft de Rubber Boots hun gedeelde naam, zonder kleur (#188)', () => {
+    expect(familyName('shoes', 'Blue Rubber Boots')).toBe('Rubber Boots')
+    expect(familyName('shoes', 'Red Rubber Boots')).toBe('Rubber Boots')
+  })
+
+  it('toont Blue, Black en Red Cloth Pants als één rij Cloth Pants, ook al vraagt de blauwe DEX en de rest LUK (Dave, #188)', () => {
+    const all = catalogItems('bottom', 'thief')
+    const variantOf = (n: string) => all.find((i) => i.name === n)!.variant
+    expect(variantOf('Blue Cloth Pants')).toBe(variantOf('Black Cloth Pants'))
+    expect(variantOf('Red Cloth Pants')).toBe(variantOf('Blue Cloth Pants'))
+    const rows = searchCatalog('bottom', 'thief', 'Cloth Pants').filter((i) => i.variant === variantOf('Red Cloth Pants'))
+    expect(rows.map((i) => i.name)).toEqual(['Red Cloth Pants']) // de winkelregel gaat voor
+    expect(familyName('bottom', 'Blue Cloth Pants')).toBe('Cloth Pants')
+  })
+
+
+  it('toont met een maxLevel alleen wat je op dat level kunt dragen, en een item zonder level altijd (#188)', () => {
+    const claws = (max?: number) => searchCatalog('claw', 'thief', '', false, '', max).map((i) => i.name)
+    expect(claws(10)).toContain('Garnier')
+    expect(claws(10)).not.toContain('Steel Igor')
+    expect(claws(19)).not.toContain('Steel Igor')
+    expect(claws(20)).toContain('Steel Igor') // het level zelf telt mee
+    for (const i of searchCatalog('claw', 'thief', '', false, '', 20)) expect(i.level ?? 0, i.name).toBeLessThanOrEqual(20)
+    // Pijlen vragen geen level en blijven dus bij elk level in de lijst.
+    const arrows = searchCatalog('ammo', 'bowman', '', false, '', 1)
+    expect(arrows.length).toBeGreaterThan(0)
+    expect(arrows.every((i) => i.level === undefined)).toBe(true)
+  })
+
+  it('filtert niets zonder maxLevel (een ongeldig level geeft undefined)', () => {
+    expect(searchCatalog('claw', 'thief', '', false, '', undefined)).toEqual(searchCatalog('claw', 'thief', ''))
+    expect(searchCatalog('claw', 'thief', '').map((i) => i.name)).toContain('Adamantium Guards')
   })
 
   it('geeft elke naam in een slot één keer, en de NPC-stat wint bij dezelfde naam', () => {
@@ -244,7 +314,7 @@ describe('wornWdef en wornName', () => {
   }
 
   it('geeft alleen de armorslots waarvan de WDEF bekend is, en nooit de claw', () => {
-    expect(wornWdef(eq, 'thief')).toEqual({ top: 32, shoes: 7 })
+    expect(wornWdef(eq, 'thief')).toEqual({ top: 32, shoes: 7, noShield: true })
   })
 
   it('noemt wat je draagt, en niets bij een slot dat nog niet is ingevuld', () => {
@@ -682,7 +752,7 @@ describe('equipment per job', () => {
   it('geeft na een jobwissel geen stat meer voor een item dat de job niet heeft', () => {
     const after = equipmentForJob(thiefGear, 'bowman')
     for (const s of slots) expect(wornStat(s, after[s]), s).toBeUndefined()
-    expect(wornWdef(after, 'bowman')).toEqual({})
+    expect(wornWdef(after, 'bowman')).toEqual({ noShield: true })
   })
 })
 
@@ -699,8 +769,8 @@ describe('equipment voor een Warrior', () => {
       expect(WORN_WARRIOR_WEAPONS).toEqual([])
       expect(items.map((i) => i.name)).toEqual(['Sword', 'Hand Axe', 'Wooden Club', ...NPC_WARRIOR_WEAPONS.map((w) => w.name)])
       expect(items.find((i) => i.name === 'Long Sword')).toMatchObject({ level: 10, stat: 27, mult: expect.any(Number), attackMs: expect.any(Number) })
-      expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8 })
-      expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5 })
+      expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8, type: '1H SWORD', speed: 'FAST' })
+      expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5, type: '2H SWORD', speed: 'FAST' })
     })
 
     it('geeft bij Hat en Shoes de Warrior-armor, met WDEF als stat', () => {
@@ -709,8 +779,8 @@ describe('equipment voor een Warrior', () => {
       const names = (slot: 'hat' | 'shoes') => [...NPC_WARRIOR_ARMOR, ...WORN_WARRIOR_ARMOR].filter((a) => a.slot === slot).map((a) => a.name)
       expect(hats.map((i) => i.name)).toEqual(names('hat'))
       expect(shoes.map((i) => i.name)).toEqual(names('shoes'))
-      expect(hats.find((i) => i.name === 'Bronze Full Helm')).toEqual({ name: 'Bronze Full Helm', level: 15, stat: 26, mdef: 0 })
-      expect(shoes.find((i) => i.name === 'Brown High Boots')).toEqual({ name: 'Brown High Boots', level: 20, stat: 21, mdef: 0 })
+      expect(hats.find((i) => i.name === 'Bronze Full Helm')).toMatchObject({ name: 'Bronze Full Helm', level: 15, stat: 26, mdef: 0 })
+      expect(shoes.find((i) => i.name === 'Brown High Boots')).toMatchObject({ name: 'Brown High Boots', level: 20, stat: 21, mdef: 0 })
     })
 
     it('geeft een Warrior tops en broeken: eerst de winkelstukken, dan de items zonder prijs, elke naam één keer; niet op geslacht gefilterd', () => {
@@ -1210,11 +1280,11 @@ describe('equipment voor een Bowman', () => {
     expect(items).toHaveLength(BEGINNER_WEAPONS.length + NPC_BOWMAN_WEAPONS.length)
     expect(items.slice(0, 5).map((i) => i.name)).toEqual(BEGINNER_WEAPONS.map((w) => w.name))
     expect(items.map((i) => i.level)).toEqual([...items.map((i) => i.level!)].sort((a, b) => a - b))
-    expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810 })
-    expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750 })
-    expect(items.find((i) => i.name === 'Eagle Crow')).toEqual({ name: 'Eagle Crow', level: 30, stat: 52, attackMs: 870 })
+    expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810, type: 'BOW', speed: 'NORMAL' })
+    expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750, type: 'BOW', speed: 'FAST' })
+    expect(items.find((i) => i.name === 'Eagle Crow')).toEqual({ name: 'Eagle Crow', level: 30, stat: 52, attackMs: 870, type: 'CROSSBOW', speed: 'SLOW' })
     // De Balanche heeft 840 ms, niet de 810 van de gedeelde tabel voor Normal (6) (issue #44).
-    expect(items.find((i) => i.name === 'Balanche')).toEqual({ name: 'Balanche', level: 20, stat: 39, attackMs: 840 })
+    expect(items.find((i) => i.name === 'Balanche')).toEqual({ name: 'Balanche', level: 20, stat: 39, attackMs: 840, type: 'CROSSBOW', speed: 'NORMAL' })
   })
 
   it('geeft bij Hat, Top, Bottom en Shoes de Bowman-armor en de items zonder jobregel, met WDEF als stat', () => {
@@ -1222,8 +1292,8 @@ describe('equipment voor een Bowman', () => {
       const names = catalogItems(slot, 'bowman').map((i) => i.name)
       for (const a of NPC_BOWMAN_ARMOR.filter((x) => x.slot === slot)) expect(names, a.name).toContain(a.name)
     }
-    expect(catalogItems('hat', 'bowman').find((i) => i.name === 'Hunter')).toEqual({ name: 'Hunter', level: 25, stat: 24, mdef: 0 })
-    expect(catalogItems('top', 'bowman').find((i) => i.name === "Hunter's Armor / Huntress Armor")).toEqual({ name: "Hunter's Armor / Huntress Armor", level: 30, stat: 40, mdef: 0 })
+    expect(catalogItems('hat', 'bowman').find((i) => i.name === 'Hunter')).toMatchObject({ name: 'Hunter', level: 25, stat: 24, mdef: 0 })
+    expect(catalogItems('top', 'bowman').find((i) => i.name === "Hunter's Armor / Huntress Armor")).toMatchObject({ name: "Hunter's Armor / Huntress Armor", level: 30, stat: 40, mdef: 0 })
   })
 
   it('heeft geen mannen-only items van de Warrior (#55)', () => {
@@ -1250,7 +1320,7 @@ describe('equipment voor een Bowman', () => {
     expect(wornStat('claw', shop('Balanche'))).toBe(39)
     expect(wornStat('hat', shop('Hunter'))).toBe(24)
     expect(wornStat('shoes', shop('Hard Leather Boots'))).toBe(10)
-    expect(wornWdef(bowmanGear, 'bowman')).toEqual({ hat: 24, shoes: 10 })
+    expect(wornWdef(bowmanGear, 'bowman')).toEqual({ hat: 24, shoes: 10, noShield: true })
     expect(wornStat('ammo', shop('Arrows for Crossbows'))).toBe(0)
   })
 
@@ -1309,7 +1379,7 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
   it('telt het shield van een Bowman niet mee zodra hij een boog vasthoudt (#172)', () => {
     const eq: Equipment = { ...defaultEquipment(), claw: shop('Sword'), shield: shop('Pan Lid') }
     expect(wornWdef(eq, 'bowman')).toEqual({ shield: 44 })
-    expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'bowman')).toEqual({})
+    expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'bowman')).toEqual({ noShield: true })
     expect(wornWdef({ ...eq, claw: shop('Balanche') }, 'warrior')).toEqual({ shield: 44 })
     expect(loadEquipment(stored({ claw: { pick: 'Sword' }, shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(shop('Pan Lid'))
     expect(loadEquipment(stored({ claw: { pick: 'Balanche' }, shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(unknown)
@@ -1346,10 +1416,10 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
       const eq = (claw: EquipEntry): Equipment => ({ ...defaultEquipment(), claw, shield: shop('Stolen Fence') })
       for (const w of hand) expect(wornWdef(eq(shop(w)), 'bowman'), w).toEqual({ shield: 40 })
       for (const claw of [shop('Balanche'), unknown, other('20', 'Eigen boog')]) {
-        expect(wornWdef(eq(claw), 'bowman'), claw.pick).toEqual({})
+        expect(wornWdef(eq(claw), 'bowman'), claw.pick).toEqual({ noShield: true })
       }
       // Een eigen shield met getal volgt dezelfde regel.
-      expect(wornWdef({ ...eq(shop('Balanche')), shield: other('12', 'Schild') }, 'bowman')).toEqual({})
+      expect(wornWdef({ ...eq(shop('Balanche')), shield: other('12', 'Schild') }, 'bowman')).toEqual({ noShield: true })
       expect(wornWdef({ ...eq(shop('Sword')), shield: other('12', 'Schild') }, 'bowman')).toEqual({ shield: 12 })
     })
 
@@ -1416,7 +1486,8 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     })
 
     it('laat de slots en catalogi van andere jobs ongemoeid, met elk wapen', () => {
-      for (const job of ['thief', 'warrior', 'magician'] as const) {
+      // De Thief niet: die verliest zijn shield-slot naast een claw (#188, eigen test).
+      for (const job of ['warrior', 'magician'] as const) {
         const base = slotsFor(job).map((s) => s.slot)
         for (const w of ['Sword', 'Balanche', 'other', '']) {
           expect(slotsFor(job, w).map((s) => s.slot), `${job} ${w}`).toEqual(base)
@@ -1426,8 +1497,8 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
       }
       // De Bowman zonder wapen-argument: alle andere slots zijn er, ook met een boog.
       expect(slotsFor('bowman', 'Balanche').map((s) => s.slot)).toEqual(slotsFor('bowman', 'Sword').map((s) => s.slot).filter((s) => s !== 'shield'))
-      // wornWdef/wornMdef met job voor Thief en Warrior tellen hun shield ook met een boog.
-      for (const job of ['thief', 'warrior'] as const) expect(wornWdef({ ...defaultEquipment(), claw: shop('Balanche'), shield: shop('Pan Lid') }, job)).toEqual({ shield: 44 })
+      // wornWdef/wornMdef met job voor de Warrior tellen zijn shield ook met een boog (een Thief niet meer: Balanche telt daar als claw, #188).
+      for (const job of ['warrior'] as const) expect(wornWdef({ ...defaultEquipment(), claw: shop('Balanche'), shield: shop('Pan Lid') }, job)).toEqual({ shield: 44 })
     })
   })
 
@@ -1459,8 +1530,8 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
       expect(names('cape', job), job).toEqual(['Old Raggedy Cape'])
       expect(names('earrings', job), job).toHaveLength(10)
     }
-    expect(catalogItems('shield', 'magician').find((i) => i.name === 'Mystic Shield')).toEqual({ name: 'Mystic Shield', level: 22, stat: 20, mdef: 42 })
-    expect(catalogItems('earrings', 'thief')[0]).toEqual({ name: 'Single Earring', level: 15, stat: 0, mdef: 19 })
+    expect(catalogItems('shield', 'magician').find((i) => i.name === 'Mystic Shield')).toMatchObject({ name: 'Mystic Shield', level: 22, stat: 20, mdef: 42 })
+    expect(catalogItems('earrings', 'thief')[0]).toMatchObject({ name: 'Single Earring', level: 15, stat: 0, mdef: 19 })
     // De Thief heeft sinds #133 een shield-slot: de twee zonder jobregel en zijn wristguards.
     expect(names('shield', 'thief')).toEqual(['Stolen Fence', 'Pan Lid', 'Seclusion Wristguard', 'Nimble Wristguard', 'Jurgen Wristguard'])
     // Een slot dat de job niet heeft, heeft geen items, ook niet die zonder jobregel: de Bowman heeft het shield-slot alleen met een wapen voor één hand (#172).
@@ -1473,7 +1544,7 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     expect(wornWdef(eq, 'thief')).toEqual({ shield: 44 })
     const bowman = equipmentForJob(eq, 'bowman')
     expect(bowman.shield).toEqual(unknown)
-    expect(wornWdef(bowman, 'bowman')).toEqual({})
+    expect(wornWdef(bowman, 'bowman')).toEqual({ noShield: true })
     expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'bowman').shield).toEqual(unknown)
     expect(loadEquipment(stored({ shield: { pick: 'Pan Lid' } }), 'warrior').shield).toEqual(shop('Pan Lid'))
   })
@@ -1588,5 +1659,85 @@ describe('weaponKind van een eigen wapen: bewaren en laden (#176)', () => {
     const next = choosePick('claw', ownDagger, 'other', 'Ander wapen')
     expect(next.weaponKind).toBeUndefined()
     expect(applyEquipChange({ ...DEFAULT_PROFILE, dagger: '1' }, 'claw', ownDagger, next).dagger).toBe('0')
+  })
+})
+
+describe('hasRangedWeapon en shownSlots (#188)', () => {
+  const entry = (pick: string, extra: Partial<EquipEntry> = {}): EquipEntry => ({ pick, name: '', stat: '', ...extra })
+  it('kent een claw en een boog als wapen voor afstand, en een leeg slot, een dagger of een wapen onder level 10 niet', () => {
+    expect(hasRangedWeapon('thief', entry(NPC_CLAWS[0].name))).toBe(true)
+    expect(hasRangedWeapon('thief', entry(UNKNOWN))).toBe(false)
+    expect(hasRangedWeapon('thief', entry(NPC_DAGGERS[0].name))).toBe(false)
+    expect(hasRangedWeapon('thief', entry('Sword'))).toBe(false)
+    expect(hasRangedWeapon('bowman', entry('Balanche'))).toBe(true)
+    expect(hasRangedWeapon('bowman', entry('Sword'))).toBe(false)
+    expect(hasRangedWeapon('warrior', entry('Sword'))).toBe(false)
+  })
+  it('volgt bij een eigen wapen wat een Thief kiest (dagger of claw); bij een Bowman is een eigen wapen voor afstand', () => {
+    expect(hasRangedWeapon('thief', entry(OTHER))).toBe(true)
+    expect(hasRangedWeapon('thief', entry(OTHER, { weaponKind: 'dagger' }))).toBe(false)
+    expect(hasRangedWeapon('bowman', entry(OTHER))).toBe(true)
+  })
+  it('laat Ammo alleen naast een wapen voor afstand zien, en de andere slots altijd', () => {
+    expect(shownSlots('thief', entry(UNKNOWN))).not.toContain('ammo')
+    expect(shownSlots('thief', entry(NPC_CLAWS[0].name))).toContain('ammo')
+    expect(shownSlots('thief', entry(UNKNOWN)).length).toBe(slotsFor('thief').length - 1)
+  })
+})
+
+describe('het shield-slot van de Thief (#188)', () => {
+  const entry = (pick: string, extra: Partial<EquipEntry> = {}): EquipEntry => ({ pick, name: '', stat: '', ...extra })
+  const hasShield = (weapon: EquipEntry) => shownSlots('thief', weapon).includes('shield')
+  it('heeft geen shield naast een claw, wel naast een dagger, een wapen onder level 10 of een leeg wapenslot', () => {
+    expect(hasShield(entry(NPC_CLAWS[0].name))).toBe(false)
+    expect(hasShield(entry(NPC_DAGGERS[0].name))).toBe(true)
+    expect(hasShield(entry('Sword'))).toBe(true)
+    expect(hasShield(entry(UNKNOWN))).toBe(true)
+  })
+  it('volgt bij een eigen wapen de keuze dagger of claw; zonder keuze is het een claw (#176)', () => {
+    expect(hasShield(entry(OTHER))).toBe(false)
+    expect(hasShield(entry(OTHER, { weaponKind: 'claw' }))).toBe(false)
+    expect(hasShield(entry(OTHER, { weaponKind: 'dagger' }))).toBe(true)
+  })
+  it('telt een bewaard shield niet mee naast een claw, en zegt het armor-advies dat er geen shield-slot is', () => {
+    const eq: Equipment = { ...defaultEquipment(), claw: entry(NPC_CLAWS[0].name), shield: entry('Pan Lid') }
+    expect(wornWdef(eq, 'thief')).toEqual({ noShield: true })
+    expect(wornWdef({ ...eq, claw: entry(NPC_DAGGERS[0].name) }, 'thief')).toEqual({ shield: 44 })
+  })
+})
+
+describe('nameWithLevel (#188)', () => {
+  it('zet het level dat een item vraagt erachter, en laat een naam zonder level of buiten de catalogus staan', () => {
+    expect(nameWithLevel('claw', NPC_CLAWS[0].name)).toBe(`${NPC_CLAWS[0].name} (Lv. ${NPC_CLAWS[0].level})`)
+    expect(nameWithLevel('ammo', 'Arrows for Bows')).toBe('Arrows for Bows')
+    expect(nameWithLevel('hat', 'Mijn hoed')).toBe('Mijn hoed')
+  })
+})
+
+describe('soort en snelheid van een wapen in de catalogus (#188)', () => {
+  it('noemt claws CLAW en daggers DAGGER, met de snelheid zonder getal', () => {
+    const items = catalogItems('claw', 'thief')
+    expect(items.find((i) => i.name === 'Steel Titans')).toMatchObject({ type: 'CLAW', level: 15, stat: 13, speed: 'FAST' })
+    expect(items.find((i) => i.name === NPC_DAGGERS[0].name)?.type).toBe('DAGGER')
+    for (const i of items) expect(i.type, i.name).toBeDefined()
+  })
+})
+
+describe('familyName naast een ander stuk met dezelfde naam zonder kleur (#188)', () => {
+  it('noemt Yellow en Blue Metal Gear (DEF 19) niet "Metal Gear": dat is een ander stuk (DEF 18)', () => {
+    expect(familyName('hat', 'Yellow Metal Gear')).toBe('Yellow Metal Gear')
+    expect(familyName('hat', 'Metal Gear')).toBe('Metal Gear')
+    const rows = searchCatalog('hat', 'thief', 'Metal Gear').map((i) => [familyName('hat', i.name), i.stat])
+    expect(rows).toEqual(expect.arrayContaining([['Metal Gear', 18], ['Yellow Metal Gear', 19]]))
+    expect(rows).toHaveLength(2)
+  })
+})
+
+describe('choosePick met "Empty" (#188)', () => {
+  it('maakt een armorslot bekend leeg en een wapen of ammo weer nog niet ingevuld', () => {
+    const worn: EquipEntry = { pick: 'Pan Lid', name: '', stat: '' }
+    expect(choosePick('hat', worn, NONE)).toEqual({ pick: NONE, name: '', stat: '' })
+    expect(choosePick('claw', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
+    expect(choosePick('ammo', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
   })
 })
