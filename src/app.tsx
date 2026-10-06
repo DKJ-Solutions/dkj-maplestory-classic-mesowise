@@ -1433,16 +1433,21 @@ function StatDialog(props: {
 type EquipView = 'worn' | 'cheapest'
 
 /**
- * De knop Cheapest in de Equip-kaart (Dave, 6 oktober 2026, #188): hij opent dezelfde Equip-popup als het oog in de kop, maar met de
- * goedkoopste equip (cheapestEquip.ts, om te lezen) in plaats van wat je character in game draagt.
+ * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188). Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
+ * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
+ * goedkoopste equip (een job die de app niet doorrekent) alleen de eerste.
  */
-function CheapestButton(props: { open: boolean; onOpen: (button: HTMLButtonElement) => void }) {
+function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen: (view: EquipView, button: HTMLButtonElement) => void }) {
+  const button = (view: EquipView, label: string) => (
+    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+      <EyeIcon />
+      {label}
+    </button>
+  )
   return (
     <div class="card-actions equip-buttons">
-      <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.open} onClick={(e) => props.onOpen(e.currentTarget)}>
-        <EyeIcon />
-        Cheapest
-      </button>
+      {button('worn', 'Your character')}
+      {props.cheapest && button('cheapest', 'Cheapest')}
     </div>
   )
 }
@@ -1518,7 +1523,7 @@ function EquipmentCard(props: {
   const [view, setView] = useState<EquipView | null>(null)
   const open = view !== null
   const head = useRef<HTMLButtonElement>(null)
-  // De knop die de popup opende (het oog in de kop of Cheapest): daar gaat de focus terug bij sluiten.
+  // De knop die de popup opende (het oog in de kop, Your character of Cheapest): daar gaat de focus terug bij sluiten.
   const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
   const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
@@ -1546,7 +1551,7 @@ function EquipmentCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      {props.cheapest && <CheapestButton open={view === 'cheapest'} onOpen={(button) => { opener.current = button; setView('cheapest') }} />}
+      <EquipButtons view={view} cheapest={props.cheapest !== null} onOpen={(v, button) => { opener.current = button; setView(v) }} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}

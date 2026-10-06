@@ -351,12 +351,14 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(headTitle('Equip')?.trim()).toBe('Equip')
   })
 
-  it('toont in de kaart naast het oog alleen de knop Cheapest, die de Equip-popup met de goedkoopste equip opent (#188)', () => {
+  it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     expect(cards()[0].querySelector('table')).toBeNull()
-    expect(within(cards()[0]).queryByRole('button', { name: 'Your character' })).toBeNull()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
+    expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Cheapest')

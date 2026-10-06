@@ -640,7 +640,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
 .cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .cheapest-changes strong { color: var(--text); }
-/* De Equip-kaart (#188): onder de kop de knop Cheapest, met tekst, over de volle breedte. */
+/* De Equip-kaart (#188): twee knoppen met tekst, Your character en Cheapest, naast elkaar over de volle breedte. */
 .equip-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
 /* De Equip-popup achter Cheapest (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
    zoals bij wat je draagt, zonder vergrootglas. Een stuk om te kopen in de accentkleur, met zijn prijs eronder. */
