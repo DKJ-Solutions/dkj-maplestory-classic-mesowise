@@ -64,7 +64,7 @@ export type LevelInvoice =
 const wholeUp = (x: number): number => Math.max(0, Math.ceil(x - 1e-9))
 
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
-const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
+export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
 
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven

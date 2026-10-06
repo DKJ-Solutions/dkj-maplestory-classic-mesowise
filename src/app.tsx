@@ -26,12 +26,13 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
+import { cheapestSettings, MAX_ROUNDS, profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
+import { ammoLabel, levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -2468,55 +2469,248 @@ export const totalCostWho = (level: string, job: Job): string => {
   return /^\d+$/.test(t) && Number(t) >= 1 ? `Lv. ${Number(t)} ${jobLabel(job)}` : jobLabel(job)
 }
 
+/** De rij van een factuurregel in de vergelijking: een potion naar zijn soort (HP of MP), de rest naar zijn naam. */
+const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
+
+/**
+ * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): per soort kost (HP Potions, MP Potions, Ammo, en reizen als
+ * dat iets kost) wat je character betaalt, wat de goedkoopste setup betaalt, en het verschil: wat je laat liggen in rood met een min,
+ * zoals de kosten op de facturen (Dave: groen las alsof je goed bezig was), en in groen met een plus als jouw setup goedkoper is. Welke potion en hoeveel staat op de twee facturen erboven. Een regel die één setup niet heeft,
+ * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
+ */
+function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; job: Job }) {
+  const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
+  const [ig, ch] = cols
+  const keys: string[] = []
+  for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
+  const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
+  // De naam van een soort kost, los van welke potion of munitie (Dave): "HP Potions", "MP Potions", "Ammo".
+  const name = (key: string) => (key === 'hp' ? 'HP Potions' : key === 'mp' ? 'MP Potions' : key === ammoLabel(props.job) ? 'Ammo' : key)
+  // Wat elke setup betaalt in de gewone tekstkleur: alleen het verschil heeft een kleur, zodat dat opvalt (Dave: "bijna alles rood").
+  const cost = (n: number | null) => (n === null ? <span class="invoice-none">—</span> : <span>{n === 0 ? '0' : `−${nfInt.format(n)}`}</span>)
+  const diff = (d: number | null) =>
+    d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="cost">−{nfInt.format(d)}</span> : d < 0 ? <span class="gain">+{nfInt.format(-d)}</span> : <span>0</span>
+  // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
+  const paid = (col: number, key: string) => (cols[col] ? (lineOf(col, key)?.meso ?? 0) : null)
+  return ig || ch ? (
+    <>
+      <table class="invoice invoice-difference">
+        <thead>
+          <tr>
+            <td />
+            <th scope="col">Your character</th>
+            <th scope="col">Cheapest</th>
+            <th scope="col">Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          {keys.map((key) => {
+            const a = paid(0, key)
+            const b = paid(1, key)
+            return (
+              <tr key={key}>
+                <th scope="row">{name(key)}</th>
+                <td class="invoice-meso">{cost(a)}</td>
+                <td class="invoice-meso">{cost(b)}</td>
+                <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
+            <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
+            <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
+      {props.inGame.kind === 'none' && <p class="hint">Your character: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+    </>
+  ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Cheapest; hier niet nog eens.
+  null
+}
+
 /**
  * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
+function InvoiceTable(props: { invoice: LevelInvoice }) {
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
+  return inv.kind === 'none' ? (
+    <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+  ) : (
+    <table class="invoice">
+      <tbody>
+        {inv.lines.map((l, i) => (
+          <tr key={`${i}-${l.label}`}>
+            <th scope="row">{l.label}</th>
+            <td class="invoice-qty">
+              {l.qty !== null && (
+                <>
+                  {`× ${nfInt.format(l.qty)}`}
+                  {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
+                  {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
+                </>
+              )}
+            </td>
+            <td class="invoice-meso cost">{meso(l.meso)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td />
+          <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  )
+}
+
+/**
+ * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
+ * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
+ * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
+ */
+function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
+  const who = totalCostWho(props.level, props.job)
   return (
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>
-      <p class="total-cost-sub">
-        This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
-      </p>
+      {/* Elk deel zegt onder zijn h3 wat zijn factuur is (Dave, #183); zonder delen staat de zin onder de h2. */}
       {!props.computed ? (
-        <NotComputed job={props.job} />
-      ) : inv.kind === 'none' ? (
-        <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+        <>
+          <p class="total-cost-sub">
+            This is how much it cost to level up your <strong>{who}</strong>
+          </p>
+          <NotComputed job={props.job} />
+        </>
       ) : (
         <>
-          <table class="invoice">
-            <tbody>
-              {inv.lines.map((l, i) => (
-                <tr key={`${i}-${l.label}`}>
-                  <th scope="row">{l.label}</th>
-                  <td class="invoice-qty">
-                    {l.qty !== null && (
-                      <>
-                        {`× ${nfInt.format(l.qty)}`}
-                        {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
-                        {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
-                      </>
-                    )}
-                  </td>
-                  <td class="invoice-meso cost">{meso(l.meso)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">Total</th>
-                <td />
-                <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
-              </tr>
-            </tfoot>
-          </table>
+          <div class="total-cost-part cost-ingame">
+            <h3>Your character</h3>
+            <p class="total-cost-sub">
+              This is how much it cost to level up your <strong>{who}</strong>
+            </p>
+            <InvoiceTable invoice={props.invoice} />
+          </div>
+          {props.cheapest && (
+            <>
+              <div class="total-cost-part cheapest-cost">
+                <h3>Cheapest</h3>
+                <p class="total-cost-sub">
+                  This is the cheapest way to level up a <strong>{who}</strong>
+                </p>
+                <InvoiceTable invoice={props.cheapest} />
+              </div>
+              <div class="total-cost-part cost-difference">
+                <h3>Difference</h3>
+                <DifferenceTable inGame={props.invoice} cheapest={props.cheapest} job={props.job} />
+                {props.children}
+              </div>
+            </>
+          )}
         </>
       )}
     </section>
+  )
+}
+
+/** Wat het Equip-advies over je wapen zegt, in een paar woorden, zoals de chip bij ATT (#183). */
+function weaponAdviceText(a: ClawUpgradeAdvice): string {
+  if (a.kind === 'none') return 'niet uit te rekenen'
+  const win = a.choices.find((c) => c.claw === a.winner)
+  if (win) return `Koop ${win.claw.name}`
+  if (noClawComputable(a)) return 'niet uit te rekenen'
+  return upgradeChipText(false, false, a.choices.length === 0 && a.notWearable.length === 0)!
+}
+
+/** Wat het Equip-advies over je armor zegt, in een paar woorden, zoals de chip bij DEF (#183). */
+function armorAdviceText(a: ArmorUpgradeAdvice, gender: Gender | null): string {
+  if (a.kind === 'none') return 'niet uit te rekenen'
+  const win = a.winner ? a.choices[0] : undefined
+  if (win) return `Koop ${buyText(win)}`
+  if (noArmorComputable(a)) return 'niet uit te rekenen'
+  return upgradeChipText(false, false, a.choices.length === 0 && a.notWearable.length === 0 && gender !== null)!
+}
+
+/**
+ * De regels onder Difference (Dave, #183): het monster als dat verandert, dan altijd je HP Potion, je MP Potion en je skills, met het
+ * verschil ("A → B") of wat blijft, en bij ATT en DEF wat het Equip-advies over je wapen en je armor zegt: Overnemen koopt geen equipment,
+ * dus dat blijft advies. De base AP vult Overnemen wel in, maar staat niet als eigen regel in de lijst.
+ */
+const changeLines = (r: CheapestResult, equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }): { label: string; text: string }[] => {
+  const of = (kind: ChangeKind) => r.changes.find((c) => c.kind === kind)?.text
+  const mob = of('mob')
+  return [
+    ...(mob ? [{ label: 'Monster:', text: mob }] : []),
+    { label: 'HP Potion:', text: of('hp') ?? r.potions.hp },
+    { label: 'MP Potion:', text: of('mp') ?? r.potions.mp },
+    { label: 'Skill:', text: of('skills') ?? 'geen verschil' },
+    { label: 'ATT:', text: weaponAdviceText(equip.claw) },
+    { label: 'DEF:', text: armorAdviceText(equip.armor, equip.gender) },
+  ]
+}
+/** Het totaal van een factuur, of null zonder factuur. */
+const invoiceTotal = (i: LevelInvoice): number | null => (i.kind === 'invoice' ? i.total : null)
+/** De besparing zoals de twee kolommen haar tonen (factuurtotaal min factuurtotaal); zonder twee facturen die van de berekening. */
+const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | null): number | null => {
+  const a = invoiceTotal(was)
+  const b = invoiceTotal(now)
+  return a !== null && b !== null ? a - b : fallback
+}
+/**
+ * Onder de tabel van Difference (Dave, 6 oktober 2026, #183): wat er voor de goedkoopste setup verandert (mob, potions, skillpunten,
+ * base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat je bespaarde en kun je alles met
+ * "Ongedaan maken" terugzetten.
+ */
+function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }; onApply: () => void; onUndo: () => void }) {
+  const r = props.applied ?? props.live
+  if (!r) return null
+  const saving = props.saving
+  const details = (
+    <div class="cheapest-result">
+      {/* Vóór Overnemen zegt het totaal van Difference wat het scheelt; daarna is dat 0, en dan staat hier wat je bespaarde. */}
+      {props.applied && saving !== null && saving >= 1 && <p class="cheapest-saving">{formatMeso(saving)} bespaard op dit level</p>}
+      {saving !== null && saving < 1 && <p class="hint">Dit levert geen meso op voor dit level.</p>}
+      {saving === null && (
+        <p class="hint">
+          {r.costBefore === null
+            ? 'Je huidige mob geeft geen EXP, dus er is geen kost om mee te vergelijken.'
+            : 'Niet door te rekenen wat dit scheelt.'}
+        </p>
+      )}
+      <ul class="cheapest-changes">
+        {changeLines(r, props.equip).map((c) => (
+          <li key={c.label}>
+            <strong>{c.label}</strong> {c.text}
+          </li>
+        ))}
+      </ul>
+      {r.capped && <p class="hint">Na {MAX_ROUNDS} rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
+      {props.applied ? (
+        <button type="button" class="btn" onClick={props.onUndo}>
+          Ongedaan maken
+        </button>
+      ) : (
+        <button type="button" class="btn primary" onClick={props.onApply}>
+          Overnemen
+        </button>
+      )}
+    </div>
+  )
+  return (
+    <>
+      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste.</p>}
+      {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
+      {!props.applied && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
+    </>
   )
 }
 
@@ -2602,6 +2796,49 @@ export function App() {
   }
   // De bevestiging na "Punt zetten", zodat een dubbele tik zichtbaar is.
   const [placed, setPlaced] = useState<string | null>(null)
+
+  // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
+  // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
+  // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; saving: number | null } | null>(null)
+  const cheapestShown =
+    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.job === job
+      ? cheapest.result
+      : null
+  const appliedSaving = cheapestShown ? cheapest!.saving : null
+  // De goedkoopste setup, live en zonder toe te passen: alleen opnieuw als een invoer verandert.
+  const cheapestInput = useMemo<CheapestInput>(() => ({ job, gender, equipment, drafts, profileDraft, potionChoice }), [job, gender, equipment, drafts, profileDraft, potionChoice])
+  const cheapestLive = useMemo(() => (computed ? cheapestSettings(cheapestInput) : null), [computed, cheapestInput])
+  const cheapestInvoice = useMemo(
+    () => (cheapestLive ? levelInvoice(cheapestLive.drafts, cheapestProfile({ job, gender, drafts: cheapestLive.drafts, profileDraft: cheapestLive.profileDraft, potionChoice: cheapestLive.potionChoice, equipment })) : levelInvoice([], null)),
+    [cheapestLive, job, gender, equipment],
+  )
+  // Overnemen past precies toe wat de kaart toont: het berekende resultaat van deze invoer. Een nog niet bevestigd concept in een
+  // corrigeervak blijft dus een concept (de kaart rekende er ook niet mee); de equipment verandert de knop nooit.
+  const cheapestSaving = cheapestLive ? invoiceSaving(invoice, cheapestInvoice, cheapestLive.saving) : null
+  const applyCheapest = () => {
+    if (!cheapestLive) return
+    const result = cheapestLive
+    const before = cheapestInput
+    if (result.drafts !== before.drafts) {
+      dirty.current = true
+      setDrafts(result.drafts)
+    }
+    if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
+    if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
+    setPlaced(null)
+    setCheapest({ result, before, saving: cheapestSaving })
+  }
+  const undoCheapest = () => {
+    if (!cheapestShown || !cheapest) return
+    const { before } = cheapest
+    dirty.current = true
+    setDrafts(before.drafts)
+    writeProfile(() => before.profileDraft)
+    writePotionChoice(before.potionChoice)
+    setPlaced(null)
+    setCheapest(null)
+  }
 
   const levelUp = () => {
     // Eerst een nog niet opgeslagen concept uit het corrigeervak, dan pas rekenen: alles uit de refs, niet uit deze render.
@@ -2818,7 +3055,10 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} />
+      {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
+      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
+        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equip={{ claw: clawAdvice, armor: armorAdvice, gender }} onApply={applyCheapest} onUndo={undoCheapest} />
+      </TotalCostCard>
 
       <LevelAdviceCard
         job={job}

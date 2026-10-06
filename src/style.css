@@ -584,9 +584,22 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 
 /* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
-.total-cost h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
+/* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Cheapest en Difference uitsteekt (Dave, #183). */
+.total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
 .total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
 .total-cost-sub strong { color: var(--text); }
+/* De drie delen van Total cost (#183): In game, Cheapest en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
+   ze los van elkaar staan (Dave): grijs voor in game, de accentkleur voor de goedkoopste setup, groen voor wat je bespaart. De
+   tinten mengen met de achtergrond van de kaart, dus ze volgen dark mode vanzelf. */
+.total-cost-part { --part: var(--muted); margin-top: 0.75rem; padding: 0.75rem; border: 1px solid color-mix(in srgb, var(--part) 35%, var(--border));
+  border-radius: 0.75rem; background: color-mix(in srgb, var(--part) 7%, transparent); }
+.total-cost-part.cheapest-cost { --part: var(--accent); }
+.total-cost-part.cost-difference { --part: var(--gain); }
+/* De h3 van een deel duidelijk groter dan de regels eronder (1rem), en kleiner dan de h2 van de kaart (Dave). */
+.total-cost h3 { margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+/* Onder de h3 van een deel de zin over zijn factuur, met de ruimte die de h3 eerst zelf had erboven de tabel. */
+.total-cost-part .total-cost-sub { margin: 0 0 0.75rem; }
+.total-cost-part .invoice { margin-top: 0; }
 .invoice { width: 100%; margin-top: 0.75rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .invoice th, .invoice td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
 .invoice th { text-align: left; font-weight: 400; overflow-wrap: anywhere; }
@@ -611,3 +624,19 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .invoice dialog { white-space: normal; text-align: left; color: var(--text); font-weight: 400; font-size: 1rem; }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
+
+/* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, rood met een min
+   wat je laat liggen (groen met een plus als jouw setup goedkoper is). Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */
+.invoice-difference thead th { padding: 0 0 0.5rem 0.5rem; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--muted); text-align: right; vertical-align: bottom; }
+.invoice-difference thead td { padding: 0; }
+.invoice-difference td.invoice-meso { padding-left: 0.5rem; }
+.invoice-difference .gain { color: var(--gain); }
+.invoice-difference .cost { color: var(--cost); }
+.invoice-none { color: var(--muted); }
+/* Onder de tabel van Difference (#183): de besparing, wat er verandert en Overnemen of Ongedaan maken. */
+.cheapest-result { margin-top: 0.75rem; }
+.cheapest-result .btn { width: 100%; }
+.cheapest-saving { margin: 0 0 0.5rem; font-weight: 700; color: var(--accent); overflow-wrap: anywhere; }
+.cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
+.cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+.cheapest-changes strong { color: var(--text); }
