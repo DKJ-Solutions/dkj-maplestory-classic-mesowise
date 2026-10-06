@@ -47,8 +47,9 @@ export type LevelInvoice =
   /** Geen factuur: de kosten van het level zijn niet uit te rekenen (zie `cost` voor waarom), of het level is niet haalbaar. */
   | { kind: 'none'; cost: LevelCost }
   /**
-   * De factuur: de regels (je HP- en MP-potion altijd, de rest alleen als het iets kost), het totaal, de mob, en hoeveel uur het level duurt. `level` en `expToNext`
-   * komen uit de kosten van het level.
+   * De factuur: de regels (je HP- en MP-potion altijd, de rest alleen als het iets kost) en het totaal. `level`, `expToNext`,
+   * `mob` en `hours` staan niet op de kaart (Dave, 6 oktober 2026); ze komen uit de kosten van het level, en de uitleg achter
+   * een aantal (PotionWhy) rekent met dezelfde mob en duur.
    */
   | { kind: 'invoice'; level: number; expToNext: number; mob: string; hours: number; lines: readonly InvoiceLine[]; total: number }
 

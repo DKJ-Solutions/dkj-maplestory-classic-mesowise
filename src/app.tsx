@@ -2453,19 +2453,20 @@ const formatHours = (hours: number): string => {
 }
 
 /**
- * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
- * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
- * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
- */
-/**
  * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "Lv. 10 Thief", vetgedrukt in "This is how much it cost
  * to level up your Lv. 10 Thief". Zonder geldig level alleen de job.
  */
 export const totalCostWho = (level: string, job: Job): string => {
-  const n = Number(level.trim())
-  return level.trim() !== '' && Number.isInteger(n) && n >= 1 ? `Lv. ${n} ${jobLabel(job)}` : jobLabel(job)
+  // Alleen cijfers, zoals het profiel een level leest: "1e1" of "0x10" is geen level.
+  const t = level.trim()
+  return /^\d+$/.test(t) && Number(t) >= 1 ? `Lv. ${Number(t)} ${jobLabel(job)}` : jobLabel(job)
 }
 
+/**
+ * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
+ * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
+ * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
+ */
 function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)

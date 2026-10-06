@@ -3020,7 +3020,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
 
   it('noemt in de ondertitel het level en de job, en zonder geldig level alleen de job', () => {
     expect(totalCostWho('15', 'warrior')).toBe('Lv. 15 Warrior')
-    for (const level of ['', ' ', 'abc', '10.5', '0']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
+    for (const level of ['', ' ', 'abc', '10.5', '0', '1e1', '0x10', '-3']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
   })
 
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {

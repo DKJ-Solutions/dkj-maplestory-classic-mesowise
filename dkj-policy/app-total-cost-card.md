@@ -69,7 +69,7 @@
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
   job, own potion costs) and app tests for the card; 1666 tests green, lint clean
 - [x] Dave looked at the card in the preview and said "ship it" (October 6, 2026)
-- [ ] Victor: final review of the later commits
+- [x] Victor: final review of the later commits; no bugs. Doc comments back in place, the level in the title read as digits only
 
 ### DEPLOY: app/total-cost-card
 
