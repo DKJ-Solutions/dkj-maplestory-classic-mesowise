@@ -55,6 +55,19 @@ describe('levelInvoice', () => {
     }
   })
 
+  it('legt bij elke potion uit hoe het aantal ontstaat, met precies het getal dat naar boven wordt afgerond (Victor, 6 oktober 2026)', () => {
+    for (const p of [thief, profileOf({ level: '15' }), profileOf({}, 'warrior'), { ...thief, potions: resolvePotions('thief', { ...NO_POTION_CHOICE, hp: 'White Potion' }) }]) {
+      for (const line of invoiceOf(p).lines.filter((l) => l.why)) {
+        const w = line.why!
+        // Het aantal is het exacte getal naar boven afgerond, en dat getal is wat je kwijt bent gedeeld door één potion.
+        expect(line.qty).toBe(Math.ceil(w.exact - 1e-9))
+        expect(w.exact).toBeCloseTo(w.need / w.restores, 9)
+        expect(w.need).toBeCloseTo((w.perKill * w.killsPerHour + w.buffPerHour) * w.hours, 6)
+        if (w.kind === 'hp') expect(w.hits! * w.touch!).toBeCloseTo(w.perKill, 9)
+      }
+    }
+  })
+
   it('rekent met de potions die je gebruikt', () => {
     const white = { ...thief, potions: resolvePotions('thief', { ...NO_POTION_CHOICE, hp: 'White Potion' }) }
     const inv = invoiceOf(white)

@@ -593,5 +593,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
   vertical-align: middle; font-size: 0.8125rem; font-weight: 700; line-height: 1; color: var(--text); background: var(--bg);
   border: 1px solid var(--border); border-radius: 999px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .invoice-why:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Klein om te zien, maar 44px om op te tikken: een onzichtbare rand rond het rondje (mobile-first). */
+.invoice-why { position: relative; }
+.invoice-why::after { content: ''; position: absolute; inset: -0.5rem; }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }

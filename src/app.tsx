@@ -38,6 +38,7 @@ const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
 const nfPct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
 const nf1 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 })
+const nf3 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 3 })
 
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 /** JJJJ-MM-DD als Nederlandse datum, bijvoorbeeld "3 oktober 2026". */
@@ -2396,8 +2397,13 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
     requestAnimationFrame(() => button.current?.focus())
   }
   const perHour = w.perKill * w.killsPerHour + w.buffPerHour
-  // Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP.
-  const one = (n: number) => nf1.format(n)
+  // Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP; onder de 0,1 met twee, zodat er geen "± 0" staat.
+  const one = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
+  // Het getal dat de factuur naar boven afrondt, zo dat het niet tegenspreekt wat eruit komt: ziet het er heel uit terwijl er
+  // een rest is (3,0004 bij drie decimalen), dan staat er "iets meer dan 3".
+  const exact = nf3.format(w.exact)
+  const looksWhole = Number.isInteger(Number(w.exact.toFixed(3)))
+  const quotient = looksWhole && line.qty! > Math.round(w.exact) ? `iets meer dan ${exact}` : exact
   return (
     <>
       <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${nfInt.format(line.qty!)} ${line.label}?`} onClick={() => setOpen(true)}>
@@ -2423,7 +2429,7 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
                 Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
               </li>
               <li>
-                Eén {line.label} herstelt {nfInt.format(w.restores)} {unit}: {nfInt.format(w.need)} / {nfInt.format(w.restores)} = {nf.format(w.need / w.restores)}, naar boven
+                Eén {line.label} herstelt {nfInt.format(w.restores)} {unit}: {nfInt.format(w.need)} / {nfInt.format(w.restores)} = {quotient}, naar boven
                 afgerond {nfInt.format(line.qty!)}.
               </li>
             </ol>

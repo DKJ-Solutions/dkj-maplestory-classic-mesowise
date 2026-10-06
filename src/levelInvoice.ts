@@ -31,6 +31,8 @@ export interface PotionWhy {
   need: number
   /** Wat één potion herstelt, met Improved HP of MP Recovery. */
   restores: number
+  /** Hoeveel potions dat precies is, voor het afronden: het getal dat de factuur naar boven afrondt (`need / restores`). */
+  exact: number
 }
 
 /** Eén regel van de factuur: wat, hoeveel stuks (null bij een bedrag zonder stuks, zoals reizen), wat het kost, en bij een potion hoe. */
@@ -49,6 +51,12 @@ export type LevelInvoice =
    * komen uit de kosten van het level.
    */
   | { kind: 'invoice'; level: number; expToNext: number; mob: string; hours: number; lines: readonly InvoiceLine[]; total: number }
+
+/**
+ * Naar boven afronden tot hele stuks, zonder dat rekenruis een stuk erbij geeft: 3,0000000000000004 is 3, geen 4. Een echte rest
+ * (3,0016) rondt wel naar boven af.
+ */
+const wholeUp = (x: number): number => Math.ceil(x - 1e-9)
 
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
 const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
@@ -77,8 +85,10 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   }
   if (resolved && plan && !own(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour, potionFactor } = resolved.suggestion
-    const hp = Math.ceil(plan.hpPotionsPerHour * hours)
-    const mp = Math.ceil(plan.mpPotionsPerHour * hours)
+    const hpExact = plan.hpPotionsPerHour * hours
+    const mpExact = plan.mpPotionsPerHour * hours
+    const hp = wholeUp(hpExact)
+    const mp = wholeUp(mpExact)
     const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours }
     add(hpPotion.name, hp, hp * hpPotion.price, {
       ...base,
@@ -89,6 +99,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       buffPerHour: 0,
       need: estimate.hpLossPerKill * plan.killsPerHour * hours,
       restores: hpPotion.hp * potionFactor.hp,
+      exact: hpExact,
     })
     add(mpPotion.name, mp, mp * mpPotion.price, {
       ...base,
@@ -97,12 +108,13 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       buffPerHour: buffMpPerHour,
       need: (estimate.mpPerKill * plan.killsPerHour + buffMpPerHour) * hours,
       restores: mpPotion.mp * potionFactor.mp,
+      exact: mpExact,
     })
   } else {
     add('Potions', null, Math.ceil(spot.cost.potions * hours))
   }
   if (resolved && plan && !own(draft.ammo) && resolved.suggestion.rechargePerStar > 0) {
-    const stars = Math.ceil(plan.killsPerHour * resolved.suggestion.estimate.starsPerKill * hours)
+    const stars = wholeUp(plan.killsPerHour * resolved.suggestion.estimate.starsPerKill * hours)
     add(ammoLabel(profile.job), stars, Math.ceil(stars * resolved.suggestion.rechargePerStar))
   } else {
     add(ammoLabel(profile.job), null, Math.ceil(spot.cost.ammo * hours))

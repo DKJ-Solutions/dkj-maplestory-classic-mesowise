@@ -51,12 +51,14 @@
   hour; checked at 360 px
 - [x] Dave (October 6, 2026): a question mark after a potion's count that explains, step by step and with the model's own
   numbers, how the app arrives at it
+- [x] Victor: the explanation shows the exact quotient the invoice rounds up (never "= 3, rounded up 4"), float noise no
+  longer adds a potion, and the question mark has a 44 px tap area
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
-  job, own potion costs) and app tests for the card; 1661 tests green, lint clean
+  job, own potion costs) and app tests for the card; 1662 tests green, lint clean
 - [ ] Dave looks at the card before the merge
 
 ### DEPLOY: app/total-cost-card
