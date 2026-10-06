@@ -54,18 +54,21 @@
 - [x] Victor and Edith: review of the potion choice; equally cheap potions count as cheapest (Magician Lemon), equal-cost hint reworded
 - [x] Dave (October 6, 2026): the Potions card had extra padding; it now gets padding 0 like every other card with an eye
 - [x] Dave (October 6, 2026): price in red with a minus, recovery in green with a plus (the Skillpoints cost/gain colours)
+- [x] Dave (October 6, 2026): styled like Monster: pick a potion (a draft until Opslaan), its price and recovery below, correctable with the pencil; the list of all potions goes
+- [ ] Victor and Edith: review of the Monster-style card
 
 ### TEST
 
-- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1647 tests green, lint clean
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1649 tests green, lint clean
 - [ ] Dave looks at the card at phone width before the merge
 
 ### DEPLOY: app/potions-card
 
 A new Potions card, under Monster, lets you pick the HP and MP potion you actually use, the way you pick your mob. The
 level's meso cost is calculated with your choice, and its report (also on the Report card) says how much the cheapest
-potion per point would save. The card lists every potion your job can buy with what it restores, its price, what it
-costs per HP or MP and how much of your bar one potion fills. Potions have no level requirement in Classic, so they are
+potion per point would save. Like the Monster card, the chosen potion's price and recovery from the database show below
+the choice, and the pencil corrects them when the shop or the game says otherwise; the calculation then uses your
+number. A line under each potion says what it costs per HP or MP and how much of your bar one fills. Potions have no level requirement in Classic, so they are
 all there at every level. Without a choice the app keeps using the cheapest. Max HP and Max MP now head the Total stats card. Max MP
 is a new field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
 before it starts empty until you fill it in. It is shown only and never blocks the calculation.

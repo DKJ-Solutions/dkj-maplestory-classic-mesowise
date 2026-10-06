@@ -2876,48 +2876,88 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
   const openPotions = () => fireEvent.click(screen.getByRole('button', { name: 'Potions bekijken' }))
   const select = (kind: 'HP' | 'MP') => within(potionsCard()).getByLabelText(`De ${kind} potion die je gebruikt`) as HTMLSelectElement
   const group = (kind: 'HP' | 'MP') => select(kind).closest<HTMLElement>('.potion-group')!
-  const names = (kind: 'HP' | 'MP') => Array.from(group(kind).querySelectorAll('.potion-name')).map((n) => n.textContent)
-  const usedName = (kind: 'HP' | 'MP') => group(kind).querySelector('.potion.used .potion-name')?.textContent
-  const pickPotion = (kind: 'HP' | 'MP', name: string) => fireEvent.change(select(kind), { target: { value: name } })
+  /** De regels onder een keuze: naam, wat er staat, en of er een potlood is. */
+  const lines = (kind: 'HP' | 'MP') =>
+    Array.from(group(kind).querySelectorAll<HTMLElement>('.stat-line')).map((l) => [
+      l.querySelector('.stat-line-name')!.textContent,
+      l.querySelector('.equip-value strong')!.textContent,
+      l.querySelector('.equip-edit') !== null,
+    ])
+  const line = (kind: 'HP' | 'MP', label: string) => Array.from(group(kind).querySelectorAll<HTMLElement>('.stat-line')).find((l) => l.querySelector('.stat-line-name')!.textContent === label)!
+  const choose = (kind: 'HP' | 'MP', name: string) => fireEvent.change(select(kind), { target: { value: name } })
+  const save = () => fireEvent.click(within(potionsCard()).getByRole('button', { name: 'Opslaan' }))
+  const fix = (kind: 'HP' | 'MP', label: string, value: string) => {
+    fireEvent.click(within(line(kind, label)).getByRole('button', { name: `${label} wijzigen` }))
+    const d = within(line(kind, label).querySelector('dialog') as HTMLDialogElement)
+    fireEvent.input(d.getByLabelText(`${label} in game`), { target: { value } })
+    fireEvent.click(d.getByRole('button', { name: 'Opslaan' }))
+  }
   const potionPart = () =>
     within(homeScreen().querySelector<HTMLElement>('section.level-cost')!).getByRole('heading', { level: 3, name: 'Potions' }).closest<HTMLElement>('.advice-part')!
-
-  it('toont per soort een keuzemenu en de potions van een Thief van goedkoop naar duur, met hun prijs, en geen Max HP of Max MP', () => {
-    openPotions()
-    expect(cardNames('section.potions')).toEqual([])
-    expect(names('HP')).toEqual(['Orange Potion', 'White Potion'])
-    expect(names('MP')).toEqual(['Blue Potion'])
-    expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
-    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['Prijs: −150 meso', 'Prijs: −350 meso', 'Prijs: −220 meso'])
-    // De prijs in rood, wat een potion herstelt in groen (Dave, 6 oktober 2026).
-    expect(Array.from(potionsCard().querySelectorAll('.potion-price .cost')).map((n) => n.textContent)).toEqual(['−150 meso', '−350 meso', '−220 meso'])
-    expect(Array.from(potionsCard().querySelectorAll('.potion-meta .gain')).map((n) => n.textContent)).toEqual(['+250 HP', '+500 HP', '+200 MP'])
-    // Zonder keuze de goedkoopste.
-    expect(select('HP').value).toBe('Orange Potion')
-    expect(usedName('HP')).toBe('Orange Potion')
-    expect(usedName('MP')).toBe('Blue Potion')
-    // 250 HP van 444: 56%; 200 MP van 363: 55%.
-    expect(potionsCard().textContent).toContain('+250 HP · 0,6 meso per HP · vult 56% van je Max HP')
-    expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP · vult 55% van je Max MP')
-  })
-
-  it('bewaart de gekozen potion, rekent er het level mee, en zegt in het rapport dat de goedkoopste bespaart', () => {
+  const withMob = () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
+  }
+
+  it('toont per soort een keuzemenu en daaronder de prijs in rood en het herstel in groen, met een potlood, zoals Monster', () => {
+    openPotions()
+    expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
+    expect(Array.from(select('MP').options).map((o) => o.textContent)).toEqual(['Blue Potion (220 meso)'])
+    // Zonder keuze de goedkoopste.
+    expect(select('HP').value).toBe('Orange Potion')
+    expect(lines('HP')).toEqual([['Prijs (meso)', '−150', true], ['Herstelt HP', '+250', true]])
+    expect(lines('MP')).toEqual([['Prijs (meso)', '−220', true], ['Herstelt MP', '+200', true]])
+    expect(line('HP', 'Prijs (meso)').querySelector('strong.cost')).not.toBeNull()
+    expect(line('HP', 'Herstelt HP').querySelector('strong.gain')).not.toBeNull()
+    // Geen Max HP of Max MP: die staan op Total stats. Wel wat een potion per punt kost en van je balk vult (250 van 444: 56%).
+    expect(cardNames('section.potions')).not.toContain('Max HP')
+    expect(group('HP').querySelector('.potion-info')!.textContent).toBe('0,6 meso per HP · vult 56% van je Max HP')
+    expect(group('MP').querySelector('.potion-info')!.textContent).toBe('1,1 meso per MP · vult 55% van je Max MP')
+  })
+
+  it('toont een gekozen potion eerst als concept, alleen om te lezen, en legt hem pas met Opslaan vast', () => {
+    withMob()
     const before = levelCostText()
     expect(potionPart().querySelector('.chip')!.textContent).toBe('Blijven')
-    expect(potionPart().textContent).toContain('Je gebruikt al de goedkoopste potions.')
     openPotions()
-    pickPotion('HP', 'White Potion')
-    expect(stored(POTION_CHOICE_KEY)).toEqual({ version: 1, hp: 'White Potion', mp: null })
-    expect(usedName('HP')).toBe('White Potion')
-    expect(group('HP').querySelector('.potion.used .potion-used')!.textContent).toBe('Je gebruikt deze potion')
+    expect((within(potionsCard()).getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement).disabled).toBe(true)
+    choose('HP', 'White Potion')
+    expect(lines('HP')).toEqual([['Prijs (meso)', '−350', false], ['Herstelt HP', '+500', false]])
+    expect(stored(POTION_CHOICE_KEY)).toBeNull()
+    save()
+    expect(stored(POTION_CHOICE_KEY)).toEqual({ version: 1, hp: 'White Potion', mp: null, fix: { hp: {}, mp: {} } })
     // Duurder per HP: het level kost meer, en het rapport raadt de Orange aan.
     expect(levelCostText()).not.toBe(before)
     expect(potionPart().querySelector('.chip')!.textContent).toBe('Wisselen')
     expect(potionPart().textContent).toContain('Wissel naar Orange Potion.')
     expect(potionPart().textContent).toMatch(/Met jouw potions kost dit level je ± [\d.]+ meso, met de goedkoopste kost het je ± [\d.]+ meso\./)
+    // Weer open: de opgeslagen potion, nu met potlood.
+    openPotions()
+    expect(select('HP').value).toBe('White Potion')
+    expect(lines('HP')).toEqual([['Prijs (meso)', '−350', true], ['Herstelt HP', '+500', true]])
+  })
+
+  it('gooit een gekozen potion weg met Annuleren, zoals bij Monster', () => {
+    openPotions()
+    choose('HP', 'White Potion')
+    fireEvent.click(within(potionsCard().querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Annuleren' }))
+    openPotions()
+    expect(select('HP').value).toBe('Orange Potion')
+    expect(stored(POTION_CHOICE_KEY)).toBeNull()
+  })
+
+  it('rekent met een gecorrigeerde prijs, en toont het getal uit de database doorgestreept ernaast', () => {
+    withMob()
+    const before = levelCostText()
+    openPotions()
+    fix('HP', 'Prijs (meso)', '300')
+    expect(stored(POTION_CHOICE_KEY).fix).toEqual({ hp: { price: 300 }, mp: {} })
+    expect(line('HP', 'Prijs (meso)').querySelector('.equip-value-db')!.textContent).toBe('−150')
+    expect(line('HP', 'Prijs (meso)').querySelector('.equip-value strong')!.textContent).toBe('−300')
+    expect(levelCostText()).not.toBe(before)
+    // Het blijft je eigen potion: geen wissel naar dezelfde.
+    expect(potionPart().querySelector('.chip')!.textContent).toBe('Blijven')
   })
 
   it('valt terug op de goedkoopste als de bewaarde keuze niet bij je job hoort', () => {
@@ -2949,8 +2989,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
     render(<App />)
     openPotions()
-    expect(names('MP')).toEqual(['Orange', 'Lemon', 'Blue Potion'])
-    expect(usedName('MP')).toBe('Orange')
+    expect(Array.from(select('MP').options).map((o) => o.value)).toEqual(['Orange', 'Lemon', 'Blue Potion'])
+    expect(select('MP').value).toBe('Orange')
   })
 
   it('laat het deel van je balk weg zolang Max MP leeg is', () => {
@@ -2960,7 +3000,6 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Total stats bekijken' }))
     expect(statShown('Max MP')).toBe('?')
     openPotions()
-    expect(potionsCard().textContent).toContain('+200 MP · 1,1 meso per MP')
-    expect(potionsCard().textContent).not.toContain('van je Max MP')
+    expect(group('MP').querySelector('.potion-info')!.textContent).toBe('1,1 meso per MP')
   })
 })

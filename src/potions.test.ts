@@ -1,92 +1,52 @@
 import { describe, expect, it } from 'vitest'
+import { bestVerdict } from './best'
 import { MAGICIAN_MP_POTIONS } from './data/magician'
-import { POTIONS } from './data/spots'
-import { mobDraft } from './data/spots'
+import { mobDraft, POTIONS } from './data/spots'
 import type { Job } from './job'
 import { levelCost } from './levelCost'
-import { bestVerdict } from './best'
-import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import {
   cheapestPotions,
+  databasePotion,
+  fixPotion,
   loadPotionChoice,
   NO_POTION_CHOICE,
+  pickPotion,
   POTION_CHOICE_KEY,
   potionAdvice,
-  potionOptions,
+  potionFields,
+  potionInfo,
+  potionsOf,
   resolvePotions,
   savePotionChoice,
+  type PotionChoice,
 } from './potions'
+import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { HP_POTION, mpPotionFor } from './suggest'
 
-const names = (list: readonly { potion: { name: string } }[]) => list.map((o) => o.potion.name)
+const potion = (name: string) => [...POTIONS, ...MAGICIAN_MP_POTIONS].find((p) => p.name === name)!
+const names = (list: readonly { name: string }[]) => list.map((p) => p.name)
+const choice = (hp: string | null, mp: string | null): PotionChoice => ({ ...NO_POTION_CHOICE, hp, mp })
 
-describe('potionOptions', () => {
-  it('geeft elke job de HP-potions en de Blue Potion, van goedkoop naar duur per punt', () => {
+describe('potionsOf en databasePotion', () => {
+  it('geeft elke job de HP-potions en de Blue Potion, en een Magician ook de Orange en de Lemon, in de volgorde van de app', () => {
     for (const job of ['thief', 'warrior', 'bowman'] as Job[]) {
-      const o = potionOptions(job, '444', '363')
-      expect(names(o.hp), job).toEqual(['Orange Potion', 'White Potion'])
-      expect(names(o.mp), job).toEqual(['Blue Potion'])
+      expect(names(potionsOf(job, 'hp')), job).toEqual(['Orange Potion', 'White Potion'])
+      expect(names(potionsOf(job, 'mp')), job).toEqual(['Blue Potion'])
     }
-  })
-
-  it('geeft een Magician de Orange en de Lemon erbij; bij gelijke prijs per MP blijft de volgorde van de data', () => {
-    const o = potionOptions('magician', '200', '500')
-    expect(names(o.mp)).toEqual(['Orange', 'Lemon', 'Blue Potion'])
-    expect(o.mp.map((x) => x.mesoPerPoint)).toEqual([1, 1, 1.1])
-  })
-
-  it('markeert precies de potion waarmee de berekening rekent', () => {
-    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as Job[]) {
-      const o = potionOptions(job, '444', '363')
-      expect(o.hp.filter((x) => x.used).map((x) => x.potion), job).toEqual([HP_POTION])
-      expect(o.mp.filter((x) => x.used).map((x) => x.potion), job).toEqual([mpPotionFor(job)])
-    }
-  })
-
-  it('rekent herstel, meso per punt en het deel van je balk uit de bronwaarden', () => {
-    const o = potionOptions('thief', '444', '363')
-    const orange = o.hp[0]
-    expect(orange).toMatchObject({ kind: 'hp', restores: 250, mesoPerPoint: 0.6 })
-    expect(orange.fillPct).toBeCloseTo((250 / 444) * 100)
-    expect(o.mp[0]).toMatchObject({ kind: 'mp', restores: 200, mesoPerPoint: 1.1 })
-    // De bronnen: elke potion op de kaart heeft een MeowDB-pagina.
+    expect(names(potionsOf('magician', 'mp'))).toEqual(['Orange', 'Lemon', 'Blue Potion'])
+    // Elke potion heeft een MeowDB-pagina als bron.
     for (const p of [...POTIONS, ...MAGICIAN_MP_POTIONS]) expect(p.source.url, p.name).toMatch(/^https:\/\/meowdb\.com\/msclassic\/item-db\/\d+$/)
   })
 
-  it('houdt bij een gelijkspel de volgorde van de app, ook met Improved MP Recovery (factor 1,1 en 1,15)', () => {
-    for (const mp of [1, 1.05, 1.1, 1.15, 1.2]) {
-      const o = potionOptions('magician', '200', '500', { hp: 1, mp })
-      expect(names(o.mp), String(mp)).toEqual(['Orange', 'Lemon', 'Blue Potion'])
-      expect(o.mp[0].used, String(mp)).toBe(true)
-    }
-  })
-
-  it('laat het deel van je balk weg boven de 30.000 die het profiel toelaat', () => {
-    expect(potionOptions('thief', '30000', '30001').hp[0].fillPct).toBeCloseTo((250 / 30000) * 100)
-    expect(potionOptions('thief', '30000', '30001').mp[0].fillPct).toBeNull()
-  })
-
-  it('vult nooit meer dan je hele balk', () => {
-    expect(potionOptions('thief', '100', '50').hp.map((x) => x.fillPct)).toEqual([100, 100])
-  })
-
-  it('laat het deel van je balk weg zonder bruikbare max: leeg, 0, negatief, geen geheel getal of geen getal', () => {
-    for (const max of ['', '  ', '0', '-5', '12.5', 'abc']) {
-      const o = potionOptions('thief', max, max)
-      expect([...o.hp, ...o.mp].every((x) => x.fillPct === null), JSON.stringify(max)).toBe(true)
-    }
-  })
-
-  it('telt Improved HP en MP Recovery mee in herstel, prijs per punt en balk', () => {
-    const o = potionOptions('warrior', '500', '200', { hp: 1.2, mp: 1 })
-    expect(o.hp[0]).toMatchObject({ restores: 300, mesoPerPoint: 0.5, fillPct: 60 })
-    expect(o.mp[0]).toMatchObject({ restores: 200, mesoPerPoint: 1.1, fillPct: 100 })
+  it('valt terug op de goedkoopste bij geen keuze, of een naam die niet bij de job of de soort hoort', () => {
+    expect(databasePotion('thief', 'hp', null)).toBe(HP_POTION)
+    expect(databasePotion('thief', 'hp', 'Blue Potion')).toBe(HP_POTION)
+    expect(databasePotion('thief', 'mp', 'Lemon')).toBe(mpPotionFor('thief'))
+    expect(databasePotion('magician', 'mp', 'Lemon')).toBe(potion('Lemon'))
   })
 })
 
-const potion = (name: string) => [...POTIONS, ...MAGICIAN_MP_POTIONS].find((p) => p.name === name)!
-
-describe('resolvePotions', () => {
+describe('resolvePotions, pickPotion en fixPotion', () => {
   it('geeft zonder keuze de goedkoopste per punt, dezelfde als de berekening zonder keuze', () => {
     for (const job of ['thief', 'warrior', 'bowman', 'magician'] as Job[]) {
       expect(resolvePotions(job, NO_POTION_CHOICE), job).toEqual({ hp: HP_POTION, mp: mpPotionFor(job) })
@@ -94,23 +54,56 @@ describe('resolvePotions', () => {
     }
   })
 
-  it('geeft je keuze terug als hij bij je job en de soort hoort', () => {
-    expect(resolvePotions('thief', { hp: 'White Potion', mp: 'Blue Potion' })).toEqual({ hp: potion('White Potion'), mp: potion('Blue Potion') })
-    expect(resolvePotions('magician', { hp: null, mp: 'Lemon' }).mp).toBe(potion('Lemon'))
+  it('geeft je keuze uit de database, met je correcties erover', () => {
+    expect(resolvePotions('thief', choice('White Potion', null)).hp).toBe(potion('White Potion'))
+    const fixed = fixPotion(fixPotion(choice('White Potion', null), 'thief', 'hp', 'price', '330')!, 'thief', 'hp', 'restores', '520')!
+    expect(fixed.fix.hp).toEqual({ price: 330, restores: 520 })
+    expect(resolvePotions('thief', fixed).hp).toMatchObject({ name: 'White Potion', price: 330, hp: 520, mp: 0 })
+    // De correctie van de MP-potion staat los van die van de HP-potion.
+    expect(resolvePotions('thief', fixed).mp).toBe(mpPotionFor('thief'))
   })
 
-  it('valt per soort terug op de goedkoopste bij een naam die niet bij de job of de soort hoort', () => {
-    // De Lemon is alleen voor een Magician; Blue Potion herstelt geen HP; een onbekende naam bestaat niet.
-    expect(resolvePotions('thief', { hp: 'Blue Potion', mp: 'Lemon' })).toEqual({ hp: HP_POTION, mp: mpPotionFor('thief') })
-    expect(resolvePotions('warrior', { hp: 'Elixir', mp: '' })).toEqual({ hp: HP_POTION, mp: mpPotionFor('warrior') })
+  it('corrigeert ook de goedkoopste als je niets koos', () => {
+    const fixed = fixPotion(NO_POTION_CHOICE, 'thief', 'mp', 'price', '200')!
+    expect(resolvePotions('thief', fixed).mp).toMatchObject({ name: 'Blue Potion', price: 200, mp: 200 })
   })
 
-  it('markeert in potionOptions je keuze als gebruikt, en de goedkoopste apart', () => {
-    const o = potionOptions('thief', '444', '363', undefined, resolvePotions('thief', { hp: 'White Potion', mp: null }))
-    expect(o.hp.map((x) => [x.potion.name, x.used, x.cheapest])).toEqual([
-      ['Orange Potion', false, true],
-      ['White Potion', true, false],
-    ])
+  it('haalt een correctie weg bij een leeg vak of het getal uit de database, en weigert een ongeldig getal', () => {
+    const fixed = fixPotion(choice('White Potion', null), 'thief', 'hp', 'price', '330')!
+    expect(fixPotion(fixed, 'thief', 'hp', 'price', '')!.fix.hp).toEqual({})
+    expect(fixPotion(fixed, 'thief', 'hp', 'price', '350')!.fix.hp).toEqual({})
+    for (const bad of ['0', '-5', '12.5', 'abc', '10000000']) expect(fixPotion(fixed, 'thief', 'hp', 'price', bad), bad).toBeNull()
+    // Herstel boven de 30.000 die het profiel als Max HP toelaat, is geen potion.
+    expect(fixPotion(fixed, 'thief', 'hp', 'restores', '30001')).toBeNull()
+  })
+
+  it('gooit de correcties van een soort weg als je daar een andere potion kiest, en laat de andere soort staan', () => {
+    let c = fixPotion(choice('White Potion', null), 'thief', 'hp', 'price', '330')!
+    c = fixPotion(c, 'thief', 'mp', 'price', '200')!
+    const picked = pickPotion(c, 'hp', 'Orange Potion')
+    expect(picked).toEqual({ hp: 'Orange Potion', mp: null, fix: { hp: {}, mp: { price: 200 } } })
+  })
+
+  it('noemt de velden per soort: de prijs als kosten, het herstel als winst', () => {
+    expect(potionFields('hp').map((f) => [f.label, f.tone])).toEqual([['Prijs (meso)', 'cost'], ['Herstelt HP', 'gain']])
+    expect(potionFields('mp').map((f) => f.label)).toEqual(['Prijs (meso)', 'Herstelt MP'])
+  })
+})
+
+describe('potionInfo', () => {
+  it('rekent meso per punt en het deel van je balk', () => {
+    const info = potionInfo(potion('Orange Potion'), 'hp', '444')
+    expect(info.mesoPerPoint).toBe(0.6)
+    expect(info.fillPct).toBeCloseTo((250 / 444) * 100)
+    expect(potionInfo(potion('White Potion'), 'hp', '444').fillPct).toBe(100)
+  })
+
+  it('telt Improved Recovery mee', () => {
+    expect(potionInfo(potion('Orange Potion'), 'hp', '500', 1.2)).toEqual({ mesoPerPoint: 0.5, fillPct: 60 })
+  })
+
+  it('laat het deel van je balk weg zonder bruikbare max: leeg, 0, negatief, geen geheel getal, geen getal of boven 30.000', () => {
+    for (const max of ['', '  ', '0', '-5', '12.5', 'abc', '30001']) expect(potionInfo(potion('Blue Potion'), 'mp', max).fillPct, JSON.stringify(max)).toBeNull()
   })
 })
 
@@ -123,6 +116,11 @@ describe('potionAdvice', () => {
     const c = levelCost(p, bestVerdict(drafts, p))
     return c.kind === 'cost' ? c.meso : undefined
   }
+  const advice = (p: Profile, d = drafts) => {
+    const a = potionAdvice(d, p)
+    if (a.kind !== 'advice') throw new Error('geen advies')
+    return a
+  }
 
   it('is niet uit te rekenen zonder profiel of zonder kosten', () => {
     expect(potionAdvice(drafts, null)).toEqual({ kind: 'none' })
@@ -131,38 +129,39 @@ describe('potionAdvice', () => {
 
   it('zegt blijven als je de goedkoopste gebruikt, met of zonder keuze in het profiel', () => {
     for (const p of [profile, { ...profile, potions: cheapestPotions('thief') }]) {
-      const a = potionAdvice(drafts, p)
-      expect(a.kind === 'advice' && a.stay).toBe(true)
-      expect(a.kind === 'advice' && a.mesoChosen).toBe(cost(profile))
+      expect(advice(p).switchTo).toEqual([])
+      expect(advice(p).mesoChosen).toBe(cost(profile))
     }
   })
 
-  it('zegt blijven bij een Magician met de Lemon: even goedkoop per MP als de Orange, ook als afronding de kosten laat verschillen', () => {
-    const p = parseProfile({ ...DEFAULT_PROFILE, level: '15', int: '60', luk: '4' }, 'magician')
-    if (!('profile' in p)) throw new Error(p.error)
-    const lemon = { ...p.profile, potions: resolvePotions('magician', { hp: null, mp: 'Lemon' }) }
-    const a = potionAdvice(drafts, lemon)
-    if (a.kind !== 'advice') throw new Error('geen advies')
-    expect(a.stay).toBe(true)
-    expect(a.mesoCheapest).toBe(a.mesoChosen)
-  })
-
   it('rekent met je keuze, en zet de goedkoopste ernaast die dit level minder kost', () => {
-    const white = { ...profile, potions: resolvePotions('thief', { hp: 'White Potion', mp: null }) }
-    const a = potionAdvice(drafts, white)
-    if (a.kind !== 'advice') throw new Error('geen advies')
-    expect(a.stay).toBe(false)
-    expect(a.cheapest).toEqual(cheapestPotions('thief'))
+    const white = { ...profile, potions: resolvePotions('thief', choice('White Potion', null)) }
+    const a = advice(white)
+    expect(a.switchTo).toEqual([HP_POTION])
     expect(a.mesoChosen).toBe(cost(white))
     expect(a.mesoCheapest).toBe(cost(profile))
     expect(a.mesoChosen!).toBeGreaterThan(a.mesoCheapest!)
   })
 
-  it('ziet geen verschil als je de potionkosten van je mob zelf invult', () => {
+  it('rekent met je correctie, en raadt geen wissel aan naar dezelfde potion', () => {
+    const dear = { ...profile, potions: resolvePotions('thief', fixPotion(NO_POTION_CHOICE, 'thief', 'hp', 'price', '300')!) }
+    expect(advice(dear).mesoChosen).toBe(cost(dear))
+    expect(advice(dear).mesoChosen!).toBeGreaterThan(cost(profile)!)
+    expect(advice(dear).switchTo).toEqual([])
+  })
+
+  it('zegt blijven bij een Magician met de Lemon: even goedkoop per MP als de Orange', () => {
+    const p = parseProfile({ ...DEFAULT_PROFILE, level: '15', int: '60', luk: '4' }, 'magician')
+    if (!('profile' in p)) throw new Error(p.error)
+    const a = advice({ ...p.profile, potions: resolvePotions('magician', choice(null, 'Lemon')) })
+    expect(a.switchTo).toEqual([])
+    expect(a.mesoCheapest).toBe(a.mesoChosen)
+  })
+
+  it('ziet geen verschil als de potions op de plek niet meetellen', () => {
     const own = [{ ...drafts[0], potions: '1000' }]
-    const a = potionAdvice(own, { ...profile, potions: resolvePotions('thief', { hp: 'White Potion', mp: null }) })
-    if (a.kind !== 'advice') throw new Error('geen advies')
-    expect(a.stay).toBe(false)
+    const a = advice({ ...profile, potions: resolvePotions('thief', choice('White Potion', null)) }, own)
+    expect(a.switchTo).toEqual([HP_POTION])
     expect(a.mesoChosen).toBe(a.mesoCheapest)
   })
 })
@@ -173,18 +172,23 @@ describe('loadPotionChoice en savePotionChoice', () => {
     return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) } as unknown as Storage
   }
 
-  it('bewaart en laadt de keuze per soort', () => {
+  it('bewaart en laadt de keuze en de correcties per soort', () => {
     const storage = memory()
-    expect(savePotionChoice(storage, { hp: 'White Potion', mp: null })).toBe(true)
-    expect(loadPotionChoice(storage)).toEqual({ hp: 'White Potion', mp: null })
+    const c: PotionChoice = { hp: 'White Potion', mp: null, fix: { hp: { price: 330 }, mp: {} } }
+    expect(savePotionChoice(storage, c)).toBe(true)
+    expect(loadPotionChoice(storage)).toEqual(c)
   })
 
-  it('geeft "nog niet gekozen" bij lege, kapotte of vreemde opslag', () => {
+  it('laadt een keuze van vóór de correcties zonder correcties', () => {
+    expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: JSON.stringify({ version: 1, hp: 'White Potion', mp: null }) }))).toEqual(choice('White Potion', null))
+  })
+
+  it('geeft "nog niet gekozen" bij lege, kapotte of vreemde opslag, en negeert een ongeldige correctie', () => {
     expect(loadPotionChoice(null)).toEqual(NO_POTION_CHOICE)
     for (const raw of ['', '{', 'null', '[]', JSON.stringify({ version: 2, hp: 'White Potion' })]) {
       expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: raw })), raw).toEqual(NO_POTION_CHOICE)
     }
-    const odd = JSON.stringify({ version: 1, hp: 42, mp: 'x'.repeat(61) })
+    const odd = JSON.stringify({ version: 1, hp: 42, mp: 'x'.repeat(61), fix: { hp: { price: -1, restores: 2.5 }, mp: { price: '200' } } })
     expect(loadPotionChoice(memory({ [POTION_CHOICE_KEY]: odd }))).toEqual(NO_POTION_CHOICE)
   })
 })
