@@ -41,17 +41,32 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: shared `ViewButtons` (Advised first, then Your character) on Equip, Skillpoints, Monster, Potions, Ability points and Total stats; Advised popups read-only from the live `cheapestSettings` result; report inside the popup; Cheapest renamed to Advised
+- [x] Review fixes from Victor and Edith (no card error in Advised, accessible name `Advised: <card>`, "Advised equip", stale comments, small cleanups)
 
 ### TEST
 
+- [x] Tycho: coverage for button order, read-only Advised popups per card, report placement, focus return, no-advice case (mocked), no visible "Cheapest" label; `npm test` (1771) and `npm run lint` green
+- [ ] Dave looks at the preview at phone width before the merge (visible result)
+
 ### DEPLOY: app/192-advised-view-buttons
 
-**Score:**
+Every card with a choice in it now works like Equip: no eye in its head, but two buttons under it, **Advised** first and
+then **Your character**. Advised opens the card's popup read-only, filled in with the advised setup (the live result of
+the cheapest free settings from #183): its monster on Monster, its potions on Potions, its skill points on Skillpoints,
+its base AP on Ability points, and the stats that follow from that AP on Total stats. Your character opens the popup as
+before, to change your own setup. The card's Report button moved into the popup, at its bottom, in both views. The label
+**Cheapest** is now **Advised** everywhere it meant that setup: the Equip button, the Total cost heading and the
+Difference column; the equip dialog under it is called **Advised equip**. A shared `ViewButtons` component and
+`useCardView` hook replace the Equip-only buttons.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+On every card you first see what the app advises and then compare it with your own setup, before you decide to copy it.
+
+**Score:** 3
 
 #### Pull Request
 
