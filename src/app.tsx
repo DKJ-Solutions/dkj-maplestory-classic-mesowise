@@ -1617,9 +1617,8 @@ function CostCardButtons(props: { part: 'worn' | 'advised'; job: Job; equipment:
   }
   return (
     <>
-      {/* Boven de knoppen het kopje Setup met wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. */}
+      {/* Boven de knoppen de zin wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. Zonder kopje (Dave). */}
       <div class="cost-setup">
-        <h4>Setup</h4>
         <p class="total-cost-sub">The total cost above is calculated with this setup.</p>
         <div class="card-actions cost-cards">
           {COST_CARDS.map((c) => {

@@ -3761,11 +3761,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('zet boven de knoppen van elk deel het kopje Setup met de zin dat het totaal met deze setup is berekend (#192)', () => {
+    it('zet boven de knoppen van elk deel de zin dat het totaal met deze setup is berekend, zonder kopje (#192)', () => {
       setUpAdvisedDiffers()
       for (const which of ['cost-ingame', 'cheapest-cost'] as const) {
         const setup = part(which).querySelector<HTMLElement>('.cost-setup')!
-        expect(setup.querySelector('h4')?.textContent, which).toBe('Setup')
+        expect(setup.querySelector('h4'), which).toBeNull()
         expect(setup.querySelector('.total-cost-sub')?.textContent).toBe('The total cost above is calculated with this setup.')
         expect(setup.querySelectorAll('.cost-cards button')).toHaveLength(6)
       }
