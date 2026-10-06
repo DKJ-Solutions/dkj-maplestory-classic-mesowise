@@ -17,7 +17,8 @@ import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { isNpcDagger, NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
-import type { ArmorPiece, ArmorSlot, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
+import type { ArmorPiece, ArmorSlot, Gender, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
+import { fitsGender } from './gender'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
 import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
 import type { Job } from './job'
@@ -163,6 +164,14 @@ export interface CatalogItem {
   mult?: number
   /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
   mdef?: number
+  /** Alleen armor voor één geslacht (#55, #188): de zoekbalk toont hem dan alleen bij dat geslacht. */
+  gender?: Gender
+  /**
+   * Alleen armor: alles wat het stuk in de app doet (slot, level, WDEF, MDEF, stat-eisen) en zijn naam zonder kleur (colourless). Kleuren
+   * van hetzelfde stuk hebben dezelfde sleutel; de zoekbalk toont ze als één (Dave, 6 oktober 2026, #188). Een ander stuk met dezelfde
+   * stats (Leather Sandals naast Rubber Boots) of een ander materiaal (Bronze en Steel Grieves) blijft apart.
+   */
+  variant?: string
 }
 
 /** Hoeveel zoekresultaten het scherm toont. */
@@ -203,7 +212,16 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false,
   const shop = SHOP[job]
   if (!shop) return []
   const items: CatalogItem[] = isArmorSlot(slot)
-    ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot).map((a) => ({ name: a.name, level: a.level, stat: a.wdef, mdef: a.mdef ?? 0 }))
+    ? [...shop.armor, ...shop.wornArmor]
+        .filter((a) => a.slot === slot)
+        .map((a) => ({
+          name: a.name,
+          level: a.level,
+          stat: a.wdef,
+          mdef: a.mdef ?? 0,
+          ...(a.gender ? { gender: a.gender } : {}),
+          variant: [a.slot, a.level, a.wdef, a.mdef ?? 0, a.str ?? 0, a.dex ?? 0, a.int ?? 0, a.luk ?? 0, colourless(a.name)].join('|'),
+        }))
     : [...shop.weapons, ...shop.wornWeapons].map((c) => ({
         name: c.name,
         level: c.level,
@@ -226,10 +244,33 @@ const catalogItem = (slot: EquipSlot, name: string, job: Job, weapon = '') => ca
 /** Het level dat een item uit de catalogus vraagt om het te dragen (#188); undefined bij een eigen item of een item zonder level (pijlen). */
 export const itemLevel = (slot: EquipSlot, name: string): number | undefined => anyItem(slot, name)?.level
 
-/** Een itemnaam met het level dat hij vraagt erachter, zoals het scherm hem toont: "Steel Titans (Lv. 15)" (Dave, 6 oktober 2026, #188). */
+/**
+ * De naam van een stuk zonder zijn kleur (#188): heeft het kleuren met precies dezelfde stats en dezelfde naam zonder kleurwoorden
+ * (dezelfde `variant`), dan die naam ("Red Rubber Boots", "Blue Rubber Boots" → "Rubber Boots"); anders de naam zelf.
+ */
+export function familyName(slot: EquipSlot, name: string): string {
+  const item = anyItem(slot, name)
+  if (item?.variant === undefined) return name
+  const names = new Set((Object.keys(SHOP) as Job[]).flatMap((j) => catalogItems(slot, j, true).filter((i) => i.variant === item.variant).map((i) => i.name)))
+  return names.size < 2 ? name : colourless(name)
+}
+
+/** De kleurwoorden waarmee een itemnaam begint ("Dark Brown", "Silver / Black"); een materiaal (Bronze, Steel) is geen kleur. */
+const COLOURS = new Set(['red', 'blue', 'yellow', 'green', 'black', 'white', 'brown', 'dark', 'pink', 'purple', 'grey', 'gray', 'gold', 'sky', 'blood', 'silver', 'orange', 'light', 'navy', '/'])
+
+/** Een itemnaam zonder de kleurwoorden vooraan: "Dark Brown Stealer Pants" → "Stealer Pants". Blijft er niets over, dan de naam zelf. */
+const colourless = (name: string): string => {
+  const words = name.split(' ')
+  let i = 0
+  while (i < words.length - 1 && COLOURS.has(words[i].toLowerCase())) i++
+  return words.slice(i).join(' ')
+}
+
+/** Een itemnaam zonder kleur en met het level dat hij vraagt erachter, zoals het scherm hem toont: "Steel Titans (Lv. 15)" (Dave, 6 oktober 2026, #188). */
 export const nameWithLevel = (slot: EquipSlot, name: string): string => {
   const level = itemLevel(slot, name)
-  return level === undefined ? name : `${name} (Lv. ${level})`
+  const shown = familyName(slot, name)
+  return level === undefined ? shown : `${shown} (Lv. ${level})`
 }
 
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
@@ -254,10 +295,29 @@ export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Re
 }
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */
-export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = '', maxLevel?: number): readonly CatalogItem[] {
+export function searchCatalog(slot: EquipSlot, job: Job, query: string, helpfulStranger = false, weapon = '', maxLevel?: number, gender: Gender | null = null): readonly CatalogItem[] {
   const q = query.trim().toLowerCase()
-  // Met `maxLevel` (je character-level, Dave, 6 oktober 2026, #188) alleen wat je op dat level kunt dragen; een item zonder level (pijlen) altijd.
-  return catalogItems(slot, job, helpfulStranger, weapon).filter((i) => i.name.toLowerCase().includes(q) && (maxLevel === undefined || (i.level ?? 0) <= maxLevel))
+  const items = catalogItems(slot, job, helpfulStranger, weapon)
+  // Kleuren van hetzelfde stuk (dezelfde `variant`) staan als één in de lijst, onder hun gedeelde naam (#188); de eerste
+  // (een winkelitem gaat voor) is wat je kiest. Je vindt het stuk ook met de naam van een andere kleur.
+  const out: CatalogItem[] = []
+  const seen = new Set<string>()
+  for (const i of items) {
+    // Met `maxLevel` (je character-level, #188) alleen wat je op dat level kunt dragen; een item zonder level (pijlen) altijd.
+    if (maxLevel !== undefined && (i.level ?? 0) > maxLevel) continue
+    // Met een gekozen geslacht (#188) geen stuk dat alleen voor het andere is.
+    if (gender !== null && !fitsGender(i, gender)) continue
+    if (i.variant !== undefined) {
+      if (seen.has(i.variant)) continue
+      const colours = items.filter((j) => j.variant === i.variant)
+      if (!colours.some((j) => j.name.toLowerCase().includes(q)) && !familyName(slot, i.name).toLowerCase().includes(q)) continue
+      seen.add(i.variant)
+      out.push(i)
+    } else if (i.name.toLowerCase().includes(q)) out.push(i)
+  }
+  // Hoogste level bovenaan (Dave, 6 oktober 2026, #188): het beste wat je kunt dragen staat eerst. Stabiel, dus bij gelijk level blijft de
+  // volgorde van de catalogus (een winkelitem eerst); een item zonder level (pijlen) onderaan.
+  return [...out].sort((a, b) => (b.level ?? -1) - (a.level ?? -1))
 }
 
 /** Een getal uit een invulveld, geheel en binnen 0..999; undefined bij leeg of onleesbaar. */

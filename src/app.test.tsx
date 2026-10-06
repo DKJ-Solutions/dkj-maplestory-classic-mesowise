@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App, totalCostWho } from './app'
 import { NPC_CLAWS } from './data/claws'
-import { EQUIPMENT_KEY, searchCatalog } from './equipment'
+import { EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
@@ -20,9 +20,9 @@ const IGOR = claw('Steel Igor')
 const MEBA = claw('Meba')
 const GARNIER = claw('Garnier')
 
-/** Twee items uit de catalogus van een slot met een verschillende stat en een naam die niet in de ander zit. */
+/** Twee items uit de catalogus van een slot met een verschillende stat en een naam die niet in de ander zit, allebei te dragen op lv 10 (#188: de lijst staat met het hoogste level bovenaan). */
 const twoItems = (slot: 'hat' | 'top' | 'shoes') => {
-  const items = searchCatalog(slot, 'thief', '')
+  const items = searchCatalog(slot, 'thief', '', false, '', 10)
   const a = items[0]
   const b = items.find((i) => i.stat !== a.stat && !i.name.includes(a.name) && !a.name.includes(i.name))
   if (!b) throw new Error(`geen tweede ${slot} met een andere WDEF`)
@@ -76,9 +76,10 @@ const typeIn = (card: HTMLElement, slot: string, text: string) => {
   return rowOf(card, slot)
 }
 const options = (row: HTMLElement) => Array.from(row.querySelectorAll<HTMLElement>('li[role="option"]'))
-/** Kies een catalogusitem: typ de naam in de zoekbalk en tik de optie aan. */
+/** Kies een catalogusitem: typ de naam in de zoekbalk en tik de optie aan; de lijst toont kleuren als één rij onder hun gedeelde naam (#188). */
 const pick = (card: HTMLElement, slot: string, name: string) => {
-  const option = options(typeIn(card, slot, name)).find((o) => o.querySelector('.equip-name')?.textContent === name)
+  const isFamilyOf = (label: string | null | undefined) => !!label && (label === name || name.endsWith(` ${label}`))
+  const option = options(typeIn(card, slot, name)).find((o) => isFamilyOf(o.querySelector('.equip-name')?.textContent))
   if (!option) throw new Error(`${name} staat niet in de lijst van ${slot}`)
   fireEvent.click(option)
 }
@@ -1125,11 +1126,30 @@ describe('bewaren na elke wijziging', () => {
     atLevel('20')
     openHomeEquipment()
     const row = typeIn(cards()[0], 'Gloves', 'Duo')
-    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toEqual(['Brown Duo', 'Blue Duo', 'Black Duo', 'Gebruik "Duo" als eigen item'])
+    expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toEqual(['Duo']) // de drie kleuren staan als één rij (#188)
     expect(options(typeIn(cards()[0], 'Gloves', 'Juno')).map((o) => o.textContent)).toEqual(['Gebruik "Juno" als eigen item'])
     pick(cards()[0], 'Gloves', 'Work Gloves')
     expect(worn(cards()[0], 'Gloves')).toBe('Work Gloves')
     expect(slots().gloves.pick).toBe('Work Gloves')
+  })
+
+  it('biedt bij Bottom het Red Miniskirt aan zonder gekozen geslacht, en niet meer met Male gekozen (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    const labels = () => options(typeIn(cards()[0], 'Bottom', 'Miniskirt')).map((o) => o.querySelector('.equip-name')?.textContent)
+    expect(labels()).toContain('Red Miniskirt')
+    localStorage.setItem('mesowise.gender.v1', JSON.stringify({ version: 1, gender: 'male' }))
+    atLevel('20')
+    openHomeEquipment()
+    expect(labels()).not.toContain('Red Miniskirt')
+  })
+
+  it('toont in de Shoes-lijst "lv 0" in de meta van Rubber Boots (#188)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    const list = options(typeIn(cards()[0], 'Shoes', 'Rubber')).filter((o) => !o.textContent?.startsWith('Gebruik "'))
+    expect(list).toHaveLength(1)
+    expect(list[0].querySelector('.equip-meta')?.textContent).toContain('lv 0')
   })
 
   it('biedt geen eigen-item-rij als je precies een naam uit de lijst typt', () => {
@@ -1202,7 +1222,7 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().attackMs).toBe(String(IGOR.speed.attackMs))
     expect(slots()).toEqual(slotsBefore)
     expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
-    expect(worn(cards()[0], 'Hat')).toBe(HAT_B.name)
+    expect(worn(cards()[0], 'Hat')).toBe(familyName('hat', HAT_B.name)) // de knop toont de naam zonder kleur (#188)
     expect(worn(cards()[0], 'Shoes')).toBeNull()
   })
 
@@ -1577,8 +1597,8 @@ describe('een Warrior in de app', () => {
       expect(found('Weapon', 'Gladius')).toContain('Gladius')
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Hat', 'Bronze Full Helm')).toContain('Bronze Full Helm')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
-      expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
+      expect(found('Shoes', 'Bronze Grieves')).toContain('Bronze Grieves') // een ander materiaal dan Steel Grieves, geen kleur: een eigen rij (#188)
     })
 
     it('toont geen uitleg boven de slots (net als de Thief) en laat bij Top en Bottom zoeken', () => {
@@ -1999,7 +2019,7 @@ describe('een Bowman in de app', () => {
       pick(cards()[0], 'Weapon', 'Balanche')
       expect(found('Ammo', 'Arrows')).toEqual(expect.arrayContaining(['Arrows for Bows', 'Arrows for Crossbows']))
       expect(found('Hat', 'Hunter')).toContain('Hunter')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
     })
 
     it('zet bij een gekozen boog weapon attack en aanvalssnelheid in het bewaarde profiel (Balanche: 39 en 840 ms) en laat de rest staan', () => {
@@ -2133,7 +2153,7 @@ describe('een Magician in de app', () => {
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
       expect(found('Hat', 'Wizardry Hat')).toContain('Wizardry Hat')
-      expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
+      expect(found('Hat', 'Red Thief Hood')).not.toContain('Thief Hood')
       expect(found('Shoes', 'Wind Shoes')).toContain('Wind Shoes')
     })
 

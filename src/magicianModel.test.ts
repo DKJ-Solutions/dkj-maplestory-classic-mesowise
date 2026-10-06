@@ -656,7 +656,7 @@ describe('Magician: equipment', () => {
       expect(names, slot).toEqual([...NPC_MAGICIAN_ARMOR, ...WORN_MAGICIAN_ARMOR].filter((a) => a.slot === slot).map((a) => a.name))
       expect(names.length, slot).toBeGreaterThan(0)
     }
-    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toEqual({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
+    expect(catalogItems('hat', 'magician').find((i) => i.name === 'Wizardry Hat')).toMatchObject({ name: 'Wizardry Hat', level: 20, stat: 12, mdef: 14 })
     // Doros Robe / Doroness Robe (#76) is zijn eigen overall; de Sauna Robe heeft geen jobregel en geldt voor elke klas.
     expect(catalogItems('overall', 'magician').map((i) => i.name)).toEqual(['Doros Robe / Doroness Robe', 'Blue Sauna Robe'])
   })
