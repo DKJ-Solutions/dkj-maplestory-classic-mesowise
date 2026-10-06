@@ -2,10 +2,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App, totalCostWho } from './app'
+import { cheapestSettings } from './cheapestSettings'
 import { NPC_CLAWS } from './data/claws'
-import { EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
+import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
-import { POTION_CHOICE_KEY } from './potions'
+import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
 import { mobDraft } from './data/spots'
@@ -3469,5 +3470,225 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     fireEvent.click(viewButton('Monster'))
     chooseMob('Snail')
     expect(within(diffCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
+  })
+})
+
+describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
+  const CARDS = Object.keys(CARD_CLASS) as (keyof typeof CARD_CLASS)[]
+  const cardOf = (title: keyof typeof CARD_CLASS) => homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
+  const labels = (title: keyof typeof CARD_CLASS) => [...cardOf(title).querySelectorAll('.view-actions button')].map((b) => b.textContent)
+  /** Opent de popup van een kaart achter een van de twee knoppen en geeft hem terug. */
+  const openView = (title: keyof typeof CARD_CLASS, view: 'Advised' | 'Your character') => {
+    fireEvent.click(within(cardOf(title)).getByRole('button', { name: view }))
+    return cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
+  }
+  const closeView = (title: keyof typeof CARD_CLASS) => fireEvent.click(within(cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
+  /** De namen van alle knoppen in een popup, zoals een scherm-lezer ze noemt. */
+  const buttonNames = (d: HTMLElement) => [...d.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') ?? b.textContent ?? '')
+  const frame = () => new Promise((done) => requestAnimationFrame(() => done(undefined)))
+
+  /** Level 20 met Slime gekozen en White Potion als HP potion: de adviezen verschillen dan van wat je character heeft. */
+  const setUpAdvisedDiffers = () => {
+    for (let i = 0; i < 10; i++) levelUp()
+    fireEvent.click(viewButton('Monster'))
+    chooseMob('Slime')
+    fireEvent.click(viewButton('Potions'))
+    const potions = document.querySelector<HTMLElement>('section.potions dialog')!
+    fireEvent.change(within(potions).getByLabelText('HP potions'), { target: { value: 'White Potion' } })
+    fireEvent.click(within(potions).getByRole('button', { name: 'Opslaan' }))
+    // Wat de knop Advised toont, rekent cheapestSettings uit op wat er nu is opgeslagen.
+    const profileDraft: ProfileDraft = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
+    const choice = stored(POTION_CHOICE_KEY)
+    return cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } })
+  }
+
+  it('zet bij elke kaart eerst Advised en dan Your character, en geen oog of knop in de kop (#192)', () => {
+    for (const title of CARDS) {
+      expect(labels(title), title).toEqual(['Advised', 'Your character'])
+      expect(cardOf(title).querySelectorAll('.spot-head button'), title).toHaveLength(0)
+      expect(cardOf(title).querySelector('.spot-head .card-report'), title).toBeNull()
+      expect(cardOf(title).querySelector('dialog'), title + ' dicht').toBeNull()
+    }
+  })
+
+  it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Advised en Your character om beurten (#192)', () => {
+    for (const title of CARDS) {
+      const advised = within(cardOf(title)).getByRole('button', { name: 'Advised' })
+      const own = within(cardOf(title)).getByRole('button', { name: 'Your character' })
+      fireEvent.click(advised)
+      expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['true', 'false'])
+      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^Advised/)
+      closeView(title)
+      fireEvent.click(own)
+      expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['false', 'true'])
+      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^Advised/)
+      closeView(title)
+    }
+  })
+
+  // Elke job die de app kent wordt doorgerekend (isComputed), dus elke job krijgt het advies. De tak zonder advies staat in app.notComputed.test.tsx.
+  it('geeft bij elke job (Thief, Warrior, Bowman, Magician) op elke kaart Advised en Your character, in die volgorde', () => {
+    for (const job of ['warrior', 'bowman', 'magician'] as const) {
+      cleanup()
+      localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+      render(<App />)
+      for (const title of CARDS) {
+        expect(labels(title), job + ' ' + title).toEqual(['Advised', 'Your character'])
+        expect(cardOf(title).querySelectorAll('.spot-head button'), job + ' ' + title).toHaveLength(0)
+        // Advised opent zonder te crashen en is alleen-lezen.
+        const d = openView(title, 'Advised')
+        expect(d.querySelectorAll('input, select, textarea'), job + ' ' + title).toHaveLength(0)
+        closeView(title)
+      }
+    }
+  })
+
+  it('maakt elke Advised-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
+    setUpAdvisedDiffers()
+    for (const title of CARDS) {
+      const d = openView(title, 'Advised')
+      expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
+      // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Report: /.test(n)), title).toEqual([])
+      expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
+      expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
+      expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
+      expect(d.querySelector('.equip-edit, .equip-save, .auto-assign'), title).toBeNull()
+      closeView(title)
+    }
+  })
+
+  it('toont achter Advised bij Monster de mob uit cheapestSettings en laat Your character op je eigen mob staan (#192)', () => {
+    const r = setUpAdvisedDiffers()
+    const advisedMob = r.drafts[0].name
+    expect(advisedMob).not.toBe('Slime')
+    const d = openView('Monster', 'Advised')
+    expect(d.querySelector('.field-fixed')!.textContent).toContain(advisedMob)
+    expect(d.textContent).not.toContain('Kies een mob')
+    closeView('Monster')
+    const own = openView('Monster', 'Your character')
+    expect((within(own).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
+  })
+
+  it('toont achter Advised bij Skillpoints de skillpunten uit cheapestSettings en laat Your character op wat je zette (#192)', () => {
+    const r = setUpAdvisedDiffers()
+    expect(r.changes.some((c) => c.kind === 'skills'), 'het advies zet skillpunten').toBe(true)
+    const level = (d: HTMLElement, name: string) => d.querySelector(`[aria-label^="${name} level "]`)!.getAttribute('aria-label')!.replace(`${name} level `, '')
+    const before = profileFields() as ProfileDraft
+    const d = openView('Skillpoints', 'Advised')
+    expect(level(d, 'Lucky Seven')).toBe(r.profileDraft.luckySeven)
+    expect(level(d, 'Nimble Body')).toBe(r.profileDraft.nimbleBody)
+    expect(r.profileDraft.luckySeven).not.toBe(before.luckySeven)
+    closeView('Skillpoints')
+    const own = openView('Skillpoints', 'Your character')
+    expect(level(own, 'Lucky Seven')).toBe(before.luckySeven)
+    expect(level(own, 'Nimble Body')).toBe(before.nimbleBody)
+    // Wat je character heeft is niet door het advies overschreven.
+    expect(profileFields()).toEqual(before)
+  })
+
+  it('toont achter Advised bij Potions de potions uit cheapestSettings en laat Your character op je eigen keuze (#192)', () => {
+    const r = setUpAdvisedDiffers()
+    expect(r.potions.hp).not.toBe('White Potion')
+    const d = openView('Potions', 'Advised')
+    const texts = [...d.querySelectorAll('.potion-group .field-fixed')].map((p) => p.textContent!)
+    expect(texts).toHaveLength(2)
+    expect(texts[0]).toContain(r.potions.hp)
+    expect(texts[1]).toContain(r.potions.mp)
+    expect(d.textContent).not.toContain('White Potion')
+    closeView('Potions')
+    const own = openView('Potions', 'Your character')
+    expect((within(own).getByLabelText('HP potions') as HTMLSelectElement).value).toBe('White Potion')
+    expect(stored(POTION_CHOICE_KEY).hp).toBe('White Potion')
+  })
+
+  it('toont achter Advised bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {
+    const r = setUpAdvisedDiffers()
+    const before = profileFields() as ProfileDraft
+    expect(r.profileDraft.luk).not.toBe(before.luk)
+    const base = (d: HTMLElement, label: string) => within(d).getByText(label, { selector: '.stat-line-name' }).closest('.stat-line')!.querySelector('.ap-base strong')!.textContent
+    const d = openView('Ability points', 'Advised')
+    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(d, k.toUpperCase()), k).toBe(r.profileDraft[k])
+    closeView('Ability points')
+    const own = openView('Ability points', 'Your character')
+    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(own, k.toUpperCase()), k).toBe(before[k])
+    expect(profileFields()).toEqual(before)
+  })
+
+  it('leidt Total stats achter Advised af van de base AP van het advies, en laat Your character op je eigen AP (#192)', () => {
+    const r = setUpAdvisedDiffers()
+    const before = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
+    const range = (draft: ProfileDraft) => {
+      const parsed = parseProfile(draft, 'thief')
+      if (!('profile' in parsed)) throw new Error(parsed.error)
+      const w = statWindowRange(parsed.profile)!
+      return `${w.min} – ${w.max}`
+    }
+    const attack = (d: HTMLElement) => within(d).getByText('Attack', { selector: '.stat-line-name' }).closest('.stat-line')!.querySelector('strong')!.textContent
+    expect(range(r.profileDraft)).not.toBe(range(before))
+    const d = openView('Total stats', 'Advised')
+    expect(attack(d)).toBe(range(r.profileDraft))
+    closeView('Total stats')
+    const own = openView('Total stats', 'Your character')
+    expect(attack(own)).toBe(range(before))
+  })
+
+  it('zet het rapport van Equip, Skillpoints, Monster en Potions in de popup, in beide weergaven, en nooit in de kop (#192)', () => {
+    for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
+      expect(cardOf(title).querySelector('.card-report'), title + ' dicht').toBeNull()
+      for (const view of ['Advised', 'Your character'] as const) {
+        const d = openView(title, view)
+        const report = within(d).getByRole('button', { name: `Report: ${title}` })
+        expect(report.closest('.spot-body'), title + ' ' + view).not.toBeNull()
+        expect(cardOf(title).querySelector('.spot-head .card-report'), title + ' ' + view).toBeNull()
+        closeView(title)
+      }
+    }
+    for (const title of ['Ability points', 'Total stats'] as const) {
+      for (const view of ['Advised', 'Your character'] as const) {
+        expect(openView(title, view).querySelector('.card-report'), title + ' ' + view).toBeNull()
+        closeView(title)
+      }
+    }
+  })
+
+  it('toont bij Monster Advised een streepje zonder mob in het advies, zonder te crashen (#192)', () => {
+    // Zonder mob gekozen heeft cheapestSettings niets om mee te rekenen: het advies heeft geen mob.
+    expect(cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: [], profileDraft: DEFAULT_PROFILE, potionChoice: NO_POTION_CHOICE }).drafts[0]).toBeUndefined()
+    const d = openView('Monster', 'Advised')
+    expect(d.querySelector('.field-fixed')!.textContent).toBe('—')
+    // Geen mob-getallen en geen keuzemenu.
+    expect(d.querySelectorAll('.stat-line')).toHaveLength(0)
+    expect(d.querySelector('select')).toBeNull()
+    expect(within(d).getByRole('button', { name: 'Report: Monster' })).not.toBeNull()
+  })
+
+  it('zet de focus na het sluiten van een Advised-popup terug op de knop Advised (#192)', async () => {
+    for (const title of CARDS) {
+      const advised = within(cardOf(title)).getByRole('button', { name: 'Advised' })
+      fireEvent.click(advised)
+      closeView(title)
+      await frame()
+      expect(document.activeElement, title).toBe(advised)
+      // En bij Your character op zijn eigen knop, niet op Advised.
+      const own = within(cardOf(title)).getByRole('button', { name: 'Your character' })
+      fireEvent.click(own)
+      closeView(title)
+      await frame()
+      expect(document.activeElement, title).toBe(own)
+    }
+  })
+
+  it('noemt de goedkoopste setup nergens meer Cheapest: Total cost zegt Advised in de kop en in de kolom van Difference (#192)', () => {
+    setUpAdvisedDiffers()
+    const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
+    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
+    // Koppen, knoppen, kolomkoppen en namen van popups, met alle Advised-popups open.
+    for (const title of CARDS) openView(title, 'Advised')
+    fireEvent.click(within(card).getByRole('button', { name: 'Equip bekijken' }))
+    const named = [...document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, button, th, dialog, [aria-label], .stat-dialog-name')].flatMap((e) => [e.getAttribute('aria-label'), e.matches('dialog, [aria-label]') ? null : e.textContent]).filter((t): t is string => !!t)
+    expect(named.length).toBeGreaterThan(20)
+    expect(named.filter((t) => /cheapest/i.test(t))).toEqual([])
   })
 })
