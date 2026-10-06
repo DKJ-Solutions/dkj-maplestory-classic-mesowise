@@ -7,7 +7,7 @@ import { MAGIC_DAMAGE, SPELL_CAST_MS } from './data/magician'
 import { BOWMAN_SKILLS, isSkillKey, MAGICIAN_SKILLS, skillInfo, THIEF_SKILLS, WARRIOR_SKILLS, type SkillInfo, type SkillKey } from './data/skills'
 import { FIRST_JOB_LEVEL, SKILL_POOL_NAME, skillPointCap, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { ATTACK_MS, STARTING_AP, SUBI } from './data/thief'
-import type { Requires, Stat } from './data/types'
+import type { Potion, Requires, Stat } from './data/types'
 import { STAT_NAME, weaponStatName } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
@@ -32,6 +32,8 @@ export interface ProfileField {
 const STATS = [
   { key: 'level', label: 'Level', min: 1, max: 200, integer: true },
   { key: 'hp', label: 'Max HP', min: 1, max: 30_000, integer: true },
+  // Max MP staat alleen ter info op Total stats (de Potions-kaart rekent er de balk mee); de berekening gebruikt hem niet, dus leeg of fout blokkeert niets.
+  { key: 'mp', label: 'Max MP', min: 0, max: 30_000, integer: true, informative: true },
   // Je base AP in een stat kan niet onder 4: daar begint elk karakter (STARTING_AP).
   { key: 'str', label: 'STR', min: STARTING_AP.perStat, max: 999, integer: true },
   { key: 'dex', label: 'DEX', min: STARTING_AP.perStat, max: 999, integer: true },
@@ -145,9 +147,11 @@ export type ProfileDraft = Record<ProfileKey, string>
 
 /**
  * Een ingevuld profiel, als getallen, met de job waarvoor het geldt (die bepaalt welk model rekent) en het geslacht
- * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen).
+ * (issue #55: bepaalt welke armor je kunt dragen; zonder telt alleen wat beide kunnen dragen). `potions` zijn de potions die
+ * je gebruikt (potions.ts, Dave, 6 oktober 2026); zonder rekent de berekening met de goedkoopste per punt (HP_POTION en
+ * mpPotionFor in suggest.ts).
  */
-export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender }
+export type Profile = Record<ProfileKey, number> & { job: Job; gender?: Gender; potions?: { hp: Potion; mp: Potion } }
 
 /**
  * De velden die een job invult: elke job heeft de skills van zijn eigen 1e job, de Beginner-skills heeft elke job.
@@ -200,6 +204,8 @@ export const statFieldsFor = (job: Job): readonly ProfileField[] =>
 export const DEFAULT_PROFILE: ProfileDraft = {
   level: '10',
   hp: '444',
+  // 113 MP van een Beginner op level 10 plus de +250 MP van de Thief-advancement (MP_PER_LEVEL).
+  mp: '363',
   str: '4',
   dex: '25',
   int: '4',
@@ -404,7 +410,8 @@ export function loadProfile(storage: Storage | null | undefined): ProfileDraft {
       const v = (fields as Record<string, unknown>)[f.key]
       // Een veld dat een bewaard profiel niet heeft, krijgt de waarde van het voorbeeldprofiel, behalve de extra AP van
       // items: een profiel van vóór die velden typte zijn totale stats, dus daar komt niets bij.
-      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : isExtraKey(f.key) ? '0' : DEFAULT_PROFILE[f.key]
+      // Max MP is nieuwer dan het bewaarde profiel: dat van het voorbeeld past niet bij jouw level, dus leeg tot je hem invult.
+      out[f.key] = typeof v === 'string' ? v.slice(0, MAX_FIELD_LENGTH) : isExtraKey(f.key) ? '0' : f.key === 'mp' ? '' : DEFAULT_PROFILE[f.key]
     }
     return out
   } catch {

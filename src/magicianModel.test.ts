@@ -54,7 +54,7 @@ import {
 } from './profile'
 import { NOT_MODELLED, notModelled, skillPointAdvice, skillsOf } from './skillPoint'
 import { newDraft, type SpotDraft } from './spotDraft'
-import { energyBoltAt, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, potionFactorOf, resolveSpot, suggestMonsters } from './suggest'
+import { energyBoltAt, HP_POTION, hourPlan, magicClawAt, MAGICIAN_MP_POTION, MP_POTION, mpPotionFor, pickMonster, potionFactorOf, resolveSpot, suggestMonsters } from './suggest'
 
 const mDraft: ProfileDraft = {
   ...DEFAULT_PROFILE,
@@ -131,7 +131,7 @@ describe('profiel: de velden van een Magician', () => {
   it('toont de stats van het statvenster met de M.ATT van het wapen, en geen tijd per aanval, multiplier of stars', () => {
     const keys = profileFieldsFor('magician').map((f) => f.key)
     // Dezelfde stats en volgorde als de Warrior (kaarten Ability points en Total stats, #82), zonder de tijd per aanval.
-    expect(keys.slice(0, 5)).toEqual(['level', 'hp', 'str', 'dex', 'int'])
+    expect(keys.slice(0, 6)).toEqual(['level', 'hp', 'mp', 'str', 'dex', 'int'])
     expect(keys).toContain('luk')
     for (const k of ['attackMs', 'weaponMult', 'starWatk', 'starRecharge']) expect(keys, k).not.toContain(k)
     // De extra AP van items staat niet als eigen stat op de kaart: die staat in de popup van zijn stat.
@@ -290,7 +290,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     const c = toCharacter(p)
     const attack = spell === 'bolt' ? spellAttack(c, energyBoltAt(p.energyBolt)!, 1) : spellAttack(c, magicClawAt(p.magicClaw)!, MAGIC_CLAW_HITS)
     const estimate = estimateMob(c, attack, monster)
-    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
+    const s = { monster, estimate, expPerHour: monster.expPerKill * estimate.killsPerHour, rechargePerStar: 0, hpPotion: HP_POTION, mpPotion: MAGICIAN_MP_POTION, buffMpPerHour: 0, potionFactor: potionFactorOf(p) }
     const plan = hourPlan(s, estimate.killsPerHour)
     return { estimate, epm: plan.potions > 0 ? plan.expPerHour / plan.potions : Infinity }
   }
