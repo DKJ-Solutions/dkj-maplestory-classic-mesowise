@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**64 / 102 minor entries** <!-- pending-tally -->
+**64 / 103 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/161-rename-meso-cost-module · 20261006-081528Z
+
+`src/mesoCostAt.ts` is now [`src/bestExpPerMeso.ts`](../src/bestExpPerMeso.ts) (#161), named after the function it
+exports. The old name pointed at `mesoCostAt`, which left with #145.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Nothing a player notices: a file rename with no behaviour change.
+
+**Score:** N/A
+
+#### Pull Request
+
+Rename src/mesoCostAt.ts to bestExpPerMeso.ts: it no longer holds mesoCostAt
+
+[PR #180](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/180)
+
+---
 
 ### DEPLOY: app/123-remove-map-data · 20261006-081306Z
 
