@@ -337,6 +337,13 @@ export const attacksAsBeginner = (job: Job, level: number): boolean => (job === 
 export const thiefWithDagger = (job: Job, dagger: number): boolean => job === 'thief' && dagger === 1
 
 /**
+ * Of dit karakter geen stars of pijlen verbruikt: een Warrior of Magician, een Beginner (attacksAsBeginner) of een Thief met een dagger. De
+ * factuur telt dan geen munitie, en het Ammo-slot van Advised toont er geen (#189).
+ */
+export const throwsNothing = (p: Pick<Profile, 'job' | 'level' | 'dagger'>): boolean =>
+  p.job === 'warrior' || p.job === 'magician' || attacksAsBeginner(p.job, p.level) || thiefWithDagger(p.job, p.dagger)
+
+/**
  * De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een
  * Warrior gooit niets, een Beginner (attacksAsBeginner) ook niet, en een Thief met een dagger evenmin.
  */

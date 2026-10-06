@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, buyTexts, cheapestEquipment } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
-import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, type Equipment } from './equipment'
-import { DEFAULT_PROFILE } from './profile'
+import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, OTHER, type Equipment } from './equipment'
+import type { Job } from './job'
+import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
 
 const SLOTS = EQUIP_SLOTS.map((s) => s.slot)
 const NONE = { kind: 'none' } as const
@@ -174,5 +175,43 @@ describe('buyTexts (#192)', () => {
     const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 20)])
     expect(buyTexts(cheapestEquipment(SLOTS, eq, clawAdvice('Steel Titans'), advice))).toEqual({ att: 'Koop Steel Titans', def: 'Koop Hat A, Shoes A' })
     expect(buyTexts(cheapestEquipment(SLOTS, eq, NONE, NONE))).toEqual({ att: null, def: null })
+  })
+})
+
+describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot van Advised (#189)', () => {
+  const parsed = (job: Job, over: Partial<ProfileDraft> = {}): Profile => {
+    const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', ...over }, job)
+    if (!('profile' in r)) throw new Error(r.error)
+    return r.profile
+  }
+  const weapon = (pick: string) => ({ pick, name: '', stat: '' })
+
+  it('geeft een Thief zonder keuze de Subi, en anders de star met de herlaadprijs uit zijn profiel', () => {
+    expect(countedAmmo(parsed('thief'), weapon('Steel Igor'))).toBe('Subi Throwing Stars')
+    expect(countedAmmo(parsed('thief', { starWatk: '17', starRecharge: '0.4' }), weapon('Steel Igor'))).toBe('Wolbi Throwing Stars')
+    // Een gecorrigeerde W.ATT van dezelfde star verandert niet welke star het is: de herlaadprijs telt.
+    expect(countedAmmo(parsed('thief', { starWatk: '18', starRecharge: '0.4' }), weapon('Steel Igor'))).toBe('Wolbi Throwing Stars')
+  })
+
+  it('geeft niets als de herlaadprijs bij geen star uit de lijst hoort', () => {
+    expect(countedAmmo(parsed('thief', { starRecharge: '0.35' }), weapon('Steel Igor'))).toBeNull()
+  })
+
+  it('geeft niets voor wie niets gooit: een Thief met een dagger, een Beginner, een Warrior of een Magician', () => {
+    expect(countedAmmo(parsed('thief', { dagger: '1' }), weapon('Steel Igor'))).toBeNull()
+    expect(countedAmmo(parsed('thief', { level: '9', luckySeven: '0' }), weapon('Steel Igor'))).toBeNull()
+    expect(countedAmmo(parsed('warrior'), weapon(''))).toBeNull()
+    expect(countedAmmo(parsed('magician'), weapon(''))).toBeNull()
+  })
+
+  it('geeft een Bowman de gewone pijl voor zijn boog of kruisboog, en de bronze alleen met Helpful Stranger', () => {
+    expect(countedAmmo(parsed('bowman'), weapon('Battle Bow'))).toBe('Arrows for Bows')
+    expect(countedAmmo(parsed('bowman'), weapon('Balanche'))).toBe('Arrows for Crossbows')
+    expect(countedAmmo(parsed('bowman', { helpfulStranger: '1', bronzeArrows: '1' }), weapon('Balanche'))).toBe('Bronze Arrows for Crossbows')
+    expect(countedAmmo(parsed('bowman', { helpfulStranger: '0', bronzeArrows: '1' }), weapon('Battle Bow'))).toBe('Arrows for Bows')
+  })
+
+  it('geeft een Bowman met een eigen wapen de pijl voor een boog, zoals de berekening (PLAIN_ARROW)', () => {
+    expect(countedAmmo(parsed('bowman'), weapon(OTHER))).toBe('Arrows for Bows')
   })
 })

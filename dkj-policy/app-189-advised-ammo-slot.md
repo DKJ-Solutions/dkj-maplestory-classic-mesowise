@@ -39,19 +39,40 @@
 
 ### PLAN
 
+#### Scope
+
+#189: the Advised view of the Equip popup left the Ammo slot at "—" for a Thief or Bowman with nothing in it, while the Advised
+invoice counts throwing stars or arrows. Built here: the slot names the ammo the invoice counts. Not built here: choosing a
+cheaper ammo per level, which is a calculation of its own with an open question (which stars count as obtainable), filed as
+#198. Hand-typed ammo prices where slot and invoice still disagree: #199.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `countedAmmo(profile, weapon)` in `src/cheapestEquip.ts`: a Thief's star from the recharge price in his profile, a Bowman's arrow from `arrowFor` for his bow or crossbow; null for whoever throws nothing.
+- [x] `throwsNothing` moved from `suggest.ts` into `profile.ts`, so the invoice and the slot read one rule.
+- [x] `advisedSetup` returns `ammo` from the same profile the Advised invoice uses; `CheapestRows` shows it in an empty Ammo slot, without "Koop voor" and without the buy accent, with "Per star herladen, op de factuur" (Bowman: "Per pijl gekocht, op de factuur") and a sentence in the hint.
 
 ### TEST
 
+- [x] Unit tests for `countedAmmo` (Thief default and corrected star, unknown price, dagger, Beginner, Warrior, Magician, Bowman bow, crossbow, bronze, own weapon) and for `advisedSetup` against the real invoice ammo line; an app test for the popup row.
+- [x] Victor reviewed the diff (no correctness finding on the main path; edge cases filed as #199), Edith the UI text (wording adopted).
+- [x] Gates: `open-pr -GatesOnly` before the park (visible result, no PR).
+
 ### DEPLOY: app/189-advised-ammo-slot
 
-**Score:**
+The Advised view of the Equip popup now fills an empty Ammo slot with the throwing stars or arrows the Advised invoice
+counts (Subi by default), so the popup and Total cost no longer disagree about what a Thief or Bowman uses. It is shown
+without a price, with "Per star herladen, op de factuur", because ammo is paid per piece on the invoice and not bought once.
+Resolves #189.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A Thief or Bowman who opens Advised on Equip now sees which stars or arrows the Advised total counts, instead of an empty
+slot next to a Total cost that charges for them; picking a cheaper star is left to #198.
+
+**Score:** 2
 
 #### Pull Request
 

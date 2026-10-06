@@ -10,7 +10,7 @@ import { DOUBLE_STAB_HITS, DOUBLE_STAB_LEVELS, DOUBLE_STAB_WEAPON_MULT, LUCKY_SE
 import type { KnownSpot, Monster, Potion, SpellLevel } from './data/types'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS } from './data/warrior'
 import type { Job } from './job'
-import { attacksAsBeginner, thiefWithDagger, toCharacter, type Profile } from './profile'
+import { attacksAsBeginner, thiefWithDagger, throwsNothing, toCharacter, type Profile } from './profile'
 import { buffBonus } from './skillEffects'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
@@ -196,8 +196,7 @@ const expPerMeso = (s: MonsterSuggestion): number => {
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attacks = attacksOf(profile, character)
-  const throwsNothing = profile.job === 'warrior' || profile.job === 'magician' || attacksAsBeginner(profile.job, profile.level) || thiefWithDagger(profile.job, profile.dagger)
-  const rechargePerStar = throwsNothing ? 0 : profile.starRecharge
+  const rechargePerStar = throwsNothing(profile) ? 0 : profile.starRecharge
   const hpPotion = profile.potions?.hp ?? HP_POTION
   const mpPotion = profile.potions?.mp ?? mpPotionFor(profile.job)
   const buffMpPerHour = buffBonus(profile).mpPerHour
