@@ -61,7 +61,7 @@
 - [x] Dave (October 6, 2026): the HP and MP potion lines are always on the invoice, "× 0" and "0 meso" when the level
   needs none (never "-0")
 - [x] Dave (October 6, 2026): the question "How much does it cost to level up a **Lv. 18 Thief**?" under the level row at the
-  top of the app
+  top of the app, as a soft accent banner (level and job in accent, kept on one line)
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
