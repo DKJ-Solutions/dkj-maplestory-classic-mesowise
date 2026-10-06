@@ -39,10 +39,9 @@
 
 ### PLAN
 
-- [x] Dave (October 6, 2026): a Total cost card, subtitle "This is how much it cost to level up your **Lv. 18 Thief**"
-  (current level and job, in bold), with an invoice of
-  the potions a level needs and the total price. Ammo and travel are lines too when they cost anything, so the total
-  matches the level cost on the Report card.
+- [x] Dave (October 6, 2026): a Total cost card with an invoice of the potions a level needs and the total price. Ammo
+  and travel are lines too when they cost anything, so the total matches the level cost on the Report card. The
+  auto-optimise button Dave raised along the way is #183.
 
 ### CREATE
 
@@ -69,17 +68,19 @@
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
   job, own potion costs) and app tests for the card; 1666 tests green, lint clean
-- [ ] Dave looks at the card before the merge
+- [x] Dave looked at the card in the preview and said "ship it" (October 6, 2026)
+- [ ] Victor: final review of the later commits
 
 ### DEPLOY: app/total-cost-card
 
-A new Total cost card above the Report card ("This is how much it cost to level up your **Lv. 18 Thief**", with your
-own level and job) shows, as an invoice, what your current level costs: how many of each potion
-you need (the potions you picked on the Potions card), the stars or arrows, and travel when it costs anything, each with
-its price, and the total underneath. It calculates with the same mob, kills and potions as the Report card, so the total
-is the same amount, give or take rounding each count up to whole potions. Under the level row at the top, the app now asks "How much does it cost to level up your **Lv. 18 Thief**?", with your
-own level and job. A question mark after a potion's count explains, step by step, how the app
-arrives at that number.
+A new Total cost card above the Report card ("This is how much it cost to level up your **Lv. 18 Thief**", with
+your own level and job) shows, as an invoice, what your current level costs: how many of your HP and MP potion you need
+(the ones you picked on the Potions card, "× 0" when the level needs none), the stars or arrows, and travel when it
+costs anything, each with its price, and the total underneath. It calculates with the same mob, kills and potions as the
+Report card, so the total is the same amount, give or take rounding each count up to whole potions. A question mark
+after a potion's count ("Hoezo 3?") explains, step by step and with the model's own numbers, how the app arrives at it.
+Under the level row at the top, the app now asks "How much does it cost to level up your **Lv. 18 Thief**?" in a soft
+accent banner.
 
 **Score:** 3
 
