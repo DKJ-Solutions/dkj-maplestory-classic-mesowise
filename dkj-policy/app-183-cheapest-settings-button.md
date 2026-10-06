@@ -54,24 +54,25 @@
   by what they are (HP potion, MP potion, stars, travel) and the other item named in its cell (Cody).
 - [x] Table cleaned up after Dave's look: each thing in its own column (name, count once, "?", the two amounts on one
   line), a different potion under the name, and narrow enough for 360px (Gwen, Cody).
+- [x] Final shape after Dave's look: one Total cost card (h2) with three tinted panels under an h3, "In game" and
+  "Cheapest" as full invoices and "Difference" with the count and saving per row, the changes and "Overnemen" (Gwen, Cody).
 
 ### TEST
 
-- [x] Unit tests on the module and app tests on apply, undo, the "already cheapest" message and the two-column rows
-  (Tycho). Code review (Victor, findings applied and re-reviewed on each design) and text review (Edith, nothing blocking).
+- [x] Unit tests on the module and app tests on apply, undo, the "already cheapest" message, the three parts and the
+  difference rows adding up to the difference of the two invoices (Tycho). Code review (Victor, findings applied and re-reviewed on each design) and text review (Edith, nothing blocking).
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-The Total cost card now has two columns. "In game" is the level's cost as you play it now; "Cheapest" is what the
-same level costs with the cheapest settings that cost nothing: the cheapest safe mob, the cheapest potion per point,
-your skill points where they save the most and your AP filled in. Each row is one kind of cost (your HP potion, your
-MP potion, stars, travel), so a different potion in the cheapest setup sits on the same row with its name under the
-row's name; the count has its own column ("× 16", or "× 4 → 3" when the cheapest setup needs a different number).
-Because those choices affect each other, it repeats until nothing changes (at most five rounds) and never picks a setup
-that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the table the card shows
-"± X meso goedkoper", the difference of the two totals, and what is different per card; "Overnemen" applies it and
-"Ongedaan maken" puts everything back in one tap, until you change something yourself. When your setup already is the
-cheapest, both columns are the same and the card says so in one line.
+The Total cost card now has three parts, each in its own tinted panel. "In game" is the level's invoice as you play it
+now. "Cheapest" is the invoice of the same level with the cheapest settings that cost nothing: the cheapest safe mob,
+the cheapest potion per point, your skill points where they save the most and your AP filled in. "Difference" shows per
+row (your HP potion, your MP potion, stars, travel) how many you buy ("× 16", or "× 4 → 3"), a different potion under
+the row's name, and what it saves in green (or costs extra in red), with the total difference of the two invoices.
+Because the choices affect each other, the cheapest setup is found in rounds until nothing changes (at most five) and is
+never one that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the difference the
+card lists what changes per card; "Overnemen" applies it and "Ongedaan maken" puts everything back in one tap, until you
+change something yourself. When your setup already is the cheapest, the card says so in one line.
 
 **Score:** 4
 

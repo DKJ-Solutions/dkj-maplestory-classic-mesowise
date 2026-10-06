@@ -2473,78 +2473,61 @@ export const totalCostWho = (level: string, job: Job): string => {
 const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
 
 /**
- * Total cost met twee kolommen (Dave, 6 oktober 2026, #183): per regel wat het level kost met je setup in game en met de goedkoopste
- * setup. Een rij is een soort regel (je HP-potion, je MP-potion, stars, reizen), zodat een andere potion in de goedkoopste setup op
- * dezelfde rij staat; zijn naam staat dan klein onder die van de rij. Elk ding heeft zijn eigen kolom (Dave): de naam, het aantal
- * (één keer "× 16", of "× 4 → 3" als het verschilt), het vraagteken dat dat aantal uitlegt, en de twee bedragen op één regel. Een
- * regel die een setup niet heeft, of een setup zonder factuur, is een streepje.
+ * Difference, het derde deel van Total cost (Dave, 6 oktober 2026, #183): wat de goedkoopste setup per regel scheelt tegenover je
+ * setup in game. Een rij is een soort regel (je HP-potion, je MP-potion, stars, reizen), zodat een andere potion in de goedkoopste
+ * setup op dezelfde rij staat; zijn naam staat dan klein onder die van de rij. Per rij het aantal (één keer "× 16", of "× 4 → 3") en
+ * het verschil: groen met een plus wat je bespaart, rood met een min wat het meer kost. Een regel die één setup niet heeft, kost daar
+ * niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
  */
-function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice }) {
+function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice }) {
   const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
+  const [ig, ch] = cols
   const keys: string[] = []
   for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
   const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
-  const amount = (n: number) => (n === 0 ? '0' : `−${nfInt.format(n)}`)
   const qty = (l: InvoiceLine | undefined) => (l && l.qty !== null ? nfInt.format(l.qty) : null)
-  const colClass = ['invoice-ingame', 'invoice-cheapest']
-  return (
-    <table class="invoice invoice-compare">
-      <thead>
-        <tr>
-          <td />
-          <td />
-          <td />
-          <th scope="col" class="invoice-meso">
-            In game
-          </th>
-          <th scope="col" class="invoice-meso">
-            Cheapest
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {keys.map((key) => {
-          const a = lineOf(0, key)
-          const b = lineOf(1, key)
-          const row = a ?? b!
-          const qa = qty(a)
-          const qb = qty(b)
-          // Eén keer het aantal als beide setups evenveel kopen; anders van in game naar cheapest.
-          // Harde spaties binnen "× 4" en "→ 3": op een smal scherm breekt het alleen bij de pijl.
-          const count = qa && qb ? (qa === qb ? `× ${qa}` : `× ${qa} → ${qb}`) : qa || qb ? `× ${qa ?? qb}` : null
-          // Gebruikt de goedkoopste setup een andere potion, dan staat die onder de naam.
-          const other = a && b && b.label !== a.label ? b.label : null
-          const why = a?.why ? a : b?.why ? b : null
-          return (
-            <tr key={key}>
-              <th scope="row">
-                {row.label}
-                {other && <span class="invoice-sub">→ {other}</span>}
-              </th>
-              <td class="invoice-qty">{count}</td>
-              <td class="invoice-why-cell">{why && <InvoiceWhy line={{ ...why, why: why.why! }} />}</td>
-              {[a, b].map((l, col) => (
-                <td key={col} class={`invoice-meso ${colClass[col]}`}>
-                  {l ? <span class="cost">{amount(l.meso)}</span> : <span class="invoice-none">—</span>}
-                </td>
-              ))}
-            </tr>
-          )
-        })}
-      </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row">Total</th>
-          <td />
-          <td />
-          {cols.map((c, col) => (
-            <td key={col} class={`invoice-meso ${colClass[col]}`}>
-              {c ? <span class="cost">{amount(c.total)}</span> : <span class="invoice-none">—</span>}
-            </td>
-          ))}
-        </tr>
-      </tfoot>
-    </table>
+  const diff = (d: number | null) =>
+    d === null ? <span class="invoice-none">—</span> : d > 0 ? <span class="gain">+{nfInt.format(d)}</span> : d < 0 ? <span class="cost">−{nfInt.format(-d)}</span> : <span>0</span>
+  return ig || ch ? (
+    <>
+      <table class="invoice invoice-compare">
+        <tbody>
+          {keys.map((key) => {
+            const a = lineOf(0, key)
+            const b = lineOf(1, key)
+            const row = a ?? b!
+            const qa = qty(a)
+            const qb = qty(b)
+            // Eén keer het aantal als beide setups evenveel kopen; anders van in game naar cheapest. Harde spaties binnen "× 4" en
+            // "→ 3": op een smal scherm breekt het alleen bij de pijl.
+            const count = qa && qb ? (qa === qb ? `× ${qa}` : `× ${qa} → ${qb}`) : qa || qb ? `× ${qa ?? qb}` : null
+            // Gebruikt de goedkoopste setup een andere potion, dan staat die onder de naam.
+            const other = a && b && b.label !== a.label ? b.label : null
+            return (
+              <tr key={key}>
+                <th scope="row">
+                  {row.label}
+                  {other && <span class="invoice-sub">→ {other}</span>}
+                </th>
+                <td class="invoice-qty">{count}</td>
+                <td class="invoice-meso invoice-diff">{diff(ig && ch ? (a?.meso ?? 0) - (b?.meso ?? 0) : null)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td />
+            <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
+      {props.inGame.kind === 'none' && <p class="hint">In game: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+    </>
+  ) : (
+    <p class="hint">{props.inGame.kind === 'none' ? (noCostReason(props.inGame.cost) ?? 'Er is niets uit te rekenen.') : 'Er is niets uit te rekenen.'}</p>
   )
 }
 
@@ -2553,57 +2536,76 @@ function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice })
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; compare?: LevelInvoice; computed: boolean; job: Job; level: string; title: string; children?: ComponentChildren }) {
+function InvoiceTable(props: { invoice: LevelInvoice }) {
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
-  const compare = props.compare
+  return inv.kind === 'none' ? (
+    <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+  ) : (
+    <table class="invoice">
+      <tbody>
+        {inv.lines.map((l, i) => (
+          <tr key={`${i}-${l.label}`}>
+            <th scope="row">{l.label}</th>
+            <td class="invoice-qty">
+              {l.qty !== null && (
+                <>
+                  {`× ${nfInt.format(l.qty)}`}
+                  {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
+                  {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
+                </>
+              )}
+            </td>
+            <td class="invoice-meso cost">{meso(l.meso)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td />
+          <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  )
+}
+
+/**
+ * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "In game" is de factuur van je setup zoals
+ * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
+ * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
+ */
+function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
   return (
     <section class="card total-cost" aria-live="polite">
-      <h2>{props.title}</h2>
+      <h2>Total cost</h2>
       <p class="total-cost-sub">
         This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
       </p>
       {!props.computed ? (
         <NotComputed job={props.job} />
-      ) : compare && (inv.kind === 'invoice' || compare.kind === 'invoice') ? (
-        <>
-          <InvoiceCompare inGame={inv} cheapest={compare} />
-          {/* Zonder factuur in game staat die kolom vol streepjes; hier waarom. */}
-          {inv.kind === 'none' && <p class="hint">In game: {noCostReason(inv.cost) ?? 'er is niets uit te rekenen.'}</p>}
-        </>
-      ) : inv.kind === 'none' ? (
-        <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
       ) : (
         <>
-          <table class="invoice">
-            <tbody>
-              {inv.lines.map((l, i) => (
-                <tr key={`${i}-${l.label}`}>
-                  <th scope="row">{l.label}</th>
-                  <td class="invoice-qty">
-                    {l.qty !== null && (
-                      <>
-                        {`× ${nfInt.format(l.qty)}`}
-                        {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
-                        {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
-                      </>
-                    )}
-                  </td>
-                  <td class="invoice-meso cost">{meso(l.meso)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">Total</th>
-                <td />
-                <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
-              </tr>
-            </tfoot>
-          </table>
+          <div class="total-cost-part cost-ingame">
+            <h3>In game</h3>
+            <InvoiceTable invoice={props.invoice} />
+          </div>
+          {props.cheapest && (
+            <>
+              <div class="total-cost-part cheapest-cost">
+                <h3>Cheapest</h3>
+                <InvoiceTable invoice={props.cheapest} />
+              </div>
+              <div class="total-cost-part cost-difference">
+                <h3>Difference</h3>
+                <DifferenceTable inGame={props.invoice} cheapest={props.cheapest} />
+                {props.children}
+              </div>
+            </>
+          )}
         </>
       )}
-      {props.children}
     </section>
   )
 }
@@ -3005,9 +3007,9 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      {/* Met twee kolommen: je setup in game en de goedkoopste, met daaronder wat dat scheelt en Overnemen (#183). */}
-      <TotalCostCard invoice={invoice} compare={computed && cheapestLive ? cheapestInvoice : undefined} computed={computed} job={job} level={profileDraft.level} title="Total cost">
-        {computed && <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />}
+      {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
+      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
+        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 
       <LevelAdviceCard
