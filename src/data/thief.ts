@@ -19,8 +19,7 @@ export const LUCKY_SEVEN = { stars: 2, weaponMult: 3.0, mastery: 0.5 } as const
 
 /**
  * Double Stab per skill-level (1 tot 20): MP en schade per klap, 2 klappen op 1 monster, met een dagger. Opgehaald op
- * 4 oktober 2026 (issue #139). Het model rekent hem niet door (het kent de Thief met een claw), de sectie
- * "Skillpoints" toont wat hij doet.
+ * 4 oktober 2026 (issue #139). Het model rekent hem door voor een Thief met een dagger (issue #170).
  */
 export const DOUBLE_STAB_SOURCE: Source = { url: 'https://meowdb.com/msclassic/skills/thief/double-stab', retrieved: '2026-10-04' }
 export const DOUBLE_STAB_LEVELS: readonly SkillLevel[] = [
@@ -28,6 +27,13 @@ export const DOUBLE_STAB_LEVELS: readonly SkillLevel[] = [
   [11, 120], [12, 124], [12, 128], [13, 132], [13, 136], [14, 140], [14, 144], [15, 148], [15, 152], [16, 160],
 ].map(([mp, damagePct], i) => ({ level: i + 1, mp, damagePct }))
 export const DOUBLE_STAB_HITS = 2
+
+/**
+ * De weapon multiplier van Double Stab: "This skill uses the weapon's stab action", 2.0× (de skillpagina, nagelezen op
+ * 6 oktober 2026, issue #170; dezelfde steek als DAGGER in beginnerWeapons.ts). De mastery is die van je wapen ("Affected by:
+ * Mastery"), in de 1e job de gewone; de aanvalstijd is die van de dagger (660 ms bij Faster, 720 ms bij Fast, zonder booster).
+ */
+export const DOUBLE_STAB_WEAPON_MULT = 2.0
 
 // De aanvalstijd per claw-snelheid (de Lucky Seven-pagina, zonder Claw Booster) staat in de gedeelde tabel.
 export { ATTACK_MS } from './attackSpeed'

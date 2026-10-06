@@ -15,6 +15,7 @@ import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
+import { isNpcDagger, NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
 import type { ArmorPiece, ArmorSlot, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
@@ -146,7 +147,7 @@ export interface CatalogItem {
 export const MAX_RESULTS = 8
 
 /**
- * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws, Thief-armor, de draagbare
+ * De winkelitems en de items zonder prijs per job die de app kent: de Thief (claws en daggers, #170; Thief-armor, de draagbare
  * items), de Warrior (zijn wapens en armor uit de winkel, plus de items zonder prijs: wornWarrior.ts en de
  * items zonder jobregel die ook de Thief draagt), de Bowman (bogen, kruisbogen en armor uit de winkel, plus de items
  * zonder jobregel, zie bowmanGear.ts) en de Magician (zijn wands, staffs en armor uit de winkel, plus de items zonder
@@ -156,7 +157,7 @@ export const MAX_RESULTS = 8
  * wie nog Beginner is, draagt er een. Elke job heeft zijn winkellijst; een item van een andere job aanbieden zou onwaar zijn.
  */
 const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly ArmorPiece[]; wornWeapons: readonly (WornClaw & { mult?: number })[]; wornArmor: readonly WornArmor[] }>> = {
-  thief: { weapons: NPC_CLAWS, armor: NPC_ARMOR, wornWeapons: [...BEGINNER_WORN_WEAPONS, ...WORN_CLAWS], wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
+  thief: { weapons: [...NPC_CLAWS, ...NPC_DAGGERS], armor: NPC_ARMOR, wornWeapons: [...BEGINNER_WORN_WEAPONS, ...WORN_CLAWS], wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: [...BEGINNER_WORN_WARRIOR_WEAPONS, ...WORN_WARRIOR_CLAWS], wornArmor: [...WORN_WARRIOR_ARMOR, ...accessoriesFor('warrior')] },
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: BEGINNER_WORN_WEAPONS, wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
   magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
@@ -309,6 +310,19 @@ const isArrow = (name: string): boolean => NPC_ARROWS.some((a) => a.name === nam
 /** Het profiel met de pijlkeuze zoals de equipment ze toont: bronze alleen als de bronze pijl in het ammo-slot staat. */
 export const syncArrow = (profile: ProfileDraft, eq: Equipment): ProfileDraft => ({ ...profile, bronzeArrows: isBronzeArrow(eq.ammo.pick) ? '1' : '0' })
 
+/** Of dit wapen een dagger is: een onder level 10 rekent met LUK als hoofdstat (#171), een NPC-dagger met Double Stab (#170). */
+const isDaggerPick = (pick: string): boolean => isBeginnerDagger(pick) || isNpcDagger(pick)
+
+/**
+ * Het profiel met de pijlkeuze en de dagger zoals de equipment ze toont (#170): een dagger alleen als er een in het wapenslot staat.
+ * Na een wissel van job (of bij het laden) kan het wapenslot leeg zijn geworden; zonder dit rekende een terugkeer naar de Thief
+ * stilletjes met Double Stab, zonder dat er een dagger in zijn hand staat.
+ */
+export const syncWithEquipment = (profile: ProfileDraft, eq: Equipment): ProfileDraft => ({
+  ...syncArrow(profile, eq),
+  dagger: isDaggerPick(eq.claw.pick) ? '1' : '0',
+})
+
 /**
  * De schakelaar "Ik heb Helpful Stranger" (#64) om of uit. Uit terwijl je bronze pijlen droeg: het ammo-slot valt terug op
  * de gewone pijl van dezelfde soort (boog of kruisboog), zodat het getal weer dat van de gewone pijl is.
@@ -346,8 +360,9 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
     return { ...base, starWatk: String(next), ...(star ? { starRecharge: String(star.rechargePerStar) } : {}) }
   }
   if (!isArmorSlot(slot)) {
-    // Een dagger onder level 10 rekent met LUK als hoofdstat (#171): elk ander nieuw wapen, ook een eigen item, zet het uit.
-    const dagger = isBeginnerDagger(after.pick) ? '1' : '0'
+    // Een dagger onder level 10 rekent met LUK als hoofdstat (#171), een NPC-dagger met Double Stab (#170): elk ander nieuw wapen,
+    // ook een eigen item, zet het uit.
+    const dagger = isDaggerPick(after.pick) ? '1' : '0'
     const withDagger = after.pick === before.pick || profile.dagger === dagger ? profile : { ...profile, dagger }
     if (next === undefined) return withDagger
     const item = after.pick === OTHER || after.pick === before.pick ? undefined : anyItem('claw', after.pick)

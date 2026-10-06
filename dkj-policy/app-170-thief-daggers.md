@@ -55,8 +55,9 @@ the Thief's hand decides the model -- a claw keeps Lucky Seven with stars, a dag
 
 ### TEST
 
-- [ ] Tycho: tests for the data, the attack, suggest, equipment, the weapon and the skill advice; lint + suite green
-- [ ] Victor: code review; Edith: the Dutch UI text
+- [x] Tycho: tests for the data, the attack, suggest, equipment, the weapon and the skill advice; lint + suite green (1599)
+- [x] Victor: code review -- a stale dagger flag survived a job switch; fixed with `syncWithEquipment` and pinned in tests.
+      The custom-weapon-after-dagger case is filed as #176. Edith: the Dutch UI text, applied
 - [ ] Dave looks at the preview before the merge (visible result)
 
 ### DEPLOY: app/170-thief-daggers

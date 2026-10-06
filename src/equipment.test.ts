@@ -97,7 +97,7 @@ describe('searchCatalog', () => {
     for (const n of pao) expect(n.toLowerCase(), n).toContain('pao')
     expect(names('top', '  RED  ')).toEqual(names('top', 'red'))
     expect(names('top', 'red').slice(0, 2)).toEqual(['Red Cloth Vest', 'Red Pao'])
-    expect(names('claw', 'gu')).toEqual(['Steel Guards', 'Adamantium Guards', 'Mithril Guards'])
+    expect(names('claw', 'gu')).toEqual(['Triangular Zamadar', 'Steel Guards', 'Adamantium Guards', 'Mithril Guards']) // ook de dagger Trian-gu-lar Zamadar heeft 'gu' in de naam
   })
 
   it('zoekt alleen in het eigen slot, en een lege tekst geeft het hele slot', () => {

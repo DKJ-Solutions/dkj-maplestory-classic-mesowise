@@ -91,9 +91,10 @@ const ARROW_CHOICE = [
 ] as const
 
 /**
- * Of de wapenhand van een Beginner een dagger is (issue #171), als 0 of 1 in het concept zodat hij met het profiel wordt
- * bewaard: dan rekent zijn gewone aanval met LUK als hoofdstat in plaats van STR. De equipment zet het (applyEquipChange); een
- * oud bewaard profiel zonder dit veld laadt als geen dagger. Geen invulveld.
+ * Of de wapenhand een dagger is (issue #171, en #170 voor de Thief vanaf level 10), als 0 of 1 in het concept zodat hij met het
+ * profiel wordt bewaard: dan rekent de aanval met LUK als hoofdstat in plaats van STR (Beginner), of met Double Stab in plaats van
+ * Lucky Seven (Thief). De equipment zet het (applyEquipChange); een oud bewaard profiel zonder dit veld laadt als geen dagger.
+ * Geen invulveld.
  */
 const WEAPON_CHOICE = [{ key: 'dagger', label: 'Dagger in de hand', min: 0, max: 1, integer: true }] as const
 
@@ -291,8 +292,8 @@ export function parseProfile(d: ProfileDraft, job: Job = 'thief', gender: Gender
     out.starWatk = arrow.watk
     out.starRecharge = arrow.pricePerArrow
   }
-  // Een Thief of Bowman onder level 10 slaat als Beginner met het wapen in zijn hand (#171): de multiplier en of het een dagger
-  // is, staan in het concept zoals de equipment ze zette. Geen invulveld, dus wat niet klopt, valt terug op de standaardwaarde.
+  // Een Thief of Bowman onder level 10 slaat als Beginner met het wapen in zijn hand (#171), en een Thief met een dagger slaat
+  // er ook daarna mee (#170): de multiplier en of het een dagger is, staan in het concept zoals de equipment ze zette. Geen invulveld, dus wat niet klopt, valt terug op de standaardwaarde.
   if (job === 'thief' || job === 'bowman') {
     const mult = Number(d.weaponMult.trim())
     if (d.weaponMult.trim() !== '' && mult >= WEAPON_MULT_FIELD.min && mult <= WEAPON_MULT_FIELD.max) out.weaponMult = mult
@@ -326,12 +327,15 @@ const bowmanArrow = (d: ProfileDraft) => arrowFor(d.helpfulStranger.trim() === '
  */
 export const attacksAsBeginner = (job: Job, level: number): boolean => (job === 'thief' || job === 'bowman') && level < FIRST_JOB_LEVEL
 
+/** Of deze Thief een dagger in zijn hand heeft (issue #170): dan slaat hij met Double Stab of de gewone aanval, en gooit hij niets. */
+export const thiefWithDagger = (job: Job, dagger: number): boolean => job === 'thief' && dagger === 1
+
 /**
  * De weapon attack die telt: bij een Thief die van je claw plus die van je stars, bij een Bowman plus die van zijn pijlen; een
- * Warrior gooit niets, en een Beginner (attacksAsBeginner) ook niet.
+ * Warrior gooit niets, een Beginner (attacksAsBeginner) ook niet, en een Thief met een dagger evenmin.
  */
-const weaponAttack = (job: Job, level: number, clawWatk: number, starWatk: number): number =>
-  job === 'warrior' || attacksAsBeginner(job, level) ? clawWatk : clawWatk + starWatk
+const weaponAttack = (job: Job, level: number, clawWatk: number, starWatk: number, dagger: number): number =>
+  job === 'warrior' || attacksAsBeginner(job, level) || thiefWithDagger(job, dagger) ? clawWatk : clawWatk + starWatk
 
 const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null)
 
@@ -343,11 +347,12 @@ const whole = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : null
 export function totalAttack(d: ProfileDraft, job: Job): number | null {
   if (job === 'magician') return 0
   const claw = whole(d.clawWatk)
-  // Een Beginner gooit en schiet niets (#171); zonder geldig level telt de job. Een Bowman schiet zijn pijl, ook als er in het
+  // Een Beginner gooit en schiet niets (#171), een Thief met een dagger ook niet (#170); zonder geldig level telt de job. Een Bowman schiet zijn pijl, ook als er in het
   // concept stars van een andere job staan (zie parseProfile).
   const level = whole(d.level) ?? FIRST_JOB_LEVEL
-  const stars = job === 'warrior' || attacksAsBeginner(job, level) ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
-  return claw === null || stars === null ? null : weaponAttack(job, level, claw, stars)
+  const dagger = d.dagger.trim() === '1' ? 1 : 0
+  const stars = job === 'warrior' || attacksAsBeginner(job, level) || thiefWithDagger(job, dagger) ? 0 : job === 'bowman' ? bowmanArrow(d).watk : whole(d.starWatk)
+  return claw === null || stars === null ? null : weaponAttack(job, level, claw, stars, dagger)
 }
 
 /**
@@ -376,7 +381,7 @@ export function toCharacter(p: Profile): Character {
     dex: p.dex,
     int: p.int,
     luk: p.luk,
-    watk: magician ? 0 : weaponAttack(p.job, p.level, p.clawWatk, p.starWatk),
+    watk: magician ? 0 : weaponAttack(p.job, p.level, p.clawWatk, p.starWatk, p.dagger),
     matk: magician ? p.clawWatk : 0,
     accuracy: p.accuracy + buff.accuracy,
     avoid: p.avoid + buff.avoid,

@@ -9,9 +9,10 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncArrow, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
+import { DAGGER_SHOP_SOURCE } from './data/daggers'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -20,7 +21,7 @@ import { ALL_SKILLS, isSkillKey, mpPerUse, skillMpAt } from './data/skills'
 import { skillEffectText, skillExtraCostText } from './skillEffects'
 import { skillPoolOf } from './data/skillPoints'
 import { ARROW_BLOW_SOURCE, HELPFUL_STRANGER_ARROWS, HELPFUL_STRANGER_SOURCES, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
-import { apAtLevel, NIMBLE_BODY, SUBI } from './data/thief'
+import { apAtLevel, DOUBLE_STAB_SOURCE, NIMBLE_BODY, SUBI } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_STRIKES_SOURCE } from './data/warrior'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
@@ -829,6 +830,8 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
  */
 function LevelAdviceCard(props: {
   job: Job
+  /** Of de Thief een dagger draagt (#170): dan gaan het wapen- en het skillpunt-advies over daggers en Double Stab. */
+  dagger: boolean
   computed: boolean
   cost: LevelCost
   clawAdvice: ClawUpgradeAdvice
@@ -848,10 +851,10 @@ function LevelAdviceCard(props: {
       {props.computed ? (
         <>
           <LevelCostPart cost={props.cost} />
-          <ClawQuestion advice={props.clawAdvice} cost={props.cost} equipment={props.equipment} next={props.nextWeapon} job={props.job} part />
+          <ClawQuestion advice={props.clawAdvice} cost={props.cost} equipment={props.equipment} next={props.nextWeapon} job={props.job} dagger={props.dagger} part />
           <ArmorQuestion advice={props.armorAdvice} cost={props.cost} equipment={props.equipment} job={props.job} gender={props.gender} part />
-          <SkillQuestion advice={props.skillAdvice} cost={props.cost} job={props.job} placed={props.placed} onApply={props.onApply} part>
-            <SkillSources job={props.job} />
+          <SkillQuestion advice={props.skillAdvice} cost={props.cost} job={props.job} dagger={props.dagger} placed={props.placed} onApply={props.onApply} part>
+            <SkillSources job={props.job} dagger={props.dagger} />
           </SkillQuestion>
           <MobQuestion advice={props.mobAdvice} cost={props.cost} part />
         </>
@@ -863,10 +866,12 @@ function LevelAdviceCard(props: {
 }
 
 /** Waar de skills vandaan komen die het skilladvies doorrekent. */
-function SkillSources(props: { job: Job }) {
+function SkillSources(props: { job: Job; dagger?: boolean }) {
+  // Een Thief met een dagger rekent ook met Double Stab (#170).
+  const sources = props.job === 'thief' && props.dagger ? [{ name: 'Double Stab', source: DOUBLE_STAB_SOURCE }, ...SKILL_SOURCES.thief] : SKILL_SOURCES[props.job]
   return (
     <>
-      {SKILL_SOURCES[props.job].map((s) => (
+      {sources.map((s) => (
         <p class="source" key={s.name}>
           {s.name}:{' '}
           <a href={s.source.url} target="_blank" rel="noopener noreferrer">
@@ -944,8 +949,21 @@ const SKILL_SOURCES = {
 /** True als de app bij de beste plek geen enkele claw kan doorrekenen (elke netto besparing is onbekend). */
 const noClawComputable = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.length > 0 && a.choices.every((c) => c.net === null)
 
-/** De zinnen van het wapen-advies: de Thief heeft een claw, de Warrior, de Bowman en de Magician een wapen (een ander lidwoord en een andere uitgang). */
+/**
+ * De zinnen van het wapen-advies: de Thief heeft een claw (of een dagger, #170), de Warrior, de Bowman en de Magician een wapen (een
+ * ander lidwoord en een andere uitgang).
+ */
 const WEAPON_TEXT = {
+  thiefDagger: {
+    noBetterQuestion: 'Geen betere dagger die je kunt dragen.',
+    uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de daggers niet doorrekenen.',
+    noPayback: 'Geen dagger verdient zich terug vóór je volgende upgrade.',
+    toWear: 'deze dagger',
+    old: 'je oude dagger',
+    unpriced: 'Daggers zonder vaste winkelprijs telt de app niet. Als beter telt een dagger waarmee je volgens de app meer EXP per meso haalt dan met je huidige; een snellere dagger kan dus winnen van een dagger met meer ATT.',
+    prices: 'Dagger-prijzen',
+    noCost: 'Zonder de kosten van dit level kan de app geen dagger afwegen.',
+  },
   thief: {
     noBetterQuestion: 'Geen betere claw die je kunt dragen.',
     uncomputable: 'Niet uit te rekenen: bij de beste plek kan de app de claws niet doorrekenen.',
@@ -987,7 +1005,7 @@ const WEAPON_TEXT = {
     noCost: 'Zonder de kosten van dit level kan de app geen wapen afwegen.',
   },
 } as const
-const weaponText = (job: Job) => WEAPON_TEXT[job]
+const weaponText = (job: Job, dagger = false) => WEAPON_TEXT[job === 'thief' && dagger ? 'thiefDagger' : job]
 
 /** Wat je tekortkomt om een wapen of stuk armor te dragen, als tekst: "5 STR en 10 DEX" (de hoofdstat eerst). */
 const missingStats = (u: UnwearableClaw | UnwearableArmor) => u.needs.map((n) => `${n.amount} ${n.stat.toUpperCase()}`).join(' en ')
@@ -1004,9 +1022,9 @@ function ClawWinnerLine(props: { win: ClawChoice }) {
 }
 
 /** Waarmee de claw-uitkomst gerekend is, en waar de prijzen vandaan komen. */
-function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' }>; job: Job }) {
+function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' }>; job: Job; dagger?: boolean }) {
   const a = props.advice
-  const t = weaponText(props.job)
+  const t = weaponText(props.job, props.dagger)
   const first = a.choices[0]?.claw ?? a.notWearable[0]?.claw
   return (
     <>
@@ -1481,7 +1499,11 @@ function EquipmentCard(props: {
               <a href={NPC_CLAWS[0].source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
-              , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Armor:{' '}
+              , opgehaald op {formatDate(NPC_CLAWS[0].source.retrieved)}. Daggers:{' '}
+              <a href={DAGGER_SHOP_SOURCE.url} target="_blank" rel="noopener noreferrer">
+                NiaMeowDB
+              </a>
+              , opgehaald op {formatDate(DAGGER_SHOP_SOURCE.retrieved)}. Armor:{' '}
               <a href={NPC_ARMOR[0].source.url} target="_blank" rel="noopener noreferrer">
                 NiaMeowDB
               </a>
@@ -1932,23 +1954,23 @@ function wornWeaponLine(equipment: Equipment, job: Job): string | null {
 }
 
 /** Waar het volgende betere wapen vandaan komt, voor een level waarop er nog geen te koop of te dragen is. */
-function nextWeaponLine(next: Weapon | null, job: Job): string {
-  const thief = job === 'thief'
-  if (!next) return `De app kent geen ${thief ? 'betere claw' : 'beter wapen'} meer voor je job.`
-  return `${thief ? 'De eerstvolgende betere claw' : 'Het eerstvolgende betere wapen'}, ${next.name}, kun je vanaf lv ${next.level} dragen.`
+function nextWeaponLine(next: Weapon | null, job: Job, dagger = false): string {
+  const kind = job !== 'thief' ? null : dagger ? 'dagger' : 'claw'
+  if (!next) return `De app kent geen ${kind ? `betere ${kind}` : 'beter wapen'} meer voor je job.`
+  return `${kind ? `De eerstvolgende betere ${kind}` : 'Het eerstvolgende betere wapen'}, ${next.name}, kun je vanaf lv ${next.level} dragen.`
 }
 
 /** Attack: loont een nieuwe claw uit de winkel? De kaart op het beginscherm en dit advies delen de zinnen. */
-function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; equipment: Equipment; next: Weapon | null | undefined; job: Job; part?: boolean }) {
+function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; equipment: Equipment; next: Weapon | null | undefined; job: Job; dagger?: boolean; part?: boolean }) {
   const a = props.advice
-  const t = weaponText(props.job)
+  const t = weaponText(props.job, props.dagger)
   const title = QUESTION_TITLE.claw
   const worn = wornWeaponLine(props.equipment, props.job)
   if (a.kind === 'none') {
     return (
       <Question title={title} abbr="Attack" chip="unknown" lead={QUESTION_LEAD.claw} part={props.part}>
         {worn && <p class="hint">{worn}</p>}
-        {props.next !== undefined && <p class="hint">{nextWeaponLine(props.next, props.job)}</p>}
+        {props.next !== undefined && <p class="hint">{nextWeaponLine(props.next, props.job, props.dagger)}</p>}
         <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} {t.noCost}</p>
       </Question>
     )
@@ -1957,7 +1979,7 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; equip
   const unknown = !win && noClawComputable(a)
   // Alleen als er nu niets beters te koop of te dragen is: anders zegt het advies zelf wat er kan.
   const complete = a.choices.length === 0 && a.notWearable.length === 0
-  const next = complete && props.next !== undefined ? nextWeaponLine(props.next, props.job) : null
+  const next = complete && props.next !== undefined ? nextWeaponLine(props.next, props.job, props.dagger) : null
   return (
     <Question title={title} abbr="Attack" chip={win || complete ? 'yes' : unknown ? 'unknown' : 'no'} chipText={upgradeChipText(!!win, unknown, complete)} lead={QUESTION_LEAD.claw} part={props.part}>
       {worn && <p class="hint">{worn}</p>}
@@ -1980,7 +2002,7 @@ function ClawQuestion(props: { advice: ClawUpgradeAdvice; cost: LevelCost; equip
         </>
       )}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere keuze misschien beter.</p>}
-      <ClawNotes advice={a} job={props.job} />
+      <ClawNotes advice={a} job={props.job} dagger={props.dagger} />
     </Question>
   )
 }
@@ -1997,6 +2019,7 @@ function noCostReason(c: LevelCost): string | null {
 /** De skills die een aanval zijn, en hoe de speler één aanval noemt. De MP per aanval komt uit mpPerUse. */
 const ATTACK_SKILLS: Partial<Record<SkillChoice['id'], { noun: string }>> = {
   luckySeven: { noun: 'worp' },
+  doubleStab: { noun: 'aanval' },
   powerStrike: { noun: 'aanval' },
   arrowBlow: { noun: 'schot' },
   energyBolt: { noun: 'cast' },
@@ -2033,7 +2056,7 @@ function placedText(choice: SkillChoice, advice: SkillPointAdvice): string {
 const skillOptionText = (saving: number | null) =>
   saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
 
-function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; placed: string | null; onApply: (choice: SkillChoice) => void; part?: boolean; children?: ComponentChildren }) {
+function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; dagger?: boolean; placed: string | null; onApply: (choice: SkillChoice) => void; part?: boolean; children?: ComponentChildren }) {
   const a = props.advice
   const title = QUESTION_TITLE.skill
   const winner = a.kind === 'advice' ? a.choices.find((c) => c.id === a.winner) : undefined
@@ -2124,7 +2147,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       {a.truncated && <p class="hint">Een punt telt over {SKILL_HORIZON_LEVELS} levels, maar de EXP-tabel loopt tot lv {a.to}, dus verder rekent de app niet.</p>}
       {placed}
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
-      <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job))}.</p>
+      <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job, props.dagger))}.</p>
       {winner && (
         <button type="button" class="btn" onClick={() => props.onApply(winner)}>
           Punt zetten
@@ -2178,7 +2201,7 @@ export function App() {
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
     // De pijlkeuze volgt het ammo-slot: profiel en equipment staan in aparte opslag en kunnen uiteen lopen (#64).
     const d = loadProfile(storage)
-    return syncArrow(d, loadEquipment(storage, loadJob(storage), d.helpfulStranger === '1'))
+    return syncWithEquipment(d, loadEquipment(storage, loadJob(storage), d.helpfulStranger === '1'))
   })
   const [job, setJob] = useState<Job>(() => loadJob(storage))
   const [jobChosen, setJobChosen] = useState(() => isJobStored(storage))
@@ -2190,6 +2213,8 @@ export function App() {
   // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   const profile = computed ? parsedProfile : null
+  // Een Thief met een dagger (#170): het wapen- en het skillpunt-advies gaan dan over daggers en Double Stab.
+  const dagger = job === 'thief' && profileDraft.dagger.trim() === '1'
   // De melding staat bij de kaart waar het foute veld staat.
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
@@ -2341,9 +2366,10 @@ export function App() {
     setSnapshot(null)
     const kept = equipmentForJob(equipmentRef.current, next)
     writeEquipment(kept)
-    // Verdwijnt de bronze pijl uit het ammo-slot (andere job), dan rekent een terugkeer niet stilletjes met bronze.
-    const synced = syncArrow(profileRef.current, kept)
-    if (synced.bronzeArrows !== profileRef.current.bronzeArrows) writeProfile(() => synced)
+    // Verdwijnt de bronze pijl uit het ammo-slot of de dagger uit het wapenslot (andere job), dan rekent een terugkeer niet
+    // stilletjes met bronze of met Double Stab (#170).
+    const synced = syncWithEquipment(profileRef.current, kept)
+    if (synced.bronzeArrows !== profileRef.current.bronzeArrows || synced.dagger !== profileRef.current.dagger) writeProfile(() => synced)
     setJob(next)
   }
   // De schakelaar van een Bowman (#64); uit valt een bronze pijl terug op de gewone (zie setHelpfulStranger).
@@ -2400,7 +2426,7 @@ export function App() {
         report={
           computed ? (
             <>
-              <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} part />
+              <ClawQuestion advice={clawAdvice} cost={cost} equipment={equipment} next={nextWeapon} job={job} dagger={dagger} part />
               <ArmorQuestion advice={armorAdvice} cost={cost} equipment={equipment} job={job} gender={gender} part />
             </>
           ) : (
@@ -2416,8 +2442,8 @@ export function App() {
         onChange={updateProfile}
         report={
           computed ? (
-            <SkillQuestion advice={skillAdvice} cost={cost} job={job} placed={placed} onApply={applyPoint} part>
-              <SkillSources job={job} />
+            <SkillQuestion advice={skillAdvice} cost={cost} job={job} dagger={dagger} placed={placed} onApply={applyPoint} part>
+              <SkillSources job={job} dagger={dagger} />
             </SkillQuestion>
           ) : (
             <NotComputed job={job} />
@@ -2441,6 +2467,7 @@ export function App() {
 
       <LevelAdviceCard
         job={job}
+        dagger={dagger}
         computed={computed}
         cost={cost}
         clawAdvice={clawAdvice}

@@ -1,4 +1,4 @@
-// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven), een Warrior (melee-wapen met
+// Het mob-model: hoeveel kills per uur een Thief (claw met Lucky Seven, of dagger met Double Stab), een Warrior (melee-wapen met
 // Power Strike), een Bowman (boog of kruisboog met Arrow Blow) of een Magician (een spreuk met een wand of staff) haalt op een
 // monster, en wat hij daarbij per kill verbruikt. Puur, zonder UI-import.
 // Overgenomen uit het mob-advies-model in Daves kennisbank (issue #15) en per stap voorzien van een bron of een benoemde aanname.
@@ -40,7 +40,8 @@ export interface Attack {
   /**
    * Het aantal klappen per aanval: stars bij een claw, 1 bij een melee-wapen of een Arrow Blow. Het is ook het aantal
    * stars of pijlen dat een aanval verbruikt, dus de munitiekosten; dat gaat goed zolang klappen en munitie gelijk zijn
-   * (Arrow Blow: 1 en 1). Een skill met meer pijlen dan klappen (Double Shot) heeft hier een eigen veld nodig.
+   * (Arrow Blow: 1 en 1). Een skill met meer pijlen dan klappen (Double Shot) heeft hier een eigen veld nodig. Double Stab
+   * (2 klappen met een dagger) verbruikt niets: daar is de herlaadprijs 0 (suggest.ts).
    */
   stars: number
   mpPerAttack: number
@@ -133,10 +134,19 @@ export function meleeAttack(c: Pick<Character, 'str' | 'dex' | 'watk'>, weaponMu
  * Eén klap per aanval, geen munitie en geen MP.
  */
 export function beginnerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>, weaponMult: number, dagger: boolean): Attack {
-  const range = dagger
-    ? damageRange(null, c.watk, c.luk, c.str + c.dex, weaponMult, BASE_MASTERY)
-    : damageRange(null, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY)
-  return { ...range, stars: 1, mpPerAttack: 0 }
+  if (dagger) return daggerAttack(c, weaponMult, null, 1)
+  return { ...damageRange(null, c.watk, c.str, c.dex, weaponMult, BASE_MASTERY), stars: 1, mpPerAttack: 0 }
+}
+
+/**
+ * De aanval van een Thief met een dagger (issue #170): dezelfde formule, met LUK als hoofdstat en STR + DEX als secundaire stat
+ * (de damage-gids, "Dagger, Claw: LUK, STR + DEX"), en de mastery van de gewone aanval: Dagger Mastery is een skill van de 2e job.
+ * `skill` is Double Stab op het gezette level, met `hits` klappen per aanval (2) en als `weaponMult` de steek (2,0, data/thief.ts);
+ * of null voor de gewone aanval (1 klap), met de verwachte multiplier van de dagger (1,4, DAGGER in data/beginnerWeapons.ts). Een dagger gooit niets: `stars` is hier alleen
+ * het aantal klappen, en de munitiekosten zijn 0 omdat suggest.ts een dagger-Thief geen herlaadprijs geeft.
+ */
+export function daggerAttack(c: Pick<Character, 'str' | 'dex' | 'luk' | 'watk'>, weaponMult: number, skill: SkillStats | null, hits: number): Attack {
+  return { ...damageRange(skill, c.watk, c.luk, c.str + c.dex, weaponMult, BASE_MASTERY), stars: skill ? hits : 1, mpPerAttack: skill ? skill.mp : 0 }
 }
 
 /**

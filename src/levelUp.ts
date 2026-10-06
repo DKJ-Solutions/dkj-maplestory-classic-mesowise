@@ -139,7 +139,8 @@ export const snapshotApplies = <E>(snap: LevelUpSnapshot<E> | null, draft: Profi
  */
 export function applySkillPoint(draft: ProfileDraft, id: SkillId, job: Job = 'thief'): ProfileDraft {
   const parsed = parseProfile(draft, job)
-  const skill = skillsOf(job).find((s) => s.id === id)
+  // Een Thief met een dagger heeft Double Stab in plaats van Lucky Seven (#170).
+  const skill = 'profile' in parsed ? skillsOf(job, parsed.profile.dagger === 1).find((s) => s.id === id) : undefined
   // Ook zonder punt over in de pot van de 1e job blijft het profiel zoals het was (issue #136).
   if (!('profile' in parsed) || !skill || skill.level(parsed.profile) >= skill.max || skillPointsLeft(parsed.profile, 'job') <= 0) return draft
   // Alleen de velden die het punt raakt gaan terug in het concept; al het andere (ook wat de speler voor een
