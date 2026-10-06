@@ -2458,8 +2458,8 @@ const formatHours = (hours: number): string => {
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
 /**
- * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "Lv. 10 Thief", vetgedrukt in "How much mesos it cost to
- * level up for a Lv. 10 Thief with the current settings". Zonder geldig level alleen de job.
+ * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "Lv. 10 Thief", vetgedrukt in "This is how much it cost
+ * for a Lv. 10 Thief to level with the current settings". Zonder geldig level alleen de job.
  */
 export const totalCostWho = (level: string, job: Job): string => {
   const n = Number(level.trim())
@@ -2473,7 +2473,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>
       <p class="total-cost-sub">
-        How much mesos it cost to level up for a <strong>{totalCostWho(props.level, props.job)}</strong> with the current settings
+        This is how much it cost for a <strong>{totalCostWho(props.level, props.job)}</strong> to level with the current settings
       </p>
       {!props.computed ? (
         <NotComputed job={props.job} />
