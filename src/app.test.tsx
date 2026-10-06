@@ -367,6 +367,9 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
     expect(dialog.textContent).toContain('Te kopen:')
+    // Het wapen heeft zijn ATT, ook als het een winkelstuk is dat je nog moet kopen.
+    const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
+    expect(weapon.querySelector('.equip-value strong')?.textContent).toMatch(/^\d+$/)
   })
 
 

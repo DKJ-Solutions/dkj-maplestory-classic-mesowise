@@ -1429,6 +1429,9 @@ function StatDialog(props: {
   )
 }
 
+/** Welke equip de Equip-popup toont (#188). */
+type EquipView = 'worn' | 'cheapest'
+
 /**
  * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188). Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
  * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
@@ -1448,7 +1451,6 @@ function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen
     </div>
   )
 }
-type EquipView = 'worn' | 'cheapest'
 
 /**
  * De rijen van de Equip-popup achter "Cheapest" (#188): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
