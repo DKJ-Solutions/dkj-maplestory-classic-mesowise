@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**62 / 99 minor entries** <!-- pending-tally -->
+**63 / 100 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/170-thief-daggers · 20261006-072613Z
+
+A Thief can now play the dagger route (#170). The weapon list offers the nine daggers an NPC sells from level 10 to 30
+([`src/data/daggers.ts`](../src/data/daggers.ts), each with its MeowDB page). With a dagger in hand the model calculates
+Double Stab (two hits, the stab multiplier 2.0) or the plain dagger attack instead of Lucky Seven, and counts no stars and
+no ammo cost. The weapon advice then compares daggers by EXP per meso, and the skill advice weighs Double Stab instead of
+Lucky Seven.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A dagger Thief gets a cost per level, a weapon advice and a skill advice for their own route instead of numbers for a claw
+they do not carry.
+
+**Score:** 4
+
+#### Pull Request
+
+Thief daggers and a dagger model with Double Stab
+
+[PR #177](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/177)
+
+---
 
 ### DEPLOY: app/171-beginner-attack · 20261005-214542Z
 
