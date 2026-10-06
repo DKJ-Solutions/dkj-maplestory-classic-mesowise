@@ -576,5 +576,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .potion.used { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .potion-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .potion-price { margin: 0.25rem 0 0; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.potion .cost { color: var(--cost); }
+.potion .gain { color: var(--gain); }
 .potion-meta { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .potion-used { margin: 0.25rem 0 0; font-size: 0.875rem; font-weight: 600; color: var(--text); }

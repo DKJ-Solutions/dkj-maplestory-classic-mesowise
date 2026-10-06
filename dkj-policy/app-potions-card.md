@@ -53,6 +53,7 @@
 - [x] Dave (October 6, 2026): pick the HP and MP potion you use, like the mob; the calculation uses it, a report compares it with the cheapest, and the card moves up with the other report cards. Wasted recovery split off as #181
 - [x] Victor and Edith: review of the potion choice; equally cheap potions count as cheapest (Magician Lemon), equal-cost hint reworded
 - [x] Dave (October 6, 2026): the Potions card had extra padding; it now gets padding 0 like every other card with an eye
+- [x] Dave (October 6, 2026): price in red with a minus, recovery in green with a plus (the Skillpoints cost/gain colours)
 
 ### TEST
 

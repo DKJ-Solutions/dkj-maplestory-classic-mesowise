@@ -838,13 +838,14 @@ function PotionRow(props: { option: PotionOption }) {
   const fill = fillPct === null ? null : fillPct >= 100 ? `vult je Max ${unit} helemaal` : `vult ${nfInt.format(fillPct)}% van je Max ${unit}`
   return (
     <li class={used ? 'potion used' : 'potion'}>
-      {/* De prijs op een eigen regel onder de naam (Dave, 6 oktober 2026): rechts ernaast viel hij weg. */}
+      {/* De prijs op een eigen regel onder de naam (Dave, 6 oktober 2026): rechts ernaast viel hij weg. Wat hij kost in rood met een
+          min, wat hij herstelt in groen met een plus, net als bij Skillpoints (#139). */}
       <p class="potion-name">{potion.name}</p>
       <p class="potion-price">
-        Prijs: <strong>{nfInt.format(potion.price)} meso</strong>
+        Prijs: <strong class="cost">−{nfInt.format(potion.price)} meso</strong>
       </p>
       <p class="potion-meta">
-        +{nfInt.format(restores)} {unit} · {nf.format(mesoPerPoint)} meso per {unit}
+        <strong class="gain">+{nfInt.format(restores)} {unit}</strong> · {nf.format(mesoPerPoint)} meso per {unit}
         {fill && <> · {fill}</>}
       </p>
       {(used || cheapest) && <p class="potion-used">{[used && 'Je gebruikt deze potion', cheapest && 'Goedkoopst per ' + unit].filter(Boolean).join(' · ')}</p>}

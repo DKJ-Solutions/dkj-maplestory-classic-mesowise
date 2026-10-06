@@ -2888,7 +2888,10 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(names('HP')).toEqual(['Orange Potion', 'White Potion'])
     expect(names('MP')).toEqual(['Blue Potion'])
     expect(Array.from(select('HP').options).map((o) => o.textContent)).toEqual(['Orange Potion (150 meso)', 'White Potion (350 meso)'])
-    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['Prijs: 150 meso', 'Prijs: 350 meso', 'Prijs: 220 meso'])
+    expect(Array.from(potionsCard().querySelectorAll('.potion-price')).map((n) => n.textContent)).toEqual(['Prijs: −150 meso', 'Prijs: −350 meso', 'Prijs: −220 meso'])
+    // De prijs in rood, wat een potion herstelt in groen (Dave, 6 oktober 2026).
+    expect(Array.from(potionsCard().querySelectorAll('.potion-price .cost')).map((n) => n.textContent)).toEqual(['−150 meso', '−350 meso', '−220 meso'])
+    expect(Array.from(potionsCard().querySelectorAll('.potion-meta .gain')).map((n) => n.textContent)).toEqual(['+250 HP', '+500 HP', '+200 MP'])
     // Zonder keuze de goedkoopste.
     expect(select('HP').value).toBe('Orange Potion')
     expect(usedName('HP')).toBe('Orange Potion')
