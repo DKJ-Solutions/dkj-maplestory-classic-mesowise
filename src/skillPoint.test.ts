@@ -351,7 +351,8 @@ describe('een Warrior: skillsOf, notModelled en skillPointAdvice', () => {
   })
 
   it('laat een punt in Improved HP Recovery de mesokosten zakken zodra de Warrior HP-potions drinkt (#141)', () => {
-    const advice = skillPointAdvice(drafts, warrior)
+    // Bij Max HP 444 mist er 222 HP en overfilt de Orange al (250): dan spaart meer herstel niets (#181). Een grotere balk laat het herstel tellen.
+    const advice = skillPointAdvice(drafts, { ...warrior, hp: 1200 })
     if (advice.kind !== 'advice') throw new Error('geen advies')
     const hr = advice.choices.find((c) => c.id === 'improvedHpRecovery')!
     expect(hr.saving!).toBeGreaterThan(0)

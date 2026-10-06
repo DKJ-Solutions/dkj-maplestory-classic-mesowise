@@ -106,3 +106,53 @@ describe('levelInvoice', () => {
     expect(line.meso).toBe(Math.ceil(1000 * inv.hours))
   })
 })
+
+describe('levelInvoice en het plafond op het herstel van een potion (#181)', () => {
+  const potionLines = (p: Profile) => invoiceOf(p).lines.filter((l) => l.why)
+  const big = profileOf({ hp: '2000', mp: '2000' })
+
+  it('zet bij een kleine balk het effectieve herstel in `restores` en het volle in `full` (Orange 250 bij Max HP 444: 222; Blue 200 bij Max MP 363: 181,5)', () => {
+    const [orange, blue] = potionLines(thief).map((l) => l.why!)
+    expect(thief.hp).toBe(444)
+    expect(orange).toMatchObject({ kind: 'hp', restores: 222, full: 250 })
+    expect(blue).toMatchObject({ kind: 'mp', restores: 181.5, full: 200 })
+  })
+
+  it('zet restores gelijk aan full als de potion binnen het plafond blijft (Max 2000)', () => {
+    for (const w of potionLines(big).map((l) => l.why!)) expect(w.restores).toBe(w.full)
+    expect(potionLines(big)[0].why).toMatchObject({ restores: 250, full: 250 })
+  })
+
+  it('deelt het getal dat naar boven wordt afgerond door `restores`, en het aantal is dat getal naar boven afgerond', () => {
+    for (const p of [thief, big, profileOf({ level: '15' })]) {
+      for (const line of potionLines(p)) {
+        const w = line.why!
+        expect(w.exact).toBeCloseTo(w.need / w.restores, 9)
+        expect(line.qty).toBe(Math.max(0, Math.ceil(w.exact - 1e-9)))
+        expect(w.restores).toBeLessThanOrEqual(w.full)
+      }
+    }
+  })
+
+  it('geeft bij een kleine balk meer potions dan bij een grote, in de verhouding full / restores', () => {
+    const small = potionLines(thief)[0].why!
+    const large = potionLines(big)[0].why!
+    // Zelfde need (alleen het plafond verschilt), dus exact verhoudt zich als 250 / 222.
+    expect(small.need).toBeCloseTo(large.need, 6)
+    expect(small.exact / large.exact).toBeCloseTo(250 / 222, 9)
+    expect(potionLines(thief)[0].qty!).toBeGreaterThan(potionLines(big)[0].qty!)
+  })
+
+  it('houdt full vast bij Improved HP Recovery en kapt restores af: een Warrior met Improved HP Recovery 15 (1,2) telt 300 volle HP, bij Max HP 500 voor 250', () => {
+    const warrior = profileOf({ hp: '500', level: '30', improvedHpRecovery: '15' }, 'warrior')
+    const w = potionLines(warrior)[0].why!
+    expect(warrior.hp).toBe(500)
+    expect(w.full).toBeCloseTo(250 * 1.2, 9)
+    expect(w.restores).toBe(250)
+  })
+
+  it('maakt het level duurder met een kleine balk dan met een grote: het plafond doet er echt iets', () => {
+    expect(levelMeso(thief)).toBeGreaterThan(levelMeso(big))
+    expect(invoiceOf(thief).total).toBeGreaterThan(invoiceOf(big).total)
+  })
+})

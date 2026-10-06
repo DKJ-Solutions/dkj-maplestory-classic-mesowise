@@ -39,19 +39,37 @@
 
 ### PLAN
 
+- [x] Cap a potion's restore at what is missing when you drink, with the drink moment as a stated assumption
+  (half a bar, `ASSUMPTIONS.drinkAtPct = 0.5`, to be measured in #20).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `effectiveRestore` in `src/calc/mobModel.ts`, used through `potionRestore` in `src/suggest.ts` by the hour plan
+  and the invoice, and in `src/potions.ts` by the potion info and the advice ranking (Cody).
+- [x] Invoice and potion info lines say when the cap applies (Cody, wording by Edith).
 
 ### TEST
 
+- [x] Dedicated tests on the cap in the model, hour plan, advice, invoice and app wording; re-pinned armor and claw
+  values verified by hand from the raw inputs (Tycho). Code review (Victor) and text review (Edith), findings applied;
+  the default potion per raw point filed as #185, the drink moment added to #20.
+
 ### DEPLOY: app/181-wasted-recovery
 
-**Score:**
+A potion that restores more than you are missing no longer counts as fully used. The app now assumes you drink at half
+a bar, so a potion counts for at most half your Max HP or Max MP: at Max HP 444 a potion counts for at most 222 HP, and
+the rest is paid for and lost. Potion counts, the level's meso cost, the potion advice ("cheapest per point") and the
+upgrade and skill-point savings all use what you actually restore; a big potion that overfills your bar is no longer
+called the cheapest. The Total cost card's "Hoezo?" explanation and the potion's meso per point on the Potions card say
+when this applies. Without a Max HP or Max MP in your profile nothing is capped, as before.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+The cost of a level no longer flatters large potions on a small bar, which is where low-level players lose mesos.
+
+**Score:** 2
 
 #### Pull Request
 

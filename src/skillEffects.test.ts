@@ -106,7 +106,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
   })
 
   it('telt de upkeep bij de MP-potions: 200 MP per uur extra is precies één Blue Potion (200 MP) per uur', () => {
-    const s = suggestMonsters(profile, bubbling)[0]
+    const s = { ...suggestMonsters(profile, bubbling)[0], bar: { hp: 0, mp: 0 } } // zonder bruikbare Max MP geen plafond: hier telt de upkeep, niet het verspilde herstel (#181)
     const without = hourPlan({ ...s, buffMpPerHour: 0 }, 100)
     const withBuff = hourPlan({ ...s, buffMpPerHour: 200 }, 100)
     expect(MP_POTION.mp).toBe(200)
@@ -118,7 +118,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
   })
 
   it('kost de upkeep ook als je niets killt: de buff blijft aan staan', () => {
-    const s = suggestMonsters(profile, bubbling)[0]
+    const s = { ...suggestMonsters(profile, bubbling)[0], bar: { hp: 0, mp: 0 } } // zie hierboven: geen plafond (#181)
     const idle = hourPlan({ ...s, buffMpPerHour: 100 }, 0)
     expect(idle.mpPotionsPerHour).toBe(0.5) // 100 MP / 200 MP per potion
     expect(idle.potions).toBeCloseTo(110, 9) // 0,5 x 220
@@ -141,6 +141,7 @@ describe('suggestMonsters en hourPlan: de MP om je buffs aan te houden', () => {
         mpPotion: MP_POTION,
         buffMpPerHour: buffBonus(p).mpPerHour,
         potionFactor: { hp: 1, mp: 1 },
+        bar: { hp: 0, mp: 0 },
       }
       return { s, h: hourPlan(s, 1000) }
     }

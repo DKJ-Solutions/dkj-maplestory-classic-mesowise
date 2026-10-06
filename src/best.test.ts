@@ -33,10 +33,10 @@ const ratio = (d: SpotDraft, a: Assumptions = ASSUMPTIONS) => {
 describe('ASSUMPTION_VARIANTS', () => {
   it('zet steeds één aanname op de rand en laat de andere staan', () => {
     expect(ASSUMPTION_VARIANTS).toEqual([
-      { timeEfficiency: 0.6, contactsPerKill: 0.15 },
-      { timeEfficiency: 0.6, contactsPerKill: 0.6 },
-      { timeEfficiency: 0.4, contactsPerKill: 0.3 },
-      { timeEfficiency: 0.8, contactsPerKill: 0.3 },
+      { timeEfficiency: 0.6, contactsPerKill: 0.15, drinkAtPct: 0.5 },
+      { timeEfficiency: 0.6, contactsPerKill: 0.6, drinkAtPct: 0.5 },
+      { timeEfficiency: 0.4, contactsPerKill: 0.3, drinkAtPct: 0.5 },
+      { timeEfficiency: 0.8, contactsPerKill: 0.3, drinkAtPct: 0.5 },
     ])
   })
 })
