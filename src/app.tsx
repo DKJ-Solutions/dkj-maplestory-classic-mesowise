@@ -9,6 +9,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
+import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
@@ -1424,6 +1425,39 @@ function StatDialog(props: {
 }
 
 /**
+ * De twee kolommen in de Equip-kaart (Dave, 6 oktober 2026, #188): wat je character in game draagt, en per slot de goedkoopste
+ * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide leeg is, staat er
+ * niet; zonder goedkoopste equip (een job die de app niet doorrekent) alleen de eerste kolom.
+ */
+function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null }) {
+  const rows = props.slots
+    .map((slot) => props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false })
+    .map((r, i) => ({ ...r, slot: props.slots[i] }))
+    .filter((r) => r.worn !== null || r.cheapest !== null)
+  if (rows.length === 0) return <p class="hint equip-columns-none">Nog geen equip ingevuld.</p>
+  return (
+    <table class="equip-columns">
+      <thead>
+        <tr>
+          <td />
+          <th scope="col">Your character</th>
+          {props.cheapest && <th scope="col">Cheapest</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.slot}>
+            <th scope="row">{slotLabel(r.slot)}</th>
+            <td class={r.worn === null ? 'equip-none' : undefined}>{r.worn ?? '—'}</td>
+            {props.cheapest && <td class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+/**
  * Wat je draagt, per slot. Het rekent mee: een claw zet je weapon attack en aanvalssnelheid, armor past je
  * WDEF aan (zie equipment.ts).
  */
@@ -1448,10 +1482,13 @@ function EquipmentCard(props: {
   error: string | null
   /** Het uitgebreide advies achter het rapport-icoon (CardReport); zonder: geen icoon. */
   report?: ComponentChildren
+  /** De kolom Cheapest (#188): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
+  cheapest: Record<EquipSlot, CheapestSlot> | null
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
   const computed = isComputed(props.job)
+  const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
   const uid = useId()
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
@@ -1476,6 +1513,7 @@ function EquipmentCard(props: {
       <p class="error" aria-live="polite">
         {props.error}
       </p>
+      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
@@ -2783,6 +2821,10 @@ export function App() {
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
+  const cheapestEquip = useMemo(
+    () => (computed ? cheapestEquipment(slotsFor(job, equipment.claw.pick).map(({ slot }) => slot), equipment, clawAdvice, armorAdvice) : null),
+    [computed, job, equipment, clawAdvice, armorAdvice],
+  )
 
   // Level up neemt een snapshot van het huidige level (profiel en equipment) en gaat op het beginscherm naar het volgende level;
   // alles gaat mee (#154). Back herstelt die snapshot zolang je nog op dat nieuwe level staat. De snapshot staat alleen in het
@@ -3010,6 +3052,7 @@ export function App() {
         onCommit={commitEquipment}
         onDiscard={(slot) => setPendingFor(slot, undefined)}
         error={equipError}
+        cheapest={cheapestEquip}
         report={
           computed ? (
             <>

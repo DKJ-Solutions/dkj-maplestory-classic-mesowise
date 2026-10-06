@@ -640,3 +640,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .cheapest-changes { margin: 0 0 0.875rem; padding: 0; list-style: none; font-size: 0.875rem; color: var(--muted); }
 .cheapest-changes li { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .cheapest-changes strong { color: var(--text); }
+/* De Equip-kaart (#188): per slot wat je character draagt en de goedkoopste equip. Een stuk dat anders is dan wat je draagt,
+   staat vet in de accentkleur; een leeg slot gedempt. Twee kolommen naast de slotnaam op 360px: namen breken af waar nodig. */
+.equip-columns { width: 100%; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.3; }
+.equip-columns thead th { padding: 0 0 0.5rem 0.5rem; font-size: 0.8125rem; font-weight: 700; color: var(--muted); text-align: left; vertical-align: bottom; }
+.equip-columns tbody th, .equip-columns tbody td { padding: 0.5rem 0 0.5rem 0.5rem; border-top: 1px solid var(--border); vertical-align: baseline; overflow-wrap: anywhere; }
+.equip-columns tbody th { padding-left: 0; font-weight: 400; color: var(--muted); text-align: left; white-space: nowrap; width: 1%; }
+.equip-columns .equip-buy { font-weight: 700; color: var(--accent); }
+.equip-columns .equip-none { color: var(--muted); }
+.equip-columns-none { margin: 0; text-align: center; }

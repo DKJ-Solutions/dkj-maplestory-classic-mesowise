@@ -351,6 +351,16 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(headTitle('Equip')?.trim()).toBe('Equip')
   })
 
+  it('toont in de kaart twee kolommen: wat je character draagt en de goedkoopste equip (#188)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    const table = cards()[0].querySelector<HTMLTableElement>('table.equip-columns')!
+    expect([...table.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Your character', 'Cheapest'])
+    const weapon = [...table.querySelectorAll('tbody tr')].find((tr) => tr.querySelector('th')?.textContent === 'Weapon')!
+    expect(weapon.querySelectorAll('td')[0].textContent).toBe(IGOR.name)
+    expect(weapon.querySelectorAll('td')[1].textContent).not.toBe('')
+  })
+
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
     const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
