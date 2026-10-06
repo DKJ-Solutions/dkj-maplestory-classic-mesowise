@@ -490,30 +490,30 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(profileFields().attackMs).toBe(DEFAULT_PROFILE.attackMs)
   })
 
-  it('maakt een slot weer leeg met "Niets dragen": armor telt dan als 0 DEF, een wapen is weer nog niet ingevuld (#188)', () => {
+  it('maakt een slot weer leeg met "Empty": armor telt dan als 0 DEF, een wapen is weer nog niet ingevuld (#188)', () => {
     atLevel('20')
     openHomeEquipment()
     const card = cards()[0]
     pick(card, 'Hat', HAT_A.name)
     pick(card, 'Hat', HAT_B.name)
     const withHat = Number(profileFields().wdef)
-    pick(card, 'Hat', 'Niets dragen')
+    pick(card, 'Hat', 'Empty')
     expect(slots().hat.pick).toBe('empty')
     expect(worn(card, 'Hat')).toBeNull()
     expect(Number(profileFields().wdef)).toBe(withHat - HAT_B.stat)
     pick(card, 'Weapon', IGOR.name)
     const watk = profileFields().clawWatk
-    pick(card, 'Weapon', 'Niets dragen')
+    pick(card, 'Weapon', 'Empty')
     expect(slots().claw.pick).toBe('unknown')
     expect(profileFields().clawWatk).toBe(watk)
   })
 
-  it('biedt "Niets dragen" alleen aan als er iets in het slot staat (#188)', () => {
+  it('biedt "Empty" alleen aan als er iets in het slot staat (#188)', () => {
     openHomeEquipment()
     const labels = () => options(typeIn(cards()[0], 'Hat', '')).map((o) => o.querySelector('.equip-name')?.textContent)
-    expect(labels()).not.toContain('Niets dragen')
+    expect(labels()).not.toContain('Empty')
     pick(cards()[0], 'Hat', HAT_A.name)
-    expect(labels()[0]).toBe('Niets dragen')
+    expect(labels()[0]).toBe('Empty')
   })
 
   it('past bij een armorstuk alleen het verschil in WDEF toe', () => {
@@ -2040,8 +2040,8 @@ describe('een Bowman in de app', () => {
       fireEvent.click(within(card).getByLabelText(/Ik heb Helpful Stranger/))
       expect(profileFields()).toMatchObject({ helpfulStranger: '0', bronzeArrows: '0' })
       expect(slots().ammo.pick).toBe('Arrows for Bows')
-      // Alleen "Niets dragen" (er staat iets in het slot, #188) en het eigen item; geen bronze pijl meer.
-      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual(['Niets dragen'])
+      // Alleen "Empty" (er staat iets in het slot, #188) en het eigen item; geen bronze pijl meer.
+      expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual(['Empty'])
     })
 
     it('zoekt bij Weapon in de bogen en kruisbogen, bij Ammo in de pijlen, en niet in claws of Warrior-wapens', () => {

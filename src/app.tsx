@@ -1187,7 +1187,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase() || familyName(slot, i.name).toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
     // Wat je draagt weer weghalen (Dave, #188): bovenaan, zolang er iets in het slot staat.
-    ...(isEmptyEntry(props.entry) ? [] : [{ pick: NONE, label: 'Niets dragen' }]),
+    ...(isEmptyEntry(props.entry) ? [] : [{ pick: NONE, label: 'Empty' }]),
     // Een stuk met kleuren staat er één keer, onder de naam die ze delen (#188); level 0 telt als level, alleen pijlen hebben er geen.
     // Achter de naam wat het stuk is (Dave, #188): bij een wapen de soort, het level, de ATT en de snelheid: "(CLAW, LV 15, ATT 13, FAST)".
     ...found.slice(0, MAX_RESULTS).map((i) => ({

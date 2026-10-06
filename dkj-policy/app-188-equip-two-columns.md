@@ -55,7 +55,7 @@
 - [x] The equip search only lists items your character's level can wear (Dave); `searchCatalog(..., maxLevel)`; tests raised to the level their items need (Tycho)
 - [x] Equip search: hides items for the other gender (63 worn tops, bottoms and the overall got their gender from NiaMeowDB, read 2026-10-06 by Rebecca), shows colour variants with the same level, DEF and MDEF once under their colourless name (also when their stat requirement differs, Dave), shows lv 0, and lists the highest level first (Dave); tests (Tycho)
 - [x] The search list shows a weapon's type, level, ATT and speed, "(CLAW, LV 15, ATT 13, FAST)", and armor as "(LV 0, DEF 2)" (Dave)
-- [x] "Niets dragen" at the top of the search empties a slot again: armor becomes known empty (0 DEF), a weapon or ammo not entered yet (Dave)
+- [x] "Empty" at the top of the search empties a slot again: armor becomes known empty (0 DEF), a weapon or ammo not entered yet (Dave)
 - [x] The NiaMeowDB source lines left the Equip popup (Dave); the footer credit stays
 - [x] The eye left the Equip card's head (Dave): the two buttons open the popup, the report button moves into that popup, at the bottom (Dave)
 
@@ -69,7 +69,7 @@
 
 The Equip card now has two buttons, **Your character** and **Cheapest**, in place of the eye in its head, and both open the Equip popup and carries the report button at its bottom; the per-shop NiaMeowDB source lines are gone from it, and the app's footer still credits NiaMeowDB. The equip search only lists items your character's level can wear and your gender can wear, highest level first, and
 shows colours of the same piece once ("Rubber Boots" instead of three colours); each weapon in the list says what it is, as
-in "Steel Titans (CLAW, LV 15, ATT 13, FAST)". "Niets dragen" at the top of the list empties a slot again. Every item from the catalog now shows the level it needs to be worn, as in "Steel Titans (Lv. 15)". Under the Cheapest invoice in Total cost, an **Equip bekijken** button shows, read-only, the equip that invoice is
+in "Steel Titans (CLAW, LV 15, ATT 13, FAST)". "Empty" at the top of the list empties a slot again. Every item from the catalog now shows the level it needs to be worn, as in "Steel Titans (Lv. 15)". Under the Cheapest invoice in Total cost, an **Equip bekijken** button shows, read-only, the equip that invoice is
 computed with: what your character wears, since the cheapest free settings never buy equipment. A Thief holding a claw no longer has a Shield slot (a claw takes both hands, like a bow), so neither view nor the
 armor advice offers a wristguard next to a claw. Both views hide the Ammo slot until a ranged weapon (a claw, a bow or a
 crossbow) is chosen. Your character

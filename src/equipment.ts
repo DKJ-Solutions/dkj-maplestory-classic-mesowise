@@ -585,7 +585,7 @@ export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: Equi
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.
  */
 export function choosePick(slot: EquipSlot, current: EquipEntry, pick: string, name = ''): EquipEntry {
-  // "Niets dragen" (Dave, 6 oktober 2026, #188): een armorslot is dan bekend leeg (0 DEF, de DEF van het stuk gaat eraf); een wapen of
+  // "Empty" (Dave, 6 oktober 2026, #188): een armorslot is dan bekend leeg (0 DEF, de DEF van het stuk gaat eraf); een wapen of
   // ammo is weer nog niet ingevuld, zodat het profiel zijn weapon attack en stars houdt (een leeg ammo-slot rekent met Subi, #117).
   if (pick === NONE) return isArmorSlot(slot) ? { ...emptyEntry(), pick: NONE } : emptyEntry()
   if (pick !== OTHER) return { pick, name: '', stat: '' }

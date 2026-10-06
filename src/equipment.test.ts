@@ -1733,7 +1733,7 @@ describe('familyName naast een ander stuk met dezelfde naam zonder kleur (#188)'
   })
 })
 
-describe('choosePick met "Niets dragen" (#188)', () => {
+describe('choosePick met "Empty" (#188)', () => {
   it('maakt een armorslot bekend leeg en een wapen of ammo weer nog niet ingevuld', () => {
     const worn: EquipEntry = { pick: 'Pan Lid', name: '', stat: '' }
     expect(choosePick('hat', worn, NONE)).toEqual({ pick: NONE, name: '', stat: '' })
