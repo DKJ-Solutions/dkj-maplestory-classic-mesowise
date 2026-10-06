@@ -39,21 +39,30 @@
 
 ### PLAN
 
+Issue #161: since #145 (PR #162) `src/mesoCostAt.ts` holds only `bestExpPerMeso` and `expPerMesoOf`; `mesoCostAt` itself
+is gone, so the file name points at a function that no longer exists. Rename it after the function it exports.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `git mv src/mesoCostAt.ts src/bestExpPerMeso.ts`, and the eight imports follow (four modules, four tests)
 
 ### TEST
 
+- [x] `npm run lint` clean, `vitest run`: 51 files, 1614 tests green; no behaviour change
+
 ### DEPLOY: app/161-rename-meso-cost-module
 
-**Score:**
+`src/mesoCostAt.ts` is now [`src/bestExpPerMeso.ts`](../src/bestExpPerMeso.ts) (#161), named after the function it
+exports. The old name pointed at `mesoCostAt`, which left with #145.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Nothing a player notices: a file rename with no behaviour change.
+
+**Score:** N/A
 
 #### Pull Request
 
 Rename src/mesoCostAt.ts to bestExpPerMeso.ts: it no longer holds mesoCostAt
-

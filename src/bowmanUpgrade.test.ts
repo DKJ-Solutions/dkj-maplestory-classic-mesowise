@@ -12,7 +12,7 @@ import { GENDERED_WORN_BOWMAN_ARMOR, HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BO
 import { NPC_CLAWS } from './data/claws'
 import { mobDraft } from './data/spots'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
-import { bestExpPerMeso } from './mesoCostAt'
+import { bestExpPerMeso } from './bestExpPerMeso'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
