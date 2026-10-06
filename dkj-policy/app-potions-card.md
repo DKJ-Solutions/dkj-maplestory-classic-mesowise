@@ -39,21 +39,38 @@
 
 ### PLAN
 
+- [x] Decided with Dave (October 6, 2026): potions have no level requirement in Classic (MeowDB "Lv 0"), so the card
+  shows every potion the job can buy; Max MP becomes a field that rises on Level up.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Vera: the Thief's MP per level (+17, advancement +250) from the HP/MP guide the other jobs already cite
+- [x] Cody + Gwen: Max MP profile field, Level up raises it, `src/potions.ts`, the Potions card and its styles
+- [ ] Victor: code review
+- [ ] Edith: final read of the Dutch UI text and comments
 
 ### TEST
 
+- [x] Tycho: `src/potions.test.ts`, Max MP in the level-up, profile and app tests; 1632 tests green, lint clean
+- [ ] Dave looks at the card at phone width before the merge
+
 ### DEPLOY: app/potions-card
 
-**Score:**
+A new Potions card in the Stats block shows your Max HP and Max MP, and every potion your job can buy: what it
+restores, its price, what it costs per HP or MP, how much of your bar one potion fills, and which potion the app
+calculates with. Potions have no level requirement in Classic, so they are all there at every level. Max MP is a new
+field: Level up raises it by your job's fixed MP per level ([`src/levelUp.ts`](../src/levelUp.ts)), and a profile saved
+before it starts empty until you fill it in. It is shown only and never blocks the calculation.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees at a glance which potion is cheapest per point and how many it takes to refill, and now keeps Max MP
+next to Max HP.
+
+**Score:** 3
 
 #### Pull Request
 
 Potions card with Max HP and Max MP
-
