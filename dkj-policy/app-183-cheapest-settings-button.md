@@ -52,6 +52,8 @@
   "Overnemen" on the second; the loose button is gone (Cody).
 - [x] Reworked again after Dave's look: one Total cost card with two columns, "In game" and "Cheapest", rows aligned
   by what they are (HP potion, MP potion, stars, travel) and the other item named in its cell (Cody).
+- [x] Table cleaned up after Dave's look: each thing in its own column (name, count once, "?", the two amounts on one
+  line), a different potion under the name, and narrow enough for 360px (Gwen, Cody).
 
 ### TEST
 
@@ -63,7 +65,8 @@
 The Total cost card now has two columns. "In game" is the level's cost as you play it now; "Cheapest" is what the
 same level costs with the cheapest settings that cost nothing: the cheapest safe mob, the cheapest potion per point,
 your skill points where they save the most and your AP filled in. Each row is one kind of cost (your HP potion, your
-MP potion, stars, travel), so a different potion in the cheapest setup sits on the same row with its name in its cell.
+MP potion, stars, travel), so a different potion in the cheapest setup sits on the same row with its name under the
+row's name; the count has its own column ("× 16", or "× 4 → 3" when the cheapest setup needs a different number).
 Because those choices affect each other, it repeats until nothing changes (at most five rounds) and never picks a setup
 that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the table the card shows
 "± X meso goedkoper", the difference of the two totals, and what is different per card; "Overnemen" applies it and

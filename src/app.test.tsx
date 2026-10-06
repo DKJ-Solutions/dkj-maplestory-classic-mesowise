@@ -3019,9 +3019,10 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 
 describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
-  const rows = () => Array.from(card().querySelectorAll('tbody tr')).map((r) => Array.from(r.children).map((c) => c.textContent))
   // De kolom In game: per regel het bedrag en eronder het aantal (#183).
   const inGame = () => Array.from(card().querySelectorAll('tbody td.invoice-ingame'))
+  // De naam van een rij, zonder het aantal eronder.
+  const rowName = (tr: Element) => tr.querySelector('th')!.firstChild!.textContent
 
   it('noemt in de ondertitel het level en de job, en zonder geldig level alleen de job', () => {
     expect(totalCostWho('15', 'warrior')).toBe('Lv. 15 Warrior')
@@ -3043,13 +3044,17 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    expect(rows().map((r) => r[0]).slice(0, 3)).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
-    expect(card().querySelector('thead')!.textContent).toBe('In gamemesoCheapestmeso')
-    for (const td of inGame()) {
-      expect(td.querySelector('.cost')!.textContent).toMatch(/^−[\d.]+$/)
-      // Een potion heeft een vraagteken achter zijn aantal; de stars niet.
-      expect(td.querySelector('.invoice-sub')!.textContent).toMatch(/^× [\d.]+\??$/)
+    const trs = Array.from(card().querySelectorAll('tbody tr'))
+    expect(trs.map(rowName)).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
+    expect(card().querySelector('thead')!.textContent).toBe('In gameCheapest')
+    // Elk ding in zijn eigen kolom (Dave, #183): een bedragkolom toont alleen het bedrag, het aantal staat één keer in zijn kolom.
+    for (const td of inGame()) expect(td.textContent).toMatch(/^−[\d.]+$/)
+    for (const tr of trs) {
+      // "× 4", of "× 4 → 3" als de goedkoopste setup er anders veel koopt.
+      expect(tr.querySelector('td.invoice-qty')!.textContent).toMatch(/^× [\d.]+( → [\d.]+)?$/)
     }
+    // Een potion heeft een vraagteken in zijn kolom; de stars niet.
+    expect(trs.map((tr) => tr.querySelector('td.invoice-why-cell .invoice-why') !== null)).toEqual([true, true, false])
     const total = card().querySelector('tfoot td.invoice-ingame')!.textContent!
     expect(total).toMatch(/^−[\d.]+$/)
     // Het totaal is de som van de regels.
@@ -3063,7 +3068,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('td.invoice-ingame .invoice-why'))
+    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('tbody td.invoice-why-cell .invoice-why'))
     expect(whys.map((b) => b.getAttribute('aria-label'))).toEqual([
       expect.stringMatching(/^Hoe komt de app op \d+ Orange Potion\?$/),
       expect.stringMatching(/^Hoe komt de app op \d+ Blue Potion\?$/),
@@ -3158,12 +3163,13 @@ describe('Total cost: de kolom Cheapest (#183)', () => {
     // Eén rij voor je HP-potion en één voor je MP-potion, welke potion elke kolom ook gebruikt.
     expect(rows.filter((tr) => tr.querySelector('.invoice-why'))).toHaveLength(2)
     for (const tr of rows) {
-      const label = tr.querySelector('th')!.textContent!
-      for (const td of Array.from(tr.querySelectorAll('td'))) {
-        const sub = td.querySelector('.invoice-sub')?.textContent ?? ''
-        // De naam van de rij herhaalt zich niet in de cel; een andere naam wel.
-        expect(sub.includes(label)).toBe(false)
-      }
+      const name = tr.querySelector('th')!.firstChild!.textContent!
+      // Een andere potion in de goedkoopste setup staat onder de naam, nooit de naam van de rij zelf.
+      const sub = tr.querySelector('.invoice-sub')?.textContent
+      if (sub !== undefined) expect(sub).toMatch(new RegExp(`^→ (?!${name}$).+$`))
+      // Geen "× 16 → 16": hetzelfde aantal staat er één keer.
+      const m = /^× ([\d.]+) → ([\d.]+)$/.exec(tr.querySelector('td.invoice-qty')!.textContent!)
+      if (m) expect(m[1]).not.toBe(m[2])
     }
   })
 

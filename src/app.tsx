@@ -2475,8 +2475,9 @@ const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
 /**
  * Total cost met twee kolommen (Dave, 6 oktober 2026, #183): per regel wat het level kost met je setup in game en met de goedkoopste
  * setup. Een rij is een soort regel (je HP-potion, je MP-potion, stars, reizen), zodat een andere potion in de goedkoopste setup op
- * dezelfde rij staat; dan staat zijn naam in die cel. Bedragen zonder "meso" in de cel: de eenheid staat in de kolomkop, zodat twee
- * kolommen op telefoonbreedte passen. Een regel die een setup niet heeft, of een setup zonder factuur, is een streepje.
+ * dezelfde rij staat; zijn naam staat dan klein onder die van de rij. Elk ding heeft zijn eigen kolom (Dave): de naam, het aantal
+ * (één keer "× 16", of "× 4 → 3" als het verschilt), het vraagteken dat dat aantal uitlegt, en de twee bedragen op één regel. Een
+ * regel die een setup niet heeft, of een setup zonder factuur, is een streepje.
  */
 function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice }) {
   const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
@@ -2484,47 +2485,49 @@ function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice })
   for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
   const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
   const amount = (n: number) => (n === 0 ? '0' : `−${nfInt.format(n)}`)
+  const qty = (l: InvoiceLine | undefined) => (l && l.qty !== null ? nfInt.format(l.qty) : null)
   const colClass = ['invoice-ingame', 'invoice-cheapest']
   return (
     <table class="invoice invoice-compare">
       <thead>
         <tr>
           <td />
+          <td />
+          <td />
           <th scope="col" class="invoice-meso">
-            In game<span class="invoice-unit">meso</span>
+            In game
           </th>
           <th scope="col" class="invoice-meso">
-            Cheapest<span class="invoice-unit">meso</span>
+            Cheapest
           </th>
         </tr>
       </thead>
       <tbody>
         {keys.map((key) => {
-          const row = lineOf(0, key) ?? lineOf(1, key)!
+          const a = lineOf(0, key)
+          const b = lineOf(1, key)
+          const row = a ?? b!
+          const qa = qty(a)
+          const qb = qty(b)
+          // Eén keer het aantal als beide setups evenveel kopen; anders van in game naar cheapest.
+          // Harde spaties binnen "× 4" en "→ 3": op een smal scherm breekt het alleen bij de pijl.
+          const count = qa && qb ? (qa === qb ? `× ${qa}` : `× ${qa} → ${qb}`) : qa || qb ? `× ${qa ?? qb}` : null
+          // Gebruikt de goedkoopste setup een andere potion, dan staat die onder de naam.
+          const other = a && b && b.label !== a.label ? b.label : null
+          const why = a?.why ? a : b?.why ? b : null
           return (
             <tr key={key}>
-              <th scope="row">{row.label}</th>
-              {[0, 1].map((col) => {
-                const l = lineOf(col, key)
-                return (
-                  <td key={col} class={`invoice-meso ${colClass[col]}`}>
-                    {l ? (
-                      <>
-                        <span class="cost">{amount(l.meso)}</span>
-                        {l.qty !== null && (
-                          <span class="invoice-sub">
-                            {`× ${nfInt.format(l.qty)}`}
-                            {l.label !== row.label && ` ${l.label}`}
-                            {l.why && <InvoiceWhy line={{ ...l, why: l.why }} />}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span class="invoice-none">—</span>
-                    )}
-                  </td>
-                )
-              })}
+              <th scope="row">
+                {row.label}
+                {other && <span class="invoice-sub">→ {other}</span>}
+              </th>
+              <td class="invoice-qty">{count}</td>
+              <td class="invoice-why-cell">{why && <InvoiceWhy line={{ ...why, why: why.why! }} />}</td>
+              {[a, b].map((l, col) => (
+                <td key={col} class={`invoice-meso ${colClass[col]}`}>
+                  {l ? <span class="cost">{amount(l.meso)}</span> : <span class="invoice-none">—</span>}
+                </td>
+              ))}
             </tr>
           )
         })}
@@ -2532,6 +2535,8 @@ function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice })
       <tfoot>
         <tr>
           <th scope="row">Total</th>
+          <td />
+          <td />
           {cols.map((c, col) => (
             <td key={col} class={`invoice-meso ${colClass[col]}`}>
               {c ? <span class="cost">{amount(c.total)}</span> : <span class="invoice-none">—</span>}
