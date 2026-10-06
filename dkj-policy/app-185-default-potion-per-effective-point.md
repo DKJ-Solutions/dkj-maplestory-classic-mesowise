@@ -39,21 +39,50 @@
 
 ### PLAN
 
+#### The issue
+
+#185: the default potion (nothing chosen) was picked per raw point at module load, while `potionAdvice` ranks per point
+you actually use (#181). Rank the default with the same measure, for the profile.
+
+#### What holds today
+
+With the current database the two measures pick the same potion at every bar: the Orange Potion is both the cheapest per
+raw point and the smaller potion, so it is never capped harder than the White Potion (and the Magician's Orange likewise
+against the Lemon and the Blue Potion). The disagreement #185 describes appears only once a bigger potion that is cheaper
+per raw point enters the data. So this changes no number today; it keeps the default and the advice on one measure.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `cheapestPotions(job, bar)` in `src/potions.ts` ranks per point you actually use (`perPoint`, the advice's own
+  measure), first on a tie; without a bar it stays `HP_POTION` / `mpPotionFor`. `databasePotion`, `resolvePotions` and
+  `fixPotion` take the bar too.
+- [x] Callers pass the profile: the app (`usedPotions`, the Potions card, the correction), and `cheapestSettings` through
+  `profileOf` and a new `usedPotions` helper. `potionFactorOf` now takes only the two recovery fields.
+- [x] Comments in `potions.ts`, `suggest.ts` and `profile.ts` say which measure picks the default.
 
 ### TEST
 
+- [x] `src/potions.test.ts`, "de keuze van de app per punt die je echt gebruikt (#185)": without a profile the old pick;
+  with one a potion the job can buy; for every job and four bars (tiny, small, large, with Improved Recovery) the advice
+  never tells a fresh profile to leave the app's default; a choice still wins over the bar.
+- [x] Typecheck clean; potions and cheapestSettings suites green (the full gate runs in ship-pr).
+
 ### DEPLOY: app/185-default-potion-per-effective-point
 
-**Score:**
+Without a potion chosen, the app now picks its default potion the way the potion advice ranks potions: per point you
+actually use, with your Max HP and MP and Improved HP and MP Recovery, rather than per point printed on the potion. The
+default and the advice can therefore no longer disagree, which kept a fresh profile from being told to switch away from
+the app's own pick. With today's potion data both measures pick the same potion, so no number changes; the guard matters
+once a larger potion that is cheaper per point enters the data.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
 Pick the default potion per effective point for the profile
-
