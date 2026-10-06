@@ -10,11 +10,35 @@ import type { Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { resolvePlan } from './suggest'
 
-/** Eén regel van de factuur: wat, hoeveel stuks (null bij een bedrag zonder stuks, zoals reizen) en wat het kost. */
+/**
+ * Hoe de app op het aantal potions komt (Dave, 6 oktober 2026): de stappen van de berekening, met de getallen die ze gebruikt.
+ * HP: wat je per kill verliest (`hits` keer `touch` schade); MP: wat je aanval per kill kost, plus je buffs per uur. Dan maal je
+ * kills per uur en de duur van het level, gedeeld door wat één potion herstelt, naar boven afgerond.
+ */
+export interface PotionWhy {
+  kind: 'hp' | 'mp'
+  mob: string
+  /** HP: hoe vaak de mob je per kill raakt (aanrakingen maal zijn raakkans) en de schade per aanraking. */
+  hits?: number
+  touch?: number
+  /** HP of MP die je per kill kwijt bent. */
+  perKill: number
+  killsPerHour: number
+  /** MP per uur voor je buffs, los van je kills (0 bij HP). */
+  buffPerHour: number
+  hours: number
+  /** Wat je in het hele level kwijt bent: (perKill × killsPerHour + buffPerHour) × hours. */
+  need: number
+  /** Wat één potion herstelt, met Improved HP of MP Recovery. */
+  restores: number
+}
+
+/** Eén regel van de factuur: wat, hoeveel stuks (null bij een bedrag zonder stuks, zoals reizen), wat het kost, en bij een potion hoe. */
 export interface InvoiceLine {
   label: string
   qty: number | null
   meso: number
+  why?: PotionWhy
 }
 
 export type LevelInvoice =
@@ -48,15 +72,32 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   const plan = resolved?.plan ?? null
   const own = (text: string | undefined) => text !== undefined && text.trim() !== ''
   const lines: InvoiceLine[] = []
-  const add = (label: string, qty: number | null, meso: number) => {
-    if (meso > 0) lines.push({ label, qty, meso })
+  const add = (label: string, qty: number | null, meso: number, why?: PotionWhy) => {
+    if (meso > 0) lines.push(why ? { label, qty, meso, why } : { label, qty, meso })
   }
   if (resolved && plan && !own(draft.potions)) {
-    const { hpPotion, mpPotion } = resolved.suggestion
+    const { hpPotion, mpPotion, estimate, buffMpPerHour, potionFactor } = resolved.suggestion
     const hp = Math.ceil(plan.hpPotionsPerHour * hours)
     const mp = Math.ceil(plan.mpPotionsPerHour * hours)
-    add(hpPotion.name, hp, hp * hpPotion.price)
-    add(mpPotion.name, mp, mp * mpPotion.price)
+    const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours }
+    add(hpPotion.name, hp, hp * hpPotion.price, {
+      ...base,
+      kind: 'hp',
+      hits: estimate.touchTaken > 0 ? estimate.hpLossPerKill / estimate.touchTaken : 0,
+      touch: estimate.touchTaken,
+      perKill: estimate.hpLossPerKill,
+      buffPerHour: 0,
+      need: estimate.hpLossPerKill * plan.killsPerHour * hours,
+      restores: hpPotion.hp * potionFactor.hp,
+    })
+    add(mpPotion.name, mp, mp * mpPotion.price, {
+      ...base,
+      kind: 'mp',
+      perKill: estimate.mpPerKill,
+      buffPerHour: buffMpPerHour,
+      need: (estimate.mpPerKill * plan.killsPerHour + buffMpPerHour) * hours,
+      restores: mpPotion.mp * potionFactor.mp,
+    })
   } else {
     add('Potions', null, Math.ceil(spot.cost.potions * hours))
   }

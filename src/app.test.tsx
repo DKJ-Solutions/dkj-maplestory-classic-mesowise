@@ -3031,7 +3031,8 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     render(<App />)
     expect(rows().map((r) => r[0])).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
     for (const [, qty, meso] of rows()) {
-      expect(qty).toMatch(/^× [\d.]+$/)
+      // Een potion heeft een vraagteken achter zijn aantal; de stars niet.
+      expect(qty).toMatch(/^× [\d.]+\??$/)
       expect(meso).toMatch(/^−[\d.]+ meso$/)
     }
     expect(card().querySelectorAll('.invoice-meso.cost')).toHaveLength(4)
@@ -3041,5 +3042,27 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
     expect(n(total)).toBe(rows().reduce((s, r) => s + n(r[2]!), 0))
     expect(card().textContent).toMatch(/Van lv 10 naar 11 op Ribbon Pig: 1\.716 EXP, ± \d+ min\./)
+  })
+
+  it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('.invoice-why'))
+    expect(whys.map((b) => b.getAttribute('aria-label'))).toEqual([
+      expect.stringMatching(/^Hoe komt de app op \d+ Orange Potion\?$/),
+      expect.stringMatching(/^Hoe komt de app op \d+ Blue Potion\?$/),
+    ])
+    fireEvent.click(whys[0])
+    const dialog = card().querySelector<HTMLElement>('dialog')!
+    const steps = Array.from(dialog.querySelectorAll('.why-steps li')).map((li) => li.textContent!.replace(/\s+/g, ' '))
+    expect(steps).toHaveLength(4)
+    expect(steps[0]).toMatch(/^Ribbon Pig raakt je per kill ± [\d,]+ keer voor ± [\d,]+ schade: ± [\d,]+ HP per kill\.$/)
+    expect(steps[1]).toMatch(/^Je killt ± [\d.]+ Ribbon Pig per uur: ± [\d.]+ HP per uur\.$/)
+    expect(steps[2]).toMatch(/^Dit level duurt ± \d+ min: ± [\d.]+ HP in totaal\.$/)
+    // Het laatste getal is het aantal op de factuur.
+    const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
+    expect(steps[3]).toMatch(new RegExp(`^Eén Orange Potion herstelt 250 HP: [\\d.]+ / 250 = [\\d,]+, naar boven afgerond ${qty}\\.$`))
+    expect(dialog.textContent).toContain('aanname zonder bron')
   })
 })

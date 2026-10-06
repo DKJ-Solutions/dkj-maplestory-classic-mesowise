@@ -49,12 +49,14 @@
   above Report
 - [x] Gwen: invoice layout (amounts right-aligned, red with a minus, total under a line), duration in minutes under an
   hour; checked at 360 px
+- [x] Dave (October 6, 2026): a question mark after a potion's count that explains, step by step and with the model's own
+  numbers, how the app arrives at it
 - [x] Victor and Edith: review; no calculation findings. "Ammo" for jobs that throw nothing, "0 meso" for a free level, a duration of 59.5+ minutes reads "1 uur", doc comment back on the card
 
 ### TEST
 
 - [x] Tycho: `src/levelInvoice.test.ts` (total matches the level cost up to rounding each line up, chosen potions, ammo per
-  job, own potion costs) and app tests for the card; 1660 tests green, lint clean
+  job, own potion costs) and app tests for the card; 1661 tests green, lint clean
 - [ ] Dave looks at the card before the merge
 
 ### DEPLOY: app/total-cost-card
@@ -63,7 +65,8 @@ A new Total cost card above the Report card shows, as an invoice, what your curr
 you need (the potions you picked on the Potions card), the stars or arrows, and travel when it costs anything, each with
 its price, and the total underneath. It calculates with the same mob, kills and potions as the Report card, so the total
 is the same amount, give or take rounding each count up to whole potions. A line above the invoice says which level, on
-which mob, and roughly how long it takes.
+which mob, and roughly how long it takes; a question mark after a potion's count explains, step by step, how the app
+arrives at that number.
 
 **Score:** 3
 
