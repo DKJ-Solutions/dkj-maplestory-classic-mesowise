@@ -49,7 +49,7 @@
 ### TEST
 
 - [x] `src/cheapestEquip.test.ts` and an app test for the two columns; full suite and lint gate green (Tycho)
-- [ ] Code review (Victor) and text read (Edith)
+- [x] Code review (Victor: a lone top and a lone bottom blocked each other, fixed with tests) and text read (Edith)
 - [ ] Dave looks at the preview before the merge (visible result)
 
 ### DEPLOY: app/188-equip-two-columns

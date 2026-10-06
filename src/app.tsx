@@ -1426,13 +1426,12 @@ function StatDialog(props: {
 
 /**
  * De twee kolommen in de Equip-kaart (Dave, 6 oktober 2026, #188): wat je character in game draagt, en per slot de goedkoopste
- * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide leeg is, staat er
+ * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide kolommen leeg is, staat er
  * niet; zonder goedkoopste equip (een job die de app niet doorrekent) alleen de eerste kolom.
  */
 function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null }) {
   const rows = props.slots
-    .map((slot) => props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false })
-    .map((r, i) => ({ ...r, slot: props.slots[i] }))
+    .map((slot) => ({ slot, ...(props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false }) }))
     .filter((r) => r.worn !== null || r.cheapest !== null)
   if (rows.length === 0) return <p class="hint equip-columns-none">Nog geen equip ingevuld.</p>
   return (

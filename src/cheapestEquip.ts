@@ -17,7 +17,7 @@ export interface CheapestSlot {
 /**
  * Per slot wat je draagt en wat de goedkoopste equip heeft. Het wapen: de winnaar van het wapenadvies. Armor: elk slot
  * waarvan het beste stuk zich terugverdient (netto besparing boven 0), van grootste naar kleinste netto besparing; een
- * stuk dat een slot raakt dat een eerder stuk al nam (een overall tegenover een top of bottom) valt af. Elk stuk is
+ * stuk dat een slot vult dat een eerder stuk al vulde, of een overall naast een top of bottom, valt af. Elk stuk is
  * doorgerekend tegen wat je nu draagt, dus de kolom is het advies per slot naast elkaar, geen nieuwe berekening van
  * alles samen. Zonder advies blijft elk slot wat je draagt.
  */
@@ -25,26 +25,26 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   if (claw.kind === 'advice' && claw.winner) pick.claw = claw.winner.name
   if (armor.kind === 'advice') {
-    const taken = new Set<ArmorSlot>()
+    // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
+    // maken (een losse top en een losse bottom maken allebei de overall leeg) elkaar niet blokkeren.
+    const fill: Partial<Record<ArmorSlot, string>> = {}
+    const bare = new Set<ArmorSlot>()
+    const halves = (f: typeof fill) => f.top !== undefined || f.bottom !== undefined
     for (const c of armor.choices) {
       if (c.net === null || c.net <= 0) continue
-      const set: Partial<Record<ArmorSlot, string | null>> = { [c.armor.slot]: c.armor.name }
-      if (c.with) set[c.with.slot] = c.with.name
-      // Een overall maakt top en bottom leeg; een top of bottom maakt de overall leeg, en bij een losse helft (bare) ook de andere helft.
-      if (c.armor.slot === 'overall') {
-        set.top = null
-        set.bottom = null
-      } else if (c.armor.slot === 'top' || c.armor.slot === 'bottom') {
-        set.overall = null
-        if (c.bare) set[c.bare] = null
-      }
-      const touched = Object.keys(set) as ArmorSlot[]
-      if (touched.some((s) => taken.has(s))) continue
-      for (const s of touched) {
-        taken.add(s)
-        pick[s] = set[s]
-      }
+      const add: Partial<Record<ArmorSlot, string>> = { [c.armor.slot]: c.armor.name }
+      if (c.with) add[c.with.slot] = c.with.name
+      // Botsen doet een slot dat al gevuld is, of een overall naast een top of bottom.
+      const clash = Object.keys(add).some((s) => fill[s as ArmorSlot] !== undefined) || (add.overall !== undefined && halves(fill)) || (fill.overall !== undefined && halves(add))
+      if (clash) continue
+      Object.assign(fill, add)
+      if (c.bare) bare.add(c.bare)
     }
+    for (const [s, name] of Object.entries(fill)) pick[s as ArmorSlot] = name
+    if (fill.overall !== undefined) pick.top = pick.bottom = null
+    if (halves(fill)) pick.overall = null
+    // Een losse helft over een gedragen overall laat de andere helft leeg, tenzij een ander stuk die vult.
+    for (const s of bare) if (fill[s] === undefined) pick[s] = null
   }
   const out = {} as Record<EquipSlot, CheapestSlot>
   for (const slot of slots) {
