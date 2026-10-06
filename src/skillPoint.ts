@@ -9,7 +9,8 @@
 // kunnen inhalen; eindigt de EXP-tabel eerder, dan stopt de horizon daar.
 // De Warrior (issue #42): Power Strike, Precise Strikes, Improved HP Recovery, Max HP Increase en Iron Body; de Bowman (issue #44):
 // Arrow Blow en Focus; de Magician (issue #43): Energy Bolt, Magic Claw, Improved MP Recovery en Magic Armor (de Recovery-skills
-// sinds issue #141, Max HP Increase en de buffs sinds issue #139).
+// sinds issue #141, Max HP Increase en de buffs sinds issue #139). De Thief met een dagger (issue #170): Double Stab in plaats van
+// Lucky Seven, die met een dagger niets doet (en Double Stab met een claw).
 import { ASSUMPTION_VARIANTS } from './best'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
@@ -23,7 +24,7 @@ import {
   MAGIC_CLAW_LEVELS,
   MAGIC_CLAW_REQUIRES_ENERGY_BOLT,
 } from './data/magician'
-import { LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
+import { DOUBLE_STAB_LEVELS, LUCKY_SEVEN_LEVELS, NIMBLE_BODY } from './data/thief'
 import { ARROW_BLOW_LEVELS, FOCUS_LEVELS, FOCUS_REQUIRES_EYE_OF_AMAZON } from './data/bowman'
 import {
   IMPROVED_HP_RECOVERY,
@@ -58,6 +59,7 @@ export function skillHorizon(level: number): { from: number; to: number; truncat
 export type SkillId = Extract<
   SkillKey,
   | 'luckySeven'
+  | 'doubleStab'
   | 'nimbleBody'
   | 'powerStrike'
   | 'preciseStrikes'
@@ -96,17 +98,7 @@ const dependent = (own: (p: Profile) => number, prereq: (p: Profile) => boolean)
   learnable: (p: Profile) => own(p) > 0 || prereq(p),
 })
 
-/** De skills van de 1e job die het model kan doorrekenen. */
-export const SKILLS: readonly Skill[] = [
-  {
-    id: 'luckySeven',
-    name: 'Lucky Seven',
-    max: LUCKY_SEVEN_LEVELS.length,
-    level: (p) => p.luckySeven,
-    plusOne: (p) => ({ ...p, luckySeven: p.luckySeven + 1 }),
-    minusOne: levelDown('luckySeven'),
-  },
-  {
+const NIMBLE_BODY_SKILL: Skill = {
     id: 'nimbleBody',
     name: 'Nimble Body',
     max: NIMBLE_BODY.maxLevel,
@@ -124,7 +116,32 @@ export const SKILLS: readonly Skill[] = [
       accuracy: p.accuracy - NIMBLE_BODY.accuracyPerLevel,
       avoid: p.avoid - NIMBLE_BODY.avoidPerLevel,
     }),
+}
+
+/** De skills van de 1e job van een Thief met een claw die het model kan doorrekenen. */
+export const SKILLS: readonly Skill[] = [
+  {
+    id: 'luckySeven',
+    name: 'Lucky Seven',
+    max: LUCKY_SEVEN_LEVELS.length,
+    level: (p) => p.luckySeven,
+    plusOne: (p) => ({ ...p, luckySeven: p.luckySeven + 1 }),
+    minusOne: levelDown('luckySeven'),
   },
+  NIMBLE_BODY_SKILL,
+]
+
+/** De skills van de 1e job van een Thief met een dagger (#170): Double Stab is zijn aanval, Lucky Seven gooit stars en doet met een dagger niets. */
+export const DAGGER_SKILLS: readonly Skill[] = [
+  {
+    id: 'doubleStab',
+    name: 'Double Stab',
+    max: DOUBLE_STAB_LEVELS.length,
+    level: (p) => p.doubleStab,
+    plusOne: (p) => ({ ...p, doubleStab: p.doubleStab + 1 }),
+    minusOne: levelDown('doubleStab'),
+  },
+  NIMBLE_BODY_SKILL,
 ]
 
 /** De accuracy die Precise Strikes op dit level geeft (0 op level 0). */
@@ -263,13 +280,20 @@ export const BOWMAN_MODELLED: readonly Skill[] = [
 
 const MODELLED: Partial<Record<Job, readonly Skill[]>> = { warrior: WARRIOR_MODELLED, bowman: BOWMAN_MODELLED, magician: MAGICIAN_MODELLED }
 
-/** De skills die het model voor deze job kan doorrekenen. */
-export const skillsOf = (job: Job): readonly Skill[] => MODELLED[job] ?? SKILLS
+/** De skills die het model voor deze job kan doorrekenen; bij een Thief hangt dat af van zijn wapen (`dagger`, #170). */
+export const skillsOf = (job: Job, dagger = false): readonly Skill[] => MODELLED[job] ?? (job === 'thief' && dagger ? DAGGER_SKILLS : SKILLS)
 
-/** De andere skills van de 1e job: het model rekent ze niet door, dus de app noemt ze. */
-export const NOT_MODELLED: readonly string[] = THIEF_SKILLS.filter((s) => s.job === 'Thief' && !SKILLS.some((m) => m.id === s.key)).map(
-  (s) => s.name,
-)
+/** De skills die het model voor dit profiel kan doorrekenen (een Thief met een dagger heeft Double Stab). */
+const skillsFor = (p: Profile): readonly Skill[] => skillsOf(p.job, p.dagger === 1)
+
+const notIn = (skills: readonly Skill[]): readonly string[] =>
+  THIEF_SKILLS.filter((s) => s.job === 'Thief' && !skills.some((m) => m.id === s.key)).map((s) => s.name)
+
+/** De andere skills van de 1e job van een Thief met een claw: het model rekent ze niet door, dus de app noemt ze. */
+export const NOT_MODELLED: readonly string[] = notIn(SKILLS)
+
+/** Hetzelfde voor een Thief met een dagger: daar telt Lucky Seven niet, Double Stab wel. */
+export const DAGGER_NOT_MODELLED: readonly string[] = notIn(DAGGER_SKILLS)
 
 /**
  * Wat het model van een Warrior niet kan doorrekenen, met de reden. Slash Blast raakt tot 4 monsters, en hoeveel
@@ -293,8 +317,9 @@ export const BOWMAN_NOT_MODELLED: readonly string[] = ['Double Shot', 'Critical 
 
 const NOT_MODELLED_BY_JOB: Partial<Record<Job, readonly string[]>> = { warrior: WARRIOR_NOT_MODELLED, bowman: BOWMAN_NOT_MODELLED, magician: MAGICIAN_NOT_MODELLED }
 
-/** De skills van deze job die het model niet doorrekent. */
-export const notModelled = (job: Job): readonly string[] => NOT_MODELLED_BY_JOB[job] ?? NOT_MODELLED
+/** De skills van deze job (bij een Thief: met dit wapen) die het model niet doorrekent. */
+export const notModelled = (job: Job, dagger = false): readonly string[] =>
+  NOT_MODELLED_BY_JOB[job] ?? (job === 'thief' && dagger ? DAGGER_NOT_MODELLED : NOT_MODELLED)
 
 /** Een skill zoals de speler hem nu heeft gezet; `level` is null als het veld geen geldig skill-level is. */
 export interface SkillLevel extends SkillInfo {
@@ -388,7 +413,7 @@ const bySaving = (a: SkillChoice, b: SkillChoice) => (b.saving ?? -Infinity) - (
  * model niets weet (Eye of Amazon, Magic Guard) blijven zoals ze zijn. Null als er geen verplaatsing is die de app kan doorrekenen.
  */
 function placementUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumptions, base: number): SkillPlacement | null {
-  const skills = skillsOf(profile.job)
+  const skills = skillsFor(profile)
   let best: SkillMove | null = null
   let closest: SkillMove | null = null
   for (const from of skills) {
@@ -413,7 +438,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
   if (typeof base !== 'number') return null
   // De modelleerbare skills zijn allemaal van de 1e job: zonder punt over in die pot is er niets te kiezen.
   const left = skillPointsLeft(profile, 'job')
-  const choices = skillsOf(profile.job)
+  const choices = skillsFor(profile)
     .filter((s) => left > 0 && s.level(profile) < s.max && (s.learnable?.(profile) ?? true))
     .map((s): SkillChoice => {
       const meso = mesoCost(drafts, s.plusOne(profile), a)
@@ -456,6 +481,6 @@ export function skillPointAdvice(drafts: readonly SpotDraft[], profile: Profile 
     const best = v?.choices[0]?.saving
     return typeof mine === 'number' && typeof best === 'number' && best - mine <= 0.5
   })
-  const maxed = skillsOf(profile.job).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
+  const maxed = skillsFor(profile).filter((s) => s.level(profile) >= s.max).map((s) => s.name)
   return { kind: 'advice', ...skillHorizon(profile.level), ...main, maxed, robust }
 }

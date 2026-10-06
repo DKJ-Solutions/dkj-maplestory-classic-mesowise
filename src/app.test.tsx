@@ -1685,6 +1685,24 @@ describe('het geslacht (issue #55)', () => {
     expect(save()).toBeNull()
   })
 
+  it('Thief met Cass -> Warrior -> Thief: het wapenslot is leeg en het profiel rekent weer met een claw, niet met Double Stab (#170)', () => {
+    cleanup()
+    localStorage.clear()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '30', dagger: '1', doubleStab: '1' } }))
+    localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: { claw: { pick: 'Cass', name: '', stat: '' } } }))
+    render(<App />)
+    expect(stored(PROFILE_KEY).fields.dagger).toBe('1')
+    for (const next of ['Warrior', 'Thief']) {
+      fireEvent.click(pencil())
+      fireEvent.click(jobButton(next))
+      fireEvent.click(save()!)
+    }
+    expect(stored(JOB_KEY).job).toBe('thief')
+    expect(slots().claw.pick).toBe('unknown')
+    expect(stored(PROFILE_KEY).fields.dagger).toBe('0')
+  })
+
   it('toont een kruis in plaats van het potlood zolang de keuze open staat', () => {
     withWarrior()
     const icon = () => pencil().querySelector('path')!.getAttribute('d')

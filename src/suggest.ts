@@ -1,16 +1,16 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
 // Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
-import { ASSUMPTIONS, beginnerAttack, bowAttack, characterAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
+import { ASSUMPTIONS, beginnerAttack, bowAttack, characterAttack, daggerAttack, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
 import { ARROW_BLOW_LEVELS, BOWMAN_DAMAGE, BOWMAN_MASTERY_BASE } from './data/bowman'
 import { ENERGY_BOLT_LEVELS, IMPROVED_MP_RECOVERY, MAGIC_CLAW_HITS, MAGIC_CLAW_LEVELS, MAGIC_CLAW_REQUIRES_ENERGY_BOLT, MAGICIAN_MP_POTIONS } from './data/magician'
 import { POTIONS } from './data/spots'
-import { LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
+import { DOUBLE_STAB_HITS, DOUBLE_STAB_LEVELS, DOUBLE_STAB_WEAPON_MULT, LUCKY_SEVEN, LUCKY_SEVEN_LEVELS } from './data/thief'
 import type { KnownSpot, Monster, Potion, SpellLevel } from './data/types'
 import { IMPROVED_HP_RECOVERY, POWER_STRIKE_LEVELS } from './data/warrior'
 import type { Job } from './job'
-import { attacksAsBeginner, toCharacter, type Profile } from './profile'
+import { attacksAsBeginner, thiefWithDagger, toCharacter, type Profile } from './profile'
 import { buffBonus } from './skillEffects'
 import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
@@ -18,6 +18,12 @@ import { parseAmount, toSpot, type SpotDraft } from './spotDraft'
 export function luckySevenAt(level: number): SkillStats | null {
   if (level < 1) return null
   return LUCKY_SEVEN_LEVELS[Math.min(level, LUCKY_SEVEN_LEVELS.length) - 1] ?? null
+}
+
+/** Double Stab op dit skill-level, of null als hij nog niet geleerd is (level 0): dan telt de gewone aanval met de dagger. */
+export function doubleStabAt(level: number): SkillStats | null {
+  if (level < 1) return null
+  return DOUBLE_STAB_LEVELS[Math.min(level, DOUBLE_STAB_LEVELS.length) - 1] ?? null
 }
 
 /** Power Strike op dit skill-level, of null als hij nog niet geleerd is (level 0): dan telt de gewone aanval. */
@@ -63,7 +69,16 @@ function magicianAttacks(profile: Profile, character: Character): Attack[] {
 const beginnerAttackOf = (profile: Profile, c: Character): Attack => beginnerAttack(c, profile.weaponMult, profile.dagger === 1)
 
 /**
- * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief of Bowman onder level 10 slaat als Beginner (#171). Een Thief gooit Lucky Seven (of de gewone claw-aanval); een Warrior slaat met
+ * De aanval van een Thief met een dagger (#170): Double Stab op het gezette level (2 klappen, de steek van 2,0), of zonder punten
+ * de gewone aanval met de verwachte multiplier van de dagger uit de equipment.
+ */
+function daggerAttackOf(profile: Profile, c: Character): Attack {
+  const stab = doubleStabAt(profile.doubleStab)
+  return stab ? daggerAttack(c, DOUBLE_STAB_WEAPON_MULT, stab, DOUBLE_STAB_HITS) : daggerAttack(c, profile.weaponMult, null, 1)
+}
+
+/**
+ * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief of Bowman onder level 10 slaat als Beginner (#171). Een Thief gooit Lucky Seven (of de gewone claw-aanval), of steekt met een dagger Double Stab (#170); een Warrior slaat met
  * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Bowman schiet Arrow Blow op het
  * gezette level, of zonder punten het gewone schot; een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er
  * geen voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
@@ -79,6 +94,7 @@ function attacksOf(profile: Profile, character: Character): Attack[] {
     case 'magician':
       return magicianAttacks(profile, character)
     default:
+      if (thiefWithDagger(profile.job, profile.dagger)) return [daggerAttackOf(profile, character)]
       return [characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)]
   }
 }
@@ -87,7 +103,7 @@ function attacksOf(profile: Profile, character: Character): Attack[] {
  * De Attack uit het statvenster (issue #108): de laagste en hoogste schade van één gewone aanval, uit je ability points
  * en je weapon attack, zonder skill en vóór de verdediging van het monster. Bron: de damage-gids van MeowDB
  * (meowdb.com/msclassic/guides/explaining-the-damage-formula, "Character-window damage range"), die beide afrondt
- * naar beneden. Null voor een Magician: zijn gewone wand-aanval staat niet in de gegevens. Bij een Warrior is het
+ * naar beneden. Null voor een Magician: zijn gewone wand-aanval staat niet in de gegevens. Bij een Warrior (en een Thief met een dagger) is het
  * een benadering: zijn weapon multiplier is het gemiddelde van zwaaien en steken (data/warrior.ts), waar het spel één
  * multiplier gebruikt; het bereik kan daardoor een paar punten van het statvenster afwijken.
  */
@@ -99,7 +115,9 @@ export function statWindowRange(profile: Profile): { min: number; max: number } 
       ? meleeAttack(c, profile.weaponMult, null)
       : profile.job === 'bowman'
         ? bowAttack(c, BOW, null)
-        : profile.job === 'thief'
+        : thiefWithDagger(profile.job, profile.dagger)
+          ? daggerAttack(c, profile.weaponMult, null, 1)
+          : profile.job === 'thief'
           ? characterAttack(c, null, LUCKY_SEVEN)
           : null
   return a && { min: Math.trunc(a.min), max: Math.trunc(a.max) }
@@ -145,7 +163,7 @@ export interface MonsterSuggestion {
   monster: Monster
   estimate: MobEstimate
   expPerHour: number
-  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior, Magician of Beginner gooit niets, dus 0. */
+  /** Wat het herladen van één ster kost: die van je gekozen stars, of de prijs van één pijl voor een Bowman; een Warrior, Magician, Beginner of Thief met een dagger gooit niets, dus 0. */
   rechargePerStar: number
   /** De potion waarmee deze job zijn MP aanvult. */
   mpPotion: Potion
@@ -170,7 +188,7 @@ const expPerMeso = (s: MonsterSuggestion): number => {
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
   const character = toCharacter(profile)
   const attacks = attacksOf(profile, character)
-  const throwsNothing = profile.job === 'warrior' || profile.job === 'magician' || attacksAsBeginner(profile.job, profile.level)
+  const throwsNothing = profile.job === 'warrior' || profile.job === 'magician' || attacksAsBeginner(profile.job, profile.level) || thiefWithDagger(profile.job, profile.dagger)
   const rechargePerStar = throwsNothing ? 0 : profile.starRecharge
   const mpPotion = mpPotionFor(profile.job)
   const buffMpPerHour = buffBonus(profile).mpPerHour
