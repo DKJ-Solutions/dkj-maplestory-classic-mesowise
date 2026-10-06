@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { autoFillAp, autoFillPatch } from './autoFillAp'
+import { EXP_TABLE_LEVELS } from './data/expTable'
 import { MOBS, mobDraft } from './data/spots'
 import { defaultEquipment } from './equipment'
 import { cheapestSettings, MAX_ROUNDS, profileOf as appProfile, type CheapestInput } from './cheapestSettings'
@@ -136,6 +137,89 @@ describe('cheapestSettings: randgevallen', () => {
   it('kiest niet opnieuw een andere mob als je al op de beste staat', () => {
     const settled = apply(base(), cheapestSettings(base()))
     expect(cheapestSettings(settled).changes.filter((c) => c.kind === 'mob')).toEqual([])
+  })
+})
+
+describe('cheapestSettings zonder gekozen mob (#193)', () => {
+  const input = base({ drafts: [] })
+  const r = cheapestSettings(input)
+
+  it('stelt een mob voor, als wijziging "— → mob"', () => {
+    expect(r.drafts).toHaveLength(1)
+    const change = r.changes.find((c) => c.kind === 'mob')
+    expect(change?.text).toMatch(/^— → /)
+    expect(change?.text.endsWith(r.drafts[0].name)).toBe(true)
+  })
+
+  it('kiest de goedkoopste mob voor het level: mobAdvice blijft erop staan en geen enkele andere mob is goedkoper', () => {
+    const next = apply(input, r)
+    const a = mobAdvice(r.drafts, profileOf(next))
+    expect(a.kind === 'advice' && a.stay).toBe(true)
+    const cost = (name: string) => {
+      const i = { ...next, drafts: [mobDraft(name)!] }
+      const inv = levelInvoice(i.drafts, appProfile(i))
+      return inv.kind === 'invoice' ? inv.total : Infinity
+    }
+    const chosen = cost(r.drafts[0].name)
+    expect(Number.isFinite(chosen)).toBe(true)
+    expect(chosen).toBeLessThanOrEqual(r.costAfter as number)
+  })
+
+  it('zet de skillpunten vanuit die mob en berekent een factuur', () => {
+    expect(r.changes.some((c) => c.kind === 'skills')).toBe(true)
+    const after = skillPointAdvice(r.drafts, profileOf(apply(input, r)))
+    expect(after.kind === 'advice' && after.left).toBe(0)
+    expect(r.costBefore).toBeUndefined()
+    expect(typeof r.costAfter).toBe('number')
+  })
+
+  it('is daarna idempotent', () => {
+    const again = cheapestSettings(apply(input, r))
+    expect(again.changes).toEqual([])
+  })
+
+  it('geeft op elk level een wijziging "— → eindmob" die eindigt op de mob die in de drafts staat, ook als een latere ronde wisselt', () => {
+    let checked = 0
+    for (const level of EXP_TABLE_LEVELS.filter((l) => l <= 70)) {
+      const i = base({ drafts: [], profileDraft: levelTo(DEFAULT_PROFILE, level) })
+      const res = cheapestSettings(i)
+      if (res.drafts.length === 0) continue
+      checked++
+      const change = res.changes.find((c) => c.kind === 'mob')
+      expect(change?.text.startsWith('— → '), `level ${level}`).toBe(true)
+      expect(change?.text, `level ${level}`).toBe(`— → ${res.drafts[0].name}`)
+      expect(res.rounds, `level ${level}`).toBeLessThanOrEqual(MAX_ROUNDS)
+      if (typeof res.costAfter === 'number') expect(res.costAfter, `level ${level}`).toBeGreaterThanOrEqual(0)
+    }
+    expect(checked).toBeGreaterThan(5)
+  })
+
+  it('geeft een positief, eindig totaal op de factuur van het voorstel', () => {
+    const own = base({ drafts: [], profileDraft: DEFAULT_PROFILE })
+    const res = cheapestSettings(own)
+    const inv = levelInvoice(res.drafts, appProfile(apply(own, res)))
+    expect(inv.kind).toBe('invoice')
+    if (inv.kind === 'invoice') {
+      expect(Number.isFinite(inv.total)).toBe(true)
+      expect(inv.total).toBeGreaterThan(0)
+      for (const l of inv.lines) expect(l.meso).toBeGreaterThanOrEqual(0)
+      expect(res.costAfter).toBe(inv.total)
+    }
+  })
+
+  it('stelt geen mob voor als je wel een mob hebt maar je level niet in de EXP-tabel staat', () => {
+    const i = base({ drafts: [mobDraft('Pig')!], profileDraft: { ...DEFAULT_PROFILE, level: '200' } })
+    const res = cheapestSettings(i)
+    expect(mobAdvice(i.drafts, appProfile(i)).kind).toBe('none')
+    expect(res.drafts).toBe(i.drafts)
+    expect(res.changes.filter((c) => c.kind === 'mob')).toEqual([])
+  })
+
+  it('een eigen plek is een keuze van de speler: Advised laat hem staan en wisselt geen mob', () => {
+    const own = { ...newDraft('x'), name: 'Eigen plek' }
+    const res = cheapestSettings(base({ drafts: [own] }))
+    expect(res.drafts).toEqual([own])
+    expect(res.changes.filter((c) => c.kind === 'mob')).toEqual([])
   })
 })
 

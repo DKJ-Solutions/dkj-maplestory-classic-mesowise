@@ -8,7 +8,7 @@ import type { Gender } from './gender'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
 import { applySkillPoint } from './levelUp'
-import { mobAdvice } from './mobAdvice'
+import { cheapestMob, mobAdvice } from './mobAdvice'
 import { parseProfile, type Profile, type ProfileDraft } from './profile'
 import { pickPotion, potionAdvice, POTION_KINDS, resolvePotions, type PotionChoice, type PotionPair } from './potions'
 import { skillPointAdvice } from './skillPoint'
@@ -55,6 +55,8 @@ export interface CheapestResult {
   capped: boolean
 }
 
+/** Het begin van de mob-regel als er nog geen mob gekozen was: "— → Slime". */
+const NO_MOB = '—'
 const STAT_LABEL = { str: 'STR', dex: 'DEX', int: 'INT', luk: 'LUK' } as const
 const STATS = Object.keys(STAT_LABEL) as (keyof typeof STAT_LABEL)[]
 
@@ -98,9 +100,17 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
     const profile = profileOf(s)
     if (!profile) break
 
-    // De mob: mobAdvice heeft de vergelijking al gedaan; de beste staat erin, of je blijft.
+    // De mob: zonder gekozen mob de goedkoopste voor dit level (#193); anders heeft mobAdvice de vergelijking al gedaan: de beste staat erin, of je blijft.
     const mob = mobAdvice(s.drafts, profile)
-    if (mob.kind === 'advice' && !mob.stay && mob.best !== null) {
+    if (mob.kind === 'none' && s.drafts.length === 0) {
+      const first = cheapestMob(profile)
+      const next = first === null ? undefined : mobDraft(first)
+      if (first !== null && next) {
+        mobs.push(NO_MOB, first)
+        s = { ...s, drafts: [next] }
+        changed = true
+      }
+    } else if (mob.kind === 'advice' && !mob.stay && mob.best !== null) {
       const next = mobDraft(mob.best)
       if (next) {
         if (mobs.length === 0) mobs.push(mob.hunted)

@@ -3264,14 +3264,16 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     for (const level of ['', ' ', 'abc', '10.5', '0', '1e1', '0x10', '-3']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
   })
 
-  it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
+  it('heeft de kop en de ondertitel, en zonder gekozen mob de factuur van de mob die Advised voorstelt (#193)', () => {
     expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
     expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
-    expect(card().querySelector('table')).toBeNull()
+    expect(card().querySelector('table')).not.toBeNull()
+    // Your character blijft de reden tonen: hij heeft zelf geen mob.
     expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
+    expect(card().textContent).toContain('Monster: — → ')
   })
 
   it('zet per potion en voor de stars het aantal en de prijs op een factuur, met het totaal van de Report-kaart', () => {
@@ -3788,13 +3790,12 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     }
   })
 
-  it('toont bij Monster Advised een streepje zonder mob in het advies, zonder te crashen (#192)', () => {
-    // Zonder mob gekozen heeft cheapestSettings niets om mee te rekenen: het advies heeft geen mob.
-    expect(cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: [], profileDraft: DEFAULT_PROFILE, potionChoice: NO_POTION_CHOICE }).drafts[0]).toBeUndefined()
+  it('toont bij Monster Advised zonder gekozen mob de goedkoopste mob, zonder te crashen (#192, #193)', () => {
+    // Zonder mob gekozen stelt het advies er een voor (#193); Your character blijft leeg.
+    const advised = cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: [], profileDraft: DEFAULT_PROFILE, potionChoice: NO_POTION_CHOICE }).drafts[0]
+    expect(advised).toBeDefined()
     const d = openView('Monster', 'Advised')
-    expect(d.querySelector('.field-fixed')!.textContent).toBe('—')
-    // Geen mob-getallen en geen keuzemenu.
-    expect(d.querySelectorAll('.stat-line')).toHaveLength(0)
+    expect(d.querySelector('.field-fixed')!.textContent).toContain(advised.name)
     expect(d.querySelector('select')).toBeNull()
     expect(within(d).getByRole('button', { name: 'Report: Monster' })).not.toBeNull()
   })
