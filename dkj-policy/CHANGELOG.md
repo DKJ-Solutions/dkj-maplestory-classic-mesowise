@@ -2,7 +2,52 @@
 
 ## [Unreleased]
 
-**70 / 110 minor entries** <!-- pending-tally -->
+**71 / 111 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/192-advised-view-buttons · 20261006-170933Z
+
+Every card with a choice in it now works like Equip: no eye in its head, but two buttons under it, **Advised** first and
+then **Your character**. Advised opens the card's popup read-only, filled in with the advised setup (the live result of
+the cheapest free settings from #183): its monster on Monster, its potions on Potions, its skill points on Skillpoints,
+its base AP on Ability points, and the stats that follow from that AP on Total stats. Your character opens the popup as
+before, to change your own setup. The card's Report button moved into the popup, at its bottom, in both views. The label
+**Cheapest** is now **Advised** everywhere it meant that setup: the Equip button, the Total cost heading and the
+Difference column. Under both invoices in Total cost one sentence says the total is calculated with this setup, above
+six icon buttons, one per card, each opening that card's popup for that part. A shared `ViewButtons` component and a
+`CardViewContext` that holds which card popup is open replace the Equip-only buttons.
+
+The Advised setup now buys equipment as well: it wears the pieces that save more than they cost up to the next upgrade
+in that slot (the horizon the Equip Report already uses), and its mob, potions, skill points and base AP are the
+cheapest with that gear; equip and settings are worked out in turn until neither changes, so after **Overnemen** there
+is nothing left to buy. A piece is worn for several levels, so the Advised invoice writes it off: each piece it buys is a
+row of its own, with its name, × 1 and only this level's share of the price (price × EXP of this level / EXP up to the
+next upgrade), and its question mark shows that sum. Difference adds the pieces up in one **Shop** row; Your character
+never has them. When a piece only pays for itself after this level, the text under Difference says so. **Overnemen**
+now also puts the advised equip in your setup, and **Ongedaan maken** puts your old equip back.
+
+The question mark behind an amount on the invoice now also sits behind the throwing stars or arrows, and every
+explanation is a table: one row per step, with the sum in small print under it and the outcome on the right, the count
+on the invoice as the bold last row. The count goes from the EXP to the next level, via the EXP per kill, to the kills
+you need, so it no longer passes through how long the level takes (only MP buffs still depend on time). Behind the stars
+the table shows where the damage comes from: the max and min of the damage formula with your own numbers, the level
+difference when the mob is higher, the mob's defence, and the average the app counts with (± 76 out of 57 – 95).
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+On every card you first see what the app advises and then compare it with your own setup, before you decide to copy it,
+Total cost shows which six cards its numbers come from, and the Advised invoice includes the upgrades worth buying, written off fairly over the levels you wear them.
+
+**Score:** 3
+
+#### Pull Request
+
+Advised and Your character buttons on every card, a Shop row for advised upgrades, and calculation tables behind the invoice
+
+[PR #197](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/197)
+
+---
 
 ### DEPLOY: fix/195-advised-invoice-rounding · 20261006-160821Z
 
