@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**66 / 105 minor entries** <!-- pending-tally -->
+**67 / 106 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/181-wasted-recovery · 20261006-112519Z
+
+A potion that restores more than you are missing no longer counts as fully used. The app now assumes you drink at half
+a bar, so a potion counts for at most half your Max HP or Max MP: at Max HP 444 a potion counts for at most 222 HP, and
+the rest is paid for and lost. Potion counts, the level's meso cost, the potion advice ("cheapest per point") and the
+upgrade and skill-point savings all use what you actually restore; a big potion that overfills your bar is no longer
+called the cheapest. The Total cost card's "Hoezo?" explanation and the potion's meso per point on the Potions card say
+when this applies. Without a Max HP or Max MP in your profile nothing is capped, as before.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+The cost of a level no longer flatters large potions on a small bar, which is where low-level players lose mesos.
+
+**Score:** 2
+
+#### Pull Request
+
+Count wasted recovery when a potion restores more than you are missing
+
+[PR #186](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/186)
+
+---
 
 ### DEPLOY: app/total-cost-card · 20261006-102405Z
 
