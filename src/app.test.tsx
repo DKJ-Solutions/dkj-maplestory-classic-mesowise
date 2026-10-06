@@ -162,7 +162,7 @@ const openHomeSkills = () => {
   fireEvent.click(head)
   return head.closest('section')!
 }
-const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip bekijken' }))
+const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 /** De open Monster-popup. */
 const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
@@ -234,8 +234,12 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints, Monster en Potions naast het oog, en niet bij Ability points en Total stats', () => {
-      for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions']) {
+    it('staat bij Equip, Skillpoints, Monster en Potions in de kop (naast het oog), en niet bij Ability points en Total stats', () => {
+      // De Equip-kaart heeft geen oog in de kop (#188): het rapport staat er alleen.
+      const equip = report('Equip')!
+      expect(equip.previousElementSibling).toBeNull()
+      expect(equip.closest('.spot-head')).not.toBeNull()
+      for (const title of ['Skillpoints', 'Monster', 'Potions']) {
         const button = report(title)!
         expect(button, title).not.toBeNull()
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
@@ -348,7 +352,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('houdt in de kaartkop alleen de titel, ook als je iets draagt', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(headTitle('Equip')?.trim()).toBe('Equip')
+    expect(cards()[0].querySelector('.spot-head .spot-name')?.textContent?.trim()).toBe('Equip')
   })
 
   it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
@@ -372,9 +376,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(weapon.querySelector('.equip-value strong')?.textContent).toMatch(/^\d+$/)
   })
 
-
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
-    const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
     expect(head.querySelector('svg')).not.toBeNull()
     // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
@@ -394,12 +397,12 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(head.tagName).toBe('DIV')
     fireEvent.click(head.querySelector('.spot-name')!)
     expect(cards()[0].querySelector('dialog')).toBeNull()
-    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual(['Equip bekijken', 'Report: Equip'])
+    expect(Array.from(head.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual(['Report: Equip'])
   })
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
-    const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
     expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')

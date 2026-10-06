@@ -350,14 +350,17 @@ const EyeIcon = () => (
  * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
  * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
  */
-function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
+function CardHead(props: { label: string; head?: Ref<HTMLButtonElement>; open?: boolean; onOpen?: () => void; report?: ComponentChildren; children: ComponentChildren }) {
   return (
     <div class="spot-head">
       {props.children}
       <div class="card-actions">
-        <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
-          <EyeIcon />
-        </button>
+        {/* Zonder onOpen geen oog: de Equip-kaart opent zijn popup met eigen knoppen onder de kop (Dave, #188). */}
+        {props.onOpen && (
+          <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
+            <EyeIcon />
+          </button>
+        )}
         {props.report}
       </div>
     </div>
@@ -1433,7 +1436,7 @@ function StatDialog(props: {
 type EquipView = 'worn' | 'cheapest'
 
 /**
- * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188). Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
+ * De twee knoppen in de Equip-kaart (Dave, 6 oktober 2026, #188), in plaats van het oog in de kop. Ze doen hetzelfde: ze openen de Equip-popup. "Your character" toont
  * daarin wat je character in game draagt (om te wijzigen), "Cheapest" de goedkoopste equip (cheapestEquip.ts, om te lezen). Zonder
  * goedkoopste equip (een job die de app niet doorrekent) alleen de eerste.
  */
@@ -1522,8 +1525,7 @@ function EquipmentCard(props: {
   // Welke equip de popup toont (#188): wat je draagt of de goedkoopste; null is dicht.
   const [view, setView] = useState<EquipView | null>(null)
   const open = view !== null
-  const head = useRef<HTMLButtonElement>(null)
-  // De knop die de popup opende (het oog in de kop, Your character of Cheapest): daar gaat de focus terug bij sluiten.
+  // De knop die de popup opende (Your character of Cheapest): daar gaat de focus terug bij sluiten.
   const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
   const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
@@ -1545,7 +1547,7 @@ function EquipmentCard(props: {
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip" head={head} open={open} onOpen={() => { opener.current = head.current; setView('worn') }} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+      <CardHead label="Equip" report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
