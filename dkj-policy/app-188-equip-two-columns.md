@@ -47,6 +47,7 @@
 - [x] `EquipColumns` in the Equip card, styled mobile-first (Cody, Gwen)
 - [x] The table left the card (Dave): two labelled buttons, Your character and Cheapest, both open the Equip popup; Cheapest shows the cheapest equip read-only with shop prices and what it all costs (Dave, #188)
 - [x] Cheapest counts this level only (Dave): `HorizonScope` 'this-level' in the weapon and armor advice, the Report advice keeps 'next-upgrade' (#25); tests in both suites (Tycho)
+- [x] A slot that stays empty shows the best piece you can wear, its price and what it saves this level, marked "Loont niet" (Dave)
 - [x] The NiaMeowDB source lines left the Equip popup (Dave); the footer credit stays
 - [x] The eye left the Equip card's head (Dave): the two buttons open the popup, the report button moves into that popup, at the bottom (Dave)
 
@@ -63,7 +64,8 @@ shows what you wear in game, to change it. Cheapest shows the same rows read-onl
 that takes you one level up most cheaply: what you wear is free, and a piece is bought only when it saves more than it
 costs on this level alone (the Report advice still counts the saving until your next upgrade). That is the weapon that
 pays for itself on this level, and every armor slot whose best piece does, skipping a piece that would clash with a better one (an overall against a top or bottom). A piece to buy is
-shown in the accent color with its shop price, and the popup ends with what it all costs. A new pure module,
+shown in the accent color with its shop price; a slot that stays empty shows the best piece you could wear there, with
+its price and what it would save this level, marked as not paying for itself; and the popup ends with what it all costs. A new pure module,
 `src/cheapestEquip.ts`, does the work from the advice the app already computes.
 
 **Score:** 2

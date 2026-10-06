@@ -14,6 +14,11 @@ export interface CheapestSlot {
   changed: boolean
   /** Wat het stuk in de winkel kost als je het moet kopen; null als je hier niets koopt. */
   price: number | null
+  /**
+   * Bij een slot dat leeg blijft: het beste stuk dat je hier kunt dragen, met zijn prijs en wat het dit level bespaart, maar dat
+   * zich niet terugverdient (Dave, 6 oktober 2026, #188). Null als het slot niet leeg blijft of de winkel hier niets heeft.
+   */
+  option: { name: string; price: number; saving: number | null } | null
 }
 
 /**
@@ -26,6 +31,17 @@ export interface CheapestSlot {
 export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice): Record<EquipSlot, CheapestSlot> {
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   const price: Partial<Record<EquipSlot, number>> = {}
+  // Per slot het beste stuk dat niet gekocht wordt: de keuzes staan al per slot, van meeste naar minste netto besparing.
+  const options: Partial<Record<EquipSlot, CheapestSlot['option']>> = {}
+  if (claw.kind === 'advice' && !claw.winner && claw.choices[0]) {
+    const c = claw.choices[0]
+    options.claw = { name: c.claw.name, price: c.claw.price, saving: c.saving }
+  }
+  if (armor.kind === 'advice') {
+    for (const c of armor.choices) {
+      if (!c.with && options[c.armor.slot] === undefined) options[c.armor.slot] = { name: c.armor.name, price: c.price, saving: c.saving }
+    }
+  }
   if (claw.kind === 'advice' && claw.winner) {
     pick.claw = claw.winner.name
     price.claw = claw.winner.price
@@ -58,7 +74,8 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     const worn = wornName(equipment[slot])
     const cheapest = slot in pick ? (pick[slot] ?? null) : worn
     const changed = cheapest !== worn
-    out[slot] = { worn, cheapest, changed, price: changed && cheapest !== null ? (price[slot] ?? null) : null }
+    const option = cheapest === null && !(slot in pick && pick[slot] === null) ? (options[slot] ?? null) : null
+    out[slot] = { worn, cheapest, changed, price: changed && cheapest !== null ? (price[slot] ?? null) : null, option }
   }
   return out
 }

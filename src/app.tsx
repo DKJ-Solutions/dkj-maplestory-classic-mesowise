@@ -1463,7 +1463,10 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
-      <p class="hint">De equip waarmee je het goedkoopst levelt. Een stuk met een prijs koop je in de winkel, de rest draag je al. De app koopt niets voor je.</p>
+      <p class="hint">
+        De equip waarmee je het goedkoopst één level omhoog gaat. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
+        het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je.
+      </p>
       {props.slots.map((slot) => {
         const c = props.cheapest[slot]
         // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
@@ -1473,7 +1476,12 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
         return (
           <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
             <span class="slot-name">{slotLabel(slot)}</span>
-            <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest ?? '—'}</span>
+            {/* Een leeg slot met een stuk dat zich dit level niet terugverdient: dat stuk, gedempt, met wat het kost en bespaart (#188). */}
+            {c.option ? (
+              <span class="equip-fixed equip-option">{c.option.name}</span>
+            ) : (
+              <span class={c.changed && c.cheapest !== null ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest ?? '—'}</span>
+            )}
             {value !== null && (
               <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
                 <span class="equip-value-num">
@@ -1483,6 +1491,12 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
               </div>
             )}
             {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
+            {c.option && (
+              <span class="equip-price">
+                Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
+                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart dit level ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
+              </span>
+            )}
           </div>
         )
       })}
