@@ -2524,11 +2524,10 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice }
         </tfoot>
       </table>
       {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
-      {props.inGame.kind === 'none' && <p class="hint">In game: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+      {props.inGame.kind === 'none' && <p class="hint">Your character: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
     </>
-  ) : (
-    <p class="hint">{props.inGame.kind === 'none' ? (noCostReason(props.inGame.cost) ?? 'Er is niets uit te rekenen.') : 'Er is niets uit te rekenen.'}</p>
-  )
+  ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Cheapest; hier niet nog eens.
+  null
 }
 
 /**
@@ -2572,7 +2571,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
- * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "In game" is de factuur van je setup zoals
+ * De kaart Total cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
  * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
@@ -2592,7 +2591,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
       ) : (
         <>
           <div class="total-cost-part cost-ingame">
-            <h3>In game</h3>
+            <h3>Your character</h3>
             <p class="total-cost-sub">
               This is how much it cost to level up your <strong>{who}</strong>
             </p>

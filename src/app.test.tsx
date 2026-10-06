@@ -3149,7 +3149,7 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
     expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['In game', 'Cheapest', 'Difference'])
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Cheapest', 'Difference'])
     expect(yours().nextElementSibling).toBe(cheapestCard())
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
     // Onder de h3 van In game en Cheapest de zin over hun factuur (Dave, #183).

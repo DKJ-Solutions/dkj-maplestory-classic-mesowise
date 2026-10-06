@@ -54,7 +54,7 @@
   by what they are (HP potion, MP potion, stars, travel) and the other item named in its cell (Cody).
 - [x] Table cleaned up after Dave's look: each thing in its own column (name, count once, "?", the two amounts on one
   line), a different potion under the name, and narrow enough for 360px (Gwen, Cody).
-- [x] Final shape after Dave's look: one Total cost card (h2) with three tinted panels under an h3, "In game" and
+- [x] Final shape after Dave's look: one Total cost card (h2) with three tinted panels under an h3, "Your character" and
   "Cheapest" as full invoices and "Difference" with the count and saving per row, the changes and "Overnemen" (Gwen, Cody).
 
 ### TEST
@@ -64,7 +64,7 @@
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-The Total cost card now has three parts, each in its own tinted panel. "In game" is the level's invoice as you play it
+The Total cost card now has three parts, each in its own tinted panel. "Your character" is the level's invoice as you play it
 now. "Cheapest" is the invoice of the same level with the cheapest settings that cost nothing: the cheapest safe mob,
 the cheapest potion per point, your skill points where they save the most and your AP filled in. "Difference" shows per
 row (your HP potion, your MP potion, stars, travel) how many you buy ("× 16", or "× 4 → 3"), a different potion under
