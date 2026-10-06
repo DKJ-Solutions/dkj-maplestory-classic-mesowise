@@ -249,7 +249,7 @@ describe('begin zonder opslag', () => {
       expect(document.querySelectorAll('.card-report')).toHaveLength(4)
     })
 
-    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions en boven de Report-kaart', () => {
+    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = report('Equip')!.closest('section')!
       const skills = report('Skillpoints')!.closest('section')!
@@ -259,7 +259,8 @@ describe('begin zonder opslag', () => {
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
-      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
+      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
+      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -3010,5 +3011,35 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(statShown('Max MP')).toBe('?')
     openPotions()
     expect(potionInfoLines()[1]).toBe('Blue Potion: 1,1 meso per MP')
+  })
+})
+
+describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
+  const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
+  const rows = () => Array.from(card().querySelectorAll('tbody tr')).map((r) => Array.from(r.children).map((c) => c.textContent))
+
+  it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
+    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
+    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much mesos you need to level')
+    expect(card().querySelector('table')).toBeNull()
+    expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
+  })
+
+  it('zet per potion en voor de stars het aantal en de prijs op een factuur, met het totaal van de Report-kaart', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    expect(rows().map((r) => r[0])).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
+    for (const [, qty, meso] of rows()) {
+      expect(qty).toMatch(/^× [\d.]+$/)
+      expect(meso).toMatch(/^−[\d.]+ meso$/)
+    }
+    expect(card().querySelectorAll('.invoice-meso.cost')).toHaveLength(4)
+    const total = card().querySelector('tfoot')!.textContent!
+    expect(total).toMatch(/^Total−[\d.]+ meso$/)
+    // Het totaal is de som van de regels.
+    const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
+    expect(n(total)).toBe(rows().reduce((s, r) => s + n(r[2]!), 0))
+    expect(card().textContent).toMatch(/Van lv 10 naar 11 op Ribbon Pig: 1\.716 EXP, ± \d+ min\./)
   })
 })

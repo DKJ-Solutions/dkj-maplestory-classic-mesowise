@@ -31,6 +31,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { levelInvoice, type LevelInvoice } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
@@ -2379,6 +2380,55 @@ function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: 
   )
 }
 
+/**
+ * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
+ * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
+ * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
+ */
+/** Hoe lang een level duurt, leesbaar: onder het uur in minuten (minstens 1), anders in uren met één decimaal. */
+const formatHours = (hours: number): string =>
+  hours < 1 ? `${Math.max(1, Math.round(hours * 60))} min` : `${new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 }).format(hours)} uur`
+
+function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job }) {
+  const inv = props.invoice
+  const meso = (n: number) => `−${nfInt.format(n)} meso`
+  return (
+    <section class="card total-cost" aria-live="polite">
+      <h2>Total cost</h2>
+      <p class="total-cost-sub">This is how much mesos you need to level</p>
+      {!props.computed ? (
+        <NotComputed job={props.job} />
+      ) : inv.kind === 'none' ? (
+        <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+      ) : (
+        <>
+          <p class="hint">
+            Van lv {inv.level} naar {inv.level + 1} op {inv.mob}: {nfInt.format(inv.expToNext)} EXP, ± {formatHours(inv.hours)}.
+          </p>
+          <table class="invoice">
+            <tbody>
+              {inv.lines.map((l) => (
+                <tr key={l.label}>
+                  <th scope="row">{l.label}</th>
+                  <td class="invoice-qty">{l.qty === null ? '' : `× ${nfInt.format(l.qty)}`}</td>
+                  <td class="invoice-meso cost">{meso(l.meso)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td />
+                <td class="invoice-meso cost">{inv.lines.length === 0 ? 'niets' : meso(inv.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </>
+      )}
+    </section>
+  )
+}
+
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
@@ -2445,6 +2495,7 @@ export function App() {
   const nextWeapon = useMemo(() => (profile ? nextBetterWeapon(profile) : undefined), [profile])
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
   const potionAdvice = useMemo(() => advisePotions(drafts, profile), [drafts, profile])
+  const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
 
@@ -2669,6 +2720,9 @@ export function App() {
         <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
       </section>
+
+      {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
+      <TotalCostCard invoice={invoice} computed={computed} job={job} />
 
       <LevelAdviceCard
         job={job}
