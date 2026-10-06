@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**72 / 112 minor entries** <!-- pending-tally -->
+**73 / 113 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/193-advised-proposes-mob · 20261006-211053Z
+
+With no mob chosen (the app's default state), the Advised setup now proposes one: the cheapest mob for your level, the same
+ranking the Monster card uses, and from it the potions, skill points and base AP. So a new player who opens Advised sees a
+full setup and a real Advised invoice in Total cost, where it used to show "—" and an empty skill point list; Overnemen
+then sets that mob too. The change list names it as "Monster: — → <mob>". A custom spot you entered yourself is left alone,
+and outside the EXP table nothing is proposed. Resolves #193.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A new player gets advice before choosing anything: Advised starts from the cheapest mob for the level instead of asking
+them to pick one first.
+
+**Score:** 3
+
+#### Pull Request
+
+Advised proposes a mob when none is chosen
+
+[PR #201](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/201)
+
+---
 
 ### DEPLOY: app/189-advised-ammo-slot · 20261006-203149Z
 
