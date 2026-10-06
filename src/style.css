@@ -654,4 +654,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
 .equip-total { margin: 0 0 0.75rem; text-align: right; }
+/* De knop Equip bekijken onder de factuur van Cheapest (#188), over de volle breedte van het deel. */
+.invoice-equip { margin-top: 0.75rem; }
+.invoice-equip .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
 .equip-total strong { color: var(--accent); }

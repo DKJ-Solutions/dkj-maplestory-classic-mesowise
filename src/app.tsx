@@ -1459,13 +1459,17 @@ function EquipButtons(props: { view: EquipView | null; cheapest: boolean; onOpen
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
  * alles samen kost. Een streepje is een slot dat leeg blijft.
  */
-function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> }) {
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; hint?: ComponentChildren; total?: boolean }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
       <p class="hint">
-        De equip waarmee je het goedkoopst één level omhoog gaat. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
-        het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je.
+        {props.hint ?? (
+          <>
+            De equip waarmee je het goedkoopst één level omhoog gaat. Een stuk met "Koop voor" koop je in de winkel; een stuk met "Loont niet" kost meer dan
+            het dit level bespaart, dus dat slot blijft leeg. De app koopt niets voor je.
+          </>
+        )}
       </p>
       {props.slots.map((slot) => {
         const c = props.cheapest[slot]
@@ -1500,9 +1504,53 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
           </div>
         )
       })}
-      <p class="equip-total">
-        Te kopen: <strong>{nfInt.format(total)} meso</strong>
-      </p>
+      {/* De equip van de factuur koopt niets: daar staat "Te kopen" niet (total={false}). */}
+      {props.total !== false && (
+        <p class="equip-total">
+          Te kopen: <strong>{nfInt.format(total)} meso</strong>
+        </p>
+      )}
+    </>
+  )
+}
+
+/**
+ * De knop "Equip bekijken" in het deel Cheapest van Total cost (Dave, 6 oktober 2026, #188): de equip waarmee die factuur rekent,
+ * om te lezen, in dezelfde rijen als de Equip-popup. De goedkoopste gratis instellingen (#183) kopen geen equipment, dus dat is wat
+ * je character nu draagt.
+ */
+function InvoiceEquipButton(props: { job: Job; equipment: Equipment }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const slots = shownSlots(props.job, props.equipment.claw)
+  // Zonder advies blijft elk slot wat je draagt: precies de equip van de factuur.
+  const rows = cheapestEquipment(slots, props.equipment, { kind: 'none' }, { kind: 'none' })
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  return (
+    <>
+      <div class="card-actions invoice-equip">
+        <button ref={button} type="button" class="card-action" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+          <EyeIcon />
+          Equip bekijken
+        </button>
+      </div>
+      {open && (
+        <StatDialog title="Equip van Cheapest" closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close}>
+          <div class="equipment">
+            <CheapestRows
+              job={props.job}
+              slots={slots}
+              equipment={props.equipment}
+              cheapest={rows}
+              hint="Met deze equip rekent de factuur van Cheapest: wat je character nu draagt. De goedkoopste instellingen kopen geen equipment."
+              total={false}
+            />
+          </div>
+        </StatDialog>
+      )}
     </>
   )
 }
@@ -2595,7 +2643,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
  * je speelt, "Cheapest" die van de goedkoopste gratis setup (live berekend), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
+function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; equipment: Equipment; children?: ComponentChildren }) {
   const who = totalCostWho(props.level, props.job)
   return (
     <section class="card total-cost" aria-live="polite">
@@ -2625,6 +2673,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
                   This is the cheapest way to level up a <strong>{who}</strong>
                 </p>
                 <InvoiceTable invoice={props.cheapest} />
+                <InvoiceEquipButton job={props.job} equipment={props.equipment} />
               </div>
               <div class="total-cost-part cost-difference">
                 <h3>Difference</h3>
@@ -3087,7 +3136,7 @@ export function App() {
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
-      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
+      <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level} equipment={equipment}>
         <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equip={{ claw: clawAdvice, armor: armorAdvice, gender }} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 

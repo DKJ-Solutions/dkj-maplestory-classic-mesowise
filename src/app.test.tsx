@@ -367,6 +367,19 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(cards()[0].querySelector('.spot-head .spot-name')?.textContent?.trim()).toBe('Equip')
   })
 
+  it('toont in Total cost onder Cheapest een knop Equip bekijken met de equip waarmee die factuur rekent: wat je draagt (#188)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
+    fireEvent.click(within(part).getByRole('button', { name: 'Equip bekijken' }))
+    const dialog = part.querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Equip van Cheapest')
+    const weapon = [...dialog.querySelectorAll('.equip-row')].find((r) => r.querySelector('.slot-name')?.textContent === 'Weapon')!
+    expect(weapon.querySelector('.equip-fixed')?.textContent).toBe(IGOR.name)
+    expect(dialog.textContent).not.toContain('Te kopen:')
+  })
+
   it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links wat je draagt, rechts de goedkoopste (#188)', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
