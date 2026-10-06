@@ -2577,24 +2577,34 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
  */
 function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
+  const who = totalCostWho(props.level, props.job)
   return (
     <section class="card total-cost" aria-live="polite">
       <h2>Total cost</h2>
-      <p class="total-cost-sub">
-        This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
-      </p>
+      {/* Elk deel zegt onder zijn h3 wat zijn factuur is (Dave, #183); zonder delen staat de zin onder de h2. */}
       {!props.computed ? (
-        <NotComputed job={props.job} />
+        <>
+          <p class="total-cost-sub">
+            This is how much it cost to level up your <strong>{who}</strong>
+          </p>
+          <NotComputed job={props.job} />
+        </>
       ) : (
         <>
           <div class="total-cost-part cost-ingame">
             <h3>In game</h3>
+            <p class="total-cost-sub">
+              This is how much it cost to level up your <strong>{who}</strong>
+            </p>
             <InvoiceTable invoice={props.invoice} />
           </div>
           {props.cheapest && (
             <>
               <div class="total-cost-part cheapest-cost">
                 <h3>Cheapest</h3>
+                <p class="total-cost-sub">
+                  This is how much it cost to level up a <strong>{who}</strong> the cheapest way
+                </p>
                 <InvoiceTable invoice={props.cheapest} />
               </div>
               <div class="total-cost-part cost-difference">
