@@ -1187,7 +1187,12 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   const exact = found.some((i) => i.name.toLowerCase() === typed.toLowerCase() || familyName(slot, i.name).toLowerCase() === typed.toLowerCase())
   const rows: { pick: string; name?: string; label: string; meta?: string }[] = [
     // Een stuk met kleuren staat er één keer, onder de naam die ze delen (#188); level 0 telt als level, alleen pijlen hebben er geen.
-    ...found.slice(0, MAX_RESULTS).map((i) => ({ pick: i.name, label: familyName(slot, i.name), meta: i.level === undefined ? `(${stat} ${i.stat})` : `(lv ${i.level}, ${stat} ${i.stat})` })),
+    // Achter de naam wat het stuk is (Dave, #188): bij een wapen de soort, het level, de ATT en de snelheid: "(CLAW, LV 15, ATT 13, FAST)".
+    ...found.slice(0, MAX_RESULTS).map((i) => ({
+      pick: i.name,
+      label: familyName(slot, i.name),
+      meta: `(${[i.type, i.level === undefined ? undefined : `LV ${i.level}`, `${stat} ${i.stat}`, i.speed].filter((p) => p !== undefined).join(', ')})`,
+    })),
     ...(typed !== '' && !exact ? [{ pick: OTHER, name: typed, label: `Gebruik "${typed}" als eigen item` }] : []),
   ]
   const choose = (row: { pick: string; name?: string }) => {

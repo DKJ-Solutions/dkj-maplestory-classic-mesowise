@@ -1144,12 +1144,19 @@ describe('bewaren na elke wijziging', () => {
     expect(labels()).not.toContain('Red Miniskirt')
   })
 
-  it('toont in de Shoes-lijst "lv 0" in de meta van Rubber Boots (#188)', () => {
+  it('toont bij een wapen in de zoeklijst de soort, het level, de ATT en de snelheid: Steel Titans (CLAW, LV 15, ATT 13, FAST) (#188)', () => {
+    atLevel('15')
+    openHomeEquipment()
+    const row = options(typeIn(cards()[0], 'Weapon', 'Steel Titans')).find((o) => o.querySelector('.equip-name')?.textContent === 'Steel Titans')!
+    expect(row.querySelector('.equip-meta')?.textContent).toBe('(CLAW, LV 15, ATT 13, FAST)')
+  })
+
+  it('toont in de Shoes-lijst "LV 0" in de meta van Rubber Boots (#188)', () => {
     atLevel('20')
     openHomeEquipment()
     const list = options(typeIn(cards()[0], 'Shoes', 'Rubber')).filter((o) => !o.textContent?.startsWith('Gebruik "'))
     expect(list).toHaveLength(1)
-    expect(list[0].querySelector('.equip-meta')?.textContent).toContain('lv 0')
+    expect(list[0].querySelector('.equip-meta')?.textContent).toBe('(LV 0, DEF 2)')
   })
 
   it('biedt geen eigen-item-rij als je precies een naam uit de lijst typt', () => {

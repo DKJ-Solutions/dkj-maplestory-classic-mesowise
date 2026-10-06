@@ -10,17 +10,19 @@
 // dan corrigeer je hem in de popup achter het potlood: wat je in je spel ziet, telt.
 import type { WornWdef } from './armorUpgrade'
 import { accessoriesFor } from './data/accessories'
-import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
+import { BEGINNER_WEAPONS, BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
 import { NPC_ARMOR } from './data/armor'
 import { BOWMAN_ARMOR, BOWMAN_WEAPONS, isBronzeArrow, WORN_BOWMAN_ARMOR } from './bowmanGear'
-import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { isNpcDagger, NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
 import type { ArmorPiece, ArmorSlot, Gender, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
 import { fitsGender } from './gender'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
-import { WORN_WARRIOR_ARMOR } from './data/wornWarrior'
+import { NPC_MAGICIAN_WEAPONS } from './data/magician'
+import { NPC_WARRIOR_WEAPONS } from './data/warrior'
+import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
@@ -164,6 +166,10 @@ export interface CatalogItem {
   mult?: number
   /** Alleen armor: de MDEF van de pagina, 0 als die er geen noemt (#91). */
   mdef?: number
+  /** Alleen een wapen: de soort zoals de zoekbalk hem toont, "CLAW", "DAGGER", "BOW", "1H SWORD" (Dave, 6 oktober 2026, #188). */
+  type?: string
+  /** Alleen een wapen: de snelheid uit het spel zonder getal, "FAST", "FASTER", "NORMAL" (#188). */
+  speed?: string
   /** Alleen armor voor één geslacht (#55, #188): de zoekbalk toont hem dan alleen bij dat geslacht. */
   gender?: Gender
   /**
@@ -193,6 +199,20 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: BEGINNER_WORN_WEAPONS, wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
   magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
 }
+
+/**
+ * De soort en de snelheid van elk wapen zoals het spel ze noemt, op naam (#188): de bronlijsten dragen ze (`kind`, `speed`); de claws
+ * en de daggers van de Thief staan in hun eigen lijst. Zo blijven ze bij een wapen ook waar een winkellijst alleen de rekenvelden
+ * overhoudt (een wand rekent met de vaste cast van een spreuk, maar zijn eigen snelheid staat op de itempagina).
+ */
+const speedWord = (label: string): string => label.split(' ')[0].toUpperCase()
+const WEAPON_INFO: ReadonlyMap<string, { type: string; speed: string }> = new Map([
+  ...[...NPC_CLAWS, ...WORN_CLAWS].map((c) => [c.name, { type: 'CLAW', speed: speedWord(c.speed.label) }] as const),
+  ...NPC_DAGGERS.map((d) => [d.name, { type: 'DAGGER', speed: speedWord(d.speed.label) }] as const),
+  ...[...BEGINNER_WEAPONS, ...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS, ...NPC_BOWMAN_WEAPONS, ...NPC_MAGICIAN_WEAPONS].map(
+    (w) => [w.name, { type: w.kind.replace('-', ' ').toUpperCase(), speed: speedWord(w.speed.label) }] as const,
+  ),
+])
 
 /**
  * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
@@ -227,6 +247,7 @@ export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false,
         level: c.level,
         stat: c.watk,
         attackMs: c.speed.attackMs,
+        ...(WEAPON_INFO.get(c.name) ?? { speed: speedWord(c.speed.label) }),
         ...(c.mult !== undefined ? { mult: c.mult } : {}),
       }))
   const unique = items.filter((i, n) => items.findIndex((j) => j.name === i.name) === n)

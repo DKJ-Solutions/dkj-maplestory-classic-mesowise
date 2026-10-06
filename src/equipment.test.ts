@@ -769,8 +769,8 @@ describe('equipment voor een Warrior', () => {
       expect(WORN_WARRIOR_WEAPONS).toEqual([])
       expect(items.map((i) => i.name)).toEqual(['Sword', 'Hand Axe', 'Wooden Club', ...NPC_WARRIOR_WEAPONS.map((w) => w.name)])
       expect(items.find((i) => i.name === 'Long Sword')).toMatchObject({ level: 10, stat: 27, mult: expect.any(Number), attackMs: expect.any(Number) })
-      expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8 })
-      expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5 })
+      expect(items.find((i) => i.name === 'Gladius')).toEqual({ name: 'Gladius', level: 30, stat: 47, attackMs: 720, mult: 1.8, type: '1H SWORD', speed: 'FAST' })
+      expect(items.find((i) => i.name === 'Wooden Sword')).toEqual({ name: 'Wooden Sword', level: 10, stat: 30, attackMs: 750, mult: 2.5, type: '2H SWORD', speed: 'FAST' })
     })
 
     it('geeft bij Hat en Shoes de Warrior-armor, met WDEF als stat', () => {
@@ -1280,11 +1280,11 @@ describe('equipment voor een Bowman', () => {
     expect(items).toHaveLength(BEGINNER_WEAPONS.length + NPC_BOWMAN_WEAPONS.length)
     expect(items.slice(0, 5).map((i) => i.name)).toEqual(BEGINNER_WEAPONS.map((w) => w.name))
     expect(items.map((i) => i.level)).toEqual([...items.map((i) => i.level!)].sort((a, b) => a - b))
-    expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810 })
-    expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750 })
-    expect(items.find((i) => i.name === 'Eagle Crow')).toEqual({ name: 'Eagle Crow', level: 30, stat: 52, attackMs: 870 })
+    expect(items.find((i) => i.name === 'War Bow')).toEqual({ name: 'War Bow', level: 10, stat: 30, attackMs: 810, type: 'BOW', speed: 'NORMAL' })
+    expect(items.find((i) => i.name === 'Battle Bow')).toEqual({ name: 'Battle Bow', level: 25, stat: 44, attackMs: 750, type: 'BOW', speed: 'FAST' })
+    expect(items.find((i) => i.name === 'Eagle Crow')).toEqual({ name: 'Eagle Crow', level: 30, stat: 52, attackMs: 870, type: 'CROSSBOW', speed: 'SLOW' })
     // De Balanche heeft 840 ms, niet de 810 van de gedeelde tabel voor Normal (6) (issue #44).
-    expect(items.find((i) => i.name === 'Balanche')).toEqual({ name: 'Balanche', level: 20, stat: 39, attackMs: 840 })
+    expect(items.find((i) => i.name === 'Balanche')).toEqual({ name: 'Balanche', level: 20, stat: 39, attackMs: 840, type: 'CROSSBOW', speed: 'NORMAL' })
   })
 
   it('geeft bij Hat, Top, Bottom en Shoes de Bowman-armor en de items zonder jobregel, met WDEF als stat', () => {
@@ -1711,5 +1711,14 @@ describe('nameWithLevel (#188)', () => {
     expect(nameWithLevel('claw', NPC_CLAWS[0].name)).toBe(`${NPC_CLAWS[0].name} (Lv. ${NPC_CLAWS[0].level})`)
     expect(nameWithLevel('ammo', 'Arrows for Bows')).toBe('Arrows for Bows')
     expect(nameWithLevel('hat', 'Mijn hoed')).toBe('Mijn hoed')
+  })
+})
+
+describe('soort en snelheid van een wapen in de catalogus (#188)', () => {
+  it('noemt claws CLAW en daggers DAGGER, met de snelheid zonder getal', () => {
+    const items = catalogItems('claw', 'thief')
+    expect(items.find((i) => i.name === 'Steel Titans')).toMatchObject({ type: 'CLAW', level: 15, stat: 13, speed: 'FAST' })
+    expect(items.find((i) => i.name === NPC_DAGGERS[0].name)?.type).toBe('DAGGER')
+    for (const i of items) expect(i.type, i.name).toBeDefined()
   })
 })

@@ -645,8 +645,8 @@ describe('Magician: equipment', () => {
   it('geeft bij Weapon de wands en staffs met M.ATT als stat en een vaste 810 ms, zonder multiplier', () => {
     const items = catalogItems('claw', 'magician')
     expect(items.map((i) => i.name)).toEqual(NPC_MAGICIAN_WEAPONS.map((w) => w.name))
-    expect(items.find((i) => i.name === 'Mithril Wand')).toEqual({ name: 'Mithril Wand', level: 30, stat: 55, attackMs: 810 })
-    expect(items.find((i) => i.name === 'Wooden Staff')).toEqual({ name: 'Wooden Staff', level: 10, stat: 24, attackMs: 810 })
+    expect(items.find((i) => i.name === 'Mithril Wand')).toEqual({ name: 'Mithril Wand', level: 30, stat: 55, attackMs: 810, type: 'WAND', speed: 'NORMAL' })
+    expect(items.find((i) => i.name === 'Wooden Staff')).toEqual({ name: 'Wooden Staff', level: 10, stat: 24, attackMs: 810, type: 'STAFF', speed: 'SLOW' })
     for (const i of items) expect(i.mult, i.name).toBeUndefined()
   })
 
