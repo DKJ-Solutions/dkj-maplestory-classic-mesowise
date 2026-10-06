@@ -10,7 +10,7 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { cheapestEquipment, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -1541,7 +1541,7 @@ function EquipmentCard(props: {
   // De knop die de popup opende (Your character of Cheapest): daar gaat de focus terug bij sluiten.
   const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
-  const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
+  const slots = shownSlots(props.job, props.equipment.claw)
   const uid = useId()
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
@@ -2805,7 +2805,7 @@ export function App() {
     () =>
       computed
         ? cheapestEquipment(
-            slotsFor(job, equipment.claw.pick).map(({ slot }) => slot),
+            shownSlots(job, equipment.claw),
             equipment,
             clawUpgradeAdvice(drafts, profile, 'this-level'),
             armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job), 'this-level'),

@@ -17,6 +17,10 @@ import {
   syncArrow,
   slotLabel,
   slotsFor,
+  hasRangedWeapon,
+  OTHER,
+  UNKNOWN,
+  shownSlots,
   statName,
   statOverride,
   wornName,
@@ -33,6 +37,7 @@ import { NPC_ARMOR } from './data/armor'
 import { BEGINNER_WEAPONS } from './data/beginnerWeapons'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_ARMOR, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
+import { NPC_DAGGERS } from './data/daggers'
 import { THROWING_STARS } from './data/thief'
 import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { COMMON_WORN_ARMOR, WORN_ARMOR } from './data/wornItems'
@@ -1588,5 +1593,28 @@ describe('weaponKind van een eigen wapen: bewaren en laden (#176)', () => {
     const next = choosePick('claw', ownDagger, 'other', 'Ander wapen')
     expect(next.weaponKind).toBeUndefined()
     expect(applyEquipChange({ ...DEFAULT_PROFILE, dagger: '1' }, 'claw', ownDagger, next).dagger).toBe('0')
+  })
+})
+
+describe('hasRangedWeapon en shownSlots (#188)', () => {
+  const entry = (pick: string, extra: Partial<EquipEntry> = {}): EquipEntry => ({ pick, name: '', stat: '', ...extra })
+  it('kent een claw en een boog als wapen voor afstand, en een leeg slot, een dagger of een wapen onder level 10 niet', () => {
+    expect(hasRangedWeapon('thief', entry(NPC_CLAWS[0].name))).toBe(true)
+    expect(hasRangedWeapon('thief', entry(UNKNOWN))).toBe(false)
+    expect(hasRangedWeapon('thief', entry(NPC_DAGGERS[0].name))).toBe(false)
+    expect(hasRangedWeapon('thief', entry('Sword'))).toBe(false)
+    expect(hasRangedWeapon('bowman', entry('Balanche'))).toBe(true)
+    expect(hasRangedWeapon('bowman', entry('Sword'))).toBe(false)
+    expect(hasRangedWeapon('warrior', entry('Sword'))).toBe(false)
+  })
+  it('volgt bij een eigen wapen wat een Thief kiest (dagger of claw); bij een Bowman is een eigen wapen voor afstand', () => {
+    expect(hasRangedWeapon('thief', entry(OTHER))).toBe(true)
+    expect(hasRangedWeapon('thief', entry(OTHER, { weaponKind: 'dagger' }))).toBe(false)
+    expect(hasRangedWeapon('bowman', entry(OTHER))).toBe(true)
+  })
+  it('laat Ammo alleen naast een wapen voor afstand zien, en de andere slots altijd', () => {
+    expect(shownSlots('thief', entry(UNKNOWN))).not.toContain('ammo')
+    expect(shownSlots('thief', entry(NPC_CLAWS[0].name))).toContain('ammo')
+    expect(shownSlots('thief', entry(UNKNOWN)).length).toBe(slotsFor('thief').length - 1)
   })
 })

@@ -973,6 +973,7 @@ describe('bewaren na elke wijziging', () => {
 
   it('bewaart de gekozen stars en zet hun weapon attack en herlaadprijs in het profiel', () => {
     openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Ammo', 'Wolbi Throwing Stars')
     expect(slots().ammo.pick).toBe('Wolbi Throwing Stars')
     expect(profileFields().starWatk).toBe('17')
@@ -1008,8 +1009,17 @@ describe('bewaren na elke wijziging', () => {
     expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
   })
 
+  it('verbergt bij een Thief het ammo-slot zonder wapen en met een dagger, en toont het met een claw (#188)', () => {
+    openHomeEquipment()
+    const ammo = () => within(cards()[0]).queryByLabelText('Zoek je Ammo')
+    expect(ammo()).toBeNull()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(ammo()).not.toBeNull()
+  })
+
   it('toont het ammo-slot zonder "optioneel", net als elk slot (#117): leeg blijft het advies gewoon rekenen', () => {
     openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
     const row = rowOf(cards()[0], 'Ammo')
     expect(row.querySelector('.slot-name')?.textContent).toBe('Ammo')
     expect(searchBox(cards()[0], 'Ammo').placeholder).toBe('Zoek wat je draagt')
@@ -1020,6 +1030,7 @@ describe('bewaren na elke wijziging', () => {
   it('biedt bij een Bowman pijlen aan in het ammo-slot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Bowman' }))
     openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Balanche')
     const row = typeIn(cards()[0], 'Ammo', 'Arrows')
     expect(options(row).map((o) => o.querySelector('.equip-name')?.textContent)).toContain('Arrows for Bows')
   })
@@ -1877,6 +1888,7 @@ describe('een Bowman in de app', () => {
     it('biedt de bronze pijlen pas aan met "Ik heb Helpful Stranger" aan, rekent ermee, en valt bij uitzetten terug (#64)', () => {
       openHomeEquipment()
       const card = cards()[0]
+      pick(card, 'Weapon', 'Balanche')
       const sw = within(card).getByLabelText(/Ik heb Helpful Stranger/) as HTMLInputElement
       expect(sw.checked).toBe(false)
       expect(found('Ammo', 'Bronze').filter((n) => !n?.startsWith('Gebruik'))).toEqual([])
@@ -1897,6 +1909,7 @@ describe('een Bowman in de app', () => {
       expect(found('Weapon', 'Balanche')).toContain('Balanche')
       expect(found('Weapon', 'Meba')).not.toContain('Meba')
       expect(found('Weapon', 'Gladius')).not.toContain('Gladius')
+      pick(cards()[0], 'Weapon', 'Balanche')
       expect(found('Ammo', 'Arrows')).toEqual(expect.arrayContaining(['Arrows for Bows', 'Arrows for Crossbows']))
       expect(found('Hat', 'Hunter')).toContain('Hunter')
       expect(found('Hat', 'Red Thief Hood')).not.toContain('Red Thief Hood')
@@ -1935,9 +1948,11 @@ describe('een Bowman in de app', () => {
       for (const name of ['Lucky Seven', 'Power Strike', 'Dark Sight']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('toont het ammo-slot', () => {
+    it('toont het ammo-slot pas naast een boog of kruisboog (#188)', () => {
       openHomeEquipment()
-      expect(cards()[0].textContent).toMatch(/Ammo/)
+      expect(within(cards()[0]).queryByLabelText('Zoek je Ammo')).toBeNull()
+      pick(cards()[0], 'Weapon', 'Balanche')
+      expect(within(cards()[0]).queryByLabelText('Zoek je Ammo')).not.toBeNull()
     })
   })
 

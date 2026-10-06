@@ -322,6 +322,24 @@ const isDaggerPick = (pick: string): boolean => isBeginnerDagger(pick) || isNpcD
 const isDaggerEntry = (e: EquipEntry): boolean => (e.pick === OTHER ? e.weaponKind === 'dagger' : isDaggerPick(e.pick))
 
 /** Het eigen wapen met de gekozen soort (#176); de rest van het slot blijft. */
+/**
+ * Of je een wapen voor afstand vasthoudt (Dave, 6 oktober 2026, #188): een claw (Thief) of een boog of kruisboog (Bowman). Een leeg
+ * wapenslot, een dagger, een wapen onder level 10 en een eigen wapen dat een Thief een dagger noemt (#176) zijn het niet; een eigen
+ * wapen van een Bowman wel (zoals bij het shield, #172). Alleen dan heeft het scherm een Ammo-slot.
+ */
+export function hasRangedWeapon(job: Job, weapon: EquipEntry): boolean {
+  if (job !== 'thief' && job !== 'bowman') return false
+  if (isEmptyEntry(weapon)) return false
+  if (weapon.pick === OTHER) return job === 'bowman' || weapon.weaponKind !== 'dagger'
+  return !isDaggerPick(weapon.pick) && !isOneHanded(weapon.pick)
+}
+
+/** De slots die het scherm toont: die van de job (slotsFor), met Ammo alleen naast een wapen voor afstand (#188). */
+export const shownSlots = (job: Job, weapon: EquipEntry): readonly EquipSlot[] =>
+  slotsFor(job, weapon.pick)
+    .map(({ slot }) => slot)
+    .filter((slot) => slot !== 'ammo' || hasRangedWeapon(job, weapon))
+
 export const withWeaponKind = (e: EquipEntry, kind: WeaponKind): EquipEntry => ({ ...e, weaponKind: kind })
 
 /**
