@@ -162,7 +162,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .btn.primary { width: 100%; background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.auto-assign.ready { background: var(--accent); border-color: var(--accent); color: #fff; }
 .credit a { color: var(--accent); overflow-wrap: anywhere; }
-.profile, .total-stats { padding: 0; overflow: hidden; }
+.profile, .total-stats, .potions { padding: 0; overflow: hidden; }
 .profile.invalid, .total-stats.invalid, .skills.invalid, .equipment.invalid { border-color: #dc2626; }
 .skill-options { list-style: none; padding: 0; }
 .hint, .note { margin: 0 0 0.875rem; font-size: 0.875rem; color: var(--muted); }
