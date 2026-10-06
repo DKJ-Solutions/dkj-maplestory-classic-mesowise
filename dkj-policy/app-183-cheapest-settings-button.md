@@ -50,22 +50,25 @@
   as soon as you edit anything yourself (Cody).
 - [x] Reworked after Dave's look (October 6, 2026): two Total cost cards, "(in game)" and "(cheapest)", with
   "Overnemen" on the second; the loose button is gone (Cody).
+- [x] Reworked again after Dave's look: one Total cost card with two columns, "In game" and "Cheapest", rows aligned
+  by what they are (HP potion, MP potion, stars, travel) and the other item named in its cell (Cody).
 
 ### TEST
 
-- [x] Unit tests on the module and app tests on apply, undo and the "already cheapest" message (Tycho). Code review
-  (Victor, findings applied and re-reviewed) and text review (Edith, nothing blocking).
+- [x] Unit tests on the module and app tests on apply, undo, the "already cheapest" message and the two-column rows
+  (Tycho). Code review (Victor, findings applied and re-reviewed on each design) and text review (Edith, nothing blocking).
 
 ### DEPLOY: app/183-cheapest-settings-button
 
-There are now two Total cost cards. "Total cost (in game)" is the level's cost as you play it now. Below it,
-"Total cost (cheapest)" shows what the same level costs with the cheapest settings that cost nothing: the
-cheapest safe mob, the cheapest potion per point, your skill points where they save the most and your AP filled in.
+The Total cost card now has two columns. "In game" is the level's cost as you play it now; "Cheapest" is what the
+same level costs with the cheapest settings that cost nothing: the cheapest safe mob, the cheapest potion per point,
+your skill points where they save the most and your AP filled in. Each row is one kind of cost (your HP potion, your
+MP potion, stars, travel), so a different potion in the cheapest setup sits on the same row with its name in its cell.
 Because those choices affect each other, it repeats until nothing changes (at most five rounds) and never picks a setup
-that costs more than yours. Equipment is never bought; upgrade advice stays advice. The second card shows "± X meso
-goedkoper" and what is different per card, and "Overnemen" applies it; "Ongedaan maken" puts everything back in one
-tap, until you change something yourself. The second card always shows the full invoice, also when your setup already
-is the cheapest; it then says so in one line.
+that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the table the card shows
+"± X meso goedkoper", the difference of the two totals, and what is different per card; "Overnemen" applies it and
+"Ongedaan maken" puts everything back in one tap, until you change something yourself. When your setup already is the
+cheapest, both columns are the same and the card says so in one line.
 
 **Score:** 4
 

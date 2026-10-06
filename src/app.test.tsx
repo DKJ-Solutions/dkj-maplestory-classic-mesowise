@@ -260,9 +260,9 @@ describe('begin zonder opslag', () => {
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
       expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
-      // Daaronder de kaart met de goedkoopste setup (#183), dan het Report.
-      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.cheapest-cost'))
-      expect(stats.nextElementSibling!.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
+      // Eén Total cost-kaart, ook met de kolom Cheapest erin (#183), en daaronder het Report.
+      expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
+      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -3020,6 +3020,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
   const rows = () => Array.from(card().querySelectorAll('tbody tr')).map((r) => Array.from(r.children).map((c) => c.textContent))
+  // De kolom In game: per regel het bedrag en eronder het aantal (#183).
+  const inGame = () => Array.from(card().querySelectorAll('tbody td.invoice-ingame'))
 
   it('noemt in de ondertitel het level en de job, en zonder geldig level alleen de job', () => {
     expect(totalCostWho('15', 'warrior')).toBe('Lv. 15 Warrior')
@@ -3027,11 +3029,12 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
   })
 
   it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
-    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost (in game)')
+    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
     expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
+    // Zonder mob is er ook voor de goedkoopste setup geen factuur, dus geen tabel met twee kolommen maar de reden (#183).
     expect(card().querySelector('table')).toBeNull()
     expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
   })
@@ -3040,18 +3043,18 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    expect(rows().map((r) => r[0])).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
-    for (const [, qty, meso] of rows()) {
+    expect(rows().map((r) => r[0]).slice(0, 3)).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
+    expect(card().querySelector('thead')!.textContent).toBe('In gamemesoCheapestmeso')
+    for (const td of inGame()) {
+      expect(td.querySelector('.cost')!.textContent).toMatch(/^−[\d.]+$/)
       // Een potion heeft een vraagteken achter zijn aantal; de stars niet.
-      expect(qty).toMatch(/^× [\d.]+\??$/)
-      expect(meso).toMatch(/^−[\d.]+ meso$/)
+      expect(td.querySelector('.invoice-sub')!.textContent).toMatch(/^× [\d.]+\??$/)
     }
-    expect(card().querySelectorAll('.invoice-meso.cost')).toHaveLength(4)
-    const total = card().querySelector('tfoot')!.textContent!
-    expect(total).toMatch(/^Total−[\d.]+ meso$/)
+    const total = card().querySelector('tfoot td.invoice-ingame')!.textContent!
+    expect(total).toMatch(/^−[\d.]+$/)
     // Het totaal is de som van de regels.
     const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
-    expect(n(total)).toBe(rows().reduce((s, r) => s + n(r[2]!), 0))
+    expect(n(total)).toBe(inGame().reduce((s, td) => s + n(td.querySelector('.cost')!.textContent!), 0))
     // Geen regel met het level, de mob en de duur boven de factuur (Dave, 6 oktober 2026).
     expect(card().textContent).not.toContain('Van lv')
   })
@@ -3060,7 +3063,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('.invoice-why'))
+    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('td.invoice-ingame .invoice-why'))
     expect(whys.map((b) => b.getAttribute('aria-label'))).toEqual([
       expect.stringMatching(/^Hoe komt de app op \d+ Orange Potion\?$/),
       expect.stringMatching(/^Hoe komt de app op \d+ Blue Potion\?$/),
@@ -3126,72 +3129,83 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Total cost: goedkoopste setup (#183)', () => {
-  const cheapestCard = () => document.querySelector<HTMLElement>('section.cheapest-cost')!
+describe('Total cost: de kolom Cheapest (#183)', () => {
+  const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
-  const yours = () => homeScreen().querySelector<HTMLElement>('section.total-cost:not(.cheapest-cost)')!
-  const total = (card: HTMLElement) => card.querySelector('tfoot')?.textContent
-  const take = () => fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Overnemen' }))
+  const total = (col: 'ingame' | 'cheapest') => card().querySelector(`tfoot td.invoice-${col}`)?.textContent
+  const take = () => fireEvent.click(within(card()).getByRole('button', { name: 'Overnemen' }))
   // Op level 20, met een mob gekozen, spelen mob, potions en skillpunten mee.
   const toLevel20 = () => {
     for (let i = 0; i < 10; i++) levelUp()
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     chooseMob('Slime')
   }
+  const mesoOf = (text: string | null | undefined) => Number(text!.replace(/\D/g, ''))
 
-  it('toont de goedkoopste setup live, vóór je iets toepast: een lager totaal, de besparing en de wijzigingen', () => {
+  it('toont de goedkoopste setup live naast je setup in game, vóór je iets toepast: een lager totaal, de besparing en de wijzigingen', () => {
     toLevel20()
     const profileBefore = profileFields()
-    expect(cheapestCard().querySelector('h2')!.textContent).toBe('Total cost (cheapest)')
-    expect(total(cheapestCard())).toBeTruthy()
-    expect(total(cheapestCard())).not.toBe(total(yours()))
+    expect(mesoOf(total('cheapest'))).toBeLessThan(mesoOf(total('ingame')))
     expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/goedkoper$/)
     expect(document.querySelectorAll('.cheapest-changes li').length).toBeGreaterThan(0)
     // Nog niets toegepast.
     expect(profileFields()).toEqual(profileBefore)
   })
 
-  const mesoOf = (text: string | undefined) => Number(text!.replace(/D/g, ''))
-  it('toont een besparing die gelijk is aan het verschil van de twee getoonde totalen, ook na Overnemen', () => {
+  it('zet een potion op de rij van zijn soort, ook als de goedkoopste setup een ander item gebruikt, en noemt dat item dan in zijn cel', () => {
     toLevel20()
-    const first = mesoOf(total(yours()))
-    const second = mesoOf(total(cheapestCard()))
-    const shown = () => mesoOf(document.querySelector('.cheapest-saving')!.textContent!.replace(/^[^d]*/, ''))
-    expect(shown()).toBe(first - second)
-    take()
-    expect(shown()).toBe(first - mesoOf(total(yours())))
+    const rows = Array.from(card().querySelectorAll('tbody tr'))
+    // Eén rij voor je HP-potion en één voor je MP-potion, welke potion elke kolom ook gebruikt.
+    expect(rows.filter((tr) => tr.querySelector('.invoice-why'))).toHaveLength(2)
+    for (const tr of rows) {
+      const label = tr.querySelector('th')!.textContent!
+      for (const td of Array.from(tr.querySelectorAll('td'))) {
+        const sub = td.querySelector('.invoice-sub')?.textContent ?? ''
+        // De naam van de rij herhaalt zich niet in de cel; een andere naam wel.
+        expect(sub.includes(label)).toBe(false)
+      }
+    }
   })
 
-  it('zet met Overnemen de setup toe: jouw Total cost krijgt het totaal van de kaart, en Ongedaan maken zet alles terug', () => {
+  it('toont een besparing die gelijk is aan het verschil van de twee getoonde totalen, ook na Overnemen', () => {
+    toLevel20()
+    const first = mesoOf(total('ingame'))
+    const second = mesoOf(total('cheapest'))
+    const shown = () => mesoOf(document.querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
+    expect(shown()).toBe(first - second)
+    take()
+    expect(shown()).toBe(first - mesoOf(total('ingame')))
+  })
+
+  it('zet met Overnemen de setup toe: de kolom In game krijgt het totaal van Cheapest, en Ongedaan maken zet alles terug', () => {
     toLevel20()
     const profileBefore = profileFields()
     const costBefore = levelCostText()
-    const yoursBefore = total(yours())
-    const cheaperTotal = total(cheapestCard())
+    const inGameBefore = total('ingame')
+    const cheaperTotal = total('cheapest')
     take()
-    expect(total(yours())).toBe(cheaperTotal)
-    // Ook na Overnemen staat de volledige factuur op de kaart.
-    expect(total(cheapestCard())).toBe(cheaperTotal)
+    expect(total('ingame')).toBe(cheaperTotal)
+    expect(total('cheapest')).toBe(cheaperTotal)
     expect(levelCostText()).not.toBe(costBefore)
     expect(document.querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
     expect(profileFields()).toEqual(profileBefore)
     expect(levelCostText()).toBe(costBefore)
-    expect(total(yours())).toBe(yoursBefore)
+    expect(total('ingame')).toBe(inGameBefore)
     const potions = stored(POTION_CHOICE_KEY)
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
   })
 
-  it('zegt dat je setup al de goedkoopste is als er niets te winnen valt, en toont ook dan de volledige factuur', () => {
+  it('zegt dat je setup al de goedkoopste is als er niets te winnen valt, en toont ook dan beide kolommen', () => {
     toLevel20()
     take()
     // Na herladen (de gekozen setup staat in de opslag) is er niets meer te winnen.
     cleanup()
     render(<App />)
-    expect(cheapestCard().textContent).toContain('al de goedkoopste')
-    expect(total(cheapestCard())).toBe(total(yours()))
-    expect(total(cheapestCard())).toBeTruthy()
-    expect(within(cheapestCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
+    expect(card().textContent).toContain('al de goedkoopste')
+    expect(total('cheapest')).toBe(total('ingame'))
+    expect(total('cheapest')).toBeTruthy()
+    expect(within(card()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
   })
 
   it('laat de uitkomst van Overnemen verdwijnen bij een ander level', () => {
@@ -3199,7 +3213,7 @@ describe('Total cost: goedkoopste setup (#183)', () => {
     take()
     expect(within(summary()!).queryByRole('button', { name: 'Ongedaan maken' })).not.toBeNull()
     levelUp()
-    expect(within(cheapestCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
+    expect(within(card()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
   })
 
   it('laat Ongedaan maken verdwijnen bij een handmatige wijziging, zodat die niet gewist wordt', () => {
@@ -3207,6 +3221,6 @@ describe('Total cost: goedkoopste setup (#183)', () => {
     take()
     fireEvent.click(screen.getByRole('button', { name: 'Monster bekijken' }))
     chooseMob('Snail')
-    expect(within(cheapestCard()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
+    expect(within(card()).queryByRole('button', { name: 'Ongedaan maken' })).toBeNull()
   })
 })

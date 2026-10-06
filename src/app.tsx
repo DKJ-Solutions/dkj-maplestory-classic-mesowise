@@ -2469,22 +2469,103 @@ export const totalCostWho = (level: string, job: Job): string => {
   return /^\d+$/.test(t) && Number(t) >= 1 ? `Lv. ${Number(t)} ${jobLabel(job)}` : jobLabel(job)
 }
 
+/** De rij van een factuurregel in de vergelijking: een potion naar zijn soort (HP of MP), de rest naar zijn naam. */
+const invoiceRowKey = (l: InvoiceLine): string => (l.why ? l.why.kind : l.label)
+
+/**
+ * Total cost met twee kolommen (Dave, 6 oktober 2026, #183): per regel wat het level kost met je setup in game en met de goedkoopste
+ * setup. Een rij is een soort regel (je HP-potion, je MP-potion, stars, reizen), zodat een andere potion in de goedkoopste setup op
+ * dezelfde rij staat; dan staat zijn naam in die cel. Bedragen zonder "meso" in de cel: de eenheid staat in de kolomkop, zodat twee
+ * kolommen op telefoonbreedte passen. Een regel die een setup niet heeft, of een setup zonder factuur, is een streepje.
+ */
+function InvoiceCompare(props: { inGame: LevelInvoice; cheapest: LevelInvoice }) {
+  const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
+  const keys: string[] = []
+  for (const c of cols) for (const l of c?.lines ?? []) if (!keys.includes(invoiceRowKey(l))) keys.push(invoiceRowKey(l))
+  const lineOf = (col: number, key: string) => cols[col]?.lines.find((l) => invoiceRowKey(l) === key)
+  const amount = (n: number) => (n === 0 ? '0' : `−${nfInt.format(n)}`)
+  const colClass = ['invoice-ingame', 'invoice-cheapest']
+  return (
+    <table class="invoice invoice-compare">
+      <thead>
+        <tr>
+          <td />
+          <th scope="col" class="invoice-meso">
+            In game<span class="invoice-unit">meso</span>
+          </th>
+          <th scope="col" class="invoice-meso">
+            Cheapest<span class="invoice-unit">meso</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {keys.map((key) => {
+          const row = lineOf(0, key) ?? lineOf(1, key)!
+          return (
+            <tr key={key}>
+              <th scope="row">{row.label}</th>
+              {[0, 1].map((col) => {
+                const l = lineOf(col, key)
+                return (
+                  <td key={col} class={`invoice-meso ${colClass[col]}`}>
+                    {l ? (
+                      <>
+                        <span class="cost">{amount(l.meso)}</span>
+                        {l.qty !== null && (
+                          <span class="invoice-sub">
+                            {`× ${nfInt.format(l.qty)}`}
+                            {l.label !== row.label && ` ${l.label}`}
+                            {l.why && <InvoiceWhy line={{ ...l, why: l.why }} />}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span class="invoice-none">—</span>
+                    )}
+                  </td>
+                )
+              })}
+            </tr>
+          )
+        })}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          {cols.map((c, col) => (
+            <td key={col} class={`invoice-meso ${colClass[col]}`}>
+              {c ? <span class="cost">{amount(c.total)}</span> : <span class="invoice-none">—</span>}
+            </td>
+          ))}
+        </tr>
+      </tfoot>
+    </table>
+  )
+}
+
 /**
  * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
  * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
-function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string; title: string; className?: string; children?: ComponentChildren }) {
+function TotalCostCard(props: { invoice: LevelInvoice; compare?: LevelInvoice; computed: boolean; job: Job; level: string; title: string; children?: ComponentChildren }) {
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
+  const compare = props.compare
   return (
-    <section class={props.className ?? 'card total-cost'} aria-live="polite">
+    <section class="card total-cost" aria-live="polite">
       <h2>{props.title}</h2>
       <p class="total-cost-sub">
         This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
       </p>
       {!props.computed ? (
         <NotComputed job={props.job} />
+      ) : compare && (inv.kind === 'invoice' || compare.kind === 'invoice') ? (
+        <>
+          <InvoiceCompare inGame={inv} cheapest={compare} />
+          {/* Zonder factuur in game staat die kolom vol streepjes; hier waarom. */}
+          {inv.kind === 'none' && <p class="hint">In game: {noCostReason(inv.cost) ?? 'er is niets uit te rekenen.'}</p>}
+        </>
       ) : inv.kind === 'none' ? (
         <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
       ) : (
@@ -2523,21 +2604,20 @@ function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: J
 }
 
 /**
- * De tweede Total cost-kaart (Dave, 6 oktober 2026, #183): wat het level kost met de goedkoopste gratis instellingen (mob, potions,
- * skillpunten, base AP), live berekend en nog niet toegepast. "Overnemen" past ze toe; daarna staat hier wat er veranderde en
- * kun je alles met "Ongedaan maken" terugzetten. Zonder verschil blijft de kaart kort.
+ * Onder de factuur van Total cost (Dave, 6 oktober 2026, #183): wat de kolom Cheapest scheelt, wat er daarvoor verandert (mob,
+ * potions, skillpunten, base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat er veranderde
+ * en kun je alles met "Ongedaan maken" terugzetten.
  */
 const CHANGE_LABEL = { mob: 'Monster:', potions: 'Potions:', skills: 'Skillpunten:', ap: 'AP:' } as const
 /** Het totaal van een factuur, of null zonder factuur. */
 const invoiceTotal = (i: LevelInvoice): number | null => (i.kind === 'invoice' ? i.total : null)
-/** De besparing zoals de twee kaarten haar tonen (factuurtotaal min factuurtotaal); zonder twee facturen die van de berekening. */
+/** De besparing zoals de twee kolommen haar tonen (factuurtotaal min factuurtotaal); zonder twee facturen die van de berekening. */
 const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | null): number | null => {
   const a = invoiceTotal(was)
   const b = invoiceTotal(now)
   return a !== null && b !== null ? a - b : fallback
 }
-const CHEAPEST_TITLE = 'Total cost (cheapest)'
-function CheapestCostCard(props: { live: CheapestResult | null; invoice: LevelInvoice; saving: number | null; applied: CheapestResult | null; job: Job; level: string; onApply: () => void; onUndo: () => void }) {
+function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
   const saving = props.saving
@@ -2571,12 +2651,11 @@ function CheapestCostCard(props: { live: CheapestResult | null; invoice: LevelIn
       )}
     </div>
   )
-  // De factuur staat er altijd, ook als je setup al de goedkoopste is en na Overnemen; eronder wat dat betekent.
   return (
-    <TotalCostCard invoice={props.invoice} computed job={props.job} level={props.level} title={CHEAPEST_TITLE} className="card total-cost cheapest-cost">
-      {props.applied && <p class="hint">Overgenomen: je setup hierboven is nu de goedkoopste.</p>}
+    <>
+      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste.</p>}
       {!props.applied && r.changes.length === 0 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
-    </TotalCostCard>
+    </>
   )
 }
 
@@ -2921,8 +3000,10 @@ export function App() {
       </section>
 
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
-      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} title="Total cost (in game)" />
-      {computed && <CheapestCostCard live={cheapestLive} invoice={cheapestInvoice} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} job={job} level={profileDraft.level} onApply={applyCheapest} onUndo={undoCheapest} />}
+      {/* Met twee kolommen: je setup in game en de goedkoopste, met daaronder wat dat scheelt en Overnemen (#183). */}
+      <TotalCostCard invoice={invoice} compare={computed && cheapestLive ? cheapestInvoice : undefined} computed={computed} job={job} level={profileDraft.level} title="Total cost">
+        {computed && <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />}
+      </TotalCostCard>
 
       <LevelAdviceCard
         job={job}

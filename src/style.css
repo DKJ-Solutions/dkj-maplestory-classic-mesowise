@@ -612,7 +612,19 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
 .why-steps li + li { margin-top: 0.5rem; }
 
-/* De tweede Total cost-kaart, goedkoopste setup (#183): onder de factuur de besparing, wat er verandert en Overnemen of Ongedaan maken. */
+/* Total cost met twee kolommen, In game en Cheapest (#183). Per cel het bedrag, met eronder klein het aantal (en de naam als de
+   goedkoopste setup een ander item gebruikt) en het vraagteken. "meso" staat in de kolomkop, zodat twee kolommen op telefoonbreedte
+   passen; het aantal mag onder het bedrag doorlopen. */
+.invoice-compare thead th { padding: 0 0 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+.invoice-compare thead td { padding: 0; }
+/* De naam van een regel breekt alleen tussen woorden, zodat de kolom met namen niet tot niets krimpt naast twee bedragen. */
+.invoice-compare tbody th { overflow-wrap: break-word; }
+.invoice-unit { display: block; font-weight: 400; color: var(--muted); }
+.invoice-compare td.invoice-meso { white-space: normal; }
+.invoice-compare td.invoice-meso .cost { white-space: nowrap; }
+.invoice-sub { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--muted); overflow-wrap: anywhere; }
+.invoice-none { color: var(--muted); }
+/* Onder de factuur van Total cost (#183): de besparing, wat er verandert en Overnemen of Ongedaan maken. */
 .cheapest-result { margin-top: 0.75rem; }
 .cheapest-result .btn { width: 100%; }
 .cheapest-saving { margin: 0 0 0.5rem; font-weight: 700; color: var(--accent); overflow-wrap: anywhere; }
