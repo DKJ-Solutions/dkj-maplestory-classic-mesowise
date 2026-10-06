@@ -342,16 +342,21 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
  * De kop van een kaart met een popup (Dave, 4 oktober 2026, #106): de titel, en eronder het oog als knop die de inhoud in
  * een popup toont, naast het rapport als de kaart er een heeft. Alleen het oog en het rapport zijn te tikken, niet de hele kop (Dave, 5 oktober 2026).
  */
+/** Het oog: de knop die een kaart of een kolom bekijkt. */
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+  </svg>
+)
+
 function CardHead(props: { label: string; head: Ref<HTMLButtonElement>; open: boolean; onOpen: () => void; report?: ComponentChildren; children: ComponentChildren }) {
   return (
     <div class="spot-head">
       {props.children}
       <div class="card-actions">
         <button type="button" class="card-action" ref={props.head} aria-haspopup="dialog" aria-expanded={props.open} aria-label={`${props.label} bekijken`} onClick={props.onOpen}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-          </svg>
+          <EyeIcon />
         </button>
         {props.report}
       </div>
@@ -1429,30 +1434,106 @@ function StatDialog(props: {
  * equip (cheapestEquip.ts). Een stuk dat anders is dan wat je draagt, krijgt het accent. Een slot dat in beide kolommen leeg is, staat er
  * niet; zonder goedkoopste equip (een job die de app niet doorrekent) alleen de eerste kolom.
  */
-function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null }) {
+function EquipColumns(props: { slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot> | null; onOpenWorn: (button: HTMLButtonElement) => void }) {
+  const [cheapestOpen, setCheapestOpen] = useState(false)
+  const cheapestButton = useRef<HTMLButtonElement>(null)
   const rows = props.slots
-    .map((slot) => ({ slot, ...(props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false }) }))
+    .map((slot) => ({ slot, ...(props.cheapest?.[slot] ?? { worn: wornName(props.equipment[slot]), cheapest: null, changed: false, price: null }) }))
     .filter((r) => r.worn !== null || r.cheapest !== null)
-  if (rows.length === 0) return <p class="hint equip-columns-none">Nog geen equip ingevuld.</p>
+  const columns = props.cheapest ? 3 : 2
+  const closeCheapest = () => {
+    setCheapestOpen(false)
+    requestAnimationFrame(() => cheapestButton.current?.focus())
+  }
   return (
-    <table class="equip-columns">
-      <thead>
-        <tr>
-          <td />
-          <th scope="col">Your character</th>
-          {props.cheapest && <th scope="col">Cheapest</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.slot}>
-            <th scope="row">{slotLabel(r.slot)}</th>
-            <td class={r.worn === null ? 'equip-none' : undefined}>{r.worn ?? '—'}</td>
-            {props.cheapest && <td class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</td>}
+    <>
+      <table class="equip-columns">
+        <thead>
+          <tr>
+            <td />
+            <th scope="col">Your character</th>
+            {props.cheapest && <th scope="col">Cheapest</th>}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={columns} class="equip-none equip-columns-none">
+                Nog geen equip ingevuld.
+              </td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr key={r.slot}>
+                <th scope="row">{slotLabel(r.slot)}</th>
+                <td class={r.worn === null ? 'equip-none' : undefined}>{r.worn ?? '—'}</td>
+                {props.cheapest && <td class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</td>}
+              </tr>
+            ))
+          )}
+        </tbody>
+        {/* Onder elke kolom een knop die hem bekijkt (Dave, #188): je eigen equip in de popup om te wijzigen, de goedkoopste om te lezen. */}
+        <tfoot>
+          <tr>
+            <td />
+            <td>
+              <button type="button" class="card-action" aria-haspopup="dialog" aria-label="Your character bekijken" onClick={(e) => props.onOpenWorn(e.currentTarget)}>
+                <EyeIcon />
+              </button>
+            </td>
+            {props.cheapest && (
+              <td>
+                <button ref={cheapestButton} type="button" class="card-action" aria-haspopup="dialog" aria-expanded={cheapestOpen} aria-label="Cheapest bekijken" onClick={() => setCheapestOpen(true)}>
+                  <EyeIcon />
+                </button>
+              </td>
+            )}
+          </tr>
+        </tfoot>
+      </table>
+      {cheapestOpen && props.cheapest && (
+        <StatDialog title="Cheapest" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={closeCheapest}>
+          <CheapestEquipList slots={props.slots} cheapest={props.cheapest} />
+        </StatDialog>
+      )}
+    </>
+  )
+}
+
+/**
+ * De popup achter "Cheapest bekijken" (#188): per slot de goedkoopste equip, met de winkelprijs van wat je moet kopen en het totaal.
+ * Alleen om te lezen: de app koopt niets voor je.
+ */
+function CheapestEquipList(props: { slots: readonly EquipSlot[]; cheapest: Record<EquipSlot, CheapestSlot> }) {
+  const rows = props.slots.map((slot) => ({ slot, ...props.cheapest[slot] })).filter((r) => r.worn !== null || r.cheapest !== null)
+  const total = rows.reduce((sum, r) => sum + (r.price ?? 0), 0)
+  return (
+    <div class="report-body">
+      <p class="hint">De equip waarmee je het goedkoopst levelt. Wat in de accentkleur staat, koop je in de winkel; de rest draag je al.</p>
+      {rows.length === 0 ? (
+        <p class="hint">Nog geen equip ingevuld.</p>
+      ) : (
+        <table class="invoice equip-cheapest">
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.slot}>
+                <th scope="row">
+                  <span class="equip-cheapest-slot">{slotLabel(r.slot)}</span>
+                  <span class={r.changed ? 'equip-buy' : r.cheapest === null ? 'equip-none' : undefined}>{r.cheapest ?? '—'}</span>
+                </th>
+                <td class="invoice-meso">{r.price !== null ? `${nfInt.format(r.price)} meso` : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total</th>
+              <td class="invoice-meso">{total === 0 ? '0 meso' : `${nfInt.format(total)} meso`}</td>
+            </tr>
+          </tfoot>
+        </table>
+      )}
+    </div>
   )
 }
 
@@ -1486,6 +1567,8 @@ function EquipmentCard(props: {
 }) {
   const [open, setOpen] = useState(false)
   const head = useRef<HTMLButtonElement>(null)
+  // De knop die de popup opende (het oog in de kop of dat onder Your character): daar gaat de focus terug bij sluiten.
+  const opener = useRef<HTMLButtonElement | null>(null)
   const computed = isComputed(props.job)
   const slots = slotsFor(props.job, props.equipment.claw.pick).map(({ slot }) => slot)
   const uid = useId()
@@ -1500,19 +1583,19 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title="Equip" head={head} error={props.error} onClose={() => setOpen(false)}>
+      <CardPopup title="Equip" head={opener} error={props.error} onClose={() => setOpen(false)}>
         {body}
       </CardPopup>
     )
   return (
     <section class={`card equipment${props.error ? ' invalid' : ''}`}>
-      <CardHead label="Equip" head={head} open={open} onOpen={() => setOpen(true)} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
+      <CardHead label="Equip" head={head} open={open} onOpen={() => { opener.current = head.current; setOpen(true) }} report={props.report && <CardReport title="Equip">{props.report}</CardReport>}>
         {name}
       </CardHead>
       <p class="error" aria-live="polite">
         {props.error}
       </p>
-      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} />
+      <EquipColumns slots={slots} equipment={props.equipment} cheapest={props.cheapest} onOpenWorn={(button) => { opener.current = button; setOpen(true) }} />
       {shell(
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}

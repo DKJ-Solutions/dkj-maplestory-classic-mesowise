@@ -648,4 +648,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-columns tbody th { padding-left: 0; font-weight: 400; color: var(--muted); text-align: left; white-space: nowrap; width: 1%; }
 .equip-columns .equip-buy { font-weight: 700; color: var(--accent); }
 .equip-columns .equip-none { color: var(--muted); }
-.equip-columns-none { margin: 0; text-align: center; }
+.equip-columns-none { text-align: center; }
+/* Onder elke kolom zijn bekijken-knop (#188), zo breed als de kolom: dezelfde donkere knop als het oog in de kop. */
+.equip-columns tfoot td { padding: 0.75rem 0 0 0.5rem; }
+.equip-columns tfoot .card-action { width: 100%; }
+/* De popup achter Cheapest bekijken: per regel het slot klein boven het stuk, rechts de prijs van wat je koopt. */
+.equip-cheapest { margin-top: 0; }
+.equip-cheapest-slot { display: block; font-size: 0.8125rem; color: var(--muted); }
+.equip-cheapest .equip-buy { font-weight: 700; color: var(--accent); }
+.equip-cheapest .equip-none { color: var(--muted); }

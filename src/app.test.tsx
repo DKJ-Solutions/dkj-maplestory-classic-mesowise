@@ -361,6 +361,19 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(weapon.querySelectorAll('td')[1].textContent).not.toBe('')
   })
 
+  it('opent onder Your character de Equip-popup en onder Cheapest een leespopup met het totaal (#188)', () => {
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character bekijken' }))
+    expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest bekijken' }))
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.report-dialog')!
+    expect(dialog.textContent).toContain(IGOR.name)
+    expect(within(dialog).getByText('Total')).toBeTruthy()
+  })
+
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
     const head = within(cards()[0]).getByRole('button', { name: 'Equip bekijken' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')

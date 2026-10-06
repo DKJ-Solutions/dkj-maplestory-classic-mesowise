@@ -12,6 +12,8 @@ export interface CheapestSlot {
   cheapest: string | null
   /** True als de goedkoopste equip hier iets anders heeft dan je draagt: een stuk om te kopen, of een slot dat leeg raakt. */
   changed: boolean
+  /** Wat het stuk in de winkel kost als je het moet kopen; null als je hier niets koopt. */
+  price: number | null
 }
 
 /**
@@ -23,7 +25,11 @@ export interface CheapestSlot {
  */
 export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice): Record<EquipSlot, CheapestSlot> {
   const pick: Partial<Record<EquipSlot, string | null>> = {}
-  if (claw.kind === 'advice' && claw.winner) pick.claw = claw.winner.name
+  const price: Partial<Record<EquipSlot, number>> = {}
+  if (claw.kind === 'advice' && claw.winner) {
+    pick.claw = claw.winner.name
+    price.claw = claw.winner.price
+  }
   if (armor.kind === 'advice') {
     // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
     // maken (een losse top en een losse bottom maken allebei de overall leeg) elkaar niet blokkeren.
@@ -32,12 +38,13 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     const halves = (f: typeof fill) => f.top !== undefined || f.bottom !== undefined
     for (const c of armor.choices) {
       if (c.net === null || c.net <= 0) continue
-      const add: Partial<Record<ArmorSlot, string>> = { [c.armor.slot]: c.armor.name }
-      if (c.with) add[c.with.slot] = c.with.name
+      const pieces = c.with ? [c.armor, c.with] : [c.armor]
+      const add: Partial<Record<ArmorSlot, string>> = Object.fromEntries(pieces.map((p) => [p.slot, p.name]))
       // Botsen doet een slot dat al gevuld is, of een overall naast een top of bottom.
       const clash = Object.keys(add).some((s) => fill[s as ArmorSlot] !== undefined) || (add.overall !== undefined && halves(fill)) || (fill.overall !== undefined && halves(add))
       if (clash) continue
       Object.assign(fill, add)
+      for (const p of pieces) price[p.slot] = p.price
       if (c.bare) bare.add(c.bare)
     }
     for (const [s, name] of Object.entries(fill)) pick[s as ArmorSlot] = name
@@ -50,7 +57,8 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
   for (const slot of slots) {
     const worn = wornName(equipment[slot])
     const cheapest = slot in pick ? (pick[slot] ?? null) : worn
-    out[slot] = { worn, cheapest, changed: cheapest !== worn }
+    const changed = cheapest !== worn
+    out[slot] = { worn, cheapest, changed, price: changed && cheapest !== null ? (price[slot] ?? null) : null }
   }
   return out
 }

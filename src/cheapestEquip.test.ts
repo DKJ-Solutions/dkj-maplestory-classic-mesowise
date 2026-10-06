@@ -18,26 +18,26 @@ const choice = (armor: ArmorPiece, net: number | null, extra: Partial<ArmorChoic
   ({ armor, price: 100, from: 1, to: 2, truncated: false, saving: net, net, replaces: undefined, ...extra })
 const armorAdvice = (choices: ArmorChoice[]): ArmorUpgradeAdvice => ({ kind: 'advice', level: 10, choices, notWearable: [], winner: choices[0]?.armor ?? null, robust: true })
 const clawAdvice = (winner: string | null): ClawUpgradeAdvice =>
-  ({ kind: 'advice', level: 10, choices: [], notWearable: [], winner: winner === null ? null : { name: winner }, robust: true }) as unknown as ClawUpgradeAdvice
+  ({ kind: 'advice', level: 10, choices: [], notWearable: [], winner: winner === null ? null : { name: winner, price: 5000 }, robust: true }) as unknown as ClawUpgradeAdvice
 
 describe('cheapestEquipment (#188)', () => {
   it('houdt zonder advies elk slot op wat je draagt', () => {
     const r = cheapestEquipment(SLOTS, wearing({ claw: 'Garnier', hat: 'Brown Bandana' }), NONE, NONE)
-    expect(r.claw).toEqual({ worn: 'Garnier', cheapest: 'Garnier', changed: false })
-    expect(r.hat).toEqual({ worn: 'Brown Bandana', cheapest: 'Brown Bandana', changed: false })
-    expect(r.top).toEqual({ worn: null, cheapest: null, changed: false })
+    expect(r.claw).toEqual({ worn: 'Garnier', cheapest: 'Garnier', changed: false, price: null })
+    expect(r.hat).toEqual({ worn: 'Brown Bandana', cheapest: 'Brown Bandana', changed: false, price: null })
+    expect(r.top).toEqual({ worn: null, cheapest: null, changed: false, price: null })
   })
 
   it('zet het wapen op de winnaar van het wapenadvies, en laat het staan zonder winnaar', () => {
     const eq = wearing({ claw: 'Garnier' })
-    expect(cheapestEquipment(SLOTS, eq, clawAdvice('Steel Titans'), NONE).claw).toEqual({ worn: 'Garnier', cheapest: 'Steel Titans', changed: true })
+    expect(cheapestEquipment(SLOTS, eq, clawAdvice('Steel Titans'), NONE).claw).toEqual({ worn: 'Garnier', cheapest: 'Steel Titans', changed: true, price: 5000 })
     expect(cheapestEquipment(SLOTS, eq, clawAdvice(null), NONE).claw.cheapest).toBe('Garnier')
   })
 
   it('neemt elk armorstuk dat zich terugverdient, en geen stuk met netto besparing 0, negatief of onbekend', () => {
     const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 0), choice(piece('gloves', 'Gloves A'), -10), choice(piece('cape', 'Cape A'), null)])
     const r = cheapestEquipment(SLOTS, wearing({ shoes: 'Old Shoes' }), NONE, advice)
-    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true })
+    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true, price: 100 })
     expect(r.shoes.cheapest).toBe('Old Shoes')
     expect(r.gloves.cheapest).toBeNull()
     expect(r.cape.cheapest).toBeNull()
@@ -45,9 +45,9 @@ describe('cheapestEquipment (#188)', () => {
 
   it('maakt top en bottom leeg voor een overall', () => {
     const r = cheapestEquipment(SLOTS, wearing({ top: 'Shirt', bottom: 'Pants' }), NONE, armorAdvice([choice(piece('overall', 'Robe'), 80)]))
-    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true })
-    expect(r.top).toEqual({ worn: 'Shirt', cheapest: null, changed: true })
-    expect(r.bottom).toEqual({ worn: 'Pants', cheapest: null, changed: true })
+    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true, price: 100 })
+    expect(r.top).toEqual({ worn: 'Shirt', cheapest: null, changed: true, price: null })
+    expect(r.bottom).toEqual({ worn: 'Pants', cheapest: null, changed: true, price: null })
   })
 
   it('zet bij een paar top en bottom allebei, en maakt de overall leeg', () => {
@@ -55,7 +55,7 @@ describe('cheapestEquipment (#188)', () => {
     const r = cheapestEquipment(SLOTS, wearing({ overall: 'Robe' }), NONE, armorAdvice([pair]))
     expect(r.top.cheapest).toBe('Shirt B')
     expect(r.bottom.cheapest).toBe('Pants B')
-    expect(r.overall).toEqual({ worn: 'Robe', cheapest: null, changed: true })
+    expect(r.overall).toEqual({ worn: 'Robe', cheapest: null, changed: true, price: null })
   })
 
   it('maakt bij een losse top over een overall ook de bottom leeg (bare)', () => {
@@ -86,7 +86,7 @@ describe('cheapestEquipment (#188)', () => {
     const r = cheapestEquipment(SLOTS, wearing({ overall: 'Robe' }), NONE, advice)
     expect(r.top.cheapest).toBe('Shirt B')
     expect(r.bottom.cheapest).toBe('Pants B')
-    expect(r.overall).toEqual({ worn: 'Robe', cheapest: null, changed: true })
+    expect(r.overall).toEqual({ worn: 'Robe', cheapest: null, changed: true, price: null })
   })
 
   it('laat een losse top vallen naast een paar dat de top al vult', () => {
