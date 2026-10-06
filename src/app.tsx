@@ -443,11 +443,14 @@ function StatLine(props: {
   readOnly?: boolean
   /** Hoe het getal op de regel staat (Dave, 6 oktober 2026): kosten in rood met een min, winst in groen met een plus. De popup toont het kale getal. */
   tone?: 'cost' | 'gain'
+  /** Wat achter het getal op de regel staat, zoals "meso" of "HP" (Dave, 6 oktober 2026). De popup toont het kale getal. */
+  unit?: string
   onSave: (text: string) => void
 }) {
   const { field: f, value, expected } = props
   const uid = useId()
   const sign = props.tone === 'cost' ? '−' : props.tone === 'gain' ? '+' : ''
+  const unit = props.unit ? ` ${props.unit}` : ''
   const [draft, setDraft] = useState<string | null>(null)
   const corrected = expected !== undefined && value.trim() !== String(expected)
   const shown = value.trim() !== '' ? value : '?'
@@ -460,8 +463,8 @@ function StatLine(props: {
       <span class="stat-line-name">{f.label}</span>
       <div class={corrected ? 'equip-value changed' : 'equip-value'} aria-label={`${f.label} ${value.trim() !== '' ? value : 'onbekend'}${corrected ? `, gecorrigeerd, verwacht ${expected}` : ''}`}>
         <span class="equip-value-num">
-          {corrected && <s class="equip-value-db">{sign}{expected}</s>}
-          <strong class={props.tone}>{shown === '?' ? shown : sign + shown}</strong>
+          {corrected && <s class="equip-value-db">{sign}{expected}{unit}</s>}
+          <strong class={props.tone}>{shown === '?' ? shown : sign + shown + unit}</strong>
         </span>
       </div>
       {props.readOnly ? (
@@ -906,7 +909,7 @@ function PotionsCard(props: {
                 {/* Een gekozen maar nog niet opgeslagen potion: zijn getallen uit de database, alleen om te lezen; aanpassen kan na Opslaan. */}
                 {potionFields(kind).map((f) =>
                   pick ? (
-                    <StatLine key={f.key} field={f} value={String(potionStat(pick, kind, f.key))} tone={f.tone} readOnly onSave={() => {}} />
+                    <StatLine key={f.key} field={f} value={String(potionStat(pick, kind, f.key))} tone={f.tone} unit={f.unit} readOnly onSave={() => {}} />
                   ) : (
                     <StatLine
                       key={f.key}
@@ -914,7 +917,7 @@ function PotionsCard(props: {
                       value={String(potionStat(used[kind], kind, f.key))}
                       expected={potionStat(db, kind, f.key)}
                       from="de database"
-                      tone={f.tone}
+                      tone={f.tone} unit={f.unit}
                       onSave={(text) => props.onFix(kind, f.key, text)}
                     />
                   ),

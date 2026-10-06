@@ -2909,8 +2909,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(Array.from(select('MP').options).map((o) => o.textContent)).toEqual(['Blue Potion (220 meso)'])
     // Zonder keuze de goedkoopste.
     expect(select('HP').value).toBe('Orange Potion')
-    expect(lines('HP')).toEqual([['Prijs', '−150', true], ['Herstel HP', '+250', true]])
-    expect(lines('MP')).toEqual([['Prijs', '−220', true], ['Herstel MP', '+200', true]])
+    expect(lines('HP')).toEqual([['Prijs', '−150 meso', true], ['Herstel HP', '+250 HP', true]])
+    expect(lines('MP')).toEqual([['Prijs', '−220 meso', true], ['Herstel MP', '+200 MP', true]])
     expect(line('HP', 'Prijs').querySelector('strong.cost')).not.toBeNull()
     expect(line('HP', 'Herstel HP').querySelector('strong.gain')).not.toBeNull()
     // Geen Max HP of Max MP: die staan op Total stats. Wel wat een potion per punt kost en van je balk vult (250 van 444: 56%).
@@ -2926,7 +2926,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     openPotions()
     expect((within(potionsCard()).getByRole('button', { name: 'Opslaan' }) as HTMLButtonElement).disabled).toBe(true)
     choose('HP', 'White Potion')
-    expect(lines('HP')).toEqual([['Prijs', '−350', false], ['Herstel HP', '+500', false]])
+    expect(lines('HP')).toEqual([['Prijs', '−350 meso', false], ['Herstel HP', '+500 HP', false]])
     expect(stored(POTION_CHOICE_KEY)).toBeNull()
     save()
     expect(stored(POTION_CHOICE_KEY)).toEqual({ version: 1, hp: 'White Potion', mp: null, fix: { hp: {}, mp: {} } })
@@ -2938,7 +2938,7 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     // Weer open: de opgeslagen potion, nu met potlood.
     openPotions()
     expect(select('HP').value).toBe('White Potion')
-    expect(lines('HP')).toEqual([['Prijs', '−350', true], ['Herstel HP', '+500', true]])
+    expect(lines('HP')).toEqual([['Prijs', '−350 meso', true], ['Herstel HP', '+500 HP', true]])
   })
 
   it('gooit een gekozen potion weg met Annuleren, zoals bij Monster', () => {
@@ -2956,8 +2956,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     openPotions()
     fix('HP', 'Prijs', '300')
     expect(stored(POTION_CHOICE_KEY).fix).toEqual({ hp: { name: 'Orange Potion', price: 300 }, mp: {} })
-    expect(line('HP', 'Prijs').querySelector('.equip-value-db')!.textContent).toBe('−150')
-    expect(line('HP', 'Prijs').querySelector('.equip-value strong')!.textContent).toBe('−300')
+    expect(line('HP', 'Prijs').querySelector('.equip-value-db')!.textContent).toBe('−150 meso')
+    expect(line('HP', 'Prijs').querySelector('.equip-value strong')!.textContent).toBe('−300 meso')
     expect(levelCostText()).not.toBe(before)
     // Voor 300 meso kost de Orange 1,2 per HP, meer dan de White (0,7): het rapport raadt de White aan.
     expect(potionPart().querySelector('.chip')!.textContent).toBe('Wisselen')

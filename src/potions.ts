@@ -50,6 +50,8 @@ export interface PotionField {
   max: number
   integer: true
   tone: 'cost' | 'gain'
+  /** Wat achter het getal staat (Dave, 6 oktober 2026): "−150 meso", "+250 HP". */
+  unit: string
 }
 
 /** Het hoogste Max HP en Max MP dat het profiel toelaat (beide 30.000): meer kan een potion niet nuttig herstellen. */
@@ -57,8 +59,8 @@ const MAX_BAR = Math.min(...PROFILE_FIELDS.filter((f) => f.key === 'hp' || f.key
 
 /** De eigenschappen van een potion van deze soort, in de volgorde van het scherm. */
 export const potionFields = (kind: PotionKind): readonly PotionField[] => [
-  { key: 'price', label: 'Prijs', min: 1, max: 9_999_999, integer: true, tone: 'cost' },
-  { key: 'restores', label: `Herstel ${kind === 'hp' ? 'HP' : 'MP'}`, min: 1, max: MAX_BAR, integer: true, tone: 'gain' },
+  { key: 'price', label: 'Prijs', min: 1, max: 9_999_999, integer: true, tone: 'cost', unit: 'meso' },
+  { key: 'restores', label: `Herstel ${kind === 'hp' ? 'HP' : 'MP'}`, min: 1, max: MAX_BAR, integer: true, tone: 'gain', unit: kind === 'hp' ? 'HP' : 'MP' },
 ]
 
 /** De waarde van een eigenschap van een potion. */
