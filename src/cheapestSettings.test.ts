@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { autoFillAp, autoFillPatch } from './autoFillAp'
 import { MOBS, mobDraft } from './data/spots'
 import { defaultEquipment } from './equipment'
-import { cheapestSettings, MAX_ROUNDS, type CheapestInput } from './cheapestSettings'
+import { cheapestSettings, MAX_ROUNDS, profileOf as appProfile, type CheapestInput } from './cheapestSettings'
+import { isComputed, type Job } from './job'
+import { levelInvoice } from './levelInvoice'
 import { applyLevelUp } from './levelUp'
 import { mobAdvice } from './mobAdvice'
 import { NO_POTION_CHOICE, resolvePotions } from './potions'
@@ -135,4 +137,42 @@ describe('cheapestSettings: randgevallen', () => {
     const settled = apply(base(), cheapestSettings(base()))
     expect(cheapestSettings(settled).changes.filter((c) => c.kind === 'mob')).toEqual([])
   })
+})
+
+describe('cheapestSettings en de factuur (#195)', () => {
+  // De factuur rondt elke regel af op hele stuks; zonder afronding goedkoper is op de factuur niet altijd goedkoper.
+  const invoiceTotal = (i: CheapestInput): number | null => {
+    const inv = levelInvoice(i.drafts, appProfile(i))
+    return inv.kind === 'invoice' ? inv.total : null
+  }
+  const at = (job: Job, level: number, mob: string): CheapestInput => {
+    let d = DEFAULT_PROFILE
+    while (Number(d.level) < level) d = applyLevelUp(d, job)
+    return base({ job, profileDraft: d, drafts: [mobDraft(mob)!] })
+  }
+
+  it('Warrior 26 op Blue Snail: Advised is op de factuur niet duurder dan Your character', () => {
+    const input = at('warrior', 26, 'Blue Snail')
+    const r = cheapestSettings(input)
+    const yours = invoiceTotal(input)
+    const advised = invoiceTotal(apply(input, r))
+    expect(yours).not.toBeNull()
+    expect(advised as number).toBeLessThanOrEqual(yours as number)
+    expect(r.costBefore).toBe(yours)
+    expect(r.costAfter).toBe(advised)
+  })
+
+  it('geldt voor elke job die rekent, op een rij levels en elke mob', () => {
+    for (const job of (['thief', 'warrior', 'bowman', 'magician'] as Job[]).filter(isComputed)) {
+      for (const level of [10, 15, 20, 25, 26, 30]) {
+        for (const m of MOBS) {
+          const input = at(job, level, m.name)
+          const yours = invoiceTotal(input)
+          const advised = invoiceTotal(apply(input, cheapestSettings(input)))
+          if (yours === null || advised === null) continue
+          expect(advised, `${job} ${level} ${m.name}`).toBeLessThanOrEqual(yours)
+        }
+      }
+    }
+  }, 60000)
 })

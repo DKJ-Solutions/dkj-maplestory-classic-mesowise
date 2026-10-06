@@ -2,16 +2,15 @@
 // maakt: mob, potions, skillpunten en base AP. Zelf kiest de berekening geen equipment: de invoer is al de equip van Advised (cheapestEquip.ts, advisedEquipment), met wat die in de winkel kost buiten deze module (#192).
 // Puur, zonder UI-import; hergebruikt de adviezen van de app, het scherm toont alleen wat hier uitkomt.
 import { autoFillAp, autoFillPatch } from './autoFillAp'
-import { bestVerdict } from './best'
 import { mobDraft } from './data/spots'
 import type { Equipment } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
-import { levelCost } from './levelCost'
+import { levelInvoice } from './levelInvoice'
 import { applySkillPoint } from './levelUp'
 import { mobAdvice } from './mobAdvice'
 import { parseProfile, type Profile, type ProfileDraft } from './profile'
-import { pickPotion, potionAdvice, POTION_KINDS, resolvePotions, type PotionChoice } from './potions'
+import { pickPotion, potionAdvice, POTION_KINDS, resolvePotions, type PotionChoice, type PotionPair } from './potions'
 import { skillPointAdvice } from './skillPoint'
 import type { SpotDraft } from './spotDraft'
 
@@ -45,7 +44,7 @@ export interface CheapestResult {
   changes: Change[]
   /** De HP- en MP-potion van de nieuwe stand, zodat het scherm ook een potion kan noemen die niet veranderde. */
   potions: Record<'hp' | 'mp', string>
-  /** Wat het level kostte voor en na (null: geen EXP, undefined: niet uit te rekenen). */
+  /** Wat het level kostte voor en na, als factuurtotaal (null: geen EXP, undefined: niet uit te rekenen). */
   costBefore: number | null | undefined
   costAfter: number | null | undefined
   /** Voor min na, alleen als beide een getal zijn; anders null. */
@@ -62,13 +61,20 @@ const STATS = Object.keys(STAT_LABEL) as (keyof typeof STAT_LABEL)[]
 /** Het profiel zoals de app het doorrekent: het concept, met de potions die je gebruikt. Null als het niet klopt. */
 export function profileOf(s: CheapestInput): Profile | null {
   const parsed = parseProfile(s.profileDraft, s.job, s.gender)
-  return 'profile' in parsed ? { ...parsed.profile, potions: resolvePotions(s.job, s.potionChoice) } : null
+  return 'profile' in parsed ? { ...parsed.profile, potions: resolvePotions(s.job, s.potionChoice, parsed.profile) } : null
 }
 
+/** De potions die een stand gebruikt: zonder keuze de goedkoopste voor de balk van zijn profiel (#185), net als profileOf. */
+const usedPotions = (s: CheapestInput): PotionPair => profileOf(s)?.potions ?? resolvePotions(s.job, s.potionChoice)
+
+/**
+ * Wat het level kost zoals de factuur het toont: hele potions, dus naar boven afgerond (#195). Op de kosten zonder afronding kan
+ * een stand goedkoper lijken en op de factuur toch duurder uitkomen. Zonder factuur de kosten van het level.
+ */
 function costOf(s: CheapestInput): number | null | undefined {
-  const profile = profileOf(s)
-  const c = levelCost(profile, bestVerdict(s.drafts, profile))
-  return c.kind === 'cost' ? c.meso : undefined
+  const invoice = levelInvoice(s.drafts, profileOf(s))
+  if (invoice.kind === 'invoice') return invoice.total
+  return invoice.cost.kind === 'cost' ? invoice.cost.meso : undefined
 }
 
 /**
@@ -107,7 +113,7 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
     // De potions: per soort de goedkopere, als er een is.
     const potions = potionAdvice(s.drafts, profileOf(s))
     if (potions.kind === 'advice') {
-      const used = resolvePotions(job, s.potionChoice)
+      const used = usedPotions(s)
       let choice = s.potionChoice
       for (const kind of POTION_KINDS) {
         const better = potions.switchTo.find((p) => p[kind] > 0 && p.name !== used[kind].name)
@@ -170,7 +176,7 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
 
 /** De namen van de HP- en MP-potion die een stand gebruikt. */
 function potionNames(s: CheapestInput): Record<'hp' | 'mp', string> {
-  const p = resolvePotions(s.job, s.potionChoice)
+  const p = usedPotions(s)
   return { hp: p.hp.name, mp: p.mp.name }
 }
 
@@ -179,8 +185,8 @@ function describe(before: CheapestInput, after: CheapestInput, mobs: readonly st
   const out: Change[] = []
   // Een mob die weer terugkwam waar hij begon, is geen wijziging.
   if (mobs.length > 1 && mobs[0] !== mobs[mobs.length - 1]) out.push({ kind: 'mob', text: `${mobs[0]} → ${mobs[mobs.length - 1]}` })
-  const was = resolvePotions(before.job, before.potionChoice)
-  const now = resolvePotions(after.job, after.potionChoice)
+  const was = usedPotions(before)
+  const now = usedPotions(after)
   // Per soort een eigen regel (Dave, #183): HP en MP los.
   for (const k of POTION_KINDS) if (was[k].name !== now[k].name) out.push({ kind: k, text: `${was[k].name} → ${now[k].name}` })
   if (points.size > 0) out.push({ kind: 'skills', text: [...points].map(([name, n]) => `${name} +${n}`).join(', ') })

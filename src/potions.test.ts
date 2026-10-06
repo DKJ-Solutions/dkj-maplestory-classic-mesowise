@@ -20,7 +20,7 @@ import {
   savePotionChoice,
   type PotionChoice,
 } from './potions'
-import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
+import { DEFAULT_PROFILE, parseProfile, type Profile, type ProfileDraft } from './profile'
 import { HP_POTION, mpPotionFor } from './suggest'
 
 const potion = (name: string) => [...POTIONS, ...MAGICIAN_MP_POTIONS].find((p) => p.name === name)!
@@ -254,5 +254,59 @@ describe('potionAdvice en verspild herstel (#181)', () => {
 
   it('laat een Orange-keuze ook bij een grote balk blijven (0,6 tegen 0,7 voor de White)', () => {
     expect(advice(chosen('2000', 'Orange Potion')).switchTo).toEqual([])
+  })
+})
+
+describe('de keuze van de app per punt die je echt gebruikt (#185)', () => {
+  const jobs: readonly Job[] = ['thief', 'warrior', 'bowman', 'magician']
+  const profileOf = (job: Job, over: Partial<ProfileDraft>): Profile => {
+    const draft = job === 'magician' ? { ...DEFAULT_PROFILE, level: '15', int: '60', luk: '4', ...over } : { ...DEFAULT_PROFILE, ...over }
+    const r = parseProfile(draft, job)
+    if (!('profile' in r)) throw new Error(`${job}: ${r.error}`)
+    return r.profile
+  }
+  // Kleine en grote balken, met en zonder Improved Recovery: ook een balk waarbij elke potion overvult.
+  const bars = [
+    { hp: '60', mp: '20' },
+    { hp: '444', mp: '100' },
+    { hp: '2000', mp: '2000' },
+    { level: '20', hp: '444', mp: '100', improvedHpRecovery: '5', improvedMpRecovery: '5' },
+  ]
+
+  it('rekent zonder profiel met de goedkoopste per puntje op de potion, zoals voorheen', () => {
+    for (const job of jobs) {
+      expect(cheapestPotions(job)).toEqual({ hp: HP_POTION, mp: mpPotionFor(job) })
+      expect(cheapestPotions(job, null)).toEqual(cheapestPotions(job))
+      expect(resolvePotions(job, NO_POTION_CHOICE, null)).toEqual(cheapestPotions(job))
+    }
+  })
+
+  it('kiest met een profiel per soort een potion die de job kan kopen', () => {
+    for (const job of jobs)
+      for (const over of bars) {
+        const p = cheapestPotions(job, profileOf(job, over))
+        expect(potionsOf(job, 'hp'), `${job} ${JSON.stringify(over)}`).toContain(p.hp)
+        expect(potionsOf(job, 'mp'), `${job} ${JSON.stringify(over)}`).toContain(p.mp)
+      }
+  })
+
+  it('laat het advies een nieuw profiel nooit van de keuze van de app af sturen, bij elke balk', () => {
+    const drafts = [mobDraft('Ribbon Pig')!]
+    for (const job of jobs)
+      for (const over of bars) {
+        const profile = profileOf(job, over)
+        const potions = resolvePotions(job, NO_POTION_CHOICE, profile)
+        expect(potions).toEqual(cheapestPotions(job, profile))
+        for (const p of [profile, { ...profile, potions }]) {
+          const a = potionAdvice(drafts, p)
+          if (a.kind === 'advice') expect(a.switchTo, `${job} ${JSON.stringify(over)}`).toEqual([])
+        }
+      }
+  })
+
+  it('geeft een keuze voorrang op de balk, en de balk telt alleen zonder keuze of bij een keuze die niet bij de job hoort', () => {
+    const profile = profileOf('thief', { hp: '60' })
+    expect(databasePotion('thief', 'hp', 'White Potion', profile)).toEqual(potion('White Potion'))
+    expect(databasePotion('thief', 'mp', 'Lemon', profile)).toEqual(cheapestPotions('thief', profile).mp)
   })
 })

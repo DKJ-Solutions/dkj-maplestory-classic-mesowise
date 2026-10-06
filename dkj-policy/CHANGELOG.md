@@ -2,7 +2,53 @@
 
 ## [Unreleased]
 
-**69 / 108 minor entries** <!-- pending-tally -->
+**70 / 110 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/195-advised-invoice-rounding · 20261006-160821Z
+
+The "Goedkoopste instellingen" button now picks the setup that is cheapest on the invoice you see, where every potion
+line is rounded up to whole pieces. Before, it picked on the unrounded cost, so in rare cases the Advised invoice came
+out a few dozen meso dearer than Your character.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The Advised column can no longer advise a setup that costs more than the one you already have.
+
+**Score:** 2
+
+#### Pull Request
+
+The Advised invoice is never dearer than Your character
+
+[PR #196](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/196)
+
+---
+
+### DEPLOY: app/185-default-potion-per-effective-point · 20261006-152007Z
+
+Without a potion chosen, the app now picks its default potion the way the potion advice ranks potions: per point you
+actually use, with your Max HP and MP and Improved HP and MP Recovery, rather than per point printed on the potion. The
+default and the advice can therefore no longer disagree, which kept a fresh profile from being told to switch away from
+the app's own pick. With today's potion data both measures pick the same potion, so no number changes; the guard matters
+once a larger potion that is cheaper per point enters the data.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Pick the default potion per effective point for the profile
+
+[PR #194](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/194)
+
+---
 
 ### DEPLOY: app/188-equip-two-columns · 20261006-144339Z
 

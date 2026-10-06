@@ -1,7 +1,7 @@
 // De potions die je gebruikt (Dave, 6 oktober 2026), net als de mob bij Monster: per soort kies je een potion, en daaronder
 // staan zijn prijs en herstel uit de database; zegt de winkel of het spel iets anders, dan corrigeer je het getal. De berekening
 // rekent met je keuze en je correcties, en het advies zegt wat de goedkoopste bespaart. Zonder keuze rekent de app met de
-// goedkoopste per punt (HP_POTION en mpPotionFor). Een potion heeft in Classic geen levelvereiste (MeowDB: "Lv 0"), dus op elk
+// goedkoopste per punt die je echt gebruikt (cheapestPotions, #185). Een potion heeft in Classic geen levelvereiste (MeowDB: "Lv 0"), dus op elk
 // level kun je ze allemaal kiezen. Puur, zonder UI-import.
 import { bestVerdict } from './best'
 import { MAGICIAN_MP_POTIONS } from './data/magician'
@@ -76,20 +76,35 @@ export const potionStat = (p: Potion, kind: PotionKind, stat: PotionStat): numbe
 export const potionsOf = (job: Job, kind: PotionKind): readonly Potion[] =>
   (job === 'magician' ? [...MAGICIAN_MP_POTIONS, ...POTIONS] : POTIONS).filter((p) => p[kind] > 0)
 
-/** De goedkoopste per punt, waarmee de app rekent zolang je niets kiest. */
-export const cheapestPotions = (job: Job): PotionPair => ({ hp: HP_POTION, mp: mpPotionFor(job) })
+/** Wat bepaalt hoeveel van een potion je echt gebruikt: je Max HP en Max MP, en Improved HP en MP Recovery (#181). */
+export type PotionBar = Pick<Profile, 'hp' | 'mp' | 'improvedHpRecovery' | 'improvedMpRecovery'>
+
+/** Wat een potion kost per punt die je echt gebruikt, voor deze balk: met Improved Recovery en hoogstens wat er mist (#181). */
+const perPoint = (p: Potion, kind: PotionKind, bar: PotionBar) =>
+  p.price / effectiveRestore(p[kind] * potionFactorOf(bar)[kind], bar[kind])
 
 /**
- * De potion van een soort zoals de database hem kent: je keuze, of de goedkoopste als je niets koos of als je keuze niet bij
- * deze job of soort hoort (een Lemon van een Magician die nu Thief is).
+ * De goedkoopste per punt, waarmee de app rekent zolang je niets kiest. Met een balk per punt die je echt gebruikt, net als
+ * potionAdvice (#185): anders zou het advies een nieuw profiel van de keuze van de app zelf af laten stappen. Bij gelijke prijs per
+ * punt de eerste. Zonder balk (geen geldig profiel) per puntje op de potion: HP_POTION en mpPotionFor.
  */
-export const databasePotion = (job: Job, kind: PotionKind, name: string | null): Potion =>
-  potionsOf(job, kind).find((p) => p.name === name) ?? cheapestPotions(job)[kind]
+export function cheapestPotions(job: Job, bar?: PotionBar | null): PotionPair {
+  if (!bar) return { hp: HP_POTION, mp: mpPotionFor(job) }
+  const cheapest = (kind: PotionKind): Potion => potionsOf(job, kind).reduce((best, p) => (perPoint(p, kind, bar) < perPoint(best, kind, bar) ? p : best))
+  return { hp: cheapest('hp'), mp: cheapest('mp') }
+}
+
+/**
+ * De potion van een soort zoals de database hem kent: je keuze, of de goedkoopste voor je balk (cheapestPotions) als je niets koos
+ * of als je keuze niet bij deze job of soort hoort (een Lemon van een Magician die nu Thief is).
+ */
+export const databasePotion = (job: Job, kind: PotionKind, name: string | null, bar?: PotionBar | null): Potion =>
+  potionsOf(job, kind).find((p) => p.name === name) ?? cheapestPotions(job, bar)[kind]
 
 /** De potions waarmee gerekend wordt: je keuze uit de database, met je correcties erover. */
-export function resolvePotions(job: Job, choice: PotionChoice): PotionPair {
+export function resolvePotions(job: Job, choice: PotionChoice, bar?: PotionBar | null): PotionPair {
   const one = (kind: PotionKind): Potion => {
-    const db = databasePotion(job, kind, choice[kind])
+    const db = databasePotion(job, kind, choice[kind], bar)
     const fix = choice.fix[kind]
     if (fix.name !== db.name || (fix.price === undefined && fix.restores === undefined)) return db
     return { ...db, price: fix.price ?? db.price, [kind]: fix.restores ?? db[kind] }
@@ -108,9 +123,9 @@ export const pickPotion = (choice: PotionChoice, kind: PotionKind, name: string)
  * Een getal van de gekozen potion corrigeren. Leeg of gelijk aan de database haalt de correctie weg; een getal dat geen heel getal
  * binnen de grenzen is, geeft null (en dan verandert er niets).
  */
-export function fixPotion(choice: PotionChoice, job: Job, kind: PotionKind, stat: PotionStat, text: string): PotionChoice | null {
+export function fixPotion(choice: PotionChoice, job: Job, kind: PotionKind, stat: PotionStat, text: string, bar?: PotionBar | null): PotionChoice | null {
   const field = potionFields(kind).find((f) => f.key === stat)!
-  const potion = databasePotion(job, kind, choice[kind])
+  const potion = databasePotion(job, kind, choice[kind], bar)
   const db = potionStat(potion, kind, stat)
   const t = text.trim()
   const n = t === '' ? db : Number(t)
@@ -142,10 +157,6 @@ export function potionInfo(p: Potion, kind: PotionKind, max: string, factor = 1)
   return { mesoPerPoint: p.price / used, capped: used < restores, fillPct: m === null ? null : Math.min(100, (restores / m) * 100) }
 }
 
-/** Wat een potion kost per punt die je echt gebruikt, voor dit profiel: met Improved Recovery en hoogstens wat er mist (#181). */
-const perPoint = (p: Potion, kind: PotionKind, profile: Profile) =>
-  p.price / effectiveRestore(p[kind] * potionFactorOf(profile)[kind], profile[kind])
-
 export type PotionAdvice =
   /** Niet uit te rekenen: geen profiel of geen kosten voor dit level. */
   | { kind: 'none' }
@@ -164,7 +175,7 @@ export type PotionAdvice =
  */
 export function potionAdvice(drafts: readonly SpotDraft[], profile: Profile | null): PotionAdvice {
   if (!profile) return { kind: 'none' }
-  const chosen = profile.potions ?? cheapestPotions(profile.job)
+  const chosen = profile.potions ?? cheapestPotions(profile.job, profile)
   const costWith = (potions: PotionPair) => {
     const p = { ...profile, potions }
     const c = levelCost(p, bestVerdict(drafts, p))

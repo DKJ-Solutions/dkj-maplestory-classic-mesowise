@@ -125,8 +125,8 @@ export function statWindowRange(profile: Profile): { min: number; max: number } 
 
 /**
  * De potion die per punt herstel het minst kost (Orange Potion bij HP, Blue Potion bij MP); bij gelijke prijs de eerste. Dit is per
- * puntje op de potion, want bij het laden van de module is er geen profiel en dus geen balk; potionAdvice (potions.ts) corrigeert
- * dat per profiel met wat je echt gebruikt (#185).
+ * puntje op de potion, want bij het laden van de module is er geen profiel en dus geen balk; met een profiel kiest cheapestPotions
+ * (potions.ts) per punt die je echt gebruikt (#185).
  */
 function cheapest(kind: 'hp' | 'mp', from: readonly Potion[] = POTIONS): Potion {
   const options = from.filter((p) => p[kind] > 0)
@@ -157,7 +157,7 @@ function itemRecoveryFactor(pct: readonly number[], level: number): number {
  * punt herstel blijft dezelfde. Het herstel per 10 seconden telt niet mee: bij HP staat er geen getal op de pagina, en bij MP
  * is het een deel van je Max MP, die de berekening niet gebruikt (Total stats toont hem). Een andere job heeft 0 in die velden (parseProfile), dus 1.
  */
-export const potionFactorOf = (profile: Profile): { hp: number; mp: number } => ({
+export const potionFactorOf = (profile: Pick<Profile, 'improvedHpRecovery' | 'improvedMpRecovery'>): { hp: number; mp: number } => ({
   hp: itemRecoveryFactor(IMPROVED_HP_RECOVERY.itemRecoveryPct, profile.improvedHpRecovery),
   mp: itemRecoveryFactor(IMPROVED_MP_RECOVERY.itemRecoveryPct, profile.improvedMpRecovery),
 })

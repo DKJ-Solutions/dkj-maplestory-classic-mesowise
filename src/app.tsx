@@ -32,7 +32,7 @@ import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
-import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
+import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionBar, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
@@ -930,6 +930,8 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
 function PotionsCard(props: {
   job: Job
   choice: PotionChoice
+  /** Je profiel: zonder keuze toont de kaart de goedkoopste voor je balk (#185); null zonder geldig profiel. */
+  bar: PotionBar | null
   onPick: (picks: Partial<Record<PotionKind, string>>) => void
   onFix: (kind: PotionKind, stat: PotionStat, text: string) => void
   /** De potions van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
@@ -941,8 +943,8 @@ function PotionsCard(props: {
   // De potions die je in de popup kiest zijn een concept; pas Opslaan legt ze vast, sluiten gooit ze weg (zoals bij Monster).
   const [concept, setConcept] = useState<Partial<Record<PotionKind, string>>>({})
   const uid = useId()
-  const used = resolvePotions(job, choice)
-  const picked = (kind: PotionKind) => (concept[kind] !== undefined && concept[kind] !== used[kind].name ? databasePotion(job, kind, concept[kind]!) : undefined)
+  const used = resolvePotions(job, choice, props.bar)
+  const picked = (kind: PotionKind) => (concept[kind] !== undefined && concept[kind] !== used[kind].name ? databasePotion(job, kind, concept[kind]!, props.bar) : undefined)
   const dirty = POTION_KINDS.some((k) => picked(k) !== undefined)
   const close = () => {
     setConcept({})
@@ -955,7 +957,7 @@ function PotionsCard(props: {
     requestAnimationFrame(() => opener.current?.focus())
   }
   const title = 'Potions'
-  const advisedPotions = props.advised !== null ? resolvePotions(job, props.advised) : null
+  const advisedPotions = props.advised !== null ? resolvePotions(job, props.advised, props.bar) : null
   return (
     <section class="card potions">
       <CardHead>
@@ -989,7 +991,7 @@ function PotionsCard(props: {
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
-            const db = databasePotion(job, kind, choice[kind])
+            const db = databasePotion(job, kind, choice[kind], props.bar)
             return (
               <div class="potion-group" key={kind}>
                 {/* Een eigen kop per soort, met een lijn ertussen (Dave, 6 oktober 2026): zo lopen HP en MP niet in elkaar over. */}
@@ -3039,7 +3041,7 @@ export function App() {
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
   // De potions die je gebruikt (Dave, 6 oktober 2026): de berekening rekent ermee; zonder keuze de goedkoopste per punt.
   const [potionChoice, setPotionChoice] = useState<PotionChoice>(() => loadPotionChoice(storage))
-  const usedPotions = useMemo(() => resolvePotions(job, potionChoice), [job, potionChoice])
+  const usedPotions = useMemo(() => resolvePotions(job, potionChoice, parsedProfile), [job, potionChoice, parsedProfile])
   const profile = useMemo(() => (computed && parsedProfile ? { ...parsedProfile, potions: usedPotions } : null), [computed, parsedProfile, usedPotions])
   // Een Thief met een dagger (#170): het wapen- en het skillpunt-advies gaan dan over daggers en Double Stab.
   const dagger = job === 'thief' && profileDraft.dagger.trim() === '1'
@@ -3289,7 +3291,7 @@ export function App() {
     writePotionChoice(POTION_KINDS.reduce((c, k) => (picks[k] === undefined ? c : pickPotion(c, k, picks[k]!)), potionChoice))
   // Een ongeldig getal wordt niet toegepast: de regel blijft op het laatste geldige getal staan (fixPotion geeft null).
   const fixPotionStat = (kind: PotionKind, stat: PotionStat, text: string) => {
-    const next = fixPotion(potionChoice, job, kind, stat, text)
+    const next = fixPotion(potionChoice, job, kind, stat, text, parsedProfile)
     if (next) writePotionChoice(next)
   }
   const changeGender = (next: Gender) => {
@@ -3384,7 +3386,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} choice={potionChoice} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
