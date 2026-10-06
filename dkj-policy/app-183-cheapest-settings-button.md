@@ -73,7 +73,8 @@ cheapest setup pays and the difference, a saving in green and an extra cost in r
 their difference below.
 Because the choices affect each other, the cheapest setup is found in rounds until nothing changes (at most five) and is
 never one that costs more than yours. Equipment is never bought; upgrade advice stays advice. Under the difference the
-card lists what changes per card; "Overnemen" applies it and "Ongedaan maken" puts everything back in one tap, until you
+card lists the monster when it changes, then always your HP Potion, MP Potion and skills (the change, or what stays),
+and under ATT and DEF what the Equip advice says about your weapon and armor (buy, don't upgrade, or complete); "Overnemen" applies it and "Ongedaan maken" puts everything back in one tap, until you
 change something yourself. When your setup already is the cheapest, the card says so in one line.
 
 **Score:** 4

@@ -3232,6 +3232,21 @@ describe('Total cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(within(diffCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
   })
 
+  it('zet onder Difference je HP Potion, MP Potion, Skill, ATT en DEF, en het monster alleen als dat verandert; geen AP-regel', () => {
+    toLevel20()
+    const lines = Array.from(diffCard().querySelectorAll('.cheapest-changes li')).map((li) => li.textContent!)
+    const labels = lines.map((l) => l.split(':')[0])
+    expect(labels.filter((l) => l !== 'Monster')).toEqual(['HP Potion', 'MP Potion', 'Skill', 'ATT', 'DEF'])
+    if (labels.includes('Monster')) expect(labels[0]).toBe('Monster')
+    expect(labels).not.toContain('AP')
+    // Een potion staat er altijd: verandert hij, dan "A → B", anders alleen zijn naam.
+    for (const l of lines.filter((t) => /^(HP|MP) Potion:/.test(t))) expect(l).toMatch(/^(HP|MP) Potion: \S.*$/)
+    // ATT en DEF zeggen wat het Equip-advies over je wapen en je armor zegt: kopen, niet upgraden of klaar (Overnemen koopt niets).
+    const verdict = /^(Koop .+|Niet upgraden|Upgrade complete|niet uit te rekenen)$/
+    expect(lines.find((l) => l.startsWith('ATT:'))!.replace(/^ATT: /, '')).toMatch(verdict)
+    expect(lines.find((l) => l.startsWith('DEF:'))!.replace(/^DEF: /, '')).toMatch(verdict)
+  })
+
   it('laat de uitkomst van Overnemen verdwijnen bij een ander level', () => {
     toLevel20()
     take()

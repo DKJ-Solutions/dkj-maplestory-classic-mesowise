@@ -30,7 +30,7 @@ export interface CheapestInput {
   potionChoice: PotionChoice
 }
 
-export type ChangeKind = 'mob' | 'potions' | 'skills' | 'ap'
+export type ChangeKind = 'mob' | 'hp' | 'mp' | 'skills' | 'ap'
 export interface Change {
   kind: ChangeKind
   /** De regel voor het scherm: "A → B". */
@@ -43,6 +43,8 @@ export interface CheapestResult {
   profileDraft: ProfileDraft
   potionChoice: PotionChoice
   changes: Change[]
+  /** De HP- en MP-potion van de nieuwe stand, zodat het scherm ook een potion kan noemen die niet veranderde. */
+  potions: Record<'hp' | 'mp', string>
   /** Wat het level kostte voor en na (null: geen EXP, undefined: niet uit te rekenen). */
   costBefore: number | null | undefined
   costAfter: number | null | undefined
@@ -157,12 +159,19 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
     profileDraft: s.profileDraft,
     potionChoice: s.potionChoice,
     changes: describe(input, s, best.mobs, best.points),
+    potions: potionNames(s),
     costBefore,
     costAfter,
     saving: typeof costBefore === 'number' && typeof costAfter === 'number' ? costBefore - costAfter : null,
     rounds,
     capped,
   }
+}
+
+/** De namen van de HP- en MP-potion die een stand gebruikt. */
+function potionNames(s: CheapestInput): Record<'hp' | 'mp', string> {
+  const p = resolvePotions(s.job, s.potionChoice)
+  return { hp: p.hp.name, mp: p.mp.name }
 }
 
 /** Wat er per kaart veranderde, van de stand voor de knop naar de stand erna. */
@@ -172,8 +181,8 @@ function describe(before: CheapestInput, after: CheapestInput, mobs: readonly st
   if (mobs.length > 1 && mobs[0] !== mobs[mobs.length - 1]) out.push({ kind: 'mob', text: `${mobs[0]} → ${mobs[mobs.length - 1]}` })
   const was = resolvePotions(before.job, before.potionChoice)
   const now = resolvePotions(after.job, after.potionChoice)
-  const potions = POTION_KINDS.filter((k) => was[k].name !== now[k].name).map((k) => `${k.toUpperCase()} ${was[k].name} → ${now[k].name}`)
-  if (potions.length > 0) out.push({ kind: 'potions', text: potions.join(', ') })
+  // Per soort een eigen regel (Dave, #183): HP en MP los.
+  for (const k of POTION_KINDS) if (was[k].name !== now[k].name) out.push({ kind: k, text: `${was[k].name} → ${now[k].name}` })
   if (points.size > 0) out.push({ kind: 'skills', text: [...points].map(([name, n]) => `${name} +${n}`).join(', ') })
   const ap = STATS.filter((k) => before.profileDraft[k] !== after.profileDraft[k]).map(
     (k) => `${STAT_LABEL[k]} ${before.profileDraft[k].trim() || '0'} → ${after.profileDraft[k]}`,

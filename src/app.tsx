@@ -26,7 +26,7 @@ import { NPC_WARRIOR_ARMOR, NPC_WARRIOR_WEAPONS, POWER_STRIKE_SOURCE, PRECISE_ST
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
 import { applyLevelDown, applyLevelUp, applySkillPoint, apBalance, isMaxLevel, snapshotApplies, spToDistribute, takeSnapshot, type LevelUpSnapshot } from './levelUp'
 import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
-import { cheapestSettings, MAX_ROUNDS, profileOf as cheapestProfile, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { cheapestSettings, MAX_ROUNDS, profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
 import { expectedStat } from './expectedStats'
@@ -2626,7 +2626,41 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
  * potions, skillpunten, base AP), live berekend en nog niet toegepast. "Overnemen" past het toe; daarna staat hier wat er veranderde
  * en kun je alles met "Ongedaan maken" terugzetten.
  */
-const CHANGE_LABEL = { mob: 'Monster:', potions: 'Potions:', skills: 'Skillpunten:', ap: 'AP:' } as const
+/** Wat het Equip-advies over je wapen zegt, in een paar woorden, zoals de chip bij ATT (#183). */
+function weaponAdviceText(a: ClawUpgradeAdvice): string {
+  if (a.kind === 'none') return 'niet uit te rekenen'
+  const win = a.choices.find((c) => c.claw === a.winner)
+  if (win) return `Koop ${win.claw.name}`
+  if (noClawComputable(a)) return 'niet uit te rekenen'
+  return upgradeChipText(false, false, a.choices.length === 0 && a.notWearable.length === 0)!
+}
+
+/** Wat het Equip-advies over je armor zegt, in een paar woorden, zoals de chip bij DEF (#183). */
+function armorAdviceText(a: ArmorUpgradeAdvice, gender: Gender | null): string {
+  if (a.kind === 'none') return 'niet uit te rekenen'
+  const win = a.winner ? a.choices[0] : undefined
+  if (win) return `Koop ${buyText(win)}`
+  if (noArmorComputable(a)) return 'niet uit te rekenen'
+  return upgradeChipText(false, false, a.choices.length === 0 && a.notWearable.length === 0 && gender !== null)!
+}
+
+/**
+ * De regels onder Difference (Dave, #183): het monster als dat verandert, dan altijd je HP Potion, je MP Potion en je skills, met het
+ * verschil ("A → B") of wat blijft, en bij ATT en DEF wat het Equip-advies over je wapen en je armor zegt: Overnemen koopt geen equipment,
+ * dus dat blijft advies. De base AP vult Overnemen wel in, maar staat niet als eigen regel in de lijst.
+ */
+const changeLines = (r: CheapestResult, equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }): { label: string; text: string }[] => {
+  const of = (kind: ChangeKind) => r.changes.find((c) => c.kind === kind)?.text
+  const mob = of('mob')
+  return [
+    ...(mob ? [{ label: 'Monster:', text: mob }] : []),
+    { label: 'HP Potion:', text: of('hp') ?? r.potions.hp },
+    { label: 'MP Potion:', text: of('mp') ?? r.potions.mp },
+    { label: 'Skill:', text: of('skills') ?? 'geen verschil' },
+    { label: 'ATT:', text: weaponAdviceText(equip.claw) },
+    { label: 'DEF:', text: armorAdviceText(equip.armor, equip.gender) },
+  ]
+}
 /** Het totaal van een factuur, of null zonder factuur. */
 const invoiceTotal = (i: LevelInvoice): number | null => (i.kind === 'invoice' ? i.total : null)
 /** De besparing zoals de twee kolommen haar tonen (factuurtotaal min factuurtotaal); zonder twee facturen die van de berekening. */
@@ -2635,7 +2669,7 @@ const invoiceSaving = (was: LevelInvoice, now: LevelInvoice, fallback: number | 
   const b = invoiceTotal(now)
   return a !== null && b !== null ? a - b : fallback
 }
-function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; onApply: () => void; onUndo: () => void }) {
+function CheapestDetails(props: { live: CheapestResult | null; saving: number | null; applied: CheapestResult | null; equip: { claw: ClawUpgradeAdvice; armor: ArmorUpgradeAdvice; gender: Gender | null }; onApply: () => void; onUndo: () => void }) {
   const r = props.applied ?? props.live
   if (!r) return null
   const saving = props.saving
@@ -2652,9 +2686,9 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
         </p>
       )}
       <ul class="cheapest-changes">
-        {r.changes.map((c) => (
-          <li key={c.kind}>
-            <strong>{CHANGE_LABEL[c.kind]}</strong> {c.text}
+        {changeLines(r, props.equip).map((c) => (
+          <li key={c.label}>
+            <strong>{c.label}</strong> {c.text}
           </li>
         ))}
       </ul>
@@ -3021,7 +3055,7 @@ export function App() {
       {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
       <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
-        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} onApply={applyCheapest} onUndo={undoCheapest} />
+        <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equip={{ claw: clawAdvice, armor: armorAdvice, gender }} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
 
       <LevelAdviceCard
