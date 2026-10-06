@@ -23,9 +23,11 @@ import {
   wornMdef,
   wornStat,
   wornWdef,
+  withWeaponKind,
   type EquipEntry,
   type Equipment,
   equipmentForJob,
+  syncWithEquipment,
 } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { BEGINNER_WEAPONS } from './data/beginnerWeapons'
@@ -1509,5 +1511,82 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
     expect(saveEquipment(storage, eq)).toBe(true)
     expect(loadEquipment(storage, 'warrior')).toEqual(eq)
     expect(loadEquipment(stored({ cape: { pick: 'Red Pao' } }), 'thief').cape).toEqual(unknown)
+  })
+})
+
+describe('weaponKind van een eigen wapen: bewaren en laden (#176)', () => {
+  const ownDagger: EquipEntry = { pick: 'other', name: 'Mijn dagger', stat: '45', weaponKind: 'dagger' }
+  const rawSlots = (storage: ReturnType<typeof fakeStorage>) => JSON.parse(storage.data.get(EQUIPMENT_KEY)!).slots
+
+  it('een eigen dagger overleeft opslaan en laden', () => {
+    const storage = fakeStorage()
+    saveEquipment(storage, { ...defaultEquipment(), claw: ownDagger })
+    expect(rawSlots(storage).claw.weaponKind).toBe('dagger')
+    expect(loadEquipment(storage, 'thief').claw).toEqual(ownDagger)
+  })
+
+  it('een eigen claw wordt niet geschreven en laadt als claw', () => {
+    const storage = fakeStorage()
+    saveEquipment(storage, { ...defaultEquipment(), claw: withWeaponKind(ownDagger, 'claw') })
+    expect('weaponKind' in rawSlots(storage).claw).toBe(false)
+    expect(loadEquipment(storage, 'thief').claw.weaponKind).toBeUndefined()
+  })
+
+  it('een andere job laadt de soort niet: alleen een Thief draagt een dagger', () => {
+    const storage = fakeStorage()
+    saveEquipment(storage, { ...defaultEquipment(), claw: ownDagger })
+    for (const job of ['bowman', 'warrior', 'magician'] as const) {
+      expect(loadEquipment(storage, job).claw.weaponKind).toBeUndefined()
+    }
+  })
+
+  it('een wissel van job laat de soort vallen, en de profielvlag dagger gaat dan uit', () => {
+    const eq = { ...defaultEquipment(), claw: ownDagger }
+    expect(equipmentForJob(eq, 'thief').claw).toEqual(ownDagger)
+    const bowman = equipmentForJob(eq, 'bowman')
+    expect(bowman.claw).toEqual({ pick: 'other', name: 'Mijn dagger', stat: '45' })
+    expect(syncWithEquipment({ ...DEFAULT_PROFILE, dagger: '1' }, bowman).dagger).toBe('0')
+  })
+
+  it('oude opslag zonder het veld laadt als claw', () => {
+    const eq = loadEquipment(stored({ claw: { pick: 'other', name: 'Oud', stat: '30' } }), 'thief')
+    expect(eq.claw).toEqual({ pick: 'other', name: 'Oud', stat: '30' })
+    expect(eq.claw.weaponKind).toBeUndefined()
+  })
+
+  it('een andere waarde dan dagger wordt genegeerd', () => {
+    for (const v of ['claw', 'sword', 1, null, true]) {
+      const eq = loadEquipment(stored({ claw: { pick: 'other', name: 'x', stat: '1', weaponKind: v } }), 'thief')
+      expect(eq.claw.weaponKind, String(v)).toBeUndefined()
+    }
+  })
+
+  it('weaponKind op een catalogusitem of een leeg wapenslot wordt bij het laden genegeerd', () => {
+    const eq = loadEquipment(stored({ claw: { pick: 'Meba', name: '', stat: '', weaponKind: 'dagger' } }), 'thief')
+    expect(eq.claw).toEqual(shop('Meba'))
+    expect('weaponKind' in eq.claw).toBe(false)
+    expect(loadEquipment(stored({ claw: { pick: 'unknown', weaponKind: 'dagger' } }), 'thief').claw).toEqual(unknown)
+  })
+
+  it('weaponKind op een eigen item in een ander slot dan het wapen wordt genegeerd', () => {
+    const eq = loadEquipment(stored({ hat: { pick: 'other', name: 'Muts', stat: '5', weaponKind: 'dagger' }, ammo: { pick: 'other', name: 'x', stat: '1', weaponKind: 'dagger' } }), 'thief')
+    expect(eq.hat).toEqual(other('5', 'Muts'))
+    expect('weaponKind' in eq.ammo).toBe(false)
+  })
+
+  it('schrijft weaponKind niet weg bij een catalogusitem in het wapenslot', () => {
+    const storage = fakeStorage()
+    saveEquipment(storage, { ...defaultEquipment(), claw: { ...shop('Meba'), weaponKind: 'dagger' }, hat: { ...other('5', 'Muts'), weaponKind: 'dagger' } })
+    expect('weaponKind' in rawSlots(storage).claw).toBe(false)
+  })
+
+  it('withWeaponKind zet alleen de soort en houdt de rest van het slot', () => {
+    expect(withWeaponKind(other('45', 'Cass'), 'dagger')).toEqual({ pick: 'other', name: 'Cass', stat: '45', weaponKind: 'dagger' })
+  })
+
+  it('een dagger -> een ander eigen item zonder gekozen soort: choosePick laat de soort vallen en het profiel rekent als claw (dagger 0)', () => {
+    const next = choosePick('claw', ownDagger, 'other', 'Ander wapen')
+    expect(next.weaponKind).toBeUndefined()
+    expect(applyEquipChange({ ...DEFAULT_PROFILE, dagger: '1' }, 'claw', ownDagger, next).dagger).toBe('0')
   })
 })

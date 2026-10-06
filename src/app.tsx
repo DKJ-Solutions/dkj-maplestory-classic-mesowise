@@ -9,7 +9,7 @@ import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, slotsFor, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { NPC_ARMOR } from './data/armor'
 import { NPC_CLAWS } from './data/claws'
 import { DAGGER_SHOP_SOURCE } from './data/daggers'
@@ -1321,6 +1321,8 @@ function EquipmentCard(props: {
   helpfulStranger: boolean
   onHelpfulStranger: (on: boolean) => void
   onPick: (slot: EquipSlot, pick: string, name?: string) => void
+  /** Een Thief met een eigen wapen kiest of het een dagger of een claw is (#176). */
+  onWeaponKind: (kind: WeaponKind) => void
   onStatInput: (slot: EquipSlot, text: string) => void
   /** Het concept uit het corrigeervak wordt vastgelegd (Opslaan of Enter). */
   onCommit: (slot: EquipSlot) => void
@@ -1395,6 +1397,16 @@ function EquipmentCard(props: {
                     </label>
                   )}
                 </div>
+                {slot === 'claw' && props.job === 'thief' && entry.pick === OTHER && (
+                  // Een eigen wapen kan een dagger of een claw zijn: de app ziet het niet, dus vraagt hij het (#176).
+                  <div class="job-choices equip-kind" role="group" aria-label="Soort wapen">
+                    {(['dagger', 'claw'] as const).map((kind) => (
+                      <button key={kind} type="button" class="btn job-choice" aria-pressed={(entry.weaponKind ?? 'claw') === kind} onClick={() => props.onWeaponKind(kind)}>
+                        {kind === 'dagger' ? 'Dagger' : 'Claw'}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {!isEmptyEntry(entry) && (
                   <div class="equip-stats">
                     <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
@@ -2346,6 +2358,7 @@ export function App() {
     setPendingFor(slot, undefined)
     applyEntry(slot, choosePick(slot, equipmentRef.current[slot], pick, name))
   }
+  const pickWeaponKind = (kind: WeaponKind) => applyEntry('claw', withWeaponKind(equipmentRef.current.claw, kind))
   // Een ongeldig getal wordt niet toegepast: het veld valt terug op de laatst toegepaste waarde (zie commitStat).
   const commitEquipment = (slot: EquipSlot) => {
     const text = pendingRef.current[slot]
@@ -2419,6 +2432,7 @@ export function App() {
         helpfulStranger={profileDraft.helpfulStranger === '1'}
         onHelpfulStranger={changeHelpfulStranger}
         onPick={pickEquipment}
+        onWeaponKind={pickWeaponKind}
         onStatInput={(slot, text) => setPendingFor(slot, text)}
         onCommit={commitEquipment}
         onDiscard={(slot) => setPendingFor(slot, undefined)}

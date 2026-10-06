@@ -94,7 +94,12 @@ export interface EquipEntry {
   pick: string
   name: string
   stat: string
+  /** Alleen een eigen wapen ('other' in het wapenslot): of het een dagger of een claw is (#176). Ontbreekt = claw, zoals oude opslag. */
+  weaponKind?: WeaponKind
 }
+
+/** Een eigen wapen weet de app niet te herkennen: een Thief kiest zelf of het een dagger (Double Stab) of een claw (Lucky Seven) is (#176). */
+export type WeaponKind = 'dagger' | 'claw'
 
 export type Equipment = Record<EquipSlot, EquipEntry>
 
@@ -313,6 +318,12 @@ export const syncArrow = (profile: ProfileDraft, eq: Equipment): ProfileDraft =>
 /** Of dit wapen een dagger is: een onder level 10 rekent met LUK als hoofdstat (#171), een NPC-dagger met Double Stab (#170). */
 const isDaggerPick = (pick: string): boolean => isBeginnerDagger(pick) || isNpcDagger(pick)
 
+/** Of het wapen in dit wapenslot een dagger is: een catalogusitem volgens de lijst, een eigen item volgens de keuze die je maakte (#176). */
+const isDaggerEntry = (e: EquipEntry): boolean => (e.pick === OTHER ? e.weaponKind === 'dagger' : isDaggerPick(e.pick))
+
+/** Het eigen wapen met de gekozen soort (#176); de rest van het slot blijft. */
+export const withWeaponKind = (e: EquipEntry, kind: WeaponKind): EquipEntry => ({ ...e, weaponKind: kind })
+
 /**
  * Het profiel met de pijlkeuze en de dagger zoals de equipment ze toont (#170): een dagger alleen als er een in het wapenslot staat.
  * Na een wissel van job (of bij het laden) kan het wapenslot leeg zijn geworden; zonder dit rekende een terugkeer naar de Thief
@@ -320,7 +331,7 @@ const isDaggerPick = (pick: string): boolean => isBeginnerDagger(pick) || isNpcD
  */
 export const syncWithEquipment = (profile: ProfileDraft, eq: Equipment): ProfileDraft => ({
   ...syncArrow(profile, eq),
-  dagger: isDaggerPick(eq.claw.pick) ? '1' : '0',
+  dagger: isDaggerEntry(eq.claw) ? '1' : '0',
 })
 
 /**
@@ -362,8 +373,10 @@ export function applyEquipChange(profile: ProfileDraft, slot: EquipSlot, before:
   if (!isArmorSlot(slot)) {
     // Een dagger onder level 10 rekent met LUK als hoofdstat (#171), een NPC-dagger met Double Stab (#170): elk ander nieuw wapen,
     // ook een eigen item, zet het uit.
-    const dagger = isDaggerPick(after.pick) ? '1' : '0'
-    const withDagger = after.pick === before.pick || profile.dagger === dagger ? profile : { ...profile, dagger }
+    // Een eigen wapen is een dagger of een claw naar de keuze in het slot (#176); alleen die keuze wijzigen zet de dagger dus ook om.
+    const dagger = isDaggerEntry(after) ? '1' : '0'
+    const sameWeapon = after.pick === before.pick && (after.pick !== OTHER || isDaggerEntry(after) === isDaggerEntry(before))
+    const withDagger = sameWeapon || profile.dagger === dagger ? profile : { ...profile, dagger }
     if (next === undefined) return withDagger
     const item = after.pick === OTHER || after.pick === before.pick ? undefined : anyItem('claw', after.pick)
     return {
@@ -471,6 +484,11 @@ export function equipmentForJob(eq: Equipment, job: Job): Equipment {
     const { pick } = eq[slot]
     if (pick !== UNKNOWN && pick !== OTHER && pick !== NONE && !catalogItem(slot, pick, job, out.claw.pick)) out[slot] = emptyEntry()
   }
+  // De soort van een eigen wapen hoort bij de Thief (#176): een andere job rekent anders stil met een dagger, net als een NPC-dagger die hierboven verdwijnt.
+  if (job !== 'thief' && out.claw.weaponKind !== undefined) {
+    const { weaponKind: _dropped, ...claw } = out.claw
+    out.claw = claw
+  }
   return out
 }
 
@@ -481,7 +499,11 @@ function loadEntry(slot: EquipSlot, v: unknown, job: Job, weapon: string): Equip
   if (typeof v !== 'object' || v === null) return emptyEntry()
   const raw = v as Record<string, unknown>
   const pick = typeof raw.pick === 'string' ? raw.pick : UNKNOWN
-  if (pick === OTHER) return { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
+  if (pick === OTHER) {
+    const base = { pick, name: str(raw.name, MAX_NAME_LENGTH), stat: str(raw.stat, MAX_STAT_LENGTH) }
+    // De soort geldt alleen voor het wapen van een Thief; oude opslag heeft hem niet en laadt als claw (#176).
+    return slot === 'claw' && job === 'thief' && raw.weaponKind === 'dagger' ? { ...base, weaponKind: 'dagger' } : base
+  }
   if (pick === NONE && (slot === 'top' || slot === 'bottom')) return { ...emptyEntry(), pick }
   if (pick !== UNKNOWN && catalogItem(slot, pick, job, weapon)) {
     const stat = str(raw.stat, MAX_STAT_LENGTH).trim()
@@ -523,7 +545,7 @@ export function saveEquipment(storage: Storage | null | undefined, eq: Equipment
     const slots = Object.fromEntries(
       EQUIP_SLOTS.map(({ slot }) => {
         const e = eq[slot]
-        return [slot, { pick: e.pick, name: e.name.slice(0, MAX_NAME_LENGTH), stat: e.stat.slice(0, MAX_STAT_LENGTH) }]
+        return [slot, { pick: e.pick, name: e.name.slice(0, MAX_NAME_LENGTH), stat: e.stat.slice(0, MAX_STAT_LENGTH), ...(slot === 'claw' && e.weaponKind === 'dagger' && e.pick === OTHER ? { weaponKind: e.weaponKind } : {}) }]
       }),
     )
     storage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: VERSION, slots }))
