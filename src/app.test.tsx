@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App } from './app'
+import { App, totalCostWho } from './app'
 import { NPC_CLAWS } from './data/claws'
 import { EQUIPMENT_KEY, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
@@ -249,7 +249,7 @@ describe('begin zonder opslag', () => {
       expect(document.querySelectorAll('.card-report')).toHaveLength(4)
     })
 
-    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions en boven de Report-kaart', () => {
+    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = report('Equip')!.closest('section')!
       const skills = report('Skillpoints')!.closest('section')!
@@ -259,7 +259,8 @@ describe('begin zonder opslag', () => {
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
-      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
+      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
+      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -3010,5 +3011,83 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     expect(statShown('Max MP')).toBe('?')
     openPotions()
     expect(potionInfoLines()[1]).toBe('Blue Potion: 1,1 meso per MP')
+  })
+})
+
+describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
+  const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
+  const rows = () => Array.from(card().querySelectorAll('tbody tr')).map((r) => Array.from(r.children).map((c) => c.textContent))
+
+  it('noemt in de ondertitel het level en de job, en zonder geldig level alleen de job', () => {
+    expect(totalCostWho('15', 'warrior')).toBe('Lv. 15 Warrior')
+    for (const level of ['', ' ', 'abc', '10.5', '0', '1e1', '0x10', '-3']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
+  })
+
+  it('heeft de kop en de ondertitel, en zonder mob de reden in plaats van een factuur', () => {
+    expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
+    // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
+    expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
+    // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
+    expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
+    expect(card().querySelector('table')).toBeNull()
+    expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
+  })
+
+  it('zet per potion en voor de stars het aantal en de prijs op een factuur, met het totaal van de Report-kaart', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    expect(rows().map((r) => r[0])).toEqual(['Orange Potion', 'Blue Potion', 'Throwing stars'])
+    for (const [, qty, meso] of rows()) {
+      // Een potion heeft een vraagteken achter zijn aantal; de stars niet.
+      expect(qty).toMatch(/^× [\d.]+\??$/)
+      expect(meso).toMatch(/^−[\d.]+ meso$/)
+    }
+    expect(card().querySelectorAll('.invoice-meso.cost')).toHaveLength(4)
+    const total = card().querySelector('tfoot')!.textContent!
+    expect(total).toMatch(/^Total−[\d.]+ meso$/)
+    // Het totaal is de som van de regels.
+    const n = (t: string) => Number(t.replace(/[^\d]/g, ''))
+    expect(n(total)).toBe(rows().reduce((s, r) => s + n(r[2]!), 0))
+    // Geen regel met het level, de mob en de duur boven de factuur (Dave, 6 oktober 2026).
+    expect(card().textContent).not.toContain('Van lv')
+  })
+
+  it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const whys = Array.from(card().querySelectorAll<HTMLButtonElement>('.invoice-why'))
+    expect(whys.map((b) => b.getAttribute('aria-label'))).toEqual([
+      expect.stringMatching(/^Hoe komt de app op \d+ Orange Potion\?$/),
+      expect.stringMatching(/^Hoe komt de app op \d+ Blue Potion\?$/),
+    ])
+    fireEvent.click(whys[0])
+    const dialog = card().querySelector<HTMLElement>('dialog')!
+    // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
+    expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
+    const steps = Array.from(dialog.querySelectorAll('.why-steps li')).map((li) => li.textContent!.replace(/\s+/g, ' '))
+    expect(steps).toHaveLength(4)
+    expect(steps[0]).toMatch(/^Ribbon Pig raakt je per kill ± [\d,]+ keer voor ± [\d,]+ schade: ± [\d,]+ HP per kill\.$/)
+    expect(steps[1]).toMatch(/^Je killt ± [\d.]+ Ribbon Pig per uur: ± [\d.]+ HP per uur\.$/)
+    expect(steps[2]).toMatch(/^Dit level duurt ± \d+ min: ± [\d.]+ HP in totaal\.$/)
+    // Het laatste getal is het aantal op de factuur.
+    const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
+    expect(steps[3]).toMatch(new RegExp(`^Eén Orange Potion herstelt 250 HP: [\\d.]+ / 250 = [\\d,]+, naar boven afgerond ${qty}\\.$`))
+    expect(dialog.textContent).toContain('aanname zonder bron')
+  })
+})
+
+describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
+  it('staat direct onder de level-rij, met het level en de job vetgedrukt', () => {
+    const q = homeScreen().querySelector('.level-row')!.nextElementSibling!
+    expect(q.classList.contains('app-question')).toBe(true)
+    expect(q.textContent).toBe('How much does it cost to level up your Lv. 10 Thief?')
+    expect(q.querySelector('strong')!.textContent).toBe('Lv. 10 Thief')
+  })
+
+  it('gaat mee met Level up', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Level up' }))
+    expect(homeScreen().querySelector('.app-question strong')!.textContent).toBe('Lv. 11 Thief')
   })
 })

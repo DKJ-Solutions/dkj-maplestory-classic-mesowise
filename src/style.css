@@ -231,6 +231,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
+/* De vraag van de app onder de level-rij (Dave, 6 oktober 2026): een zachte banner in de accenttint van een gewijzigd vak
+   (.equip-value.changed), met een dunne accentrand, zodat hij als eigen element leest en niet als losse tekst. */
+.app-question { margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 0.75rem; }
+.app-question strong { color: var(--accent); white-space: nowrap; }
 .level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { position: relative; width: 100%; height: 36px; border-radius: 0.25rem; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
@@ -576,3 +581,33 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Een stat-regel met een toon (StatLine tone): kosten in rood met een min, winst in groen met een plus, zoals bij Skillpoints (#139). */
 .equip-value strong.cost { color: var(--cost); }
 .equip-value strong.gain { color: var(--gain); }
+
+/* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
+   met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
+.total-cost h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
+.total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
+.total-cost-sub strong { color: var(--text); }
+.invoice { width: 100%; margin-top: 0.75rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.invoice th, .invoice td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.invoice th { text-align: left; font-weight: 400; overflow-wrap: anywhere; }
+.invoice td.invoice-qty { padding-left: 0.75rem; color: var(--muted); text-align: right; white-space: nowrap; }
+.invoice td.invoice-meso { padding-left: 0.75rem; text-align: right; white-space: nowrap; }
+.invoice .cost { color: var(--cost); }
+/* Het totaal met lucht erboven, zodat het los staat van de regels (Dave, 6 oktober 2026). De lijn erboven is grijs, tussen de
+   lijn van een regel en grijze tekst in: in dark mode was de tekstkleur bijna wit en veel te fel. */
+.invoice tfoot th, .invoice tfoot td { padding-top: 0.875rem; border-bottom: 0; border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); font-weight: 700; font-size: 1.125rem; }
+.invoice tbody tr:last-child th, .invoice tbody tr:last-child td { padding-bottom: 0.75rem; border-bottom: 0; }
+/* Het vraagteken achter een aantal op de factuur (Dave, 6 oktober 2026): een klein rondje dat de berekening in een popup toont. */
+.invoice-why { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; margin-left: 0.375rem; padding: 0;
+  vertical-align: middle; font-size: 0.8125rem; font-weight: 700; line-height: 1; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.invoice-why-space { display: inline-block; width: 1.75rem; margin-left: 0.375rem; vertical-align: middle; }
+.invoice-why:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Klein om te zien, maar 44px om op te tikken: een onzichtbare rand rond het rondje (mobile-first). */
+.invoice-why { position: relative; }
+.invoice-why::after { content: ''; position: absolute; inset: -0.5rem; }
+/* De popup van het vraagteken staat in een cel van de factuur en erfde daarvan "nowrap", grijs en rechts uitlijnen: de stappen
+   liepen buiten de popup en hij scrolde (Dave, 6 oktober 2026). Hier krijgt hij de gewone tekst terug. */
+.invoice dialog { white-space: normal; text-align: left; color: var(--text); font-weight: 400; font-size: 1rem; }
+.why-steps { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+.why-steps li + li { margin-top: 0.5rem; }

@@ -31,11 +31,14 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { expectedStat } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { levelInvoice, type InvoiceLine, type LevelInvoice, type PotionWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
 const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
 const nfPct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
+const nf1 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 })
+const nf3 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 3 })
 
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 /** JJJJ-MM-DD als Nederlandse datum, bijvoorbeeld "3 oktober 2026". */
@@ -2379,6 +2382,138 @@ function PotionInfo(props: { potions: PotionPair; draft: ProfileDraft; profile: 
   )
 }
 
+/**
+ * Hoe de app op het aantal potions op de factuur komt (Dave, 6 oktober 2026): een vraagteken achter het aantal, dat de stappen van
+ * de berekening in een popup toont, met de getallen die ze gebruikt (PotionWhy in levelInvoice.ts).
+ */
+function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy } }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const { line } = props
+  const w = line.why
+  const unit = w.kind === 'hp' ? 'HP' : 'MP'
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  const perHour = w.perKill * w.killsPerHour + w.buffPerHour
+  // Per kill met één decimaal: ± 0,3 keer, ± 27,7 schade, ± 8,3 HP; onder de 0,1 met twee, zodat er geen "± 0" staat.
+  const one = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
+  // Het getal dat de factuur naar boven afrondt, zo dat het niet tegenspreekt wat eruit komt: ziet het er heel uit terwijl er
+  // een rest is (3,0004 bij drie decimalen), dan staat er "iets meer dan 3".
+  const exact = nf3.format(w.exact)
+  const looksWhole = Number.isInteger(Number(w.exact.toFixed(3)))
+  const quotient = looksWhole && line.qty! > Math.round(w.exact) ? `iets meer dan ${exact}` : exact
+  return (
+    <>
+      <button ref={button} type="button" class="invoice-why" aria-haspopup="dialog" aria-label={`Hoe komt de app op ${nfInt.format(line.qty!)} ${line.label}?`} onClick={() => setOpen(true)}>
+        ?
+      </button>
+      {open && (
+        <StatDialog title={`Hoezo ${nfInt.format(line.qty!)}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+          <div class="report-body">
+            <ol class="why-steps">
+              {w.kind === 'hp' ? (
+                <li>
+                  {w.mob} raakt je per kill ± {one(w.hits!)} keer voor ± {one(w.touch!)} schade: ± {one(w.perKill)} HP per kill.
+                </li>
+              ) : (
+                <li>
+                  Je aanval kost ± {one(w.perKill)} MP per kill{w.buffPerHour > 0 && <>, en je buffs ± {nfInt.format(w.buffPerHour)} MP per uur</>}.
+                </li>
+              )}
+              <li>
+                Je killt ± {nfInt.format(w.killsPerHour)} {w.mob} per uur: ± {nfInt.format(perHour)} {unit} per uur.
+              </li>
+              <li>
+                Dit level duurt ± {formatHours(w.hours)}: ± {nfInt.format(w.need)} {unit} in totaal.
+              </li>
+              <li>
+                Eén {line.label} herstelt {nfInt.format(w.restores)} {unit}: {nfInt.format(w.need)} / {nfInt.format(w.restores)} = {quotient}, naar boven
+                afgerond {nfInt.format(line.qty!)}.
+              </li>
+            </ol>
+            {w.kind === 'hp' && (
+              <p class="hint">
+                Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
+                spel iets anders, pas dan de mob aan op de Monster-kaart.
+              </p>
+            )}
+          </div>
+        </StatDialog>
+      )}
+    </>
+  )
+}
+
+/** Hoe lang een level duurt, leesbaar: onder het uur in minuten (minstens 1), anders in uren met één decimaal. */
+const formatHours = (hours: number): string => {
+  const minutes = Math.max(1, Math.round(hours * 60))
+  return minutes < 60 ? `${minutes} min` : `${nf1.format(minutes / 60)} uur`
+}
+
+/**
+ * Wie er in de ondertitel van Total cost staat (Dave, 6 oktober 2026): "Lv. 10 Thief", vetgedrukt in "This is how much it cost
+ * to level up your Lv. 10 Thief". Zonder geldig level alleen de job.
+ */
+export const totalCostWho = (level: string, job: Job): string => {
+  // Alleen cijfers, zoals het profiel een level leest: "1e1" of "0x10" is geen level.
+  const t = level.trim()
+  return /^\d+$/.test(t) && Number(t) >= 1 ? `Lv. ${Number(t)} ${jobLabel(job)}` : jobLabel(job)
+}
+
+/**
+ * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
+ * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
+ * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
+ */
+function TotalCostCard(props: { invoice: LevelInvoice; computed: boolean; job: Job; level: string }) {
+  const inv = props.invoice
+  const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
+  return (
+    <section class="card total-cost" aria-live="polite">
+      <h2>Total cost</h2>
+      <p class="total-cost-sub">
+        This is how much it cost to level up your <strong>{totalCostWho(props.level, props.job)}</strong>
+      </p>
+      {!props.computed ? (
+        <NotComputed job={props.job} />
+      ) : inv.kind === 'none' ? (
+        <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+      ) : (
+        <>
+          <table class="invoice">
+            <tbody>
+              {inv.lines.map((l, i) => (
+                <tr key={`${i}-${l.label}`}>
+                  <th scope="row">{l.label}</th>
+                  <td class="invoice-qty">
+                    {l.qty !== null && (
+                      <>
+                        {`× ${nfInt.format(l.qty)}`}
+                        {/* Een regel zonder vraagteken houdt zijn plek vrij, zodat elk aantal op dezelfde lijn eindigt (Dave, 6 oktober 2026). */}
+                        {l.why ? <InvoiceWhy line={{ ...l, why: l.why }} /> : <span class="invoice-why-space" aria-hidden="true" />}
+                      </>
+                    )}
+                  </td>
+                  <td class="invoice-meso cost">{meso(l.meso)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td />
+                <td class="invoice-meso cost">{inv.total === 0 ? '0 meso' : meso(inv.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </>
+      )}
+    </section>
+  )
+}
+
 export function App() {
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => {
@@ -2445,6 +2580,7 @@ export function App() {
   const nextWeapon = useMemo(() => (profile ? nextBetterWeapon(profile) : undefined), [profile])
   const mobAdvice = useMemo(() => adviseMob(drafts, profile), [drafts, profile])
   const potionAdvice = useMemo(() => advisePotions(drafts, profile), [drafts, profile])
+  const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
   const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
 
@@ -2610,6 +2746,11 @@ export function App() {
         </button>
       </div>
       {!canLevelUp && <p class="hint level-row-hint" id="levelup-reason">{isMaxLevel(profileDraft) ? 'Al op het hoogste level.' : 'Controleer eerst je karakter, dan kun je levelen.'}</p>}
+      {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Total cost. "your" en
+          niet "a": elke Lv. 18 Thief is anders, en dit gaat over de jouwe. */}
+      <p class="app-question">
+        How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
+      </p>
 
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
       {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
@@ -2669,6 +2810,9 @@ export function App() {
         <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} />
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} />
       </section>
+
+      {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
+      <TotalCostCard invoice={invoice} computed={computed} job={job} level={profileDraft.level} />
 
       <LevelAdviceCard
         job={job}

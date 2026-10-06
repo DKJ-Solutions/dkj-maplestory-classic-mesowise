@@ -245,6 +245,24 @@ const orSuggestion = (text: string | undefined, suggestion: number) =>
   text === undefined || text.trim() === '' ? suggestion : parseAmount(text)
 
 /**
+ * Het voorstel en het uur voor een bekende plek: het monster dat je kiest (of het beste) en wat een uur daar oplevert en
+ * kost, met je eigen kills per uur als je die invulde. `plan` is null bij onzinnige kills per uur. Undefined als er geen
+ * voorstel is. resolveSpot en de factuur van een level (levelInvoice.ts) rekenen er allebei mee, zodat ze niet uiteenlopen.
+ */
+export function resolvePlan(
+  d: SpotDraft,
+  known: KnownSpot,
+  profile: Profile,
+  assumptions: Assumptions = ASSUMPTIONS,
+): { suggestion: MonsterSuggestion; plan: HourPlan | null } | undefined {
+  const suggestion = pickMonster(suggestMonsters(profile, known, assumptions), d.monster)
+  if (!suggestion) return undefined
+  const kills = orSuggestion(d.kills, suggestion.estimate.killsPerHour)
+  // Onzinnige kills per uur: er is geen voorstel, dus alleen wat de speler zelf invulde telt.
+  return { suggestion, plan: Number.isFinite(kills) && kills >= 0 ? hourPlan(suggestion, kills) : null }
+}
+
+/**
  * Een plek als getallen. Bij een bekende plek met een geldig profiel vullen de lege velden zich
  * met het voorstel; bij een eigen plek (of zonder profiel) is dit gewoon toSpot.
  */
@@ -256,11 +274,9 @@ export function resolveSpot(
 ): Spot {
   const spot = toSpot(d)
   if (!known || !profile) return spot
-  const s = pickMonster(suggestMonsters(profile, known, assumptions), d.monster)
-  if (!s) return spot
-  const kills = orSuggestion(d.kills, s.estimate.killsPerHour)
-  // Onzinnige kills per uur: er is geen voorstel, dus alleen wat de speler zelf invulde telt.
-  const plan = Number.isFinite(kills) && kills >= 0 ? hourPlan(s, kills) : null
+  const resolved = resolvePlan(d, known, profile, assumptions)
+  if (!resolved) return spot
+  const { plan } = resolved
   return {
     ...spot,
     expPerHour: orSuggestion(d.expPerHour, plan?.expPerHour ?? NaN),
