@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**91 / 142 minor entries** <!-- pending-tally -->
+**91 / 143 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/char-popup-based-on · 20261007-212755Z
+
+The advised character's stats popup, behind the info button on the Char label under "Based on:", now carries `data-based-on-character="Lv. 10 Thief"` and `data-sheet="advised"` beside its `data-popup`, the way the mob's info popup already carried `data-based-on-mob` (#247).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
+
+#### Pull Request
+
+the advised character's stats popup carries data-based-on-character and data-sheet, like the mob's info popup
+
+[PR #248](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/248)
+
+---
 
 ### DEPLOY: app/advised-for-attr · 20261007-211945Z
 
