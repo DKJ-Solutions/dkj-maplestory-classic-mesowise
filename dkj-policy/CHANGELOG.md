@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**88 / 136 minor entries** <!-- pending-tally -->
+**89 / 137 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/download-hint-visible · 20261007-203125Z
+
+The explanation under "Offlineversie downloaden" in the menu is visible again, without a question mark of its own on a separate line.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Opening the menu shows straight away what the offline version is, and no lone question mark sits under the download button.
+
+**Score:** 2
+
+#### Pull Request
+
+The offline download explanation is visible again, without a question mark
+
+[PR #241](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/241)
+
+---
 
 ### DEPLOY: app/popup-95-percent · 20261007-202125Z
 
