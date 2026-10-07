@@ -3960,7 +3960,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Total stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4167,7 +4167,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      const button = d.querySelector<HTMLElement>('.based-on .advised-for-mob .help-toggle')!
+      // Het vraagteken staat naast het vak van de mob, niet erin (Dave, 7 oktober 2026).
+      expect(d.querySelector('.based-on .advised-for-row .help-toggle')).toBeNull()
+      const button = d.querySelector<HTMLElement>('.based-on .advised-for-line > .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
@@ -4177,6 +4179,49 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
+    })
+
+    it('zet in het vak van de mob onder "Based on:" een i-knopje dat de stats van die mob toont, dezelfde regels als Advised: Monster (Dave, 7 oktober 2026)', async () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const lines = (d: HTMLElement) => [...d.querySelectorAll('.stat-line')].map((l) => l.textContent)
+      const advisedLines = lines(openView('Monster', 'Advised'))
+      closeView('Monster')
+      expect(advisedLines.length).toBeGreaterThan(2)
+      const d = openView('Equip', 'Advised')
+      const button = d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!
+      expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
+      expect(button.previousElementSibling!.textContent).toBe(mob)
+      fireEvent.click(button)
+      const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(popup.querySelector('.stat-dialog-name')!.textContent).toMatch(new RegExp(`^${mob} \\(lv \\d+\\)$`))
+      expect(lines(popup)).toEqual(advisedLines)
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+      await frame()
+      expect(document.activeElement).toBe(button)
+      closeView('Equip')
+    })
+
+    it('zet achter de char onder "Based on:" een i-knopje dat de Total stats van het advies opent, met dezelfde regels als Advised: Total stats (Dave, 7 oktober 2026)', async () => {
+      setJob('thief')
+      const lines = (d: HTMLElement) => [...d.querySelectorAll('.stat-line')].map((l) => l.textContent)
+      const advisedLines = lines(openView('Total stats', 'Advised'))
+      closeView('Total stats')
+      expect(advisedLines.length).toBeGreaterThan(3)
+      for (const card of ['Equip', 'Potions'] as const) {
+        const d = openView(card, 'Advised')
+        const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
+        expect(button.getAttribute('aria-label')).toBe(`Total stats van ${totalCostWho('20', 'thief')}`)
+        expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+        fireEvent.click(button)
+        const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
+        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Total stats')
+        expect(lines(popup)).toEqual(advisedLines)
+        fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+        await frame()
+        expect(document.activeElement).toBe(button)
+        closeView(card)
+      }
     })
   })
 
