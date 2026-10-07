@@ -1878,10 +1878,11 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
       price={shopPrice}
       level={props.line ? props.line.meso : null}
-      // Het vraagteken heet naar het bedrag dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?", Level als het er staat, anders Shop; zonder bedrag de naam.
-      helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : shopPrice !== null ? `Waarom ${compactMeso(shopPrice)}?` : undefined}
+      // Het vraagteken heet naar het bedrag in Level dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?"; is Level leeg, "Waarom niets?".
+      helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : 'Waarom niets?'}
       help={
         <>
+          {!props.line && <p class="item-why item-nothing">{nothingWhy(props.job, c, counted)}</p>}
           <p class="item-verdict">{help.verdict}</p>
           <p class="item-why">{help.text}</p>
           {props.line?.why?.kind === 'shop' && (
@@ -1893,6 +1894,17 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       }
     />
   )
+}
+
+/**
+ * Waarom de kolom Level van een slot leeg is (Dave, 7 oktober 2026): dit level verandert hier niets aan de factuur. Bovenaan de popup van het
+ * vraagteken, boven het oordeel en de uitleg (cheapestWhy).
+ */
+function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
+  if (counted) return `Hier verandert niets: ${job === 'bowman' ? 'pijlen' : 'stars'} tellen per stuk, in Expected: Useable.`
+  if (c.option) return 'Hier verandert niets: je koopt dit stuk niet, dus dit level kost het niets.'
+  if (c.cheapest === null) return 'Hier verandert niets: dit slot blijft leeg, dus dit level kost het niets.'
+  return 'Hier verandert niets: je houdt wat je draagt, dus dit level kost het niets.'
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */

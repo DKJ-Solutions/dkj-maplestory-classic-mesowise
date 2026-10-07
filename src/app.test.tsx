@@ -385,7 +385,7 @@ const closeItem = (item: HTMLElement) => fireEvent.click(within(item).getByRole(
 /** De reden van een regel: opent de popup, leest hem en sluit hem weer. */
 const whyOf = (row: HTMLElement) => {
   const item = openItem(row)
-  const text = item.querySelector('.item-why')!.textContent!
+  const text = item.querySelector('.item-why:not(.item-nothing)')!.textContent!
   closeItem(item)
   return text
 }
@@ -3745,8 +3745,14 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     // Achter elk bedrag een muntje, dat de schermlezer overslaat (Dave, 7 oktober 2026).
     for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.querySelector('svg.meso-icon[aria-hidden="true"]')).not.toBeNull()
     expect(d.querySelectorAll('.advised-total svg.meso-icon')).toHaveLength(2)
-    // Wat je niet koopt staat niet op de factuur: Level blijft leeg.
-    for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-level')!.textContent).toBe('')
+    // Wat je niet koopt staat niet op de factuur: Level blijft leeg, en het vraagteken zegt waarom hier niets verandert (Dave, 7 oktober 2026).
+    for (const r of rows.filter((r) => !r.classList.contains('buy'))) {
+      expect(r.querySelector('.advised-level')!.textContent).toBe('')
+      const it = openItem(r)
+      expect(it.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom niets?')
+      expect(it.querySelector('.item-nothing')!.textContent).toMatch(/^Hier verandert niets: /)
+      closeItem(it)
+    }
     // Twee totalen: Shop telt de winkelprijzen van wat je koopt (een grijs stuk niet), Level wat de factuur voor de stukken rekent.
     const [shopTotal, levelTotal] = Array.from(d.querySelectorAll('.advised-total strong')).map(full)
     expect(shopTotal).toBe(bought.reduce((s, r) => s + full(r.querySelector('.advised-price')!), 0))
