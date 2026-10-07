@@ -51,7 +51,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 ### TEST
 
 - [ ] Tycho: existing tests on the new rows, plus tests for `why` and the row's "?"
-- [ ] Victor: code review
+- [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. Left for Dave's look: the price per piece now sits only behind the "?", and an empty half next to an overall has no "?"
 - [ ] Dave looks at it on a phone before the merge
 
 ### DEPLOY: app/compact-advised-popup
