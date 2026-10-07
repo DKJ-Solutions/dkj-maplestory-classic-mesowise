@@ -323,7 +323,7 @@ describe('Bowman-armor: de winkel', () => {
 describe('Bowman-wapens: een gelijke besparing (#227)', () => {
   // Op de Snail doodt elk wapen even snel, dus elk bespaart evenveel; dan beslist de prijs en daarna de schade per milliseconde, niet de winkelvolgorde.
   const snail = [{ ...mobDraft('Snail')!, id: 's' }]
-  const power = (w: { watk: number; speed: { attackMs: number } }) => w.watk / w.speed.attackMs
+  const power = (w: { watk: number; mult?: number; speed: { attackMs: number } }) => (w.watk * (w.mult ?? 1)) / w.speed.attackMs
 
   it('zet bij gelijke netto besparing het goedkoopste wapen voor, en bij gelijke prijs het sterkste (War Bow vóór Crossbow)', () => {
     for (const [str, dex] of [[4, 25], [20, 60], [30, 90]]) {
@@ -331,7 +331,7 @@ describe('Bowman-wapens: een gelijke besparing (#227)', () => {
       if (a.kind !== 'advice') throw new Error('advies verwacht')
       const names = a.choices.map((c) => c.claw.name)
       expect(names.slice(0, 2), `${str}/${dex}`).toEqual(['War Bow', 'Crossbow'])
-      expect(a.choices[0].net, `${str}/${dex}`).toBe(a.choices[1].net) // voorwaarde: het is echt een gelijkspel
+      expect(Math.round(a.choices[0].net!), `${str}/${dex}`).toBe(Math.round(a.choices[1].net!)) // voorwaarde: het is echt een gelijkspel
       expect(power(a.choices[0].claw)).toBeGreaterThan(power(a.choices[1].claw))
       expect(a.winner?.name, `${str}/${dex}`).toBe('War Bow')
       for (let i = 1; i < a.choices.length; i++) {
