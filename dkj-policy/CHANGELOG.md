@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**76 / 118 minor entries** <!-- pending-tally -->
+**77 / 119 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/shield-only-with-one-hand · 20261007-110139Z
+
+The Shield row now appears only next to a one-handed weapon: a weapon under level 10, a dagger, a 1H sword, axe or blunt
+weapon, or a wand. With an empty weapon slot or a two-handed weapon (staff, 2H weapon, spear, polearm, claw, bow) it is
+gone, and picking such a weapon takes a worn shield off, with its defence. Shoes now sits directly under Hat.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+The screen no longer offers a slot you cannot use in the game, and a shield you could not wear no longer counts in your
+defence or the advice.
+
+**Score:** 2
+
+#### Pull Request
+
+Shield row only next to a one-handed weapon
+
+[PR #214](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/214)
+
+---
 
 ### DEPLOY: app/hint-behind-question-mark · 20261007-095832Z
 
