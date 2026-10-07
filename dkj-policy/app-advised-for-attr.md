@@ -1,4 +1,4 @@
-## app/advised-for-attr
+﻿## app/advised-for-attr
 
 > **How this file is read.** A step is `- [ ]` until it is resolved -- `- [x]` done, or
 > `- [~]` dropped with the reason, which exists so nobody ticks a box for work they did not do.
@@ -41,17 +41,24 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `data-advised-for` on both rows under "Based on:": "Char: <who>" and "Mob: <mob>" (src/app.tsx)
+- [ ] Dave looked (visible in the inspector, like #245)
 
 ### TEST
 
+- [x] Test pins both values (src/app.test.tsx); Based on tests and `npm run lint` green
+
 ### DEPLOY: app/advised-for-attr
 
-**Score:**
+Each row under "Based on:" in Total cost carries `data-advised-for` ("Char: Lv. 21 Thief", "Mob: Snail"), so the HTML inspector shows which row you are pointing at, the way `data-popup` does for popups (#245).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
 
 #### Pull Request
 

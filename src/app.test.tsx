@@ -4287,6 +4287,17 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
+    it('zet op elk vak onder "Based on:" data-advised-for met wat erin staat, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      const rows = [...d.querySelectorAll('.based-on .advised-for-row')].map((r) => r.getAttribute('data-advised-for'))
+      expect(rows).toHaveLength(2)
+      expect(rows[0]).toMatch(/^Char: Lv\. \d+ Thief$/)
+      expect(rows[1]).toBe(`Mob: ${mob}`)
+      closeView('Equip')
+    })
+
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
