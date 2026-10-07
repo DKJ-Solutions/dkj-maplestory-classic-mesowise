@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**74 / 114 minor entries** <!-- pending-tally -->
+**74 / 115 minor entries** <!-- pending-tally -->
+
+### DEPLOY: docs/206-changelog-capital · 20261007-090134Z
+
+Every Pull Request title in the changelog now starts with a capital letter; six entries, PR #205's among them, were
+lowercase. Cosmetic only. Resolves #206.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Capitalise the PR #205 changelog title
+
+[PR #208](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/208)
+
+---
 
 ### DEPLOY: app/202-advised-always-weapon · 20261007-085517Z
 
