@@ -53,6 +53,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] The details in brackets (type, level, stat) are gone again, the row was too full (Dave, October 7, 2026); `weaponType` removed with them
 - [x] Tycho found that `why` never reached the app: `Purchase` now carries it and `advisedSetup` copies it
 - [x] The "?" opens a popup of its own with what the piece is (type, level, ATT or DEF, MDEF, speed, requirements, price) and the reason (Dave, October 7, 2026); `catalogInfo` exported from `src/equipment.ts`
+- [x] The "?" popup opens with a verdict (Kopen, Niet kopen, Houden, Leeg laten) and the sum: price, saving until your next upgrade, what you keep or would lose, and how the piece saves (Dave, October 7, 2026)
+- [x] An info button right after the item name opens the item facts; the "?" keeps only the verdict and the reason (Dave, October 7, 2026); both through `PopupButton`
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
@@ -65,8 +67,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 
 The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
 shop price and a question mark. It has no Report button any more. What you buy
-is in the accent colour. The question mark on every row opens a popup with what the piece is (type, level, ATT or DEF,
-requirements, price) and why you buy it (what it saves until your next upgrade), why you
+is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, requirements,
+price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
 keep what you wear, or why the slot stays empty.
 
 **Score:** 3
