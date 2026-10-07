@@ -39,21 +39,38 @@
 
 ### PLAN
 
+Dave, October 7, 2026: long explanatory text in the app is unwieldy on a phone and he does not want to see it; at the least it
+sits behind a question-mark icon. Results, statuses and prompts stay visible; explanations of how a screen or the calculation
+works move behind the "?". The rule is recorded in Gwen's lens.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `Help` component in `src/app.tsx` (44px tap target, `aria-expanded`/`aria-controls`, collapsed by default) and its styles
+- [x] Applied to the Advised Equip popup paragraph and the other explanatory hints (gender, offline file, AP, weapon and armor notes, unknown-job items, contact assumption, the extra-mana clause)
+- [x] Rule in `.claude/specialists/lenses/specialist-04-12-lens.md`
 
 ### TEST
 
+- [x] Tests: the "?" is collapsed by default and opens and closes on tap; existing tests tap it first
+- [ ] Victor: code review
+- [ ] Edith: final read
+- [ ] Dave looks at it on a phone before the merge
+
 ### DEPLOY: app/hint-behind-question-mark
 
-**Score:**
+Long explanations no longer fill the screen: the paragraph above the Advised Equip popup and the other hints that explain how a
+screen or the calculation works now sit behind a "?" icon, collapsed until you tap it. Results, statuses and prompts stay
+visible as before. Every new screen follows the same rule.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+On a phone the cards are shorter and the answer is what you see first; the explanation is one tap away instead of a block of
+text you scroll past every time.
+
+**Score:** 3
 
 #### Pull Request
 
 long explanations in the app sit behind a question-mark icon instead of on screen
-

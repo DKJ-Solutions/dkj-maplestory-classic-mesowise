@@ -3364,7 +3364,11 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(rows[6]).toMatchObject({ result: qty, total: true })
     expect(rows[5]).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
     expect(rows[6].calc).toMatch(/^[\d.]+ \/ 222 = [\d,]+, naar boven afgerond$/)
-    expect(dialog.textContent).toContain('aanname zonder bron')
+    // De aanname staat achter het vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
+    const help = within(dialog).getByRole('button', { name: 'Uitleg' })
+    expect(help.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(help)
+    expect(dialog.querySelector('#' + help.getAttribute('aria-controls')!)!.textContent).toContain('aanname zonder bron')
   })
 })
 
@@ -3687,7 +3691,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && n !== 'Uitleg' && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -3918,5 +3922,42 @@ describe('noSavingText: Advised kost dit level meer door equipment (#192)', () =
     expect(noSavingText(-280, false)).toBe('Dit levert geen meso op voor dit level.')
     expect(noSavingText(0, true)).toBe('Dit levert geen meso op voor dit level.')
     expect(noSavingText(0.4, true)).toBe('Dit levert geen meso op voor dit level.')
+  })
+})
+
+describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
+  /** Het tekstvak waar het vraagteken naar wijst. */
+  const textOf = (button: HTMLElement) => document.getElementById(button.getAttribute('aria-controls')!)!
+
+  it('toont de uitleg onder Gender pas na een tik op het vraagteken, en verbergt hem bij een tweede tik', () => {
+    cleanup()
+    localStorage.clear()
+    render(<App />)
+    const button = within(homeScreen()).getAllByRole('button', { name: 'Uitleg' })[0]
+    const text = textOf(button)
+    expect(text.textContent).toMatch(/Sommige armor is alleen voor mannen/)
+    expect(button.getAttribute('aria-expanded')).toBe('false')
+    expect(text.hidden).toBe(true)
+    fireEvent.click(button)
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    expect(text.hidden).toBe(false)
+    fireEvent.click(button)
+    expect(button.getAttribute('aria-expanded')).toBe('false')
+    expect(text.hidden).toBe(true)
+  })
+
+  it('zet de lange alinea van de Equip-popup achter een vraagteken, dicht tot je tikt', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
+    render(<App />)
+    const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
+    fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
+    const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
+    const button = within(dialog).getByRole('button', { name: 'Uitleg' })
+    const text = textOf(button)
+    expect(text.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
+    expect(text.hidden).toBe(true)
+    fireEvent.click(button)
+    expect(text.hidden).toBe(false)
   })
 })

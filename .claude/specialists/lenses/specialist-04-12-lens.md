@@ -9,10 +9,10 @@ group: 04
 > Created by `specialists-init` as empty template; agent definition reads it automatically.
 > Fill in repo-specific tasks and context below that specialist 04-12 needs in this repo.
 
-## Specific to this repo (VUL-IN)
+## Specific to this repo
 
-<!-- TODO: describe what this specialist does in THIS repo:
-     - which files/directories belong to their domain;
-     - repo-specific tasks, conventions, and agreements;
-     - references to safety rules / gatekeepers for this repo.
-     Portable expertise remains in plugin manual; only repo-specific matters belong here. -->
+- **No long explanations on screen** (Dave, October 7, 2026). The app is mobile-first, and a paragraph that explains how a
+  screen or the calculation works costs a phone user a scroll for every glance. What stays visible is the answer (a number,
+  a choice, a status) in at most one short sentence. Every explanation beyond that sits behind the "?" icon (the `Help`
+  component in `src/app.tsx`), collapsed by default. This applies to every new or changed screen. Edith flags an open
+  explanatory paragraph in her final read as well.
