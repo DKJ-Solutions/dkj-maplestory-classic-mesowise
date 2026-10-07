@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets at most one row, for example
+"Weapon: Steel Igor (CLAW, LV 20, 17 ATT)", with a question-mark icon that explains why it pays to buy that piece.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `CheapestSlot.why` in `src/cheapestEquip.ts`: what a bought piece saves until your next upgrade, the piece it is bought with (a top and bottom replacing an overall), or that it is the required weapon for an empty weapon slot (#202)
+- [x] `CheapestRow` in `src/app.tsx`: one line per slot with the slot, the name and "(type, LV, stat)"; the price and the reason sit behind a "?" per row (`cheapestWhy`); `weaponType` exported from `src/equipment.ts`
+- [x] `.advised-*` styles in `src/style.css`: one line at 360px, the name truncates before the type, level and stat do
 
 ### TEST
 
+- [ ] Tycho: existing tests on the new rows, plus tests for `why` and the row's "?"
+- [ ] Victor: code review
+- [ ] Dave looks at it on a phone before the merge
+
 ### DEPLOY: app/compact-advised-popup
 
-**Score:**
+The Advised equip popup is compact: every slot is one line, such as "Weapon: Steel Igor (CLAW, LV 20, 17 ATT)". What you buy
+is in the accent colour. The price and why it pays off (what it saves until your next upgrade) sit behind a question mark at
+the end of the line.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+The whole advice fits on a phone screen at a glance; the reasoning per piece is one tap away.
+
+**Score:** 3
 
 #### Pull Request
 
