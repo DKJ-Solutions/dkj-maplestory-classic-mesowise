@@ -1488,6 +1488,9 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   )
 }
 
+/** Hoe breed een popup is tegenover de laag eronder: 91% (Dave, 7 oktober 2026); gelijk aan 1 - --layer-shrink in style.css. */
+export const POPUP_STEP = 0.91
+
 /** Hoeveel popups er onder deze liggen: de popups waar hij in staat, zonder het menupaneel. */
 function popupDepth(d: Element): number {
   let n = 0
@@ -1634,9 +1637,9 @@ function StatDialog(props: {
   )
   useEffect(() => {
     const d = ref.current
-    // Elke laag is 95% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
+    // Elke laag is 91% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
     // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
-    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(0.95 ** (popupDepth(d) + 1)))
+    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(POPUP_STEP ** (popupDepth(d) + 1)))
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
     if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()

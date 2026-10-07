@@ -59,10 +59,14 @@ body {
   color: var(--text);
 }
 
+/* Hoeveel kleiner elke laag is dan het scherm eronder: 9% (Dave, 7 oktober 2026; eerst 5%). StatDialog rekent met hetzelfde getal (POPUP_STEP). */
+:root { --layer-shrink: 0.09; }
+/* De inhoud is hooguit 9% smaller dan het scherm: 91% van de app-kolom, even breed als de eerste popup. */
 main {
+  box-sizing: border-box;
   max-width: 32rem;
   margin: 0 auto;
-  padding: 1.25rem 1rem 2rem;
+  padding: 1.25rem calc(min(100vw, 32rem) * var(--layer-shrink) / 2) 2rem;
 }
 
 h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
@@ -362,10 +366,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .breakdown-note { margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon; is de inhoud hoger, dan scrollt de popup.
-   Hij is hooguit 5% smaller dan het scherm eronder (Dave, 7 oktober 2026): de eerste 95% van de app-kolom (de telefoon,
-   op een computer 32rem zoals main), een popup daarbovenop 95% daarvan. --popup-scale zet StatDialog per laag. */
+   Hij is hooguit 9% smaller dan het scherm eronder (Dave, 7 oktober 2026): de eerste 91% van de app-kolom (de telefoon,
+   op een computer 32rem zoals main), een popup daarbovenop 91% daarvan. --popup-scale zet StatDialog per laag. */
 .stat-dialog {
-  width: calc(min(100vw, 32rem) * var(--popup-scale, 0.95)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+  width: calc(min(100vw, 32rem) * var(--popup-scale, calc(1 - var(--layer-shrink)))); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
@@ -528,7 +532,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Een veld dat in beeld schuift, blijft onder de menubalk en de Level-up-balk. */
 html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .topbar { position: sticky; top: 0; z-index: 2; background: var(--card); box-shadow: 0 1px 0 var(--border); }
-.topbar-inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+.topbar-inner { box-sizing: border-box; max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 calc(min(100vw, 32rem) * var(--layer-shrink) / 2); display: flex; align-items: center; justify-content: space-between; }
 .topbar-brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 .topbar-name { flex: none; font-size: 1.125rem; font-weight: 700; }
 .topbar-tagline { min-width: 0; font-size: 0.75rem; line-height: 1.25; color: var(--muted); }
