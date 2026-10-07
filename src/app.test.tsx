@@ -1622,6 +1622,26 @@ describe('een Warrior in de app', () => {
   }
   const NOT_YET = /Nog niet doorgerekend/
 
+  describe('het shield-slot (Dave, 7 oktober 2026)', () => {
+    beforeEach(() => open('warrior'))
+    const hasShieldRow = () => within(cards()[0]).queryByLabelText('Zoek je Shield') !== null
+
+    it('toont het shield-slot alleen met een wapen voor één hand en haalt een gekozen shield eraf bij een wapen voor twee handen', () => {
+      atLevel('30')
+      openHomeEquipment()
+      expect(hasShieldRow()).toBe(false)
+      pick(cards()[0], 'Weapon', 'Long Sword')
+      expect(hasShieldRow()).toBe(true)
+      pick(cards()[0], 'Shield', 'Pan Lid')
+      expect(slots().shield.pick).toBe('Pan Lid')
+      pick(cards()[0], 'Weapon', 'Wooden Sword')
+      expect(hasShieldRow()).toBe(false)
+      expect(slots().shield.pick).toBe('unknown')
+      pick(cards()[0], 'Weapon', 'Spear')
+      expect(hasShieldRow()).toBe(false)
+    })
+  })
+
   describe('het beginscherm', () => {
     beforeEach(() => open('warrior'))
 
@@ -2190,6 +2210,23 @@ describe('een Magician in de app', () => {
     levelUp()
   }
   const NOT_YET = /Nog niet doorgerekend/
+
+  describe('het shield-slot (Dave, 7 oktober 2026)', () => {
+    beforeEach(() => open())
+    const hasShieldRow = () => within(cards()[0]).queryByLabelText('Zoek je Shield') !== null
+
+    it('toont het shield-slot met een wand en niet met een staff', () => {
+      atLevel('30')
+      openHomeEquipment()
+      expect(hasShieldRow()).toBe(false)
+      pick(cards()[0], 'Weapon', 'Wooden Wand')
+      expect(hasShieldRow()).toBe(true)
+      pick(cards()[0], 'Shield', 'Mystic Shield')
+      pick(cards()[0], 'Weapon', 'Wooden Staff')
+      expect(hasShieldRow()).toBe(false)
+      expect(slots().shield.pick).toBe('unknown')
+    })
+  })
 
   describe('het beginscherm', () => {
     beforeEach(() => open())

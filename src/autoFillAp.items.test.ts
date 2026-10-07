@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { autoFillAp, autoFillMessage, autoFillPatch, MAIN_SECONDARY, type AutoFillResult } from './autoFillAp'
 import { apAtLevel } from './data/thief'
 import type { Stat } from './data/types'
-import { catalogItems, defaultEquipment, EQUIP_SLOTS, itemRequirements, NONE, OTHER, type Equipment } from './equipment'
+import { catalogItems, defaultEquipment, EQUIP_SLOTS, itemRequirements, NONE, OTHER, slotsFor, type Equipment } from './equipment'
 import type { Job } from './job'
 
 const wear = (patch: Partial<Record<keyof Equipment, string>>): Equipment => {
@@ -118,16 +118,23 @@ describe('autoFillAp: de hele catalogus per job', () => {
   for (const job of JOBS) {
     it(`${job}: elk winkelitem geeft een kloppende verdeling op level 190`, () => {
       const { main, secondary } = MAIN_SECONDARY[job]
-      const bare = autoFillAp(job, '190', defaultEquipment())
-      if (!bare.ok) throw new Error(`${job}: verwacht ok zonder equipment`)
-      const top = bare.base[secondary]
-      const topBy = bare.limitedBy
+      // Zonder wapen voor één hand telt de eis van een shield niet mee (Dave, 7 oktober 2026): met de beginner Sword wel.
+      const bareOf = (eq: Equipment) => {
+        const b = autoFillAp(job, '190', eq)
+        if (!b.ok) throw new Error(`${job}: verwacht ok zonder equipment`)
+        return b
+      }
+      const bare = bareOf(defaultEquipment())
+      const bareShield = bareOf(wear({ claw: 'Sword' }))
       let checked = 0
       for (const { slot } of EQUIP_SLOTS) {
         if (slot === 'ammo') continue
         for (const item of catalogItems(slot, job)) {
-          const eq = wear({ [slot]: item.name })
+          // Een shield telt alleen naast een wapen voor één hand (Dave, 7 oktober 2026): de beginner Sword vraagt geen stat.
+          const eq = wear(slot === 'shield' ? { claw: 'Sword', shield: item.name } : { [slot]: item.name })
           const req = itemRequirements(slot, eq[slot])
+          const { base: topBase, limitedBy: topBy } = slot === 'shield' || (slot === 'claw' && slotsFor(job, item.name).some((s) => s.slot === 'shield')) ? bareShield : bare
+          const top = topBase[secondary]
           const r = autoFillAp(job, '190', eq)
           if (!r.ok) throw new Error(`${job} ${item.name}: verwacht ok`)
           checked++
@@ -151,7 +158,8 @@ describe('autoFillAp: de hele catalogus per job', () => {
       for (const { slot } of EQUIP_SLOTS) {
         if (slot === 'ammo') continue
         for (const item of catalogItems(slot, job)) {
-          const eq = wear({ [slot]: item.name })
+          // Een shield telt alleen naast een wapen voor één hand (Dave, 7 oktober 2026): de beginner Sword vraagt geen stat.
+          const eq = wear(slot === 'shield' ? { claw: 'Sword', shield: item.name } : { [slot]: item.name })
           const req = itemRequirements(slot, eq[slot]) ?? {}
           const need = STATS.reduce((n, s) => n + Math.max(4, req[s] ?? 0), 0)
           const r = autoFillAp(job, '1', eq)
@@ -171,7 +179,8 @@ describe('autoFillAp: de grens van AP en levels', () => {
 
   it('level 199 en 200: de DEX voor wat je mag dragen houdt LUK onder de 999 die een stat kan houden', () => {
     for (const lvl of ['199', '200']) {
-      const r = autoFillAp('thief', lvl, defaultEquipment())
+      // Met een dagger in de hand, want alleen dan telt de Seclusion Wristguard (shield) mee.
+      const r = autoFillAp('thief', lvl, wear({ claw: 'Razor' }))
       expect(r).toMatchObject({ ok: true, base: { dex: 34 } })
       if (r.ok) expect(r.base.luk).toBeLessThanOrEqual(999)
     }
