@@ -146,6 +146,9 @@ export type LevelInvoice =
 // Nooit onder 0: Math.ceil(0 - 1e-9) is -0, en dat zou als "× -0" op de factuur staan.
 const wholeUp = (x: number): number => Math.max(0, Math.ceil(x - 1e-9))
 
+/** Of je zelf een bedrag invulde; zo'n bedrag telt de factuur als één regel zonder aantal. */
+const ownAmount = (text: string | undefined): boolean => text !== undefined && text.trim() !== ''
+
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
 export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
 
@@ -171,7 +174,6 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   // Wat één kill geeft: de EXP per uur van de plek gedeeld door je kills per uur, dus wat de uren eruit laat vallen (#192). Zonder kills per uur geen kills.
   const expPerKill = plan && plan.killsPerHour > 0 ? spot.expPerHour / plan.killsPerHour : NaN
   const kills = cost.expToNext / expPerKill
-  const own = (text: string | undefined) => text !== undefined && text.trim() !== ''
   const lines: InvoiceLine[] = []
   // Alleen wat iets kost, behalve je HP- en MP-potion: die staan er altijd, ook met × 0 (Dave, 6 oktober 2026).
   const add = (label: string, qty: number | null, meso: number, why?: PotionWhy | AmmoWhy) => {
@@ -191,7 +193,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       why: { kind: 'shop', name: p.name, price: p.price, level: cost.level, from, to, truncated: p.truncated ?? false, thisExp: w.thisExp, sumExp: w.sumExp, share: w.share },
     })
   }
-  if (resolved && plan && !own(draft.potions)) {
+  if (resolved && plan && !ownAmount(draft.potions)) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
     const hpExact = plan.hpPotionsPerHour * hours
     const mpExact = plan.mpPotionsPerHour * hours
@@ -223,7 +225,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   } else {
     add('Potions', null, Math.ceil(spot.cost.potions * hours))
   }
-  if (resolved && plan && !own(draft.ammo) && resolved.suggestion.rechargePerStar > 0) {
+  if (resolved && plan && !ownAmount(draft.ammo) && resolved.suggestion.rechargePerStar > 0) {
     const { estimate, rechargePerStar, monster } = resolved.suggestion
     const exact = plan.killsPerHour * estimate.starsPerKill * hours
     const stars = wholeUp(exact)

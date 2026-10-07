@@ -10,7 +10,8 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
-import { buyTexts, type CheapestSlot } from './cheapestEquip'
+import { nf3 } from './numberFormat'
+import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -38,7 +39,6 @@ const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
 const nfPct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
 const nf1 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 })
-const nf3 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 3 })
 
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 /** JJJJ-MM-DD als Nederlandse datum, bijvoorbeeld "3 oktober 2026". */
@@ -1550,7 +1550,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
     <>
       <p class="hint">
         De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
       </p>
       {props.slots.map((slot) => {
         const slotAdvice = props.cheapest[slot]
@@ -1560,7 +1560,8 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
         // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
         const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
         const stat = statName(slot, props.job)
-        const value = c.cheapest === null ? null : wornStat(slot, entry)
+        // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
+        const value = c.cheapest === null || (counted && wornStat(slot, entry) === undefined) ? null : wornStat(slot, entry)
         return (
           <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
             <span class="slot-name">{slotLabel(slot)}</span>
@@ -1579,7 +1580,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
               </div>
             )}
             {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
-            {counted && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
+            {counted && props.ammo !== OWN_AMMO && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
             {c.option && (
               <span class="equip-price">
                 Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}

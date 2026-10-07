@@ -9,6 +9,7 @@ import { THROWING_STARS } from './data/thief'
 import type { ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, isEmptyEntry, NONE, wornName, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import type { Job } from './job'
+import { nf3 } from './numberFormat'
 import { throwsNothing, type Profile, type ProfileDraft } from './profile'
 
 /** De levels van een stuk om te kopen, uit het wapen- of armor-advies dat het koos. */
@@ -153,17 +154,25 @@ export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equ
   return { equipment: out.equipment, profile: out.profile, shop: purchases.reduce((sum, p) => sum + p.price, 0), purchases }
 }
 
+/** Het label van het Ammo-slot als je zelf een bedrag voor de munitie invulde: de app weet dan niet welke munitie dat koopt (#199). */
+export const OWN_AMMO = 'Eigen bedrag'
+
 /**
  * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Advised als je daar niets invulde. Een Thief
  * gooit de star met de herlaadprijs uit zijn profiel (zonder keuze de Subi uit DEFAULT_PROFILE); een Bowman schiet de pijl die zijn profiel rekent
- * (arrowFor), voor zijn boog of kruisboog, en bij een eigen wapen voor een boog zoals PLAIN_ARROW. Null als hij niets gooit (throwsNothing) of de
- * herlaadprijs bij geen enkele star of pijl uit de lijst hoort.
+ * (arrowFor), voor zijn boog of kruisboog, en bij een eigen wapen voor een boog zoals PLAIN_ARROW. Null als hij niets gooit (throwsNothing).
+ * Typte je zelf het bedrag voor de munitie van de plek (`ownCost`), dan telt de factuur dat bedrag en kent de app de munitie niet: OWN_AMMO.
+ * Hoort de herlaadprijs van een Thief bij geen enkele star uit de lijst, dan een algemeen label met die prijs (#199), zoals de factuur hem telt;
+ * een Bowman rekent altijd met de prijs van zijn pijl (parseProfile), dus bij hem komt dat niet voor;
+ * zonder herlaadprijs telt de factuur de munitiekosten van de plek en is er niets te noemen.
  */
-export function countedAmmo(profile: Profile, weapon: EquipEntry): string | null {
+export function countedAmmo(profile: Profile, weapon: EquipEntry, ownCost = false): string | null {
   if (throwsNothing(profile)) return null
-  if (profile.job === 'thief') return THROWING_STARS.find((t) => t.rechargePerStar === profile.starRecharge)?.name ?? null
+  if (ownCost) return OWN_AMMO
+  const price = profile.starRecharge
+  if (profile.job === 'thief') return THROWING_STARS.find((t) => t.rechargePerStar === price)?.name ?? (price > 0 ? `Throwing stars, ${nf3.format(price)} meso per stuk` : null)
   const kind = NPC_BOWMAN_WEAPONS.find((w) => w.name === weapon.pick)?.kind ?? 'bow'
-  return [...NPC_ARROWS, ...HELPFUL_STRANGER_ARROWS].find((a) => a.for === kind && a.pricePerArrow === profile.starRecharge && a.watk === profile.starWatk)?.name ?? null
+  return [...NPC_ARROWS, ...HELPFUL_STRANGER_ARROWS].find((a) => a.for === kind && a.pricePerArrow === price && a.watk === profile.starWatk)?.name ?? null
 }
 
 /**

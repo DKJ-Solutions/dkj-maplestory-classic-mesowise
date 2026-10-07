@@ -5,7 +5,9 @@ import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipSlot, type Equipment } from './equipment'
+import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { ammoLabel, levelInvoice } from './levelInvoice'
+import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 
 /** Hoeveel keer hoogstens equipment erbij komt en alles opnieuw wordt doorgerekend; daarna blijft de laatste stand staan (`capped`). */
@@ -99,6 +101,16 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
     purchases: final,
     shop: final.reduce((sum, p) => sum + p.price, 0),
     cheapest,
-    ammo: profile ? countedAmmo(profile, equipment.claw) : null,
+    ammo: profile ? ammoOnInvoice(result.drafts, profile, job, equipment.claw) : null,
   }
+}
+
+/**
+ * Wat het Ammo-slot noemt, volgt de factuur (#199): staat er een regel met stars of pijlen (`why`), dan die munitie; staat er een bedrag zonder aantal (een
+ * eigen bedrag, of een plek zonder berekend plan), dan een eigen bedrag; staat er geen munitieregel, dan niets.
+ */
+function ammoOnInvoice(drafts: CheapestResult['drafts'], profile: NonNullable<ReturnType<typeof profileOf>>, job: Job, claw: EquipEntry): string | null {
+  const inv = levelInvoice(drafts, profile)
+  const line = inv.kind === 'invoice' ? inv.lines.find((l) => !l.shop && l.label === ammoLabel(job)) : undefined
+  return line ? countedAmmo(profile, claw, !line.why) : null
 }
