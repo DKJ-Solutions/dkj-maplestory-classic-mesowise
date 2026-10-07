@@ -10,6 +10,7 @@ import { NPC_CLAWS } from './data/claws'
 import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { compactMeso } from './numberFormat'
+import { expectedStat } from './expectedStats'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
@@ -3983,7 +3984,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Total stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4225,21 +4226,67 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet achter de char onder "Based on:" een i-knopje dat de Total stats van het advies opent, met dezelfde regels als Advised: Total stats (Dave, 7 oktober 2026)', async () => {
+    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
-      const lines = (d: HTMLElement) => [...d.querySelectorAll('.stat-line')].map((l) => l.textContent)
-      const advisedLines = lines(openView('Total stats', 'Advised'))
-      closeView('Total stats')
-      expect(advisedLines.length).toBeGreaterThan(3)
+      const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
+      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop en de skills zonder de Beginner-groep, die de popup
+      // verbergt (Dave, 7 oktober 2026). Total stats volgt hieronder.
+      const firstJobRows = (d: Element) =>
+        [...d.querySelectorAll('.skill-group')].filter((g) => !g.querySelector('h3')!.textContent!.startsWith('Beginner')).flatMap((g) => lines(g, '.skill-row'))
+      const tables = [
+        ['Ability points', (d: Element) => lines(d, '.ability-line:not(.ability-head)')],
+        ['Skillpoints', firstJobRows],
+      ] as const
+      const want = tables.map(([title, pick]) => {
+        const got = pick(openView(title, 'Advised'))
+        closeView(title)
+        expect(got.length, title).toBeGreaterThan(1)
+        return got
+      })
+      const who = totalCostWho('20', 'thief')
       for (const card of ['Equip', 'Potions'] as const) {
         const d = openView(card, 'Advised')
         const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
-        expect(button.getAttribute('aria-label')).toBe(`Total stats van ${totalCostWho('20', 'thief')}`)
+        expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Total stats')
-        expect(lines(popup)).toEqual(advisedLines)
+        // De popup heet naar het karakter, met het label expected erboven (Dave, 7 oktober 2026).
+        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(who)
+        expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
+        expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
+        const sections = [...popup.querySelectorAll('section.char-table')]
+        // De kop van de skills zegt dat het die van de 1e job zijn; de groep zelf heeft geen kop en geen "31 / 31 SP" (Dave, 7 oktober 2026).
+        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual(['Ability points', 'Skillpoints (1e job)', 'Total stats'])
+        expect(lines(sections[0], '.ability-line:not(.ability-head)'), 'Ability points').toEqual(want[0])
+        expect(lines(sections[1], '.skill-row'), 'Skillpoints').toEqual(want[1])
+        expect(sections[1].querySelector('.skill-group h3, .skill-sp')).toBeNull()
+        // Total stats puur uit level, base AP en skillpunten (Dave, 7 oktober 2026): Max HP, Max MP, Accuracy en Evasion, niets van de equipment.
+        const stats = sections[2]
+        const value = (name: string) => [...stats.querySelectorAll('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!.querySelector('.equip-value strong')!.textContent
+        expect(lines(stats, '.stat-line-name')).toEqual(['Max HP', 'Max MP', 'Accuracy', 'Evasion'])
+        // De formule met de base AP uit de tabel erboven (zonder Extra AP van items) en Nimble Body uit Skillpoints.
+        const base = (stat: string) => sections[0].querySelector(`[aria-label^="${stat} base "]`)!.textContent!
+        const skill = (name: string) => [...sections[1].querySelectorAll('.skill-row')].find((r) => r.firstElementChild!.firstChild!.textContent === name)!.querySelector('.equip-value strong')!.textContent!
+        const bare: ProfileDraft = { ...DEFAULT_PROFILE, level: '20', dex: base('DEX'), luk: base('LUK'), dexExtra: '0', lukExtra: '0', nimbleBody: skill('Nimble Body') }
+        expect(value('Accuracy')).toBe(String(expectedStat('accuracy', bare, 'thief')))
+        expect(value('Evasion')).toBe(String(expectedStat('avoid', bare, 'thief')))
+        // Alleen om te lezen: geen potlood en geen invoer.
+        expect(popup.querySelector('.equip-edit, input')).toBeNull()
+        // Een vraagteken achter het level van elke skill van de 1e job met punten, zoals Lucky Seven en Nimble Body; niet bij 0 of bij Beginner (Dave, 7 oktober 2026).
+        const rows = [...sections[1].querySelectorAll<HTMLElement>('.skill-row')]
+        const level = (row: HTMLElement) => Number(row.querySelector('.equip-value strong')!.textContent)
+        const withPoints = rows.filter((r) => level(r) > 0)
+        expect(withPoints.map((r) => r.firstElementChild!.firstChild!.textContent)).toEqual(expect.arrayContaining(['Lucky Seven']))
+        for (const row of rows) expect(row.querySelector('.help-toggle') !== null, row.textContent!).toBe(withPoints.includes(row))
+        const lucky = withPoints.find((r) => r.firstElementChild!.firstChild!.textContent === 'Lucky Seven')!
+        fireEvent.click(within(lucky).getByRole('button', { name: 'Uitleg bij Lucky Seven' }))
+        const why = [...popup.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
+        expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${level(lucky)}?`)
+        expect(why.querySelector('.item-why')!.textContent).toContain('de meeste mesos bespaart')
+        expect(why.querySelector('.skill-why')!.textContent).toContain('Now:')
+        fireEvent.click(within(why).getByRole('button', { name: 'Sluiten' }))
+        await frame()
         fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
         await frame()
         expect(document.activeElement).toBe(button)
