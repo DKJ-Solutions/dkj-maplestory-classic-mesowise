@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { autoFillAp, autoFillMessage, autoFillPatch } from './autoFillAp'
+import { NPC_CLAWS } from './data/claws'
 import { apAtLevel } from './data/thief'
 import { defaultEquipment, itemRequirements, OTHER, type Equipment } from './equipment'
 
@@ -76,7 +77,9 @@ describe('autoFillAp: items die je nog niet draagt (Dave, 5 oktober 2026)', () =
     expect(autoFillAp('thief', '8', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 4 }, limitedBy: null })
     expect(autoFillAp('thief', '10', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 10 }, limitedBy: 'Blue Cloth Pants' })
     expect(autoFillAp('thief', '20', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 20 }, limitedBy: 'Steel Igor' })
-    expect(autoFillAp('thief', '40', defaultEquipment())).toMatchObject({ ok: true, base: { dex: 34, luk: apAtLevel(40) - 42 }, limitedBy: 'Seclusion Wristguard' })
+    // De Seclusion Wristguard is een shield: die telt alleen mee naast een wapen voor één hand (Dave, 7 oktober 2026).
+    expect(autoFillAp('thief', '40', wear({ claw: 'Razor' }))).toMatchObject({ ok: true, base: { dex: 34, luk: apAtLevel(40) - 42 }, limitedBy: 'Seclusion Wristguard' })
+    expect(autoFillAp('thief', '40', defaultEquipment())).toMatchObject({ ok: true, limitedBy: expect.not.stringMatching(/Wristguard/) })
   })
 
   it('een item boven je level telt niet: Steel Igor (level 20) tilt DEX niet op level 15', () => {
@@ -100,6 +103,31 @@ describe('autoFillAp: items die je nog niet draagt (Dave, 5 oktober 2026)', () =
     expect(autoFillAp('thief', '32', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 30, int: 50, luk: 50 }, limitedBy: 'Seclusion Wristguard' })
     expect(autoFillAp('thief', '30', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 20, int: 50, luk: 50 }, limitedBy: 'Red Cross Shield' })
     expect(autoFillAp('thief', '29', eq)).toMatchObject({ ok: false, reason: 'short', need: 170, have: 165 })
+  })
+})
+
+describe('autoFillAp: de toekomstige eis telt een shield alleen naast een wapen voor één hand (Dave, 7 oktober 2026)', () => {
+  const shields = ['Wooden Buckler', 'Pan Lid', 'Steel Shield', 'Mithril Buckler', 'Red Triangular Shield', 'Red Cross Shield', 'Seclusion Wristguard', 'Nimble Wristguard', 'Jurgen Wristguard']
+  it('een Warrior met een wapen voor twee handen krijgt op een hoog level geen verhoging die naar een shield heet; met een wapen voor één hand mag dat', () => {
+    for (const w of ['Wooden Sword', 'Spear', 'Pole Arm']) {
+      const r = autoFillAp('warrior', '190', wear({ claw: w }))
+      if (!r.ok) throw new Error('verwacht ok')
+      expect(shields, w).not.toContain(r.limitedBy)
+    }
+    // Met een wapen voor één hand blijft de uitkomst geldig; de shields vragen een Warrior minder dan zijn wapens, dus ze winnen niet.
+    expect(autoFillAp('warrior', '190', wear({ claw: 'Long Sword' }))).toMatchObject({ ok: true })
+  })
+
+  it('een Thief krijgt de DEX van de Seclusion Wristguard alleen met een dagger, niet met een claw of zonder wapen', () => {
+    expect(autoFillAp('thief', '190', wear({ claw: 'Razor' }))).toMatchObject({ ok: true, base: { dex: 34 }, limitedBy: 'Seclusion Wristguard' })
+    for (const claw of [NPC_CLAWS[0].name, 'Meba']) {
+      const r = autoFillAp('thief', '190', wear({ claw }))
+      if (!r.ok) throw new Error('verwacht ok')
+      expect(shields, claw).not.toContain(r.limitedBy)
+    }
+    const empty = autoFillAp('thief', '190', defaultEquipment())
+    if (!empty.ok) throw new Error('verwacht ok')
+    expect(shields).not.toContain(empty.limitedBy)
   })
 })
 

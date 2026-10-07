@@ -52,8 +52,8 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'earrings', label: 'Earrings' },
 ]
 
-/** De wapens voor één hand die een Bowman kan vasthouden (de wapens onder level 10): met zo'n wapen past er een shield bij (#172). */
-const isOneHanded = (weapon: string): boolean => BEGINNER_WORN_WEAPONS.some((w) => w.name === weapon)
+/** De wapens onder level 10: wapens voor één hand die elke job kan vasthouden, ook een Bowman (#172). */
+const isBeginnerWeapon = (weapon: string): boolean => BEGINNER_WORN_WEAPONS.some((w) => w.name === weapon)
 
 /**
  * Of de Thief een claw vasthoudt (#188): een wapen in zijn wapenslot dat geen dagger is en geen wapen onder level 10, of een eigen
@@ -61,12 +61,13 @@ const isOneHanded = (weapon: string): boolean => BEGINNER_WORN_WEAPONS.some((w) 
  */
 const holdsClaw = (weapon: string, kind?: WeaponKind): boolean => {
   if (weapon === OTHER) return kind === 'claw'
-  return weapon !== '' && weapon !== UNKNOWN && weapon !== NONE && !isDaggerPick(weapon) && !isOneHanded(weapon)
+  return weapon !== '' && weapon !== UNKNOWN && weapon !== NONE && !isDaggerPick(weapon) && !isBeginnerWeapon(weapon)
 }
 
 /**
- * Of een job het slot heeft; `weapon` is de pick in het wapenslot (claw): voor het shield-slot van de Bowman en de Thief telt wat
- * hij vasthoudt. `kind` zegt bij een eigen wapen van een Thief of het een dagger of een claw is (#176); zonder `kind` is het onbekend.
+ * Of een job het slot heeft, zoals de catalogus het ziet; `weapon` is de pick in het wapenslot (claw): voor het shield-slot van de
+ * Bowman en de Thief telt wat hij vasthoudt. `kind` zegt bij een eigen wapen van een Thief of het een dagger of een claw is (#176);
+ * zonder `kind` is het onbekend. Wat het scherm toont en meetelt is strenger: het shield alleen naast een wapen voor één hand (wearsSlot).
  */
 const hasSlot = (job: Job, slot: EquipSlot, weapon = '', kind?: WeaponKind): boolean => {
   // Ammo alleen voor de Thief (stars) en de Bowman (pijlen); een Warrior of Magician gooit niets.
@@ -77,7 +78,7 @@ const hasSlot = (job: Job, slot: EquipSlot, weapon = '', kind?: WeaponKind): boo
   // Met een boog, een leeg wapenslot of een eigen wapen heeft hij het niet.
   // Ook een claw vraagt beide handen (Dave, 6 oktober 2026, #188; claws hebben itemnummers 147xxxx, de reeks van de wapens voor twee
   // handen, net als bogen en kruisbogen): de Thief draagt zijn wristguards alleen naast een dagger of een wapen onder level 10.
-  if (slot === 'shield') return job === 'bowman' ? isOneHanded(weapon) : job !== 'thief' || !holdsClaw(weapon, kind)
+  if (slot === 'shield') return job === 'bowman' ? isBeginnerWeapon(weapon) : job !== 'thief' || !holdsClaw(weapon, kind)
   return true
 }
 
@@ -246,7 +247,8 @@ const WEAPON_INFO: ReadonlyMap<string, { type: string; speed: string }> = new Ma
  */
 export function catalogItems(slot: EquipSlot, job: Job, helpfulStranger = false, weapon = ''): readonly CatalogItem[] {
   // Een slot dat de job niet heeft, heeft voor hem geen items (#125): anders bleef bij een wissel van job een shield staan
-  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF. Bij de Bowman hangt het shield-slot af van `weapon` (#172).
+  // in een slot dat hij niet ziet, en telde dat mee in zijn WDEF. Bij de Bowman en de Thief hangt het shield-slot af van `weapon`
+  // (#172, #188); de regel van het scherm (alleen naast een wapen voor één hand) staat in wearsSlot, zodat opzoeken op naam ook zonder wapen werkt.
   if (!hasSlot(job, slot, weapon)) return []
   // Het ammo-slot: stars voor een Thief, pijlen voor een Bowman (de Bowman-data van issue #44); een Warrior heeft het niet.
   if (slot === 'ammo') {
@@ -468,7 +470,7 @@ const isDaggerEntry = (e: EquipEntry): boolean => (e.pick === OTHER ? e.weaponKi
 export function hasRangedWeapon(job: Job, weapon: EquipEntry): boolean {
   if (job === 'thief') return holdsClaw(weapon.pick, effectiveKind(weapon))
   if (job !== 'bowman' || isEmptyEntry(weapon)) return false
-  return weapon.pick === OTHER || !isOneHanded(weapon.pick)
+  return weapon.pick === OTHER || !isBeginnerWeapon(weapon.pick)
 }
 
 /** De slots die het scherm toont: die van de job (slotsFor), met Ammo alleen naast een wapen voor afstand (#188). */
@@ -647,6 +649,8 @@ export function equipmentForJob(eq: Equipment, job: Job): Equipment {
     const { weaponKind: _dropped, ...claw } = out.claw
     out.claw = claw
   }
+  // Een shield dat de nieuwe job met zijn wapen niet draagt (Dave, 7 oktober 2026), wordt "nog niet ingevuld", net als hierboven.
+  if (!hasSlotFor(out, job, 'shield')) out.shield = emptyEntry()
   return out
 }
 
@@ -682,6 +686,8 @@ export function loadEquipment(storage: Storage | null | undefined, job: Job, hel
     if (typeof slots !== 'object' || slots === null) return out
     // Het wapenslot (claw) staat voorop in EQUIP_SLOTS: het shield van een Bowman wordt geladen met het wapen dat hij net kreeg (#172).
     for (const { slot } of EQUIP_SLOTS) out[slot] = loadEntry(slot, (slots as Record<string, unknown>)[slot], job, out.claw.pick)
+    // Een shield naast een wapen voor twee handen of een leeg wapenslot (Dave, 7 oktober 2026) blijft niet verborgen bewaard.
+    if (!hasSlotFor(out, job, 'shield')) out.shield = emptyEntry()
     // Opslag van voor de overall (issue #50) heeft het slot niet: dat laadt als leeg. Staat er wel een overall naast
     // een top of bottom (handmatig bewerkt), dan wint de overall, want die beslaat ze.
     if (isFilled(out.overall)) {

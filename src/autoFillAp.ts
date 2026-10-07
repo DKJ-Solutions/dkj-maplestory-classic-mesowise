@@ -5,7 +5,7 @@
 // de extra AP van items en de getypte accuracy blijven staan.
 import { apAtLevel, STARTING_AP } from './data/thief'
 import type { Stat } from './data/types'
-import { catalogItems, EQUIP_SLOTS, itemRequirements, slotsFor, wornName, type Equipment } from './equipment'
+import { catalogItems, itemRequirements, slotsFor, wornName, type Equipment } from './equipment'
 import type { Job } from './job'
 import { mainStatKey, PROFILE_FIELDS, type ProfileDraft } from './profile'
 
@@ -46,11 +46,12 @@ export const autoFillPatch = (base: Record<Stat, number>): Partial<ProfileDraft>
 
 /**
  * De hoogste eis op een stat van alle catalogusitems van een job die je op dit level mag dragen (ammo vraagt geen stat), en het
- * item dat hem vraagt; null als geen item meer vraagt dan het minimum.
+ * item dat hem vraagt; null als geen item meer vraagt dan het minimum. Alleen de slots die je met je wapen draagt: zonder wapen voor
+ * één hand telt geen shield (Dave, 7 oktober 2026).
  */
-function catalogNeed(job: Job, level: number, stat: Stat): { value: number; name: string } | null {
+function catalogNeed(job: Job, level: number, stat: Stat, equipment: Equipment): { value: number; name: string } | null {
   let best: { value: number; name: string } | null = null
-  for (const { slot } of EQUIP_SLOTS) {
+  for (const { slot } of slotsFor(job, equipment.claw.pick, equipment.claw.weaponKind)) {
     if (slot === 'ammo') continue
     for (const item of catalogItems(slot, job)) {
       if (item.level === undefined || item.level > level) continue
@@ -94,7 +95,7 @@ export function autoFillAp(job: Job, level: string, equipment: Equipment): AutoF
   if (lvl === null || lvl < 1 || lvl > 200) return { ok: false, reason: 'level', unknown }
   const { main, secondary } = MAIN_SECONDARY[job]
   const total = apAtLevel(lvl)
-  const future = catalogNeed(job, lvl, secondary)
+  const future = catalogNeed(job, lvl, secondary, equipment)
   if (future !== null && future.value > need[secondary]) {
     const room = total - STATS.filter((s) => s !== secondary && s !== main).reduce((sum, s) => sum + need[s], 0) - need[main]
     const value = Math.min(future.value, room)
