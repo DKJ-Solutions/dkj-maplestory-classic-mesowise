@@ -4234,6 +4234,21 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         sections.forEach((section, i) => expect(lines(section, tables[i][1]), tables[i][0]).toEqual(want[i]))
         // Alleen om te lezen: geen potlood en geen invoer.
         expect(popup.querySelector('.equip-edit, input')).toBeNull()
+        // Een vraagteken achter het level van elke skill van de 1e job met punten, zoals Lucky Seven en Nimble Body; niet bij 0 of bij Beginner (Dave, 7 oktober 2026).
+        const rows = [...sections[1].querySelectorAll<HTMLElement>('.skill-row')]
+        const level = (row: HTMLElement) => Number(row.querySelector('.equip-value strong')!.textContent)
+        const firstJob = [...sections[1].querySelectorAll<HTMLElement>('.skill-group')].find((g) => g.querySelector('h3')!.textContent!.startsWith('Thief'))!
+        const withPoints = [...firstJob.querySelectorAll<HTMLElement>('.skill-row')].filter((r) => level(r) > 0)
+        expect(withPoints.map((r) => r.firstElementChild!.firstChild!.textContent)).toEqual(expect.arrayContaining(['Lucky Seven']))
+        for (const row of rows) expect(row.querySelector('.help-toggle') !== null, row.textContent!).toBe(withPoints.includes(row))
+        const lucky = withPoints.find((r) => r.firstElementChild!.firstChild!.textContent === 'Lucky Seven')!
+        fireEvent.click(within(lucky).getByRole('button', { name: 'Uitleg bij Lucky Seven' }))
+        const why = [...popup.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
+        expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${level(lucky)}?`)
+        expect(why.querySelector('.item-why')!.textContent).toContain('de meeste mesos bespaart')
+        expect(why.querySelector('.skill-why')!.textContent).toContain('Now:')
+        fireEvent.click(within(why).getByRole('button', { name: 'Sluiten' }))
+        await frame()
         fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
         await frame()
         expect(document.activeElement).toBe(button)

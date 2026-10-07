@@ -2301,6 +2301,19 @@ interface SkillLinePart {
   tone?: 'cost' | 'gain'
 }
 
+/** Wat een skill kost en geeft, Now en Next elk op een eigen regel (skillMpLines): onder de naam in Skillpoints, en in de uitleg achter zijn vraagteken. */
+function SkillEffects(props: { lines: SkillLinePart[][]; class?: string }) {
+  return (
+    <small class={props.class ? `skill-mp ${props.class}` : 'skill-mp'}>
+      {props.lines.map((line) => (
+        <span key={line.map((p) => p.text).join('')}>
+          {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
+        </span>
+      ))}
+    </small>
+  )
+}
+
 /** De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de skill alleen het procent. */
 function profileWdef(draft: ProfileDraft): number | null {
   const n = Number(draft.wdef.trim())
@@ -2351,7 +2364,7 @@ function SkillsCard(props: {
 }
 
 /** De skills van je job per groep (Beginner, 1e job), elk met wat je van zijn pot zette: in Skillpoints en in de popup van het karakter onder "Based on:". */
-function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; why?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const { draft } = props
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
@@ -2367,7 +2380,7 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
           {levels
             .filter((s) => s.job === job)
             .map((s) => (
-              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} onChange={props.onChange} />
+              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.why && job !== 'Beginner'} onChange={props.onChange} />
             ))}
         </div>
       ))}
@@ -2395,7 +2408,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; stats: Compone
       </section>
       <section class="char-table" aria-label="Skillpoints">
         <h3 class="char-table-head">Skillpoints</h3>
-        <SkillGroups job={job} draft={draft} readOnly onChange={none} />
+        <SkillGroups job={job} draft={draft} readOnly why onChange={none} />
       </section>
       <section class="char-table" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>
@@ -2410,7 +2423,16 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; stats: Compone
  * level dat er nu staat en het potlood, net als bij equipment. Wijzigen gaat in een eigen popup met − en +; hoger dan het
  * maximum van de skill of dan wat de pot nog over laat kan niet.
  */
-function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wdef: number | null; readOnly?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillLine(props: {
+  skill: SkillLevel
+  draft: ProfileDraft
+  job: Job
+  wdef: number | null
+  readOnly?: boolean
+  /** In het karakter onder "Based on:" (Dave, 7 oktober 2026): een vraagteken achter het level van een skill met punten, dat zegt waarom hij zo hoog staat. */
+  why?: boolean
+  onChange: (patch: Partial<ProfileDraft>) => void
+}) {
   const { skill: s, draft } = props
   const uid = useId()
   const [edit, setEdit] = useState<string | null>(null)
@@ -2433,22 +2455,24 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
     <div class="skill-row">
       <span>
         {s.name}
-        {lines.length > 0 && (
-          <small class="skill-mp">
-            {lines.map((line) => (
-              <span key={line.map((p) => p.text).join('')}>
-                {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
-              </span>
-            ))}
-          </small>
-        )}
+        {lines.length > 0 && <SkillEffects lines={lines} />}
       </span>
       <div class="equip-value" aria-label={`${s.name} level ${value.trim() || 'onbekend'}`}>
         <span class="equip-value-num">
           <strong>{value.trim() || '?'}</strong>
         </span>
       </div>
-      {props.readOnly ? (
+      {props.readOnly && props.why && now > 0 ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${s.name}`} title={`Waarom ${now}?`}>
+          <p class="item-verdict">
+            Lv. {now} van {s.max}
+          </p>
+          <p class="item-why">
+            Het advies zet elk skillpunt dat nog open staat in de skill die over dit level en de 4 erna de meeste mesos bespaart. Zo komt {s.name} op {now}.
+          </p>
+          {lines.length > 0 && <SkillEffects lines={lines} class="skill-why" />}
+        </PopupButton>
+      ) : props.readOnly ? (
         <span />
       ) : (
         <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${s.name} wijzigen`} onClick={() => setEdit(value)}>
