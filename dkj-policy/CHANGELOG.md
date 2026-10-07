@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**83 / 131 minor entries** <!-- pending-tally -->
+**84 / 132 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/230-armor-tie-break · 20261007-144609Z
+
+When two armor choices save the same to the whole meso, the armor advice now puts the cheaper one first, and at the same price the one with more WDEF. Before, shop order or rounding noise decided, so a tiny model change could flip the pick (#230).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+In today's data no slot's advice changes. Where two pieces save within half a meso of each other, the app now steadily advises the cheaper one.
+
+**Score:** 1
+
+#### Pull Request
+
+Break an equal-saving armor tie on price, then defence
+
+[PR #234](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/234)
+
+---
 
 ### DEPLOY: claude/226-ignore-worktrees · 20261007-143933Z
 
