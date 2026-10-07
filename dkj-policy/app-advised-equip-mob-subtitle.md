@@ -45,6 +45,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 
 - [x] Cody: `AdvisedFor` subtitle (Char / Mob rows, ? after the mob) via a new `subtitle` prop on `CardPopup`; mob = `huntedMob(cheapestLive.drafts[0])`, the same read as Advised: Monster
 - [x] Gwen: two-row grid, small uppercase labels, value at title size with a 24px line so it lines up with the unchanged ? icon
+- [x] Cody + Gwen: title Advised: Equip renamed to Total cost: Equip with a small grey ADVISED tag, at h3 size so title, tag and ? fit one row at 360px (checked in headless Chrome); accessible name Total cost: Equip (advised)
 - [x] Edith: explanation cut to one sentence (EXP per meso); Victor: no bugs
 
 ### TEST
@@ -54,7 +55,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 
 ### DEPLOY: app/advised-equip-mob-subtitle
 
-The Advised: Equip popup now says on two rows who and what its advice is computed for: **Char** (level and job) and **Mob** (the mob Advised: Monster also shows), with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
+The Advised: Equip popup is now titled **Total cost: Equip** with a small ADVISED tag, on one row on a phone, and says on two rows who and what its advice is computed for: **Char** (level and job) and **Mob** (the mob Advised: Monster also shows), with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
 
 **Score:** 2
 

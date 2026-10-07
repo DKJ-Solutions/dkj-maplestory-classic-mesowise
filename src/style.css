@@ -400,6 +400,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel van een kaart- of rapport-popup is de grootste kop erin, op de maat van een h2 (Dave, 5 oktober 2026): daaronder
    de delen van het advies (--fs-h3), het oordeel (--fs-h4), de toelichting (0.875rem) en de bron (0.75rem). */
 .card-dialog .stat-dialog-name, .report-dialog .stat-dialog-name { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
+/* Een titel met een label erachter, "Total cost: Equip" met "advised" (Dave, 7 oktober 2026): kleiner, zodat titel, label en vraagteken op een telefoon op één regel passen. */
+.card-dialog .stat-dialog-name:has(.title-tag) { font-size: var(--fs-h3); white-space: nowrap; }
+.title-tag { margin-left: 0.125rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); vertical-align: 0.125rem; }
 .ap-edit .stat-dialog-label { margin: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ap-edit input, .ap-edit-total { display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; margin: 0; padding: 0 0.25rem; box-sizing: border-box;
   font: inherit; font-size: 1.25rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--text);

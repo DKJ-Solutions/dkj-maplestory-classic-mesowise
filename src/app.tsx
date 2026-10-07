@@ -436,7 +436,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; advised?: boolean; subtitle?: ComponentChildren; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { title: string; tag?: string; advised?: boolean; subtitle?: ComponentChildren; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026); een eigen ondertitel
   // (`subtitle`) vervangt die regel, zoals die van Advised: Equip met de mob erbij.
   const who = useContext(AdvisedWho)
@@ -446,7 +446,7 @@ function CardPopup(props: { title: string; advised?: boolean; subtitle?: Compone
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -1435,6 +1435,8 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
+  /** Een klein grijs label achter de titel, "Total cost: Equip" met "advised" (Dave, 7 oktober 2026); de toegankelijke naam krijgt het tussen haakjes. */
+  tag?: string
   /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
   subtitle?: ComponentChildren
   /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
@@ -1534,6 +1536,7 @@ function StatDialog(props: {
     <>
       {props.title}
       {props.titleNote && <> {props.titleNote}</>}
+      {props.tag && <> <span class="title-tag">{props.tag}</span></>}
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
@@ -1568,7 +1571,7 @@ function StatDialog(props: {
     <dialog
       ref={ref}
       class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
-      aria-label={props.title}
+      aria-label={props.tag ? `${props.title} (${props.tag})` : props.title}
       onCancel={(e) => {
         e.preventDefault()
         cancel()
@@ -2119,7 +2122,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} advised={view === 'advised'} subtitle={props.cheapest && props.advisedMob ? <AdvisedFor who={who} mob={props.advisedMob} /> : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} subtitle={props.cheapest && props.advisedMob ? <AdvisedFor who={who} mob={props.advisedMob} /> : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
