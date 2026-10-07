@@ -769,12 +769,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .char-table + .char-table { margin-top: 1rem; }
 .char-table-head { margin: 0 0 0.25rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-/* Ability points: Base + Extra = Totaal, en daarachter de kolom van het vraagteken. Alle drie de getallen en hun kopjes staan rechts in hun kolom
-   (Dave, 7 oktober 2026): zo staan ze binnen de tabel gelijk, en het Totaal onder de getallen van de andere tabellen. */
+/* Ability points: Base + Extra = Totaal, en daarachter de kolom van het vraagteken. Alle drie de getallen staan in het midden van hun kolom, onder
+   hun kopje (Dave, 7 oktober 2026). */
 .item-dialog .stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 2.25rem 0.5rem 2.25rem 0.5rem 2.5rem 2.25rem; }
 .item-dialog .ability-head { min-height: 0; }
-.item-dialog .ability-line .equip-value { justify-content: flex-end; }
-.item-dialog .ability-head > :nth-child(2), .item-dialog .ability-head > :nth-child(4), .item-dialog .ability-head > :nth-child(6) { text-align: right; }
+.item-dialog .ability-line .equip-value { justify-content: center; }
 /* Base en Extra wijken af van het Totaal (Dave, 7 oktober 2026): gewoon gewicht in grijs, het Totaal vet in de tekstkleur. */
 .item-dialog .ability-line .ap-base strong, .item-dialog .ability-line .ap-extra strong { font-weight: 400; color: var(--muted); }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
