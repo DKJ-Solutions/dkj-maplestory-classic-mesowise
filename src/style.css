@@ -23,6 +23,8 @@
   /* Elke Advised-popup is licht oranje (Dave, 7 oktober 2026): het advies van de app, niet wat je zelf invulde. */
   --advised-bg: #fff7ed;
   --advised-border: #fed7aa;
+  /* Het vak met Char en Mob in Total cost: Equip: een tint dieper dan de popup. */
+  --advised-box: #ffedd5;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -45,6 +47,7 @@
     --gain: #4ade80;
     --advised-bg: #2a2118;
     --advised-border: #57391a;
+    --advised-box: #3a2a17;
   }
 }
 
@@ -367,7 +370,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De ondertitel van Advised: Equip (Dave, 7 oktober 2026): twee regels, Char en Mob, met het label klein en grijs in een eigen kolom en de waarde
    ernaast in de tekstkleur. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is even groot als de titel en zo hoog als het icoon, zodat
    die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
-.advised-for { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.75rem; row-gap: 0.25rem; margin-top: 0.375rem; }
+.advised-for { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.75rem; row-gap: 0.25rem; margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem; background: var(--advised-box); border-radius: 0.5rem; }
 .advised-for-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .advised-for-value { min-width: 0; font-size: 1rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 .advised-for-mob { display: flex; align-items: center; }

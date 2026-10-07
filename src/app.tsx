@@ -1625,11 +1625,11 @@ const mobWhy = (mob: string) =>
 
 /**
  * De ondertitel van Advised: Equip (Dave, 7 oktober 2026): voor wie het advies rekent en op welke mob, op twee regels (Char, Mob) met het
- * label klein ervoor, en een vraagteken achter de mob dat zegt waarom juist die.
+ * label klein ervoor, samen in een eigen vak met een lichte achtergrond, en een vraagteken achter de mob dat zegt waarom juist die.
  */
 function AdvisedFor(props: { who: string; mob: string }) {
   return (
-    <span class="advised-for">
+    <div class="advised-for">
       {props.who && (
         <>
           <span class="advised-for-label">Char</span>
@@ -1643,7 +1643,7 @@ function AdvisedFor(props: { who: string; mob: string }) {
           <p class="item-why">{mobWhy(props.mob)}</p>
         </PopupButton>
       </span>
-    </span>
+    </div>
   )
 }
 
