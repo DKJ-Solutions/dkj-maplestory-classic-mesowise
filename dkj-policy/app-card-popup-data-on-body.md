@@ -42,7 +42,7 @@
 ### CREATE
 
 - [x] CardPopup hands `data-sheet` and `data-based-on-*` to StatDialog's `data`, so they land on `.stat-dialog-body` instead of `.spot-body` (src/app.tsx)
-- [ ] Dave looked (visible in the inspector)
+- [x] Dave looked (visible in the inspector)
 
 ### TEST
 
