@@ -48,6 +48,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] `CheapestRow` in `src/app.tsx`: one line per slot with the slot, the name and "(type, LV, stat)"; the price and the reason sit behind a "?" per row (`cheapestWhy`); `weaponType` exported from `src/equipment.ts`
 - [x] `.advised-*` styles in `src/style.css`: one line at 360px, the name truncates before the type, level and stat do
 - [x] Three columns per row (slot, details, "?"), the slot column fixed so the details line up; a lower row with the "?" keeping its 44px tap target (Dave, October 7, 2026)
+- [x] A fourth column with the shop price: of what you buy, and muted of a piece that does not pay (Dave, October 7, 2026)
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
@@ -58,8 +59,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 
 ### DEPLOY: app/compact-advised-popup
 
-The Advised equip popup is compact: every slot is one line in three columns, the slot, the item such as "Steel Igor (CLAW,
-LV 20, 17 ATT)" and a question mark. It has no Report button any more. What you buy
+The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor (CLAW,
+LV 20, 17 ATT)", its shop price and a question mark. It has no Report button any more. What you buy
 is in the accent colour. The price and why it pays off (what it saves until your next upgrade) sit behind a question mark at
 the end of the line.
 
