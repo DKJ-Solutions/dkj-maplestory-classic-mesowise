@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**81 / 128 minor entries** <!-- pending-tally -->
+**82 / 129 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/based-on-char-stats · 20261007-142158Z
+
+Under **Based on:** in Total cost: Equip and Total cost: Useable, an info button after the character (e.g. "Lv. 20 Thief") opens the Total stats Advised computes for that character, with the ability points and skill points it places, and an info button after the mob opens that mob's stats. The mob's ? now sits beside its box instead of inside it.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player can see which stats and which mob the cost advice assumes without leaving the popup.
+
+**Score:** 2
+
+#### Pull Request
+
+Based on: an info button after the character and the mob, and the mob's ? beside its box
+
+[PR #231](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/231)
+
+---
 
 ### DEPLOY: app/equip-horizon-growth · 20261007-141351Z
 
