@@ -4287,15 +4287,44 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet op elk vak onder "Based on:" data-character-advised met wat erin staat, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+    it('zet op de vakken onder "Based on:" data-character-advised en data-mob-advised, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      const rows = [...d.querySelectorAll('.based-on .advised-for-row')].map((r) => r.getAttribute('data-character-advised'))
-      expect(rows).toHaveLength(2)
-      expect(rows[0]).toMatch(/^Char: Lv\. \d+ Thief$/)
-      expect(rows[1]).toBe(`Mob: ${mob}`)
+      const [char, mobRow] = d.querySelectorAll('.based-on .advised-for-row')
+      expect(char.getAttribute('data-character-advised')).toMatch(/^Lv\. \d+ Thief$/)
+      expect(char.hasAttribute('data-mob-advised')).toBe(false)
+      expect(mobRow.getAttribute('data-mob-advised')).toBe(mob)
+      expect(mobRow.hasAttribute('data-character-advised')).toBe(false)
       closeView('Equip')
+    })
+
+    it('zet data-mob-advised op elke popup die info over de mob van het advies toont: het i-knopje onder "Based on:" en Advised: Monster (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!)
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-mob-advised')).toBe(mob)
+      fireEvent.click(within(info).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+      const monster = openView('Monster', 'Advised')
+      expect(monster.querySelector('.spot-body')!.getAttribute('data-mob-advised')).toBe(mob)
+      closeView('Monster')
+      expect(openView('Monster', 'Your character').querySelector('[data-mob-advised]')).toBeNull()
+      closeView('Monster')
+    })
+
+    it('zet in elke Your character-popup data-character-actual met het level en de job die je invulde, en niet in Advised (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
+        const worn = openView(card, 'Your character')
+        expect(worn.querySelector('.spot-body')!.getAttribute('data-character-actual')).toMatch(/^Lv\. \d+ Thief$/)
+        closeView(card)
+        const advised = openView(card, 'Advised')
+        expect(advised.querySelector('[data-character-actual]')).toBeNull()
+        closeView(card)
+      }
     })
 
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {

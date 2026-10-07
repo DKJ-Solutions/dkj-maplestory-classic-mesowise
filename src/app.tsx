@@ -444,7 +444,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -458,7 +458,9 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
   return (
     <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
-      <div class="spot-body">
+      {/* Your character is het karakter uit het spel, zoals jij het invult: data-character-actual, "Lv. 21 Thief", tegenover data-character-advised
+          onder "Based on:" in Advised (Dave, 7 oktober 2026). Advised: Monster zegt zo welke mob hij toont: data-mob-advised. */}
+      <div class="spot-body" data-character-actual={props.advised ? undefined : who} data-mob-advised={props.advised ? props.mob : undefined}>
         {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
@@ -1542,6 +1544,8 @@ function StatDialog(props: {
   drawer?: boolean
   /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
   pathName?: string
+  /** Data-attributen op .stat-dialog-body, naast data-popup: wat de popup toont, data-mob-advised="Snail" (Dave, 7 oktober 2026). */
+  data?: Record<`data-${string}`, string>
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -1674,7 +1678,7 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && cancel()}
       {...swipe}
     >
-      <div class="stat-dialog-body" data-popup={path.join(' › ')}>
+      <div class="stat-dialog-body" data-popup={path.join(' › ')} {...props.data}>
       <PopupPath.Provider value={path}>
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
         {title}
@@ -1740,9 +1744,9 @@ function BasedOn(props: { who: string; mob: string }) {
       <h3 class="based-on-head">Based on:</h3>
       <div class="advised-for">
         {props.who && (
-          // data-character-advised zegt in de HTML welk vak je aanwijst, "Char: Lv. 21 Thief" of "Mob: Snail", net als data-popup (#245).
-          // "advised": het karakter dat de app adviseert, niet dat uit het spel (dat wordt data-character-actual; Dave, 7 oktober 2026).
-          <div class="advised-for-row" data-character-advised={`Char: ${props.who}`}>
+          // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-character-advised="Lv. 21 Thief" en data-mob-advised="Snail".
+          // "advised" is wat de app adviseert, tegenover data-character-actual in Your character: het karakter uit het spel (Dave, 7 oktober 2026).
+          <div class="advised-for-row" data-character-advised={props.who}>
             <span class="sr-only">Char: </span>
             <span class="advised-for-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
@@ -1756,11 +1760,11 @@ function BasedOn(props: { who: string; mob: string }) {
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
         <div class="advised-for-line">
-          <div class="advised-for-row" data-character-advised={`Mob: ${props.mob}`}>
+          <div class="advised-for-row" data-mob-advised={props.mob}>
             <span class="sr-only">Mob: </span>
             <span class="advised-for-value">{props.mob}</span>
             {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`}>
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-mob-advised': mobDef.name }}>
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}
@@ -2051,7 +2055,7 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const close = () => {
@@ -2065,7 +2069,7 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
       </button>
       {open && (
         // In data-popup heet hij naar zijn knop, "Info over Snail" of "Uitleg": zijn titel is vaak die van de popup eronder (#245).
-        <StatDialog title={props.title} tag={props.tag} pathName={props.label} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        <StatDialog title={props.title} tag={props.tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}
@@ -2701,7 +2705,7 @@ function HuntedMobCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && props.advised !== null && (
-        <CardPopup card="mob" title="Advised: Monster" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup card="mob" title="Advised: Monster" advised mob={advisedMob?.name} opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
           <div class="field">
             <span>De mob die je het meest killt</span>

@@ -41,16 +41,18 @@
 
 ### CREATE
 
-- [x] `data-character-advised` on both rows under "Based on:": "Char: <who>" and "Mob: <mob>" (src/app.tsx)
+- [x] `data-character-advised` on the Char row under "Based on:" (src/app.tsx)
+- [x] `data-character-actual` on every Your character popup (`.spot-body`)
+- [x] `data-mob-advised` on the Mob row, the mob's info popup and Advised: Monster
 - [ ] Dave looked (visible in the inspector, like #245)
 
 ### TEST
 
-- [x] Test pins both values (src/app.test.tsx); Based on tests and `npm run lint` green
+- [x] Tests pin all three attributes (src/app.test.tsx); full suite and `npm run lint` green
 
 ### DEPLOY: app/advised-for-attr
 
-Each row under "Based on:" in Total cost carries `data-character-advised` ("Char: Lv. 21 Thief", "Mob: Snail"), so the HTML inspector shows which row you are pointing at, the way `data-popup` does for popups (#245).
+The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-character-advised="Lv. 21 Thief"` on the Char row under "Based on:", `data-character-actual` on every Your character popup (the character as played in game), and `data-mob-advised="Snail"` on the Mob row, its info popup and Advised: Monster.
 
 **Score:** 1
 
@@ -62,5 +64,5 @@ Not visible on screen; only someone reading the HTML sees it.
 
 #### Pull Request
 
-every advised-for-row carries data-character-advised with what it holds (Char or Mob), so the inspector shows which row you are pointing at
+data-character-advised, data-character-actual and data-mob-advised say in the HTML which character or mob an element shows
 
