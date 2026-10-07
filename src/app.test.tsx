@@ -5,6 +5,7 @@ import { App, noSavingText, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
 
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
@@ -441,7 +442,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised: Equip')
     expect(dialog.getAttribute('aria-label')).toBe('Advised: Equip')
     const weapon = advisedRow(dialog, 'Weapon')
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
@@ -461,7 +462,7 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised: Equip')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -3867,11 +3868,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const own = within(cardOf(title)).getByRole('button', { name: 'Your character' })
       fireEvent.click(advised)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['true', 'false'])
-      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^Advised/)
+      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^(Advised|Expected)/)
       closeView(title)
       fireEvent.click(own)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['false', 'true'])
-      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^Advised/)
+      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Advised|Expected)/)
       closeView(title)
     }
   })
@@ -3941,15 +3942,147 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.potions.hp).not.toBe('White Potion')
     const d = openView('Potions', 'Advised')
-    const texts = [...d.querySelectorAll('.potion-group .field-fixed')].map((p) => p.textContent!)
-    expect(texts).toHaveLength(2)
-    expect(texts[0]).toContain(r.potions.hp)
-    expect(texts[1]).toContain(r.potions.mp)
+    // De popup heet Useable, zoals het Use-tabblad in het spel; de kaart zelf blijft Potions (Dave, 7 oktober 2026).
+    expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Expected: Useable')
+    expect(nameOf(advisedRow(d, 'HP'))).toContain(r.potions.hp)
+    expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
     closeView('Potions')
     const own = openView('Potions', 'Your character')
     expect((within(own).getByLabelText('HP potions') as HTMLSelectElement).value).toBe('White Potion')
     expect(stored(POTION_CHOICE_KEY).hp).toBe('White Potion')
+  })
+
+  describe('Expected: Useable als factuur (Dave, 7 oktober 2026)', () => {
+    const setJob = (job: 'thief' | 'bowman' | 'warrior' | 'magician') => {
+      cleanup()
+      localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+      atLevel('20')
+    }
+    const n = (t: string | null | undefined) => Number((t ?? '').replace(/[^0-9]/g, ''))
+    /** De regels van de factuur van Advised in Total cost: label, aantal en meso. */
+    const invoiceLines = () =>
+      [...document.querySelectorAll<HTMLElement>('section.total-cost .cheapest-cost tbody tr')].map((tr) => ({
+        label: tr.querySelector('th')!.textContent!,
+        qty: n(tr.querySelectorAll('td')[0]?.textContent),
+        meso: n(tr.querySelector('.invoice-meso')?.textContent),
+      }))
+    const wearWeapon = (name: string) => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', name)
+      fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    }
+    const rowsOf = (d: HTMLElement) => [...d.querySelectorAll<HTMLElement>('.advised-row')].map((r) => r.querySelector('.slot-name')!.textContent)
+
+    it('toont rijen HP, MP en Ammo met aantal en meso van de factuur van Advised, en een totaal dat de som is', () => {
+      setJob('thief')
+      wearWeapon(IGOR.name)
+      const d = openView('Potions', 'Advised')
+      expect(d.querySelector('.advised-head')!.textContent).toContain('Useable')
+      expect(rowsOf(d)).toEqual(['HP', 'MP', 'Ammo'])
+      const lines = invoiceLines()
+      let sum = 0
+      for (const slot of ['HP', 'MP', 'Ammo']) {
+        const row = advisedRow(d, slot)
+        const line = lines.find((l) => (slot === 'Ammo' ? /Throwing stars/.test(l.label) : nameOf(row).startsWith(l.label)))!
+        expect(line, slot).toBeDefined()
+        expect(n(row.querySelector('.advised-price')!.textContent), slot + ' meso').toBe(line.meso)
+        expect(n(row.querySelector('.advised-qty')!.textContent), slot + ' aantal').toBe(line.qty)
+        expect(row.classList.contains('buy'), slot).toBe(line.meso > 0)
+        sum += line.meso
+      }
+      expect(n(d.querySelector('.advised-total')!.textContent!.replace('Total cost', ''))).toBe(sum)
+      expect(d.querySelector('.advised-total .advised-total-label')!.textContent).toBe('Total cost')
+      expect(nameOf(advisedRow(d, 'Ammo'))).toContain('Subi Throwing Stars')
+    })
+
+    it('opent met het vraagteken van een potion de stappen van de rekensom', () => {
+      setJob('thief')
+      const d = openView('Potions', 'Advised')
+      const item = openItem(advisedRow(d, 'HP'))
+      expect(item.querySelector('.item-verdict')!.textContent).toMatch(/^× [0-9.]+ dit level$/)
+      expect(item.querySelector('.report-body')!.textContent!.length).toBeGreaterThan(0)
+      closeItem(item)
+      // De info-knop noemt de prijs en wat de potion geneest.
+      const info = factsOf(openItem(advisedRow(d, 'HP'), '.info-toggle'))
+      expect(Object.keys(info)).toEqual(expect.arrayContaining(['Price', 'Recovery']))
+    })
+
+    it('titelt het vraagteken van een rij met aantal "Waarom <aantal>?" en laat de info-popup de naam van de potion houden', () => {
+      setJob('thief')
+      const d = openView('Potions', 'Advised')
+      const row = advisedRow(d, 'HP')
+      const qty = n(row.querySelector('.advised-qty')!.textContent)
+      expect(qty).toBeGreaterThan(0)
+      const why = openItem(row)
+      expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${new Intl.NumberFormat('nl-NL').format(qty)}?`)
+      closeItem(why)
+      const info = openItem(row, '.info-toggle')
+      expect(info.querySelector('.stat-dialog-name')!.textContent).toBe(nameOf(row))
+      closeItem(info)
+    })
+
+    it('toont bij een Bowman de pijl met zijn eigen ATT en prijs per pijl in de info van de Ammo-rij', () => {
+      setJob('bowman')
+      wearWeapon('Balanche')
+      const d = openView('Potions', 'Advised')
+      const row = advisedRow(d, 'Ammo')
+      const arrow = nameOf(row)
+      expect(arrow).toContain('Arrows')
+      const data = [...NPC_ARROWS, ...HELPFUL_STRANGER_ARROWS].find((a) => a.name === arrow)!
+      expect(data, 'pijl uit de data').toBeDefined()
+      const facts = factsOf(openItem(row, '.info-toggle'))
+      expect(facts.ATT).toBe(String(data.watk))
+      expect(facts['Prijs per pijl']).toContain(String(data.pricePerArrow).replace('.', ','))
+      expect(facts['Herladen per star']).toBeUndefined()
+    })
+
+    it('toont bij een Warrior en een Magician geen Ammo-rij, alleen HP en MP', () => {
+      for (const job of ['warrior', 'magician'] as const) {
+        setJob(job)
+        const d = openView('Potions', 'Advised')
+        expect(rowsOf(d), job).toEqual(['HP', 'MP'])
+        closeView('Potions')
+      }
+    })
+
+    const totalOf = (d: HTMLElement) => n(d.querySelector('.advised-total')!.textContent!.replace('Total cost', ''))
+    const priceSum = (d: HTMLElement) => [...d.querySelectorAll('.advised-row .advised-price')].reduce((sum, p) => sum + n(p.textContent), 0)
+
+    it('laat het totaal de som van de getoonde rijen zijn en de potion- en munitieregels van de factuur van Advised', () => {
+      const check = (label: string) => {
+        const d = openView('Potions', 'Advised')
+        const sum = priceSum(d)
+        expect(totalOf(d), label + ' som van de rijen').toBe(sum)
+        const names = [...d.querySelectorAll<HTMLElement>('.advised-row')].filter((r) => r.querySelector('.slot-name')!.textContent !== 'Ammo').map((r) => nameOf(r))
+        const lines = invoiceLines().filter((l) => names.includes(l.label) || ['Potions', 'Throwing stars', 'Arrows', 'Ammo'].includes(l.label))
+        expect(sum, label + ' factuur').toBe(lines.reduce((t, l) => t + l.meso, 0))
+        closeView('Potions')
+      }
+      for (const job of ['thief', 'warrior', 'magician'] as const) {
+        setJob(job)
+        check(job)
+      }
+      setJob('bowman')
+      wearWeapon('Balanche')
+      check('bowman')
+    })
+
+    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", en onder Your character geen', () => {
+      for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+        setJob(job)
+        const who = totalCostWho('20', job)
+        expect(who.startsWith('Lv. 20 ')).toBe(true)
+        for (const title of CARDS) {
+          const adv = openView(title, 'Advised')
+          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(who)
+          closeView(title)
+          const own = openView(title, 'Your character')
+          expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
+          closeView(title)
+        }
+      }
+    })
   })
 
   it('toont achter Advised bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {
@@ -4077,8 +4210,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         closeView(title)
         fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Advised` }))
         const adv = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
-        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(/^Advised/)
-        expect(adv.getAttribute('aria-label')).toBe(`Advised: ${title}`)
+        // De titel noemt de kaart, niet alleen Advised (Dave, 7 oktober 2026).
+        // Potions heet in Advised Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026).
+        const advisedTitle = title === 'Potions' ? 'Expected: Useable' : `Advised: ${title}`
+        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + advisedTitle))
+        expect(adv.getAttribute('aria-label')).toBe(advisedTitle)
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
       }
@@ -4090,7 +4226,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
       expect(buy).not.toBeNull()
@@ -4173,7 +4309,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
     // Naast de kop, niet boven de rijen (Dave, 7 oktober 2026).
     const head = button.closest('.stat-dialog-head')!
-    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
+    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
     const text = textOf(button)
     expect(text.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     expect(text.hidden).toBe(true)
