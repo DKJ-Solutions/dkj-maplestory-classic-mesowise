@@ -44,7 +44,7 @@ Dave, October 7, 2026 (#245): many `.stat-dialog-body` elements, and in the insp
 ### CREATE
 
 - [x] `PopupPath` context in `StatDialog`; `data-popup` on the dialog and the body
-- [ ] Dave looks at it in the inspector before the merge
+- [x] Dave looked at it and said "ship it" (October 7, 2026)
 
 ### TEST
 
