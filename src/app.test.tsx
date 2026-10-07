@@ -508,7 +508,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
   })
 
-  it('maakt elke popup 91% zo breed als het scherm of de popup eronder (Dave, 7 oktober 2026)', () => {
+  it('maakt elke popup 93% zo breed als het scherm of de popup eronder (Dave, 7 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
@@ -519,7 +519,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const layers: Element[] = []
     for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
     expect(layers.length).toBeGreaterThan(1)
-    expect(POPUP_STEP).toBe(0.91)
+    expect(POPUP_STEP).toBe(0.93)
     layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(POPUP_STEP ** (layers.length - i)))
     closeItem(item)
   })

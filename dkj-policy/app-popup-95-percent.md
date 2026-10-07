@@ -42,25 +42,25 @@
 #### Decisions
 
 - "The screen" under the first popup is the app column: the phone width, on a computer 32rem like `main`.
-- The step was 5% first and became 9% the same evening (Dave, October 7, 2026); it lives in `--layer-shrink` (CSS) and `POPUP_STEP` (TS), each naming the other in its comment.
+- The step was 5% first, then 9%, and settled at 7% the same evening (Dave, October 7, 2026); it lives in `--layer-shrink` (CSS) and `POPUP_STEP` (TS), each naming the other in its comment.
 - Only the width scales; the height still follows the content, capped at the screen minus 2rem.
 - The menu drawer keeps its own width and does not count as a layer.
-- The content of `main` follows the same rule: 91% of the app column, as wide as the first popup. The top bar's left padding moves with it, because its content lines up with `main`.
-- This replaces the 1rem minimum margin of October 5, 2026: at 390px a first popup and `main` leave about 17.5px per side.
+- The content of `main` follows the same rule: 93% of the app column, as wide as the first popup. The top bar's left padding moves with it, because its content lines up with `main`.
+- This replaces the 1rem minimum margin of October 5, 2026: at 390px a first popup and `main` leave about 13.5px per side.
 
 ### CREATE
 
-- [x] `src/style.css`: `--layer-shrink: 0.09`; `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale`; the fixed `.item-dialog` width is gone
+- [x] `src/style.css`: `--layer-shrink: 0.07`; `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale`; the fixed `.item-dialog` width is gone
 - [x] `src/style.css`: `main` and `.topbar-inner` are border-box with a side padding of half of `--layer-shrink` of the app column
-- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `POPUP_STEP^(depth + 1)` (0.91), with depth counted over enclosing popups except the menu drawer
+- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `POPUP_STEP^(depth + 1)` (0.93), with depth counted over enclosing popups except the menu drawer
 
 ### TEST
 
-- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.91 times the popup below it, down to the app; vitest 1946/1946 green, lint clean
+- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.93 times the popup below it, down to the app; vitest 1946/1946 green, lint clean
 
 ### DEPLOY: app/popup-95-percent
 
-Every popup is 91% as wide as whatever lies below it: the first one 91% of the app column, a popup on top of it 91% of that. The page content in `main` is 91% of the app column too, so it lines up with the first popup.
+Every popup is 93% as wide as whatever lies below it: the first one 93% of the app column, a popup on top of it 93% of that. The page content in `main` is 93% of the app column too, so it lines up with the first popup.
 
 **Score:** 2
 
@@ -72,4 +72,4 @@ The page and its popups share one width rule: a popup opened from another popup 
 
 #### Pull Request
 
-Every popup is 91% as wide as the screen below it, and so is the page content
+Every popup is 93% as wide as the screen below it, and so is the page content
