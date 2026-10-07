@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**80 / 125 minor entries** <!-- pending-tally -->
+**80 / 126 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/216-remove-own-amounts · 20261007-134915Z
+
+The own potion and ammo amounts are gone from the calculation: the level invoice, the star-upgrade advice and the spot ranking always count potions and ammo from the app's own estimate, and the "Eigen bedrag" ammo verdict is removed. No screen could set an own amount any more, so no number in the app changes. The failure it prevents: old stored spots carrying an amount reviving a path no test covered and no popup explained.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the unreachable own potion and ammo amounts
+
+[PR #223](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/223)
+
+---
 
 ### DEPLOY: app/advised-equip-mob-subtitle · 20261007-134229Z
 
