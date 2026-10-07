@@ -49,6 +49,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 - [x] Gwen: every Advised popup is light orange (`--advised-bg`/`--advised-border`, light and dark), via an `advised-dialog` class that sets `--card`
 - [x] Gwen: Char and Mob rows each sit in their own box, equally wide, without a visible label (Char/Mob kept for screen readers), with a light background (`--advised-box`, light and dark)
 - [x] Cody + Gwen: Char and Mob moved out of the title into a **Based on:** block at the top of the popup, side by side on one row (full popup width, so even Lv. 70 Magician + Orange Mushroom fit at 360px, checked in headless Chrome); the grey level/job line under the title is hidden there (`hideWho`)
+- [x] Gwen: ADVISED is a pill label in the accent colour
 - [x] Edith: explanation cut to one sentence (EXP per meso); Victor: no bugs
 
 ### TEST
@@ -58,7 +59,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 
 ### DEPLOY: app/advised-equip-mob-subtitle
 
-The Advised: Equip popup is now titled **Total cost: Equip** with a small ADVISED label above it, every Advised popup is light orange, and Total cost: Equip opens with a **Based on:** block: two boxes on one row with the level and job, and the mob Advised: Monster also shows, with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
+The Advised: Equip popup is now titled **Total cost: Equip** with an orange ADVISED label above it, every Advised popup is light orange, and Total cost: Equip opens with a **Based on:** block: two boxes on one row with the level and job, and the mob Advised: Monster also shows, with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
 
 **Score:** 2
 
