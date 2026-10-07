@@ -170,6 +170,7 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
       expect(s.cheapest.claw.cheapest, job).toBeNull()
       expect(s.purchases.some((p) => p.slot === 'claw'), job).toBe(false)
       expect(isEmptyEntry(s.equipment.claw), job).toBe(true)
+      expect(s.profile.clawWatk, job).toBe(user.profileDraft.clawWatk)
       // Zoals voorheen: met de ATT uit het profiel; een ander profiel-ATT verandert hier dus iets aan de rekening, niet aan het wapen.
       const other = advisedSetup({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '25' } })
       expect(other.cheapest.claw.cheapest, job).toBeNull()

@@ -53,7 +53,7 @@ weapon saves 0 mesos against it).
 ### TEST
 
 - [x] Tycho: tests on `requiredWeapon`, `cheapestEquipment` and `advisedSetup` (every job, fixed point, below level 10)
-- [ ] Victor: code review
+- [x] Victor: code review (no bugs; null-net ordering fixed, design question filed)
 - [x] Edith: final read of the changed comments and this entry
 
 ### DEPLOY: app/202-advised-always-weapon

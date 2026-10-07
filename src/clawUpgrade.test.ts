@@ -393,6 +393,13 @@ describe('requiredWeapon: er staat altijd een wapen in het advies (#202)', () =>
     expect(requiredWeapon(empty, a)).toBe(choices[0])
   })
 
+  it('kiest het goedkoopste wapen, niet het eerste in de lijst, als geen besparing uit te rekenen valt', () => {
+    const fallback = requiredWeapon(empty, noChoices)!
+    const choices = [{ claw: claw('Steel Titans'), from: 10, to: 12, truncated: false, net: null }]
+    const a = { kind: 'advice', level: 10, choices, notWearable: [], winner: null, robust: true } as unknown as ClawUpgradeAdvice
+    expect(requiredWeapon(empty, a)?.claw).toBe(fallback.claw)
+  })
+
   it('valt terug op het goedkoopste wapen dat je kunt dragen als het advies niets vergelijkt', () => {
     for (const a of [noChoices, { kind: 'none' } as ClawUpgradeAdvice]) {
       const pick = requiredWeapon(empty, a)
