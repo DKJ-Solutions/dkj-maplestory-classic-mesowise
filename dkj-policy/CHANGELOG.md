@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**79 / 124 minor entries** <!-- pending-tally -->
+**80 / 125 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/advised-equip-mob-subtitle · 20261007-134229Z
+
+The Advised: Equip popup is now titled **Total cost: Equip** with an orange ADVISED label above it, every Advised popup is light orange, and Total cost: Equip and the Potions popup behind Advised, now **Total cost: Useable** with an EXPECTED label, both open with a **Based on:** block: two boxes on one row with the level and job, and the mob Advised: Monster also shows, with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player sees at a glance which mob the equipment advice assumes, so an advice that looks odd can be traced to the mob it was computed for.
+
+**Score:** 2
+
+#### Pull Request
+
+Advised: Equip names the mob its advice is based on, with a ? explaining why that mob
+
+[PR #221](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/221)
+
+---
 
 ### DEPLOY: app/198-cheapest-npc-stars · 20261007-132120Z
 
