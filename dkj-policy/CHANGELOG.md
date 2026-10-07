@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**91 / 139 minor entries** <!-- pending-tally -->
+**91 / 140 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/242-unique-element-hooks · 20261007-204235Z
+
+Buttons and popups that do different things no longer share one bare class, so each can be named and found in the HTML. The Advised and Your character buttons carry `view-advised` and `view-worn`, and every card popup says which card and which view it belongs to (`card-dialog-equip`, `advised-dialog`). The six Total cost buttons, the −/+ steppers, the three character tables and the apply/undo buttons each carry a class naming their function as well. Nothing changes on screen.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Nothing a player sees changes: the classes only make the markup easier to point at.
+
+**Score:** N/A
+
+#### Pull Request
+
+every element names what it is, so two buttons that do different things no longer look identical in the markup
+
+[PR #244](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/244)
+
+---
 
 ### DEPLOY: fix/240-lock-scroll-behind-popup · 20261007-203807Z
 
