@@ -2365,9 +2365,10 @@ function SkillsCard(props: {
 
 /**
  * De skills van je job per groep (Beginner, 1e job), elk met wat je van zijn pot zette: in Skillpoints en in de popup van het karakter onder "Based on:".
- * Met `noBeginner` (die popup, Dave, 7 oktober 2026) zonder de Beginner-skills zodra er een 1e job is: die zijn daar niet relevant.
+ * Met `inCharacter` (die popup, Dave, 7 oktober 2026) zonder de Beginner-skills zodra er een 1e job is en zonder "31 / 31 SP": die zijn daar niet
+ * relevant. Wel een vraagteken achter elke skill met punten (SkillLine `why`).
  */
-function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; why?: boolean; noBeginner?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; inCharacter?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const { draft } = props
   const shown = profileFieldsFor(props.job).map((f) => f.key)
   const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
@@ -2376,16 +2377,16 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
   const firstJob = groups.some(({ job }) => job !== 'Beginner')
   return (
     <>
-      {groups.filter(({ job }) => !(props.noBeginner && firstJob && job === 'Beginner')).map(({ job, title }) => (
+      {groups.filter(({ job }) => !(props.inCharacter && firstJob && job === 'Beginner')).map(({ job, title }) => (
         <div class="skill-group" key={job}>
           <h3>
             {title}
-            <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />
+            {!props.inCharacter && <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />}
           </h3>
           {levels
             .filter((s) => s.job === job)
             .map((s) => (
-              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.why} onChange={props.onChange} />
+              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.inCharacter} onChange={props.onChange} />
             ))}
         </div>
       ))}
@@ -2413,7 +2414,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
       </section>
       <section class="char-table" aria-label="Skillpoints">
         <h3 class="char-table-head">Skillpoints</h3>
-        <SkillGroups job={job} draft={draft} readOnly why noBeginner onChange={none} />
+        <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
       </section>
       <section class="char-table" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>

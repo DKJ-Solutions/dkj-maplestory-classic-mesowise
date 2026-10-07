@@ -4237,6 +4237,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(lines(sections[0], '.ability-line:not(.ability-head)'), 'Ability points').toEqual(want[0])
         expect(lines(sections[1], '.skill-row'), 'Skillpoints').toEqual(want[1])
         expect(lines(sections[1], '.skill-group h3').some((t) => t!.startsWith('Beginner'))).toBe(false)
+        // Zonder "31 / 31 SP": hier niet nodig (Dave, 7 oktober 2026).
+        expect(sections[1].querySelector('.skill-sp')).toBeNull()
         // Total stats puur uit level, base AP en skillpunten (Dave, 7 oktober 2026): Max HP, Max MP, Accuracy en Evasion, niets van de equipment.
         const stats = sections[2]
         const value = (name: string) => [...stats.querySelectorAll('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!.querySelector('.equip-value strong')!.textContent

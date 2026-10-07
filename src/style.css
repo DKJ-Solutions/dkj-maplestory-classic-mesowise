@@ -758,12 +758,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-dialog .stat-line > span:empty:last-child { display: none; }
 /* Een skill houdt een kolom voor het vraagteken achter zijn level (Dave, 7 oktober 2026), ook zonder: zo staan de levels onder elkaar. Het knopje
    houdt zijn 44px om te tikken maar steekt boven en onder buiten de rij, zoals in de factuur. */
-.item-dialog .skill-row { grid-template-columns: minmax(0, 1fr) 4.5rem 2.25rem; column-gap: 0.25rem; }
+.item-dialog .skill-row { grid-template-columns: minmax(0, 1fr) auto 2.25rem; column-gap: 0.25rem; }
 .item-dialog .skill-row .help-toggle { justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
-.item-dialog .stat-line .equip-value, .item-dialog .skill-row .equip-value { height: auto; min-width: 0; padding: 0; justify-content: flex-end; }
-/* Een skill-level gecentreerd in zijn kolom, onder "31 / 31 SP" (zie .skill-group h3 hieronder). */
-.item-dialog .skill-row .equip-value { justify-content: center; }
-.item-dialog .equip-value-num, .item-dialog .ability-line .ap-total .equip-value-num { font-size: 0.875rem; }
+.item-dialog .stat-line .equip-value, .item-dialog .skill-row .equip-value { height: auto; min-width: 0; padding: 0; justify-content: flex-end; }.item-dialog .equip-value-num, .item-dialog .ability-line .ap-total .equip-value-num { font-size: 0.875rem; }
 .item-dialog .skill-row > span:first-child { font-size: 0.9375rem; }
 /* Wat een skill kost en geeft staat in Skillpoints zelf; hier alleen de naam en het level, zoals een factuurregel. */
 .item-dialog .skill-row > span:first-child .skill-mp { display: none; }
@@ -778,10 +775,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-dialog .ability-head { min-height: 0; }
 .item-dialog .ability-line .equip-value { justify-content: center; }
 .item-dialog .skill-group { margin-bottom: 0.5rem; }
-/* "31 / 31 SP" in de kolom van de levels, en de levels precies in het midden eronder (Dave, 7 oktober 2026): de kop heeft hetzelfde raster als de
-   rijen, met een vaste kolom van 4.5rem, en beide staan gecentreerd. */
-.item-dialog .skill-group h3 { display: grid; grid-template-columns: minmax(0, 1fr) 4.5rem 2.25rem; column-gap: 0.25rem; margin: 0.25rem 0 0; font-size: 0.6875rem; }
-.item-dialog .skill-group h3 .skill-sp { grid-column: 2; text-align: center; }
+.item-dialog .skill-group h3 { margin: 0.25rem 0 0; font-size: 0.6875rem; }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
    met de prijzen erboven, zonder "meso" (de kop zegt Mesos), en een totaalstreep over de hele breedte, zoals op een bon: subtiel, maar net sterker dan de lijnen tussen de rijen (Dave, 7 oktober 2026). Zoals een echte factuur: het
    totaal even groot als de bedragen erboven, en lucht rond de totaalstreep. Onder het totaal een lijn over de hele breedte, net als erboven
