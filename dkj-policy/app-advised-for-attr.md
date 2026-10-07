@@ -44,7 +44,7 @@
 - [x] `data-based-on-character` on the Char row under "Based on:" and on every Your character popup (`.spot-body`) (src/app.tsx)
 - [x] `data-based-on-mob` on the Mob row, the mob's info popup and both Monster popups
 - [x] `data-sheet="advised" | "actual"` beside them, and on every card popup's `.spot-body`
-- [x] The "Based on:" classes follow its heading: `.advised-for` becomes `.based-on-container`, `-row`/`-line`/`-value` become `.based-on-*` (app.tsx, style.css, tests)
+- [x] The "Based on:" classes follow its heading: `.advised-for` becomes `.based-on-container`, `-row` becomes `.based-on-label`, `-line`/`-value` become `.based-on-line`/`-value` (app.tsx, style.css, tests)
 - [ ] Dave looked (visible in the inspector, like #245)
 
 ### TEST
@@ -53,7 +53,7 @@
 
 ### DEPLOY: app/advised-for-attr
 
-The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-based-on-character="Lv. 21 Thief"` and `data-based-on-mob="Snail"`, with `data-sheet` beside them saying whose sheet it is: `advised` (what the app advises, under "Based on:" and in the Advised popups) or `actual` (the character as played in game, in every Your character popup). The classes inside the "Based on:" section are renamed after it, `.advised-for` to `.based-on-container` and `.advised-for-row`/`-line`/`-value` to `.based-on-row`/`-line`/`-value`.
+The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-based-on-character="Lv. 21 Thief"` and `data-based-on-mob="Snail"`, with `data-sheet` beside them saying whose sheet it is: `advised` (what the app advises, under "Based on:" and in the Advised popups) or `actual` (the character as played in game, in every Your character popup). The classes inside the "Based on:" section are renamed after it, `.advised-for` to `.based-on-container` and `.advised-for-row`/`-line`/`-value` to `.based-on-label`/`.based-on-line`/`.based-on-value`.
 
 **Score:** 1
 

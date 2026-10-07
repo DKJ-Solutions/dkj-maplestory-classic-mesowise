@@ -1747,7 +1747,7 @@ function BasedOn(props: { who: string; mob: string }) {
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="based-on-row" data-based-on-character={props.who} data-sheet="advised">
+          <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
             <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
@@ -1761,7 +1761,7 @@ function BasedOn(props: { who: string; mob: string }) {
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
         <div class="based-on-line">
-          <div class="based-on-row" data-based-on-mob={props.mob} data-sheet="advised">
+          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
             <span class="sr-only">Mob: </span>
             <span class="based-on-value">{props.mob}</span>
             {mobDef && (
