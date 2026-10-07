@@ -441,7 +441,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised: Equip')
     expect(dialog.getAttribute('aria-label')).toBe('Advised: Equip')
     const weapon = advisedRow(dialog, 'Weapon')
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
@@ -461,7 +461,7 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised: Equip')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -4077,7 +4077,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         closeView(title)
         fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Advised` }))
         const adv = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
-        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(/^Advised/)
+        // De titel noemt de kaart, niet alleen Advised (Dave, 7 oktober 2026).
+        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^Advised: ' + title))
         expect(adv.getAttribute('aria-label')).toBe(`Advised: ${title}`)
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
@@ -4090,7 +4091,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
       expect(buy).not.toBeNull()
@@ -4173,7 +4174,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
     // Naast de kop, niet boven de rijen (Dave, 7 oktober 2026).
     const head = button.closest('.stat-dialog-head')!
-    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
+    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
     const text = textOf(button)
     expect(text.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     expect(text.hidden).toBe(true)

@@ -436,14 +436,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; ariaLabel?: string; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} ariaLabel={props.ariaLabel} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -741,7 +741,7 @@ function StatsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={showAdvised ? 'Advised' : props.title} ariaLabel={showAdvised ? `Advised: ${props.title}` : undefined} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           {props.lead?.(draft, showAdvised)}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -1015,7 +1015,7 @@ function PotionsCard(props: {
       </CardHead>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && advisedPotions && (
-        <CardPopup title="Advised" ariaLabel="Advised: Potions" opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup title="Advised: Potions" opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De potions van het advies, om te lezen (Dave, 6 oktober 2026, #192): de naam met zijn prijs als vaste tekst, zonder keuzemenu. */}
           {POTION_KINDS.map((kind) => {
             const potion = advisedPotions[kind]
@@ -1430,8 +1430,6 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
  */
 function StatDialog(props: {
   title: string
-  /** De naam voor een schermlezer als die langer is dan de zichtbare titel, zoals "Advised: Skillpoints" (#192). */
-  ariaLabel?: string
   closeLabel?: string
   /** Op een computer meteen in het eerste vak (standaard); uit voor een kaart-popup, waar dat vak een zoekbalk kan zijn waarvan de zoeklijst dan openklapt. */
   focusInput?: boolean
@@ -1552,7 +1550,7 @@ function StatDialog(props: {
     <dialog
       ref={ref}
       class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
-      aria-label={props.ariaLabel ?? props.title}
+      aria-label={props.title}
       onCancel={(e) => {
         e.preventDefault()
         cancel()
@@ -1598,7 +1596,7 @@ function StatDialog(props: {
   )
 }
 
-/** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
+/** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised: Equip" (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
     De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt; op de factuur
@@ -1620,7 +1618,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
       {/* De kop van de factuur (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */}
       <div class="advised-head" aria-hidden="true">
         <span>Slot</span>
-        <span>Item</span>
+        <span>Equip</span>
         <span class="advised-head-price">Mesos</span>
       </div>
       {props.slots.map((slot) => (
@@ -1858,7 +1856,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2043,7 +2041,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={advised ? 'Advised' : 'Skillpoints'} ariaLabel={advised ? 'Advised: Skillpoints' : undefined} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>
@@ -2215,7 +2213,7 @@ function HuntedMobCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && props.advised !== null && (
-        <CardPopup title="Advised" ariaLabel="Advised: Monster" opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup title="Advised: Monster" opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
           <div class="field">
             <span>De mob die je het meest killt</span>

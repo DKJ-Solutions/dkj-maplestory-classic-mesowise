@@ -39,19 +39,33 @@
 
 ### PLAN
 
+Dave, October 7, 2026: the six popups behind the Advised block all had the title "Advised". Clicking the sword icon should show
+"Advised: Equip", and so on for each card. Also rename the Item column of the Advised equip bill to Equip.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Every Advised popup shows "Advised: <card>" as its title (Equip, Skillpoints, Monster, Potions, Ability points, Total stats), also when opened from the card itself
+- [x] The `ariaLabel` prop of `CardPopup` and `StatDialog` is gone: the visible title now carries the card name
+- [x] The Item column header of the Advised equip bill reads Equip
 
 ### TEST
 
+- [x] Tests: the title of each Advised popup starts with "Advised: <card>"
+- [ ] Victor: code review
+- [ ] Dave looks at it on a phone before the merge
+
 ### DEPLOY: app/advised-popup-titles
 
-**Score:**
+Every Advised popup now names its card in the title, such as "Advised: Equip" or "Advised: Potions", so you can see which part
+of the advice you are reading. The middle column of the Advised equip bill is called Equip.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
