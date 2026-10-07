@@ -87,11 +87,15 @@ function HelpToggle(props: { open: boolean; controls: string; onToggle: () => vo
   )
 }
 
-/** Een rond i-teken: de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026), naast het vraagteken hieronder. */
+/**
+ * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in een zachte tint van de
+ * tekstkleur, met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje), naast het vraagteken hieronder.
+ */
 const INFO_ICON = (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 11v6M12 7.5v.01" />
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.16" />
+    <circle cx="12" cy="7.6" r="1.4" fill="currentColor" />
+    <path d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 )
 
@@ -1616,8 +1620,11 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
       {props.slots.map((slot) => (
         <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
       ))}
-      <p class="equip-total">
-        Te kopen: <strong>{nfInt.format(total)} meso</strong>
+      {/* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep erboven. */}
+      <p class="equip-total advised-total">
+        <span class="advised-total-label">Te kopen</span>
+        <strong>{nfInt.format(total)}</strong>
+        <span class="advised-total-unit">meso</span>
       </p>
     </>
   )

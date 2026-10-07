@@ -55,6 +55,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] The "?" opens a popup of its own with what the piece is (type, level, ATT or DEF, MDEF, speed, requirements, price) and the reason (Dave, October 7, 2026); `catalogInfo` exported from `src/equipment.ts`
 - [x] The "?" popup opens with a verdict (Kopen, Niet kopen, Houden, Leeg laten; for ammo Per stuk kopen, Per stuk herladen or Eigen bedrag) and the sum: price, saving until your next upgrade, what you keep or would lose, and how the piece saves (Dave, October 7, 2026)
 - [x] An info button right after the item name opens the item facts; the "?" keeps only the verdict and the reason (Dave, October 7, 2026); both through `PopupButton`
+- [x] A filled info icon with a classic i (Dave, October 7, 2026)
+- [x] The total as the last line of the bill: in the price column under the amounts, with a total rule above it and "meso" beside it (Dave, October 7, 2026)
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
@@ -67,7 +69,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 ### DEPLOY: app/compact-advised-popup
 
 The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
-shop price and a question mark. It has no Report button any more. What you buy
+shop price and a question mark. The total sits under the prices with a total rule. It has no Report button any more. What you buy
 is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, MDEF, speed,
 requirements, price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
 keep what you wear, or why the slot stays empty.

@@ -447,7 +447,7 @@ describe('equipment: de claw past het profiel aan', () => {
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
     expect(weapon.classList.contains('buy')).toBe(false)
     expect(whyOf(weapon)).toMatch(/^Je draagt dit al/)
-    expect(dialog.textContent).toContain('Te kopen:')
+    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
   })
 
   it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links het advies, rechts wat je draagt (#188, #192)', () => {
@@ -466,7 +466,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
-    expect(dialog.textContent).toContain('Te kopen:')
+    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
     expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
   })
 
@@ -4096,7 +4096,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(buy).not.toBeNull()
       expect(buy.querySelector('dialog.item-dialog')).toBeNull()
       expect(whyOf(buy)).toContain('Koop')
-      expect(d.textContent).toContain('Te kopen:')
+      expect(d.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
       expect(part('cheapest-cost').querySelector('dialog')).toBeNull()
       expect(within(part('cheapest-cost')).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
     })
