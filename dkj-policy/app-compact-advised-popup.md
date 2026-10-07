@@ -68,7 +68,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] Tycho: existing tests on the new rows, plus tests for `why`, the info popup and the "?" popup (Kopen, Houden, Leeg laten). Not covered by a UI test: the verdicts "Niet kopen" and "Per stuk kopen", and "Leeg: je overall beslaat dit slot" (no UI scenario found in which Advised leaves top and bottom empty under a worn overall)
 - [x] Edith: final read of the Dutch UI text. Applied: an own ammo amount gets the verdict "Eigen bedrag" and stars "Per stuk herladen"; "Niet zeker of het loont" when the saving is unknown; no double "maar"; the covered texts no longer say "je draagt" (the piece may be one you buy). Withdrawn: the weapon slot is `claw` for every job, so a wand or bow gets the ATT sentence. Kept: "grijs" in the header help, the muted colour is grey
 - [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. His two open points were settled by Dave's later asks: the price got its own column, and every row (an empty half next to an overall too) got a "?"
-- [ ] Dave looks at it on a phone before the merge
+- [x] Dave looks at it on a phone before the merge (approved October 7, 2026)
 
 ### DEPLOY: app/compact-advised-popup
 
