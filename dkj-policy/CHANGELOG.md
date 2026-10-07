@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**75 / 116 minor entries** <!-- pending-tally -->
+**75 / 117 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/199-advised-ammo-typed-price · 20261007-094736Z
+
+The Ammo slot in the Advised view of the Equip popup now always agrees with the Advised invoice. If you typed your own ammo
+amount on the spot it shows "Eigen bedrag" instead of a star or arrow name; a Thief whose star recharge price matches no
+known star sees "Throwing stars, 0,35 meso per stuk" instead of "—"; and a custom spot that the invoice counts no ammo for
+leaves the slot empty. Resolves #199.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Advised Ammo slot agrees with the invoice when the ammo price is typed in
+
+[PR #212](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/212)
+
+---
 
 ### DEPLOY: app/203-beginner-weapon-advice · 20261007-093146Z
 
