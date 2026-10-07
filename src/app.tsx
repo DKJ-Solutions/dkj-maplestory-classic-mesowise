@@ -346,7 +346,8 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 Offlineversie downloaden
               </a>
-              <Help>Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</Help>
+              {/* Gewoon zichtbaar, zonder vraagteken (Dave, 7 oktober 2026): de zin is kort en hoort bij de knop. */}
+              <p class="hint">Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</p>
             </div>
           )}
         </StatDialog>

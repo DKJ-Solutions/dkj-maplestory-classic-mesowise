@@ -39,19 +39,27 @@
 
 ### PLAN
 
+Dave asked why a help button sat under the download button: cbdf1b7 had put the one-line explanation behind a question mark, which `.help` renders on its own line. He chose to show the text again (October 7, 2026).
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: the menu's download explanation is a plain `.hint` paragraph again instead of `<Help>`
 
 ### TEST
 
+- [x] `src/app.test.tsx`: the download block has no question mark and shows the explanation; vitest 1946/1946 green, lint clean
+
 ### DEPLOY: app/download-hint-visible
 
-**Score:**
+The explanation under "Offlineversie downloaden" in the menu is visible again, without a question mark of its own on a separate line.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Opening the menu shows straight away what the offline version is, and no lone question mark sits under the download button.
+
+**Score:** 2
 
 #### Pull Request
 
