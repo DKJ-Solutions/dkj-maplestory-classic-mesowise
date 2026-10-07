@@ -41,17 +41,23 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `.gitignore`: add `.claude/worktrees/`, where Claude Code puts an isolated subagent worktree
 
 ### TEST
 
+- [x] `git check-ignore -v --no-index .claude/worktrees/probe/x` matches `.gitignore:6:.claude/worktrees/`
+
 ### DEPLOY: claude/226-ignore-worktrees
 
-**Score:**
+A subagent worktree under `.claude/worktrees/` no longer shows up as untracked in the main checkout. This prevents a failure that hasn't happened yet: a `git add .` on the main checkout while a subagent worktree exists would stage that whole nested checkout (#226).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Nothing a player of the app sees: this only touches the repo's own git housekeeping.
+
+**Score:** N/A
 
 #### Pull Request
 
