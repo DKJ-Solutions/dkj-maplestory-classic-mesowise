@@ -1741,7 +1741,7 @@ function BasedOn(props: { who: string; mob: string }) {
       <div class="advised-for">
         {props.who && (
           // data-character-advised zegt in de HTML welk vak je aanwijst, "Char: Lv. 21 Thief" of "Mob: Snail", net als data-popup (#245).
-          // "advised": het karakter dat de app adviseert, niet dat uit het spel (dat wordt data-character-profile; Dave, 7 oktober 2026).
+          // "advised": het karakter dat de app adviseert, niet dat uit het spel (dat wordt data-character-actual; Dave, 7 oktober 2026).
           <div class="advised-for-row" data-character-advised={`Char: ${props.who}`}>
             <span class="sr-only">Char: </span>
             <span class="advised-for-value">{props.who}</span>
