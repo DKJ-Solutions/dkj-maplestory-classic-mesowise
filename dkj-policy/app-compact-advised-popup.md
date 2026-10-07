@@ -58,6 +58,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] A filled info icon with a classic i (Dave, October 7, 2026)
 - [x] The total as the last line of the bill: in the price column under the amounts, with a total rule above it and "meso" beside it (Dave, October 7, 2026)
 - [x] Only the amount of a bought piece is in the accent colour, not its name, and the name is not bold (Dave, October 7, 2026)
+- [x] A header row: Slot, Item and Mesos above the amounts (Dave, October 7, 2026)
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
@@ -70,7 +71,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 ### DEPLOY: app/compact-advised-popup
 
 The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
-shop price and a question mark. The total sits under the prices with a total rule. It has no Report button any more. The price of what you
+shop price and a question mark. A header row names the columns, with Mesos above the prices, and the total sits under
+them with a total rule. It has no Report button any more. The price of what you
 buy is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, MDEF, speed,
 requirements, price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
 keep what you wear, or why the slot stays empty.

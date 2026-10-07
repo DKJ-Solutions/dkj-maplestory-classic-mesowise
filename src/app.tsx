@@ -1617,6 +1617,12 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
   const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
+      {/* De kop van de factuur (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */}
+      <div class="advised-head" aria-hidden="true">
+        <span>Slot</span>
+        <span>Item</span>
+        <span class="advised-head-price">Mesos</span>
+      </div>
       {props.slots.map((slot) => (
         <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
       ))}
