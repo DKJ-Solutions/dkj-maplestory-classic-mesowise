@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo, OWN_AMMO } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, OTHER, type Equipment } from './equipment'
@@ -193,8 +193,19 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
     expect(countedAmmo(parsed('thief', { starWatk: '18', starRecharge: '0.4' }), weapon('Steel Igor'))).toBe('Wolbi Throwing Stars')
   })
 
-  it('geeft niets als de herlaadprijs bij geen star uit de lijst hoort', () => {
-    expect(countedAmmo(parsed('thief', { starRecharge: '0.35' }), weapon('Steel Igor'))).toBeNull()
+  it('geeft een algemeen label met de prijs als de herlaadprijs bij geen star of pijl uit de lijst hoort (#199)', () => {
+    expect(countedAmmo(parsed('thief', { starRecharge: '0.35' }), weapon('Steel Igor'))).toBe('Throwing stars, 0,35 meso per stuk')
+    // Een Bowman rekent altijd met de prijs van zijn pijl (parseProfile), dus een getypte prijs verandert niets.
+    expect(countedAmmo(parsed('bowman', { starRecharge: '0.35' }), weapon('Battle Bow'))).toBe('Arrows for Bows')
+    // Zonder herlaadprijs telt de factuur de munitiekosten van de plek: niets te noemen.
+    expect(countedAmmo(parsed('thief', { starRecharge: '0' }), weapon('Steel Igor'))).toBeNull()
+  })
+
+  it('noemt geen munitie als je zelf het bedrag voor de munitie van de plek invulde (#199)', () => {
+    expect(countedAmmo(parsed('thief'), weapon('Steel Igor'), true)).toBe(OWN_AMMO)
+    expect(countedAmmo(parsed('bowman'), weapon('Battle Bow'), true)).toBe(OWN_AMMO)
+    // Wie niets gooit houdt null, ook met een eigen bedrag.
+    expect(countedAmmo(parsed('warrior'), weapon(''), true)).toBeNull()
   })
 
   it('geeft niets voor wie niets gooit: een Thief met een dagger, een Beginner, een Warrior of een Magician', () => {
