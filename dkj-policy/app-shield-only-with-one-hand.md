@@ -50,6 +50,7 @@ it takes the shield off, as #172 already did for the Bowman.
 
 - [x] `ONE_HANDED`, `holdsOneHanded` and `wearsSlot` in `src/equipment.ts`; `hasSlotFor`, `slotsFor` and `changeEquipment` use them. The catalogue keeps the job-level `hasSlot`, so a lookup by name still works without a weapon
 - [x] `autoFillAp` passes the custom weapon's kind to `slotsFor`
+- [x] Shoes sits directly under Hat in `EQUIP_SLOTS` (Dave, October 7, 2026)
 
 ### TEST
 
@@ -61,7 +62,7 @@ it takes the shield off, as #172 already did for the Bowman.
 
 The Shield row now appears only next to a one-handed weapon: a weapon under level 10, a dagger, a 1H sword, axe or blunt
 weapon, or a wand. With an empty weapon slot or a two-handed weapon (staff, 2H weapon, spear, polearm, claw, bow) it is
-gone, and picking such a weapon takes a worn shield off, with its defence.
+gone, and picking such a weapon takes a worn shield off, with its defence. Shoes now sits directly under Hat.
 
 **Score:** 3
 
