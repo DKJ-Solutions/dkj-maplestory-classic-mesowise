@@ -215,3 +215,24 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
     expect(countedAmmo(parsed('bowman'), weapon(OTHER))).toBe('Arrows for Bows')
   })
 })
+
+describe('cheapestEquipment: het vereiste wapen (#202)', () => {
+  const weapon = { claw: { name: 'Garnier', price: 5000 }, from: 10, to: 14, truncated: false } as unknown as Parameters<typeof cheapestEquipment>[4]
+
+  it('zet het wapen in het wapenslot als het advies geen winnaar heeft, met prijs en horizon', () => {
+    for (const advice of [NONE, clawAdvice(null)]) {
+      const r = cheapestEquipment(SLOTS, defaultEquipment(), advice, NONE, weapon)
+      expect(r.claw).toEqual({ worn: null, cheapest: 'Garnier', changed: true, price: 5000, option: null, horizon: { from: 10, to: 14, truncated: false } })
+    }
+  })
+
+  it('negeert het wapen als het advies een winnaar heeft', () => {
+    const r = cheapestEquipment(SLOTS, defaultEquipment(), clawAdvice('Steel Titans'), NONE, weapon)
+    expect(r.claw.cheapest).toBe('Steel Titans')
+    expect(r.claw.price).toBe(5000)
+  })
+
+  it('verandert niets zonder wapen (null is de standaard)', () => {
+    expect(cheapestEquipment(SLOTS, defaultEquipment(), NONE, NONE).claw.cheapest).toBeNull()
+  })
+})

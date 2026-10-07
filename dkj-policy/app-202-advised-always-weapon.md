@@ -49,7 +49,7 @@ Dave, October 7, 2026 (#202): an empty weapon slot in the player's own setup doe
 
 ### TEST
 
-- [ ] Tycho: tests on `requiredWeapon`, `cheapestEquipment` and `advisedSetup` (every job, fixed point, below level 10)
+- [x] Tycho: tests on `requiredWeapon`, `cheapestEquipment` and `advisedSetup` (every job, fixed point, below level 10)
 - [ ] Victor: code review
 - [ ] Edith: final read of the changed comments and this entry
 

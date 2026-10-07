@@ -4,7 +4,7 @@ import type { CheapestInput } from './cheapestSettings'
 import { profileOf } from './cheapestSettings'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
-import { defaultEquipment, wornName } from './equipment'
+import { defaultEquipment, isEmptyEntry, wornName } from './equipment'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
 import { NO_POTION_CHOICE } from './potions'
@@ -108,5 +108,81 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
       expect(s.equipment).toBe(user.equipment)
       expect(s.profile).toBe(user.profileDraft)
     }
+  })
+})
+
+describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober 2026, #202)', () => {
+  const JOBS_ALL: Job[] = ['thief', 'warrior', 'bowman', 'magician']
+  /** Geen mob gekozen, leeg wapenslot (zoals defaultEquipment) en het voorbeeldprofiel. */
+  const bare = (job: Job, level: number): CheapestInput => ({
+    job,
+    gender: null,
+    equipment: defaultEquipment(),
+    drafts: [],
+    profileDraft: { ...DEFAULT_PROFILE, level: String(level) },
+    potionChoice: NO_POTION_CHOICE,
+  })
+  const levels = [10, 11, 12, 15, 20, 25, 30]
+
+  it('zet bij een leeg wapenslot een wapen in het advies: gekocht met zijn winkelprijs en aan je hand', () => {
+    for (const job of JOBS_ALL) {
+      for (const level of levels) {
+        const label = `${job} L${level}`
+        const s = advisedSetup(bare(job, level))
+        const slot = s.cheapest.claw
+        expect(slot.cheapest, label).not.toBeNull()
+        expect(slot.changed, label).toBe(true)
+        const bought = s.purchases.find((p) => p.slot === 'claw')
+        expect(bought, label + ' gekocht').toBeDefined()
+        expect(bought!.name, label).toBe(slot.cheapest)
+        expect(bought!.price, label).toBe(slot.price)
+        expect(bought!.price, label + ' prijs').toBeGreaterThan(0)
+        expect(wornName(s.equipment.claw), label + ' equip').toBe(slot.cheapest)
+      }
+    }
+  })
+
+  it('geeft Dave\'s geval: een Thief en een Warrior op level 10 met het voorbeeldprofiel krijgen allebei een wapen', () => {
+    const thief = advisedSetup(bare('thief', 10))
+    expect(thief.cheapest.claw).toMatchObject({ cheapest: 'Garnier', changed: true, price: 5000 })
+    const warrior = advisedSetup(bare('warrior', 10))
+    expect(warrior.cheapest.claw).toMatchObject({ cheapest: 'Steel Pipe', changed: true, price: 3000 })
+  })
+
+  it('blijft een vast punt: na Overnemen koopt Advised niets meer en verandert niets meer', () => {
+    for (const job of JOBS_ALL) {
+      for (const level of levels) {
+        const user = bare(job, level)
+        const taken = afterTake(user, advisedSetup(user))
+        const again = advisedSetup(taken)
+        const label = `${job} L${level}`
+        expect(again.purchases.map((p) => p.name), label + ' koopt').toEqual([])
+        expect(again.result.changes, label + ' verandert').toEqual([])
+        expect(again.shop, label).toBe(0)
+      }
+    }
+  })
+
+  it('geeft onder level 10, zonder wapen in de winkel, geen wapen en geen crash', () => {
+    for (const job of JOBS_ALL) {
+      const user = bare(job, 8)
+      const s = advisedSetup(user)
+      expect(s.cheapest.claw.cheapest, job).toBeNull()
+      expect(s.purchases.some((p) => p.slot === 'claw'), job).toBe(false)
+      expect(isEmptyEntry(s.equipment.claw), job).toBe(true)
+      // Zoals voorheen: met de ATT uit het profiel; een ander profiel-ATT verandert hier dus iets aan de rekening, niet aan het wapen.
+      const other = advisedSetup({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '25' } })
+      expect(other.cheapest.claw.cheapest, job).toBeNull()
+    }
+  })
+
+  it('laat een gevuld wapenslot met rust: het advies rekent met je eigen wapen, niet vanaf een lege hand', () => {
+    const user = { ...bare('thief', 20), equipment: { ...defaultEquipment(), claw: { pick: 'Steel Igor', name: '', stat: '' } } }
+    const s = advisedSetup(user)
+    expect(s.cheapest.claw.worn).toBe('Steel Igor')
+    // Zonder aankoop blijft het wapen wat je droeg; met een aankoop is het een echte upgrade (het kost geld en verandert iets).
+    const bought = s.purchases.find((p) => p.slot === 'claw')
+    if (!bought) expect(wornName(s.equipment.claw)).toBe('Steel Igor')
+    else expect(bought.name).not.toBe('Steel Igor')
   })
 })

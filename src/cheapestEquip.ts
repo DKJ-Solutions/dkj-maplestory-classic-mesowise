@@ -3,7 +3,7 @@
 // Puur, zonder UI-import; leest alleen wat het wapen- en armor-advies al uitrekenden. De factuur van Advised rekent met deze equip
 // (Dave, 6 oktober 2026, #192): advisedEquipment zet haar om in een Equipment en de winkelprijs van wat je koopt.
 import type { ArmorUpgradeAdvice } from './armorUpgrade'
-import type { ClawUpgradeAdvice } from './clawUpgrade'
+import type { ClawUpgradeAdvice, WeaponPick } from './clawUpgrade'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { THROWING_STARS } from './data/thief'
 import type { ArmorSlot } from './data/types'
@@ -42,9 +42,10 @@ export interface CheapestSlot {
  * waarvan het beste stuk zich terugverdient (netto besparing boven 0), van grootste naar kleinste netto besparing; een
  * stuk dat een slot vult dat een eerder stuk al vulde, of een overall naast een top of bottom, valt af. Elk stuk is
  * doorgerekend tegen wat je nu draagt, dus dit is het advies per slot naast elkaar, geen nieuwe berekening van
- * alles samen. Zonder advies blijft elk slot wat je draagt.
+ * alles samen. Zonder advies blijft elk slot wat je draagt. Met `weapon` (een leeg wapenslot, #202) staat dat wapen er als het advies
+ * zelf geen wapen koopt: er staat altijd een wapen in het advies.
  */
-export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice): Record<EquipSlot, CheapestSlot> {
+export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice, weapon: WeaponPick | null = null): Record<EquipSlot, CheapestSlot> {
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   const price: Partial<Record<EquipSlot, number>> = {}
   const horizon: Partial<Record<EquipSlot, Horizon>> = {}
@@ -64,6 +65,10 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     price.claw = claw.winner.price
     const won = claw.choices.find((c) => c.claw === claw.winner)
     if (won) horizon.claw = { from: won.from, to: won.to, truncated: won.truncated }
+  } else if (weapon) {
+    pick.claw = weapon.claw.name
+    price.claw = weapon.claw.price
+    horizon.claw = { from: weapon.from, to: weapon.to, truncated: weapon.truncated }
   }
   if (armor.kind === 'advice') {
     // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
