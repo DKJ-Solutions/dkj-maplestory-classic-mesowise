@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**82 / 129 minor entries** <!-- pending-tally -->
+**83 / 130 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/227-weapon-tie-break · 20261007-142401Z
+
+When two weapons save exactly the same, the weapon advice no longer depends on shop order or rounding noise. It now prefers the cheaper weapon, and at the same price the stronger one, so a small model change can't flip the pick (#227).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On a spot where every weapon kills just as fast (a Bowman on Snail), the app now steadily advises the War Bow over the equal-priced Crossbow, and under level 10 the Wooden Club over the Sword or Hand Axe.
+
+**Score:** 2
+
+#### Pull Request
+
+Break an equal-saving weapon tie on price, then power
+
+[PR #232](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/232)
+
+---
 
 ### DEPLOY: app/based-on-char-stats · 20261007-142158Z
 
