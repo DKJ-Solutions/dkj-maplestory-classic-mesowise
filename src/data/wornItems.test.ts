@@ -123,7 +123,7 @@ describe('items zonder prijs in het upgrade-advies', () => {
   if (!('profile' in parsed)) throw new Error('voorbeeldprofiel ongeldig')
   const spots = [
     { ...mobDraft('Ribbon Pig')!, id: 'a' },
-    { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' },
+    { ...newDraft('b'), name: 'b', expPerHour: '1000', travel: '10000' },
   ]
 
   it('komt met de echte data in geen enkel advies voor, op elk level', () => {

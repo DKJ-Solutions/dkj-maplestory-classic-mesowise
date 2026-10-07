@@ -77,7 +77,7 @@ export function findKnownSpot(id: string | undefined): KnownSpot | undefined {
 export function mobDraft(name: string): SpotDraft | undefined {
   const spot = findKnownSpot(`mob:${name}`)
   if (!spot) return undefined
-  return { id: spot.id, name: spot.name, known: spot.id, monster: name, kills: '', expPerHour: '', potions: '', ammo: '', travel: '0' }
+  return { id: spot.id, name: spot.name, known: spot.id, monster: name, kills: '', expPerHour: '', travel: '0' }
 }
 
 /** De mob waarop je jaagt, uit een bewaarde plek; undefined als het geen mob is (een map of een eigen plek van vroeger). */

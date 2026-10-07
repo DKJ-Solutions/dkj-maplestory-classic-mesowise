@@ -95,14 +95,9 @@ describe('levelInvoice', () => {
     expect(invoiceOf(bowman).lines.map((l) => l.label)).toContain('Arrows')
   })
 
-  it('zet de potions van een plek zonder berekend plan als één regel zonder aantal en uitleg', () => {
-    const own = [{ id: 'eigen', name: 'Eigen plek', expPerHour: '50000', potions: '1000', ammo: '0', travel: '0' }]
-    const inv = invoiceOf(thief, own)
-    const line = inv.lines.find((l) => l.label === 'Potions')!
-    expect(line.qty).toBeNull()
-    expect(line.why).toBeUndefined()
-    expect(line.meso).toBe(Math.ceil(1000 * inv.hours))
-    expect(inv.lines.some((l) => l.why?.kind === 'ammo')).toBe(false)
+  it('geeft geen factuur voor een plek zonder berekend plan (een eigen plek heeft geen potions en munitie om te tellen)', () => {
+    const own = [{ id: 'eigen', name: 'Eigen plek', expPerHour: '50000', travel: '0' }]
+    expect(levelInvoice(own, thief).kind).toBe('none')
   })
 })
 

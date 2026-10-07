@@ -23,7 +23,7 @@ const parseW = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
 /** Een Warrior met stats ruim genoeg voor elk item, zodat alleen level en wapen of armor bepalen wat een kandidaat is. */
 const strong = (over: Partial<Profile> = {}): Profile => ({ ...parseW({}), ...over })
 
-const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
 // De mob waarop je jaagt (#123): Stump. Waar een sterke Warrior een Stump met elk wapen in één klap velt, telt de schade
 // niet en rekent de test op de taaiere Dark Stump (toughDrafts).
 const drafts = [{ ...mobDraft('Stump')!, id: 'a' }, own('b', 1_000, 10_000)]
