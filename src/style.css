@@ -754,10 +754,23 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De stat-regels in een info-popup, zoals de Total stats achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): even compact als de factuur
    van Total cost: Equip (.advised-row). Een lage rij, de naam links, het getal klein en vet rechts, en geen lege kolom voor een potlood: hier is
    alles alleen om te lezen. */
-.item-dialog .stat-line { grid-template-columns: minmax(0, 1fr) auto; min-height: 2.25rem; padding: 0.125rem 0; }
-.item-dialog .stat-line > span:empty { display: none; }
-.item-dialog .stat-line .equip-value { height: auto; min-width: 0; padding: 0; justify-content: flex-end; }
-.item-dialog .stat-line .equip-value-num { font-size: 0.875rem; }
+.item-dialog .stat-line, .item-dialog .skill-row { grid-template-columns: minmax(0, 1fr) auto; min-height: 2.25rem; padding: 0.125rem 0; }
+.item-dialog .stat-line > span:empty:last-child, .item-dialog .skill-row > span:empty:last-child { display: none; }
+.item-dialog .stat-line .equip-value, .item-dialog .skill-row .equip-value { height: auto; min-width: 0; padding: 0; justify-content: flex-end; }
+.item-dialog .equip-value-num, .item-dialog .ability-line .ap-total .equip-value-num { font-size: 0.875rem; }
+.item-dialog .skill-row > span:first-child { font-size: 0.9375rem; }
+/* Wat een skill kost en geeft staat in Skillpoints zelf; hier alleen de naam en het level, zoals een factuurregel. */
+.item-dialog .skill-mp { display: none; }
+/* Het karakter achter "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points, Skillpoints en Total stats, elk met een kop
+   zoals die van de factuur (.advised-head), en lucht ertussen. Ability points houdt zijn kolommen Base + Extra = Totaal, zonder potloodkolom. */
+.char-table + .char-table { margin-top: 1rem; }
+.char-table-head { margin: 0 0 0.25rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.item-dialog .stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 2.25rem 0.5rem 2.25rem 0.5rem 2.5rem; }
+.item-dialog .ability-head { min-height: 0; }
+.item-dialog .ability-line .equip-value { justify-content: center; }
+.item-dialog .skill-group { margin-bottom: 0.5rem; }
+.item-dialog .skill-group h3 { margin: 0.25rem 0 0; font-size: 0.6875rem; }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
    met de prijzen erboven, zonder "meso" (de kop zegt Mesos), en een totaalstreep over de hele breedte, zoals op een bon: subtiel, maar net sterker dan de lijnen tussen de rijen (Dave, 7 oktober 2026). Zoals een echte factuur: het
    totaal even groot als de bedragen erboven, en lucht rond de totaalstreep. Onder het totaal een lijn over de hele breedte, net als erboven

@@ -3960,7 +3960,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Total stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4202,25 +4202,38 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet achter de char onder "Based on:" een i-knopje dat de Total stats van het advies opent, met dezelfde regels als Advised: Total stats (Dave, 7 oktober 2026)', async () => {
+    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points, Skillpoints en Total stats, met dezelfde regels als hun Advised-popups (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
-      const lines = (d: HTMLElement) => [...d.querySelectorAll('.stat-line')].map((l) => l.textContent)
-      const advisedLines = lines(openView('Total stats', 'Advised'))
-      closeView('Total stats')
-      expect(advisedLines.length).toBeGreaterThan(3)
+      const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
+      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop, de skills en de Total stats.
+      const tables = [
+        ['Ability points', '.ability-line:not(.ability-head)'],
+        ['Skillpoints', '.skill-row'],
+        ['Total stats', '.stat-line'],
+      ] as const
+      const want = tables.map(([title, sel]) => {
+        const got = lines(openView(title, 'Advised'), sel)
+        closeView(title)
+        expect(got.length, title).toBeGreaterThan(1)
+        return got
+      })
+      const who = totalCostWho('20', 'thief')
       for (const card of ['Equip', 'Potions'] as const) {
         const d = openView(card, 'Advised')
         const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
-        expect(button.getAttribute('aria-label')).toBe(`Total stats van ${totalCostWho('20', 'thief')}`)
+        expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
         // De popup heet naar het karakter, met het label expected erboven (Dave, 7 oktober 2026).
-        const who = totalCostWho('20', 'thief')
         expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(who)
         expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
         expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
-        expect(lines(popup)).toEqual(advisedLines)
+        const sections = [...popup.querySelectorAll('section.char-table')]
+        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual(tables.map(([title]) => title))
+        sections.forEach((section, i) => expect(lines(section, tables[i][1]), tables[i][0]).toEqual(want[i]))
+        // Alleen om te lezen: geen potlood en geen invoer.
+        expect(popup.querySelector('.equip-edit, input')).toBeNull()
         fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
         await frame()
         expect(document.activeElement).toBe(button)
