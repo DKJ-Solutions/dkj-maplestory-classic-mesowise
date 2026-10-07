@@ -4287,42 +4287,51 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet op de vakken onder "Based on:" data-character-advised en data-mob-advised, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+    it('zet op de vakken onder "Based on:" data-based-on-character en data-based-on-mob, met data-sheet="advised", zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
       const [char, mobRow] = d.querySelectorAll('.based-on .advised-for-row')
-      expect(char.getAttribute('data-character-advised')).toMatch(/^Lv\. \d+ Thief$/)
-      expect(char.hasAttribute('data-mob-advised')).toBe(false)
-      expect(mobRow.getAttribute('data-mob-advised')).toBe(mob)
-      expect(mobRow.hasAttribute('data-character-advised')).toBe(false)
+      expect(char.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+      expect(char.hasAttribute('data-based-on-mob')).toBe(false)
+      expect(mobRow.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(mobRow.hasAttribute('data-based-on-character')).toBe(false)
+      for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('advised')
       closeView('Equip')
     })
 
-    it('zet data-mob-advised op elke popup die info over de mob van het advies toont: het i-knopje onder "Based on:" en Advised: Monster (Dave, 7 oktober 2026)', () => {
+    it('zet data-based-on-mob op elke popup die info over een mob toont: het i-knopje onder "Based on:" en de Monster-popup, met data-sheet advised of actual (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
       fireEvent.click(d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!)
-      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-mob-advised')).toBe(mob)
-      fireEvent.click(within(info).getByRole('button', { name: 'Sluiten' }))
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .stat-dialog-body')!
+      expect(info.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(info.getAttribute('data-sheet')).toBe('advised')
+      fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
-      const monster = openView('Monster', 'Advised')
-      expect(monster.querySelector('.spot-body')!.getAttribute('data-mob-advised')).toBe(mob)
+      const advised = openView('Monster', 'Advised').querySelector('.spot-body')!
+      expect(advised.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(advised.getAttribute('data-sheet')).toBe('advised')
       closeView('Monster')
-      expect(openView('Monster', 'Your character').querySelector('[data-mob-advised]')).toBeNull()
+      // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
+      const worn = openView('Monster', 'Your character')
+      const saved = worn.querySelector<HTMLSelectElement>('select')!.value
+      expect(worn.querySelector('.spot-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
+      expect(worn.querySelector('.spot-body')!.getAttribute('data-sheet')).toBe('actual')
       closeView('Monster')
     })
 
-    it('zet in elke Your character-popup data-character-actual met het level en de job die je invulde, en niet in Advised (Dave, 7 oktober 2026)', () => {
+    it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
-        const worn = openView(card, 'Your character')
-        expect(worn.querySelector('.spot-body')!.getAttribute('data-character-actual')).toMatch(/^Lv\. \d+ Thief$/)
+        const worn = openView(card, 'Your character').querySelector('.spot-body')!
+        expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+        expect(worn.getAttribute('data-sheet')).toBe('actual')
         closeView(card)
-        const advised = openView(card, 'Advised')
-        expect(advised.querySelector('[data-character-actual]')).toBeNull()
+        const advised = openView(card, 'Advised').querySelector('.spot-body')!
+        expect(advised.hasAttribute('data-based-on-character')).toBe(false)
+        expect(advised.getAttribute('data-sheet')).toBe('advised')
         closeView(card)
       }
     })

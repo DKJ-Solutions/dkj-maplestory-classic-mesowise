@@ -41,9 +41,9 @@
 
 ### CREATE
 
-- [x] `data-character-advised` on the Char row under "Based on:" (src/app.tsx)
-- [x] `data-character-actual` on every Your character popup (`.spot-body`)
-- [x] `data-mob-advised` on the Mob row, the mob's info popup and Advised: Monster
+- [x] `data-based-on-character` on the Char row under "Based on:" and on every Your character popup (`.spot-body`) (src/app.tsx)
+- [x] `data-based-on-mob` on the Mob row, the mob's info popup and both Monster popups
+- [x] `data-sheet="advised" | "actual"` beside them, and on every card popup's `.spot-body`
 - [ ] Dave looked (visible in the inspector, like #245)
 
 ### TEST
@@ -52,7 +52,7 @@
 
 ### DEPLOY: app/advised-for-attr
 
-The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-character-advised="Lv. 21 Thief"` on the Char row under "Based on:", `data-character-actual` on every Your character popup (the character as played in game), and `data-mob-advised="Snail"` on the Mob row, its info popup and Advised: Monster.
+The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-based-on-character="Lv. 21 Thief"` and `data-based-on-mob="Snail"`, with `data-sheet` beside them saying whose sheet it is: `advised` (what the app advises, under "Based on:" and in the Advised popups) or `actual` (the character as played in game, in every Your character popup).
 
 **Score:** 1
 
@@ -64,5 +64,5 @@ Not visible on screen; only someone reading the HTML sees it.
 
 #### Pull Request
 
-data-character-advised, data-character-actual and data-mob-advised say in the HTML which character or mob an element shows
+data-based-on-character, data-based-on-mob and data-sheet say in the HTML which character or mob an element shows, on the advised or the actual sheet
 
