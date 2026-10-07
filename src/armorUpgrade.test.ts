@@ -5,7 +5,7 @@ import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { mobDraft } from './data/spots'
 import type { ArmorPiece } from './data/types'
-import { horizonCost } from './horizonCost'
+import { growthOf } from './growth'
 import { MAGICIAN_ARMOR } from './magicianGear'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
@@ -44,6 +44,17 @@ const epm = (p: Profile, a: Assumptions = ASSUMPTIONS) => {
   return v
 }
 
+/**
+ * De mesokosten van level from t/m to met de hand: per level de EXP (EXP_AT) gedeeld door de EXP per meso op het profiel van dat level. Het karakter
+ * groeit over de horizon mee (growth.ts, Dave, 7 oktober 2026), dus elk level heeft zijn eigen profiel; `wdef` is de WDEF die op elk level geldt (standaard die van nu).
+ */
+const costOver = (p: Profile, from: number, to: number, wdef: number = p.wdef, v: Assumptions = ASSUMPTIONS) => {
+  const grown = growthOf(drafts, p)
+  let sum = 0
+  for (let l = from; l <= to; l++) sum += EXP_AT[l] / epm({ ...grown(l), wdef }, v)
+  return sum
+}
+
 // EXP tot het volgende level, met de hand uit de tabel overgenomen (level 10 t/m 30), los van expToNextLevel.
 const EXP_AT: Record<number, number> = {
   10: 1_716, 11: 2_360, 12: 3_216, 13: 4_200, 14: 5_460, 15: 7_050, 16: 8_840, 17: 11_040, 18: 13_716, 19: 16_680,
@@ -72,8 +83,8 @@ const handTo = (level: number, a: ArmorPiece, gender: 'male' | 'female' | null =
 }
 /** De netto besparing van een stuk met de hand: EXP-som over de horizon gedeeld door de EXP per meso zonder en met het stuk, min de prijs. */
 const handNet = (p: Profile, a: ArmorPiece, v: Assumptions = ASSUMPTIONS) => {
-  const exp = expSum(p.level, handTo(p.level, a, p.gender ?? null))
-  return exp / epm(p, v) - exp / epm({ ...p, wdef: p.wdef + a.wdef }, v) - a.price
+  const to = handTo(p.level, a, p.gender ?? null)
+  return costOver(p, p.level, to, p.wdef, v) - costOver(p, p.level, to, p.wdef + a.wdef, v) - a.price
 }
 /** Elk stuk dat dit profiel kan dragen, met zijn netto: een brute-force blik op heel NPC_ARMOR, zonder keuze per slot. */
 const wearableNets = (p: Profile, v: Assumptions = ASSUMPTIONS) =>
@@ -229,8 +240,8 @@ describe('armorUpgradeAdvice: de horizon', () => {
   })
 
   it('kapt af op de laatste tabelrij (lv 30) als er geen beter stuk meer komt, en meldt dat', () => {
-    // Red Ninja Sandals: Red Enamel Boots is lv 20, dus niet "later": de horizon is niet eindig en wordt afgekapt.
-    expect(choice(advice(drafts, strong({ level: 20 })), 'Red Ninja Sandals')).toMatchObject({ from: 20, to: 30, truncated: true })
+    // Blue Gidder Shoes: Red Enamel Boots is lv 20, dus niet "later", en de Red Ninja Sandals (lv 15) ook niet: de horizon is niet eindig en wordt afgekapt.
+    expect(choice(advice(drafts, strong({ level: 20 })), 'Blue Gidder Shoes')).toMatchObject({ from: 20, to: 30, truncated: true })
     for (const c of advice(drafts, strong({ level: 30 })).choices) expect(c).toMatchObject({ from: 30, to: 30, truncated: true })
   })
 
@@ -250,30 +261,24 @@ describe('armorUpgradeAdvice: de horizon', () => {
 })
 
 describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
-  it('is volledig met de hand uit te rekenen: lv 20, Red Ninja Sandals (WDEF 12, 1.800 mesos), 20 t/m 30', () => {
-    // EXP 148.430 + 322.582 + 95.700 = 566.712; EXP per meso zonder en met de sandalen (WDEF 72 en 84) als losse getallen.
+  it('is volledig met de hand uit te rekenen: lv 20, Blue Gidder Shoes (WDEF 10, 1.200 mesos), 20 t/m 30', () => {
+    // EXP 148.430 + 322.582 + 95.700 = 566.712; per level de EXP gedeeld door de EXP per meso van het gegroeide profiel van dat level (zonder en met WDEF 72 + 10).
     expect(EXP_20_24 + EXP_25_29 + EXP_30).toBe(EXP_20_30)
-    const e0 = 0.7369886709185443
-    const e1 = 0.7412366443758266
     const p = strong({ level: 20 })
-    expect(epm(p)).toBeCloseTo(e0, 12)
-    expect(epm({ ...p, wdef: p.wdef + 12 })).toBeCloseTo(e1, 12)
-    const saving = EXP_20_30 / e0 - EXP_20_30 / e1
-    expect(saving).toBeCloseTo(4_406.8, 1)
-    const c = choice(advice(drafts, p), 'Red Ninja Sandals')
+    const saving = costOver(p, 20, 30) - costOver(p, 20, 30, p.wdef + 10)
+    // Voor de groei (Dave, 7 oktober 2026) was dit 4.406,8 met de Red Ninja Sandals, bij één EXP per meso voor alle levels.
+    expect(saving).toBeCloseTo(2_294.2, 1)
+    const c = choice(advice(drafts, p), 'Blue Gidder Shoes')
     expect(c.saving).toBeCloseTo(saving, 6)
-    expect(c.net).toBeCloseTo(saving - 1_800, 6)
-    expect(c.net).toBeCloseTo(2_606.8, 1)
+    expect(c.net).toBeCloseTo(saving - 1_200, 6)
+    expect(c.net).toBeCloseTo(1_094.2, 1)
   })
 
   it('is volledig met de hand uit te rekenen: lv 25, Red Cloth Vest (WDEF 24, 2.000 mesos), 25 t/m 29', () => {
-    const e0 = 0.7437004007666398
-    const e1 = 0.7513654618582168
     const p = strong({ level: 25 })
-    expect(epm(p)).toBeCloseTo(e0, 12)
-    expect(epm({ ...p, wdef: p.wdef + 24 })).toBeCloseTo(e1, 12)
-    const saving = EXP_25_29 / e0 - EXP_25_29 / e1
-    expect(saving).toBeCloseTo(4_424.9, 1)
+    const saving = costOver(p, 25, 29) - costOver(p, 25, 29, p.wdef + 24)
+    // Voor de groei was dit 4.424,9 (één EXP per meso voor alle levels).
+    expect(saving).toBeCloseTo(3_863.7, 1)
     const c = choice(advice(drafts, p), 'Red Cloth Vest')
     expect(c.saving).toBeCloseTo(saving, 6)
     expect(c.net).toBeCloseTo(saving - 2_000, 6)
@@ -282,8 +287,8 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
   it('is kosten zonder min kosten met over de horizon, elk op de beste plek (lv 15, Red Cloth Vest, 15 t/m 19)', () => {
     const p = strong({ level: 15 })
     const c = choice(advice(drafts, p), 'Red Cloth Vest')
-    const without = EXP_15_19 / epm(p)
-    const withIt = EXP_15_19 / epm({ ...p, wdef: p.wdef + 24 })
+    const without = costOver(p, 15, 19)
+    const withIt = costOver(p, 15, 19, p.wdef + 24)
     expect(c.saving).toBeCloseTo(without - withIt, 6)
     expect(c.net).toBeCloseTo(without - withIt - 2_000, 6)
   })
@@ -295,7 +300,7 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
       [10, 'Blue Gidder Shoes', 10, 14],
       [10, 'Red Ghetto Beanie', 10, 14],
       [15, 'Red Ghetto Beanie', 15, 19],
-      [20, 'Red Ninja Sandals', 20, 30],
+      [20, 'Blue Gidder Shoes', 20, 30],
       [20, 'Red Cloth Vest', 20, 24],
       [20, 'Red Cloth Pants', 20, 24],
       [20, 'Red Ghetto Beanie', 20, 21], // de Red Baseball Cap (lv 22, WDEF 22) is eerder beter dan de Red Tiberian (lv 25), zie de horizon hierboven
@@ -307,8 +312,7 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
     ]
     for (const [level, name, from, to] of cases) {
       const p = strong({ level })
-      const exp = expSum(from, to)
-      const want = exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + armor(name).wdef })
+      const want = costOver(p, from, to) - costOver(p, from, to, p.wdef + armor(name).wdef)
       const c = choice(advice(drafts, p), name)
       expect(c, `${name} lv ${level}`).toMatchObject({ from, to })
       expect(c.saving, `${name} lv ${level}`).toBeCloseTo(want, 6)
@@ -324,12 +328,14 @@ describe('armorUpgradeAdvice: de besparing, met de hand nagerekend', () => {
     expect(expSum(30, 30)).toBe(EXP_30)
   })
 
-  it('houdt de stats van nu vast over de hele horizon, en telt het huidige level vol mee', () => {
-    // Eén epm (van het level van nu) voor alle levels van de horizon, geen epm die met het level meegroeit.
+  it('telt het huidige level vol mee, en laat je karakter over de horizon groeien (growth.ts): niet één EXP per meso voor alle levels', () => {
     const p = strong({ level: 25 })
     const c = choice(advice(drafts, p), 'Red Cloth Vest')
     expect(c.from).toBe(25)
-    expect(c.saving).toBeCloseTo(EXP_25_29 * (1 / epm(p) - 1 / epm({ ...p, wdef: p.wdef + 24 })), 5)
+    expect(c.saving).toBeCloseTo(costOver(p, 25, 29) - costOver(p, 25, 29, p.wdef + 24), 5)
+    // Het oude antwoord (de stats van nu over de hele horizon) is een ander getal: het profiel van level 29 is niet dat van level 25.
+    const constant = EXP_25_29 * (1 / epm(p) - 1 / epm({ ...p, wdef: p.wdef + 24 }))
+    expect(Math.abs(c.saving! - constant)).toBeGreaterThan(1)
   })
 
   it('telt de verkoopwaarde van het oude stuk niet mee: net = saving - prijs', () => {
@@ -376,10 +382,10 @@ describe('armorUpgradeAdvice: meer WDEF geeft nooit minder besparing (de "nee is
     for (const level of [10, 15, 20, 25, 30]) {
       const p = strong({ level })
       for (const [from, to] of horizons) {
-        const without = horizonCost(from, to, epm(p))!
+        const without = costOver(p, from, to)
         let prev = -Infinity
         for (let wdef = 0; wdef <= 80; wdef++) {
-          const saving = without - horizonCost(from, to, epm({ ...p, wdef: p.wdef + wdef }))!
+          const saving = without - costOver(p, from, to, p.wdef + wdef)
           expect(saving, `lv ${level} ${from}-${to} +${wdef}`).toBeGreaterThanOrEqual(prev)
           prev = saving
         }
@@ -405,7 +411,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
     expect(names(a)).toEqual(['White Bandana'])
     // Met de hand: horizon 15 t/m 19 (de Red Loosecap, lv 20, is beter), EXP 57.326, WDEF +15, prijs 1.200.
     expect(choice(a, 'White Bandana')).toMatchObject({ from: 15, to: 19, truncated: false })
-    const saving = EXP_15_19 / epm(p) - EXP_15_19 / epm({ ...p, wdef: p.wdef + 15 })
+    const saving = costOver(p, 15, 19) - costOver(p, 15, 19, p.wdef + 15)
     expect(choice(a, 'White Bandana').saving).toBeCloseTo(saving, 6)
     expect(saving).toBeLessThan(1_200)
     expect(a.winner).toBeNull()
@@ -423,7 +429,7 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
 
   it('kiest het stuk met de grootste netto besparing boven 0 en sorteert de lijst op netto, aflopend', () => {
     const a = advice(drafts, strong({ level: 20 }))
-    expect(a.winner).toBe(armor('Red Ninja Sandals'))
+    expect(a.winner).toBe(armor('Blue Gidder Shoes'))
     expect(a.winner).toBe(a.choices[0].armor)
     expect(a.choices[0].net!).toBeGreaterThan(0)
     const nets = a.choices.map((c) => c.net!)
@@ -433,14 +439,14 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
   it('kiest in een slot een goedkoper stuk met minder WDEF als dat netto meer oplevert (lv 20 schoenen)', () => {
     const p = strong({ level: 20 })
     const a = advice(drafts, p)
-    // Het topstuk (Red Enamel Boots, WDEF 14, 3.600) bespaart meer dan de Red Ninja Sandals (WDEF 12, 1.800), maar kost het dubbele.
+    // Het topstuk (Red Enamel Boots, WDEF 14, 3.600) bespaart meer dan de Blue Gidder Shoes (WDEF 10, 1.200), maar kost het driedubbele.
     const boots = armor('Red Enamel Boots')
-    const sandals = armor('Red Ninja Sandals')
+    const sandals = armor('Blue Gidder Shoes')
     expect(boots.wdef).toBeGreaterThan(sandals.wdef)
-    const savingOf = (x: ArmorPiece) => EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: p.wdef + x.wdef })
+    const savingOf = (x: ArmorPiece) => costOver(p, 20, 30) - costOver(p, 20, 30, p.wdef + x.wdef)
     expect(savingOf(boots)).toBeGreaterThan(savingOf(sandals))
     expect(savingOf(boots) - boots.price).toBeLessThan(savingOf(sandals) - sandals.price)
-    expect(names(a)).toContain('Red Ninja Sandals')
+    expect(names(a)).toContain('Blue Gidder Shoes')
     expect(names(a)).not.toContain('Red Enamel Boots')
     expect(a.winner).toBe(sandals)
   })
@@ -480,48 +486,42 @@ describe('armorUpgradeAdvice: winnaar en robuustheid', () => {
   })
 
   it('meldt robust true als dezelfde uitkomst geldt onder elke aannamevariant (lv 16: nergens een winnaar)', () => {
-    // Op lv 15 is dat sinds #181 niet meer zo: bij 0,6 contacten verdienen de Beanie en de Bandana zich dan net terug (ongeveer +19).
-    expect(advice(drafts, strong({ level: 15 })).robust).toBe(false)
+    // Op lv 15 gold sinds #181 dat bij 0,6 contacten de Beanie en de Bandana zich net terugverdienden (ongeveer +19); sinds de groei (Dave, 7 oktober 2026) niet meer.
+    expect(advice(drafts, strong({ level: 15 })).robust).toBe(true)
     expect(advice(drafts, strong({ level: 16 })).robust).toBe(true)
     // Handcontrole: onder geen enkele variant verdient een van de stukken zich terug.
-    const p = strong({ level: 16 })
-    for (const v of ASSUMPTION_VARIANTS) {
-      for (const x of wearableNets(p, v)) expect(x.net, x.armor.name).toBeLessThan(0)
+    for (const level of [15, 16]) {
+      const p = strong({ level })
+      for (const v of ASSUMPTION_VARIANTS) {
+        for (const x of wearableNets(p, v)) expect(x.net, `${x.armor.name} lv ${level}`).toBeLessThan(0)
+      }
     }
   })
 
-  it('meldt robust false op lv 20 omdat bij minder contacten (0,15) een ander stuk wint: Blue Gidder Shoes in plaats van Red Ninja Sandals', () => {
+  it('meldt robust false op lv 20 omdat bij minder contacten (0,15) geen stuk zich nog terugverdient: Blue Gidder Shoes staat dan op ongeveer -53', () => {
     const p = strong({ level: 20 })
     const a = advice(drafts, p)
-    expect(a.winner).toBe(armor('Red Ninja Sandals'))
+    expect(a.winner).toBe(armor('Blue Gidder Shoes'))
     expect(V_FEW_CONTACTS.contactsPerKill).toBe(0.15)
-    // Met de hand: bij 0,15 contacten is Gidder (ongeveer 645 netto) beter dan Sandals (ongeveer 403), beide nog boven 0.
-    const gidder = handNet(p, armor('Blue Gidder Shoes'), V_FEW_CONTACTS)
-    const sandals = handNet(p, armor('Red Ninja Sandals'), V_FEW_CONTACTS)
-    expect(gidder).toBeGreaterThan(0)
-    expect(sandals).toBeGreaterThan(0)
-    expect(gidder).toBeGreaterThan(sandals)
-    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Blue Gidder Shoes'))
+    // Met de hand: bij 0,15 contacten is Gidder ongeveer -53 netto (bij de standaardwaarden +1.094): geen winnaar meer. (Voor de groei won hier bij 0,15 nog Gidder boven Sandals.)
+    expect(handNet(p, armor('Blue Gidder Shoes'), V_FEW_CONTACTS)).toBeCloseTo(-52.9, 0)
+    expect(bruteWinner(p, V_FEW_CONTACTS)).toBeNull()
     expect(a.robust).toBe(false)
   })
 
-  it('meldt robust true op lv 25: ook bij minder contacten (0,15) wint Red Cloth Vest, en op lv 26 niet meer (daar is er dan geen winnaar)', () => {
+  it('meldt robust false op lv 25: bij minder contacten (0,15) wint de Red Ghetto Beanie (ongeveer +31) in plaats van de Red Cloth Vest, en op lv 26 verdient geen stuk zich dan nog terug', () => {
     const p = strong({ level: 25 })
     const a = advice(drafts, p)
     expect(a.winner).toBe(armor('Red Cloth Vest'))
-    // Met de hand, EXP per meso als losse getallen bij 0,15 contacten: zonder 0,8235472, met de Vest (WDEF 24) 0,8282253 en met de Beanie (WDEF 15) 0,8265237.
-    // (Voor #181 verdiende bij 0,15 alleen de Beanie zich terug; nu verspilt een potion minder, dus de Vest ook.)
-    expect(epm(p, V_FEW_CONTACTS)).toBeCloseTo(0.8235472, 6)
-    expect(epm({ ...p, wdef: p.wdef + 24 }, V_FEW_CONTACTS)).toBeCloseTo(0.8282253, 6)
-    expect(epm({ ...p, wdef: p.wdef + 15 }, V_FEW_CONTACTS)).toBeCloseTo(0.8265237, 6)
-    const vestNet = EXP_25_29 / 0.8235472 - EXP_25_29 / 0.8282253 - 2_000
-    expect(vestNet).toBeCloseTo(212, -1) // ongeveer +212: de Vest verdient zich terug
-    const beanieNet = EXP_25_29 / 0.8235472 - EXP_25_29 / 0.8265237 - 1_200
-    expect(beanieNet).toBeCloseTo(211, -1)
+    // Met de hand, per level de EXP gedeeld door de EXP per meso van het gegroeide profiel, bij 0,15 contacten: de Beanie (WDEF 15, 1.200) ongeveer +31, de Vest (WDEF 24, 2.000) ongeveer -68.
+    // (Voor de groei, Dave 7 oktober 2026, won hier bij 0,15 ook de Vest, met ongeveer +212 tegen +211.)
+    const beanieNet = costOver(p, 25, 29, undefined, V_FEW_CONTACTS) - costOver(p, 25, 29, p.wdef + 15, V_FEW_CONTACTS) - 1_200
+    const vestNet = costOver(p, 25, 29, undefined, V_FEW_CONTACTS) - costOver(p, 25, 29, p.wdef + 24, V_FEW_CONTACTS) - 2_000
+    expect(beanieNet).toBeCloseTo(31.2, 0)
+    expect(vestNet).toBeCloseTo(-68.2, 0)
     expect(handNet(p, armor('Red Ghetto Beanie'), V_FEW_CONTACTS)).toBeCloseTo(beanieNet, 0)
-    // De Vest wint nipt van de Beanie en de Bandana (ongeveer +212 tegen +211), dus onder elke variant dezelfde winnaar.
-    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Cloth Vest'))
-    expect(a.robust).toBe(true)
+    expect(bruteWinner(p, V_FEW_CONTACTS)).toBe(armor('Red Ghetto Beanie'))
+    expect(a.robust).toBe(false)
     // Lv 26: bij 0,15 contacten verdient geen stuk zich nog terug, terwijl de Vest bij de standaardwaarden wint.
     const p26 = strong({ level: 26 })
     expect(advice(drafts, p26).winner).toBe(armor('Red Cloth Vest'))
@@ -551,27 +551,28 @@ describe('armorUpgradeAdvice: wat de standaardwaarden geven (Cody, luk/dex 100)'
     expect(a.winner).toBeNull()
     const top = a.choices[0]
     expect(top.armor.name).toBe('Red Ghetto Beanie')
-    expect(top.net!).toBeCloseTo(-590.4, 0)
-    // Met de hand: EXP 15 t/m 19 (57.326) bij EXP per meso 0,7307872 zonder en 0,7365103 met WDEF 15, min 1.200 mesos.
-    expect(EXP_15_19 / 0.7307872 - EXP_15_19 / 0.7365103 - 1_200).toBeCloseTo(-590.4, 0)
-    // De Blue Gidder Shoes, tot nu toe de beste, komen er net achter (ongeveer -788).
-    expect(choice(a, 'Blue Gidder Shoes').net!).toBeCloseTo(-788.5, 0)
+    // Voor de groei (Dave, 7 oktober 2026) was dit -590,4; de levels erna zijn nu makkelijker, dus een stuk WDEF bespaart minder.
+    expect(top.net!).toBeCloseTo(-671.4, 0)
+    // Met de hand: 15 t/m 19, de EXP per level gedeeld door de EXP per meso van het gegroeide profiel, zonder en met WDEF 15, min 1.200 mesos.
+    expect(costOver(strong({ level: 15 }), 15, 19) - costOver(strong({ level: 15 }), 15, 19, 72 + 15) - 1_200).toBeCloseTo(-671.4, 0)
+    // De Blue Gidder Shoes, tot nu toe de beste, komen er net achter (was ongeveer -788).
+    expect(choice(a, 'Blue Gidder Shoes').net!).toBeCloseTo(-843.2, 0)
   })
 
-  it('geeft op lv 20 Red Ninja Sandals als winnaar met ongeveer +2.607', () => {
+  it('geeft op lv 20 Blue Gidder Shoes als winnaar met ongeveer +1.094 (voor de groei: Red Ninja Sandals met +2.607)', () => {
     const a = advice(drafts, strong({ level: 20 }))
-    expect(a.winner).toBe(armor('Red Ninja Sandals'))
-    expect(a.choices[0].net!).toBeCloseTo(2_606.8, 0)
+    expect(a.winner).toBe(armor('Blue Gidder Shoes'))
+    expect(a.choices[0].net!).toBeCloseTo(1_094.2, 0)
     expect(a.robust).toBe(false)
   })
 
-  it('geeft op lv 25 Red Cloth Vest als winnaar met ongeveer +2.425, en elk slot is positief', () => {
+  it('geeft op lv 25 Red Cloth Vest als winnaar met ongeveer +1.864 (voor de groei: +2.425), en elk slot is positief', () => {
     const a = advice(drafts, strong({ level: 25 }))
     expect(a.winner).toBe(armor('Red Cloth Vest'))
-    expect(a.choices[0].net!).toBeCloseTo(2_424.9, 0)
+    expect(a.choices[0].net!).toBeCloseTo(1_863.7, 0)
     expect(a.choices.every((c) => c.net! > 0)).toBe(true)
     expect(a.choices).toHaveLength(4)
-    expect(a.robust).toBe(true)
+    expect(a.robust).toBe(false)
   })
 })
 
@@ -586,8 +587,8 @@ const adviceW = (p: Profile | null, worn: Worn): Advice => {
 const handWdef = (p: Profile, a: ArmorPiece, w: number) => Math.max(0, p.wdef - w) + a.wdef
 /** Netto met vervanging, met de hand: EXP-som over de horizon gedeeld door EXP per meso zonder en met het stuk, min de prijs. */
 const handNetW = (p: Profile, a: ArmorPiece, w: number, v: Assumptions = ASSUMPTIONS) => {
-  const exp = expSum(p.level, handTo(p.level, a))
-  return exp / epm(p, v) - exp / epm({ ...p, wdef: handWdef(p, a, w) }, v) - a.price
+  const to = handTo(p.level, a)
+  return costOver(p, p.level, to, p.wdef, v) - costOver(p, p.level, to, handWdef(p, a, w), v) - a.price
 }
 /** De kandidaten met worn, brute force over heel NPC_ARMOR (met de geslachtsregel van shopHand): draagbaar, level genoeg en meer WDEF dan wat je draagt. */
 const wornNets = (p: Profile, worn: Worn, v: Assumptions = ASSUMPTIONS) =>
@@ -671,7 +672,7 @@ describe('armorUpgradeAdvice met worn: netto met vervanging, met de hand', () =>
     const p = strong({ level: 20 })
     const c = choice(adviceW(p, { shoes: 12 }), 'Red Enamel Boots')
     expect(handWdef(p, armor('Red Enamel Boots'), 12)).toBe(74)
-    const saving = EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: 74 })
+    const saving = costOver(p, 20, 30) - costOver(p, 20, 30, 74)
     expect(c).toMatchObject({ from: 20, to: 30, truncated: true, replaces: 12 })
     expect(c.saving).toBeCloseTo(saving, 6)
     expect(c.net).toBeCloseTo(saving - 3_600, 6)
@@ -682,7 +683,7 @@ describe('armorUpgradeAdvice met worn: netto met vervanging, met de hand', () =>
     const w = choice(adviceW(p, { top: 24 }), 'Red Pao')
     expect(w.net!).toBeLessThan(handNet(p, armor('Red Pao')))
     expect(w.net!).toBeCloseTo(handNetW(p, armor('Red Pao'), 24), 6)
-    expect(w.net!).toBeCloseTo(EXP_20_24 / epm(p) - EXP_20_24 / epm({ ...p, wdef: 72 + 8 }) - 6_000, 6)
+    expect(w.net!).toBeCloseTo(costOver(p, 20, 24) - costOver(p, 20, 24, 72 + 8) - 6_000, 6)
   })
 
   it('komt voor elke keuze op elk level, bij elke gedragen set, overeen met de hand', () => {
@@ -710,7 +711,7 @@ describe('armorUpgradeAdvice met worn: netto met vervanging, met de hand', () =>
     const p = strong({ level: 20, wdef: 5 })
     expect(handWdef(p, armor('Red Enamel Boots'), 12)).toBe(14)
     const c = choice(adviceW(p, { shoes: 12 }), 'Red Enamel Boots')
-    expect(c.net!).toBeCloseTo(EXP_20_30 / epm(p) - EXP_20_30 / epm({ ...p, wdef: 14 }) - 3_600, 6)
+    expect(c.net!).toBeCloseTo(costOver(p, 20, 30) - costOver(p, 20, 30, 14) - 3_600, 6)
   })
 
   it('geeft withArmor met replaced de WDEF max(0, wdef - gedragen) + stuk', () => {
@@ -719,12 +720,12 @@ describe('armorUpgradeAdvice met worn: netto met vervanging, met de hand', () =>
     expect(withArmor(base, armor('Red Pao')).wdef).toBe(72 + 32)
   })
 
-  it('laat een stuk dat je al draagt niet meer winnen (lv 20: zonder worn wint Red Ninja Sandals)', () => {
+  it('laat een stuk dat je al draagt niet meer winnen (lv 20: zonder worn wint Blue Gidder Shoes)', () => {
     const p = strong({ level: 20 })
-    expect(advice(drafts, p).winner).toBe(armor('Red Ninja Sandals'))
-    const a = adviceW(p, { shoes: 12 })
-    expect(a.winner).not.toBe(armor('Red Ninja Sandals'))
-    expect(a.winner).toBe(bruteWinnerW(p, { shoes: 12 }))
+    expect(advice(drafts, p).winner).toBe(armor('Blue Gidder Shoes'))
+    const a = adviceW(p, { shoes: 10 })
+    expect(a.winner).not.toBe(armor('Blue Gidder Shoes'))
+    expect(a.winner).toBe(bruteWinnerW(p, { shoes: 10 }))
   })
 
   it('kiest de winnaar zoals brute force, op elk level en bij verschillende gedragen sets', () => {
@@ -912,8 +913,7 @@ describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de win
       const c = choice(adviceW(p, { top: 32, bottom: 23 }), o.name)
       expect(c.replaces).toBe(55)
       expect(c).toMatchObject({ from: 25, to: OVERALL_TO })
-      const exp = expSum(p.level, OVERALL_TO)
-      expect(c.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: handWdef(p, o, 55) }) - o.price, 6)
+      expect(c.net!).toBeCloseTo(costOver(p, p.level, OVERALL_TO) - costOver(p, p.level, OVERALL_TO, handWdef(p, o, 55)) - o.price, 6)
     })
   })
 
@@ -931,8 +931,7 @@ describe('armorUpgradeAdvice met een overall als kandidaat (geinjecteerd: de win
       expect(choice(adviceW(p, { bottom: 23 }), o.name).replaces).toBe(23)
       const unk = choice(adviceW(p, { hat: 10 }), o.name)
       expect(unk.replaces).toBeUndefined()
-      const exp = expSum(p.level, OVERALL_TO)
-      expect(unk.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + o.wdef }) - o.price, 6)
+      expect(unk.net!).toBeCloseTo(costOver(p, p.level, OVERALL_TO) - costOver(p, p.level, OVERALL_TO, p.wdef + o.wdef) - o.price, 6)
     })
   })
 
@@ -1055,12 +1054,11 @@ describe('armorUpgradeAdvice: het lijf, overall tegen top + bottom (issue #87)',
     // Met de hand: geen later lijfstuk in de Magician-winkel, dus beide lopen tot de tabelrand (lv 30, afgekapt).
     const p = mage(25)
     const a = advice(drafts, p)
-    const exp = expSum(25, 30)
     const o = a.choices.find((c) => c.armor === robe)!
     expect(o).toMatchObject({ from: 25, to: 30, truncated: true, price: 13_500, replaces: undefined })
-    expect(o.net!).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + 40 }) - 13_500, 6)
+    expect(o.net!).toBeCloseTo(costOver(p, 25, 30) - costOver(p, 25, 30, p.wdef + 40) - 13_500, 6)
     // Elk paar top + bottom met de hand: WDEF en prijs opgeteld, over dezelfde horizon. Het paar in de keuzes is dat met de hoogste netto.
-    const pairNet = (t: ArmorPiece, b: ArmorPiece) => exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + t.wdef + b.wdef }) - t.price - b.price
+    const pairNet = (t: ArmorPiece, b: ArmorPiece) => costOver(p, 25, 30) - costOver(p, 25, 30, p.wdef + t.wdef + b.wdef) - t.price - b.price
     const halves = (slot: 'top' | 'bottom') => MAGICIAN_ARMOR.filter((x) => x.slot === slot && x.level <= 25)
     const nets = halves('top').flatMap((t) => halves('bottom').map((b) => ({ t, b, net: pairNet(t, b) })))
     expect(nets).toHaveLength(4)
