@@ -563,13 +563,12 @@ function StatLine(props: {
   tone?: 'cost' | 'gain'
   /** Wat achter het getal op de regel staat, zoals "meso" of "HP" (Dave, 6 oktober 2026). De popup toont het kale getal. */
   unit?: string
-  /** Hoe de app het getal opbouwt (Dave, 7 oktober 2026): dan staat er een vraagteken achter het getal dat de opbouw opent. */
+  /** Hoe de app het getal opbouwt (Dave, 7 oktober 2026): dan staat er een vraagteken achter het getal dat de opbouw in een kleine popup opent. */
   breakdown?: StatBreakdown
   onSave: (text: string) => void
 }) {
   const { field: f, value, expected, breakdown } = props
   const uid = useId()
-  const [helpOpen, setHelpOpen] = useState(false)
   const sign = props.tone === 'cost' ? '−' : props.tone === 'gain' ? '+' : ''
   const unit = props.unit ? ` ${props.unit}` : ''
   const [draft, setDraft] = useState<string | null>(null)
@@ -588,18 +587,18 @@ function StatLine(props: {
           <strong class={props.tone}>{shown === '?' ? shown : sign + shown + unit}</strong>
         </span>
       </div>
-      {breakdown && <HelpToggle open={helpOpen} controls={`${uid}-help`} onToggle={() => setHelpOpen(!helpOpen)} />}
+      {breakdown && (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${f.label}`} title={`${f.label} ${nfInt.format(breakdown.total)}`}>
+          <BreakdownList breakdown={breakdown} value={value} />
+        </PopupButton>
+      )}
       {props.readOnly ? (
-        <span />
+        // Met een vraagteken is dat de laatste kolom; zonder houdt een leeg vak de plek van het potlood.
+        !breakdown && <span />
       ) : (
         <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
-      )}
-      {breakdown && (
-        <div class="stat-breakdown" id={`${uid}-help`} hidden={!helpOpen}>
-          <BreakdownList breakdown={breakdown} value={value} />
-        </div>
       )}
       {draft !== null && (
         <StatDialog title={f.label} onCancel={() => setDraft(null)} onSave={draft !== value ? save : undefined}>
@@ -2496,7 +2495,8 @@ function BaseStats(props: { job: Job; draft: ProfileDraft }) {
       })}
       {(['accuracy', 'avoid'] as const).map((key) => {
         const f = field(key)
-        return f && <StatLine key={key} field={f} value={shown(expectedStat(key, bare, job))} readOnly onSave={none} />
+        const breakdown = statBreakdown(key, bare, job)
+        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={breakdown} readOnly onSave={none} />
       })}
       {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>

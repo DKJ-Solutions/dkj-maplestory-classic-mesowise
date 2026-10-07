@@ -44,7 +44,7 @@ Dave (October 7, 2026): a question-mark button after the Accuracy and Evasion va
 ### CREATE
 
 - [x] `statBreakdown` in `src/expectedStats.ts`: the parts of Accuracy and Evasion per job; `expectedStat` is now its total, so the formula lives in one place
-- [x] `StatLine` takes an optional breakdown: a `HelpToggle` after the value and a hidden list under the row (`BreakdownList`), with a note when the in-game value differs
+- [x] `StatLine` takes an optional breakdown: a `HelpToggle` after the value and a hidden list under the row (`BreakdownList`), with a note when the in-game value differs. After Dave looked: the breakdown opens in a small popup (PopupButton), the ? sits in the reserved question-mark column of the three character tables (#235, merged in), and the Total stats card reserves that column on every row so the values line up
 - [x] Styling in `src/style.css` (`.stat-line.with-help`, `.stat-breakdown`, `.breakdown-*`)
 
 ### TEST
@@ -61,7 +61,7 @@ Internal: the Accuracy and Evasion formulas now come from one function (`statBre
 
 #### What makes this deploy extra special
 
-Behind Accuracy and Evasion in Total stats there is now a question mark that shows how the number is built: the formula with your own DEX, LUK and level, the passive of your job, and the total. If the game shows a different number, it says by how much.
+Behind Accuracy and Evasion in Total stats and in the character popup under Based on:, there is now a question mark that opens how the number is built: the formula with your own DEX, LUK and level, the passive of your job, and the total. If the game shows a different number, it says by how much.
 
 **Score:** 3
 
