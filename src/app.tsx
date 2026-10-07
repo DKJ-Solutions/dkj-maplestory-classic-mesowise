@@ -732,7 +732,7 @@ type StatsCardBody = {
   note?: ComponentChildren
 }
 
-/** De regels van een statpopup voor het profiel `draft`; `advised` zet ze alleen om te lezen. Ook de popup achter het i-knopje bij "Based on:" gebruikt ze (Dave, 7 oktober 2026). */
+/** De regels van een statpopup voor het profiel `draft`; `advised` zet ze alleen om te lezen. */
 function StatRows(props: Pick<StatsCardBody, 'fields' | 'job' | 'onChange' | 'lead' | 'derived'> & { draft: ProfileDraft; advised: boolean }) {
   const { draft, job, advised } = props
   return (
@@ -975,7 +975,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   return <StatsCard {...totalStatsBody(props)} />
 }
 
-/** Wat de Total stats toont, voor de kaart en voor de popup bij "Based on:" (Dave, 7 oktober 2026): zo zijn de getallen overal dezelfde. */
+/** Wat de Total stats toont. De popup bij "Based on:" toont in plaats daarvan de stats zonder equipment (BaseStats). */
 function totalStatsBody(props: StatsCardProps & { equipment: Equipment }): StatsCardBody {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
@@ -2392,7 +2392,7 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
  * Het karakter van het advies, achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points,
  * Skillpoints en Total stats, met dezelfde regels als hun Advised-popups, alleen om te lezen. De popup maakt ze compact (.item-dialog).
  */
-function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; stats: ComponentChildren }) {
+function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
   const { job, draft } = props
   const none = () => {}
   return (
@@ -2412,8 +2412,35 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; stats: Compone
       </section>
       <section class="char-table" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>
-        {props.stats}
+        <BaseStats job={job} draft={draft} />
       </section>
+    </>
+  )
+}
+
+/**
+ * De stats van een karakter zonder equipment (Dave, 7 oktober 2026): puur wat level, base AP en skillpunten geven. Max HP en Max MP, Accuracy en
+ * Evasion uit de formule (expectedStat, met Nimble Body of Precise Strikes erin) en bij een Magician de M.ATT uit zijn INT. Extra AP van items
+ * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet.
+ */
+function BaseStats(props: { job: Job; draft: ProfileDraft }) {
+  const { job } = props
+  const bare: ProfileDraft = { ...props.draft, strExtra: '0', dexExtra: '0', intExtra: '0', lukExtra: '0', clawWatk: '0' }
+  const fields = statFieldsFor(job)
+  const field = (key: keyof ProfileDraft) => fields.find((f) => f.key === key)
+  const shown = (n: number | null | undefined) => (n == null ? '' : nfInt.format(n))
+  const none = () => {}
+  return (
+    <>
+      {(['hp', 'mp'] as const).map((key) => {
+        const f = field(key)
+        return f && <StatLine key={key} field={f} value={bare[key]} readOnly onSave={none} />
+      })}
+      {(['accuracy', 'avoid'] as const).map((key) => {
+        const f = field(key)
+        return f && <StatLine key={key} field={f} value={shown(expectedStat(key, bare, job))} readOnly onSave={none} />
+      })}
+      {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>
   )
 }
@@ -3855,9 +3882,7 @@ export function App() {
     setDrafts([next])
   }
 
-  const advisedStats = advisedProfile && (
-    <AdvisedCharacter job={job} draft={advisedProfile} stats={<StatRows {...totalStatsBody({ job, draft: profileDraft, equipment, error: null, onChange: updateProfile, advised: advisedProfile })} draft={advisedProfile} advised />} />
-  )
+  const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
 
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>

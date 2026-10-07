@@ -10,6 +10,7 @@ import { NPC_CLAWS } from './data/claws'
 import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
 import { compactMeso } from './numberFormat'
+import { expectedStat } from './expectedStats'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
@@ -4202,14 +4203,13 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points, Skillpoints en Total stats, met dezelfde regels als hun Advised-popups (Dave, 7 oktober 2026)', async () => {
+    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
-      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop, de skills en de Total stats.
+      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop en de skills. Total stats volgt hieronder.
       const tables = [
         ['Ability points', '.ability-line:not(.ability-head)'],
         ['Skillpoints', '.skill-row'],
-        ['Total stats', '.stat-line'],
       ] as const
       const want = tables.map(([title, sel]) => {
         const got = lines(openView(title, 'Advised'), sel)
@@ -4230,8 +4230,18 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
         expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
         const sections = [...popup.querySelectorAll('section.char-table')]
-        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual(tables.map(([title]) => title))
-        sections.forEach((section, i) => expect(lines(section, tables[i][1]), tables[i][0]).toEqual(want[i]))
+        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual([...tables.map(([title]) => title), 'Total stats'])
+        tables.forEach(([title, sel], i) => expect(lines(sections[i], sel), title).toEqual(want[i]))
+        // Total stats puur uit level, base AP en skillpunten (Dave, 7 oktober 2026): Max HP, Max MP, Accuracy en Evasion, niets van de equipment.
+        const stats = sections[2]
+        const value = (name: string) => [...stats.querySelectorAll('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!.querySelector('.equip-value strong')!.textContent
+        expect(lines(stats, '.stat-line-name')).toEqual(['Max HP', 'Max MP', 'Accuracy', 'Evasion'])
+        // De formule met de base AP uit de tabel erboven (zonder Extra AP van items) en Nimble Body uit Skillpoints.
+        const base = (stat: string) => sections[0].querySelector(`[aria-label^="${stat} base "]`)!.textContent!
+        const skill = (name: string) => [...sections[1].querySelectorAll('.skill-row')].find((r) => r.firstElementChild!.firstChild!.textContent === name)!.querySelector('.equip-value strong')!.textContent!
+        const bare: ProfileDraft = { ...DEFAULT_PROFILE, level: '20', dex: base('DEX'), luk: base('LUK'), dexExtra: '0', lukExtra: '0', nimbleBody: skill('Nimble Body') }
+        expect(value('Accuracy')).toBe(String(expectedStat('accuracy', bare, 'thief')))
+        expect(value('Evasion')).toBe(String(expectedStat('avoid', bare, 'thief')))
         // Alleen om te lezen: geen potlood en geen invoer.
         expect(popup.querySelector('.equip-edit, input')).toBeNull()
         // Een vraagteken achter het level van elke skill van de 1e job met punten, zoals Lucky Seven en Nimble Body; niet bij 0 of bij Beginner (Dave, 7 oktober 2026).
