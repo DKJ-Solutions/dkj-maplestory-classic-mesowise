@@ -51,26 +51,33 @@ export const NIMBLE_BODY = {
 
 // De starpagina's (294 tot 300) zijn op 4 oktober 2026 alle zeven gelezen, Subi opnieuw (zijn waarden klopten).
 const STARS_RETRIEVED = '2026-10-04'
-const star = (id: number, name: string, watk: number, rechargePerStar: number): ThrowingStar => ({
-  name,
-  watk,
-  rechargePerStar,
-  level: 10,
-  source: { url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: STARS_RETRIEVED },
-})
+// De koopprijs van een set bij een NPC staat op dezelfde pagina, gelezen op 7 oktober 2026 (issue #198).
+const BUY_RETRIEVED = '2026-10-07'
+const star = (id: number, name: string, watk: number, rechargePerStar: number, buyPrice?: number): ThrowingStar => {
+  const url = `https://meowdb.com/msclassic/item-db/${id}`
+  return {
+    name,
+    watk,
+    rechargePerStar,
+    level: 10,
+    source: { url, retrieved: STARS_RETRIEVED },
+    ...(buyPrice === undefined ? {} : { buy: { price: buyPrice, source: { url, retrieved: BUY_RETRIEVED } } }),
+  }
+}
 
-/** De goedkoopste stars, die je laat herladen in plaats van nieuwe te kopen (het levelplan). */
-export const SUBI: ThrowingStar = star(294, 'Subi Throwing Stars', 15, 0.3)
+/** De goedkoopste stars (500 meso per set, bij alle twaalf NPC's), die je laat herladen in plaats van nieuwe te kopen (het levelplan). */
+export const SUBI: ThrowingStar = star(294, 'Subi Throwing Stars', 15, 0.3, 500)
 
 /**
  * De throwing stars die je kunt kiezen, per itempagina: weapon attack en herladen per star, elk level 10. Alleen
  * Subi (twaalf NPC's) en Wolbi (alleen Max, Kerning City Civic Center) verkoopt een NPC; de rest is een drop of
  * Free Market, maar wie ze heeft, laat ze net zo herladen. Steely Throwing Knives staan erbij: de pagina noemt
- * de waarden, alleen waar je ze krijgt nog niet ("Coming soon").
+ * de waarden, alleen waar je ze krijgt nog niet ("Coming soon"). Alleen Subi en Wolbi hebben een koopprijs per set (`buy`, 1.000 meso
+ * voor Wolbi): Advised koopt alleen uit de NPC-stars (#198).
  */
 export const THROWING_STARS: readonly ThrowingStar[] = [
   SUBI,
-  star(295, 'Wolbi Throwing Stars', 17, 0.4),
+  star(295, 'Wolbi Throwing Stars', 17, 0.4, 1000),
   star(296, 'Mokbi Throwing Stars', 19, 0.5),
   star(297, 'Kumbi Throwing Stars', 21, 0.6),
   star(298, 'Tobi Throwing Stars', 23, 0.7),

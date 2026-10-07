@@ -48,6 +48,8 @@ export interface ThrowingStar {
   rechargePerStar: number
   level: number
   source: Source
+  /** Wat een set bij een NPC kost, met zijn eigen bron; ontbreekt bij stars die je niet bij een NPC koopt (drop of Free Market). */
+  buy?: { price: number; source: Source }
 }
 
 /**
