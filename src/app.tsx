@@ -1601,7 +1601,7 @@ function StatDialog(props: {
 /** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk in de accentkleur koop je in de winkel; op de factuur
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt; op de factuur
     staat alleen het deel van dit level. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
@@ -1632,7 +1632,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 
 /**
  * Eén slot in Advised, op één regel in vier kolommen (Dave, 7 oktober 2026): "Weapon", "Steel Igor" met de info-knop erachter, de winkelprijs en
- * het vraagteken. Wat je koopt staat in de accentkleur, een stuk dat niet loont gedempt. De info-knop toont wat het stuk is (soort, level, ATT of
+ * het vraagteken. Van wat je koopt staat alleen het bedrag in de accentkleur, niet de naam; een stuk dat niet loont gedempt. De info-knop toont wat het stuk is (soort, level, ATT of
  * DEF, eisen, prijs), het vraagteken of je het moet kopen en waarom: elk in een eigen popup.
  */
 function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
