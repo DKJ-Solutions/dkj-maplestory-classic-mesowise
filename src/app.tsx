@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { nf3 } from './numberFormat'
 import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, itemLevel, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, weaponType, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -79,9 +79,9 @@ function Help(props: { children: ComponentChildren; class?: string }) {
 }
 
 /** Het ronde vraagteken zelf: onder Help, en naast de kop van een popup (StatDialog `help`). */
-function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void }) {
+function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void; label?: string }) {
   return (
-    <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
+    <button type="button" class="help-toggle" aria-label={props.label ?? 'Uitleg'} aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10" />
         <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
@@ -1595,10 +1595,13 @@ const CHEAPEST_HELP = (
  */
 function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
+  // Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg.
+  const filled = (s: EquipSlot) => props.cheapest[s]?.cheapest != null
+  const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
       {props.slots.map((slot) => (
-        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} />
+        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
       ))}
       <p class="equip-total">
         Te kopen: <strong>{nfInt.format(total)} meso</strong>
@@ -1608,10 +1611,11 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 }
 
 /**
- * Eén slot in Advised, op één regel (Dave, 7 oktober 2026): "Weapon: Steel Igor (CLAW, LV 20, 17 ATT)". Wat je koopt staat in de accentkleur,
- * een stuk dat niet loont gedempt; waarom het loont (of niet) staat achter het vraagteken aan het eind van de regel.
+ * Eén slot in Advised, op één regel in vier kolommen (Dave, 7 oktober 2026): "Weapon", "Steel Igor", de winkelprijs en het vraagteken; de soort,
+ * het level en de stat staan er niet bij, de regel is vol genoeg. Wat je koopt staat in de accentkleur, een stuk dat niet loont gedempt; waarom
+ * het loont (of niet) staat achter het vraagteken aan het eind van de regel.
  */
-function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null }) {
+function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
   const { slot } = props
   const [open, setOpen] = useState(false)
   const id = useId()
@@ -1619,40 +1623,42 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
   const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
   const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
   const name = c.option ? c.option.name : c.cheapest
-  // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
-  const entry: EquipEntry = c.option ? { pick: c.option.name, name: '', stat: '' } : c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.worn
-  const own = entry.pick === OTHER
-  // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
-  const value = name === null ? undefined : wornStat(slot, entry)
-  const level = name === null || own ? undefined : itemLevel(slot, name)
-  const meta = [slot === 'claw' && name !== null ? weaponType(name) : undefined, level === undefined ? undefined : `LV ${level}`, value === undefined ? undefined : `${value} ${statName(slot, props.job)}`].filter((p) => p !== undefined)
-  const help = cheapestWhy(props.job, slot, c, counted)
+  // Een eigen item dat je houdt staat onder zijn eigen naam; een winkelstuk onder de naam zonder kleur.
+  const own = !c.option && !c.changed && props.worn.pick === OTHER
+  const help = cheapestWhy(props.job, slot, c, counted, props.covered)
+  const shopPrice = c.option ? c.option.price : c.price
   const tone = c.option ? ' option' : name === null ? ' empty' : c.changed && !counted ? ' buy' : ''
   return (
     <div class={`advised-row${tone}`}>
-      <p class="advised-line">
-        <span class="slot-name">{slotLabel(slot)}:</span> <span class="advised-name">{name === null ? '—' : own ? name : familyName(slot, name)}</span>
-        {meta.length > 0 && <span class="advised-meta"> ({meta.join(', ')})</span>}
+      <span class="slot-name">{slotLabel(slot)}</span>
+      <span class="advised-name" title={name ?? undefined}>{name === null ? '—' : own ? name : familyName(slot, name)}</span>
+      {/* De winkelprijs in een eigen kolom (Dave, 7 oktober 2026): van wat je koopt, en gedempt van een stuk dat niet loont. */}
+      <span class="advised-price">{shopPrice === null ? '' : nfInt.format(shopPrice)}</span>
+      <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} label={`Uitleg bij ${slotLabel(slot)}`} />
+      <p class="hint advised-help" id={id} hidden={!open}>
+        {help}
       </p>
-      {help !== null && <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} />}
-      {help !== null && (
-        <p class="hint advised-help" id={id} hidden={!open}>
-          {help}
-        </p>
-      )}
     </div>
   )
 }
 
-/** Waarom Advised dit stuk koopt, of juist niet (Dave, 7 oktober 2026): de tekst achter het vraagteken van één slot; null als er niets te zeggen is. */
-function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean): string | null {
+/**
+ * Waarom Advised dit stuk koopt, houdt of leeg laat (Dave, 7 oktober 2026): de tekst achter het vraagteken van één slot; elke regel heeft er een.
+ * `covered` zegt bij een leeg slot dat de overall het beslaat (top en bottom), of dat een losse top of bottom het leeg maakt (overall).
+ */
+function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean): string {
   const meso = (n: number) => `${nfInt.format(Math.max(0, Math.round(n)))} meso`
   if (c.option) {
     const saves = c.option.saving === null ? 'de besparing is niet uit te rekenen' : `het bespaart tot je volgende upgrade ${meso(c.option.saving)}`
     return `Loont niet: het kost ${meso(c.option.price)} en ${saves}. Dit slot blijft leeg.`
   }
   if (counted) return c.cheapest === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.'
-  if (c.price === null || c.why === undefined) return null
+  if (c.cheapest === null) {
+    if (covered) return slot === 'overall' ? 'Leeg: je draagt een losse top en bottom, en die nemen de plek van een overall in.' : 'Leeg: je overall beslaat dit slot.'
+    return 'Leeg: de winkel heeft hier niets dat je op je level kunt dragen en dat zich tot je volgende upgrade terugverdient.'
+  }
+  if (!c.changed) return 'Je draagt dit al. Geen stuk uit de winkel bespaart tot je volgende upgrade meer dan het kost, dus je houdt het.'
+  if (c.price === null || c.why === undefined) return c.price === null ? 'Dit stuk komt in je equip.' : `Koop voor ${meso(c.price)}.`
   if ('required' in c.why) return `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}.`
   const buy = c.why.partner === undefined ? `Koop voor ${meso(c.price)}.` : `Koop samen met ${familyName(slot === 'top' ? 'bottom' : 'top', c.why.partner)} voor ${meso(c.why.cost ?? c.price)}.`
   if (c.why.saving === null) return `${buy} De besparing is niet uit te rekenen.`
@@ -1747,9 +1753,10 @@ function EquipmentCard(props: {
     </span>
   )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
+  // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )

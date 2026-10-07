@@ -92,6 +92,7 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
       price: changed && bought ? bought.price : null,
       option: changed ? null : (last[slot]?.option ?? null),
       ...(bought?.horizon ? { horizon: bought.horizon } : {}),
+      ...(changed && bought?.why ? { why: bought.why } : {}),
     }
   }
   return {

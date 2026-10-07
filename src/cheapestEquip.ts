@@ -141,6 +141,8 @@ export interface Purchase {
   price: number
   /** De levels waarover het stuk zich terugverdient (#192); ontbreekt als het advies ze niet gaf. */
   horizon?: Horizon
+  /** Waarom het stuk loont (Dave, 7 oktober 2026; zie CheapestSlot.why); ontbreekt als het advies het niet gaf. */
+  why?: CheapestSlot['why']
 }
 
 /**
@@ -158,7 +160,7 @@ export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equ
     const c = cheapest[slot]
     if (!c.changed || c.cheapest === null) continue
     out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], c.cheapest), job)
-    purchases.push({ slot, name: c.cheapest, price: c.price ?? 0, ...(c.horizon ? { horizon: c.horizon } : {}) })
+    purchases.push({ slot, name: c.cheapest, price: c.price ?? 0, ...(c.horizon ? { horizon: c.horizon } : {}), ...(c.why ? { why: c.why } : {}) })
   }
   for (const slot of slots) {
     const c = cheapest[slot]
