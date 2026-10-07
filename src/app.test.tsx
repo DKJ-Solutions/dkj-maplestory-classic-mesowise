@@ -4206,13 +4206,16 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
-      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop en de skills. Total stats volgt hieronder.
+      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop en de skills zonder de Beginner-groep, die de popup
+      // verbergt (Dave, 7 oktober 2026). Total stats volgt hieronder.
+      const firstJobRows = (d: Element) =>
+        [...d.querySelectorAll('.skill-group')].filter((g) => !g.querySelector('h3')!.textContent!.startsWith('Beginner')).flatMap((g) => lines(g, '.skill-row'))
       const tables = [
-        ['Ability points', '.ability-line:not(.ability-head)'],
-        ['Skillpoints', '.skill-row'],
+        ['Ability points', (d: Element) => lines(d, '.ability-line:not(.ability-head)')],
+        ['Skillpoints', firstJobRows],
       ] as const
-      const want = tables.map(([title, sel]) => {
-        const got = lines(openView(title, 'Advised'), sel)
+      const want = tables.map(([title, pick]) => {
+        const got = pick(openView(title, 'Advised'))
         closeView(title)
         expect(got.length, title).toBeGreaterThan(1)
         return got
@@ -4231,7 +4234,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
         const sections = [...popup.querySelectorAll('section.char-table')]
         expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual([...tables.map(([title]) => title), 'Total stats'])
-        tables.forEach(([title, sel], i) => expect(lines(sections[i], sel), title).toEqual(want[i]))
+        expect(lines(sections[0], '.ability-line:not(.ability-head)'), 'Ability points').toEqual(want[0])
+        expect(lines(sections[1], '.skill-row'), 'Skillpoints').toEqual(want[1])
+        expect(lines(sections[1], '.skill-group h3').some((t) => t!.startsWith('Beginner'))).toBe(false)
         // Total stats puur uit level, base AP en skillpunten (Dave, 7 oktober 2026): Max HP, Max MP, Accuracy en Evasion, niets van de equipment.
         const stats = sections[2]
         const value = (name: string) => [...stats.querySelectorAll('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!.querySelector('.equip-value strong')!.textContent
