@@ -2,8 +2,7 @@
   "enabledPlugins": {
     "dkj-policy@dkj-claude-plugins": true,
     "dkj-subagents-alpha@dkj-claude-plugins": true,
-    "dkj-subagents-shopify@dkj-claude-plugins": false,
-    "dkj-policy-bwj@dkj-claude-plugins": false
+    "dkj-subagents-shopify@dkj-claude-plugins": false
   },
   "permissions": {
     "allow": [

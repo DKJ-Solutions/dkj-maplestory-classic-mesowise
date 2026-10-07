@@ -39,19 +39,32 @@
 
 ### PLAN
 
+#### Scope (#207)
+
+Issue #207 names two things. Only the stale entry is built here: `dkj-policy-bwj` is no longer in the
+marketplace catalog (it became `bwj-development`). Enabling the `dkj-solutions` codex touches the visible
+result and is Dave's decision, so #207 stays open with `awaiting-decision` for that half.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Remove `dkj-policy-bwj@dkj-claude-plugins` from `enabledPlugins` in `.claude/settings.json` (Sylvester); checked absent from the marketplace catalog first.
 
 ### TEST
 
+- [x] `.claude/settings.json` still parses as JSON, and `enabledPlugins` keeps the other three entries unchanged.
+
 ### DEPLOY: claude/207-stale-plugin-entry
 
-**Score:**
+`.claude/settings.json` no longer lists `dkj-policy-bwj`, a plugin the marketplace has retired (it is now `bwj-development`).
+It was already disabled, so nothing changes in how a session loads.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
