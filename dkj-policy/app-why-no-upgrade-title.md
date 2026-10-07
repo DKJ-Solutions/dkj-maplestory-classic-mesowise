@@ -41,17 +41,22 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: the item help title reads "Waarom geen upgrade?" instead of "Waarom niets?" when Level is empty
 
 ### TEST
 
+- [x] `src/app.test.tsx` asserts the new title; vitest 1945/1945 green, lint clean
 ### DEPLOY: app/why-no-upgrade-title
 
-**Score:**
+The question-mark dialog on an equipment row with an empty Level column is now titled "Waarom geen upgrade?" instead of "Waarom niets?", saying what the dialog explains.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A player opening the help on a slot that is not upgraded reads directly that it explains why no upgrade is advised there.
+
+**Score:** 2
 
 #### Pull Request
 
