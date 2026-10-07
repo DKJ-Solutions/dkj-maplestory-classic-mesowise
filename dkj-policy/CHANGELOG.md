@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**83 / 130 minor entries** <!-- pending-tally -->
+**83 / 131 minor entries** <!-- pending-tally -->
+
+### DEPLOY: claude/226-ignore-worktrees · 20261007-143933Z
+
+A subagent worktree under `.claude/worktrees/` no longer shows up as untracked in the main checkout. This prevents a failure that hasn't happened yet: a `git add .` on the main checkout while a subagent worktree exists would stage that whole nested checkout (#226).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Nothing a player of the app sees: this only touches the repo's own git housekeeping.
+
+**Score:** N/A
+
+#### Pull Request
+
+.claude/worktrees/ is not gitignored
+
+[PR #233](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/233)
+
+---
 
 ### DEPLOY: app/227-weapon-tie-break · 20261007-142401Z
 
