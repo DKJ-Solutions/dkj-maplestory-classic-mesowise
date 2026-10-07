@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { nf3 } from './numberFormat'
 import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -79,16 +79,21 @@ function Help(props: { children: ComponentChildren; class?: string }) {
 }
 
 /** Het ronde vraagteken zelf: onder Help, en naast de kop van een popup (StatDialog `help`). */
-function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void; label?: string }) {
+function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void }) {
   return (
-    <button type="button" class="help-toggle" aria-label={props.label ?? 'Uitleg'} aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
-      </svg>
+    <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
+      {QUESTION_ICON}
     </button>
   )
 }
+
+/** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised de popup van een stuk opent (Dave, 7 oktober 2026). */
+const QUESTION_ICON = (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
+  </svg>
+)
 
 /**
  * Sluit de popup of het paneel waarin deze component staat, met dezelfde beweging als het kruisje; buiten een popup
@@ -1613,12 +1618,16 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 /**
  * Eén slot in Advised, op één regel in vier kolommen (Dave, 7 oktober 2026): "Weapon", "Steel Igor", de winkelprijs en het vraagteken; de soort,
  * het level en de stat staan er niet bij, de regel is vol genoeg. Wat je koopt staat in de accentkleur, een stuk dat niet loont gedempt; waarom
- * het loont (of niet) staat achter het vraagteken aan het eind van de regel.
+ * het loont (of niet) staat in een eigen popup achter het vraagteken aan het eind van de regel, met wat het stuk is (Dave, 7 oktober 2026).
  */
 function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
   const { slot } = props
   const [open, setOpen] = useState(false)
-  const id = useId()
+  const button = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
   // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
   const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
   const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
@@ -1628,18 +1637,57 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
   const help = cheapestWhy(props.job, slot, c, counted, props.covered)
   const shopPrice = c.option ? c.option.price : c.price
   const tone = c.option ? ' option' : name === null ? ' empty' : c.changed && !counted ? ' buy' : ''
+  const shown = name === null ? null : own ? name : familyName(slot, name)
+  // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
+  const entry: EquipEntry = name === null ? props.worn : c.option || c.changed ? { pick: name, name: '', stat: '' } : props.worn
+  const facts = name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)
   return (
     <div class={`advised-row${tone}`}>
       <span class="slot-name">{slotLabel(slot)}</span>
-      <span class="advised-name" title={name ?? undefined}>{name === null ? '—' : own ? name : familyName(slot, name)}</span>
+      <span class="advised-name" title={name ?? undefined}>{shown ?? '—'}</span>
       {/* De winkelprijs in een eigen kolom (Dave, 7 oktober 2026): van wat je koopt, en gedempt van een stuk dat niet loont. */}
       <span class="advised-price">{shopPrice === null ? '' : nfInt.format(shopPrice)}</span>
-      <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} label={`Uitleg bij ${slotLabel(slot)}`} />
-      <p class="hint advised-help" id={id} hidden={!open}>
-        {help}
-      </p>
+      <button ref={button} type="button" class="help-toggle" aria-haspopup="dialog" aria-expanded={open} aria-label={`Uitleg bij ${slotLabel(slot)}`} onClick={() => setOpen(true)}>
+        {QUESTION_ICON}
+      </button>
+      {open && (
+        <StatDialog title={shown ?? slotLabel(slot)} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+          {facts.length > 0 && (
+            <dl class="item-facts">
+              {facts.map(([term, value]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <p class="item-why">{help}</p>
+        </StatDialog>
+      )}
     </div>
   )
+}
+
+/**
+ * Wat een stuk in Advised is, voor zijn popup (Dave, 7 oktober 2026): de soort, het level, ATT of DEF (met een correctie die je zelf
+ * invulde), de MDEF, de snelheid, de stat-eisen en de winkelprijs. Wat de app niet weet (een eigen item, munitie als bedrag) staat er niet.
+ */
+function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, price: number | null): [string, string][] {
+  const info = entry.pick === OTHER ? undefined : catalogInfo(slot, name)
+  const value = wornStat(slot, entry)
+  const req = itemRequirements(slot, entry)
+  const needs = req && Object.entries(req).map(([stat, v]) => `${stat.toUpperCase()} ${v}`)
+  const facts: [string, string | undefined][] = [
+    ['Soort', info?.type],
+    ['Level', info?.level === undefined ? undefined : String(info.level)],
+    [statName(slot, job), value === undefined ? undefined : String(value)],
+    ['MDEF', info?.mdef ? String(info.mdef) : undefined],
+    ['Snelheid', info?.speed],
+    ['Eisen', needs && needs.length > 0 ? needs.join(', ') : undefined],
+    ['Prijs', price === null ? undefined : `${nfInt.format(price)} meso`],
+  ]
+  return facts.filter((f): f is [string, string] => f[1] !== undefined)
 }
 
 /**

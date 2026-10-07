@@ -373,8 +373,22 @@ describe('begin zonder opslag', () => {
 /** De rijen van de Advised-popup (Dave, 7 oktober 2026): één regel per slot, met het vraagteken ernaast. */
 const advisedRow = (dialog: HTMLElement, slot: string) =>
   [...dialog.querySelectorAll<HTMLElement>('.advised-row')].find((r) => r.querySelector('.slot-name')?.textContent === slot)!
-const lineOf = (row: HTMLElement) => row.querySelector('.advised-line')!.textContent!.replace(/\s+/g, ' ').trim()
-const whyOf = (row: HTMLElement) => document.getElementById(row.querySelector('.help-toggle')!.getAttribute('aria-controls')!)!
+const nameOf = (row: HTMLElement) => row.querySelector('.advised-name')!.textContent!
+/** Het vraagteken van een regel opent een eigen popup (class item-dialog) met de feiten en de reden (Dave, 7 oktober 2026). */
+const openItem = (row: HTMLElement) => {
+  fireEvent.click(row.querySelector<HTMLElement>('.help-toggle')!)
+  return row.querySelector<HTMLElement>('dialog.item-dialog')!
+}
+const closeItem = (item: HTMLElement) => fireEvent.click(within(item).getByRole('button', { name: 'Sluiten' }))
+/** De reden van een regel: opent de popup, leest hem en sluit hem weer. */
+const whyOf = (row: HTMLElement) => {
+  const item = openItem(row)
+  const text = item.querySelector('.item-why')!.textContent!
+  closeItem(item)
+  return text
+}
+/** De feiten van een regel als { Soort: 'CLAW', Level: '20', ... }. */
+const factsOf = (item: HTMLElement) => Object.fromEntries([...item.querySelectorAll('.item-facts div')].map((d) => [d.querySelector('dt')!.textContent!, d.querySelector('dd')!.textContent!]))
 
 describe('equipment: de claw past het profiel aan', () => {
   it('zet weapon attack en aanvalssnelheid van de gekozen claw in het bewaarde profiel', () => {
@@ -423,9 +437,9 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Advised')
     expect(dialog.getAttribute('aria-label')).toBe('Advised: Equip')
     const weapon = advisedRow(dialog, 'Weapon')
-    // Het wapen dat je al draagt blijft staan: geen aankoop, dus geen vraagteken.
+    // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
     expect(weapon.classList.contains('buy')).toBe(false)
-    expect(weapon.querySelector('.help-toggle')).toBeNull()
+    expect(whyOf(weapon)).toMatch(/^Je draagt dit al/)
     expect(dialog.textContent).toContain('Te kopen:')
   })
 
@@ -446,11 +460,10 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
     expect(dialog.textContent).toContain('Te kopen:')
-    // Het wapen heeft zijn ATT, ook als het een winkelstuk is dat je nog moet kopen.
-    expect(lineOf(advisedRow(dialog, 'Weapon'))).toMatch(/\(CLAW, LV \d+, \d+ ATT\)$/)
+    expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
   })
 
-  it('zet een gekocht wapen in Advised op één regel "naam (TYPE, LV n, m ATT)" achter het slot Weapon, met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
+  it('zet een gekocht wapen in Advised als slot, naam en prijs (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
     // Niets aan: het wapenslot is leeg, dus Advised koopt het goedkoopste wapen dat je kunt dragen (#202).
     atLevel('20')
     openHomeEquipment()
@@ -459,20 +472,46 @@ describe('equipment: de claw past het profiel aan', () => {
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = advisedRow(dialog, 'Weapon')
     expect(row.classList.contains('buy')).toBe(true)
-    expect(row.querySelectorAll('.advised-line')).toHaveLength(1)
     expect(row.querySelector('.slot-name')!.textContent).toBe('Weapon')
-    expect(lineOf(row)).toMatch(/^.+ ?\(CLAW, LV \d+, \d+ ATT\)$/)
+    expect(nameOf(row)).not.toBe('—')
+    expect(row.querySelector('.advised-price')!.textContent).toMatch(/^[\d.]+$/)
+    // De details (type, level, ATT) staan er niet meer.
+    expect(row.querySelector('.advised-line, .advised-meta')).toBeNull()
+    expect(row.textContent).not.toMatch(/ATT|LV /)
     const toggle = within(row).getByRole('button', { name: 'Uitleg bij Weapon' })
-    const why = whyOf(row)
+    expect(toggle.getAttribute('aria-haspopup')).toBe('dialog')
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(why.hidden).toBe(true)
-    // Zonder tik staat de reden niet op het scherm, maar wel in de DOM; het vraagteken opent hem.
+    // Zonder tik staat er geen popup in de pagina; het vraagteken opent hem.
+    expect(row.querySelector('dialog.item-dialog')).toBeNull()
     fireEvent.click(toggle)
     expect(toggle.getAttribute('aria-expanded')).toBe('true')
-    expect(why.hidden).toBe(false)
-    expect(why.textContent).toMatch(/^(Koop voor [\d.]+ meso\. Van lv \d+ tot en met lv \d+ bespaart het [\d.]+ meso, meer dan het kost|Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen\. Koop het voor [\d.]+ meso)\.$/)
-    fireEvent.click(toggle)
-    expect(why.hidden).toBe(true)
+    const item = row.querySelector<HTMLElement>('dialog.item-dialog')!
+    expect(item.querySelector('.item-why')!.textContent).toMatch(/^(Koop voor [\d.]+ meso\. Van lv \d+ tot en met lv \d+ bespaart het [\d.]+ meso, meer dan het kost|Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen\. Koop het voor [\d.]+ meso)\.$/)
+    closeItem(item)
+    expect(row.querySelector('dialog.item-dialog')).toBeNull()
+  })
+
+  it('toont in de popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar het vraagteken (Dave, 7 oktober 2026)', async () => {
+    atLevel('20')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const row = advisedRow(dialog, 'Weapon')
+    const toggle = row.querySelector<HTMLElement>('.help-toggle')!
+    const item = openItem(row)
+    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
+    const facts = factsOf(item)
+    expect(facts.Soort).toBe('CLAW')
+    expect(facts.Level).toMatch(/^[\d]+$/)
+    expect(facts.ATT).toMatch(/^[\d]+$/)
+    expect(facts.Prijs).toBe(row.querySelector('.advised-price')!.textContent + ' meso')
+    expect(item.querySelector('.item-why')!.textContent).not.toBe('')
+    closeItem(item)
+    await new Promise((done) => requestAnimationFrame(() => done(undefined)))
+    expect(row.querySelector('dialog.item-dialog')).toBeNull()
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(toggle)
   })
 
   it('toont in Advised de winkelprijs van een gekocht stuk in .advised-price, en niets bij een stuk dat je houdt of een leeg slot (Dave, 7 oktober 2026)', () => {
@@ -497,16 +536,37 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(priceOf(kept.querySelector<HTMLElement>('.advised-row.empty')!)).toBe('')
   })
 
-  it('geeft een slot dat Advised leeg laat of je laat houden geen vraagteken (Dave, 7 oktober 2026)', () => {
+  it('geeft elke regel een vraagteken met de reden: houden, leeg, en leeg omdat een overall of losse top het slot beslaat (Dave, 7 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Top', 'Red Pao')
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    const empty = [...dialog.querySelectorAll<HTMLElement>('.advised-row.empty')]
-    expect(empty.length).toBeGreaterThan(0)
-    empty.forEach((r) => expect(r.querySelector('.help-toggle')).toBeNull())
+    const rows = [...dialog.querySelectorAll<HTMLElement>('.advised-row')]
+    expect(rows.length).toBeGreaterThan(0)
+    rows.forEach((r) => {
+      expect(within(r).getByRole('button', { name: 'Uitleg bij ' + r.querySelector('.slot-name')!.textContent }).getAttribute('aria-expanded')).toBe('false')
+      expect(r.querySelector('dialog.item-dialog')).toBeNull()
+    })
+    const why = (slot: string) => whyOf(advisedRow(dialog, slot))
+    expect(why('Weapon')).toMatch(/^Je draagt dit al/)
+    expect(why('Overall')).toBe('Leeg: je draagt een losse top en bottom, en die nemen de plek van een overall in.')
+    expect(rows.filter((r) => r.classList.contains('empty')).length).toBeGreaterThan(0)
+    expect(why('Cape')).toMatch(/^Leeg: /)
+    // Koopt Advised een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
+    cleanup()
+    localStorage.clear()
+    render(<App />)
+    atLevel('20')
+    openHomeEquipment()
+    pickOwn(cards()[0], 'Overall', 'Mijn overall')
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    const withOverall = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(whyOf(advisedRow(withOverall, 'Top'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
+    expect(whyOf(advisedRow(withOverall, 'Bottom'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
   })
 
   it('toont in een leeg Ammo-slot van Advised de stars die de factuur telt, zonder "Koop voor" (#189)', () => {
@@ -517,12 +577,11 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const ammo = advisedRow(dialog, 'Ammo')
-    expect(lineOf(ammo)).toContain('Subi Throwing Stars')
+    expect(nameOf(ammo)).toContain('Subi Throwing Stars')
     expect(ammo.classList.contains('buy')).toBe(false)
     expect(ammo.classList.contains('empty')).toBe(false)
-    expect(whyOf(ammo).textContent).toBe('Stars herlaad je per stuk; de factuur telt ze.')
+    expect(whyOf(ammo)).toBe('Stars herlaad je per stuk; de factuur telt ze.')
     expect(ammo.textContent).not.toContain('Koop voor')
-    expect(lineOf(ammo)).toMatch(/15 /)
   })
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
@@ -3599,7 +3658,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
     // De prijs staat achter het vraagteken: "Koop voor X meso" of, bij een paar, "voor <prijs van het paar> meso".
     const bought = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.equipment dialog .advised-row.buy')).map((row) => {
-      const why = whyOf(row).textContent!
+      const why = whyOf(row)
       return { name: row.querySelector('.advised-name')!.textContent!, price: mesoOf(why.match(/voor ([\d.]+) meso/)![1]), pair: why.includes('samen met') }
     })
     expect(bought.length).toBeGreaterThan(0)
@@ -3994,13 +4053,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
       expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
-      // De reden staat achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
+      // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
       expect(buy).not.toBeNull()
-      expect(whyOf(buy).hidden).toBe(true)
-      fireEvent.click(within(buy).getByRole('button', { name: /^Uitleg bij / }))
-      expect(whyOf(buy).hidden).toBe(false)
-      expect(whyOf(buy).textContent).toContain('Koop')
+      expect(buy.querySelector('dialog.item-dialog')).toBeNull()
+      expect(whyOf(buy)).toContain('Koop')
       expect(d.textContent).toContain('Te kopen:')
       expect(part('cheapest-cost').querySelector('dialog')).toBeNull()
       expect(within(part('cheapest-cost')).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
