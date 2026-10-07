@@ -1101,6 +1101,29 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Evasion').querySelector('s')?.textContent).toBe('22')
   })
 
+  it('opent achter Accuracy en Evasion met een vraagteken de opbouw van het getal (Dave, 7 oktober 2026)', () => {
+    fireEvent.click(viewButton('Total stats'))
+    for (const stat of ['Accuracy', 'Evasion']) {
+      const line = statLine(stat)
+      const toggle = within(line).getByRole('button', { name: 'Uitleg' })
+      const panel = line.querySelector<HTMLElement>('.stat-breakdown')!
+      expect(panel.hidden).toBe(true)
+      fireEvent.click(toggle)
+      expect(toggle.getAttribute('aria-expanded')).toBe('true')
+      expect(panel.hidden).toBe(false)
+      expect(panel.querySelector('.breakdown-total')?.textContent).toContain('Totaal')
+    }
+    // Evasion: LUK ÷ 3, DEX ÷ 6 en 5 basis; het voorbeeldprofiel staat in game 1 hoger dan de formule.
+    const evasion = statLine('Evasion').querySelector('.stat-breakdown')!
+    expect(evasion.querySelector('.breakdown-total dd')?.textContent).toBe('22')
+    expect(evasion.querySelector('.breakdown-note')?.textContent).toContain('+1')
+  })
+
+  it('heeft geen vraagteken achter een stat zonder formule', () => {
+    fireEvent.click(viewButton('Total stats'))
+    expect(within(statLine('Tijd per aanval (ms)')).queryByRole('button', { name: 'Uitleg' })).toBeNull()
+  })
+
   it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
     fireEvent.click(viewButton('Total stats'))
     const first = openStat('Accuracy')

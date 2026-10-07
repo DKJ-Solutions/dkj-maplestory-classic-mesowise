@@ -345,6 +345,19 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-line:last-of-type { border-bottom: 0; }
 .stat-line-name { min-width: 0; font-size: 0.9375rem; color: var(--text); overflow-wrap: anywhere; }
 .stat-line .equip-value, .stat-line .equip-edit { grid-row: auto; grid-column: auto; }
+/* Accuracy en Evasion: een vraagteken achter het getal opent de opbouw (Dave, 7 oktober 2026). Het knopje houdt zijn 44px om te tikken,
+   maar neemt opzij minder ruimte, zodat het getal zo dicht mogelijk bij die van de andere regels blijft. De opbouw staat over de hele breedte eronder. */
+.stat-line.with-help { grid-template-columns: minmax(0, 1fr) auto auto var(--control-h); }
+.stat-line.with-help > .help-toggle { margin: -0.5rem -0.625rem; }
+.stat-breakdown { grid-column: 1 / -1; margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--muted); }
+.stat-breakdown[hidden] { display: none; }
+.breakdown-list { margin: 0; font-variant-numeric: tabular-nums; }
+.breakdown-list > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.25rem 0; }
+.breakdown-list dt { min-width: 0; color: var(--text); }
+.breakdown-list dd { margin: 0; white-space: nowrap; color: var(--text); }
+.breakdown-detail { display: block; font-size: 0.75rem; color: var(--muted); }
+.breakdown-total { border-top: 1px solid var(--border); font-weight: 600; }
+.breakdown-note { margin: 0.375rem 0 0; }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon, en blijft rondom minstens 1rem van de rand
    (Dave, 5 oktober 2026); is de inhoud hoger, dan scrollt de popup. */

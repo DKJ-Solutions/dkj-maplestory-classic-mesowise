@@ -39,19 +39,31 @@
 
 ### PLAN
 
+Dave (October 7, 2026): a question-mark button after the Accuracy and Evasion values; tapping it shows how the value is added up.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `statBreakdown` in `src/expectedStats.ts`: the parts of Accuracy and Evasion per job; `expectedStat` is now its total, so the formula lives in one place
+- [x] `StatLine` takes an optional breakdown: a `HelpToggle` after the value and a hidden list under the row (`BreakdownList`), with a note when the in-game value differs
+- [x] Styling in `src/style.css` (`.stat-line.with-help`, `.stat-breakdown`, `.breakdown-*`)
 
 ### TEST
 
+- [x] Vitest: the breakdown sums to `expectedStat` for every job, the parts of Evasion, the passive only when learned; app test for the toggle
+- [x] Lint gate clean
+- [x] Victor (code) and Edith (Dutch text) read the diff
+
 ### DEPLOY: app/stat-breakdown-help
 
-**Score:**
+Internal: the Accuracy and Evasion formulas now come from one function (`statBreakdown`) that both the expected value and the new breakdown read.
+
+**Score:** 1 -- prevents the explanation and the expected value from ever disagreeing.
 
 #### What makes this deploy extra special
 
-**Score:**
+Behind Accuracy and Evasion in Total stats there is now a question mark that shows how the number is built: the formula with your own DEX, LUK and level, the passive of your job, and the total. If the game shows a different number, it says by how much.
+
+**Score:** 3
 
 #### Pull Request
 

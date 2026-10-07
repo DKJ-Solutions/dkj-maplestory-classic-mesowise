@@ -27,31 +27,58 @@ const preciseStrikesAccuracy = (level: number): number => PRECISE_STRIKES_LEVELS
  * (Nimble Body of Precise Strikes; de Magician heeft er in de 1e job geen). Avoid: het stat-deel uit DEX en LUK, voor elke job hetzelfde, plus Nimble Body bij een Thief.
  */
 export function expectedStat(key: ProfileKey, draft: ProfileDraft, job: Job): number | undefined {
+  return statBreakdown(key, draft, job)?.total
+}
+
+/** Eén deel van een stat in de opbouw achter het vraagteken: wat het is, eventueel de formule met jouw getallen, en wat het oplevert. */
+export type BreakdownPart = { label: string; detail?: string; value: number }
+
+/** De opbouw van een verwachte stat: de delen, die samen precies `expectedStat` geven. */
+export type StatBreakdown = { parts: readonly BreakdownPart[]; total: number }
+
+/** Het stat-deel van de accuracy per job: de hoofdstat en hoe de som eindigt (de bronnen staan bij de functies in data/). */
+const ACCURACY_TAIL: Record<Job, { stat: 'DEX' | 'INT'; tail: string; of: (main: number, level: number, luk: number) => number }> = {
+  thief: { stat: 'DEX', tail: '× 0,25 + 15', of: baseAccuracy },
+  warrior: { stat: 'DEX', tail: '÷ 2,5 + 10', of: warriorAccuracy },
+  bowman: { stat: 'DEX', tail: '÷ 4,8 + 20', of: bowmanAccuracy },
+  magician: { stat: 'INT', tail: '÷ 5,1 + 20', of: magicianAccuracy },
+}
+
+/**
+ * Hoe de app een stat opbouwt (Dave, 7 oktober 2026): het vraagteken achter Accuracy en Evasion toont dit. Undefined als de
+ * app er geen formule voor heeft of een benodigd veld geen geheel getal is, net als `expectedStat`, die hier het totaal van is.
+ * Accuracy: het stat-deel (naar beneden afgerond) plus de passief van je job. Avoid: LUK ÷ 3 en DEX ÷ 6 (elk naar beneden
+ * afgerond) plus 5, en Nimble Body bij een Thief. Een skill die niet geleerd is, staat er niet in.
+ */
+export function statBreakdown(key: ProfileKey, draft: ProfileDraft, job: Job): StatBreakdown | undefined {
+  if (key !== 'accuracy' && key !== 'avoid') return undefined
   const level = wholeOf(draft.level)
   // De formules rekenen met je totale stats: base AP plus wat je items geven.
   const dex = draftStatTotal(draft, 'dex')
   const luk = draftStatTotal(draft, 'luk')
-  if (level === null || dex === null || luk === null) return undefined
-  if (job === 'magician') {
-    const int = draftStatTotal(draft, 'int')
-    if (int === null) return undefined
-    if (key === 'accuracy') return magicianAccuracy(int, level, luk)
-    if (key === 'avoid') return baseAvoid(dex, luk)
-    return undefined
+  // Een Magician rekent ook INT mee; zonder INT heeft hij geen verwachting, ook niet voor avoid.
+  const int = draftStatTotal(draft, 'int')
+  if (level === null || dex === null || luk === null || (job === 'magician' && int === null)) return undefined
+  const parts: BreakdownPart[] = []
+  if (key === 'accuracy') {
+    // De Bowman heeft in de 1e job geen accuracy-skill (Focus is een buff en telt niet mee), de Magician ook niet: alleen het stat-deel.
+    const acc = ACCURACY_TAIL[job]
+    const main = job === 'magician' ? int! : dex
+    parts.push({ label: 'Stats', detail: `(1,2 × ${acc.stat} ${main} + 2 × level ${level} + 0,6 × LUK ${luk}) ${acc.tail}, naar beneden afgerond`, value: acc.of(main, level, luk) })
+  } else {
+    parts.push({ label: `LUK ${luk} ÷ 3`, detail: 'naar beneden afgerond', value: Math.floor(luk / 3) })
+    parts.push({ label: `DEX ${dex} ÷ 6`, detail: 'naar beneden afgerond', value: Math.floor(dex / 6) })
+    parts.push({ label: 'Basis', value: baseAvoid(dex, luk) - Math.floor(luk / 3) - Math.floor(dex / 6) })
   }
-  if (job === 'warrior') {
-    if (key === 'accuracy') return warriorAccuracy(dex, level, luk) + preciseStrikesAccuracy(wholeOf(draft.preciseStrikes) ?? 0)
-    if (key === 'avoid') return baseAvoid(dex, luk)
-    return undefined
+  if (job === 'thief') {
+    const nimbleBody = wholeOf(draft.nimbleBody) ?? 0
+    const per = key === 'accuracy' ? NIMBLE_BODY.accuracyPerLevel : NIMBLE_BODY.avoidPerLevel
+    if (nimbleBody > 0) parts.push({ label: `Nimble Body (level ${nimbleBody})`, value: nimbleBody * per })
   }
-  if (job === 'bowman') {
-    // De Bowman heeft in de 1e job geen accuracy-skill (Focus is een buff en telt niet mee): alleen het stat-deel.
-    if (key === 'accuracy') return bowmanAccuracy(dex, level, luk)
-    if (key === 'avoid') return baseAvoid(dex, luk)
-    return undefined
+  if (job === 'warrior' && key === 'accuracy') {
+    const precise = wholeOf(draft.preciseStrikes) ?? 0
+    const value = preciseStrikesAccuracy(precise)
+    if (value > 0) parts.push({ label: `Precise Strikes (level ${precise})`, value })
   }
-  const nimbleBody = wholeOf(draft.nimbleBody) ?? 0
-  if (key === 'accuracy') return baseAccuracy(dex, level, luk) + nimbleBody * NIMBLE_BODY.accuracyPerLevel
-  if (key === 'avoid') return baseAvoid(dex, luk) + nimbleBody * NIMBLE_BODY.avoidPerLevel
-  return undefined
+  return { parts, total: parts.reduce((sum, p) => sum + p.value, 0) }
 }
