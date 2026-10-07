@@ -4233,12 +4233,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
         expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
         const sections = [...popup.querySelectorAll('section.char-table')]
-        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual([...tables.map(([title]) => title), 'Total stats'])
+        // De kop van de skills zegt dat het die van de 1e job zijn; de groep zelf heeft geen kop en geen "31 / 31 SP" (Dave, 7 oktober 2026).
+        expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual(['Ability points', 'Skillpoints (1e job)', 'Total stats'])
         expect(lines(sections[0], '.ability-line:not(.ability-head)'), 'Ability points').toEqual(want[0])
         expect(lines(sections[1], '.skill-row'), 'Skillpoints').toEqual(want[1])
-        expect(lines(sections[1], '.skill-group h3').some((t) => t!.startsWith('Beginner'))).toBe(false)
-        // Zonder "31 / 31 SP": hier niet nodig (Dave, 7 oktober 2026).
-        expect(sections[1].querySelector('.skill-sp')).toBeNull()
+        expect(sections[1].querySelector('.skill-group h3, .skill-sp')).toBeNull()
         // Total stats puur uit level, base AP en skillpunten (Dave, 7 oktober 2026): Max HP, Max MP, Accuracy en Evasion, niets van de equipment.
         const stats = sections[2]
         const value = (name: string) => [...stats.querySelectorAll('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!.querySelector('.equip-value strong')!.textContent
@@ -4254,8 +4253,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         // Een vraagteken achter het level van elke skill van de 1e job met punten, zoals Lucky Seven en Nimble Body; niet bij 0 of bij Beginner (Dave, 7 oktober 2026).
         const rows = [...sections[1].querySelectorAll<HTMLElement>('.skill-row')]
         const level = (row: HTMLElement) => Number(row.querySelector('.equip-value strong')!.textContent)
-        const firstJob = [...sections[1].querySelectorAll<HTMLElement>('.skill-group')].find((g) => g.querySelector('h3')!.textContent!.startsWith('Thief'))!
-        const withPoints = [...firstJob.querySelectorAll<HTMLElement>('.skill-row')].filter((r) => level(r) > 0)
+        const withPoints = rows.filter((r) => level(r) > 0)
         expect(withPoints.map((r) => r.firstElementChild!.firstChild!.textContent)).toEqual(expect.arrayContaining(['Lucky Seven']))
         for (const row of rows) expect(row.querySelector('.help-toggle') !== null, row.textContent!).toBe(withPoints.includes(row))
         const lucky = withPoints.find((r) => r.firstElementChild!.firstChild!.textContent === 'Lucky Seven')!

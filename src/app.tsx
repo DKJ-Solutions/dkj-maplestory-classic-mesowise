@@ -2363,26 +2363,36 @@ function SkillsCard(props: {
   )
 }
 
+/** De skills van je job die de app toont, en de groepen (1e job, Beginner) waarin ze vallen, in de volgorde van SKILL_GROUPS. */
+function skillGroupsOf(job: Job, draft: ProfileDraft) {
+  const shown = profileFieldsFor(job).map((f) => f.key)
+  const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  return { levels, groups: SKILL_GROUPS.filter((g) => levels.some((s) => s.job === g.job)) }
+}
+
+/** Of het karakter een 1e job heeft: dan staan alleen zijn skills in de popup onder "Based on:" (Dave, 7 oktober 2026). */
+const hasFirstJob = (job: Job, draft: ProfileDraft) => skillGroupsOf(job, draft).groups.some((g) => g.job !== 'Beginner')
+
 /**
  * De skills van je job per groep (Beginner, 1e job), elk met wat je van zijn pot zette: in Skillpoints en in de popup van het karakter onder "Based on:".
- * Met `inCharacter` (die popup, Dave, 7 oktober 2026) zonder de Beginner-skills zodra er een 1e job is en zonder "31 / 31 SP": die zijn daar niet
- * relevant. Wel een vraagteken achter elke skill met punten (SkillLine `why`).
+ * Met `inCharacter` (die popup, Dave, 7 oktober 2026) alleen de skills van de 1e job (zonder 1e job die van de Beginner), zonder kop en zonder
+ * "31 / 31 SP": de kop van de tabel zegt welke het zijn. Wel een vraagteken achter elke skill met punten (SkillLine `why`).
  */
 function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; inCharacter?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
   const { draft } = props
-  const shown = profileFieldsFor(props.job).map((f) => f.key)
-  const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  const { levels, groups } = skillGroupsOf(props.job, draft)
   const wdef = profileWdef(draft)
-  const groups = SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job))
-  const firstJob = groups.some(({ job }) => job !== 'Beginner')
+  // In de popup één groep: de eerste, want de Beginner staat in SKILL_GROUPS achteraan.
   return (
     <>
-      {groups.filter(({ job }) => !(props.inCharacter && firstJob && job === 'Beginner')).map(({ job, title }) => (
+      {(props.inCharacter ? groups.slice(0, 1) : groups).map(({ job, title }) => (
         <div class="skill-group" key={job}>
-          <h3>
-            {title}
-            {!props.inCharacter && <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />}
-          </h3>
+          {!props.inCharacter && (
+            <h3>
+              {title}
+              <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />
+            </h3>
+          )}
           {levels
             .filter((s) => s.job === job)
             .map((s) => (
@@ -2413,7 +2423,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
           ))}
       </section>
       <section class="char-table" aria-label="Skillpoints">
-        <h3 class="char-table-head">Skillpoints</h3>
+        <h3 class="char-table-head">Skillpoints ({hasFirstJob(job, draft) ? '1e job' : 'Beginner'})</h3>
         <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
       </section>
       <section class="char-table" aria-label="Total stats">
