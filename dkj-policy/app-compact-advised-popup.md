@@ -57,7 +57,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] An info button right after the item name opens the item facts; the "?" keeps only the verdict and the reason (Dave, October 7, 2026); both through `PopupButton`
 - [x] A filled info icon with a classic i (Dave, October 7, 2026)
 - [x] The total as the last line of the bill: in the price column under the amounts, with a total rule above it and "meso" beside it (Dave, October 7, 2026)
-- [x] Only the amount of a bought piece is in the accent colour, not its name, and the name is not bold (Dave, October 7, 2026)
+- [x] Only the amount of a bought piece is in the accent colour, not its name, and every item name is plain text colour, also of a piece that does not pay (Dave, October 7, 2026)
 - [x] A header row: Slot, Item and Mesos above the amounts (Dave, October 7, 2026)
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
