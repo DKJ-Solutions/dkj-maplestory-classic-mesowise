@@ -55,7 +55,7 @@ works move behind the "?". The rule is recorded in Gwen's lens.
 - [x] Tests: the "?" is collapsed by default and opens and closes on tap; existing tests tap it first
 - [x] Victor: code review (the unknown-job instruction stays visible; spacing and clipping fixed)
 - [x] Edith: final read
-- [ ] Dave looks at it on a phone before the merge
+- [x] Dave looks at it on a phone before the merge (approved October 7, 2026)
 
 ### DEPLOY: app/hint-behind-question-mark
 
