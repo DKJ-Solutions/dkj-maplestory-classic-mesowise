@@ -147,6 +147,24 @@ function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly W
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)
 }
 
+/** Een wapen met de levels waarover het meetelt: wat Advised in een leeg wapenslot zet (requiredWeapon). */
+export type WeaponPick = Pick<ClawChoice, 'claw' | 'from' | 'to' | 'truncated'>
+
+/**
+ * Het wapen dat Advised in je hand zet als je wapenslot leeg is (Dave, 7 oktober 2026, #202): er staat altijd een wapen in het advies. De
+ * winnaar van het advies; verdient geen wapen zich terug, dan het wapen met de beste netto besparing (het kleinste verlies); vergelijkt het
+ * advies geen wapen of valt geen besparing uit te rekenen (het model ziet geen verschil met een lege hand, of rekent niet), dan het goedkoopste wapen uit je winkel dat je kunt
+ * dragen, bij gelijke prijs het sterkste. Null als je winkel op je level niets heeft wat je kunt dragen (onder level 10, of te lage stats).
+ */
+export function requiredWeapon(profile: Profile | null, advice: ClawUpgradeAdvice): WeaponPick | null {
+  if (!profile) return null
+  // Zonder netto besparing (geen wapen valt uit te rekenen) zegt de volgorde van de keuzes niets: dan het goedkoopste.
+  if (advice.kind === 'advice' && advice.choices[0] && advice.choices[0].net !== null) return advice.choices[0]
+  const wearable = shopOf(profile).weapons.filter((c) => c.level <= profile.level && shortfall(c, profile).length === 0)
+  const pick = [...wearable].sort((a, b) => a.price - b.price || power(b) - power(a))[0]
+  return pick ? { claw: pick, ...horizon(profile, pick, 'next-upgrade') } : null
+}
+
 export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, scope: HorizonScope = 'next-upgrade'): ClawUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
   const better = betterClaws(drafts, profile)

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { pickUnder } from './best'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid } from './calc/rankSpots'
-import { clawUpgradeAdvice, nextBetterWeapon, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
+import { clawUpgradeAdvice, nextBetterWeapon, requiredWeapon, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS } from './data/expTable'
 import { mobDraft } from './data/spots'
@@ -368,5 +368,49 @@ describe('clawUpgradeAdvice over alleen dit level (#188)', () => {
     }
     // Een winnaar over één level is er alleen als die op dat level al meer bespaart dan hij kost.
     if (level.winner) expect(level.choices[0].net!).toBeGreaterThan(0)
+  })
+})
+
+describe('requiredWeapon: er staat altijd een wapen in het advies (#202)', () => {
+  const empty = { ...base, level: 10, clawWatk: 0 } as Profile
+  const noChoices = { kind: 'advice', level: 10, choices: [], notWearable: [], winner: null, robust: true } as unknown as ClawUpgradeAdvice
+
+  it('geeft null zonder profiel', () => {
+    expect(requiredWeapon(null, noChoices)).toBeNull()
+    expect(requiredWeapon(null, { kind: 'none' })).toBeNull()
+  })
+
+  it('geeft de winnaar van het advies als die er is', () => {
+    const p = strong({ level: 20 })
+    const a = advice(drafts, p)
+    expect(a.winner).not.toBeNull()
+    expect(requiredWeapon(p, a)?.claw).toBe(a.winner)
+  })
+
+  it('geeft de eerste keuze (beste netto, ook negatief) als er geen winnaar is', () => {
+    const choices = [{ claw: claw('Garnier'), from: 10, to: 12, truncated: false, net: -5 }, { claw: claw('Steel Titans'), from: 10, to: 12, truncated: false, net: -9 }]
+    const a = { kind: 'advice', level: 10, choices, notWearable: [], winner: null, robust: true } as unknown as ClawUpgradeAdvice
+    expect(requiredWeapon(empty, a)).toBe(choices[0])
+  })
+
+  it('kiest het goedkoopste wapen, niet het eerste in de lijst, als geen besparing uit te rekenen valt', () => {
+    const fallback = requiredWeapon(empty, noChoices)!
+    const choices = [{ claw: claw('Steel Titans'), from: 10, to: 12, truncated: false, net: null }]
+    const a = { kind: 'advice', level: 10, choices, notWearable: [], winner: null, robust: true } as unknown as ClawUpgradeAdvice
+    expect(requiredWeapon(empty, a)?.claw).toBe(fallback.claw)
+  })
+
+  it('valt terug op het goedkoopste wapen dat je kunt dragen als het advies niets vergelijkt', () => {
+    for (const a of [noChoices, { kind: 'none' } as ClawUpgradeAdvice]) {
+      const pick = requiredWeapon(empty, a)
+      expect(pick).not.toBeNull()
+      expect(pick!.claw.level).toBeLessThanOrEqual(10)
+      expect(pick!.from).toBeLessThanOrEqual(pick!.to)
+    }
+  })
+
+  it('geeft null als je winkel op je level niets heeft wat je kunt dragen', () => {
+    expect(requiredWeapon({ ...empty, level: 8 }, noChoices)).toBeNull()
+    expect(requiredWeapon({ ...empty, level: 8 }, { kind: 'none' })).toBeNull()
   })
 })
