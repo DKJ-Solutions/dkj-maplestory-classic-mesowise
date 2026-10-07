@@ -670,8 +670,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
   border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .advised-head-price { grid-column: 3; text-align: right; }
 /* Een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026): aantal en bedrag krijgen een vaste breedte, zodat ze in elke regel onder elkaar staan.
-   Het vraagteken staat direct achter het aantal, want het legt uit hoe de app op dat aantal komt; het bedrag staat achteraan. */
-.advised-head.with-qty, .advised-row.with-qty, .equip-total.advised-total.with-qty { grid-template-columns: 4.75rem minmax(0, 1fr) 2.75rem 2.25rem 4.25rem; }
+   Het vraagteken staat direct achter het aantal, want het legt uit hoe de app op dat aantal komt; het bedrag staat achteraan.
+   Smaller dan de Equip-factuur (HP, MP, Ammo en Potions zijn korte slotnamen), zodat de naam van het stuk op 360px leesbaar blijft. */
+.advised-head.with-qty, .advised-row.with-qty, .equip-total.advised-total.with-qty { grid-template-columns: 3.5rem minmax(0, 1fr) 2.25rem 2.25rem 3.75rem; }
 .advised-head-qty, .advised-qty { grid-column: 3; text-align: right; font-variant-numeric: tabular-nums; }
 .advised-qty { font-size: 0.875rem; color: var(--muted); }
 .with-qty .advised-head-price, .with-qty .advised-price, .advised-total.with-qty strong { grid-column: 5; }

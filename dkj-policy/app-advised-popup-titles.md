@@ -57,8 +57,9 @@ and shows the ammo next to the potions.
 ### TEST
 
 - [x] Tests: the title of each Advised popup starts with "Advised: <card>"
-- [ ] Tycho: tests for the Useable bill, the subtitle and `ammoInfo`
-- [ ] Victor: review of the Useable change
+- [x] Tycho: tests for the Useable bill, the subtitle and `ammoInfo`
+- [x] Victor: review of the Useable change. Applied: a spot that charges potions as one amount (own amount, or no computed plan) shows one Potions row with that amount instead of empty HP and MP rows; an ammo line on the invoice always gets an Ammo row ("Eigen bedrag" for a Warrior or Magician), so the rows add up to the total; narrower fixed columns so the item name stays readable at 360px; the own-ammo text is shared. Left: the potion facts keep the card's English labels (Price, Recovery)
+- [ ] Tycho: tests for the one-amount Potions row, an ammo line without an Ammo name, and the total equal to the rows
 - [x] Victor: code review, no findings (all seven Advised call sites carry the new title; a long title wraps beside the close button)
 - [ ] Dave looks at it on a phone before the merge
 

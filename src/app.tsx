@@ -1637,81 +1637,99 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
  */
 function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; ammo: string | null; lines: readonly InvoiceLine[] }) {
   const lineOf = (kind: 'hp' | 'mp' | 'ammo') => props.lines.find((l) => l.why?.kind === kind)
+  // Zonder aantal per potion (een eigen bedrag op de plek, of een plek zonder berekend plan) telt de factuur één regel "Potions" (levelInvoice).
+  const lumped = props.lines.find((l) => !l.shop && !l.why && l.label === 'Potions')
   // Een eigen bedrag voor munitie staat op de factuur zonder uitleg, onder het label van de munitie (#199).
   const ammoLine = lineOf('ammo') ?? props.lines.find((l) => !l.shop && !l.why && l.label === ammoLabel(props.job))
-  const ammo = props.ammo === null ? undefined : ammoInfo(props.ammo)
+  // Staat er munitie op de factuur, dan staat ze ook hier, zodat de regels optellen tot het totaal: zonder naam is het een eigen bedrag.
+  const ammoName = props.ammo ?? (ammoLine ? OWN_AMMO : null)
+  const ammo = ammoName === null ? undefined : ammoInfo(ammoName)
   const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
-  const rows = [
-    ...POTION_KINDS.map((kind) => {
-      const potion = props.potions[kind]
-      const line = lineOf(kind)
-      const why = line?.why?.kind === kind ? line.why : undefined
-      return (
+  const potionRows = lumped
+    ? [
         <BillRow
-          key={kind}
-          tone={line && line.meso > 0 ? 'buy' : ''}
-          slot={kind === 'hp' ? 'HP' : 'MP'}
-          qty={line?.qty ?? null}
-          name={potion.name}
-          facts={knownFacts([
+          key="potions"
+          tone={lumped.meso > 0 ? 'buy' : ''}
+          slot="Potions"
+          qty={null}
+          name="Bedrag"
+          facts={[]}
+          price={lumped.meso}
+          help={<p class="item-why">Op deze plek rekent de factuur met een bedrag voor potions, niet met een aantal per potion: je vulde het zelf in, of de app kent de plek niet.</p>}
+        />,
+      ]
+    : POTION_KINDS.map((kind) => {
+        const potion = props.potions[kind]
+        const line = lineOf(kind)
+        const why = line?.why?.kind === kind ? line.why : undefined
+        return (
+          <BillRow
+            key={kind}
+            tone={line && line.meso > 0 ? 'buy' : ''}
+            slot={kind === 'hp' ? 'HP' : 'MP'}
+            qty={line?.qty ?? null}
+            name={potion.name}
+            facts={knownFacts([
               ['Price', `${nfInt.format(potion.price)} meso`],
               ['Recovery', `${nfInt.format(potionStat(potion, kind, 'restores'))} ${kind === 'hp' ? 'HP' : 'MP'}`],
-          ])}
-          price={line ? line.meso : null}
-          help={
-            line && why ? (
-              <>
-                <p class="item-verdict">{verdict(line)}</p>
-                <div class="report-body">
-                  <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
-                </div>
-              </>
-            ) : (
-              <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
-            )
-          }
-        />
-      )
-    }),
-    ...(props.ammo === null
-      ? []
-      : [
-          <BillRow
-            key="ammo"
-            tone={ammoLine && ammoLine.meso > 0 ? 'buy' : ''}
-            slot="Ammo"
-            qty={ammoLine?.qty ?? null}
-            name={props.ammo}
-            facts={knownFacts([
-                [STAT_NAME.weapon, ammo && String(ammo.watk)],
-                ['Level', ammo?.level === undefined ? undefined : String(ammo.level)],
-                [props.job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', ammo && `${nf3.format(ammo.price)} meso`],
             ])}
-            price={ammoLine ? ammoLine.meso : null}
+            price={line ? line.meso : null}
             help={
-              ammoLine?.why?.kind === 'ammo' ? (
+              line && why ? (
                 <>
-                  <p class="item-verdict">{verdict(ammoLine)}</p>
+                  <p class="item-verdict">{verdict(line)}</p>
                   <div class="report-body">
-                    <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+                    <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
                   </div>
                 </>
               ) : (
-                <p class="item-why">{props.ammo === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : 'De factuur van dit level telt deze munitie niet apart.'}</p>
+                <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
               )
             }
-          />,
-        ]),
-  ]
-  const total = [...POTION_KINDS.map(lineOf), ammoLine].reduce((sum, l) => sum + (l?.meso ?? 0), 0)
+          />
+        )
+      })
+  const ammoRow = ammoName !== null && (
+    <BillRow
+      key="ammo"
+      tone={ammoLine && ammoLine.meso > 0 ? 'buy' : ''}
+      slot="Ammo"
+      qty={ammoLine?.qty ?? null}
+      name={ammoName}
+      facts={knownFacts([
+        [STAT_NAME.weapon, ammo && String(ammo.watk)],
+        ['Level', ammo?.level === undefined ? undefined : String(ammo.level)],
+        [props.job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', ammo && `${nf3.format(ammo.price)} meso`],
+      ])}
+      price={ammoLine ? ammoLine.meso : null}
+      help={
+        ammoLine?.why?.kind === 'ammo' ? (
+          <>
+            <p class="item-verdict">{verdict(ammoLine)}</p>
+            <div class="report-body">
+              <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+            </div>
+          </>
+        ) : (
+          <p class="item-why">{ammoName === OWN_AMMO ? OWN_AMMO_WHY : 'De factuur van dit level telt deze munitie niet apart.'}</p>
+        )
+      }
+    />
+  )
+  // Precies de regels die hier staan, dus het totaal is wat de factuur van Advised voor potions en munitie rekent.
+  const total = [...(lumped ? [lumped] : POTION_KINDS.map(lineOf)), ammoName === null ? undefined : ammoLine].reduce((sum, l) => sum + (l?.meso ?? 0), 0)
   return (
     <>
       <BillHead item="Useable" qty />
-      {rows}
+      {potionRows}
+      {ammoRow}
       <BillTotal total={total} qty />
     </>
   )
 }
+
+/** Waarom munitie als bedrag op de factuur staat (#199): in Advised: Equip en Advised: Useable. */
+const OWN_AMMO_WHY = 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.'
 
 /** De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */
 function BillHead(props: { item: string; qty?: boolean }) {
@@ -1875,7 +1893,7 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
   if (counted)
     return {
       verdict: c.cheapest === OWN_AMMO ? 'Eigen bedrag' : job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
-      text: c.cheapest === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
+      text: c.cheapest === OWN_AMMO ? OWN_AMMO_WHY : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
     }
   if (c.cheapest === null) {
     if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: een losse top of bottom neemt de plek van een overall in.' : 'Leeg: de overall beslaat dit slot.' }
