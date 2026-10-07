@@ -776,6 +776,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-dialog .ability-line .equip-value { justify-content: center; }
 .item-dialog .ability-line .ap-total { justify-content: flex-end; }
 .item-dialog .ability-head > :nth-child(6) { text-align: right; }
+/* Base en Extra wijken af van het Totaal (Dave, 7 oktober 2026): gewoon gewicht in grijs, het Totaal vet in de tekstkleur. */
+.item-dialog .ability-line .ap-base strong, .item-dialog .ability-line .ap-extra strong { font-weight: 400; color: var(--muted); }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
    met de prijzen erboven, zonder "meso" (de kop zegt Mesos), en een totaalstreep over de hele breedte, zoals op een bon: subtiel, maar net sterker dan de lijnen tussen de rijen (Dave, 7 oktober 2026). Zoals een echte factuur: het
    totaal even groot als de bedragen erboven, en lucht rond de totaalstreep. Onder het totaal een lijn over de hele breedte, net als erboven
