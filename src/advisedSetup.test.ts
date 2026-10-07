@@ -180,9 +180,9 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     const user = { ...bare('thief', 20), equipment: { ...defaultEquipment(), claw: { pick: 'Steel Igor', name: '', stat: '' } } }
     const s = advisedSetup(user)
     expect(s.cheapest.claw.worn).toBe('Steel Igor')
-    // Zonder aankoop blijft het wapen wat je droeg; met een aankoop is het een echte upgrade (het kost geld en verandert iets).
-    const bought = s.purchases.find((p) => p.slot === 'claw')
-    if (!bought) expect(wornName(s.equipment.claw)).toBe('Steel Igor')
-    else expect(bought.name).not.toBe('Steel Igor')
+    // Op level 20 is er geen betere claw in de winkel: niets te kopen, en het profiel houdt zijn eigen ATT (geen lege hand van 0).
+    expect(s.purchases.find((p) => p.slot === 'claw')).toBeUndefined()
+    expect(wornName(s.equipment.claw)).toBe('Steel Igor')
+    expect(s.profile.clawWatk).toBe(user.profileDraft.clawWatk)
   })
 })

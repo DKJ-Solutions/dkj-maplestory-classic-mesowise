@@ -39,7 +39,10 @@
 
 ### PLAN
 
-Dave, October 7, 2026 (#202): an empty weapon slot in the player's own setup does not mean the Advised setup gets no weapon; there must ALWAYS be a weapon in the advice. Until now an empty slot kept the profile's "ATT van je wapen" (default 10), so a Thief (Garnier is also 10 ATT) and a Warrior (a shop weapon saves 0 against it) got no weapon at level 10.
+Dave, October 7, 2026 (#202): an empty weapon slot in the player's own setup does not mean the Advised setup gets no weapon;
+there must ALWAYS be a weapon in the advice. Until now an empty slot kept the profile's "ATT van je wapen" (default 10), so a
+Thief got no weapon at level 10 (the Garnier, 10 ATT, saves nothing against an assumed 10 ATT) and neither did a Warrior (a shop
+weapon saves 0 mesos against it).
 
 ### CREATE
 
@@ -51,17 +54,22 @@ Dave, October 7, 2026 (#202): an empty weapon slot in the player's own setup doe
 
 - [x] Tycho: tests on `requiredWeapon`, `cheapestEquipment` and `advisedSetup` (every job, fixed point, below level 10)
 - [ ] Victor: code review
-- [ ] Edith: final read of the changed comments and this entry
+- [x] Edith: final read of the changed comments and this entry
 
 ### DEPLOY: app/202-advised-always-weapon
 
-The Advised setup now always holds a weapon. When your own weapon slot is empty, Advised no longer assumes you hold an unnamed weapon with the profile's ATT (10 by default); it starts from an empty hand and buys the weapon that saves the most mesos up to your next upgrade, or, when none pays for itself, the one that costs the least net, or else the cheapest shop weapon you can wear. A Thief at level 10 now gets the Garnier and a Warrior the Steel Pipe, where both used to get nothing. Below level 10 the shop has no priced weapon yet, so nothing changes there (#203). Resolves #202.
+The Advised setup now always holds a weapon. When your own weapon slot is empty, Advised no longer assumes you hold an unnamed
+weapon with the profile's ATT (10 by default); it starts from an empty hand and buys the weapon that saves the most mesos up to
+your next upgrade, or, when none pays for itself, the one that loses the least, or else the cheapest shop weapon you can wear. A
+Thief at level 10 now gets the Garnier and a Warrior the Steel Pipe, where both used to get nothing. Below level 10 the shop has
+no priced weapon yet, so nothing changes there (#203). Resolves #202.
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
-A player who has not filled in a weapon now sees one in Advised and on its invoice, instead of an empty weapon slot that read as advice to fight bare-handed.
+A player who has not filled in a weapon now sees one in Advised and on its invoice, instead of an empty weapon slot that read as
+advice to fight bare-handed.
 
 **Score:** 3
 
