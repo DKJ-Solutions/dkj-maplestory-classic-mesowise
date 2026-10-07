@@ -354,6 +354,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .stat-dialog-name { margin: 0; min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
 /* Een ondertitel onder de titel (Dave, 7 oktober 2026): bij een Advised-popup op welk level en voor welke job het advies rekent. */
 .stat-dialog-titles { min-width: 0; }
+/* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
+.stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
@@ -678,6 +680,22 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .with-qty .advised-head-price, .with-qty .advised-price, .advised-total.with-qty strong { grid-column: 5; }
 .advised-total.with-qty .advised-total-label { grid-column: 1 / 5; }
 .advised-row.with-qty .help-toggle { grid-column: 4; justify-self: center; margin: -0.5rem -0.25rem; }
+/* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
+   zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
+.advised-head.with-level, .advised-row.with-level, .equip-total.advised-total.with-level { grid-template-columns: 4.25rem minmax(0, 1fr) 3.75rem 3.5rem 2.25rem; }
+/* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */
+.meso-amount { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
+.meso-icon { flex: none; width: 0.75rem; height: 0.75rem; }
+.advised-head-level, .advised-level { grid-column: 4; text-align: right; }
+.advised-level { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.advised-row.buy .advised-level { color: var(--accent); }
+.advised-row.with-level .help-toggle { grid-column: 5; }
+.advised-total.with-level .advised-total-level { grid-column: 4; }
+/* Shop in gewone tekst, niet vet en zonder accent (Dave, 7 oktober 2026): het bedrag dat telt is Level. */
+.advised-row.with-level .advised-price, .advised-row.with-level.buy .advised-price, .advised-row.with-level.option .advised-price,
+.advised-total.with-level strong:not(.advised-total-level) { font-weight: 400; color: var(--text); }
+/* Het vraagteken achter Total cost (Dave, 7 oktober 2026): in de kolom van de vraagtekens erboven, zonder dat de regel hoger wordt. */
+.advised-total.with-level .help-toggle { grid-column: 5; justify-self: end; align-self: center; margin: -0.75rem -0.5rem -0.75rem 0; }
 .advised-row .slot-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
 .advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9375rem; line-height: 1.3; font-weight: 400; }
 /* Elke itemnaam in de tekstkleur, ook van een stuk dat niet loont (Dave, 7 oktober 2026); alleen het streepje van een leeg slot is grijs. */
@@ -730,8 +748,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .help-toggle { width: 44px; height: 44px; margin: -0.375rem 0; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .help-toggle[aria-expanded="true"] { color: var(--accent); }
-/* Naast de titel van een popup (StatDialog help): direct achter de titel, zonder de kop hoger te maken; de tekst opent onder de kop. */
+/* Naast de titel van een popup (StatDialog help): direct achter de titel, zonder de kop hoger te maken; de uitleg opent in een eigen popup. */
 .stat-dialog-head .help-toggle { flex: none; margin: -0.5rem 0 -0.5rem 0.125rem; }
-.stat-dialog-help { margin: -0.5rem 0 1rem; }
-.stat-dialog-help[hidden] { display: none; }
 .help-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
