@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**89 / 137 minor entries** <!-- pending-tally -->
+**90 / 138 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/why-no-upgrade-title · 20261007-203558Z
+
+The question-mark dialog on an equipment row with an empty Level column is now titled "Waarom geen upgrade?" instead of "Waarom niets?", saying what the dialog explains.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player opening the help on a slot that is not upgraded reads directly that it explains why no upgrade is advised there.
+
+**Score:** 2
+
+#### Pull Request
+
+Item help title reads 'Waarom geen upgrade?' when Level is empty
+
+[PR #238](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/238)
+
+---
 
 ### DEPLOY: app/download-hint-visible · 20261007-203125Z
 
