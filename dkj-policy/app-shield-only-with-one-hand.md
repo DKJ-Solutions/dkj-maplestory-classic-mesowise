@@ -57,7 +57,7 @@ it takes the shield off, as #172 already did for the Bowman.
 
 - [x] Tycho: existing tests on the new rule, plus tests per job (1H against 2H, wand against staff, empty slot, custom dagger, a shield dropped on a switch)
 - [x] Victor: code review. Applied: a stored or carried-over shield is cleared on load and on a job switch when the weapon hides it; the AP future need skips a hidden shield; `isOneHanded` renamed `isBeginnerWeapon`; stale comments updated. Left as is: ties in the AP limit now name Shoes before Top/Bottom/Overall (no numeric effect)
-- [ ] Dave looks at it on a phone before the merge
+- [x] Dave looks at it on a phone before the merge (approved October 7, 2026)
 
 ### DEPLOY: app/shield-only-with-one-hand
 
