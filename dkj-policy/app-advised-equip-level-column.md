@@ -52,11 +52,12 @@ Dave, October 7, 2026: Advised: Equip gets a second amount column. The first (re
 
 - [x] New app test: headers Shop and Level, Level equals the invoice line per bought piece, empty for the rest, both totals, the ? popup
 - [x] Typecheck and full suite green (1893 tests)
-- [ ] Dave looks at the result (visible result)
+- [x] Follow-ups from Dave's look: a coin icon behind each amount, amounts written short (14.1k, compactMeso with its own tests), Shop in plain text, a ? behind Total cost, ? popups titled after their amount ("Waarom 1.9k?", "Waarom niets?" with a line on why nothing changes), and the header ? on the title line opening its own popup
+- [x] Dave looks at the result (visible result) -- approved: "ship it"
 
 ### DEPLOY: app/advised-equip-level-column
 
-Advised: Equip now shows two amounts per piece: Shop, what it costs in the shop, and Level, the part of that price this level pays because you wear it until your next upgrade. The Level total is what the Advised invoice counts for equipment.
+Advised: Equip now shows two amounts per piece: Shop, what it costs in the shop, and Level, the part of that price this level pays because you wear it until your next upgrade. The Level total is what the Advised invoice counts for equipment, and a ? behind Total cost explains why it counts Level rather than Shop. Amounts are written short with a coin behind them (14.1k), each ? popup is titled after the amount it explains ("Waarom 1.9k?"), an empty Level cell explains why nothing changes there ("Waarom niets?"), and the ? behind the title Advised: Equip sits on the title line and opens its own popup.
 
 **Score:** 3
 
