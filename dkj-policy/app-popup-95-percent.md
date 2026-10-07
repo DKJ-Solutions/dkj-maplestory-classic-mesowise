@@ -41,24 +41,24 @@
 
 #### Decisions
 
-- The first popup is 96% of the app column (the phone width, on a computer 32rem like `main`); each popup on top is 93% of the one below (Dave, October 7, 2026).
-- The values were tried live in the preview the same evening: a step of 5%, 9% and then 7%, and a first popup of 93% of `main`, 95%, 96%, 97% and back to 96%. `main` and the top bar briefly followed the rule too and went back to their fixed 1rem padding.
+- The first popup is 95% of the app column (the phone width, on a computer 32rem like `main`); each popup on top is 93% of the one below (Dave, October 7, 2026).
+- The values were tried live in the preview the same evening: a step of 5%, 9% and then 7%, and a first popup of 93% of `main`, 95%, 96%, 97%, 96% and then 95%. `main` and the top bar briefly followed the rule too and went back to their fixed 1rem padding.
 - Only the width scales; the height still follows the content, capped at the screen minus 2rem.
 - The menu drawer keeps its own width and does not count as a layer.
-- This replaces the 1rem minimum margin for popups of October 5, 2026: at 390px a first popup leaves about 8px per side.
+- This replaces the 1rem minimum margin for popups of October 5, 2026: at 390px a first popup leaves about 10px per side.
 
 ### CREATE
 
-- [x] `src/style.css`: `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale` (fallback 0.96); the fixed `.item-dialog` width is gone
-- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `FIRST_POPUP * POPUP_STEP^depth` (0.96, 0.93), with depth counted over enclosing popups except the menu drawer
+- [x] `src/style.css`: `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale` (fallback 0.95); the fixed `.item-dialog` width is gone
+- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `FIRST_POPUP * POPUP_STEP^depth` (0.95, 0.93), with depth counted over enclosing popups except the menu drawer
 
 ### TEST
 
-- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.93 times the popup below it, and the first popup 0.96; vitest 1946/1946 green, lint clean
+- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.93 times the popup below it, and the first popup 0.95; vitest 1946/1946 green, lint clean
 
 ### DEPLOY: app/popup-95-percent
 
-The first popup is 96% as wide as the app column, and every popup above it 93% of the one below, so a stacked popup is visibly one layer up.
+The first popup is 95% as wide as the app column, and every popup above it 93% of the one below, so a stacked popup is visibly one layer up.
 
 **Score:** 2
 
@@ -70,4 +70,4 @@ Popups use almost the full phone width, so more fits on a line, and a popup open
 
 #### Pull Request
 
-First popup 96% of the screen, every popup above it 93% of the one below
+First popup 95% of the screen, every popup above it 93% of the one below

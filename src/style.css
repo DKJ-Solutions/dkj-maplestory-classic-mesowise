@@ -362,10 +362,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .breakdown-note { margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon; is de inhoud hoger, dan scrollt de popup.
-   De eerste is 96% van de app-kolom (de telefoon, op een computer 32rem zoals main), een popup daarbovenop 93% van de
-   popup eronder (Dave, 7 oktober 2026). --popup-scale zet StatDialog per laag (FIRST_POPUP, POPUP_STEP); 0.96 is de eerste. */
+   De eerste is 95% van de app-kolom (de telefoon, op een computer 32rem zoals main), een popup daarbovenop 93% van de
+   popup eronder (Dave, 7 oktober 2026). --popup-scale zet StatDialog per laag (FIRST_POPUP, POPUP_STEP); 0.95 is de eerste. */
 .stat-dialog {
-  width: calc(min(100vw, 32rem) * var(--popup-scale, 0.96)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+  width: calc(min(100vw, 32rem) * var(--popup-scale, 0.95)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
