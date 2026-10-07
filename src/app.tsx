@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { nf3 } from './numberFormat'
 import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -82,13 +82,30 @@ function Help(props: { children: ComponentChildren; class?: string }) {
 function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void }) {
   return (
     <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
-      </svg>
+      {QUESTION_ICON}
     </button>
   )
 }
+
+/**
+ * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in een zachte tint van de
+ * tekstkleur, met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje), naast het vraagteken hieronder.
+ */
+const INFO_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.16" />
+    <circle cx="12" cy="7.6" r="1.4" fill="currentColor" />
+    <path d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+)
+
+/** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised uitlegt of je een stuk koopt (Dave, 7 oktober 2026). */
+const QUESTION_ICON = (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
+  </svg>
+)
 
 /**
  * Sluit de popup of het paneel waarin deze component staat, met dezelfde beweging als het kruisje; buiten een popup
@@ -1581,66 +1598,174 @@ function StatDialog(props: {
   )
 }
 
-/**
- * De rijen van de Equip-popup achter "Advised" (#188, #192): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
- * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
- * alles samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
- */
 /** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-    staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt; op de factuur
+    staat alleen het deel van dit level. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
 
+/**
+ * De rijen van de Equip-popup achter "Advised" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow), en onderaan wat alles
+ * samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
+ */
 function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
+  // Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg.
+  const filled = (s: EquipSlot) => props.cheapest[s]?.cheapest != null
+  const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
-      {props.slots.map((slot) => {
-        const slotAdvice = props.cheapest[slot]
-        // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen "Koop voor".
-        const counted = slot === 'ammo' && slotAdvice.cheapest === null && !slotAdvice.option && props.ammo !== null
-        const c: CheapestSlot = counted ? { ...slotAdvice, cheapest: props.ammo, changed: true } : slotAdvice
-        // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
-        const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
-        const stat = statName(slot, props.job)
-        // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
-        const value = c.cheapest === null || (counted && wornStat(slot, entry) === undefined) ? null : wornStat(slot, entry)
-        return (
-          <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
-            <span class="slot-name">{slotLabel(slot)}</span>
-            {/* Een leeg slot met een stuk dat zich dit level niet terugverdient: dat stuk, gedempt, met wat het kost en bespaart (#188). */}
-            {c.option ? (
-              <span class="equip-fixed equip-option">{nameWithLevel(slot, c.option.name)}</span>
-            ) : (
-              <span class={c.changed && c.cheapest !== null && !counted ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
-            )}
-            {value !== null && (
-              <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
-                <span class="equip-value-num">
-                  <strong>{value ?? '?'}</strong>
-                </span>
-                <span class="equip-value-head" aria-hidden="true">{stat}</span>
-              </div>
-            )}
-            {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
-            {counted && props.ammo !== OWN_AMMO && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
-            {c.option && (
-              <span class="equip-price">
-                Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
-                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart tot je volgende upgrade ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
-              </span>
-            )}
-          </div>
-        )
-      })}
-      <p class="equip-total">
-        Te kopen: <strong>{nfInt.format(total)} meso</strong>
+      {/* De kop van de factuur (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */}
+      <div class="advised-head" aria-hidden="true">
+        <span>Slot</span>
+        <span>Item</span>
+        <span class="advised-head-price">Mesos</span>
+      </div>
+      {props.slots.map((slot) => (
+        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
+      ))}
+      {/* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */}
+      <p class="equip-total advised-total">
+        <span class="advised-total-label">Total cost</span>
+        <strong>{nfInt.format(total)}</strong>
       </p>
     </>
   )
+}
+
+/**
+ * Eén slot in Advised, op één regel in vier kolommen (Dave, 7 oktober 2026): "Weapon", "Steel Igor" met de info-knop erachter, de winkelprijs en
+ * het vraagteken. Van wat je koopt staat alleen het bedrag in de accentkleur, niet de naam; een stuk dat niet loont gedempt. De info-knop toont wat het stuk is (soort, level, ATT of
+ * DEF, eisen, prijs), het vraagteken of je het moet kopen en waarom: elk in een eigen popup.
+ */
+function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
+  const { slot } = props
+  // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
+  const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
+  const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
+  const name = c.option ? c.option.name : c.cheapest
+  // Een eigen item dat je houdt staat onder zijn eigen naam; een winkelstuk onder de naam zonder kleur.
+  const own = !c.option && !c.changed && props.worn.pick === OTHER
+  const help = cheapestWhy(props.job, slot, c, counted, props.covered)
+  const shopPrice = c.option ? c.option.price : c.price
+  const tone = c.option ? ' option' : name === null ? ' empty' : c.changed && !counted ? ' buy' : ''
+  const shown = name === null ? null : own ? name : familyName(slot, name)
+  // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
+  const entry: EquipEntry = name === null ? props.worn : c.option || c.changed ? { pick: name, name: '', stat: '' } : props.worn
+  const facts = name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)
+  const title = shown ?? slotLabel(slot)
+  return (
+    <div class={`advised-row${tone}`}>
+      <span class="slot-name">{slotLabel(slot)}</span>
+      <span class="advised-item">
+        <span class="advised-name" title={name ?? undefined}>{shown ?? '—'}</span>
+        {/* De info-knop direct achter de naam (Dave, 7 oktober 2026); alleen als de app iets over het stuk weet. */}
+        {facts.length > 0 && (
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${shown}`} title={title}>
+            <dl class="item-facts">
+              {facts.map(([term, value]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </PopupButton>
+        )}
+      </span>
+      {/* De winkelprijs in een eigen kolom (Dave, 7 oktober 2026): van wat je koopt, en gedempt van een stuk dat niet loont. */}
+      <span class="advised-price">{shopPrice === null ? '' : nfInt.format(shopPrice)}</span>
+      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${slotLabel(slot)}`} title={title}>
+        <p class="item-verdict">{help.verdict}</p>
+        <p class="item-why">{help.text}</p>
+      </PopupButton>
+    </div>
+  )
+}
+
+/** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; children: ComponentChildren }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  return (
+    <>
+      <button ref={button} type="button" class={props.class} aria-haspopup="dialog" aria-expanded={open} aria-label={props.label} onClick={() => setOpen(true)}>
+        {props.icon}
+      </button>
+      {open && (
+        <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+          {props.children}
+        </StatDialog>
+      )}
+    </>
+  )
+}
+
+/**
+ * Wat een stuk in Advised is, voor de popup van zijn info-knop (Dave, 7 oktober 2026): de soort, het level, ATT of DEF (met een correctie die je zelf
+ * invulde), de MDEF, de snelheid, de stat-eisen en de winkelprijs. Wat de app niet weet (een eigen item, munitie als bedrag) staat er niet.
+ */
+function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, price: number | null): [string, string][] {
+  const info = entry.pick === OTHER ? undefined : catalogInfo(slot, name)
+  const value = wornStat(slot, entry)
+  const req = itemRequirements(slot, entry)
+  const needs = req && Object.entries(req).map(([stat, v]) => `${stat.toUpperCase()} ${v}`)
+  const facts: [string, string | undefined][] = [
+    ['Soort', info?.type],
+    ['Level', info?.level === undefined ? undefined : String(info.level)],
+    [statName(slot, job), value === undefined ? undefined : String(value)],
+    ['MDEF', info?.mdef ? String(info.mdef) : undefined],
+    ['Snelheid', info?.speed],
+    ['Eisen', needs && needs.length > 0 ? needs.join(', ') : undefined],
+    ['Prijs', price === null ? undefined : `${nfInt.format(price)} meso`],
+  ]
+  return facts.filter((f): f is [string, string] => f[1] !== undefined)
+}
+
+/**
+ * Of je dit stuk moet kopen, en waarom (Dave, 7 oktober 2026): het oordeel bovenaan de popup van één slot in Advised ("Kopen", "Niet kopen",
+ * "Houden", "Leeg laten", en bij munitie "Per stuk kopen", "Per stuk herladen" of "Eigen bedrag") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
+ * `covered` zegt bij een leeg slot dat de overall het beslaat (top en bottom), of dat een losse top of bottom het leeg maakt (overall).
+ */
+function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean): { verdict: string; text: string } {
+  const meso = (n: number) => `${nfInt.format(Math.max(0, Math.round(n)))} meso`
+  // Hoe een stuk bespaart: de factuur van een level is vooral potions (en ammo); sneller doden of minder hard geraakt worden scheelt die.
+  const how =
+    slot === 'claw'
+      ? `Met meer ${statName(slot, job)} dood je een monster sneller, dus per level gaan er minder potions${job === 'thief' || job === 'bowman' ? ' en minder ammo' : ''} op.`
+      : slot === 'ammo'
+        ? 'Met meer ATT dood je een monster sneller, dus per level gaan er minder potions op.'
+        : 'Met meer DEF raakt een monster je minder hard, dus per level gaan er minder potions op.'
+  if (c.option) {
+    if (c.option.saving === null) return { verdict: 'Niet kopen', text: `Niet zeker of het loont: het kost ${meso(c.option.price)} en de besparing is niet uit te rekenen. Dit slot blijft leeg.` }
+    return {
+      verdict: 'Niet kopen',
+      text: `Loont niet: het kost ${meso(c.option.price)} en bespaart tot je volgende upgrade maar ${meso(c.option.saving)}. ${how} Dat is te weinig: je zou ${meso(c.option.price - c.option.saving)} verliezen, dus dit slot blijft leeg.`,
+    }
+  }
+  if (counted)
+    return {
+      verdict: c.cheapest === OWN_AMMO ? 'Eigen bedrag' : job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
+      text: c.cheapest === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
+    }
+  if (c.cheapest === null) {
+    if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: een losse top of bottom neemt de plek van een overall in.' : 'Leeg: de overall beslaat dit slot.' }
+    return { verdict: 'Leeg laten', text: 'Leeg: de winkel heeft hier niets dat je op je level kunt dragen en dat zich tot je volgende upgrade terugverdient.' }
+  }
+  if (!c.changed) return { verdict: 'Houden', text: 'Je draagt dit al. Geen stuk uit de winkel loont tot je volgende upgrade, dus je houdt wat je draagt.' }
+  if (c.price === null || c.why === undefined) return { verdict: 'Kopen', text: c.price === null ? 'Dit stuk komt in je equip.' : `Koop voor ${meso(c.price)}.` }
+  if ('required' in c.why) return { verdict: 'Kopen', text: `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}; zonder wapen kun je niet trainen.` }
+  const cost = c.why.cost ?? c.price
+  const buy = c.why.partner === undefined ? `Koop voor ${meso(c.price)}.` : `Koop samen met ${familyName(slot === 'top' ? 'bottom' : 'top', c.why.partner)} voor ${meso(cost)}.`
+  if (c.why.saving === null) return { verdict: 'Kopen', text: `${buy} De besparing is niet uit te rekenen.` }
+  const span = c.horizon ? `${capitalize(skillSpan(c.horizon))} bespaart het` : 'Tot je volgende upgrade bespaart het'
+  return { verdict: 'Kopen', text: `${buy} ${how} ${span} ${meso(c.why.saving)}, meer dan het kost: je houdt ${meso(c.why.saving - cost)} over.` }
 }
 
 /**
@@ -1730,9 +1855,10 @@ function EquipmentCard(props: {
     </span>
   )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
+  // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )

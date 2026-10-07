@@ -328,6 +328,9 @@ export const nameWithLevel = (slot: EquipSlot, name: string): string => {
 const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
   (Object.keys(SHOP) as Job[]).map((j) => catalogItem(slot, name, j)).find((i) => i !== undefined)
 
+/** Een catalogusitem op naam, uit de lijsten van alle jobs (zie hierboven); undefined bij een eigen item of een naam die in geen lijst staat. */
+export const catalogInfo = (slot: EquipSlot, name: string): CatalogItem | undefined => anyItem(slot, name)
+
 /**
  * De stat-eisen van wat je in een slot draagt (een eis die de pagina niet noemt staat er niet). Winkelitems en items zonder prijs
  * kennen hun eisen (#158; bij dezelfde naam wint de winkelregel); undefined bij een leeg slot, een eigen item of een naam die in

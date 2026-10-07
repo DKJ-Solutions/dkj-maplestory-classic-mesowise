@@ -39,7 +39,7 @@ describe('cheapestEquipment (#188)', () => {
   it('neemt elk armorstuk dat zich terugverdient, en geen stuk met netto besparing 0, negatief of onbekend', () => {
     const advice = armorAdvice([choice(piece('hat', 'Hat A'), 50), choice(piece('shoes', 'Shoes A'), 0), choice(piece('gloves', 'Gloves A'), -10), choice(piece('cape', 'Cape A'), null)])
     const r = cheapestEquipment(SLOTS, wearing({ shoes: 'Old Shoes' }), NONE, advice)
-    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false } })
+    expect(r.hat).toEqual({ worn: null, cheapest: 'Hat A', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false }, why: { saving: 50 } })
     expect(r.shoes.cheapest).toBe('Old Shoes')
     expect(r.gloves.cheapest).toBeNull()
     expect(r.cape.cheapest).toBeNull()
@@ -47,7 +47,7 @@ describe('cheapestEquipment (#188)', () => {
 
   it('maakt top en bottom leeg voor een overall', () => {
     const r = cheapestEquipment(SLOTS, wearing({ top: 'Shirt', bottom: 'Pants' }), NONE, armorAdvice([choice(piece('overall', 'Robe'), 80)]))
-    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false } })
+    expect(r.overall).toEqual({ worn: null, cheapest: 'Robe', changed: true, price: 100, option: null, horizon: { from: 1, to: 2, truncated: false }, why: { saving: 80 } })
     expect(r.top).toEqual({ worn: 'Shirt', cheapest: null, changed: true, price: null, option: null })
     expect(r.bottom).toEqual({ worn: 'Pants', cheapest: null, changed: true, price: null, option: null })
   })
@@ -227,13 +227,49 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
   })
 })
 
+describe('cheapestEquipment: why, de reden achter het vraagteken (Dave, 7 oktober 2026)', () => {
+  it('zet bij een gekocht wapen de besparing van de winnaar', () => {
+    const winner = { name: 'Steel Titans', price: 5000 }
+    const advice = { ...clawAdvice(null), winner, choices: [{ claw: winner, saving: 700, net: 700, from: 10, to: 14, truncated: false }] } as unknown as ClawUpgradeAdvice
+    const r = cheapestEquipment(SLOTS, wearing({ claw: 'Garnier' }), advice, NONE)
+    expect(r.claw.why).toEqual({ saving: 700 })
+  })
+
+  it('zet bij een gekocht armorstuk de besparing, en bij een onbekende besparing null', () => {
+    const r = cheapestEquipment(SLOTS, wearing({}), NONE, armorAdvice([choice(piece('hat', 'Hat A'), 50, { saving: 120 }), choice(piece('cape', 'Cape A'), 30, { saving: null })]))
+    expect(r.hat.why).toEqual({ saving: 120 })
+    expect(r.cape.why).toEqual({ saving: null })
+  })
+
+  it('zet bij een paar top en bottom de partner en de prijs van het paar op allebei', () => {
+    const pair = choice(piece('top', 'Shirt B'), 60, { with: piece('bottom', 'Pants B'), price: 250, saving: 310 })
+    const r = cheapestEquipment(SLOTS, wearing({}), NONE, armorAdvice([pair]))
+    expect(r.top.why).toEqual({ saving: 310, partner: 'Pants B', cost: 250 })
+    expect(r.bottom.why).toEqual({ saving: 310, partner: 'Shirt B', cost: 250 })
+  })
+
+  it('zet bij het vereiste wapen (#202) required', () => {
+    const weapon = { claw: { name: 'Garnier', price: 5000 }, from: 10, to: 14, truncated: false } as unknown as Parameters<typeof cheapestEquipment>[4]
+    expect(cheapestEquipment(SLOTS, defaultEquipment(), NONE, NONE, weapon).claw.why).toEqual({ required: true })
+  })
+
+  it('zet geen why bij een slot dat je houdt, dat leeg blijft of dat een overall leeg maakt', () => {
+    const r = cheapestEquipment(SLOTS, wearing({ claw: 'Garnier', top: 'Shirt', bottom: 'Pants' }), clawAdvice(null), armorAdvice([choice(piece('overall', 'Robe'), 80)]))
+    expect(r.claw).not.toHaveProperty('why')
+    expect(r.top).not.toHaveProperty('why')
+    expect(r.bottom).not.toHaveProperty('why')
+    expect(r.hat).not.toHaveProperty('why')
+    expect(cheapestEquipment(SLOTS, wearing({}), NONE, NONE).claw).not.toHaveProperty('why')
+  })
+})
+
 describe('cheapestEquipment: het vereiste wapen (#202)', () => {
   const weapon = { claw: { name: 'Garnier', price: 5000 }, from: 10, to: 14, truncated: false } as unknown as Parameters<typeof cheapestEquipment>[4]
 
   it('zet het wapen in het wapenslot als het advies geen winnaar heeft, met prijs en horizon', () => {
     for (const advice of [NONE, clawAdvice(null)]) {
       const r = cheapestEquipment(SLOTS, defaultEquipment(), advice, NONE, weapon)
-      expect(r.claw).toEqual({ worn: null, cheapest: 'Garnier', changed: true, price: 5000, option: null, horizon: { from: 10, to: 14, truncated: false } })
+      expect(r.claw).toEqual({ worn: null, cheapest: 'Garnier', changed: true, price: 5000, option: null, horizon: { from: 10, to: 14, truncated: false }, why: { required: true } })
     }
   })
 
