@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**78 / 122 minor entries** <!-- pending-tally -->
+**79 / 123 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/advised-equip-level-column · 20261007-125717Z
+
+Advised: Equip now shows two amounts per piece: Shop, what it costs in the shop, and Level, the part of that price this level pays because you wear it until your next upgrade. The Level total is what the Advised invoice counts for equipment, and a ? behind Total cost explains why it counts Level rather than Shop. Amounts are written short with a coin behind them (14.1k), each ? popup is titled after the amount it explains ("Waarom 1.9k?"), an empty Level cell explains why nothing changes there ("Waarom niets?"), and the ? behind the title Advised: Equip sits on the title line and opens its own popup.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player sees at a glance what a piece costs in the shop and what it costs this level, without opening the ? popup.
+
+**Score:** 3
+
+#### Pull Request
+
+Advised: Equip shows the shop price and this level's share in two columns
+
+[PR #219](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/219)
+
+---
 
 ### DEPLOY: claude/207-stale-plugin-entry · 20261007-123223Z
 
