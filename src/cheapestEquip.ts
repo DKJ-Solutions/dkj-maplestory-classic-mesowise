@@ -174,6 +174,18 @@ export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equ
 export const OWN_AMMO = 'Eigen bedrag'
 
 /**
+ * Wat een star of pijl is, op naam (Dave, 7 oktober 2026): zijn ATT, wat hij per stuk kost (herladen of kopen) en het level dat hij vraagt, voor de
+ * info-knop in Advised: Useable. Uit de lijsten zelf, niet uit het profiel: dat draagt de pijl van een Bowman niet. Undefined bij een eigen bedrag
+ * of een naam die in geen lijst staat.
+ */
+export function ammoInfo(name: string): { watk: number; price: number; level?: number } | undefined {
+  const star = THROWING_STARS.find((t) => t.name === name)
+  if (star) return { watk: star.watk, price: star.rechargePerStar, level: star.level }
+  const arrow = [...NPC_ARROWS, ...HELPFUL_STRANGER_ARROWS].find((a) => a.name === name)
+  return arrow && { watk: arrow.watk, price: arrow.pricePerArrow }
+}
+
+/**
  * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Advised als je daar niets invulde. Een Thief
  * gooit de star met de herlaadprijs uit zijn profiel (zonder keuze de Subi uit DEFAULT_PROFILE); een Bowman schiet de pijl die zijn profiel rekent
  * (arrowFor), voor zijn boog of kruisboog, en bij een eigen wapen voor een boog zoals PLAIN_ARROW. Null als hij niets gooit (throwsNothing).

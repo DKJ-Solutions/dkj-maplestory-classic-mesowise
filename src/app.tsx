@@ -7,11 +7,11 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_LEVELS, EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot, Stat, Weapon } from './data/types'
+import type { ArmorSlot, Potion, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { nf3 } from './numberFormat'
-import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
+import { ammoInfo, buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -436,14 +436,16 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { title: string; advised?: boolean; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026).
+  const who = useContext(AdvisedWho)
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} subtitle={props.advised ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -483,6 +485,9 @@ interface CardViewState {
   openCard: (card: CardKey, view: CardView, button: HTMLButtonElement) => void
   close: (card: CardKey) => void
 }
+/** Op welk level en voor welke job het advies rekent, "Lv. 30 Thief": de ondertitel van elke Advised-popup (Dave, 7 oktober 2026; zie CardPopup). */
+const AdvisedWho = createContext('')
+
 const CardViewContext = createContext<CardViewState>({ open: {}, opener: { current: null }, openCard: () => {}, close: () => {} })
 
 /** De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende. */
@@ -741,7 +746,7 @@ function StatsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           {props.lead?.(draft, showAdvised)}
           {props.fields.map((f) => {
             const derived = props.derived?.[f.key]
@@ -983,11 +988,10 @@ function PotionsCard(props: {
   onFix: (kind: PotionKind, stat: PotionStat, text: string) => void
   /** De potions van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
   advised: PotionChoice | null
-  /**
-   * De munitie van het advies (Dave, 7 oktober 2026): de stars of pijlen die de factuur van Advised telt, met hun ATT en prijs per stuk uit het
-   * profiel van het advies; null als het advies geen munitie telt (een Warrior of Magician, of een plek zonder munitie).
-   */
-  advisedAmmo: { name: string; watk: string; price: string } | null
+  /** De munitie die de factuur van Advised telt (Dave, 7 oktober 2026), op naam; null als het advies geen munitie telt (een Warrior of Magician). */
+  advisedAmmo: string | null
+  /** De regels van de factuur van Advised: wat elke potion en de munitie dit level kosten; null zonder factuur. */
+  advisedLines: readonly InvoiceLine[] | null
   report: ComponentChildren
 }) {
   const { job, choice } = props
@@ -1020,36 +1024,10 @@ function PotionsCard(props: {
       </CardHead>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && advisedPotions && (
-        // Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026): potions en, voor een Thief of Bowman, zijn munitie.
-        <CardPopup title="Advised: Useable" opener={opener} onClose={close} report={props.report} reportTitle={title}>
-          {/* De potions van het advies, om te lezen (Dave, 6 oktober 2026, #192): de naam met zijn prijs als vaste tekst, zonder keuzemenu. */}
-          {POTION_KINDS.map((kind) => {
-            const potion = advisedPotions[kind]
-            return (
-              <div class="potion-group" key={kind}>
-                <h3>{kind === 'hp' ? 'HP potions' : 'MP potions'}</h3>
-                <p class="field-fixed">
-                  {potion.name} ({nfInt.format(potion.price)} meso)
-                </p>
-                {potionFields(kind).map((f) => (
-                  <StatLine key={f.key} field={f} value={String(potionStat(potion, kind, f.key))} tone={f.tone} unit={f.unit} readOnly onSave={() => {}} />
-                ))}
-              </div>
-            )
-          })}
-          {props.advisedAmmo && (
-            <div class="potion-group">
-              <h3>{job === 'bowman' ? 'Arrows' : 'Throwing stars'}</h3>
-              <p class="field-fixed">{props.advisedAmmo.name}</p>
-              {/* Een eigen bedrag noemt geen munitie: dan zijn ATT en prijs per stuk niet bekend. */}
-              {props.advisedAmmo.name !== OWN_AMMO && (
-                <>
-                  <StatLine field={{ label: STAT_NAME.weapon, min: 0, max: 999, integer: true }} value={props.advisedAmmo.watk} readOnly onSave={() => {}} />
-                  <StatLine field={{ label: job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', min: 0, max: 100, integer: false }} value={props.advisedAmmo.price} unit="meso" readOnly onSave={() => {}} />
-                </>
-              )}
-            </div>
-          )}
+        // Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026): dezelfde factuur als Advised: Equip, met een regel per potion en, voor
+        // een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
+        <CardPopup title="Advised: Useable" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+          <UseableRows job={job} potions={advisedPotions} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} />
         </CardPopup>
       )}
       {view === 'worn' && (
@@ -1455,6 +1433,8 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
+  /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
+  subtitle?: string
   /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
   help?: ComponentChildren
   onCancel: () => void
@@ -1555,7 +1535,15 @@ function StatDialog(props: {
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
-  const title = <h2 class="stat-dialog-name">{name}</h2>
+  const heading = <h2 class="stat-dialog-name">{name}</h2>
+  const title = props.subtitle ? (
+    <div class="stat-dialog-titles">
+      {heading}
+      <p class="stat-dialog-sub">{props.subtitle}</p>
+    </div>
+  ) : (
+    heading
+  )
   const [helpOpen, setHelpOpen] = useState(false)
   const helpId = useId()
   useEffect(() => {
@@ -1643,21 +1631,104 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
   )
 }
 
-/** De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */
-function BillHead(props: { item: string }) {
+/**
+ * De factuur van Advised: Useable (Dave, 7 oktober 2026): dezelfde regels als Advised: Equip (BillRow), een per potion en een voor de munitie. Het
+ * bedrag is wat het dit level kost, uit de factuur van Advised; de info-knop toont wat het stuk is, het vraagteken hoe de app op dat aantal komt.
+ */
+function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; ammo: string | null; lines: readonly InvoiceLine[] }) {
+  const lineOf = (kind: 'hp' | 'mp' | 'ammo') => props.lines.find((l) => l.why?.kind === kind)
+  // Een eigen bedrag voor munitie staat op de factuur zonder uitleg, onder het label van de munitie (#199).
+  const ammoLine = lineOf('ammo') ?? props.lines.find((l) => !l.shop && !l.why && l.label === ammoLabel(props.job))
+  const ammo = props.ammo === null ? undefined : ammoInfo(props.ammo)
+  const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
+  const rows = [
+    ...POTION_KINDS.map((kind) => {
+      const potion = props.potions[kind]
+      const line = lineOf(kind)
+      const why = line?.why?.kind === kind ? line.why : undefined
+      return (
+        <BillRow
+          key={kind}
+          tone={line && line.meso > 0 ? 'buy' : ''}
+          slot={kind === 'hp' ? 'HP' : 'MP'}
+          qty={line?.qty ?? null}
+          name={potion.name}
+          facts={knownFacts([
+              ['Price', `${nfInt.format(potion.price)} meso`],
+              ['Recovery', `${nfInt.format(potionStat(potion, kind, 'restores'))} ${kind === 'hp' ? 'HP' : 'MP'}`],
+          ])}
+          price={line ? line.meso : null}
+          help={
+            line && why ? (
+              <>
+                <p class="item-verdict">{verdict(line)}</p>
+                <div class="report-body">
+                  <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
+                </div>
+              </>
+            ) : (
+              <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
+            )
+          }
+        />
+      )
+    }),
+    ...(props.ammo === null
+      ? []
+      : [
+          <BillRow
+            key="ammo"
+            tone={ammoLine && ammoLine.meso > 0 ? 'buy' : ''}
+            slot="Ammo"
+            qty={ammoLine?.qty ?? null}
+            name={props.ammo}
+            facts={knownFacts([
+                [STAT_NAME.weapon, ammo && String(ammo.watk)],
+                ['Level', ammo?.level === undefined ? undefined : String(ammo.level)],
+                [props.job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', ammo && `${nf3.format(ammo.price)} meso`],
+            ])}
+            price={ammoLine ? ammoLine.meso : null}
+            help={
+              ammoLine?.why?.kind === 'ammo' ? (
+                <>
+                  <p class="item-verdict">{verdict(ammoLine)}</p>
+                  <div class="report-body">
+                    <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+                  </div>
+                </>
+              ) : (
+                <p class="item-why">{props.ammo === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : 'De factuur van dit level telt deze munitie niet apart.'}</p>
+              )
+            }
+          />,
+        ]),
+  ]
+  const total = [...POTION_KINDS.map(lineOf), ammoLine].reduce((sum, l) => sum + (l?.meso ?? 0), 0)
   return (
-    <div class="advised-head" aria-hidden="true">
+    <>
+      <BillHead item="Useable" qty />
+      {rows}
+      <BillTotal total={total} qty />
+    </>
+  )
+}
+
+/** De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */
+function BillHead(props: { item: string; qty?: boolean }) {
+  return (
+    <div class={props.qty ? 'advised-head with-qty' : 'advised-head'} aria-hidden="true">
       <span>Slot</span>
       <span>{props.item}</span>
+      {props.qty && <span class="advised-head-qty">Qty</span>}
       <span class="advised-head-price">Mesos</span>
     </div>
   )
 }
 
 /** Het totaal als laatste regel van een factuur in Advised (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */
-function BillTotal(props: { total: number }) {
+function BillTotal(props: { total: number; qty?: boolean }) {
   return (
-    <p class="equip-total advised-total">
+    <p class={props.qty ? 'equip-total advised-total with-qty' : 'equip-total advised-total'}>
       <span class="advised-total-label">Total cost</span>
       <strong>{nfInt.format(props.total)}</strong>
     </p>
@@ -1669,10 +1740,10 @@ function BillTotal(props: { total: number }) {
  * vraagteken. Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren }) {
   const title = props.name ?? props.slot
   return (
-    <div class={props.tone ? `advised-row ${props.tone}` : 'advised-row'}>
+    <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty'].filter(Boolean).join(' ')}>
       <span class="slot-name">{props.slot}</span>
       <span class="advised-item">
         <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
@@ -1690,6 +1761,8 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; n
           </PopupButton>
         )}
       </span>
+      {/* Het aantal, alleen in een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026). */}
+      {props.qty !== undefined && <span class="advised-qty">{props.qty === null ? '' : nfInt.format(props.qty)}</span>}
       <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
       <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={title}>
         {props.help}
@@ -1761,7 +1834,7 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
   const value = wornStat(slot, entry)
   const req = itemRequirements(slot, entry)
   const needs = req && Object.entries(req).map(([stat, v]) => `${stat.toUpperCase()} ${v}`)
-  const facts: [string, string | undefined][] = [
+  return knownFacts([
     ['Soort', info?.type],
     ['Level', info?.level === undefined ? undefined : String(info.level)],
     [statName(slot, job), value === undefined ? undefined : String(value)],
@@ -1769,9 +1842,11 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
     ['Snelheid', info?.speed],
     ['Eisen', needs && needs.length > 0 ? needs.join(', ') : undefined],
     ['Prijs', price === null ? undefined : `${nfInt.format(price)} meso`],
-  ]
-  return facts.filter((f): f is [string, string] => f[1] !== undefined)
+  ])
 }
+
+/** De feiten van een info-knop die de app kent: een regel zonder waarde valt weg. */
+const knownFacts = (facts: [string, string | undefined][]): [string, string][] => facts.filter((f): f is [string, string] => f[1] !== undefined)
 
 /**
  * Of je dit stuk moet kopen, en waarom (Dave, 7 oktober 2026): het oordeel bovenaan de popup van één slot in Advised ("Kopen", "Niet kopen",
@@ -1903,7 +1978,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} advised={view === 'advised'} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2088,7 +2163,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
             <div class="skill-group" key={job}>
               <h3>
@@ -2260,7 +2335,7 @@ function HuntedMobCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && props.advised !== null && (
-        <CardPopup title="Advised: Monster" opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup title="Advised: Monster" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
           <div class="field">
             <span>De mob die je het meest killt</span>
@@ -3533,6 +3608,7 @@ export function App() {
   }
 
   return (
+    <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
     <CardViewContext.Provider value={cardViews}>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
@@ -3613,7 +3689,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} advisedAmmo={advisedSet?.ammo ? { name: advisedSet.ammo, watk: advisedSet.profile.starWatk, price: advisedSet.profile.starRecharge } : null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} advisedAmmo={advisedSet?.ammo ?? null} advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
@@ -3662,5 +3738,6 @@ export function App() {
       </footer>
       </main>
     </CardViewContext.Provider>
+    </AdvisedWho.Provider>
   )
 }
