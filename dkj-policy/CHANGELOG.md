@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**84 / 132 minor entries** <!-- pending-tally -->
+**85 / 133 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/compact-total-stats-popup · 20261007-152946Z
+
+The info button after the character under **Based on:** (Total cost: Equip and Useable) now opens a compact popup titled after the character (e.g. "Lv. 20 Thief") with the label **expected**, in three tables: **Ability points** (Base + Extra = Totaal), **Skillpoints (1e job)** with a ? behind each skill the advice put points in, explaining why, and **Total stats** from level, base AP and skill points alone, without equipment. The values of all three tables line up in one column.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player sees at a glance which AP and skill points the cost advice assumes, and why a skill sits at its level, without the equipment muddying the base stats.
+
+**Score:** 2
+
+#### Pull Request
+
+Character popup under Based on: three compact tables, base stats without equipment
+
+[PR #235](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/235)
+
+---
 
 ### DEPLOY: app/230-armor-tie-break · 20261007-144609Z
 
