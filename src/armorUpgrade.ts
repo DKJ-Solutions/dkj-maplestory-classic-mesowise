@@ -154,6 +154,15 @@ function horizon(profile: Profile, c: Candidate, scope: HorizonScope): { from: n
 /** Twee keuzes zijn dezelfde als ze dezelfde stukken kopen (een paar is niet dezelfde keuze als zijn losse top). */
 const sameChoice = (x: ArmorChoice | undefined, y: ArmorChoice | undefined) => x?.armor === y?.armor && x?.with === y?.with
 
+/**
+ * Van meeste naar minste netto besparing, op hele mesos; bij gelijke netto het goedkoopste stuk, dan dat met de meeste WDEF
+ * (bij een paar top en bottom samen), net als bij de wapens (#227, #230). Zonder die volgorde besliste bij een gelijke
+ * besparing de winkelvolgorde of afrondingsruis.
+ */
+const wdefOf = (c: ArmorChoice) => c.armor.wdef + (c.with?.wdef ?? 0)
+const roundedNet = (c: ArmorChoice) => ({ net: c.net === null ? null : Math.round(c.net) })
+const byChoice = (a: ArmorChoice, b: ArmorChoice): number => byNet(roundedNet(a), roundedNet(b)) || a.price - b.price || wdefOf(b) - wdefOf(a)
+
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Candidate[], worn: WornWdef, a: Assumptions, scope: HorizonScope) {
   if (bestExpPerMeso(drafts, profile, a) === undefined) return null
   // Over de horizon groeit je karakter mee (growth.ts); 'this-level' is één level en dus je profiel van nu.
@@ -171,7 +180,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
       const bare = !c.with && isHalf(c.armor.slot) && wearsOverall(worn) ? otherHalf(c.armor.slot) : undefined
       return { ...c, price, ...(bare && { bare }), ...h, saving, net: saving === null ? null : saving - price, replaces }
     })
-    .sort(byNet)
+    .sort(byChoice)
   // Per slot (een paar telt als eigen slot) de keuze met de hoogste netto besparing: `all` is al gesorteerd, dus de eerste per slot wint.
   const slotOf = (c: ArmorChoice) => (c.with ? 'pair' : c.armor.slot)
   const choices = all.filter((c, i) => all.findIndex((o) => slotOf(o) === slotOf(c)) === i)

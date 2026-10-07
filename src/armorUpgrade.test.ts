@@ -1211,3 +1211,37 @@ describe('armorUpgradeAdvice over alleen dit level (#188)', () => {
     }
   })
 })
+
+describe('armorUpgradeAdvice: een gelijke besparing (#230)', () => {
+  // Een tweeling van het beste stuk met 1 WDEF meer, geprijsd zodat hij 0,1 meso meer netto geeft: op hele mesos een gelijkspel,
+  // dus wint het goedkopere origineel, niet de afrondingsruis (zoals bij de wapens, #227).
+  it('zet bij gelijke netto besparing op hele mesos het goedkoopste stuk voor', () => {
+    for (const level of [15, 20, 25]) {
+      const p = strong({ level })
+      const a = advice(drafts, p).choices.find((c) => !c.with)!
+      const twin = (over: Partial<ArmorPiece>): ArmorPiece => ({ ...a.armor, name: 'Test Twin', wdef: a.armor.wdef + 1, ...over })
+      const d = withInjected(twin({}), () => choice(advice(drafts, p), 'Test Twin').net!) - a.net!
+      expect(d, `lv ${level}`).toBeGreaterThan(0.1) // voorwaarde: de tweeling is na de prijsaanpassing echt duurder
+      const t = twin({ price: a.armor.price + d - 0.1 })
+      withInjected(t, () => {
+        const got = advice(drafts, p)
+        // Voorwaarde: het is echt een gelijkspel op hele mesos (anders zegt deze test niets).
+        expect(Math.round(a.net! + 0.1), `lv ${level}`).toBe(Math.round(a.net!))
+        expect(names(got), `lv ${level}`).toContain(a.armor.name)
+        expect(names(got), `lv ${level}`).not.toContain('Test Twin')
+      })
+    }
+  })
+
+  it('ordent elke gelijke netto besparing op prijs en dan op WDEF', () => {
+    for (const level of LEVELS) {
+      const c = advice(drafts, strong({ level })).choices
+      for (let i = 1; i < c.length; i++) {
+        const [x, y] = [c[i - 1], c[i]]
+        if (x.net === null || y.net === null || Math.round(x.net) !== Math.round(y.net)) continue
+        expect(x.price, `${x.armor.name} vóór ${y.armor.name}`).toBeLessThanOrEqual(y.price)
+        if (x.price === y.price) expect(x.armor.wdef + (x.with?.wdef ?? 0)).toBeGreaterThanOrEqual(y.armor.wdef + (y.with?.wdef ?? 0))
+      }
+    }
+  })
+})
