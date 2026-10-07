@@ -41,17 +41,24 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] The stats popup behind the Char label's info button carries `data-based-on-character` and `data-sheet="advised"` on its `.stat-dialog-body` (src/app.tsx)
+- [ ] Dave looked (visible in the inspector)
 
 ### TEST
 
+- [x] The Based on test opens that popup and pins both attributes (src/app.test.tsx); full suite and `npm run lint` green
+
 ### DEPLOY: app/char-popup-based-on
 
-**Score:**
+The advised character's stats popup, behind the info button on the Char label under "Based on:", now carries `data-based-on-character="Lv. 10 Thief"` and `data-sheet="advised"` beside its `data-popup`, the way the mob's info popup already carried `data-based-on-mob` (#247).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
 
 #### Pull Request
 

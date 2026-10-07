@@ -1753,7 +1753,7 @@ function BasedOn(props: { who: string; mob: string }) {
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected">
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
                 {stats}
               </PopupButton>
             )}

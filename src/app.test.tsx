@@ -4297,6 +4297,13 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(mobRow.getAttribute('data-based-on-mob')).toBe(mob)
       expect(mobRow.hasAttribute('data-based-on-character')).toBe(false)
       for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('advised')
+      // De popup achter het i-knopje van de char zegt hetzelfde, zoals die van de mob.
+      fireEvent.click(char.querySelector<HTMLElement>('.info-toggle')!)
+      const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      const body = stats.querySelector(':scope > .stat-dialog-body')!
+      expect(body.getAttribute('data-based-on-character')).toBe(char.getAttribute('data-based-on-character'))
+      expect(body.getAttribute('data-sheet')).toBe('advised')
+      fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
     })
 
