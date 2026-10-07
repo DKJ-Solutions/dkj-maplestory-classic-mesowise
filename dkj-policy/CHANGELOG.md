@@ -2,7 +2,47 @@
 
 ## [Unreleased]
 
-**87 / 135 minor entries** <!-- pending-tally -->
+**89 / 137 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/download-hint-visible · 20261007-203125Z
+
+The explanation under "Offlineversie downloaden" in the menu is visible again, without a question mark of its own on a separate line.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Opening the menu shows straight away what the offline version is, and no lone question mark sits under the download button.
+
+**Score:** 2
+
+#### Pull Request
+
+The offline download explanation is visible again, without a question mark
+
+[PR #241](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/241)
+
+---
+
+### DEPLOY: app/popup-95-percent · 20261007-202125Z
+
+The first popup is 95% as wide as the app column, and every popup above it 93% of the one below, so a stacked popup is visibly one layer up.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Popups use almost the full phone width, so more fits on a line, and a popup opened from another popup stays recognisable as one layer up.
+
+**Score:** 3
+
+#### Pull Request
+
+First popup 95% of the screen, every popup above it 93% of the one below
+
+[PR #239](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/239)
+
+---
 
 ### DEPLOY: app/224-stale-cost-text · 20261007-153955Z
 

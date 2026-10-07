@@ -346,7 +346,8 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 Offlineversie downloaden
               </a>
-              <Help>Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</Help>
+              {/* Gewoon zichtbaar, zonder vraagteken (Dave, 7 oktober 2026): de zin is kort en hoort bij de knop. */}
+              <p class="hint">Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</p>
             </div>
           )}
         </StatDialog>
@@ -1488,6 +1489,18 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
   )
 }
 
+/** Hoe breed een popup is tegenover de popup eronder: 93% (Dave, 7 oktober 2026). */
+export const POPUP_STEP = 0.93
+/** Hoe breed de eerste popup is tegenover het scherm: 95% (Dave, 7 oktober 2026); ook de terugval van --popup-scale in style.css. */
+export const FIRST_POPUP = 0.95
+
+/** Hoeveel popups er onder deze liggen: de popups waar hij in staat, zonder het menupaneel. */
+function popupDepth(d: Element): number {
+  let n = 0
+  for (let p = d.parentElement?.closest('.stat-dialog'); p; p = p.parentElement?.closest('.stat-dialog')) if (!p.classList.contains('menu-drawer')) n++
+  return n
+}
+
 /**
  * De popup om een stat te wijzigen (karakter) of te corrigeren (equipment), en die van een kaart: het eigen <dialog> van de browser, zodat de focus erin blijft en Escape
  * werkt. Escape, een tik naast de popup of het kruisje sluit zonder op te slaan; is er iets gewijzigd, dan is het kruisje een vinkje dat opslaat (onSave).
@@ -1627,6 +1640,9 @@ function StatDialog(props: {
   )
   useEffect(() => {
     const d = ref.current
+    // De eerste popup is 95% van het scherm, elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
+    // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
+    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(FIRST_POPUP * POPUP_STEP ** popupDepth(d)))
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
     if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()

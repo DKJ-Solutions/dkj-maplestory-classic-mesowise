@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, noSavingText, totalCostWho } from './app'
+import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
 
@@ -506,6 +506,22 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(item.querySelector('.item-why')!.textContent).toMatch(/^(Koop voor [\d.]+ meso\. .*bespaart het [\d.]+ meso, meer dan het kost: je houdt [\d.]+ meso over|Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen\. Koop het voor [\d.]+ meso.*)\.$/)
     closeItem(item)
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
+  })
+
+  it('maakt de eerste popup 95% zo breed als het scherm en elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    const item = openItem(advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!, 'Weapon'))
+    const scale = (d: Element) => Number((d as HTMLElement).style.getPropertyValue('--popup-scale'))
+    // Elke popup tot op de app: de bovenste eerst.
+    const layers: Element[] = []
+    for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
+    expect(layers.length).toBeGreaterThan(1)
+    expect([FIRST_POPUP, POPUP_STEP]).toEqual([0.95, 0.93])
+    layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(FIRST_POPUP * POPUP_STEP ** (layers.length - 1 - i)))
+    closeItem(item)
   })
 
   it('toont in de info-popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar de infoknop (Dave, 7 oktober 2026)', async () => {
@@ -2618,6 +2634,10 @@ describe('de menubalk bovenin (issue #86)', () => {
     const link = openMenu().getByRole('link', { name: 'Offlineversie downloaden' })
     expect(link.getAttribute('href')).toBe(`${import.meta.env.BASE_URL}mesowise-offline.html`)
     expect(link.hasAttribute('download')).toBe(true)
+    // De uitleg staat er gewoon onder, zonder vraagteken (Dave, 7 oktober 2026).
+    const download = link.closest('.menu-download')!
+    expect(download.querySelector('.help-toggle')).toBeNull()
+    expect(download.querySelector('.hint:not([hidden])')!.textContent).toMatch(/^Eén bestand dat je in je browser opent, zonder internet\./)
   })
 
   const rows = (menu: ReturnType<typeof openMenu>) =>
