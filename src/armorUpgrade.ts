@@ -6,8 +6,8 @@
 // dan dat, en komt het erbij als `wdef - gedragen + stuk.wdef`. Weet de app het niet, dan is de standaard:
 // een stuk wordt gerekend als `wdef + stuk.wdef`, alsof dat slot nu leeg is. Dat is de grootst mogelijke
 // besparing: een "nee" is daarmee zeker, een "ja" geldt onder die voorwaarde. Verder dezelfde standaarden als bij de claw:
-// je stats van nu blijven gelden over de hele horizon, de verkoopwaarde van je oude stuk telt niet mee en
-// het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts en is de eis naast DEX zijn STR; voor een Bowman (issue #44) is het die van bowmanGear.ts, ook met STR.
+// over de horizon groeit je karakter mee (growth.ts, Dave, 7 oktober 2026: level, Max HP en MP, AP en de skillpunten van elk level),
+// de verkoopwaarde van je oude stuk telt niet mee en het huidige level telt vol mee. Voor een Warrior (issue #42) is de winkel die van warriorGear.ts en is de eis naast DEX zijn STR; voor een Bowman (issue #44) is het die van bowmanGear.ts, ook met STR.
 // Voor een Magician (issue #43) is het die van magicianGear.ts, met INT en LUK als eisen.
 // Een stuk voor één geslacht (issue #55) telt alleen als je dat geslacht hebt gekozen.
 //
@@ -33,7 +33,8 @@ import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
 import { NPC_ARMOR } from './data/armor'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import type { ArmorPiece, ArmorSlot } from './data/types'
-import { byNet, horizonCost, type HorizonScope } from './horizonCost'
+import { growthCosts, growthOf } from './growth'
+import { byNet, type HorizonScope } from './horizonCost'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { MAGICIAN_ARMOR } from './magicianGear'
 import { fitsGender } from './gender'
@@ -154,16 +155,16 @@ function horizon(profile: Profile, c: Candidate, scope: HorizonScope): { from: n
 const sameChoice = (x: ArmorChoice | undefined, y: ArmorChoice | undefined) => x?.armor === y?.armor && x?.with === y?.with
 
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Candidate[], worn: WornWdef, a: Assumptions, scope: HorizonScope) {
-  const baseEpm = bestExpPerMeso(drafts, profile, a)
-  if (baseEpm === undefined) return null
+  if (bestExpPerMeso(drafts, profile, a) === undefined) return null
+  // Over de horizon groeit je karakter mee (growth.ts); 'this-level' is één level en dus je profiel van nu.
+  const costs = growthCosts(drafts, growthOf(drafts, profile), a)
   const all = candidates
     .map((c): ArmorChoice => {
       const h = horizon(profile, c, scope)
       const replaces = replacedWdef(c.with ? 'overall' : c.armor.slot, worn)
       const added: ArmorPiece = c.with ? { ...c.armor, wdef: c.armor.wdef + c.with.wdef } : c.armor
-      const epm = bestExpPerMeso(drafts, withArmor(profile, added, replaces), a)
-      const without = horizonCost(h.from, h.to, baseEpm)
-      const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
+      const without = costs.without(h.from, h.to)
+      const withIt = costs.withIt(h.from, h.to, (p) => withArmor(p, added, replaces))
       // Is een level zonder stuk onhaalbaar (basiskosten null), dan is elk stuk bewust "niet uit te rekenen" (zie issue #25).
       const saving = without === null || withIt === null ? null : without - withIt
       const price = c.armor.price + (c.with?.price ?? 0)

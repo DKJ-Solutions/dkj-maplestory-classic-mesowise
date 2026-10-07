@@ -7,6 +7,7 @@ import { BEGINNER_WORN_WEAPONS } from './data/beginnerWeapons'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS } from './data/expTable'
 import { mobDraft } from './data/spots'
+import { growthOf } from './growth'
 import { BOWMAN_WEAPONS } from './bowmanGear'
 import { WARRIOR_WEAPONS } from './warriorGear'
 import type { Weapon } from './data/types'
@@ -156,40 +157,58 @@ describe('clawUpgradeAdvice: de horizon', () => {
 })
 
 describe('clawUpgradeAdvice: de besparing', () => {
-  // De EXP-sommen zijn met de hand uit de tabel opgeteld, niet uit de module gehaald.
-  const EXP_15_19 = 7_050 + 8_840 + 11_040 + 13_716 + 16_680 // 57.326
+  // De EXP per level is met de hand uit de tabel overgenomen, niet uit de module gehaald.
   const EXP_20_24 = 20_216 + 24_402 + 28_980 + 34_320 + 40_512 // 148.430
-  const EXP_25_29 = 47_216 + 54_900 + 63_666 + 73_080 + 83_720 // 322.582
+  // EXP per level met de hand uit de tabel (level 15 t/m 29), voor de kosten per level.
+  const EXP_AT: Record<number, number> = {
+    15: 7_050, 16: 8_840, 17: 11_040, 18: 13_716, 19: 16_680, 20: 20_216, 21: 24_402, 22: 28_980, 23: 34_320, 24: 40_512,
+    25: 47_216, 26: 54_900, 27: 63_666, 28: 73_080, 29: 83_720,
+  }
+  /**
+   * De mesokosten van level from t/m to met de hand: per level de EXP gedeeld door de EXP per meso op het gegroeide profiel van dat level
+   * (growth.ts, Dave, 7 oktober 2026: het karakter groeit over de horizon mee), met `change` erbij (een claw in de hand).
+   */
+  const costOver = (p: Profile, from: number, to: number, change: (q: Profile) => Profile = (q) => q) => {
+    const grown = growthOf(drafts, p)
+    let sum = 0
+    for (let l = from; l <= to; l++) sum += EXP_AT[l] / epm(change(grown(l)))
+    return sum
+  }
 
   it('is de som over de horizon van kosten zonder min kosten met, elk op de beste plek (lv 15, Steel Titans)', () => {
     const p = strong({ level: 15, clawWatk: 10 })
-    const without = EXP_15_19 / epm(p)
-    const withIt = EXP_15_19 / epm(withClaw(p, claw('Steel Titans')))
+    const without = costOver(p, 15, 19)
+    const withIt = costOver(p, 15, 19, (q) => withClaw(q, claw('Steel Titans')))
     const c = advice(drafts, p).choices[0]
     expect(c.saving).toBeCloseTo(without - withIt, 6)
-    expect(c.saving).toBeCloseTo(45_406.5, 0) // een los getal ter controle van de som zelf (sinds #181 telt een potion alleen wat er mist)
+    // Een los getal ter controle van de som zelf; was 45.406,5 voor de groei (Dave, 7 oktober 2026): met de skillpunten en AP van elk level doodt hij sneller, dus meer ATT telt minder.
+    expect(c.saving).toBeCloseTo(5_584.1, 0)
     expect(c.net).toBeCloseTo(without - withIt - 7_000, 6)
   })
 
   it('geldt ook over een langere horizon: lv 20 (5 levels) en lv 25', () => {
-    for (const [level, exp] of [[20, EXP_20_24], [25, EXP_25_29]] as const) {
+    for (const [level, to] of [[20, 24], [25, 29]] as const) {
       const p = strong({ level, clawWatk: 10 })
       const titans = advice(drafts, p).choices.find((c) => c.claw.name === 'Steel Titans')!
-      expect(titans.saving).toBeCloseTo(exp / epm(p) - exp / epm(withClaw(p, claw('Steel Titans'))), 5)
+      expect(titans.saving).toBeCloseTo(costOver(p, level, to) - costOver(p, level, to, (q) => withClaw(q, claw('Steel Titans'))), 5)
     }
   })
 
   it('telt het huidige level vol mee: de horizon begint op het level van de speler', () => {
     const c = advice(drafts, strong({ level: 15, clawWatk: 10 })).choices[0]
     expect(c.from).toBe(15)
-    expect(c.saving).toBeCloseTo(57_326 / epm(strong({ level: 15, clawWatk: 10 })) - 57_326 / epm(strong({ level: 15, clawWatk: 13 })), 6)
+    const p = strong({ level: 15, clawWatk: 10 })
+    expect(c.saving).toBeCloseTo(costOver(p, 15, 19) - costOver(p, 15, 19, (q) => ({ ...q, clawWatk: 13 })), 6)
   })
 
-  it('houdt de stats van nu vast over de hele horizon (alleen EXP per level verschilt)', () => {
-    // lv 20 met Steel Titans: één epm op lv 20 voor alle vijf levels, niet een epm die met het level meegroeit.
+  it('laat je karakter over de horizon meegroeien (growth.ts): niet één EXP per meso voor alle levels', () => {
+    // lv 20 met Steel Titans: elk level van de horizon met zijn eigen profiel (level, AP, skillpunten), niet de stats van nu.
     const p = strong({ level: 20, clawWatk: 10 })
     const c = advice(drafts, p).choices.find((x) => x.claw.name === 'Steel Titans')!
-    expect(c.saving).toBeCloseTo(EXP_20_24 / epm(p) - EXP_20_24 / epm(withClaw(p, claw('Steel Titans'))), 5)
+    expect(c.saving).toBeCloseTo(costOver(p, 20, 24) - costOver(p, 20, 24, (q) => withClaw(q, claw('Steel Titans'))), 5)
+    // Het oude antwoord (de stats van nu over de hele horizon) is een ander getal.
+    const constant = EXP_20_24 / epm(p) - EXP_20_24 / epm(withClaw(p, claw('Steel Titans')))
+    expect(Math.abs(c.saving! - constant)).toBeGreaterThan(1)
   })
 
   it('telt de verkoopwaarde van de oude claw niet mee: net = saving - prijs', () => {

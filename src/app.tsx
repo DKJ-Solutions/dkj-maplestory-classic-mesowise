@@ -1299,7 +1299,7 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
   return (
     <>
       <Help>
-        Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van {t.old} telt niet mee. {t.unpriced}
+        Gerekend vanaf lv {a.level} met je stats van nu; elk volgend level groeit je karakter mee (AP, skillpunten). De verkoopwaarde van {t.old} telt niet mee. {t.unpriced}
       </Help>
       {first && (
         <p class="source">
@@ -1618,7 +1618,7 @@ function StatDialog(props: {
 /** De uitleg bij Total cost: Equip: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt. Shop is wat het
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Je karakter groeit daarbij mee (AP, skillpunten). Een bedrag in de accentkleur is een stuk dat je in de winkel koopt. Shop is wat het
     in de winkel kost; Level is het deel van dit level, want je draagt het tot je volgende upgrade. Dat deel staat op de factuur. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
@@ -2633,7 +2633,7 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
       <Help>
         {a.choices.some((c) => c.replaces === undefined) &&
           `Waar de app niet weet hoeveel ${STAT_NAME.armor} je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder ${STAT_NAME.armor}), is gerekend alsof het geen ${STAT_NAME.armor} geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel ${STAT_NAME.armor}, dan is de winst kleiner. `}
-        Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
+        Verder gerekend vanaf lv {a.level} met je stats van nu; elk volgend level groeit je karakter mee (AP, skillpunten). De verkoopwaarde van je oude stuk telt niet mee.
       </Help>
       {first && (
         <p class="source">

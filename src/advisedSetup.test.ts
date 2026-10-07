@@ -90,11 +90,12 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
   })
 
   it('noemt bij een Bowman de pijl voor het wapen van Advised, en bij een Thief met een dagger niets, net als de factuur (#189)', () => {
-    // Met een Balanche koopt Advised op level 20 een War Bow: de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
+    // Met een Balanche koopt Advised op level 20 een War Bow of een Crossbow (voor de groei was dat een War Bow, Dave 7 oktober 2026; beide geven op Snail
+    // dezelfde EXP per meso en dezelfde besparing, dus de keuze is een gelijkspel): de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
     const bowman = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Balanche', name: '', stat: '' } } }
     const b = advisedSetup(bowman)
-    expect(b.equipment.claw.pick).toBe('War Bow')
-    expect(b.ammo).toBe('Arrows for Bows')
+    expect(['War Bow', 'Crossbow']).toContain(b.equipment.claw.pick)
+    expect(b.ammo).toBe(b.equipment.claw.pick === 'Crossbow' ? 'Arrows for Crossbows' : 'Arrows for Bows')
     const thief = { ...input('thief', 20, 'Snail'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1' } }
     const s = advisedSetup(thief)
     expect(s.ammo).toBeNull()
@@ -131,7 +132,7 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     expect(noPlanOwn.s.ammo).toBe(OWN_AMMO)
     // Een Bowman heeft geen eigen pijlprijs: zijn profiel rekent altijd met de prijs van de gekozen pijl, dus daar loopt het slot niet uiteen.
     const bow = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Battle Bow', name: '', stat: '' } } }
-    expect(advisedSetup({ ...bow, profileDraft: { ...bow.profileDraft, starRecharge: '0.35' } }).ammo).toBe('Arrows for Bows')
+    expect(advisedSetup({ ...bow, profileDraft: { ...bow.profileDraft, starRecharge: '0.35' } }).ammo).toMatch(/^Arrows for (Bows|Crossbows)$/)
   })
 
   it('geeft zonder aankopen de eigen equip terug, dezelfde objecten', () => {

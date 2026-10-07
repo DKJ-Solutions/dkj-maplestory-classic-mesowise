@@ -9,7 +9,7 @@ import { bestExpPerMeso } from './bestExpPerMeso'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import { THROWING_STARS } from './data/thief'
 import type { ThrowingStar } from './data/types'
-import { horizonCost } from './horizonCost'
+import { growthCosts, growthOf } from './growth'
 import { ownAmount } from './levelInvoice'
 import { nextBetterWeapon } from './clawUpgrade'
 import { throwsNothing, type Profile } from './profile'
@@ -40,19 +40,19 @@ export function starUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile
   if (drafts.some((d) => ownAmount(d.ammo))) return null
   const held = THROWING_STARS.find((t) => t.rechargePerStar === profile.starRecharge)
   if (!held) return null
-  const baseEpm = bestExpPerMeso(drafts, profile, ASSUMPTIONS)
-  if (baseEpm === undefined) return null
+  if (bestExpPerMeso(drafts, profile, ASSUMPTIONS) === undefined) return null
   const next = nextBetterWeapon(profile)
   const end = next ? next.level - 1 : Infinity
   const from = profile.level
   const to = Math.min(end, LAST_TABLE_LEVEL)
-  const without = horizonCost(from, to, baseEpm)
+  // Over de horizon groeit je karakter mee (growth.ts), de star erbij op dat gegroeide profiel.
+  const costs = growthCosts(drafts, growthOf(drafts, profile))
+  const without = costs.without(from, to)
   if (without === null) return null
   let best: StarPick | null = null
   for (const star of THROWING_STARS) {
     if (!star.buy || star === held || star.level > profile.level) continue
-    const epm = bestExpPerMeso(drafts, { ...profile, starWatk: star.watk, starRecharge: star.rechargePerStar }, ASSUMPTIONS)
-    const withIt = epm === undefined ? null : horizonCost(from, to, epm)
+    const withIt = costs.withIt(from, to, (p) => ({ ...p, starWatk: star.watk, starRecharge: star.rechargePerStar }))
     if (withIt === null) continue
     const saving = without - withIt
     const net = saving - star.buy.price
