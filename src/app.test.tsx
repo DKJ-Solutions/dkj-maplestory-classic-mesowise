@@ -4317,26 +4317,26 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(info.getAttribute('data-sheet')).toBe('advised')
       fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
-      const advised = openView('Monster', 'Advised').querySelector('.spot-body')!
+      const advised = openView('Monster', 'Advised').querySelector(':scope > .stat-dialog-body')!
       expect(advised.getAttribute('data-based-on-mob')).toBe(mob)
       expect(advised.getAttribute('data-sheet')).toBe('advised')
       closeView('Monster')
       // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
       const worn = openView('Monster', 'Your character')
       const saved = worn.querySelector<HTMLSelectElement>('select')!.value
-      expect(worn.querySelector('.spot-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
-      expect(worn.querySelector('.spot-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
       closeView('Monster')
     })
 
     it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
-        const worn = openView(card, 'Your character').querySelector('.spot-body')!
+        const worn = openView(card, 'Your character').querySelector(':scope > .stat-dialog-body')!
         expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
         expect(worn.getAttribute('data-sheet')).toBe('actual')
         closeView(card)
-        const advised = openView(card, 'Advised').querySelector('.spot-body')!
+        const advised = openView(card, 'Advised').querySelector(':scope > .stat-dialog-body')!
         expect(advised.hasAttribute('data-based-on-character')).toBe(false)
         expect(advised.getAttribute('data-sheet')).toBe('advised')
         closeView(card)

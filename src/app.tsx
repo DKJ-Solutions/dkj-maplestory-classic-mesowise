@@ -455,13 +455,16 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   // De klassen zeggen van welke kaart en welke weergave de popup is (Dave, 7 oktober 2026, #242), zodat je hem in de HTML kunt aanwijzen.
   const className = `card-dialog card-dialog-${props.card} ${props.advised ? 'advised-dialog' : 'worn-dialog'}`
+  // De HTML zegt welke sheet dit is en waar hij over gaat (Dave, 7 oktober 2026): data-sheet "advised" (wat de app adviseert) of "actual" (je
+  // karakter uit het spel), met data-based-on-character "Lv. 21 Thief" in Your character (in Advised staat die onder "Based on:") en
+  // data-based-on-mob in de Monster-popup. Ze staan op .stat-dialog-body naast data-popup, zoals in elke andere popup.
+  const data: Record<`data-${string}`, string> = { 'data-sheet': props.advised ? 'advised' : 'actual' }
+  if (!props.advised) data['data-based-on-character'] = who
+  if (props.mob) data['data-based-on-mob'] = props.mob
   return (
-    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} data={data} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
-      {/* De HTML zegt welke sheet dit is en waar hij over gaat (Dave, 7 oktober 2026): data-sheet "advised" (wat de app adviseert) of "actual" (je
-          karakter uit het spel), met data-based-on-character "Lv. 21 Thief" in Your character (in Advised staat die onder "Based on:") en
-          data-based-on-mob in de Monster-popup. */}
-      <div class="spot-body" data-sheet={props.advised ? 'advised' : 'actual'} data-based-on-character={props.advised ? undefined : who} data-based-on-mob={props.mob}>
+      <div class="spot-body">
         {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}

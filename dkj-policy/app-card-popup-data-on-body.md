@@ -41,17 +41,24 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] CardPopup hands `data-sheet` and `data-based-on-*` to StatDialog's `data`, so they land on `.stat-dialog-body` instead of `.spot-body` (src/app.tsx)
+- [ ] Dave looked (visible in the inspector)
 
 ### TEST
 
+- [x] The Your character and Monster popup tests read the attributes off `.stat-dialog-body` (src/app.test.tsx); full suite and `npm run lint` green
+
 ### DEPLOY: app/card-popup-data-on-body
 
-**Score:**
+In the card popups (Advised and Your character), `data-sheet`, `data-based-on-character` and `data-based-on-mob` moved from `.spot-body` to `.stat-dialog-body`, beside `data-popup`, so every popup carries its attributes on the same element (#247, #248).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
 
 #### Pull Request
 
