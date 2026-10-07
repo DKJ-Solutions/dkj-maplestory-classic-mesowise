@@ -670,11 +670,20 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-price { grid-column: 3; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .advised-row.buy .advised-price { color: var(--accent); }
 .advised-row.option .advised-price { font-weight: 400; color: var(--muted); }
+/* De naam met de info-knop er direct achter (Dave, 7 oktober 2026): de naam kort in, de knop blijft staan. Hij is kleiner dan het vraagteken
+   (20px) maar houdt 44px om te tikken; dat vlak steekt boven, onder en links over de rij heen, zodat de rij niet hoger wordt. */
+.advised-item { display: flex; align-items: center; min-width: 0; }
+.info-toggle { flex: none; width: 44px; height: 44px; margin: -0.5rem -0.5rem -0.5rem -0.625rem; padding: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.info-toggle[aria-expanded="true"] { color: var(--accent); }
+.info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
-/* De popup van één stuk in Advised (Dave, 7 oktober 2026): wat het is, als lijst met het label links en de waarde rechts, en daaronder waarom. */
+/* De twee popups van één stuk in Advised (Dave, 7 oktober 2026): achter het vraagteken het oordeel (Kopen, Niet kopen, Houden, Leeg laten)
+   en waarom; achter de info-knop wat het stuk is, als lijst met het label links en de waarde rechts. */
+.item-verdict { margin: 0 0 0.375rem; font-size: 1.125rem; font-weight: 700; }
 /* Smaller dan de Advised-popup eronder (Dave, 7 oktober 2026): anders ligt hij er precies overheen en zie je niet dat het een tweede popup is. */
 .stat-dialog.item-dialog { width: calc(100% - 4rem); max-width: 22rem; }
-.item-facts { margin: 0 0 0.875rem; }
+.item-facts { margin: 0; }
 .item-facts > div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: 1px solid var(--border); }
 .item-facts dt { color: var(--muted); }
 .item-facts dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }

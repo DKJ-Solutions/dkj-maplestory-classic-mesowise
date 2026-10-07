@@ -375,8 +375,8 @@ const advisedRow = (dialog: HTMLElement, slot: string) =>
   [...dialog.querySelectorAll<HTMLElement>('.advised-row')].find((r) => r.querySelector('.slot-name')?.textContent === slot)!
 const nameOf = (row: HTMLElement) => row.querySelector('.advised-name')!.textContent!
 /** Het vraagteken van een regel opent een eigen popup (class item-dialog) met de feiten en de reden (Dave, 7 oktober 2026). */
-const openItem = (row: HTMLElement) => {
-  fireEvent.click(row.querySelector<HTMLElement>('.help-toggle')!)
+const openItem = (row: HTMLElement, button: '.help-toggle' | '.info-toggle' = '.help-toggle') => {
+  fireEvent.click(row.querySelector<HTMLElement>(button)!)
   return row.querySelector<HTMLElement>('dialog.item-dialog')!
 }
 const closeItem = (item: HTMLElement) => fireEvent.click(within(item).getByRole('button', { name: 'Sluiten' }))
@@ -384,6 +384,13 @@ const closeItem = (item: HTMLElement) => fireEvent.click(within(item).getByRole(
 const whyOf = (row: HTMLElement) => {
   const item = openItem(row)
   const text = item.querySelector('.item-why')!.textContent!
+  closeItem(item)
+  return text
+}
+/** Het oordeel in de popup van het vraagteken: Kopen, Niet kopen, Houden, Leeg laten of Per stuk kopen. */
+const verdictOf = (row: HTMLElement) => {
+  const item = openItem(row)
+  const text = item.querySelector('.item-verdict')!.textContent!
   closeItem(item)
   return text
 }
@@ -486,32 +493,63 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(toggle)
     expect(toggle.getAttribute('aria-expanded')).toBe('true')
     const item = row.querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(item.querySelector('.item-why')!.textContent).toMatch(/^(Koop voor [\d.]+ meso\. Van lv \d+ tot en met lv \d+ bespaart het [\d.]+ meso, meer dan het kost|Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen\. Koop het voor [\d.]+ meso)\.$/)
+    expect(item.querySelector('.item-verdict')!.textContent).toBe('Kopen')
+    expect(item.querySelector('.item-facts')).toBeNull()
+    expect(item.querySelector('.item-why')!.textContent).toMatch(/^(Koop voor [\d.]+ meso\. .*bespaart het [\d.]+ meso, meer dan het kost: je houdt [\d.]+ meso over|Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen\. Koop het voor [\d.]+ meso.*)\.$/)
     closeItem(item)
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
   })
 
-  it('toont in de popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar het vraagteken (Dave, 7 oktober 2026)', async () => {
+  it('toont in de info-popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar de infoknop (Dave, 7 oktober 2026)', async () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = advisedRow(dialog, 'Weapon')
-    const toggle = row.querySelector<HTMLElement>('.help-toggle')!
-    const item = openItem(row)
+    const toggle = within(row).getByRole('button', { name: 'Info over ' + row.querySelector('.advised-name')!.textContent })
+    expect(toggle.classList.contains('info-toggle')).toBe(true)
+    expect(toggle.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(toggle.closest('.advised-item')!.querySelector('.advised-name')).not.toBeNull()
+    const item = openItem(row, '.info-toggle')
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
     const facts = factsOf(item)
     expect(facts.Soort).toBe('CLAW')
     expect(facts.Level).toMatch(/^[\d]+$/)
     expect(facts.ATT).toMatch(/^[\d]+$/)
     expect(facts.Prijs).toBe(row.querySelector('.advised-price')!.textContent + ' meso')
-    expect(item.querySelector('.item-why')!.textContent).not.toBe('')
+    // De info-popup heeft alleen de feiten, het vraagteken het oordeel en de reden.
+    expect(item.querySelector('.item-why, .item-verdict')).toBeNull()
     closeItem(item)
     await new Promise((done) => requestAnimationFrame(() => done(undefined)))
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(toggle)
+  })
+
+  it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, bij een stuk dat je houdt Houden, en geeft een leeg slot geen infoknop (Dave, 7 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const weapon = advisedRow(dialog, 'Weapon')
+    expect(verdictOf(weapon)).toBe('Kopen')
+    expect(whyOf(weapon)).toContain('je houdt')
+    const empty = dialog.querySelector<HTMLElement>('.advised-row.empty')!
+    expect(empty.querySelector('.info-toggle')).toBeNull()
+    expect(verdictOf(empty)).toBe('Leeg laten')
+    // Draag je het wapen al, dan houdt Advised het.
+    cleanup()
+    localStorage.clear()
+    render(<App />)
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(verdictOf(advisedRow(dialog, 'Weapon'))).toBe('Houden')
   })
 
   it('toont in Advised de winkelprijs van een gekocht stuk in .advised-price, en niets bij een stuk dat je houdt of een leeg slot (Dave, 7 oktober 2026)', () => {
@@ -3861,7 +3899,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
