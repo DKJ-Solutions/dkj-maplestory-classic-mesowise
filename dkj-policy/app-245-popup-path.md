@@ -39,19 +39,29 @@
 
 ### PLAN
 
+Dave, October 7, 2026 (#245): many `.stat-dialog-body` elements, and in the inspector you cannot tell which one you are looking at. Every popup gets `data-popup` with its path of titles, on both the `<dialog>` and its `.stat-dialog-body`.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `PopupPath` context in `StatDialog`; `data-popup` on the dialog and the body
+- [ ] Dave looks at it in the inspector before the merge
 
 ### TEST
 
+- [x] Test: Total cost: Equip and the mob info popup inside it carry their path, and no two open bodies share one
+- [ ] Victor's review
+
 ### DEPLOY: app/245-popup-path
 
-**Score:**
+Every popup, and the `.stat-dialog-body` inside it, now carries `data-popup` with the titles of the popups it sits in, outermost first: the mob info opened from Total cost: Equip reads `Total cost: Equip (advised) › Snail (lv 7)`. In the inspector you can see straight away which popup you are pointing at.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Only visible in the HTML; a user of the app sees nothing new.
+
+**Score:** N/A
 
 #### Pull Request
 
