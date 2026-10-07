@@ -1743,13 +1743,13 @@ function BasedOn(props: { who: string; mob: string }) {
   return (
     <section class="based-on" aria-label="Based on">
       <h3 class="based-on-head">Based on:</h3>
-      <div class="advised-for">
+      <div class="based-on-container">
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="advised-for-row" data-based-on-character={props.who} data-sheet="advised">
+          <div class="based-on-row" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
-            <span class="advised-for-value">{props.who}</span>
+            <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
@@ -1760,10 +1760,10 @@ function BasedOn(props: { who: string; mob: string }) {
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
-        <div class="advised-for-line">
-          <div class="advised-for-row" data-based-on-mob={props.mob} data-sheet="advised">
+        <div class="based-on-line">
+          <div class="based-on-row" data-based-on-mob={props.mob} data-sheet="advised">
             <span class="sr-only">Mob: </span>
-            <span class="advised-for-value">{props.mob}</span>
+            <span class="based-on-value">{props.mob}</span>
             {mobDef && (
               <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
