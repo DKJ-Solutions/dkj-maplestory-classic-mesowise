@@ -508,7 +508,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
   })
 
-  it('maakt de eerste popup 96% zo breed als het scherm en elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026)', () => {
+  it('maakt de eerste popup 97% zo breed als het scherm en elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
@@ -519,7 +519,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const layers: Element[] = []
     for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
     expect(layers.length).toBeGreaterThan(1)
-    expect([FIRST_POPUP, POPUP_STEP]).toEqual([0.96, 0.93])
+    expect([FIRST_POPUP, POPUP_STEP]).toEqual([0.97, 0.93])
     layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(FIRST_POPUP * POPUP_STEP ** (layers.length - 1 - i)))
     closeItem(item)
   })

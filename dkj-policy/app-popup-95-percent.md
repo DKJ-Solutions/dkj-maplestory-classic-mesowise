@@ -41,26 +41,26 @@
 
 #### Decisions
 
-- The layers start at the app column (the phone width, on a computer 32rem): `main` is 93% of it, the first popup 96% of it, and each popup on top is 93% of the one below (Dave, October 7, 2026, after briefly making the first popup 93% of `main`).
+- The layers start at the app column (the phone width, on a computer 32rem): `main` is 93% of it, the first popup 97% of it, and each popup on top is 93% of the one below (Dave, October 7, 2026, after briefly making the first popup 93% of `main`).
 - The step was 5% first, then 9%, and settled at 7% the same evening (Dave, October 7, 2026); it lives in `--layer-shrink` (CSS) and `POPUP_STEP` (TS), each naming the other in its comment.
 - Only the width scales; the height still follows the content, capped at the screen minus 2rem.
 - The menu drawer keeps its own width and does not count as a layer.
 - The top bar's left padding moves with `main`, because its content lines up with `main`.
-- This replaces the 1rem minimum margin of October 5, 2026: at 390px `main` leaves about 13.5px per side and a first popup about 8px.
+- This replaces the 1rem minimum margin of October 5, 2026: at 390px `main` leaves about 13.5px per side and a first popup about 6px.
 
 ### CREATE
 
-- [x] `src/style.css`: `--layer-shrink: 0.07`, `--first-popup: 0.96`; `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale`; the fixed `.item-dialog` width is gone
+- [x] `src/style.css`: `--layer-shrink: 0.07`, `--first-popup: 0.97`; `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale`; the fixed `.item-dialog` width is gone
 - [x] `src/style.css`: `main` and `.topbar-inner` are border-box with a side padding of half of `--layer-shrink` of the app column
-- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `FIRST_POPUP * POPUP_STEP^depth` (0.96, 0.93), with depth counted over enclosing popups except the menu drawer
+- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `FIRST_POPUP * POPUP_STEP^depth` (0.97, 0.93), with depth counted over enclosing popups except the menu drawer
 
 ### TEST
 
-- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.93 times the popup below it, and the first popup 0.96; vitest 1946/1946 green, lint clean
+- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.93 times the popup below it, and the first popup 0.97; vitest 1946/1946 green, lint clean
 
 ### DEPLOY: app/popup-95-percent
 
-The page content in `main` is 93% of the app column, the first popup 96% of it, and every popup above that 93% of the one below.
+The page content in `main` is 93% of the app column, the first popup 97% of it, and every popup above that 93% of the one below.
 
 **Score:** 2
 
@@ -72,4 +72,4 @@ The page and its popups share one width rule: a popup opened from another popup 
 
 #### Pull Request
 
-Page content 93% of the screen, first popup 96%, every popup above it 93% of the one below
+Page content 93% of the screen, first popup 97%, every popup above it 93% of the one below
