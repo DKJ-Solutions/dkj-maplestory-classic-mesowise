@@ -177,13 +177,10 @@ export function advisedEquipment(job: Job, profile: ProfileDraft, equipment: Equ
   return { equipment: out.equipment, profile: out.profile, shop: purchases.reduce((sum, p) => sum + p.price, 0), purchases }
 }
 
-/** Het label van het Ammo-slot als je zelf een bedrag voor de munitie invulde: de app weet dan niet welke munitie dat koopt (#199). */
-export const OWN_AMMO = 'Eigen bedrag'
-
 /**
  * Wat een star of pijl is, op naam (Dave, 7 oktober 2026): zijn ATT, wat hij per stuk kost (herladen of kopen) en het level dat hij vraagt, voor de
- * info-knop in Total cost: Useable. Uit de lijsten zelf, niet uit het profiel: dat draagt de pijl van een Bowman niet. Undefined bij een eigen bedrag
- * of een naam die in geen lijst staat.
+ * info-knop in Total cost: Useable. Uit de lijsten zelf, niet uit het profiel: dat draagt de pijl van een Bowman niet. Undefined bij een naam die in
+ * geen lijst staat.
  */
 export function ammoInfo(name: string): { watk: number; price: number; level?: number } | undefined {
   const star = THROWING_STARS.find((t) => t.name === name)
@@ -193,17 +190,15 @@ export function ammoInfo(name: string): { watk: number; price: number; level?: n
 }
 
 /**
- * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Advised als je daar niets invulde. Een Thief
+ * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Advised. Een Thief
  * gooit de star met de herlaadprijs uit zijn profiel (zonder keuze de Subi uit DEFAULT_PROFILE); een Bowman schiet de pijl die zijn profiel rekent
  * (arrowFor), voor zijn boog of kruisboog, en bij een eigen wapen voor een boog zoals PLAIN_ARROW. Null als hij niets gooit (throwsNothing).
- * Typte je zelf het bedrag voor de munitie van de plek (`ownCost`), dan telt de factuur dat bedrag en kent de app de munitie niet: OWN_AMMO.
  * Hoort de herlaadprijs van een Thief bij geen enkele star uit de lijst, dan een algemeen label met die prijs (#199), zoals de factuur hem telt;
  * een Bowman rekent altijd met de prijs van zijn pijl (parseProfile), dus bij hem komt dat niet voor;
- * zonder herlaadprijs telt de factuur de munitiekosten van de plek en is er niets te noemen.
+ * zonder herlaadprijs telt de factuur geen munitie en is er niets te noemen.
  */
-export function countedAmmo(profile: Profile, weapon: EquipEntry, ownCost = false): string | null {
+export function countedAmmo(profile: Profile, weapon: EquipEntry): string | null {
   if (throwsNothing(profile)) return null
-  if (ownCost) return OWN_AMMO
   const price = profile.starRecharge
   if (profile.job === 'thief') return THROWING_STARS.find((t) => t.rechargePerStar === price)?.name ?? (price > 0 ? `Throwing stars, ${nf3.format(price)} meso per stuk` : null)
   const kind = NPC_BOWMAN_WEAPONS.find((w) => w.name === weapon.pick)?.kind ?? 'bow'

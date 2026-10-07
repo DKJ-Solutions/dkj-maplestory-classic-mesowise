@@ -99,8 +99,8 @@ describe('bestVerdict', () => {
 
   it('geeft een gevaarlijke plek het label niet, ook als hij bovenaan staat', () => {
     const dangerous = suggestMonsters(profile, mixedMobs).find((s) => s.estimate.dangerous)!
-    const k = known('eng', dangerous.monster.name, { expPerHour: '10000', potions: '1', ammo: '0' })
-    const v = bestVerdict([k, own('veilig', 10_000, 1_000)], profile)
+    const k = known('eng', dangerous.monster.name, { expPerHour: '10000' })
+    const v = bestVerdict([k, own('veilig', 10_000, 1_000_000)], profile)
     expect(v.ranked[0].spot.id).toBe('eng')
     expect(v.bestId).toBe('veilig')
     expect(v.excluded.get('eng')).toBe('dangerous')

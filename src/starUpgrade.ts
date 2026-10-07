@@ -10,7 +10,6 @@ import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import { THROWING_STARS } from './data/thief'
 import type { ThrowingStar } from './data/types'
 import { horizonCost } from './horizonCost'
-import { ownAmount } from './levelInvoice'
 import { nextBetterWeapon } from './clawUpgrade'
 import { throwsNothing, type Profile } from './profile'
 import type { SpotDraft } from './spotDraft'
@@ -36,8 +35,6 @@ export interface StarPick {
 export function starUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null): StarPick | null {
   if (!profile || profile.job !== 'thief' || throwsNothing(profile) || expToNextLevel(profile.level) === undefined) return null
   // Een herlaadprijs die bij geen star uit de lijst hoort, is een star die de app niet kent (#199): die is van jou, daar adviseert Advised niets over.
-  // Een eigen bedrag voor de munitie verandert niet met de star (de factuur telt dat bedrag): dan valt er niets te vergelijken.
-  if (drafts.some((d) => ownAmount(d.ammo))) return null
   const held = THROWING_STARS.find((t) => t.rechargePerStar === profile.starRecharge)
   if (!held) return null
   const baseEpm = bestExpPerMeso(drafts, profile, ASSUMPTIONS)

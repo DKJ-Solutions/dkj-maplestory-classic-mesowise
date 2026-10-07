@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, buyTexts, cheapestEquipment, ammoInfo, countedAmmo, OWN_AMMO } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, ammoInfo, countedAmmo } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, OTHER, type Equipment } from './equipment'
@@ -201,13 +201,6 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
     expect(countedAmmo(parsed('thief', { starRecharge: '0' }), weapon('Steel Igor'))).toBeNull()
   })
 
-  it('noemt geen munitie als je zelf het bedrag voor de munitie van de plek invulde (#199)', () => {
-    expect(countedAmmo(parsed('thief'), weapon('Steel Igor'), true)).toBe(OWN_AMMO)
-    expect(countedAmmo(parsed('bowman'), weapon('Battle Bow'), true)).toBe(OWN_AMMO)
-    // Wie niets gooit houdt null, ook met een eigen bedrag.
-    expect(countedAmmo(parsed('warrior'), weapon(''), true)).toBeNull()
-  })
-
   it('geeft niets voor wie niets gooit: een Thief met een dagger, een Beginner, een Warrior of een Magician', () => {
     expect(countedAmmo(parsed('thief', { dagger: '1' }), weapon('Steel Igor'))).toBeNull()
     expect(countedAmmo(parsed('thief', { level: '9', luckySeven: '0' }), weapon('Steel Igor'))).toBeNull()
@@ -291,8 +284,7 @@ describe('ammoInfo (Total cost: Useable)', () => {
   it('geeft bij een pijl zijn eigen ATT en prijs per pijl, zonder level', () => {
     expect(ammoInfo('Arrows for Bows')).toEqual({ watk: 0, price: 1 })
   })
-  it('geeft niets bij een eigen bedrag of een onbekende naam', () => {
-    expect(ammoInfo(OWN_AMMO)).toBeUndefined()
+  it('geeft niets bij een onbekende naam', () => {
     expect(ammoInfo('Throwing stars, 0,35 meso per stuk')).toBeUndefined()
   })
 })

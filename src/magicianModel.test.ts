@@ -378,7 +378,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     expect(s.rechargePerStar).toBe(0.3)
   })
 
-  it('vult bij resolveSpot de munitie met 0 en de potions met het voorstel, en laat de reiskosten en een ingevulde munitie staan', () => {
+  it('vult bij resolveSpot de munitie met 0 en de potions met het voorstel, en laat de reiskosten staan', () => {
     const chosen = { ...mobDraft('Ribbon Pig')!, id: 'a', travel: '100' }
     const known = findKnownSpot('mob:Ribbon Pig')!
     const s = pickMonster(suggestMonsters(magician, known), undefined)!
@@ -386,7 +386,6 @@ describe('Magician: de spreuken en het voorstel', () => {
     const spot = resolveSpot(chosen, known, magician)
     expect(spot.cost).toEqual({ potions: plan.potions, ammo: 0, travel: 100 })
     expect(spot.cost.potions).toBeGreaterThan(0)
-    expect(resolveSpot({ ...chosen, ammo: '55' }, known, magician).cost.ammo).toBe(55)
   })
 
   it('laat bij een Magician zonder spreuk een bekende plek zoals de speler hem invulde (geen voorstel)', () => {

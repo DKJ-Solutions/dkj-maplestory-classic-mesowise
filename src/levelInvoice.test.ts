@@ -95,19 +95,14 @@ describe('levelInvoice', () => {
     expect(invoiceOf(bowman).lines.map((l) => l.label)).toContain('Arrows')
   })
 
-  it('noemt munitie die een Warrior zelf invulde Ammo, en geen Throwing stars', () => {
-    const own = [{ ...drafts[0], ammo: '100' }]
-    const labels = invoiceOf(profileOf({}, 'warrior'), own).lines.map((l) => l.label)
-    expect(labels).toContain('Ammo')
-    expect(labels).not.toContain('Throwing stars')
-  })
-
-  it('zet potions die je zelf invulde als één bedrag zonder stuks', () => {
-    const own = [{ ...drafts[0], potions: '1000' }]
+  it('zet de potions van een plek zonder berekend plan als één regel zonder aantal en uitleg', () => {
+    const own = [{ id: 'eigen', name: 'Eigen plek', expPerHour: '50000', potions: '1000', ammo: '0', travel: '0' }]
     const inv = invoiceOf(thief, own)
     const line = inv.lines.find((l) => l.label === 'Potions')!
     expect(line.qty).toBeNull()
+    expect(line.why).toBeUndefined()
     expect(line.meso).toBe(Math.ceil(1000 * inv.hours))
+    expect(inv.lines.some((l) => l.why?.kind === 'ammo')).toBe(false)
   })
 })
 
