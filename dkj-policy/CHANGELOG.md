@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**91 / 141 minor entries** <!-- pending-tally -->
+**91 / 142 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/advised-for-attr · 20261007-211945Z
+
+The HTML now says which character or mob an element shows, the way `data-popup` does for popups (#245): `data-based-on-character="Lv. 21 Thief"` and `data-based-on-mob="Snail"`, with `data-sheet` beside them saying whose sheet it is: `advised` (what the app advises, under "Based on:" and in the Advised popups) or `actual` (the character as played in game, in every Your character popup). The classes inside the "Based on:" section are renamed after it, `.advised-for` to `.based-on-container` and `.advised-for-row`/`-line`/`-value` to `.based-on-label`/`.based-on-line`/`.based-on-value`.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
+
+#### Pull Request
+
+data-based-on-character, data-based-on-mob and data-sheet say in the HTML which character or mob an element shows, on the advised or the actual sheet
+
+[PR #247](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/247)
+
+---
 
 ### DEPLOY: app/245-popup-path · 20261007-205252Z
 
