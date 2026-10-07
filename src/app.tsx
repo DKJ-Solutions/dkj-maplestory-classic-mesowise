@@ -436,8 +436,9 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; advised?: boolean; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
-  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026).
+function CardPopup(props: { title: string; advised?: boolean; subtitle?: ComponentChildren; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026); een eigen ondertitel
+  // (`subtitle`) vervangt die regel, zoals die van Advised: Equip met de mob erbij.
   const who = useContext(AdvisedWho)
   const close = () => {
     props.onClose()
@@ -445,7 +446,7 @@ function CardPopup(props: { title: string; advised?: boolean; opener: RefObject<
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} subtitle={props.advised ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -1435,7 +1436,7 @@ function StatDialog(props: {
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
   /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
-  subtitle?: string
+  subtitle?: ComponentChildren
   /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
   help?: ComponentChildren
   onCancel: () => void
@@ -1551,7 +1552,7 @@ function StatDialog(props: {
   const title = props.subtitle ? (
     <div class="stat-dialog-titles">
       {heading}
-      <p class="stat-dialog-sub">{props.subtitle}</p>
+      <div class="stat-dialog-sub">{props.subtitle}</div>
     </div>
   ) : (
     heading
@@ -1614,6 +1615,34 @@ const CHEAPEST_HELP = (
     in de winkel kost; Level is het deel van dit level, want je draagt het tot je volgende upgrade. Dat deel staat op de factuur. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
+
+/** Waarom het advies met deze mob rekent: achter het vraagteken naast de mob in de ondertitel van Advised: Equip (Dave, 7 oktober 2026). */
+const mobWhy = (mob: string) =>
+  `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
+
+/**
+ * De ondertitel van Advised: Equip (Dave, 7 oktober 2026): voor wie het advies rekent en op welke mob, op twee regels (Char, Mob) met het
+ * label klein ervoor, en een vraagteken achter de mob dat zegt waarom juist die.
+ */
+function AdvisedFor(props: { who: string; mob: string }) {
+  return (
+    <span class="advised-for">
+      {props.who && (
+        <>
+          <span class="advised-for-label">Char</span>
+          <span class="advised-for-value">{props.who}</span>
+        </>
+      )}
+      <span class="advised-for-label">Mob</span>
+      <span class="advised-for-value advised-for-mob">
+        {props.mob}
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+          <p class="item-why">{mobWhy(props.mob)}</p>
+        </PopupButton>
+      </span>
+    </span>
+  )
+}
 
 /**
  * De rijen van de Equip-popup achter "Advised" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow), en onderaan wat alles
@@ -2068,6 +2097,8 @@ function EquipmentCard(props: {
   advisedAmmo: string | null
   /** De regels van de factuur van Advised: per gekocht stuk wat dit level ervan betaalt, de kolom Level (Dave, 7 oktober 2026); null zonder factuur. */
   advisedLines: readonly InvoiceLine[] | null
+  /** De mob waarop het advies rekent (Dave, 7 oktober 2026), in de ondertitel van Advised: Equip; null zonder mob. */
+  advisedMob: string | null
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -2075,6 +2106,7 @@ function EquipmentCard(props: {
   const computed = isComputed(props.job)
   const slots = shownSlots(props.job, props.equipment.claw)
   const uid = useId()
+  const who = useContext(AdvisedWho)
   // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
   const [editing, setEditing] = useState<EquipSlot | null>(null)
   const name = (
@@ -2087,7 +2119,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} advised={view === 'advised'} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} advised={view === 'advised'} subtitle={props.cheapest && props.advisedMob ? <AdvisedFor who={who} mob={props.advisedMob} /> : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -3759,6 +3791,7 @@ export function App() {
         cheapest={cheapestEquip}
         advisedAmmo={advisedSet?.ammo ?? null}
         advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
+        advisedMob={huntedMob(cheapestLive?.drafts[0])?.name ?? null}
         level={characterLevel}
         gender={gender}
         report={

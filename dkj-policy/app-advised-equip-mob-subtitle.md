@@ -39,19 +39,30 @@
 
 ### PLAN
 
+Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the mob the advice is computed on, with a ? explaining why that mob; two rows, and the ? keeps its size.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `AdvisedFor` subtitle (Char / Mob rows, ? after the mob) via a new `subtitle` prop on `CardPopup`; mob = `huntedMob(cheapestLive.drafts[0])`, the same read as Advised: Monster
+- [x] Gwen: two-row grid, small uppercase labels, value at title size with a 24px line so it lines up with the unchanged ? icon
+- [x] Edith: explanation cut to one sentence (EXP per meso); Victor: no bugs
 
 ### TEST
 
+- [x] Tycho: subtitle test extended for Equip (same mob as Advised: Monster), new test for the ? popup; 1899 tests green, lint clean
+- [ ] Dave looks at the preview (visible result)
+
 ### DEPLOY: app/advised-equip-mob-subtitle
 
-**Score:**
+The Advised: Equip popup now says on two rows who and what its advice is computed for: **Char** (level and job) and **Mob** (the mob Advised: Monster also shows), with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees at a glance which mob the equipment advice assumes, so an advice that looks odd can be traced to the mob it was computed for.
+
+**Score:** 2
 
 #### Pull Request
 

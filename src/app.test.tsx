@@ -4124,20 +4124,47 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       check('bowman')
     })
 
-    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", en onder Your character geen', () => {
+    // De mob van het advies, zoals Advised: Monster hem toont: "Green Mushroom (lv 15)" zonder het level.
+    const advisedMobName = () => {
+      const d = openView('Monster', 'Advised')
+      const name = d.querySelector('.field-fixed')!.textContent!.replace(/ \(lv \d+\)$/, '')
+      closeView('Monster')
+      return name
+    }
+
+    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", onder Advised: Equip twee regels Char (Lv. <n> <Job>) en Mob (<mob>), en onder Your character geen', () => {
       for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
         setJob(job)
         const who = totalCostWho('20', job)
         expect(who.startsWith('Lv. 20 ')).toBe(true)
+        const mob = advisedMobName()
+        expect(mob, job).not.toBe('—')
         for (const title of CARDS) {
           const adv = openView(title, 'Advised')
-          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(who)
+          // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
+          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? `Char${who}Mob${mob}` : who)
           closeView(title)
           const own = openView(title, 'Your character')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
           closeView(title)
         }
       }
+    })
+
+    it('zet achter de mob in de ondertitel van Advised: Equip een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      const button = d.querySelector<HTMLElement>('.stat-dialog-sub .advised-for-mob .help-toggle')!
+      expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
+      expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+      expect(d.querySelector('dialog.item-dialog')).toBeNull()
+      fireEvent.click(button)
+      const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
     })
   })
 

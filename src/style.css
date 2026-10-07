@@ -357,6 +357,14 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
+/* De ondertitel van Advised: Equip (Dave, 7 oktober 2026): twee regels, Char en Mob, met het label klein en grijs in een eigen kolom en de waarde
+   ernaast in de tekstkleur. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is even groot als de titel en zo hoog als het icoon, zodat
+   die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
+.advised-for { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.75rem; row-gap: 0.25rem; margin-top: 0.375rem; }
+.advised-for-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.advised-for-value { min-width: 0; font-size: 1rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.advised-for-mob { display: flex; align-items: center; }
+.stat-dialog-sub .advised-for-mob .help-toggle { flex: none; margin: -0.625rem 0 -0.625rem -0.375rem; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }
