@@ -4,7 +4,6 @@ import type { CheapestInput } from './cheapestSettings'
 import { profileOf } from './cheapestSettings'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
-import { OWN_AMMO } from './cheapestEquip'
 import { defaultEquipment, isEmptyEntry, wornName } from './equipment'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
@@ -102,7 +101,7 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     expect(inv.kind === 'invoice' && inv.lines.some((l) => l.why?.kind === 'ammo')).toBe(false)
   })
 
-  it('laat het Ammo-slot en de factuur samen kloppen bij een eigen bedrag of een star-prijs buiten de lijst (#199)', () => {
+  it('laat het Ammo-slot en de factuur samen kloppen bij een star-prijs buiten de lijst (#199)', () => {
     const claw = { pick: 'Steel Igor', name: '', stat: '' }
     const thief = { ...input('thief', 20, 'Snail'), equipment: { ...defaultEquipment(), claw } }
     const ammoLine = (user: CheapestInput) => {
@@ -110,13 +109,6 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
       const inv = levelInvoice(s.result.drafts, profileOf(afterTake(user, s)))
       return { s, line: inv.kind === 'invoice' ? inv.lines.find((l) => l.label === 'Throwing stars') : undefined }
     }
-    // Eigen bedrag op de plek: één regel zonder aantal, en het slot noemt geen star.
-    // Advised kiest zelf de mob; op die mob typ je een laag bedrag, zodat Advised de plek niet inruilt.
-    const hunted = mobDraft(advisedSetup(thief).result.drafts[0].name)!
-    const own = ammoLine({ ...thief, drafts: [{ ...hunted, ammo: '1' }] })
-    expect(own.s.ammo).toBe(OWN_AMMO)
-    expect(own.line).toMatchObject({ qty: null })
-    expect(own.line?.why).toBeUndefined()
     // Een herlaadprijs die bij geen star hoort: de factuur telt stars tegen die prijs, het slot noemt die prijs.
     const odd = ammoLine({ ...thief, profileDraft: { ...thief.profileDraft, starRecharge: '0.35' } })
     expect(odd.s.ammo).toBe('Throwing stars, 0,35 meso per stuk')
@@ -126,9 +118,6 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     const noPlan = ammoLine({ ...thief, drafts: [custom] })
     expect(noPlan.line).toBeUndefined()
     expect(noPlan.s.ammo).toBeNull()
-    const noPlanOwn = ammoLine({ ...thief, drafts: [{ ...custom, ammo: '100' }] })
-    expect(noPlanOwn.line).toMatchObject({ qty: null, meso: expect.any(Number) })
-    expect(noPlanOwn.s.ammo).toBe(OWN_AMMO)
     // Een Bowman heeft geen eigen pijlprijs: zijn profiel rekent altijd met de prijs van de gekozen pijl, dus daar loopt het slot niet uiteen.
     const bow = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Battle Bow', name: '', stat: '' } } }
     expect(advisedSetup({ ...bow, profileDraft: { ...bow.profileDraft, starRecharge: '0.35' } }).ammo).toBe('Arrows for Bows')

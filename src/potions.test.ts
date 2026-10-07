@@ -181,13 +181,6 @@ describe('potionAdvice', () => {
     expect(a.switchTo).toEqual([])
     expect(a.mesoCheapest).toBe(a.mesoChosen)
   })
-
-  it('ziet geen verschil als de potions op de plek niet meetellen', () => {
-    const own = [{ ...drafts[0], potions: '1000' }]
-    const a = advice({ ...profile, potions: resolvePotions('thief', choice('White Potion', null)) }, own)
-    expect(a.switchTo).toEqual([HP_POTION])
-    expect(a.mesoChosen).toBe(a.mesoCheapest)
-  })
 })
 
 describe('loadPotionChoice en savePotionChoice', () => {

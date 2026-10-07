@@ -146,16 +146,12 @@ export type LevelInvoice =
 // Nooit onder 0: Math.ceil(0 - 1e-9) is -0, en dat zou als "× -0" op de factuur staan.
 const wholeUp = (x: number): number => Math.max(0, Math.ceil(x - 1e-9))
 
-/** Of je zelf een bedrag invulde; zo'n bedrag telt de factuur als één regel zonder aantal. */
-export const ownAmount = (text: string | undefined): boolean => text !== undefined && text.trim() !== ''
-
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
 export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')
 
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven
- * afgerond; reizen als bedrag. Heb je de potion- of munitiekosten van je plek zelf ingevuld, dan staat dat bedrag er als één
- * regel, want de app weet dan niet om hoeveel stuks het gaat. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
+ * afgerond; reizen als bedrag. Heeft de plek geen berekend plan, dan staan potions en munitie als één regel zonder aantal. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
  * staat elk gekocht stuk bovenaan als eigen regel, met zijn naam, × 1 en zijn winkelprijs (Dave, 6 oktober 2026); zonder aankopen, zoals bij je
  * character, staan die regels er niet.
  */
@@ -193,7 +189,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       why: { kind: 'shop', name: p.name, price: p.price, level: cost.level, from, to, truncated: p.truncated ?? false, thisExp: w.thisExp, sumExp: w.sumExp, share: w.share },
     })
   }
-  if (resolved && plan && !ownAmount(draft.potions)) {
+  if (resolved && plan) {
     const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
     const hpExact = plan.hpPotionsPerHour * hours
     const mpExact = plan.mpPotionsPerHour * hours
@@ -225,7 +221,7 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   } else {
     add('Potions', null, Math.ceil(spot.cost.potions * hours))
   }
-  if (resolved && plan && !ownAmount(draft.ammo) && resolved.suggestion.rechargePerStar > 0) {
+  if (resolved && plan && resolved.suggestion.rechargePerStar > 0) {
     const { estimate, rechargePerStar, monster } = resolved.suggestion
     const exact = plan.killsPerHour * estimate.starsPerKill * hours
     const stars = wholeUp(exact)

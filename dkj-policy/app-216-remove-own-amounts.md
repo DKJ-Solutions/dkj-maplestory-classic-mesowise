@@ -39,19 +39,31 @@
 
 ### PLAN
 
+Dave's decision on #216 (October 7, 2026): remove the own potion and ammo amounts as dead code. No screen sets them and
+`initialDrafts()` clears them on load, so no reachable path changes a number. The no-plan invoice fallback and the
+`SpotDraft.potions/ammo` fields stay; review found them unreachable too, and that is #222.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: drop `ownAmount` (levelInvoice, starUpgrade), the draft override of potions and ammo in `resolveSpot`, `OWN_AMMO` and the `ownCost` parameter of `countedAmmo`, and the "Eigen bedrag" handling in `UseableRows` and `cheapestWhy`
+- [x] Comments and the lumped-potions help text no longer speak of amounts the player typed in (Edith's and Victor's points)
 
 ### TEST
 
+- [x] Tycho: own-amount tests removed; the end-to-end `resolveSpot` into `rankSpots` test restored without own amounts; a test for the kept lumped-potions fallback added. `npm test` green (1910), `npm run lint` clean
+- [x] Victor: no correctness finding; stored drafts with own amounts are neutralised at load, so numbers are unchanged
+
 ### DEPLOY: app/216-remove-own-amounts
 
-**Score:**
+The own potion and ammo amounts are gone from the calculation: the level invoice, the star-upgrade advice and the spot ranking always count potions and ammo from the app's own estimate, and the "Eigen bedrag" ammo verdict is removed. No screen could set an own amount any more, so no number in the app changes. The failure it prevents: old stored spots carrying an amount reviving a path no test covered and no popup explained.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 

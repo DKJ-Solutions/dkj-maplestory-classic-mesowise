@@ -109,10 +109,10 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
 
 /**
  * Wat het Ammo-slot noemt, volgt de factuur (#199): staat er een regel met stars of pijlen (`why`), dan die munitie; staat er een bedrag zonder aantal (een
- * eigen bedrag, of een plek zonder berekend plan), dan een eigen bedrag; staat er geen munitieregel, dan niets.
+ * plek zonder berekend plan), dan ook die munitie; staat er geen munitieregel, dan niets.
  */
 function ammoOnInvoice(drafts: CheapestResult['drafts'], profile: NonNullable<ReturnType<typeof profileOf>>, job: Job, claw: EquipEntry): string | null {
   const inv = levelInvoice(drafts, profile)
   const line = inv.kind === 'invoice' ? inv.lines.find((l) => !l.shop && l.label === ammoLabel(job)) : undefined
-  return line ? countedAmmo(profile, claw, !line.why) : null
+  return line ? countedAmmo(profile, claw) : null
 }
