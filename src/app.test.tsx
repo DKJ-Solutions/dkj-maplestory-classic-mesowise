@@ -3793,7 +3793,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) {
       expect(r.querySelector('.advised-level')!.textContent).toBe('')
       const it = openItem(r)
-      expect(it.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom niets?')
+      expect(it.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom geen upgrade?')
       expect(it.querySelector('.item-nothing')!.textContent).toMatch(/^Hier verandert niets: /)
       closeItem(it)
     }

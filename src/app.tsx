@@ -2003,8 +2003,8 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
       price={shopPrice}
       level={props.line ? props.line.meso : null}
-      // Het vraagteken heet naar het bedrag in Level dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?"; is Level leeg, "Waarom niets?".
-      helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : 'Waarom niets?'}
+      // Het vraagteken heet naar het bedrag in Level dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?"; is Level leeg, "Waarom geen upgrade?".
+      helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : 'Waarom geen upgrade?'}
       help={
         <>
           {!props.line && <p class="item-why item-nothing">{nothingWhy(props.job, c, counted)}</p>}
