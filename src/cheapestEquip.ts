@@ -175,7 +175,7 @@ export const OWN_AMMO = 'Eigen bedrag'
 
 /**
  * Wat een star of pijl is, op naam (Dave, 7 oktober 2026): zijn ATT, wat hij per stuk kost (herladen of kopen) en het level dat hij vraagt, voor de
- * info-knop in Advised: Useable. Uit de lijsten zelf, niet uit het profiel: dat draagt de pijl van een Bowman niet. Undefined bij een eigen bedrag
+ * info-knop in Total cost: Useable. Uit de lijsten zelf, niet uit het profiel: dat draagt de pijl van een Bowman niet. Undefined bij een eigen bedrag
  * of een naam die in geen lijst staat.
  */
 export function ammoInfo(name: string): { watk: number; price: number; level?: number } | undefined {

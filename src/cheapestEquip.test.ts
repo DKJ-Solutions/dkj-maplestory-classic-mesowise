@@ -284,7 +284,7 @@ describe('cheapestEquipment: het vereiste wapen (#202)', () => {
   })
 })
 
-describe('ammoInfo (Advised: Useable)', () => {
+describe('ammoInfo (Total cost: Useable)', () => {
   it('geeft bij een star zijn ATT, level en herlaadprijs', () => {
     expect(ammoInfo('Subi Throwing Stars')).toEqual({ watk: 15, price: 0.3, level: 10 })
   })
