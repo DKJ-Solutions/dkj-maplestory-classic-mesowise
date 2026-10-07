@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**73 / 113 minor entries** <!-- pending-tally -->
+**74 / 114 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/202-advised-always-weapon · 20261007-085517Z
+
+The Advised setup now always holds a weapon. When your own weapon slot is empty, Advised no longer assumes you hold an unnamed
+weapon with the profile's ATT (10 by default); it starts from an empty hand and buys the weapon that saves the most mesos up to
+your next upgrade, or, when none pays for itself, the one that loses the least, or else the cheapest shop weapon you can wear. A
+Thief at level 10 now gets the Garnier and a Warrior the Steel Pipe, where both used to get nothing. Below level 10 the shop has
+no priced weapon yet, so nothing changes there (#203). Resolves #202.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player who has not filled in a weapon now sees one in Advised and on its invoice, instead of an empty weapon slot that read as
+advice to fight bare-handed.
+
+**Score:** 3
+
+#### Pull Request
+
+the advised setup always holds a weapon, also when your own weapon slot is empty
+
+[PR #205](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/205)
+
+---
 
 ### DEPLOY: app/193-advised-proposes-mob · 20261006-211053Z
 
