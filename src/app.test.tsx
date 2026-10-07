@@ -3717,6 +3717,38 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(mesoOf(d)).toBe(shop)
   })
 
+  it('zet in Advised: Equip naast Shop (de winkelprijs) de kolom Level: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
+    toLevel20()
+    const invoice = Array.from(cheapestCard().querySelectorAll('tbody tr'))
+      .filter((tr) => /^× 1\s*\??$/.test(tr.querySelector('td.invoice-qty')!.textContent!.trim()) && tr.querySelector('.invoice-why')?.getAttribute('aria-label')?.includes(' meso voor '))
+      .map((tr) => ({ name: tr.querySelector('th')!.textContent, meso: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
+    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
+    const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
+    // De kop: Mesos heet Shop (Dave, 7 oktober 2026), met Level ernaast.
+    const head = d.querySelector('.advised-head')!
+    expect(head.querySelector('.advised-head-price')!.textContent).toBe('Shop')
+    expect(head.querySelector('.advised-head-level')!.textContent).toBe('Level')
+    expect(head.textContent).not.toContain('Mesos')
+    const rows = Array.from(d.querySelectorAll<HTMLElement>('.advised-row'))
+    const bought = rows.filter((r) => r.classList.contains('buy'))
+    expect(bought.length).toBeGreaterThan(0)
+    // Elk gekocht stuk: Level is zijn regel op de factuur, nooit meer dan Shop.
+    expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: mesoOf(r.querySelector('.advised-level')!.textContent) }))).toEqual(invoice)
+    for (const r of bought) expect(mesoOf(r.querySelector('.advised-level')!.textContent)).toBeLessThanOrEqual(mesoOf(r.querySelector('.advised-price')!.textContent))
+    expect(bought.some((r) => mesoOf(r.querySelector('.advised-level')!.textContent) < mesoOf(r.querySelector('.advised-price')!.textContent))).toBe(true)
+    // Wat je niet koopt staat niet op de factuur: Level blijft leeg.
+    for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-level')!.textContent).toBe('')
+    // Twee totalen: Shop telt de winkelprijzen van wat je koopt (een grijs stuk niet), Level wat de factuur voor de stukken rekent.
+    const [shopTotal, levelTotal] = Array.from(d.querySelectorAll('.advised-total strong')).map((s) => mesoOf(s.textContent))
+    expect(shopTotal).toBe(bought.reduce((s, r) => s + mesoOf(r.querySelector('.advised-price')!.textContent), 0))
+    expect(levelTotal).toBe(invoice.reduce((s, l) => s + l.meso, 0))
+    // Het vraagteken rekent het deel voor, met het bedrag uit de kolom.
+    const item = openItem(bought[0])
+    expect(item.textContent).toContain('Op deze factuur')
+    expect(item.textContent).toContain(`${bought[0].querySelector('.advised-level')!.textContent} meso`)
+    closeItem(item)
+  })
+
   it('legt achter een gekocht stuk uit hoe het afgeschreven bedrag ontstaat: prijs, horizon, EXP van dit level en van de horizon, deel, en het bedrag op de factuur (#192)', () => {
     toLevel20()
     const row = cheapestCard().querySelector('tbody tr')!

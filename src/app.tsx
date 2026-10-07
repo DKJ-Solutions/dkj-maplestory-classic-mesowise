@@ -1607,27 +1607,36 @@ function StatDialog(props: {
 /** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised: Equip" (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt; op de factuur
-    staat alleen het deel van dit level. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt. Shop is wat het
+    in de winkel kost; Level is het deel van dit level, want je draagt het tot je volgende upgrade. Dat deel staat op de factuur. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
 
 /**
  * De rijen van de Equip-popup achter "Advised" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow), en onderaan wat alles
  * samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
+ * Twee bedragen per regel (Dave, 7 oktober 2026): Shop, wat je in de winkel betaalt, en Level, het deel daarvan dat dit level betaalt omdat je het
+ * stuk tot je volgende upgrade draagt; dat is de regel van het stuk op de factuur van Advised (`lines`, writeOff.ts).
  */
-function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
+function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null; lines: readonly InvoiceLine[] }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
+  // De factuurregel van een stuk dat je koopt: op de naam zonder kleur, zoals de factuur van Advised hem schrijft (familyName). Een stuk dat je
+  // houdt of niet koopt staat er niet op.
+  const lineOf = (slot: EquipSlot) => {
+    const c = props.cheapest[slot]
+    return c.changed && c.cheapest !== null ? props.lines.find((l) => l.why?.kind === 'shop' && l.why.name === familyName(slot, c.cheapest!)) : undefined
+  }
+  const levelTotal = props.slots.reduce((sum, slot) => sum + (lineOf(slot)?.meso ?? 0), 0)
   // Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg.
   const filled = (s: EquipSlot) => props.cheapest[s]?.cheapest != null
   const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
-      <BillHead item="Equip" />
+      <BillHead item="Equip" level />
       {props.slots.map((slot) => (
-        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
+        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} line={lineOf(slot)} />
       ))}
-      <BillTotal total={total} />
+      <BillTotal total={total} level={levelTotal} />
     </>
   )
 }
@@ -1736,24 +1745,32 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
 /** Waarom munitie als bedrag op de factuur staat (#199): in Advised: Equip en Advised: Useable. */
 const OWN_AMMO_WHY = 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.'
 
-/** De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */
-function BillHead(props: { item: string; qty?: boolean }) {
+/**
+ * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
+ * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level.
+ */
+function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
   return (
-    <div class={props.qty ? 'advised-head with-qty' : 'advised-head'} aria-hidden="true">
+    <div class={['advised-head', props.qty && 'with-qty', props.level && 'with-level'].filter(Boolean).join(' ')} aria-hidden="true">
       <span>Slot</span>
       <span>{props.item}</span>
       {props.qty && <span class="advised-head-qty">Qty</span>}
-      <span class="advised-head-price">Mesos</span>
+      <span class="advised-head-price">{props.level ? 'Shop' : 'Mesos'}</span>
+      {props.level && <span class="advised-head-level">Level</span>}
     </div>
   )
 }
 
-/** Het totaal als laatste regel van een factuur in Advised (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */
-function BillTotal(props: { total: number; qty?: boolean }) {
+/**
+ * Het totaal als laatste regel van een factuur in Advised (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de
+ * hele breedte erboven. Met `level` (Equip) staat het totaal van de kolom Level ernaast.
+ */
+function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
   return (
-    <p class={props.qty ? 'equip-total advised-total with-qty' : 'equip-total advised-total'}>
+    <p class={['equip-total advised-total', props.qty && 'with-qty', props.level !== undefined && 'with-level'].filter(Boolean).join(' ')}>
       <span class="advised-total-label">Total cost</span>
       <strong>{nfInt.format(props.total)}</strong>
+      {props.level !== undefined && <strong class="advised-total-level">{nfInt.format(props.level)}</strong>}
     </p>
   )
 }
@@ -1763,11 +1780,17 @@ function BillTotal(props: { total: number; qty?: boolean }) {
  * vraagteken. Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren; helpTitle?: string }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren; helpTitle?: string }) {
   const title = props.name ?? props.slot
-  const price = <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
+  const price = (
+    <>
+      <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
+      {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
+      {props.level !== undefined && <span class="advised-level">{props.level === null ? '' : nfInt.format(props.level)}</span>}
+    </>
+  )
   return (
-    <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty'].filter(Boolean).join(' ')}>
+    <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty', props.level !== undefined && 'with-level'].filter(Boolean).join(' ')}>
       <span class="slot-name">{props.slot}</span>
       <span class="advised-item">
         <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
@@ -1797,8 +1820,11 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
   )
 }
 
-/** Eén slot in de Equip-factuur van Advised (BillRow): de winkelprijs als bedrag, en of je het stuk moet kopen en waarom achter het vraagteken. */
-function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
+/**
+ * Eén slot in de Equip-factuur van Advised (BillRow): de winkelprijs onder Shop, het deel van dit level onder Level (`line`, de regel van het stuk
+ * op de factuur), en of je het stuk moet kopen en waarom achter het vraagteken, met de afschrijving eronder.
+ */
+function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean; line?: InvoiceLine }) {
   const { slot } = props
   // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
   const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
@@ -1819,10 +1845,16 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       fullName={name ?? undefined}
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
       price={shopPrice}
+      level={props.line ? props.line.meso : null}
       help={
         <>
           <p class="item-verdict">{help.verdict}</p>
           <p class="item-why">{help.text}</p>
+          {props.line?.why?.kind === 'shop' && (
+            <div class="report-body">
+              <ShopSteps meso={props.line.meso} w={props.line.why} />
+            </div>
+          )}
         </>
       }
     />
@@ -1985,6 +2017,8 @@ function EquipmentCard(props: {
   cheapest: Record<EquipSlot, CheapestSlot> | null
   /** De stars of pijlen die de factuur van Advised telt, voor een leeg Ammo-slot achter Advised (#189). */
   advisedAmmo: string | null
+  /** De regels van de factuur van Advised: per gekocht stuk wat dit level ervan betaalt, de kolom Level (Dave, 7 oktober 2026); null zonder factuur. */
+  advisedLines: readonly InvoiceLine[] | null
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -2022,7 +2056,7 @@ function EquipmentCard(props: {
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} ammo={props.advisedAmmo} /> : slots.map((slot) => {
+          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} /> : slots.map((slot) => {
             const label = slotLabel(slot)
             const entry = props.equipment[slot]
             const stat = statName(slot, props.job)
@@ -3675,6 +3709,7 @@ export function App() {
         error={equipError}
         cheapest={cheapestEquip}
         advisedAmmo={advisedSet?.ammo ?? null}
+        advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
         level={characterLevel}
         gender={gender}
         report={

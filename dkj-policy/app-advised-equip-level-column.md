@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave, October 7, 2026: Advised: Equip gets a second amount column. The first (renamed from Mesos to Shop) is what you pay in the shop; the second (Level) is the share of that price this level pays, because you wear the piece until your next upgrade -- the existing write-off (writeOff.ts), which is the piece's line on the Advised invoice.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Equip card receives the Advised invoice lines; CheapestRows matches each bought piece to its shop line by familyName, as the invoice writes it
+- [x] BillHead/BillRow/BillTotal: a with-level variant -- Shop and Level columns, two totals; Useable keeps Mesos
+- [x] The ? popup of a bought piece shows the write-off steps (ShopSteps); the header help names Shop and Level
+- [x] CSS grid for the with-level rows, slot column narrowed so the name stays readable at 360px
 
 ### TEST
 
+- [x] New app test: headers Shop and Level, Level equals the invoice line per bought piece, empty for the rest, both totals, the ? popup
+- [x] Typecheck and full suite green (1893 tests)
+- [ ] Dave looks at the result (visible result)
+
 ### DEPLOY: app/advised-equip-level-column
 
-**Score:**
+Advised: Equip now shows two amounts per piece: Shop, what it costs in the shop, and Level, the part of that price this level pays because you wear it until your next upgrade. The Level total is what the Advised invoice counts for equipment.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees at a glance what a piece costs in the shop and what it costs this level, without opening the ? popup.
+
+**Score:** 3
 
 #### Pull Request
 

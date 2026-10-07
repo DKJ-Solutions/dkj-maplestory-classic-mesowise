@@ -678,6 +678,14 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .with-qty .advised-head-price, .with-qty .advised-price, .advised-total.with-qty strong { grid-column: 5; }
 .advised-total.with-qty .advised-total-label { grid-column: 1 / 5; }
 .advised-row.with-qty .help-toggle { grid-column: 4; justify-self: center; margin: -0.5rem -0.25rem; }
+/* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
+   zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
+.advised-head.with-level, .advised-row.with-level, .equip-total.advised-total.with-level { grid-template-columns: 4.25rem minmax(0, 1fr) 3.25rem 3rem 2.25rem; }
+.advised-head-level, .advised-level { grid-column: 4; text-align: right; }
+.advised-level { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.advised-row.buy .advised-level { color: var(--accent); }
+.advised-row.with-level .help-toggle { grid-column: 5; }
+.advised-total.with-level .advised-total-level { grid-column: 4; }
 .advised-row .slot-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
 .advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9375rem; line-height: 1.3; font-weight: 400; }
 /* Elke itemnaam in de tekstkleur, ook van een stuk dat niet loont (Dave, 7 oktober 2026); alleen het streepje van een leeg slot is grijs. */
