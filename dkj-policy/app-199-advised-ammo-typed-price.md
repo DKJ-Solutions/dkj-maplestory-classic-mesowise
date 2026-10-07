@@ -39,19 +39,35 @@
 
 ### PLAN
 
+#199: two hand-typed cases where the Advised Ammo slot and the Advised invoice disagreed: an own ammo amount on the spot, and
+a Thief star recharge price that matches no star. Review found a third: a best spot without a resolved plan (a custom spot),
+where the invoice counts no star line but the slot still named one. Visible result, so the branch parks for Dave's look.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] The Ammo slot is derived from the Advised invoice itself (`ammoOnInvoice` in `src/advisedSetup.ts`): star/arrow detail gives the named or generic ammo, an amount-only line gives "Eigen bedrag", no line gives nothing
+- [x] Generic Thief label "Throwing stars, 0,35 meso per stuk", formatted with the shared `nf3` (new `src/numberFormat.ts`)
+- [x] The Ammo hint gains one clause for "Eigen bedrag"; review follow-ups from Edith and Victor
 
 ### TEST
 
+- [x] Slot and invoice agree for a typed amount, an unmatched star price, a custom spot without a plan (with and without typed ammo), and a Bowman with a typed price
+- [x] `npm run lint` clean, `npx vitest run` 1856 passing
+
 ### DEPLOY: app/199-advised-ammo-typed-price
 
-**Score:**
+The Ammo slot in the Advised view of the Equip popup now always agrees with the Advised invoice. If you typed your own ammo
+amount on the spot it shows "Eigen bedrag" instead of a star or arrow name; a Thief whose star recharge price matches no
+known star sees "Throwing stars, 0,35 meso per stuk" instead of "—"; and a custom spot that the invoice counts no ammo for
+leaves the slot empty. Resolves #199.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
