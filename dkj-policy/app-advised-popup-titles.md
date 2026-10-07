@@ -51,7 +51,7 @@ Dave, October 7, 2026: the six popups behind the Advised block all had the title
 ### TEST
 
 - [x] Tests: the title of each Advised popup starts with "Advised: <card>"
-- [ ] Victor: code review
+- [x] Victor: code review, no findings (all seven Advised call sites carry the new title; a long title wraps beside the close button)
 - [ ] Dave looks at it on a phone before the merge
 
 ### DEPLOY: app/advised-popup-titles
