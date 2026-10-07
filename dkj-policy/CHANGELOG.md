@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**80 / 126 minor entries** <!-- pending-tally -->
+**80 / 127 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/222-remove-no-plan-fallback · 20261007-135848Z
+
+The level invoice no longer has a fallback for a spot without a computed plan, and saved spots no longer carry potion and ammo costs. Neither could be reached from the app any more, so no number changes. Spots saved by an older version still load; their old potion and ammo values are dropped. The failure it prevents: a stored cost that no screen shows quietly entering the ranking again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the unreachable no-plan invoice fallback and the draft potion and ammo fields
+
+[PR #225](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/225)
+
+---
 
 ### DEPLOY: app/216-remove-own-amounts · 20261007-134915Z
 
