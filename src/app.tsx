@@ -437,7 +437,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; tag?: string; advised?: boolean; basedOn?: string | null; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -446,8 +446,10 @@ function CardPopup(props: { title: string; tag?: string; advised?: boolean; base
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
+  // De klassen zeggen van welke kaart en welke weergave de popup is (Dave, 7 oktober 2026, #242), zodat je hem in de HTML kunt aanwijzen.
+  const className = `card-dialog card-dialog-${props.card} ${props.advised ? 'advised-dialog' : 'worn-dialog'}`
   return (
-    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
@@ -509,7 +511,7 @@ function useCardView(card: CardKey) {
  */
 function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
   const button = (view: CardView, label: string) => (
-    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+    <button type="button" class={`card-action view-${view}`} aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
       <EyeIcon />
       {label}
     </button>
@@ -686,7 +688,7 @@ function StatEditor(props: {
       {props.expected && <p class="stat-dialog-db">Verwacht volgens {props.expected.from}: <strong>{props.expected.value}</strong></p>}
       <span class="stat-dialog-label" id={props.labelId}>{props.heading ?? `${stat} in game`}</span>
       <div class={integer ? 'equip-step' : 'equip-step plain'}>
-        {integer && <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
+        {integer && <button type="button" class="step-down" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
         <input type="number" inputMode={integer ? 'numeric' : 'decimal'} pattern={integer ? '[0-9]*' : undefined} min={min} max={max} enterKeyHint="done" aria-labelledby={props.labelId}
           value={value}
           onFocus={(e) => e.currentTarget.select()}
@@ -698,7 +700,7 @@ function StatEditor(props: {
             }
           }}
         />
-        {integer && <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>}
+        {integer && <button type="button" class="step-up" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>}
       </div>
       <div class="stat-dialog-actions">
         {reset !== undefined && (
@@ -727,7 +729,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
     <div class="ap-edit-col">
       <span class="stat-dialog-label" id={props.id}>{props.label}</span>
       <div class="equip-step ap-edit-steps">
-        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+        <button type="button" class="step-down" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
         <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
           value={value}
           onFocus={(e) => e.currentTarget.select()}
@@ -739,7 +741,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
             }
           }}
         />
-        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+        <button type="button" class="step-up" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
       </div>
     </div>
   )
@@ -809,7 +811,7 @@ function StatsCard(props: StatsCardBody) {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
@@ -1094,12 +1096,12 @@ function PotionsCard(props: {
         // en geen Report-knop, want elke regel heeft zijn eigen vraagteken. Het label zegt "expected", niet "advised": wat je verbruikt is een
         // verwachting uit de berekening, geen advies om iets te kopen (Dave, 7 oktober 2026). Useable, zoals het Use-tabblad in het spel: een regel
         // per potion en, voor een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
-        <CardPopup title="Total cost: Useable" tag="expected" advised basedOn={props.advisedMob} opener={opener} onClose={close} help={USEABLE_HELP}>
+        <CardPopup card="potions" title="Total cost: Useable" tag="expected" advised basedOn={props.advisedMob} opener={opener} onClose={close} help={USEABLE_HELP}>
           <UseableRows job={job} potions={advisedPotions} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} />
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
+        <CardPopup card="potions" title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -2138,7 +2140,7 @@ function CostCardButtons(props: { part: 'worn' | 'advised' }) {
               <button
                 key={c.key}
                 type="button"
-                class="card-action"
+                class={`card-action cost-card cost-card-${c.key}`}
                 aria-haspopup="dialog"
                 aria-expanded={ctx.open[c.key] === props.part}
                 aria-label={name}
@@ -2211,7 +2213,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2410,7 +2412,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
@@ -2469,7 +2471,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
   const none = () => {}
   return (
     <>
-      <section class="char-table" aria-label="Ability points">
+      <section class="char-table char-table-ap" aria-label="Ability points">
         <h3 class="char-table-head">Ability points</h3>
         <AbilityHead />
         {shownStats(job)
@@ -2478,11 +2480,11 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
             <AbilityLine key={f.key} field={f} draft={draft} cap={null} readOnly onSave={none} />
           ))}
       </section>
-      <section class="char-table" aria-label="Skillpoints">
+      <section class="char-table char-table-skills" aria-label="Skillpoints">
         <h3 class="char-table-head">Skillpoints ({hasFirstJob(job, draft) ? '1e job' : 'Beginner'})</h3>
         <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
       </section>
-      <section class="char-table" aria-label="Total stats">
+      <section class="char-table char-table-total" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>
         <BaseStats job={job} draft={draft} />
       </section>
@@ -2682,7 +2684,7 @@ function HuntedMobCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && props.advised !== null && (
-        <CardPopup title="Advised: Monster" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup card="mob" title="Advised: Monster" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
           <div class="field">
             <span>De mob die je het meest killt</span>
@@ -2692,7 +2694,7 @@ function HuntedMobCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup title={title} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
+        <CardPopup card="mob" title={title} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
@@ -3091,7 +3093,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job, props.dagger))}.</p>
       {winner && (
-        <button type="button" class="btn" onClick={() => props.onApply(winner)}>
+        <button type="button" class="btn skill-apply" onClick={() => props.onApply(winner)}>
           Punt zetten
         </button>
       )}
@@ -3643,11 +3645,11 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
       {/* Gestopt na de laatste toegestane ronde, van de instellingen of van de equip (#192): geen vast getal. */}
       {r.capped && <p class="hint">Na het maximum aantal rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
       {props.applied ? (
-        <button type="button" class="btn" onClick={props.onUndo}>
+        <button type="button" class="btn cheapest-undo" onClick={props.onUndo}>
           Ongedaan maken
         </button>
       ) : (
-        <button type="button" class="btn primary" onClick={props.onApply}>
+        <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
           Overnemen
         </button>
       )}
