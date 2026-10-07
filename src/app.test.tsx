@@ -4264,6 +4264,29 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
+    it('zet op elke popup en zijn .stat-dialog-body het pad van titels als data-popup, zodat je in de HTML ziet welke popup het is en waar hij in staat (Dave, 7 oktober 2026, #245)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      expect(d.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
+      expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!)
+      const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      const path = popup.getAttribute('data-popup')!
+      expect(path).toBe(`Total cost: Equip (advised) › Info over ${mob}`)
+      expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe(path)
+      // Geen twee open popups met hetzelfde pad: elke .stat-dialog-body is aan te wijzen.
+      const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
+      expect(new Set(paths).size).toBe(paths.length)
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+      // Het vraagteken naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
+      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .help-toggle')!)
+      const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Uitleg')
+      fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+    })
+
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)

@@ -114,6 +114,13 @@ const QUESTION_ICON = (
 const DialogClose = createContext<((then?: () => void) => void) | null>(null)
 
 /**
+ * De titels van de popups waar deze component in staat, de buitenste eerst. Elke popup zet het hele pad op zijn
+ * <dialog> en zijn .stat-dialog-body als data-popup, "Total cost: Equip (advised) › Snail (lv 7)", zodat je in de
+ * HTML ziet welke popup je aanwijst en waar hij in staat (Dave, 7 oktober 2026, #245).
+ */
+const PopupPath = createContext<string[]>([])
+
+/**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog de kop
  * Character en het potlood (Dave, 4 en 5 oktober 2026). Het potlood herstelt een vergissing: het toont weer alle jobs
@@ -1533,9 +1540,13 @@ function StatDialog(props: {
    * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
    */
   drawer?: boolean
+  /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
+  pathName?: string
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const label = props.tag ? `${props.title} (${props.tag})` : props.title
+  const path = [...useContext(PopupPath), props.pathName ?? label]
   // De veeg van het paneel: waar de vinger begon, hoe ver hij naar rechts is, en of het een veeg opzij is (geen scroll).
   const drag = useRef<{ x: number; y: number; dx: number; sideways: boolean | null } | null>(null)
   // Wat er gebeurt als het paneel weg is; null zolang het niet wegschuift.
@@ -1654,7 +1665,8 @@ function StatDialog(props: {
     <dialog
       ref={ref}
       class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
-      aria-label={props.tag ? `${props.title} (${props.tag})` : props.title}
+      aria-label={label}
+      data-popup={path.join(' › ')}
       onCancel={(e) => {
         e.preventDefault()
         cancel()
@@ -1662,7 +1674,8 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && cancel()}
       {...swipe}
     >
-      <div class="stat-dialog-body">
+      <div class="stat-dialog-body" data-popup={path.join(' › ')}>
+      <PopupPath.Provider value={path}>
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
         {title}
       </div>
@@ -1689,6 +1702,7 @@ function StatDialog(props: {
         </svg>
       </button>
       <DialogClose.Provider value={cancel}>{props.children}</DialogClose.Provider>
+      </PopupPath.Provider>
       </div>
     </dialog>
   )
@@ -2048,7 +2062,8 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
         {props.icon}
       </button>
       {open && (
-        <StatDialog title={props.title} tag={props.tag} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        // In data-popup heet hij naar zijn knop, "Info over Snail" of "Uitleg": zijn titel is vaak die van de popup eronder (#245).
+        <StatDialog title={props.title} tag={props.tag} pathName={props.label} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}
