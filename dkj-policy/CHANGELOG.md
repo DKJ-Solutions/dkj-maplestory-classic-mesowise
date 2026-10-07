@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**85 / 133 minor entries** <!-- pending-tally -->
+**86 / 134 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/stat-breakdown-help · 20261007-153224Z
+
+Internal: the Accuracy and Evasion formulas now come from one function (`statBreakdown`) that both the expected value and the new breakdown read.
+
+**Score:** 1 -- prevents the explanation and the expected value from ever disagreeing.
+
+#### What makes this deploy extra special
+
+Behind Accuracy and Evasion in Total stats and in the character popup under Based on:, there is now a question mark that opens how the number is built: the formula with your own DEX, LUK and level, the passive of your job, and the total. If the game shows a different number, it says by how much.
+
+**Score:** 3
+
+#### Pull Request
+
+Explain how Accuracy and Evasion add up behind a question mark
+
+[PR #236](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/236)
+
+---
 
 ### DEPLOY: app/compact-total-stats-popup · 20261007-152946Z
 
