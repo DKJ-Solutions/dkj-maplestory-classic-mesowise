@@ -42,7 +42,7 @@
 ### CREATE
 
 - [x] The stats popup behind the Char label's info button carries `data-based-on-character` and `data-sheet="advised"` on its `.stat-dialog-body` (src/app.tsx)
-- [ ] Dave looked (visible in the inspector)
+- [x] Dave looked (visible in the inspector)
 
 ### TEST
 
