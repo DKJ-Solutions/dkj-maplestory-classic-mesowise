@@ -1024,9 +1024,10 @@ function PotionsCard(props: {
       </CardHead>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && advisedPotions && (
+        // Expected, niet Advised (Dave, 7 oktober 2026): wat je verbruikt is een verwachting uit de berekening, geen advies om iets te kopen.
         // Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026): dezelfde factuur als Advised: Equip, met een regel per potion en, voor
         // een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
-        <CardPopup title="Advised: Useable" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup title="Expected: Useable" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
           <UseableRows job={job} potions={advisedPotions} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} />
         </CardPopup>
       )}
@@ -1644,6 +1645,8 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
   // Staat er munitie op de factuur, dan staat ze ook hier, zodat de regels optellen tot het totaal: zonder naam is het een eigen bedrag.
   const ammoName = props.ammo ?? (ammoLine ? OWN_AMMO : null)
   const ammo = ammoName === null ? undefined : ammoInfo(ammoName)
+  // Het vraagteken legt het aantal uit, dus zijn popup heet naar dat aantal: "Waarom 52?" (Dave, 7 oktober 2026); zonder aantal de naam.
+  const whyTitle = (l: InvoiceLine | undefined) => (l?.qty == null ? undefined : `Waarom ${nfInt.format(l.qty)}?`)
   const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
   const potionRows = lumped
     ? [
@@ -1668,6 +1671,7 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
             tone={line && line.meso > 0 ? 'buy' : ''}
             slot={kind === 'hp' ? 'HP' : 'MP'}
             qty={line?.qty ?? null}
+            helpTitle={whyTitle(line)}
             name={potion.name}
             facts={knownFacts([
               ['Price', `${nfInt.format(potion.price)} meso`],
@@ -1695,6 +1699,7 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
       tone={ammoLine && ammoLine.meso > 0 ? 'buy' : ''}
       slot="Ammo"
       qty={ammoLine?.qty ?? null}
+      helpTitle={whyTitle(ammoLine)}
       name={ammoName}
       facts={knownFacts([
         [STAT_NAME.weapon, ammo && String(ammo.watk)],
@@ -1758,7 +1763,7 @@ function BillTotal(props: { total: number; qty?: boolean }) {
  * vraagteken. Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren; helpTitle?: string }) {
   const title = props.name ?? props.slot
   const price = <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
   return (
@@ -1784,7 +1789,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       {props.qty !== undefined && <span class="advised-qty">{props.qty === null ? '' : nfInt.format(props.qty)}</span>}
       {/* Met een Qty-kolom staat het vraagteken direct achter het aantal en het bedrag achteraan (Dave, 7 oktober 2026); zonder achter het bedrag. */}
       {props.qty === undefined && price}
-      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={title}>
+      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={props.helpTitle ?? title}>
         {props.help}
       </PopupButton>
       {props.qty !== undefined && price}
