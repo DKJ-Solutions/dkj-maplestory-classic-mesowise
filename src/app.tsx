@@ -61,6 +61,36 @@ function NotComputed(props: { job: Job }) {
 }
 
 /**
+ * Uitleg achter een vraagteken (Dave, 7 oktober 2026): lange tekst die uitlegt hoe een scherm of de berekening werkt, wil hij niet
+ * ongevraagd zien, zeker niet op een telefoon. Standaard dicht; het ronde knopje rechts opent en sluit hem. De tekst blijft in de
+ * pagina (hidden), zodat aria-controls klopt. Alleen voor uitleg: een uitkomst, een status of een foutmelding blijft gewoon staan.
+ */
+function Help(props: { children: ComponentChildren; class?: string }) {
+  const [open, setOpen] = useState(false)
+  const id = useId()
+  return (
+    <div class="help">
+      <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} />
+      <p class={props.class ? `hint ${props.class}` : 'hint'} id={id} hidden={!open}>
+        {props.children}
+      </p>
+    </div>
+  )
+}
+
+/** Het ronde vraagteken zelf: onder Help, en naast de kop van een popup (StatDialog `help`). */
+function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void }) {
+  return (
+    <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
+      </svg>
+    </button>
+  )
+}
+
+/**
  * Sluit de popup of het paneel waarin deze component staat, met dezelfde beweging als het kruisje; buiten een popup
  * null. Met een functie erbij draait die in plaats van het gewone sluiten, als het paneel weg is (Opslaan).
  */
@@ -170,7 +200,7 @@ function GenderChoices(props: { labelledBy?: string; label?: string; pressed: Ge
 }
 
 function GenderHint() {
-  return <p class="hint">Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</p>
+  return <Help>Sommige armor is alleen voor mannen of alleen voor vrouwen. Kies je geslacht, dan houdt het advies daar rekening mee.</Help>
 }
 
 /** Ontwikkelaarsinfo, rood gemarkeerd zodat de speler ziet dat het niet voor de speler bedoeld is (Dave, 4 oktober 2026). */
@@ -299,7 +329,7 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 Offlineversie downloaden
               </a>
-              <p class="hint">Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</p>
+              <Help>Eén bestand dat je in je browser opent, zonder internet. Wat je daarin opslaat staat los van de webversie.</Help>
             </div>
           )}
         </StatDialog>
@@ -389,14 +419,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; ariaLabel?: string; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; ariaLabel?: string; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} ariaLabel={props.ariaLabel} titleNote={props.titleNote} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} ariaLabel={props.ariaLabel} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -912,7 +942,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
       <StatLine key="attack" field={ATTACK_FIELD} value={attackText(d, job)} readOnly onSave={() => {}} />
       <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(d, job))} readOnly onSave={() => {}} />
       <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(d, job))} readOnly onSave={() => {}} />
-      {!advised && isComputed(job) && <p class="hint total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</p>}
+      {!advised && isComputed(job) && <Help class="total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</Help>}
     </>
   )
   const mdef = wornMdef(props.equipment, job)
@@ -1248,9 +1278,9 @@ function ClawNotes(props: { advice: Extract<ClawUpgradeAdvice, { kind: 'advice' 
   const first = a.choices[0]?.claw ?? a.notWearable[0]?.claw
   return (
     <>
-      <p class="hint">
+      <Help>
         Gerekend met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van {t.old} telt niet mee. {t.unpriced}
-      </p>
+      </Help>
       {first && (
         <p class="source">
           {t.prices}:{' '}
@@ -1391,6 +1421,8 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
+  /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
+  help?: ComponentChildren
   onCancel: () => void
   /**
    * Alleen als er iets gewijzigd is: dan wordt het kruisje een vinkje dat opslaat en sluit, naast Opslaan onderin, met
@@ -1490,6 +1522,8 @@ function StatDialog(props: {
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
   const title = <h2 class="stat-dialog-name">{name}</h2>
+  const [helpOpen, setHelpOpen] = useState(false)
+  const helpId = useId()
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1510,7 +1544,15 @@ function StatDialog(props: {
       {...swipe}
     >
       <div class="stat-dialog-body">
-      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
+      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
+        {title}
+        {props.help && <HelpToggle open={helpOpen} controls={helpId} onToggle={() => setHelpOpen(!helpOpen)} />}
+      </div>
+      {props.help && (
+        <p class="hint stat-dialog-help" id={helpId} hidden={!helpOpen}>
+          {props.help}
+        </p>
+      )}
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
@@ -1544,14 +1586,18 @@ function StatDialog(props: {
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
  * alles samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
  */
+/** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
+const CHEAPEST_HELP = (
+  <>
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
+    staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+  </>
+)
+
 function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
-      <p class="hint">
-        De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
-      </p>
       {props.slots.map((slot) => {
         const slotAdvice = props.cheapest[slot]
         // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen "Koop voor".
@@ -1686,7 +1732,7 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} onClose={close} report={props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2178,11 +2224,11 @@ function ArmorNotes(props: { advice: ArmorAdvice }) {
   const first = a.choices[0]?.armor ?? a.notWearable[0]?.armor
   return (
     <>
-      <p class="hint">
+      <Help>
         {a.choices.some((c) => c.replaces === undefined) &&
           `Waar de app niet weet hoeveel ${STAT_NAME.armor} je huidige stuk geeft (nog niet ingevuld, of een eigen item zonder ${STAT_NAME.armor}), is gerekend alsof het geen ${STAT_NAME.armor} geeft: dat is de grootste besparing die een nieuw stuk kan geven. Geeft je stuk wel ${STAT_NAME.armor}, dan is de winst kleiner. `}
         Verder met je stats van nu, vanaf lv {a.level}. De verkoopwaarde van je oude stuk telt niet mee.
-      </p>
+      </Help>
       {first && (
         <p class="source">
           Armor-prijzen:{' '}
@@ -2417,12 +2463,14 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
             </ul>
           )}
           {attack && (
-            <p class="hint">
-              {mpFrom === 0
-                ? `Elke ${attack.noun} kost je dan ${mpPerUse(winner.id, winner.to)} MP (nu 0).`
-                : `Elke ${attack.noun} kost je dan ${mpFrom} → ${mpPerUse(winner.id, winner.to)} MP.`}{' '}
-              De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.
-            </p>
+            <>
+              <p class="hint">
+                {mpFrom === 0
+                  ? `Elke ${attack.noun} kost je dan ${mpPerUse(winner.id, winner.to)} MP (nu 0).`
+                  : `Elke ${attack.noun} kost je dan ${mpFrom} → ${mpPerUse(winner.id, winner.to)} MP.`}
+              </p>
+              <Help>De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.</Help>
+            </>
           )}
           {(winner.id === 'nimbleBody' || winner.id === 'preciseStrikes') && <p class="hint">{winner.name} kost geen extra mana.</p>}
         </>
@@ -2625,10 +2673,10 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
     <>
       <WhyTable rows={rows} />
       {w.kind === 'hp' && (
-        <p class="hint">
+        <Help>
           Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
           spel iets anders, pas dan de mob aan op de Monster-kaart.
-        </p>
+        </Help>
       )}
     </>
   )
