@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**74 / 115 minor entries** <!-- pending-tally -->
+**75 / 116 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/203-beginner-weapon-advice · 20261007-093146Z
+
+Below level 10, Advised now gives a Thief, Warrior or Bowman with an empty weapon slot a weapon from the shop: the Sword, Hand
+Axe or Wooden Club (50 mesos) or, for a Thief or Bowman, the Razor (500) or Fruit Knife (1,500), counted on the Advised invoice
+up to level 9. A Magician still gets none, because no shop sells a wand or staff below level 10. The Attack card on Home is
+unchanged (#209). The prices carry their own source date. Resolves #203, resolves #210.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A brand-new character now sees a weapon in Advised from level 1, not only from level 10.
+
+**Score:** 2
+
+#### Pull Request
+
+Advised gives a weapon below level 10
+
+[PR #211](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/211)
+
+---
 
 ### DEPLOY: docs/206-changelog-capital · 20261007-090134Z
 
