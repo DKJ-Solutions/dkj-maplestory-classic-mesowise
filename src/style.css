@@ -20,6 +20,11 @@
   /* Skillpoints (#139): wat een punt kost in rood, wat hij geeft in groen. */
   --cost: #b91c1c;
   --gain: #15803d;
+  /* Elke Advised-popup is licht oranje (Dave, 7 oktober 2026): het advies van de app, niet wat je zelf invulde. */
+  --advised-bg: #fff7ed;
+  --advised-border: #fed7aa;
+  /* De vakken van Char en Mob in Total cost: Equip: een tint dieper dan de popup. */
+  --advised-box: #ffedd5;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -40,6 +45,9 @@
     --on-levelup: #052e16;
     --cost: #f87171;
     --gain: #4ade80;
+    --advised-bg: #2a2118;
+    --advised-border: #57391a;
+    --advised-box: #3a2a17;
   }
 }
 
@@ -346,6 +354,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
 .stat-dialog-body { position: relative; padding: 1rem; }
+/* Een Advised-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */
+.stat-dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
 .stat-dialog { text-align: left; }
@@ -357,6 +367,18 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
+/* "Based on:" bovenaan Total cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder Char en Mob naast elkaar op één regel, elk in een
+   eigen vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In de popup en niet onder de titel, zodat de
+   volle breedte er is: ook "Lv. 70 Magician" en "Orange Mushroom" passen op 360px naast elkaar; op een nog smaller scherm gaat het tweede vak
+   eronder. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het
+   vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
+.based-on { margin-bottom: 1rem; }
+.based-on-head { margin: 0 0 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.advised-for { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
+.advised-for-row { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
+.advised-for-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.advised-for-mob { display: flex; align-items: center; }
+.based-on .advised-for-mob .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }
@@ -392,6 +414,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel van een kaart- of rapport-popup is de grootste kop erin, op de maat van een h2 (Dave, 5 oktober 2026): daaronder
    de delen van het advies (--fs-h3), het oordeel (--fs-h4), de toelichting (0.875rem) en de bron (0.75rem). */
 .card-dialog .stat-dialog-name, .report-dialog .stat-dialog-name { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
+/* Een label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026). De titel houdt de maat van de andere kaart-popups
+   en past met zijn vraagteken op één regel vanaf 360px breed; op een nog smaller scherm breekt hij af in plaats van over het vraagteken te lopen.
+   Het label is een afgerond plaatje in de accentkleur, niet breder dan zijn tekst (Dave, 7 oktober 2026). */
+.title-tag { display: inline-block; margin-bottom: 0.25rem; padding: 0.125rem 0.5rem; font-size: 0.6875rem; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--on-accent); background: var(--accent); border-radius: 999px; }
 .ap-edit .stat-dialog-label { margin: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ap-edit input, .ap-edit-total { display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; margin: 0; padding: 0 0.25rem; box-sizing: border-box;
   font: inherit; font-size: 1.25rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--text);

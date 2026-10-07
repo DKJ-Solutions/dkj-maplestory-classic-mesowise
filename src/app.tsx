@@ -436,8 +436,9 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; advised?: boolean; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
-  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026).
+function CardPopup(props: { title: string; tag?: string; advised?: boolean; basedOn?: string | null; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
+  // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
   const close = () => {
     props.onClose()
@@ -445,9 +446,10 @@ function CardPopup(props: { title: string; advised?: boolean; opener: RefObject<
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} subtitle={props.advised ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
+        {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -992,6 +994,8 @@ function PotionsCard(props: {
   advisedAmmo: string | null
   /** De regels van de factuur van Advised: wat elke potion en de munitie dit level kosten; null zonder factuur. */
   advisedLines: readonly InvoiceLine[] | null
+  /** De mob waarop het advies rekent, onder "Based on:" (Dave, 7 oktober 2026); null zonder mob. */
+  advisedMob: string | null
   report: ComponentChildren
 }) {
   const { job, choice } = props
@@ -1024,10 +1028,11 @@ function PotionsCard(props: {
       </CardHead>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && advisedPotions && (
-        // Expected, niet Advised (Dave, 7 oktober 2026): wat je verbruikt is een verwachting uit de berekening, geen advies om iets te kopen.
-        // Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026): dezelfde factuur als Advised: Equip, met een regel per potion en, voor
-        // een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
-        <CardPopup title="Expected: Useable" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        // Zoals Total cost: Equip (Dave, 7 oktober 2026, Equip is leidend): het label erboven, een vraagteken naast de titel, "Based on:" bovenaan
+        // en geen Report-knop, want elke regel heeft zijn eigen vraagteken. Het label zegt "expected", niet "advised": wat je verbruikt is een
+        // verwachting uit de berekening, geen advies om iets te kopen (Dave, 7 oktober 2026). Useable, zoals het Use-tabblad in het spel: een regel
+        // per potion en, voor een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
+        <CardPopup title="Total cost: Useable" tag="expected" advised basedOn={props.advisedMob} opener={opener} onClose={close} help={USEABLE_HELP}>
           <UseableRows job={job} potions={advisedPotions} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} />
         </CardPopup>
       )}
@@ -1434,6 +1439,8 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
+  /** Een klein grijs label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026); de toegankelijke naam krijgt het tussen haakjes. */
+  tag?: string
   /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
   subtitle?: string
   /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
@@ -1548,10 +1555,11 @@ function StatDialog(props: {
   ) : (
     <h2 class="stat-dialog-name">{name}</h2>
   )
-  const title = props.subtitle ? (
+  const title = props.subtitle || props.tag ? (
     <div class="stat-dialog-titles">
+      {props.tag && <span class="title-tag">{props.tag}</span>}
       {heading}
-      <p class="stat-dialog-sub">{props.subtitle}</p>
+      {props.subtitle && <p class="stat-dialog-sub">{props.subtitle}</p>}
     </div>
   ) : (
     heading
@@ -1567,7 +1575,7 @@ function StatDialog(props: {
     <dialog
       ref={ref}
       class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
-      aria-label={props.title}
+      aria-label={props.tag ? `${props.title} (${props.tag})` : props.title}
       onCancel={(e) => {
         e.preventDefault()
         cancel()
@@ -1607,13 +1615,54 @@ function StatDialog(props: {
   )
 }
 
-/** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised: Equip" (Dave, 7 oktober 2026; zie StatDialog `help`). */
+/** De uitleg bij Total cost: Equip: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
     De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een bedrag in de accentkleur is een stuk dat je in de winkel koopt. Shop is wat het
     in de winkel kost; Level is het deel van dit level, want je draagt het tot je volgende upgrade. Dat deel staat op de factuur. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
+
+/** De uitleg bij Total cost: Useable: achter het vraagteken naast de titel, zoals CHEAPEST_HELP bij Equip (Dave, 7 oktober 2026). */
+const USEABLE_HELP = (
+  <>
+    Wat je dit level naar verwachting verbruikt aan potions en munitie, en waarmee de factuur van Advised rekent. Het aantal volgt uit de mob, je skills en de equip van Advised; het bedrag is wat dat kost. Het vraagteken achter een regel zegt per stuk hoe de app op dat aantal komt.
+  </>
+)
+
+/** Waarom het advies met deze mob rekent: achter het vraagteken naast de mob onder "Based on:" (Dave, 7 oktober 2026). */
+const mobWhy = (mob: string) =>
+  `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
+
+/**
+ * Bovenaan Total cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), naast
+ * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
+ * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
+ */
+function BasedOn(props: { who: string; mob: string }) {
+  return (
+    <section class="based-on" aria-label="Based on">
+      <h3 class="based-on-head">Based on:</h3>
+      <div class="advised-for">
+        {props.who && (
+          <div class="advised-for-row">
+            <span class="sr-only">Char: </span>
+            <span class="advised-for-value">{props.who}</span>
+          </div>
+        )}
+        <div class="advised-for-row">
+          <span class="sr-only">Mob: </span>
+          <span class="advised-for-value advised-for-mob">
+            {props.mob}
+            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+              <p class="item-why">{mobWhy(props.mob)}</p>
+            </PopupButton>
+          </span>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 /**
  * De rijen van de Equip-popup achter "Advised" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow), en onderaan wat alles
@@ -1645,7 +1694,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
 }
 
 /**
- * De factuur van Advised: Useable (Dave, 7 oktober 2026): dezelfde regels als Advised: Equip (BillRow), een per potion en een voor de munitie. Het
+ * De factuur van Total cost: Useable (Dave, 7 oktober 2026): dezelfde regels als Total cost: Equip (BillRow), een per potion en een voor de munitie. Het
  * bedrag is wat het dit level kost, uit de factuur van Advised; de info-knop toont wat het stuk is, het vraagteken hoe de app op dat aantal komt.
  */
 function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; ammo: string | null; lines: readonly InvoiceLine[] }) {
@@ -1789,7 +1838,7 @@ function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
 }
 
 /**
- * Een bedrag met een muntje erachter (Dave, 7 oktober 2026), in Advised: Equip. Een eigen tekening, geen meso-sprite uit het spel: Nexons beelden
+ * Een bedrag met een muntje erachter (Dave, 7 oktober 2026), in Total cost: Equip. Een eigen tekening, geen meso-sprite uit het spel: Nexons beelden
  * blijven buiten de repo (#14). Het muntje is versiering; de tekst blijft het getal.
  */
 function MesoAmount(props: { n: number }) {
@@ -1901,7 +1950,7 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
  * vraagteken, boven het oordeel en de uitleg (cheapestWhy).
  */
 function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
-  if (counted) return `Hier verandert niets: ${job === 'bowman' ? 'pijlen' : 'stars'} tellen per stuk, in Expected: Useable.`
+  if (counted) return `Hier verandert niets: ${job === 'bowman' ? 'pijlen' : 'stars'} tellen per stuk, in Total cost: Useable.`
   if (c.option) return 'Hier verandert niets: je koopt dit stuk niet, dus dit level kost het niets.'
   if (c.cheapest === null) return 'Hier verandert niets: dit slot blijft leeg, dus dit level kost het niets.'
   return 'Hier verandert niets: je houdt wat je draagt, dus dit level kost het niets.'
@@ -2065,6 +2114,8 @@ function EquipmentCard(props: {
   advisedAmmo: string | null
   /** De regels van de factuur van Advised: per gekocht stuk wat dit level ervan betaalt, de kolom Level (Dave, 7 oktober 2026); null zonder factuur. */
   advisedLines: readonly InvoiceLine[] | null
+  /** De mob waarop het advies rekent (Dave, 7 oktober 2026), onder "Based on:" in Total cost: Equip; null zonder mob. */
+  advisedMob: string | null
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -2084,7 +2135,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised: Equip' : 'Equip'} advised={view === 'advised'} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -3533,6 +3584,8 @@ export function App() {
   const advisedSet = useMemo(() => (computed ? advisedSetup(userInput) : null), [computed, userInput])
   const cheapestLive = advisedSet?.result ?? null
   const cheapestEquip = advisedSet?.cheapest ?? null
+  // De mob waarop het advies rekent, zoals Advised: Monster hem toont: onder "Based on:" in Total cost: Equip en Useable (Dave, 7 oktober 2026).
+  const advisedMob = huntedMob(cheapestLive?.drafts[0])?.name ?? null
   const advisedGear = advisedSet ?? { equipment, profile: profileDraft, shop: 0, purchases: [] }
   const bought = advisedGear.purchases.length > 0
   // Het profiel van het advies (#192): achter de knop Advised van Skillpoints, Ability points en Total stats.
@@ -3756,6 +3809,7 @@ export function App() {
         cheapest={cheapestEquip}
         advisedAmmo={advisedSet?.ammo ?? null}
         advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
+        advisedMob={advisedMob}
         level={characterLevel}
         gender={gender}
         report={
@@ -3796,7 +3850,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} advisedAmmo={advisedSet?.ammo ?? null} advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} advisedAmmo={advisedSet?.ammo ?? null} advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null} advisedMob={advisedMob} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
