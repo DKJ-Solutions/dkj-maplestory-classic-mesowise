@@ -5,6 +5,7 @@ import { App, noSavingText, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
 
+import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
@@ -3943,16 +3944,109 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const d = openView('Potions', 'Advised')
     // De popup heet Useable, zoals het Use-tabblad in het spel; de kaart zelf blijft Potions (Dave, 7 oktober 2026).
     expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Useable')
-    const texts = [...d.querySelectorAll('.potion-group .field-fixed')].map((p) => p.textContent!)
-    // HP en MP staan vooraan; de munitie van de Thief komt erna (die opmaak wordt herbouwd, dus geen vast aantal).
-    expect(texts.length).toBeGreaterThanOrEqual(2)
-    expect(texts[0]).toContain(r.potions.hp)
-    expect(texts[1]).toContain(r.potions.mp)
+    expect(nameOf(advisedRow(d, 'HP'))).toContain(r.potions.hp)
+    expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
     closeView('Potions')
     const own = openView('Potions', 'Your character')
     expect((within(own).getByLabelText('HP potions') as HTMLSelectElement).value).toBe('White Potion')
     expect(stored(POTION_CHOICE_KEY).hp).toBe('White Potion')
+  })
+
+  describe('Advised: Useable als factuur (Dave, 7 oktober 2026)', () => {
+    const setJob = (job: 'thief' | 'bowman' | 'warrior' | 'magician') => {
+      cleanup()
+      localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
+      atLevel('20')
+    }
+    const n = (t: string | null | undefined) => Number((t ?? '').replace(/[^0-9]/g, ''))
+    /** De regels van de factuur van Advised in Total cost: label, aantal en meso. */
+    const invoiceLines = () =>
+      [...document.querySelectorAll<HTMLElement>('section.total-cost .cheapest-cost tbody tr')].map((tr) => ({
+        label: tr.querySelector('th')!.textContent!,
+        qty: n(tr.querySelectorAll('td')[0]?.textContent),
+        meso: n(tr.querySelector('.invoice-meso')?.textContent),
+      }))
+    const wearWeapon = (name: string) => {
+      openHomeEquipment()
+      pick(cards()[0], 'Weapon', name)
+      fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    }
+    const rowsOf = (d: HTMLElement) => [...d.querySelectorAll<HTMLElement>('.advised-row')].map((r) => r.querySelector('.slot-name')!.textContent)
+
+    it('toont rijen HP, MP en Ammo met aantal en meso van de factuur van Advised, en een totaal dat de som is', () => {
+      setJob('thief')
+      wearWeapon(IGOR.name)
+      const d = openView('Potions', 'Advised')
+      expect(d.querySelector('.advised-head')!.textContent).toContain('Useable')
+      expect(rowsOf(d)).toEqual(['HP', 'MP', 'Ammo'])
+      const lines = invoiceLines()
+      let sum = 0
+      for (const slot of ['HP', 'MP', 'Ammo']) {
+        const row = advisedRow(d, slot)
+        const line = lines.find((l) => (slot === 'Ammo' ? /Throwing stars/.test(l.label) : nameOf(row).startsWith(l.label)))!
+        expect(line, slot).toBeDefined()
+        expect(n(row.querySelector('.advised-price')!.textContent), slot + ' meso').toBe(line.meso)
+        expect(n(row.querySelector('.advised-qty')!.textContent), slot + ' aantal').toBe(line.qty)
+        expect(row.classList.contains('buy'), slot).toBe(line.meso > 0)
+        sum += line.meso
+      }
+      expect(n(d.querySelector('.advised-total')!.textContent!.replace('Total cost', ''))).toBe(sum)
+      expect(d.querySelector('.advised-total .advised-total-label')!.textContent).toBe('Total cost')
+      expect(nameOf(advisedRow(d, 'Ammo'))).toContain('Subi Throwing Stars')
+    })
+
+    it('opent met het vraagteken van een potion de stappen van de rekensom', () => {
+      setJob('thief')
+      const d = openView('Potions', 'Advised')
+      const item = openItem(advisedRow(d, 'HP'))
+      expect(item.querySelector('.item-verdict')!.textContent).toMatch(/^× [0-9.]+ dit level$/)
+      expect(item.querySelector('.report-body')!.textContent!.length).toBeGreaterThan(0)
+      closeItem(item)
+      // De info-knop noemt de prijs en wat de potion geneest.
+      const info = factsOf(openItem(advisedRow(d, 'HP'), '.info-toggle'))
+      expect(Object.keys(info)).toEqual(expect.arrayContaining(['Price', 'Recovery']))
+    })
+
+    it('toont bij een Bowman de pijl met zijn eigen ATT en prijs per pijl in de info van de Ammo-rij', () => {
+      setJob('bowman')
+      wearWeapon('Balanche')
+      const d = openView('Potions', 'Advised')
+      const row = advisedRow(d, 'Ammo')
+      const arrow = nameOf(row)
+      expect(arrow).toContain('Arrows')
+      const data = [...NPC_ARROWS, ...HELPFUL_STRANGER_ARROWS].find((a) => a.name === arrow)!
+      expect(data, 'pijl uit de data').toBeDefined()
+      const facts = factsOf(openItem(row, '.info-toggle'))
+      expect(facts.ATT).toBe(String(data.watk))
+      expect(facts['Prijs per pijl']).toContain(String(data.pricePerArrow).replace('.', ','))
+      expect(facts['Herladen per star']).toBeUndefined()
+    })
+
+    it('toont bij een Warrior en een Magician geen Ammo-rij, alleen HP en MP', () => {
+      for (const job of ['warrior', 'magician'] as const) {
+        setJob(job)
+        const d = openView('Potions', 'Advised')
+        expect(rowsOf(d), job).toEqual(['HP', 'MP'])
+        closeView('Potions')
+      }
+    })
+
+    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", en onder Your character geen', () => {
+      for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+        setJob(job)
+        const who = totalCostWho('20', job)
+        expect(who.startsWith('Lv. 20 ')).toBe(true)
+        for (const title of CARDS) {
+          const adv = openView(title, 'Advised')
+          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(who)
+          closeView(title)
+          const own = openView(title, 'Your character')
+          expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
+          closeView(title)
+        }
+      }
+    })
   })
 
   it('toont achter Advised bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo, OWN_AMMO } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, ammoInfo, countedAmmo, OWN_AMMO } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, OTHER, type Equipment } from './equipment'
@@ -281,5 +281,18 @@ describe('cheapestEquipment: het vereiste wapen (#202)', () => {
 
   it('verandert niets zonder wapen (null is de standaard)', () => {
     expect(cheapestEquipment(SLOTS, defaultEquipment(), NONE, NONE).claw.cheapest).toBeNull()
+  })
+})
+
+describe('ammoInfo (Advised: Useable)', () => {
+  it('geeft bij een star zijn ATT, level en herlaadprijs', () => {
+    expect(ammoInfo('Subi Throwing Stars')).toEqual({ watk: 15, price: 0.3, level: 10 })
+  })
+  it('geeft bij een pijl zijn eigen ATT en prijs per pijl, zonder level', () => {
+    expect(ammoInfo('Arrows for Bows')).toEqual({ watk: 0, price: 1 })
+  })
+  it('geeft niets bij een eigen bedrag of een onbekende naam', () => {
+    expect(ammoInfo(OWN_AMMO)).toBeUndefined()
+    expect(ammoInfo('Throwing stars, 0,35 meso per stuk')).toBeUndefined()
   })
 })
