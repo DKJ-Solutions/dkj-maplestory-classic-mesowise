@@ -1,5 +1,5 @@
 // Het voorstel bij een bekende plek: het mob-model met de spelgegevens en het karakterprofiel.
-// Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint.
+// Een leeg veld bij een bekende plek betekent "neem het voorstel"; wat de speler zelf invult, wint (behalve potions en munitie: die rekent altijd het voorstel, #216).
 import { expPerHour, potionCostPerHour } from './calc/expPerHour'
 import { ASSUMPTIONS, beginnerAttack, bowAttack, characterAttack, daggerAttack, effectiveRestore, estimateMob, meleeAttack, spellAttack, type Assumptions, type Attack, type Character, type MobEstimate, type SkillStats } from './calc/mobModel'
 import type { Spot } from './calc/rankSpots'
@@ -279,7 +279,7 @@ export function resolvePlan(
 
 /**
  * Een plek als getallen. Bij een bekende plek met een geldig profiel vullen de lege velden zich
- * met het voorstel; bij een eigen plek (of zonder profiel) is dit gewoon toSpot.
+ * met het voorstel, en potions en munitie komen altijd uit het voorstel (#216); bij een eigen plek (of zonder profiel) is dit gewoon toSpot.
  */
 export function resolveSpot(
   d: SpotDraft,
@@ -296,8 +296,8 @@ export function resolveSpot(
     ...spot,
     expPerHour: orSuggestion(d.expPerHour, plan?.expPerHour ?? NaN),
     cost: {
-      potions: orSuggestion(d.potions, plan?.potions ?? NaN),
-      ammo: orSuggestion(d.ammo, plan?.ammo ?? NaN),
+      potions: plan?.potions ?? NaN,
+      ammo: plan?.ammo ?? NaN,
       travel: spot.cost.travel,
     },
   }

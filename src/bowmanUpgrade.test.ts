@@ -26,7 +26,7 @@ const parseB = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
 /** Een Bowman met stats ruim genoeg voor elk item, zodat alleen level en wapen of armor bepalen wat een kandidaat is. */
 const strong = (over: Partial<Profile> = {}): Profile => ({ ...parseB({}), ...over })
 
-const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
 const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 
 /** EXP per meso op de beste plek, via bestExpPerMeso (niet via de module onder test). */

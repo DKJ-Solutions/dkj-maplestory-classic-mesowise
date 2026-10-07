@@ -96,12 +96,6 @@ describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als eq
     expect(pick === null || [SUBI, WOLBI].includes(pick.star)).toBe(true)
   })
 
-  it('laat een eigen bedrag voor de munitie met rust: de factuur telt dat bedrag, niet de star', () => {
-    const user = mokbi(10)
-    const own = { ...user, drafts: [{ ...user.drafts[0], ammo: '300' }] }
-    expect(starUpgradeAdvice(own.drafts, profileOf(own))).toBeNull()
-  })
-
   it('laat een onbekende herlaadprijs met rust: die star is van jou en de app kent hem niet', () => {
     const user = thief('Stump', 10, 10, { starRecharge: '0.35' })
     expect(starUpgradeAdvice(user.drafts, profileOf(user))).toBeNull()

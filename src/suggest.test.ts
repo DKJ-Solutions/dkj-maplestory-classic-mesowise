@@ -105,7 +105,7 @@ describe('resolveSpot', () => {
   const chosen = { ...mobDraft('Bubbling')!, id: 'a', travel: '100' }
 
   it('is gewoon toSpot bij een eigen plek of zonder profiel', () => {
-    const own = { ...newDraft('b'), expPerHour: '5000', potions: '10' }
+    const own = { ...newDraft('b'), expPerHour: '5000', travel: '10' }
     expect(resolveSpot(own, undefined, profile)).toEqual(toSpot(own))
     expect(resolveSpot(chosen, bubbling, null)).toEqual(toSpot(chosen))
   })
@@ -124,16 +124,14 @@ describe('resolveSpot', () => {
   })
 
   it('laat een ingevuld veld winnen boven het voorstel', () => {
-    const spot = resolveSpot({ ...chosen, expPerHour: '1234', ammo: '0' }, bubbling, profile)
+    const spot = resolveSpot({ ...chosen, expPerHour: '1234' }, bubbling, profile)
     expect(spot.expPerHour).toBe(1234)
-    expect(spot.cost.ammo).toBe(0)
   })
 
-  it('maakt de plek ongeldig bij onzinnige kills per uur, maar een ingevuld veld blijft winnen', () => {
+  it('maakt de plek ongeldig bij onzinnige kills per uur, maar een ingevulde EXP per uur blijft winnen', () => {
     expect(resolveSpot({ ...chosen, kills: '-5' }, bubbling, profile).expPerHour).toBeNaN()
     expect(resolveSpot({ ...chosen, kills: 'abc' }, bubbling, profile).cost.potions).toBeNaN()
-    const typed = resolveSpot({ ...chosen, kills: '-5', expPerHour: '900', potions: '10', ammo: '0' }, bubbling, profile)
-    expect(typed).toMatchObject({ expPerHour: 900, cost: { potions: 10, ammo: 0, travel: 100 } })
+    expect(resolveSpot({ ...chosen, kills: '-5', expPerHour: '900' }, bubbling, profile).expPerHour).toBe(900)
   })
 
   it('noemt de EXP alleen een schatting als de app hem zelf invult', () => {
@@ -142,14 +140,18 @@ describe('resolveSpot', () => {
     expect(isEstimated(chosen, bubbling, null)).toBe(false)
     expect(isEstimated(chosen, undefined, profile)).toBe(false)
   })
+})
 
-  it('van begin tot eind: bekende plekken met invoer komen in de juiste volgorde', () => {
-    // Zelfde kosten, andere kills: de plek met meer EXP per uur wint.
-    const a = { ...mobDraft('Bubbling')!, id: 'veel', kills: '400', potions: '1000', ammo: '0' }
-    const b = { ...mobDraft('Bubbling')!, id: 'weinig', kills: '100', potions: '1000', ammo: '0' }
-    const ranked = rankSpots([b, a].map((d) => resolveSpot(d, bubbling, profile)))
-    expect(ranked.map((r) => r.spot.id)).toEqual(['veel', 'weinig'])
-    expect('expPerMeso' in ranked[0] && ranked[0].expPerMeso).toBeCloseTo((28 * 400) / 1000, 9)
+describe('resolveSpot en rankSpots samen', () => {
+  it('van begin tot eind: bekende plekken zonder invoer komen op de berekende kosten in de juiste volgorde', () => {
+    // Zelfde mob en kills, dus dezelfde EXP en potions; alleen de reiskosten verschillen, en de goedkoopste wint.
+    const near = { ...mobDraft('Bubbling')!, id: 'dichtbij', travel: '0' }
+    const far = { ...mobDraft('Bubbling')!, id: 'ver', travel: '5000' }
+    const ranked = rankSpots([far, near].map((d) => resolveSpot(d, bubbling, profile)))
+    expect(ranked.map((r) => r.spot.id)).toEqual(['dichtbij', 'ver'])
+    const best = ranked[0]
+    const c = best.spot.cost
+    expect('expPerMeso' in best && best.expPerMeso).toBeCloseTo(best.spot.expPerHour / (c.potions + c.ammo + c.travel), 9)
   })
 })
 
@@ -333,9 +335,6 @@ describe('resolveSpot voor een Warrior', () => {
     expect(resolveSpot(chosen, bubbling, profile).cost.ammo).toBeGreaterThan(0)
   })
 
-  it('laat een ingevulde munitie winnen, ook bij een Warrior', () => {
-    expect(resolveSpot({ ...chosen, ammo: '55' }, bubbling, warrior).cost.ammo).toBe(55)
-  })
 })
 
 describe('statWindowRange: de Attack uit het statvenster (#108)', () => {

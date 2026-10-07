@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, type SpotDraft } from '../spotDraft'
-import { exampleSpot, isDraftRow, loadSpots, saveSpots, STORAGE_KEY } from './spots'
+import { isDraftRow, loadSpots, saveSpots, STORAGE_KEY } from './spots'
 
 /** Een kleine in-memory Storage; geen jsdom nodig. */
 function fakeStorage(initial: Record<string, string> = {}): Storage & { data: Map<string, string> } {
@@ -22,8 +22,6 @@ const spot = (id: string, over: Partial<SpotDraft> = {}): SpotDraft => ({
   id,
   name: `plek ${id}`,
   expPerHour: '60000',
-  potions: '10000',
-  ammo: '4000',
   travel: '1000',
   ...over,
 })
@@ -88,9 +86,9 @@ describe('saveSpots en loadSpots', () => {
   })
 
   it('houdt een rij met een ongeldig getal (negatief, leeg, tekst) voor de foutmarkering', () => {
-    const storage = stored([spot('a'), spot('neg', { expPerHour: '-1' }), spot('leeg', { potions: '' }), spot('t', { ammo: 'abc' })])
+    const storage = stored([spot('a'), spot('neg', { expPerHour: '-1' }), spot('leeg', { travel: '' }), spot('t', { travel: 'abc' })])
     expect(loadSpots(storage)?.map((s) => s.id)).toEqual(['a', 'neg', 'leeg', 't'])
-    expect(loadSpots(storage)?.[2].potions).toBe('')
+    expect(loadSpots(storage)?.[2].travel).toBe('')
   })
 
   it('laat rijen weg zonder id of met verkeerd getypte velden', () => {
@@ -213,14 +211,14 @@ describe('grenzen bij bewaren', () => {
 describe('isDraftRow', () => {
   it('accepteert een volledige rij, ook met ongeldige getalteksten', () => {
     expect(isDraftRow(spot('a'))).toBe(true)
-    expect(isDraftRow(spot('a', { expPerHour: '', potions: 'abc', ammo: '-1' }))).toBe(true)
+    expect(isDraftRow(spot('a', { expPerHour: '', travel: 'abc' }))).toBe(true)
   })
 
   it('weigert niet-objecten, lijsten, lege id, ontbrekende of verkeerd getypte velden', () => {
     for (const v of [null, undefined, 5, 'x', [], { ...spot('a'), id: '' }, { ...spot('a'), id: 3 }, { ...spot('a'), name: undefined }]) {
       expect(isDraftRow(v)).toBe(false)
     }
-    for (const f of ['name', 'expPerHour', 'potions', 'ammo', 'travel'] as const) {
+    for (const f of ['name', 'expPerHour', 'travel'] as const) {
       const { [f]: _weg, ...rest } = spot('a')
       expect(isDraftRow(rest)).toBe(false)
       expect(isDraftRow({ ...spot('a'), [f]: 1 })).toBe(false)
@@ -228,9 +226,20 @@ describe('isDraftRow', () => {
   })
 })
 
-describe('exampleSpot', () => {
-  it('geeft de voorbeeldplek met de meegegeven id', () => {
-    expect(exampleSpot('x').id).toBe('x')
-    expect(exampleSpot('x').expPerHour).toBeGreaterThan(0)
+describe('oude rijen met potions en ammo (#222)', () => {
+  const old = { ...spot('a'), known: 'mob:Snail', potions: '10000', ammo: '4000' }
+
+  it('accepteert een rij die nog potions en ammo draagt, en laat die velden weg bij het laden', () => {
+    expect(isDraftRow(old)).toBe(true)
+    const [row] = loadSpots(stored([old]))!
+    expect(row).toEqual({ id: 'a', name: 'plek a', expPerHour: '60000', travel: '1000', known: 'mob:Snail' })
+    expect(row).not.toHaveProperty('potions')
+    expect(row).not.toHaveProperty('ammo')
+  })
+
+  it('schrijft potions en ammo niet meer weg', () => {
+    const storage = fakeStorage({})
+    expect(saveSpots(storage, [old as SpotDraft])).toBe(true)
+    expect(storage.getItem(STORAGE_KEY)).not.toMatch(/potions|ammo/)
   })
 })

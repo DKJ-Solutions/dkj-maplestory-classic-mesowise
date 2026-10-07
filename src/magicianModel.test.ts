@@ -79,7 +79,7 @@ const parseM = (over: Partial<ProfileDraft> = {}): Profile => {
 const magician = parseM()
 
 const mixedMobs = mobGroup('Snail', 'Blue Snail', 'Red Snail', 'Stump', 'Dark Stump', 'Green Mushroom', 'Axe Stump', 'Dark Axe Stump')
-const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
 const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 const epm = (p: Profile) => {
   const v = bestExpPerMeso(drafts, p, ASSUMPTIONS)
@@ -378,7 +378,7 @@ describe('Magician: de spreuken en het voorstel', () => {
     expect(s.rechargePerStar).toBe(0.3)
   })
 
-  it('vult bij resolveSpot de munitie met 0 en de potions met het voorstel, en laat de reiskosten en een ingevulde munitie staan', () => {
+  it('vult bij resolveSpot de munitie met 0 en de potions met het voorstel, en laat de reiskosten staan', () => {
     const chosen = { ...mobDraft('Ribbon Pig')!, id: 'a', travel: '100' }
     const known = findKnownSpot('mob:Ribbon Pig')!
     const s = pickMonster(suggestMonsters(magician, known), undefined)!
@@ -386,7 +386,6 @@ describe('Magician: de spreuken en het voorstel', () => {
     const spot = resolveSpot(chosen, known, magician)
     expect(spot.cost).toEqual({ potions: plan.potions, ammo: 0, travel: 100 })
     expect(spot.cost.potions).toBeGreaterThan(0)
-    expect(resolveSpot({ ...chosen, ammo: '55' }, known, magician).cost.ammo).toBe(55)
   })
 
   it('laat bij een Magician zonder spreuk een bekende plek zoals de speler hem invulde (geen voorstel)', () => {

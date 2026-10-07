@@ -2,7 +2,47 @@
 
 ## [Unreleased]
 
-**80 / 125 minor entries** <!-- pending-tally -->
+**80 / 127 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/222-remove-no-plan-fallback · 20261007-135848Z
+
+The level invoice no longer has a fallback for a spot without a computed plan, and saved spots no longer carry potion and ammo costs. Neither could be reached from the app any more, so no number changes. Spots saved by an older version still load; their old potion and ammo values are dropped. The failure it prevents: a stored cost that no screen shows quietly entering the ranking again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the unreachable no-plan invoice fallback and the draft potion and ammo fields
+
+[PR #225](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/225)
+
+---
+
+### DEPLOY: app/216-remove-own-amounts · 20261007-134915Z
+
+The own potion and ammo amounts are gone from the calculation: the level invoice, the star-upgrade advice and the spot ranking always count potions and ammo from the app's own estimate, and the "Eigen bedrag" ammo verdict is removed. No screen could set an own amount any more, so no number in the app changes. The failure it prevents: old stored spots carrying an amount reviving a path no test covered and no popup explained.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the unreachable own potion and ammo amounts
+
+[PR #223](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/223)
+
+---
 
 ### DEPLOY: app/advised-equip-mob-subtitle · 20261007-134229Z
 

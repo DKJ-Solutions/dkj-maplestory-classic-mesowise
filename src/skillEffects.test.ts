@@ -286,7 +286,7 @@ describe('maxHpAfterPoint', () => {
 })
 
 describe('het skillpunt-advies telt de nieuwe skills mee', () => {
-  const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+  const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
   const known = (id: string, mob: string): SpotDraft => ({ ...mobDraft(mob)!, id })
   // De kosten van de horizon van een skillpunt (#145): je level plus de 4 erna, elk level op dat level doorgerekend.
   const costOf = (drafts: readonly SpotDraft[], p: Profile) => {

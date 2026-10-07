@@ -11,7 +11,7 @@ import type { ArmorSlot, Potion, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { compactMeso, nf3 } from './numberFormat'
-import { ammoInfo, buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
+import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -52,7 +52,7 @@ const storage = browserStorage()
  */
 function initialDrafts(): SpotDraft[] {
   const saved = loadSpots(storage)?.find((d) => huntedMob(d) !== undefined)
-  return saved ? [{ ...saved, kills: '', expPerHour: '', potions: '', ammo: '' }] : []
+  return saved ? [{ ...saved, kills: '', expPerHour: '' }] : []
 }
 
 /** De zin die bij een advies staat in plaats van een getal, voor een job die de app nog niet doorrekent. */
@@ -1699,61 +1699,45 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
  */
 function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; ammo: string | null; lines: readonly InvoiceLine[] }) {
   const lineOf = (kind: 'hp' | 'mp' | 'ammo') => props.lines.find((l) => l.why?.kind === kind)
-  // Zonder aantal per potion (een eigen bedrag op de plek, of een plek zonder berekend plan) telt de factuur één regel "Potions" (levelInvoice).
-  const lumped = props.lines.find((l) => !l.shop && !l.why && l.label === 'Potions')
-  // Een eigen bedrag voor munitie staat op de factuur zonder uitleg, onder het label van de munitie (#199).
-  const ammoLine = lineOf('ammo') ?? props.lines.find((l) => !l.shop && !l.why && l.label === ammoLabel(props.job))
-  // Staat er munitie op de factuur, dan staat ze ook hier, zodat de regels optellen tot het totaal: zonder naam is het een eigen bedrag.
-  const ammoName = props.ammo ?? (ammoLine ? OWN_AMMO : null)
+  const ammoLine = lineOf('ammo')
+  // Staat er munitie op de factuur, dan staat ze ook hier, zodat de regels optellen tot het totaal.
+  const ammoName = props.ammo
   const ammo = ammoName === null ? undefined : ammoInfo(ammoName)
   // Het vraagteken legt het aantal uit, dus zijn popup heet naar dat aantal: "Waarom 52?" (Dave, 7 oktober 2026); zonder aantal de naam.
   const whyTitle = (l: InvoiceLine | undefined) => (l?.qty == null ? undefined : `Waarom ${nfInt.format(l.qty)}?`)
   const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
-  const potionRows = lumped
-    ? [
-        <BillRow
-          key="potions"
-          tone={lumped.meso > 0 ? 'buy' : ''}
-          slot="Potions"
-          qty={null}
-          name="Bedrag"
-          facts={[]}
-          price={lumped.meso}
-          help={<p class="item-why">Op deze plek rekent de factuur met een bedrag voor potions, niet met een aantal per potion: je vulde het zelf in, of de app kent de plek niet.</p>}
-        />,
-      ]
-    : POTION_KINDS.map((kind) => {
-        const potion = props.potions[kind]
-        const line = lineOf(kind)
-        const why = line?.why?.kind === kind ? line.why : undefined
-        return (
-          <BillRow
-            key={kind}
-            tone={line && line.meso > 0 ? 'buy' : ''}
-            slot={kind === 'hp' ? 'HP' : 'MP'}
-            qty={line?.qty ?? null}
-            helpTitle={whyTitle(line)}
-            name={potion.name}
-            facts={knownFacts([
-              ['Price', `${nfInt.format(potion.price)} meso`],
-              ['Recovery', `${nfInt.format(potionStat(potion, kind, 'restores'))} ${kind === 'hp' ? 'HP' : 'MP'}`],
-            ])}
-            price={line ? line.meso : null}
-            help={
-              line && why ? (
-                <>
-                  <p class="item-verdict">{verdict(line)}</p>
-                  <div class="report-body">
-                    <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
-                  </div>
-                </>
-              ) : (
-                <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
-              )
-            }
-          />
-        )
-      })
+  const potionRows = POTION_KINDS.map((kind) => {
+    const potion = props.potions[kind]
+    const line = lineOf(kind)
+    const why = line?.why?.kind === kind ? line.why : undefined
+    return (
+      <BillRow
+        key={kind}
+        tone={line && line.meso > 0 ? 'buy' : ''}
+        slot={kind === 'hp' ? 'HP' : 'MP'}
+        qty={line?.qty ?? null}
+        helpTitle={whyTitle(line)}
+        name={potion.name}
+        facts={knownFacts([
+          ['Price', `${nfInt.format(potion.price)} meso`],
+          ['Recovery', `${nfInt.format(potionStat(potion, kind, 'restores'))} ${kind === 'hp' ? 'HP' : 'MP'}`],
+        ])}
+        price={line ? line.meso : null}
+        help={
+          line && why ? (
+            <>
+              <p class="item-verdict">{verdict(line)}</p>
+              <div class="report-body">
+                <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
+              </div>
+            </>
+          ) : (
+            <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
+          )
+        }
+      />
+    )
+  })
   const ammoRow = ammoName !== null && (
     <BillRow
       key="ammo"
@@ -1777,13 +1761,13 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
             </div>
           </>
         ) : (
-          <p class="item-why">{ammoName === OWN_AMMO ? OWN_AMMO_WHY : 'De factuur van dit level telt deze munitie niet apart.'}</p>
+          <p class="item-why">De factuur van dit level telt deze munitie niet apart.</p>
         )
       }
     />
   )
   // Precies de regels die hier staan, dus het totaal is wat de factuur van Advised voor potions en munitie rekent.
-  const total = [...(lumped ? [lumped] : POTION_KINDS.map(lineOf)), ammoName === null ? undefined : ammoLine].reduce((sum, l) => sum + (l?.meso ?? 0), 0)
+  const total = [...POTION_KINDS.map(lineOf), ammoName === null ? undefined : ammoLine].reduce((sum, l) => sum + (l?.meso ?? 0), 0)
   return (
     <>
       <BillHead item="Useable" qty />
@@ -1793,9 +1777,6 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
     </>
   )
 }
-
-/** Waarom munitie als bedrag op de factuur staat (#199): in Total cost: Equip en Total cost: Useable. */
-const OWN_AMMO_WHY = 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.'
 
 /**
  * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
@@ -1983,7 +1964,7 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
 
 /**
  * Wat een stuk in Advised is, voor de popup van zijn info-knop (Dave, 7 oktober 2026): de soort, het level, ATT of DEF (met een correctie die je zelf
- * invulde), de MDEF, de snelheid, de stat-eisen en de winkelprijs. Wat de app niet weet (een eigen item, munitie als bedrag) staat er niet.
+ * invulde), de MDEF, de snelheid, de stat-eisen en de winkelprijs. Wat de app niet weet (een eigen item) staat er niet.
  */
 function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, price: number | null): [string, string][] {
   const info = entry.pick === OTHER ? undefined : catalogInfo(slot, name)
@@ -2006,7 +1987,7 @@ const knownFacts = (facts: [string, string | undefined][]): [string, string][] =
 
 /**
  * Of je dit stuk moet kopen, en waarom (Dave, 7 oktober 2026): het oordeel bovenaan de popup van één slot in Advised ("Kopen", "Niet kopen",
- * "Houden", "Leeg laten", en bij munitie "Per stuk kopen", "Per stuk herladen" of "Eigen bedrag") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
+ * "Houden", "Leeg laten", en bij munitie "Per stuk kopen" of "Per stuk herladen") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
  * `covered` zegt bij een leeg slot dat de overall het beslaat (top en bottom), of dat een losse top of bottom het leeg maakt (overall).
  */
 function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean): { verdict: string; text: string } {
@@ -2027,8 +2008,8 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
   }
   if (counted)
     return {
-      verdict: c.cheapest === OWN_AMMO ? 'Eigen bedrag' : job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
-      text: c.cheapest === OWN_AMMO ? OWN_AMMO_WHY : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
+      verdict: job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
+      text: job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
     }
   if (c.cheapest === null) {
     if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: een losse top of bottom neemt de plek van een overall in.' : 'Leeg: de overall beslaat dit slot.' }
@@ -3211,7 +3192,7 @@ export const totalCostWho = (level: string, job: Job): string => {
 }
 
 /** De rij van een factuurregel in de vergelijking: een potion naar zijn soort (HP of MP), de rest naar zijn naam. */
-// De munitie houdt haar label als sleutel, met of zonder uitleg (#192): zo valt ze in Difference op dezelfde rij als een eigen munitiebedrag.
+// De munitie houdt haar label als sleutel (#192), de potions hun soort: zo vallen HP en MP in Difference op dezelfde rij, ook als de potion anders heet.
 // De gekochte stukken (#192) vallen samen onder Shop: Difference vergelijkt per soort kost, niet per stuk.
 const invoiceRowKey = (l: InvoiceLine): string => (l.shop ? SHOP_LABEL : l.why && l.why.kind !== 'ammo' ? l.why.kind : l.label)
 

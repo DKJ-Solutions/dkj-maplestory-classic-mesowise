@@ -25,7 +25,7 @@ const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   ...newDraft(id),
   name: id,
   expPerHour: String(expPerHour),
-  potions: String(potions),
+  travel: String(potions),
 })
 // "Beste" vraagt minstens twee plekken: de mob waarop je jaagt (Pig, #123) en een eigen plek met weinig EXP per uur.
 const drafts = [{ ...mobDraft('Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
