@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**78 / 120 minor entries** <!-- pending-tally -->
+**78 / 121 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/advised-popup-titles · 20261007-122905Z
+
+Every Advised popup now names its card in the title, such as "Advised: Equip" or "Advised: Skillpoints", so you can see which part
+of the advice you are reading. Under each title a subtitle says the level and job the advice reckons with. The potions popup is
+now "Expected: Useable": a bill like Advised: Equip, with a row per potion and for the stars or arrows, how many you use this level
+and what that costs. The middle column of the Advised equip bill is called Equip.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Advised popups name their card in the title
+
+[PR #217](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/217)
+
+---
 
 ### DEPLOY: app/compact-advised-popup · 20261007-115301Z
 
