@@ -1536,7 +1536,18 @@ function StatDialog(props: {
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
-  const heading = <h2 class="stat-dialog-name">{name}</h2>
+  // Het vraagteken van de popup staat direct achter de titel, op dezelfde regel, ook met een ondertitel eronder (Dave, 7 oktober 2026); het opent
+  // een eigen popup, zoals elk vraagteken in Advised.
+  const heading = props.help ? (
+    <div class="stat-dialog-title-row">
+      <h2 class="stat-dialog-name">{name}</h2>
+      <PopupButton icon={QUESTION_ICON} class="help-toggle" label="Uitleg" title={props.title}>
+        <p class="item-why">{props.help}</p>
+      </PopupButton>
+    </div>
+  ) : (
+    <h2 class="stat-dialog-name">{name}</h2>
+  )
   const title = props.subtitle ? (
     <div class="stat-dialog-titles">
       {heading}
@@ -1545,8 +1556,6 @@ function StatDialog(props: {
   ) : (
     heading
   )
-  const [helpOpen, setHelpOpen] = useState(false)
-  const helpId = useId()
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1569,13 +1578,7 @@ function StatDialog(props: {
       <div class="stat-dialog-body">
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
         {title}
-        {props.help && <HelpToggle open={helpOpen} controls={helpId} onToggle={() => setHelpOpen(!helpOpen)} />}
       </div>
-      {props.help && (
-        <p class="hint stat-dialog-help" id={helpId} hidden={!helpOpen}>
-          {props.help}
-        </p>
-      )}
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (

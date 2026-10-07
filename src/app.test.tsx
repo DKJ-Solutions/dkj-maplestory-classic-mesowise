@@ -4355,7 +4355,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     expect(text.hidden).toBe(true)
   })
 
-  it('zet de lange alinea van de Equip-popup achter een vraagteken naast de kop Advised, dicht tot je tikt', () => {
+  it('zet de lange alinea van de Equip-popup achter een vraagteken direct achter de titel Advised: Equip, in een eigen popup', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
@@ -4363,14 +4363,17 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
     const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
-    // Naast de kop, niet boven de rijen (Dave, 7 oktober 2026).
-    const head = button.closest('.stat-dialog-head')!
-    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
-    const text = textOf(button)
-    expect(text.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
-    expect(text.hidden).toBe(true)
+    // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
+    const row = button.closest('.stat-dialog-title-row')!
+    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
+    // Dicht tot je tikt; dan een eigen popup, zoals elk vraagteken in Advised.
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     fireEvent.click(button)
-    expect(text.hidden).toBe(false)
+    const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
+    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Equip')
+    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
+    fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft die uitleg niet: daar staat geen vraagteken in de kop.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
