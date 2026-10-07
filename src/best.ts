@@ -21,7 +21,7 @@ export const resolveAll = (drafts: readonly SpotDraft[], profile: Profile | null
   drafts.map((d) => resolveSpot(d, spotOf(d), profile, assumptions))
 
 /**
- * Of het monster waarop je traint gevaarlijk is; bij een eigen plek weet de app dat niet. De aannames
+ * Of het monster waarop je traint gevaarlijk is; zonder bekende plek (alleen in tests) weet de app dat niet. De aannames
  * tellen mee, omdat ze bepalen welk monster het voorstel kiest als de speler er geen koos.
  */
 export function isDangerousSpot(d: SpotDraft, profile: Profile | null, assumptions: Assumptions = ASSUMPTIONS): boolean {

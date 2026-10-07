@@ -279,7 +279,7 @@ export function resolvePlan(
 
 /**
  * Een plek als getallen. Bij een bekende plek met een geldig profiel vullen de lege velden zich
- * met het voorstel, en potions en munitie komen altijd uit het voorstel (#216); bij een eigen plek (of zonder profiel) is dit gewoon toSpot.
+ * met het voorstel, en potions en munitie komen altijd uit het voorstel (#216); zonder bekende plek (alleen in tests) of zonder profiel is dit gewoon toSpot.
  */
 export function resolveSpot(
   d: SpotDraft,

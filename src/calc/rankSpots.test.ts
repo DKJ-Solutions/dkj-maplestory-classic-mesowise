@@ -20,10 +20,10 @@ describe('spotError', () => {
     return s
   }
   const cases = [
-    { field: 'expPerHour', fill: 'Vul EXP per uur in.', negative: 'EXP per uur kan niet negatief zijn.', tooBig: 'EXP per uur is te groot.' },
-    { field: 'potions', fill: 'Vul de potionkosten in (0 als er geen zijn).', negative: 'De potionkosten kunnen niet negatief zijn.', tooBig: 'De potionkosten zijn te groot.' },
-    { field: 'ammo', fill: 'Vul de ammokosten in (0 als er geen zijn).', negative: 'De ammokosten kunnen niet negatief zijn.', tooBig: 'De ammokosten zijn te groot.' },
-    { field: 'travel', fill: 'Vul de reiskosten in (0 als er geen zijn).', negative: 'De reiskosten kunnen niet negatief zijn.', tooBig: 'De reiskosten zijn te groot.' },
+    { field: 'expPerHour', fill: 'De EXP per uur van deze plek is onbekend.', negative: 'EXP per uur kan niet negatief zijn.', tooBig: 'EXP per uur is te groot.' },
+    { field: 'potions', fill: 'De potionkosten van deze plek zijn onbekend.', negative: 'De potionkosten kunnen niet negatief zijn.', tooBig: 'De potionkosten zijn te groot.' },
+    { field: 'ammo', fill: 'De ammokosten van deze plek zijn onbekend.', negative: 'De ammokosten kunnen niet negatief zijn.', tooBig: 'De ammokosten zijn te groot.' },
+    { field: 'travel', fill: 'De reiskosten van deze plek zijn onbekend.', negative: 'De reiskosten kunnen niet negatief zijn.', tooBig: 'De reiskosten zijn te groot.' },
   ] as const
 
   it('geeft null voor een geldige plek, ook met alles op 0', () => {
@@ -43,7 +43,7 @@ describe('spotError', () => {
     const s = ok()
     s.expPerHour = NaN
     s.cost.potions = -1
-    expect(spotError(s)).toBe('Vul EXP per uur in.')
+    expect(spotError(s)).toBe('De EXP per uur van deze plek is onbekend.')
   })
 })
 
@@ -52,7 +52,7 @@ describe('rankSpots foutteksten', () => {
     const bad: Spot = { id: 'b', name: 'b', expPerHour: 1, cost: { potions: NaN, ammo: 0, travel: 0 } }
     const [r] = rankSpots([bad])
     expect(isInvalid(r) && r.error).toBe(spotError(bad))
-    expect(isInvalid(r) && r.error).toBe('Vul de potionkosten in (0 als er geen zijn).')
+    expect(isInvalid(r) && r.error).toBe('De potionkosten van deze plek zijn onbekend.')
   })
 })
 

@@ -3046,7 +3046,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
                   ? `Elke ${attack.noun} kost je dan ${mpPerUse(winner.id, winner.to)} MP (nu 0).`
                   : `Elke ${attack.noun} kost je dan ${mpFrom} → ${mpPerUse(winner.id, winner.to)} MP.`}
               </p>
-              <Help>De extra mana is verrekend, maar alleen bij plekken waar je de potionkosten leeg laat.</Help>
+              <Help>De extra mana is verrekend in de potionkosten.</Help>
             </>
           )}
           {(winner.id === 'nimbleBody' || winner.id === 'preciseStrikes') && <p class="hint">{winner.name} kost geen extra mana.</p>}

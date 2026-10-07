@@ -35,7 +35,7 @@ export function parseAmount(text: string): number {
   return text.trim() === '' ? NaN : Number(text)
 }
 
-/** Potions en munitie staan niet in de plek: bij een bekende plek komen ze uit het voorstel (resolveSpot), en een eigen plek heeft ze niet.
+/** Potions en munitie staan niet in de plek: bij een bekende plek komen ze uit het voorstel (resolveSpot), en zonder bekende plek (alleen in tests) blijven ze 0.
  * Let op: 0 leest hier als "gratis". Dat is veilig zolang de app nooit een EXP per uur invult (mobDraft en initialDrafts laten hem leeg, dus NaN),
  * want dan rangschikt een plek zonder voorstel ongeldig (#222). */
 export function toSpot(d: SpotDraft): Spot {
