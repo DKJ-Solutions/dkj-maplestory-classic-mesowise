@@ -41,17 +41,26 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Reproduced on main: a lv 20 Bowman with a 5-ATT weapon on Snail gets the same net saving from every bow, so War Bow and Crossbow (both 5000) tie exactly and the shop order picked one
+- [x] `clawUpgrade.ts`: sort the choices by net saving rounded to whole mesos, then the lower price, then the higher power (`byChoice`)
 
 ### TEST
 
+- [x] New test in `bowmanUpgrade.test.ts`: on Snail, War Bow comes before Crossbow, and every tie is ordered by price and then power
+- [x] `clawUpgrade.test.ts`: the beginner-weapon orders (all 50 meso, equal saving) now follow power: Wooden Club, Hand Axe, Sword
+- [x] Full suite (1935 tests) and `npm run lint` green
+
 ### DEPLOY: app/227-weapon-tie-break
 
-**Score:**
+When two weapons save exactly the same, the weapon advice no longer depends on shop order or rounding noise. It now prefers the cheaper weapon, and at the same price the stronger one, so a small model change can't flip the pick (#227).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+On a spot where every weapon kills just as fast (a Bowman on Snail), the app now steadily advises the War Bow over the equal-priced Crossbow, and under level 10 the Wooden Club over the Sword or Hand Axe.
+
+**Score:** 2
 
 #### Pull Request
 
