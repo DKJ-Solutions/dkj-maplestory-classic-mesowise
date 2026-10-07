@@ -52,7 +52,7 @@ works move behind the "?". The rule is recorded in Gwen's lens.
 ### TEST
 
 - [x] Tests: the "?" is collapsed by default and opens and closes on tap; existing tests tap it first
-- [ ] Victor: code review
+- [x] Victor: code review (the unknown-job instruction stays visible; spacing and clipping fixed)
 - [x] Edith: final read
 - [ ] Dave looks at it on a phone before the merge
 

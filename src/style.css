@@ -502,7 +502,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-value { min-width: 0; font-size: 1rem; text-align: right; overflow-wrap: anywhere; }
 /* .equip-edit staat elders op een vaste plek in zijn raster; hier op de rij zelf. */
 .menu-row .equip-edit { grid-row: auto; grid-column: auto; margin-right: calc((44px - var(--control-h)) / 2); }
-.menu-list ~ .hint, .menu-list ~ .debug { margin-top: 1rem; }
+.menu-list ~ .hint, .menu-list ~ .help, .menu-list ~ .debug { margin-top: 1rem; }
 /* De downloadknop (Dave, 5 oktober 2026): volle breedte, zacht (de achtergrondkleur van de pagina met een dunne rand, in de
    tekstkleur; de gevulde kaartknopkleur was te hard), 44px hoog, gelijke ruimte rondom. Het blijft een <a download>, dus geen formulieractie. */
 .menu-download .download-btn {
@@ -674,11 +674,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-total strong { color: var(--accent); }
 
 /* Uitleg achter een vraagteken (Dave, 7 oktober 2026; Help in app.tsx): het ronde knopje rechts, 44px om te tikken maar met een
-   kleiner icoon en negatieve marge, zodat het geen eigen rij van 44px kost. De tekst eronder is dicht tot je tikt. */
+   icoon van 24px en negatieve marge boven en onder, zodat het geen eigen rij van 44px kost. De tekst eronder is dicht tot je tikt. */
 .help { display: flex; flex-direction: column; align-items: flex-end; }
 .help > .hint { align-self: stretch; margin-top: 0.5rem; }
 .help > .hint[hidden] { display: none; }
-.help-toggle { width: 44px; height: 44px; margin: -0.375rem -0.5rem -0.375rem 0; padding: 0; display: flex; align-items: center; justify-content: center;
+.help-toggle { width: 44px; height: 44px; margin: -0.375rem 0; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .help-toggle[aria-expanded="true"] { color: var(--accent); }
 .help-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
