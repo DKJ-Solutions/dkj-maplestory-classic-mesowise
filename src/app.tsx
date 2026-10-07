@@ -1626,11 +1626,10 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
       {props.slots.map((slot) => (
         <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
       ))}
-      {/* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep erboven. */}
+      {/* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */}
       <p class="equip-total advised-total">
-        <span class="advised-total-label">Te kopen</span>
+        <span class="advised-total-label">Total cost</span>
         <strong>{nfInt.format(total)}</strong>
-        <span class="advised-total-unit">meso</span>
       </p>
     </>
   )

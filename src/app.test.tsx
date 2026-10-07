@@ -447,7 +447,7 @@ describe('equipment: de claw past het profiel aan', () => {
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
     expect(weapon.classList.contains('buy')).toBe(false)
     expect(whyOf(weapon)).toMatch(/^Je draagt dit al/)
-    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
+    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
   })
 
   it('toont in de kaart geen tabel maar twee knoppen die allebei de Equip-popup openen: links het advies, rechts wat je draagt (#188, #192)', () => {
@@ -466,7 +466,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
-    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
+    expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
     expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
   })
 
@@ -3703,7 +3703,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const rows = Array.from(cheapestCard().querySelectorAll('tbody tr')).slice(0, bought.length)
     const onInvoice = rows.map((tr) => ({ name: tr.querySelector('th')!.textContent, qty: tr.querySelector('td.invoice-qty')!.textContent!.trim().replace(/\s*\?$/, ''), price: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
     expect(onInvoice.map((r) => [r.name, r.qty])).toEqual(bought.map((b) => [b.name, '× 1']))
-    // De winkel vraagt de volle prijs ("Koop voor", "Te kopen"); op de factuur staat alleen het deel van dit level (afgeschreven, #192).
+    // De winkel vraagt de volle prijs ("Koop voor", "Total cost"); op de factuur staat alleen het deel van dit level (afgeschreven, #192).
     onInvoice.forEach((r, i) => bought[i].pair || expect(r.price).toBeLessThanOrEqual(bought[i].price))
     expect(onInvoice.some((r, i) => !bought[i].pair && r.price < bought[i].price)).toBe(true)
     const full = mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)
@@ -4086,7 +4086,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(cardOf('Equip').querySelector('dialog.card-dialog .equip-edit, dialog.card-dialog [aria-label^="Zoek"]')).not.toBeNull()
     })
 
-    it('opent bij Equip van Advised de Advised-popup van de Equip-kaart, met de stukken om te kopen en Te kopen, en geen eigen dialoog meer', () => {
+    it('opent bij Equip van Advised de Advised-popup van de Equip-kaart, met de stukken om te kopen en Total cost, en geen eigen dialoog meer', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
@@ -4096,7 +4096,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(buy).not.toBeNull()
       expect(buy.querySelector('dialog.item-dialog')).toBeNull()
       expect(whyOf(buy)).toContain('Koop')
-      expect(d.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Te kopen')
+      expect(d.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
       expect(part('cheapest-cost').querySelector('dialog')).toBeNull()
       expect(within(part('cheapest-cost')).queryByRole('button', { name: 'Equip bekijken' })).toBeNull()
     })
