@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**91 / 140 minor entries** <!-- pending-tally -->
+**91 / 141 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/245-popup-path · 20261007-205252Z
+
+Every popup, and the `.stat-dialog-body` inside it, now carries `data-popup` with the titles of the popups it sits in, outermost first: the mob info opened from Total cost: Equip reads `Total cost: Equip (advised) › Info over Snail`. In the inspector you can see straight away which popup you are pointing at.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Only visible in the HTML; a user of the app sees nothing new.
+
+**Score:** N/A
+
+#### Pull Request
+
+every popup body says which popup it is, and which popup it sits in
+
+[PR #246](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/246)
+
+---
 
 ### DEPLOY: app/242-unique-element-hooks · 20261007-204235Z
 
