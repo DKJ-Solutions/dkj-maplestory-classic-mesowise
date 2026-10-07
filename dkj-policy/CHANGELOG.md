@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**77 / 119 minor entries** <!-- pending-tally -->
+**78 / 120 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/compact-advised-popup · 20261007-115301Z
+
+The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
+shop price and a question mark. A header row names the columns, with Mesos above the prices, and the total sits under
+them with a total rule. It has no Report button any more. The price of what you
+buy is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, MDEF, speed,
+requirements, price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
+keep what you wear, or why the slot stays empty.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+The whole advice fits on a phone screen at a glance; the reasoning per piece is one tap away.
+
+**Score:** 3
+
+#### Pull Request
+
+Advised popup: one row per item slot, the reason behind a question mark
+
+[PR #215](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/215)
+
+---
 
 ### DEPLOY: app/shield-only-with-one-hand · 20261007-110139Z
 
