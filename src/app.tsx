@@ -1625,24 +1625,26 @@ const mobWhy = (mob: string) =>
 
 /**
  * De ondertitel van Advised: Equip (Dave, 7 oktober 2026): voor wie het advies rekent en op welke mob, op twee regels (Char, Mob) met het
- * label klein ervoor, samen in een eigen vak met een lichte achtergrond, en een vraagteken achter de mob dat zegt waarom juist die.
+ * label klein ervoor, elk in een eigen vak met een lichte achtergrond, en een vraagteken achter de mob dat zegt waarom juist die.
  */
 function AdvisedFor(props: { who: string; mob: string }) {
   return (
     <div class="advised-for">
       {props.who && (
-        <>
+        <div class="advised-for-row">
           <span class="advised-for-label">Char</span>
           <span class="advised-for-value">{props.who}</span>
-        </>
+        </div>
       )}
-      <span class="advised-for-label">Mob</span>
-      <span class="advised-for-value advised-for-mob">
-        {props.mob}
-        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-          <p class="item-why">{mobWhy(props.mob)}</p>
-        </PopupButton>
-      </span>
+      <div class="advised-for-row">
+        <span class="advised-for-label">Mob</span>
+        <span class="advised-for-value advised-for-mob">
+          {props.mob}
+          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+            <p class="item-why">{mobWhy(props.mob)}</p>
+          </PopupButton>
+        </span>
+      </div>
     </div>
   )
 }

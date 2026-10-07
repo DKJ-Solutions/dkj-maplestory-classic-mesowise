@@ -47,7 +47,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 - [x] Gwen: two-row grid, small uppercase labels, value at title size with a 24px line so it lines up with the unchanged ? icon
 - [x] Cody + Gwen: title Advised: Equip renamed to Total cost: Equip with a small grey ADVISED tag on its own row above it; the title keeps the card-popup size and fits one row with its ? from 360px (checked in headless Chrome at 360 and 320px); accessible name Total cost: Equip (advised)
 - [x] Gwen: every Advised popup is light orange (`--advised-bg`/`--advised-border`, light and dark), via an `advised-dialog` class that sets `--card`
-- [x] Gwen: Char and Mob rows sit together in their own box with a light background (`--advised-box`, light and dark)
+- [x] Gwen: Char and Mob rows each sit in their own box, equally wide, with a light background (`--advised-box`, light and dark)
 - [x] Edith: explanation cut to one sentence (EXP per meso); Victor: no bugs
 
 ### TEST

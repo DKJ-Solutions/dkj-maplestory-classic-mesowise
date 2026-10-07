@@ -23,7 +23,7 @@
   /* Elke Advised-popup is licht oranje (Dave, 7 oktober 2026): het advies van de app, niet wat je zelf invulde. */
   --advised-bg: #fff7ed;
   --advised-border: #fed7aa;
-  /* Het vak met Char en Mob in Total cost: Equip: een tint dieper dan de popup. */
+  /* De vakken van Char en Mob in Total cost: Equip: een tint dieper dan de popup. */
   --advised-box: #ffedd5;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -367,12 +367,13 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
-/* De ondertitel van Advised: Equip (Dave, 7 oktober 2026): twee regels, Char en Mob, met het label klein en grijs in een eigen kolom en de waarde
-   ernaast in de tekstkleur. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is even groot als de titel en zo hoog als het icoon, zodat
-   die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
-.advised-for { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.75rem; row-gap: 0.25rem; margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem; background: var(--advised-box); border-radius: 0.5rem; }
-.advised-for-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* De ondertitel van Total cost: Equip (Dave, 7 oktober 2026): twee regels, Char en Mob, elk in een eigen vak met een lichte achtergrond, even breed.
+   Het label is klein en grijs met een vaste breedte, zodat de waarden onder elkaar beginnen; de waarde staat in de tekstkleur. Het vraagteken houdt
+   zijn grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan
+   zonder zijn regel hoger te maken. */
+.advised-for { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+.advised-for-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.375rem 0.75rem; background: var(--advised-box); border-radius: 0.5rem; }
+.advised-for-label { flex: none; min-width: 2.25rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .advised-for-value { min-width: 0; font-size: 1rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 .advised-for-mob { display: flex; align-items: center; }
 .stat-dialog-sub .advised-for-mob .help-toggle { flex: none; margin: -0.625rem 0 -0.625rem -0.375rem; }
