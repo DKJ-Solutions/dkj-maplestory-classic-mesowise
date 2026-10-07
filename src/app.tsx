@@ -983,6 +983,11 @@ function PotionsCard(props: {
   onFix: (kind: PotionKind, stat: PotionStat, text: string) => void
   /** De potions van het advies (#192), achter de knop Advised; null als de app deze job niet doorrekent: dan alleen Your character. */
   advised: PotionChoice | null
+  /**
+   * De munitie van het advies (Dave, 7 oktober 2026): de stars of pijlen die de factuur van Advised telt, met hun ATT en prijs per stuk uit het
+   * profiel van het advies; null als het advies geen munitie telt (een Warrior of Magician, of een plek zonder munitie).
+   */
+  advisedAmmo: { name: string; watk: string; price: string } | null
   report: ComponentChildren
 }) {
   const { job, choice } = props
@@ -1015,7 +1020,8 @@ function PotionsCard(props: {
       </CardHead>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && advisedPotions && (
-        <CardPopup title="Advised: Potions" opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        // Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026): potions en, voor een Thief of Bowman, zijn munitie.
+        <CardPopup title="Advised: Useable" opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De potions van het advies, om te lezen (Dave, 6 oktober 2026, #192): de naam met zijn prijs als vaste tekst, zonder keuzemenu. */}
           {POTION_KINDS.map((kind) => {
             const potion = advisedPotions[kind]
@@ -1031,6 +1037,19 @@ function PotionsCard(props: {
               </div>
             )
           })}
+          {props.advisedAmmo && (
+            <div class="potion-group">
+              <h3>{job === 'bowman' ? 'Arrows' : 'Throwing stars'}</h3>
+              <p class="field-fixed">{props.advisedAmmo.name}</p>
+              {/* Een eigen bedrag noemt geen munitie: dan zijn ATT en prijs per stuk niet bekend. */}
+              {props.advisedAmmo.name !== OWN_AMMO && (
+                <>
+                  <StatLine field={{ label: STAT_NAME.weapon, min: 0, max: 999, integer: true }} value={props.advisedAmmo.watk} readOnly onSave={() => {}} />
+                  <StatLine field={{ label: job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', min: 0, max: 100, integer: false }} value={props.advisedAmmo.price} unit="meso" readOnly onSave={() => {}} />
+                </>
+              )}
+            </div>
+          )}
         </CardPopup>
       )}
       {view === 'worn' && (
@@ -1615,29 +1634,71 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
   const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
-      {/* De kop van de factuur (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */}
-      <div class="advised-head" aria-hidden="true">
-        <span>Slot</span>
-        <span>Equip</span>
-        <span class="advised-head-price">Mesos</span>
-      </div>
+      <BillHead item="Equip" />
       {props.slots.map((slot) => (
         <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} />
       ))}
-      {/* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */}
-      <p class="equip-total advised-total">
-        <span class="advised-total-label">Total cost</span>
-        <strong>{nfInt.format(total)}</strong>
-      </p>
+      <BillTotal total={total} />
     </>
   )
 }
 
+/** De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. */
+function BillHead(props: { item: string }) {
+  return (
+    <div class="advised-head" aria-hidden="true">
+      <span>Slot</span>
+      <span>{props.item}</span>
+      <span class="advised-head-price">Mesos</span>
+    </div>
+  )
+}
+
+/** Het totaal als laatste regel van een factuur in Advised (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de hele breedte erboven. */
+function BillTotal(props: { total: number }) {
+  return (
+    <p class="equip-total advised-total">
+      <span class="advised-total-label">Total cost</span>
+      <strong>{nfInt.format(props.total)}</strong>
+    </p>
+  )
+}
+
 /**
- * Eén slot in Advised, op één regel in vier kolommen (Dave, 7 oktober 2026): "Weapon", "Steel Igor" met de info-knop erachter, de winkelprijs en
- * het vraagteken. Van wat je koopt staat alleen het bedrag in de accentkleur, niet de naam; een stuk dat niet loont gedempt. De info-knop toont wat het stuk is (soort, level, ATT of
- * DEF, eisen, prijs), het vraagteken of je het moet kopen en waarom: elk in een eigen popup.
+ * Eén regel van een factuur in Advised, in vier kolommen (Dave, 7 oktober 2026): het slot, de naam met de info-knop erachter, het bedrag en het
+ * vraagteken. Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
+ * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren }) {
+  const title = props.name ?? props.slot
+  return (
+    <div class={props.tone ? `advised-row ${props.tone}` : 'advised-row'}>
+      <span class="slot-name">{props.slot}</span>
+      <span class="advised-item">
+        <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
+        {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
+        {props.facts.length > 0 && (
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title}>
+            <dl class="item-facts">
+              {props.facts.map(([term, value]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </PopupButton>
+        )}
+      </span>
+      <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
+      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={title}>
+        {props.help}
+      </PopupButton>
+    </div>
+  )
+}
+
+/** Eén slot in de Equip-factuur van Advised (BillRow): de winkelprijs als bedrag, en of je het stuk moet kopen en waarom achter het vraagteken. */
 function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean }) {
   const { slot } = props
   // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
@@ -1648,38 +1709,24 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
   const own = !c.option && !c.changed && props.worn.pick === OTHER
   const help = cheapestWhy(props.job, slot, c, counted, props.covered)
   const shopPrice = c.option ? c.option.price : c.price
-  const tone = c.option ? ' option' : name === null ? ' empty' : c.changed && !counted ? ' buy' : ''
-  const shown = name === null ? null : own ? name : familyName(slot, name)
+  const tone = c.option ? 'option' : name === null ? 'empty' : c.changed && !counted ? 'buy' : ''
   // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
   const entry: EquipEntry = name === null ? props.worn : c.option || c.changed ? { pick: name, name: '', stat: '' } : props.worn
-  const facts = name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)
-  const title = shown ?? slotLabel(slot)
   return (
-    <div class={`advised-row${tone}`}>
-      <span class="slot-name">{slotLabel(slot)}</span>
-      <span class="advised-item">
-        <span class="advised-name" title={name ?? undefined}>{shown ?? '—'}</span>
-        {/* De info-knop direct achter de naam (Dave, 7 oktober 2026); alleen als de app iets over het stuk weet. */}
-        {facts.length > 0 && (
-          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${shown}`} title={title}>
-            <dl class="item-facts">
-              {facts.map(([term, value]) => (
-                <div key={term}>
-                  <dt>{term}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </PopupButton>
-        )}
-      </span>
-      {/* De winkelprijs in een eigen kolom (Dave, 7 oktober 2026): van wat je koopt, en gedempt van een stuk dat niet loont. */}
-      <span class="advised-price">{shopPrice === null ? '' : nfInt.format(shopPrice)}</span>
-      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${slotLabel(slot)}`} title={title}>
-        <p class="item-verdict">{help.verdict}</p>
-        <p class="item-why">{help.text}</p>
-      </PopupButton>
-    </div>
+    <BillRow
+      tone={tone}
+      slot={slotLabel(slot)}
+      name={name === null ? null : own ? name : familyName(slot, name)}
+      fullName={name ?? undefined}
+      facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
+      price={shopPrice}
+      help={
+        <>
+          <p class="item-verdict">{help.verdict}</p>
+          <p class="item-why">{help.text}</p>
+        </>
+      }
+    />
   )
 }
 
@@ -3566,7 +3613,7 @@ export function App() {
         report={computed ? <MobQuestion advice={mobAdvice} cost={cost} part /> : <NotComputed job={job} />}
       />
       {/* Potions heeft een rapport, dus staat bij de andere kaarten met een rapport, onder Monster (Dave, 5 en 6 oktober 2026). */}
-      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
+      <PotionsCard job={job} choice={potionChoice} bar={parsedProfile} onPick={pickPotions} onFix={fixPotionStat} advised={cheapestLive?.potionChoice ?? null} advisedAmmo={advisedSet?.ammo ? { name: advisedSet.ammo, watk: advisedSet.profile.starWatk, price: advisedSet.profile.starRecharge } : null} report={computed ? <PotionQuestion advice={potionAdvice} cost={cost} info={potionLines} part /> : <NotComputed job={job} />} />
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">

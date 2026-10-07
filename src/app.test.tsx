@@ -3941,8 +3941,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.potions.hp).not.toBe('White Potion')
     const d = openView('Potions', 'Advised')
+    // De popup heet Useable, zoals het Use-tabblad in het spel; de kaart zelf blijft Potions (Dave, 7 oktober 2026).
+    expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Advised: Useable')
     const texts = [...d.querySelectorAll('.potion-group .field-fixed')].map((p) => p.textContent!)
-    expect(texts).toHaveLength(2)
+    // HP en MP staan vooraan; de munitie van de Thief komt erna (die opmaak wordt herbouwd, dus geen vast aantal).
+    expect(texts.length).toBeGreaterThanOrEqual(2)
     expect(texts[0]).toContain(r.potions.hp)
     expect(texts[1]).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
@@ -4078,8 +4081,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Advised` }))
         const adv = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
         // De titel noemt de kaart, niet alleen Advised (Dave, 7 oktober 2026).
-        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^Advised: ' + title))
-        expect(adv.getAttribute('aria-label')).toBe(`Advised: ${title}`)
+        // Potions heet in Advised Useable, zoals het Use-tabblad in het spel (Dave, 7 oktober 2026).
+        const advisedTitle = title === 'Potions' ? 'Useable' : title
+        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^Advised: ' + advisedTitle))
+        expect(adv.getAttribute('aria-label')).toBe(`Advised: ${advisedTitle}`)
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
       }
