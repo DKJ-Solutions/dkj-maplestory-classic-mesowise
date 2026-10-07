@@ -2,7 +2,47 @@
 
 ## [Unreleased]
 
-**80 / 126 minor entries** <!-- pending-tally -->
+**81 / 128 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/equip-horizon-growth · 20261007-141351Z
+
+The equipment advice (Advised, Total cost: Equip and the Report) now counts how your character grows until your next upgrade: every later level of the horizon gets its own Max HP and MP, the AP of that level on your main stat, its accuracy and evasion, and the skill points of that level placed where they save the most. A Lv 20 Thief's upgrade is no longer judged as if he stayed at Lv 20 with today's Lucky Seven and Nimble Body. Savings over a horizon are therefore usually lower than before, and a cheaper piece can now win (at Lv 20, Blue Gidder Shoes over Red Ninja Sandals).
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Upgrade advice stops overestimating what a piece saves over the coming levels, so a player buys less equipment that would not have paid back.
+
+**Score:** 3
+
+#### Pull Request
+
+Equip upgrades count the skill points and AP you gain over their horizon
+
+[PR #228](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/228)
+
+---
+
+### DEPLOY: app/222-remove-no-plan-fallback · 20261007-135848Z
+
+The level invoice no longer has a fallback for a spot without a computed plan, and saved spots no longer carry potion and ammo costs. Neither could be reached from the app any more, so no number changes. Spots saved by an older version still load; their old potion and ammo values are dropped. The failure it prevents: a stored cost that no screen shows quietly entering the ranking again.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Remove the unreachable no-plan invoice fallback and the draft potion and ammo fields
+
+[PR #225](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/225)
+
+---
 
 ### DEPLOY: app/216-remove-own-amounts · 20261007-134915Z
 

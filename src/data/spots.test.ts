@@ -81,7 +81,7 @@ describe('de mobs (Dave, 4 oktober 2026: geen maps meer, alleen de mob waarop je
 
   it('maken van een mob een plek met alleen dat monster, en de voorgestelde velden leeg', () => {
     const d = mobDraft('Pig')!
-    expect(d).toEqual({ id: 'mob:Pig', name: 'Pig', known: 'mob:Pig', monster: 'Pig', kills: '', expPerHour: '', potions: '', ammo: '', travel: '0' })
+    expect(d).toEqual({ id: 'mob:Pig', name: 'Pig', known: 'mob:Pig', monster: 'Pig', kills: '', expPerHour: '', travel: '0' })
     const spot = findKnownSpot(d.known)!
     expect(spot.monsters.map((m) => m.name)).toEqual(['Pig'])
     expect(spot.source).toBe(spot.monsters[0].source)

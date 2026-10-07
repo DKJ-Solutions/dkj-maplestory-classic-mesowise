@@ -7,8 +7,8 @@
 // niets: een zwaarder wapen kan trager zijn of een lagere multiplier hebben. Een wapen telt dus als beter
 // als het model er meer EXP per meso mee haalt dan met je huidige wapen, en de horizon loopt tot het volgende
 // wapen dat meer schade per milliseconde geeft (weapon attack × multiplier ÷ aanvalstijd).
-// Puur, zonder UI-import. Gekozen standaarden (de app toont ze): je stats van nu blijven gelden over de
-// hele horizon, alleen de EXP per level verschilt; de verkoopwaarde van je oude claw telt niet mee
+// Puur, zonder UI-import. Gekozen standaarden (de app toont ze): over de horizon groeit je karakter mee (growth.ts, Dave, 7 oktober 2026:
+// level, HP en MP, AP en de skillpunten van elk level), de claw erbij op dat gegroeide profiel; de verkoopwaarde van je oude claw telt niet mee
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
 // het scherm "Equip" vult die in als je een claw kiest.
 // Onder level 10 koopt alleen Advised uit de wapens met een prijs van een Beginner (data/beginnerWeapons.ts, #203), met de horizon
@@ -22,7 +22,8 @@ import { NPC_DAGGERS } from './data/daggers'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import { FIRST_JOB_LEVEL } from './data/skillPoints'
 import type { Weapon } from './data/types'
-import { byNet, horizonCost, type HorizonScope } from './horizonCost'
+import { growthCosts, growthOf } from './growth'
+import { byNet, type HorizonScope } from './horizonCost'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { MAGICIAN_WEAPONS } from './magicianGear'
 import { attacksAsBeginner, shortfall, thiefWithDagger, type Profile, type StatNeed } from './profile'
@@ -148,14 +149,14 @@ export function nextBetterWeapon(profile: Profile): Weapon | null {
 }
 
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions, scope: HorizonScope, shop: Shop) {
-  const baseEpm = bestExpPerMeso(drafts, profile, a)
-  if (baseEpm === undefined) return null
+  if (bestExpPerMeso(drafts, profile, a) === undefined) return null
+  // Over de horizon groeit je karakter mee (growth.ts); 'this-level' is één level en dus je profiel van nu.
+  const costs = growthCosts(drafts, growthOf(drafts, profile), a)
   const choices = candidates
     .map((claw): ClawChoice => {
       const h = horizon(profile, claw, scope, shop)
-      const epm = bestExpPerMeso(drafts, withClaw(profile, claw), a)
-      const without = horizonCost(h.from, h.to, baseEpm)
-      const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
+      const without = costs.without(h.from, h.to)
+      const withIt = costs.withIt(h.from, h.to, (p) => withClaw(p, claw))
       // Is een level zonder claw onhaalbaar (basiskosten null), dan is elke claw bewust "niet uit te rekenen" (zie issue #25).
       const saving = without === null || withIt === null ? null : without - withIt
       return { claw, ...h, saving, net: saving === null ? null : saving - claw.price }

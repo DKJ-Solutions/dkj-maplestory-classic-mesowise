@@ -79,7 +79,7 @@ const parseM = (over: Partial<ProfileDraft> = {}): Profile => {
 const magician = parseM()
 
 const mixedMobs = mobGroup('Snail', 'Blue Snail', 'Red Snail', 'Stump', 'Dark Stump', 'Green Mushroom', 'Axe Stump', 'Dark Axe Stump')
-const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
 const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 const epm = (p: Profile) => {
   const v = bestExpPerMeso(drafts, p, ASSUMPTIONS)

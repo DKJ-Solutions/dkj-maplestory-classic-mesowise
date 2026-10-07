@@ -453,6 +453,14 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, a: Assumpti
   return { base, choices, winner, left, placement }
 }
 
+/**
+ * Het punt dat skillPointAdvice zou zetten (de `winner`), zonder de robuust-controle onder de aanname-varianten: de goedkope vorm voor wie
+ * veel punten achter elkaar moet plaatsen (growth.ts, Dave, 7 oktober 2026). Null als er geen punt over is of niets uit te rekenen valt.
+ */
+export function skillPointWinner(drafts: readonly SpotDraft[], profile: Profile): SkillId | null {
+  return adviseUnder(drafts, profile, ASSUMPTIONS)?.winner ?? null
+}
+
 /** De skillpunten van een pot zoals de speler ze nu heeft gezet, tegenover wat zijn level hem geeft; `cap` is null als het level geen geldig getal is. */
 export function skillPoolUsage(draft: ProfileDraft, job: Job, pool: SkillPool): { spent: number; cap: number | null } {
   const shown = profileFieldsFor(job).map((f) => f.key)

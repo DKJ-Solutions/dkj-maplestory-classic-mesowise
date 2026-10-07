@@ -105,7 +105,7 @@ describe('resolveSpot', () => {
   const chosen = { ...mobDraft('Bubbling')!, id: 'a', travel: '100' }
 
   it('is gewoon toSpot bij een eigen plek of zonder profiel', () => {
-    const own = { ...newDraft('b'), expPerHour: '5000', potions: '10' }
+    const own = { ...newDraft('b'), expPerHour: '5000', travel: '10' }
     expect(resolveSpot(own, undefined, profile)).toEqual(toSpot(own))
     expect(resolveSpot(chosen, bubbling, null)).toEqual(toSpot(chosen))
   })

@@ -13,6 +13,7 @@ import { NPC_CLAWS } from './data/claws'
 import { mobDraft } from './data/spots'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
 import { bestExpPerMeso } from './bestExpPerMeso'
+import { growthOf } from './growth'
 import { DEFAULT_PROFILE, parseProfile, type Profile } from './profile'
 import { newDraft, type SpotDraft } from './spotDraft'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS } from './warriorGear'
@@ -25,7 +26,7 @@ const parseB = (over: Partial<typeof DEFAULT_PROFILE>): Profile => {
 /** Een Bowman met stats ruim genoeg voor elk item, zodat alleen level en wapen of armor bepalen wat een kandidaat is. */
 const strong = (over: Partial<Profile> = {}): Profile => ({ ...parseB({}), ...over })
 
-const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), potions: String(potions) })
+const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({ ...newDraft(id), name: id, expPerHour: String(expPerHour), travel: String(potions) })
 const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, own('b', 1_000, 10_000)]
 
 /** EXP per meso op de beste plek, via bestExpPerMeso (niet via de module onder test). */
@@ -40,9 +41,14 @@ const EXP_AT: Record<number, number> = {
   10: 1_716, 11: 2_360, 12: 3_216, 13: 4_200, 14: 5_460, 15: 7_050, 16: 8_840, 17: 11_040, 18: 13_716, 19: 16_680,
   20: 20_216, 21: 24_402, 22: 28_980, 23: 34_320, 24: 40_512, 25: 47_216, 26: 54_900, 27: 63_666, 28: 73_080, 29: 83_720, 30: 95_700,
 }
-const expSum = (from: number, to: number) => {
+/**
+ * De mesokosten van level from t/m to met de hand: per level de EXP gedeeld door de EXP per meso op het gegroeide profiel van dat level
+ * (growth.ts, Dave, 7 oktober 2026: het karakter groeit over de horizon mee), met `change` erbij (een wapen, een stuk armor).
+ */
+const costOver = (p: Profile, from: number, to: number, change: (q: Profile) => Profile = (q) => q) => {
+  const grown = growthOf(drafts, p)
   let sum = 0
-  for (let l = from; l <= to; l++) sum += EXP_AT[l]
+  for (let l = from; l <= to; l++) sum += EXP_AT[l] / epm(change(grown(l)))
   return sum
 }
 
@@ -169,8 +175,7 @@ describe('Bowman-wapens: de winkel', () => {
     const a = advice(p)
     expect(a.choices.length).toBeGreaterThan(0)
     for (const c of a.choices) {
-      const exp = expSum(c.from, c.to)
-      expect(c.saving, c.claw.name).toBeCloseTo(exp / epm(p) - exp / epm(withClaw(p, c.claw)), 5)
+      expect(c.saving, c.claw.name).toBeCloseTo(costOver(p, c.from, c.to) - costOver(p, c.from, c.to, (q) => withClaw(q, c.claw)), 5)
       expect(c.net, c.claw.name).toBeCloseTo(c.saving! - c.claw.price, 6)
       expect(c.from).toBe(15)
     }
@@ -292,8 +297,7 @@ describe('Bowman-armor: de winkel', () => {
     const a = advice(p)
     expect(a.choices.length).toBeGreaterThan(0)
     for (const c of a.choices) {
-      const exp = expSum(c.from, c.to)
-      expect(c.saving, c.armor.name).toBeCloseTo(exp / epm(p) - exp / epm({ ...p, wdef: p.wdef + c.armor.wdef }), 5)
+      expect(c.saving, c.armor.name).toBeCloseTo(costOver(p, c.from, c.to) - costOver(p, c.from, c.to, (q) => ({ ...q, wdef: q.wdef + c.armor.wdef })), 5)
       expect(c.net, c.armor.name).toBeCloseTo(c.saving! - c.armor.price, 6)
     }
   })

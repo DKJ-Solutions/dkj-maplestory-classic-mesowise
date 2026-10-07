@@ -11,6 +11,7 @@ import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 import { starUpgradeAdvice } from './starUpgrade'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { ASSUMPTIONS } from './calc/mobModel'
+import { growthOf } from './growth'
 
 // Advised rekent met de stats die het zelf zet (cheapestSettings), dus de uitkomst per profiel loopt via advisedSetup en niet via het ruwe profiel.
 
@@ -34,14 +35,15 @@ describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als eq
     expect(THROWING_STARS.filter((t) => t.buy).map((t) => t.name)).toEqual([SUBI.name, WOLBI.name])
   })
 
-  // Een Thief die Mokbi draagt (0,5 per star) en Wolbi (0,4 per star) overweegt: dat loont op level 10 en 15 ATT, want het herladen weegt zwaarder dan 2 ATT.
+  // Een Thief die Mokbi draagt (0,5 per star) en Wolbi (0,4 per star) overweegt: dat loont op level 15 met 5 ATT, want het herladen weegt zwaarder dan 2 ATT.
+  // (Voor de groei, Dave 7 oktober 2026, loonde het ook op level 10 met 15 ATT: met de skillpunten en AP van elk level gooit hij sneller en gebruikt hij minder stars.)
   const mokbi = (level: number, claw = 15) => thief('Snail', level, claw, { starWatk: String(MOKBI.watk), starRecharge: String(MOKBI.rechargePerStar) })
 
   it('koopt Wolbi als dat het level goedkoper maakt dan de set kost, met de prijs en horizon van de set', () => {
-    const user = mokbi(10)
+    const user = mokbi(15, 5)
     const s = advisedSetup(user)
     const bought = s.purchases.find((p) => p.slot === 'ammo')
-    expect(bought).toMatchObject({ name: WOLBI.name, price: 1000, horizon: { from: 10 } })
+    expect(bought).toMatchObject({ name: WOLBI.name, price: 1000, horizon: { from: 15 } })
     expect(s.shop).toBeGreaterThanOrEqual(1000)
     // Overnemen zet de star in het profiel en in het Ammo-slot, zoals een keuze op de Equip-kaart.
     expect(wornName(s.equipment.ammo)).toBe(WOLBI.name)
@@ -52,7 +54,7 @@ describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als eq
   })
 
   it('schrijft de set af op de factuur: een level betaalt zijn deel van de 1.000, niet de hele prijs', () => {
-    const user = mokbi(10)
+    const user = mokbi(15, 5)
     const s = advisedSetup(user)
     const bought = s.purchases.find((p) => p.slot === 'ammo')!
     const p = profileOf({ ...user, equipment: s.equipment, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice })
@@ -78,7 +80,7 @@ describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als eq
   })
 
   it('telt de star die je draagt als van jou: de Wolbi die je koopt, kost daarna niets meer', () => {
-    const user = mokbi(10)
+    const user = mokbi(15, 5)
     const s = advisedSetup(user)
     const again = { ...user, equipment: s.equipment, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice }
     expect(starUpgradeAdvice(again.drafts, profileOf(again))).toBeNull()
@@ -144,13 +146,17 @@ const expSum = (from: number, to: number) => EXP_10_TO_30.slice(from - 10, to - 
 const heldMokbi = (level: number, claw = 15) => thief('Snail', level, claw, { starWatk: String(MOKBI.watk), starRecharge: String(MOKBI.rechargePerStar) })
 
 describe('starUpgradeAdvice: het getal zelf (#198)', () => {
-  // Met de hand: saving = (som EXP over de horizon) x (1/EPM zonder - 1/EPM met de star); net = saving - prijs van de set.
+  // Met de hand: saving = som over de levels van de horizon van EXP x (1/EPM zonder - 1/EPM met de star), elk level op zijn eigen gegroeide profiel (growth.ts); net = saving - prijs van de set.
   const hand = (user: CheapestInput, name: string, to: number) => {
     const profile = profileOf(user)!
-    const base = bestExpPerMeso(user.drafts, profile, ASSUMPTIONS)!
+    const grown = growthOf(user.drafts, profile)
     const star = THROWING_STARS.find((t) => t.name === name)!
-    const withIt = bestExpPerMeso(user.drafts, { ...profile, starWatk: star.watk, starRecharge: star.rechargePerStar }, ASSUMPTIONS)!
-    const saving = expSum(profile.level, to) * (1 / base - 1 / withIt)
+    let saving = 0
+    for (let l = profile.level; l <= to; l++) {
+      const base = bestExpPerMeso(user.drafts, grown(l), ASSUMPTIONS)!
+      const withIt = bestExpPerMeso(user.drafts, { ...grown(l), starWatk: star.watk, starRecharge: star.rechargePerStar }, ASSUMPTIONS)!
+      saving += expSum(l, l) * (1 / base - 1 / withIt)
+    }
     return { saving, net: saving - star.buy!.price }
   }
 
@@ -189,15 +195,16 @@ describe('starUpgradeAdvice: het getal zelf (#198)', () => {
     expect(starUpgradeAdvice(beyond.drafts, profileOf(beyond))).toBeNull()
   })
 
-  it('schrijft de set af met de hand-berekende deelprijs: level 10 van 10 tot en met 19 betaalt 1.000 x 1.716 / 74.278, naar boven afgerond', () => {
-    // 1000 x 1716 / 74278 = 23,10 meso, afgerond naar boven op 24.
-    const user = heldMokbi(10)
+  it('schrijft de set af met de hand-berekende deelprijs: level 15 van 15 tot en met 19 betaalt 1.000 x 7.050 / 57.326, naar boven afgerond', () => {
+    // 1000 x 7050 / 57326 = 122,98 meso, afgerond naar boven op 123. (Voor de groei was het level 10 met 15 ATT: 1000 x 1716 / 74278 = 24.)
+    expect(expSum(15, 19)).toBe(57326)
+    const user = heldMokbi(15, 5)
     const s = advisedSetup(user)
     const bought = s.purchases.find((p) => p.slot === 'ammo')!
-    expect(bought).toMatchObject({ name: WOLBI.name, price: 1000, horizon: { from: 10, to: 19 } })
+    expect(bought).toMatchObject({ name: WOLBI.name, price: 1000, horizon: { from: 15, to: 19 } })
     const p = profileOf({ ...user, equipment: s.equipment, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice })
     const inv = levelInvoice(s.result.drafts, p, [{ ...bought.horizon!, name: bought.name, price: bought.price }])
     const line = inv.kind === 'invoice' ? inv.lines.find((l) => l.shop && l.label === WOLBI.name) : undefined
-    expect(line?.meso).toBe(24)
+    expect(line?.meso).toBe(123)
   })
 })

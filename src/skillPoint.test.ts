@@ -20,7 +20,7 @@ const own = (id: string, expPerHour: number, potions: number): SpotDraft => ({
   ...newDraft(id),
   name: id,
   expPerHour: String(expPerHour),
-  potions: String(potions),
+  travel: String(potions),
 })
 const known = (id: string, mob: string): SpotDraft => ({ ...mobDraft(mob)!, id })
 

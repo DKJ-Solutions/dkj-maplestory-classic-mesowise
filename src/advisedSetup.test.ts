@@ -89,11 +89,12 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
   })
 
   it('noemt bij een Bowman de pijl voor het wapen van Advised, en bij een Thief met een dagger niets, net als de factuur (#189)', () => {
-    // Met een Balanche koopt Advised op level 20 een War Bow: de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
+    // Met een Balanche koopt Advised op level 20 een War Bow of een Crossbow (voor de groei was dat een War Bow, Dave 7 oktober 2026; beide geven op Snail
+    // dezelfde EXP per meso en dezelfde besparing, dus de keuze is een gelijkspel): de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
     const bowman = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Balanche', name: '', stat: '' } } }
     const b = advisedSetup(bowman)
-    expect(b.equipment.claw.pick).toBe('War Bow')
-    expect(b.ammo).toBe('Arrows for Bows')
+    expect(['War Bow', 'Crossbow']).toContain(b.equipment.claw.pick)
+    expect(b.ammo).toBe(b.equipment.claw.pick === 'Crossbow' ? 'Arrows for Crossbows' : 'Arrows for Bows')
     const thief = { ...input('thief', 20, 'Snail'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1' } }
     const s = advisedSetup(thief)
     expect(s.ammo).toBeNull()
@@ -113,14 +114,14 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     const odd = ammoLine({ ...thief, profileDraft: { ...thief.profileDraft, starRecharge: '0.35' } })
     expect(odd.s.ammo).toBe('Throwing stars, 0,35 meso per stuk')
     expect(odd.line?.why).toMatchObject({ kind: 'ammo', pricePerStar: 0.35 })
-    // Een eigen plek zonder berekend plan: de factuur telt geen stars (alleen het bedrag van de plek), dus het slot noemt er ook geen.
-    const custom = { id: 'eigen', name: 'Eigen plek', expPerHour: '50000', potions: '0', ammo: '', travel: '0' }
+    // Een eigen plek zonder berekend plan: er is geen factuur, dus het slot noemt ook geen munitie.
+    const custom = { id: 'eigen', name: 'Eigen plek', expPerHour: '50000', travel: '0' }
     const noPlan = ammoLine({ ...thief, drafts: [custom] })
     expect(noPlan.line).toBeUndefined()
     expect(noPlan.s.ammo).toBeNull()
     // Een Bowman heeft geen eigen pijlprijs: zijn profiel rekent altijd met de prijs van de gekozen pijl, dus daar loopt het slot niet uiteen.
     const bow = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Battle Bow', name: '', stat: '' } } }
-    expect(advisedSetup({ ...bow, profileDraft: { ...bow.profileDraft, starRecharge: '0.35' } }).ammo).toBe('Arrows for Bows')
+    expect(advisedSetup({ ...bow, profileDraft: { ...bow.profileDraft, starRecharge: '0.35' } }).ammo).toMatch(/^Arrows for (Bows|Crossbows)$/)
   })
 
   it('geeft zonder aankopen de eigen equip terug, dezelfde objecten', () => {

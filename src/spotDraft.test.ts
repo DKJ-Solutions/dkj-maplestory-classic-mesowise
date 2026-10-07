@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Spot } from './calc/rankSpots'
-import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, parseAmount, toDraft, toSpot, type SpotDraft } from './spotDraft'
+import { MAX_NAME_LENGTH, MAX_SPOTS, newDraft, parseAmount, toSpot, type SpotDraft } from './spotDraft'
 
 describe('parseAmount', () => {
   it('leest gewone getallen', () => {
@@ -25,17 +24,15 @@ describe('toSpot', () => {
     id: 'a1',
     name: '  Ant Tunnel  ',
     expPerHour: '60000',
-    potions: '10000',
-    ammo: '4000',
     travel: '1000',
   }
 
-  it('zet de tekstvelden om naar getallen', () => {
+  it('zet de tekstvelden om naar getallen, met potions en munitie op 0 (die staan niet in de plek)', () => {
     expect(toSpot(draft)).toEqual({
       id: 'a1',
       name: 'Ant Tunnel',
       expPerHour: 60_000,
-      cost: { potions: 10_000, ammo: 4_000, travel: 1_000 },
+      cost: { potions: 0, ammo: 0, travel: 1_000 },
     })
   })
 
@@ -44,34 +41,9 @@ describe('toSpot', () => {
   })
 
   it('maakt van een leeg veld NaN', () => {
-    const s = toSpot({ ...draft, expPerHour: '', ammo: ' ' })
+    const s = toSpot({ ...draft, expPerHour: '', travel: ' ' })
     expect(s.expPerHour).toBeNaN()
-    expect(s.cost.ammo).toBeNaN()
-    expect(s.cost.potions).toBe(10_000)
-  })
-})
-
-describe('toDraft', () => {
-  const spot: Spot = {
-    id: 'b2',
-    name: 'Sleepywood',
-    expPerHour: 45_000,
-    cost: { potions: 7_500, ammo: 0, travel: 250 },
-  }
-
-  it('zet getallen om naar tekst', () => {
-    expect(toDraft(spot)).toEqual({
-      id: 'b2',
-      name: 'Sleepywood',
-      expPerHour: '45000',
-      potions: '7500',
-      ammo: '0',
-      travel: '250',
-    })
-  })
-
-  it('geeft heen en terug dezelfde plek', () => {
-    expect(toSpot(toDraft(spot))).toEqual(spot)
+    expect(s.cost.travel).toBeNaN()
   })
 })
 
@@ -83,7 +55,7 @@ describe('grenzen', () => {
 })
 
 describe('newDraft', () => {
-  it('begint leeg, met kosten op 0', () => {
-    expect(newDraft('x')).toEqual({ id: 'x', name: '', expPerHour: '', potions: '0', ammo: '0', travel: '0' })
+  it('begint leeg, met reizen op 0', () => {
+    expect(newDraft('x')).toEqual({ id: 'x', name: '', expPerHour: '', travel: '0' })
   })
 })

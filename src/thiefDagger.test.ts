@@ -33,7 +33,7 @@ const daggerDraft = (over: Partial<ProfileDraft> = {}): ProfileDraft => ({
 })
 
 const bubbling = findKnownSpot('mob:Bubbling')!
-const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, { ...newDraft('b'), name: 'b', expPerHour: '1000', potions: '10000' }]
+const drafts = [{ ...mobDraft('Ribbon Pig')!, id: 'a' }, { ...newDraft('b'), name: 'b', expPerHour: '1000', travel: '10000' }]
 
 describe('thiefWithDagger en de weapon attack', () => {
   it('geldt alleen voor een Thief met dagger = 1', () => {
