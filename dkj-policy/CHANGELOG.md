@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**86 / 134 minor entries** <!-- pending-tally -->
+**87 / 135 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/224-stale-cost-text · 20261007-153955Z
+
+The app no longer asks the player to fill in potion, ammo, EXP-per-hour or travel values it does not
+let them enter. The skill help text says the extra mana is always included in the potion costs, and
+an invalid spot says which value is unknown.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player no longer reads a help line or an error that points at a field that does not exist.
+
+**Score:** 2
+
+#### Pull Request
+
+Stop asking the player for potion and ammo costs they can no longer enter
+
+[PR #237](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/237)
+
+---
 
 ### DEPLOY: app/stat-breakdown-help · 20261007-153224Z
 
