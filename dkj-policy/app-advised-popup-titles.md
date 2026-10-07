@@ -48,11 +48,15 @@ and shows the ammo next to the potions.
 - [x] Every Advised popup shows "Advised: <card>" as its title (Equip, Skillpoints, Monster, Potions, Ability points, Total stats), also when opened from the card itself
 - [x] The `ariaLabel` prop of `CardPopup` and `StatDialog` is gone: the visible title now carries the card name
 - [x] The Item column header of the Advised equip bill reads Equip
-- [x] The Potions card's Advised popup is "Advised: Useable" and shows the ammo the advice counts (Throwing stars or Arrows: name, ATT, price per piece; only the name for an own amount) (Dave, October 7, 2026)
+- [x] The Potions card's Advised popup is "Advised: Useable" and shows the ammo the advice counts (Dave, October 7, 2026)
+- [x] Advised: Useable is a bill like Advised: Equip: HP, MP and Ammo rows with a Qty column, what each costs this level, an info button and a "?" with the calculation steps, and a Total cost; the bill's head, row and total are shared parts (`BillHead`, `BillRow`, `BillTotal`) (Dave, October 7, 2026)
+- [x] `ammoInfo` in `src/cheapestEquip.ts` reads a star's or arrow's ATT and price from the item lists; the profile's star fields were wrong for a Bowman (Tycho)
+- [x] Every Advised popup has a subtitle with the level and job the advice reckons with, such as "Lv. 30 Thief" (Dave, October 7, 2026)
 
 ### TEST
 
 - [x] Tests: the title of each Advised popup starts with "Advised: <card>"
+- [ ] Tycho: tests for the Useable bill, the subtitle and `ammoInfo`
 - [ ] Victor: review of the Useable change
 - [x] Victor: code review, no findings (all seven Advised call sites carry the new title; a long title wraps beside the close button)
 - [ ] Dave looks at it on a phone before the merge
@@ -60,8 +64,9 @@ and shows the ammo next to the potions.
 ### DEPLOY: app/advised-popup-titles
 
 Every Advised popup now names its card in the title, such as "Advised: Equip" or "Advised: Skillpoints", so you can see which part
-of the advice you are reading. The potions popup is now "Advised: Useable" and also shows the stars or arrows the advice
-counts, with their ATT and price per piece. The middle column of the Advised equip bill is called Equip.
+of the advice you are reading. Under each title a subtitle says the level and job the advice reckons with. The potions popup is
+now "Advised: Useable": a bill like Advised: Equip, with a row per potion and for the stars or arrows, how many you use this level
+and what that costs. The middle column of the Advised equip bill is called Equip.
 
 **Score:** 2
 
