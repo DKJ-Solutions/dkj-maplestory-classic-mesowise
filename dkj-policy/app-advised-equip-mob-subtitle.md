@@ -47,7 +47,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 - [x] Gwen: two-row grid, small uppercase labels, value at title size with a 24px line so it lines up with the unchanged ? icon
 - [x] Cody + Gwen: title Advised: Equip renamed to Total cost: Equip with a small grey ADVISED tag on its own row above it; the title keeps the card-popup size and fits one row with its ? from 360px (checked in headless Chrome at 360 and 320px); accessible name Total cost: Equip (advised)
 - [x] Gwen: every Advised popup is light orange (`--advised-bg`/`--advised-border`, light and dark), via an `advised-dialog` class that sets `--card`
-- [x] Gwen: Char and Mob rows each sit in their own box, equally wide, with a light background (`--advised-box`, light and dark)
+- [x] Gwen: Char and Mob rows each sit in their own box, equally wide, without a visible label (Char/Mob kept for screen readers), with a light background (`--advised-box`, light and dark)
 - [x] Edith: explanation cut to one sentence (EXP per meso); Victor: no bugs
 
 ### TEST
@@ -57,7 +57,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 
 ### DEPLOY: app/advised-equip-mob-subtitle
 
-The Advised: Equip popup is now titled **Total cost: Equip** with a small ADVISED label above it, every Advised popup is light orange, and Total cost: Equip says on two rows who and what its advice is computed for: **Char** (level and job) and **Mob** (the mob Advised: Monster also shows), with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
+The Advised: Equip popup is now titled **Total cost: Equip** with a small ADVISED label above it, every Advised popup is light orange, and Total cost: Equip says in two boxes who and what its advice is computed for: the level and job, and the mob Advised: Monster also shows, with a ? after the mob that explains in one sentence why that mob: of the mobs that are not dangerous for you, it gives the most EXP per meso at this level.
 
 **Score:** 2
 

@@ -4147,7 +4147,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
           const adv = openView(title, 'Advised')
           // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
-          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? `Char${who}Mob${mob}` : who)
+          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? `Char: ${who}Mob: ${mob}` : who)
           closeView(title)
           const own = openView(title, 'Your character')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
