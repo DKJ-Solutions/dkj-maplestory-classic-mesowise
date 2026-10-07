@@ -1878,6 +1878,8 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
       price={shopPrice}
       level={props.line ? props.line.meso : null}
+      // Het vraagteken heet naar het bedrag dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?", Level als het er staat, anders Shop; zonder bedrag de naam.
+      helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : shopPrice !== null ? `Waarom ${compactMeso(shopPrice)}?` : undefined}
       help={
         <>
           <p class="item-verdict">{help.verdict}</p>

@@ -3760,6 +3760,8 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     closeItem(why)
     // Het vraagteken rekent het deel voor, met het bedrag uit de kolom.
     const item = openItem(bought[0])
+    // De popup heet naar het bedrag uit de kolom Level (Dave, 7 oktober 2026).
+    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${bought[0].querySelector('.advised-level')!.textContent}?`)
     expect(item.textContent).toContain('Op deze factuur')
     expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
     closeItem(item)
