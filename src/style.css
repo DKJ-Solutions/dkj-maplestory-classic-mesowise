@@ -367,15 +367,18 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
-/* De ondertitel van Total cost: Equip (Dave, 7 oktober 2026): twee regels, Char en Mob, elk in een eigen vak met een lichte achtergrond, even breed.
-   Zonder zichtbaar label (Dave, 7 oktober 2026); de waarde staat in de tekstkleur. Het vraagteken houdt
-   zijn grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan
-   zonder zijn regel hoger te maken. */
-.advised-for { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
-.advised-for-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.375rem 0.75rem; background: var(--advised-box); border-radius: 0.5rem; }
-.advised-for-value { min-width: 0; font-size: 1rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+/* "Based on:" bovenaan Total cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder Char en Mob naast elkaar op één regel, elk in een
+   eigen vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In de popup en niet onder de titel, zodat de
+   volle breedte er is: ook "Lv. 70 Magician" en "Orange Mushroom" passen op 360px naast elkaar; op een nog smaller scherm gaat het tweede vak
+   eronder. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het
+   vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
+.based-on { margin-bottom: 1rem; }
+.based-on-head { margin: 0 0 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.advised-for { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
+.advised-for-row { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
+.advised-for-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 .advised-for-mob { display: flex; align-items: center; }
-.stat-dialog-sub .advised-for-mob .help-toggle { flex: none; margin: -0.625rem 0 -0.625rem -0.375rem; }
+.based-on .advised-for-mob .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }

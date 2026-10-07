@@ -4136,7 +4136,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       return name
     }
 
-    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", onder Advised: Equip twee regels Char (Lv. <n> <Job>) en Mob (<mob>), en onder Your character geen', () => {
+    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", behalve in Total cost: Equip, dat bovenaan onder "Based on:" Char (Lv. <n> <Job>) en Mob (<mob>) zet; onder Your character geen', () => {
       for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
         setJob(job)
         const who = totalCostWho('20', job)
@@ -4145,9 +4145,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(mob, job).not.toBe('—')
         for (const title of CARDS) {
           const adv = openView(title, 'Advised')
-          // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
-          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? `Char: ${who}Mob: ${mob}` : who)
+          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? undefined : who)
+          // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
+          expect(adv.querySelector('.based-on')?.textContent, job + ' ' + title + ' based on').toBe(title === 'Equip' ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
           const own = openView(title, 'Your character')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
@@ -4162,7 +4163,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      const button = d.querySelector<HTMLElement>('.stat-dialog-sub .advised-for-mob .help-toggle')!
+      const button = d.querySelector<HTMLElement>('.based-on .advised-for-mob .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()

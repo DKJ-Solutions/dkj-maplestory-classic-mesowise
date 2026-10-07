@@ -436,9 +436,9 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; tag?: string; advised?: boolean; subtitle?: ComponentChildren; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
-  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026); een eigen ondertitel
-  // (`subtitle`) vervangt die regel, zoals die van Advised: Equip met de mob erbij.
+function CardPopup(props: { title: string; tag?: string; advised?: boolean; hideWho?: boolean; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+  // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026); niet als de popup dat
+  // zelf zegt (`hideWho`), zoals Total cost: Equip onder "Based on:".
   const who = useContext(AdvisedWho)
   const close = () => {
     props.onClose()
@@ -446,7 +446,7 @@ function CardPopup(props: { title: string; tag?: string; advised?: boolean; subt
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.hideWho ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -1438,7 +1438,7 @@ function StatDialog(props: {
   /** Een klein grijs label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026); de toegankelijke naam krijgt het tussen haakjes. */
   tag?: string
   /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
-  subtitle?: ComponentChildren
+  subtitle?: string
   /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
   help?: ComponentChildren
   onCancel: () => void
@@ -1555,7 +1555,7 @@ function StatDialog(props: {
     <div class="stat-dialog-titles">
       {props.tag && <span class="title-tag">{props.tag}</span>}
       {heading}
-      {props.subtitle && <div class="stat-dialog-sub">{props.subtitle}</div>}
+      {props.subtitle && <p class="stat-dialog-sub">{props.subtitle}</p>}
     </div>
   ) : (
     heading
@@ -1624,28 +1624,32 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /**
- * De ondertitel van Total cost: Equip (Dave, 7 oktober 2026): voor wie het advies rekent en op welke mob, op twee regels (Char, Mob),
- * elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob dat zegt waarom juist die.
+ * Bovenaan Total cost: Equip (Dave, 7 oktober 2026): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), naast
+ * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
+ * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function AdvisedFor(props: { who: string; mob: string }) {
+function BasedOn(props: { who: string; mob: string }) {
   return (
-    <div class="advised-for">
-      {props.who && (
+    <section class="based-on" aria-label="Based on">
+      <h3 class="based-on-head">Based on:</h3>
+      <div class="advised-for">
+        {props.who && (
+          <div class="advised-for-row">
+            <span class="sr-only">Char: </span>
+            <span class="advised-for-value">{props.who}</span>
+          </div>
+        )}
         <div class="advised-for-row">
-          <span class="sr-only">Char: </span>
-          <span class="advised-for-value">{props.who}</span>
+          <span class="sr-only">Mob: </span>
+          <span class="advised-for-value advised-for-mob">
+            {props.mob}
+            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+              <p class="item-why">{mobWhy(props.mob)}</p>
+            </PopupButton>
+          </span>
         </div>
-      )}
-      <div class="advised-for-row">
-        <span class="sr-only">Mob: </span>
-        <span class="advised-for-value advised-for-mob">
-          {props.mob}
-          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-            <p class="item-why">{mobWhy(props.mob)}</p>
-          </PopupButton>
-        </span>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -2122,9 +2126,12 @@ function EquipmentCard(props: {
   )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
+  // "Based on:" bovenaan Advised (Dave, 7 oktober 2026); dan staat het level en de job daar, en niet nog eens onder de titel.
+  const basedOn = view === 'advised' && props.cheapest !== null && props.advisedMob !== null
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} subtitle={props.cheapest && props.advisedMob ? <AdvisedFor who={who} mob={props.advisedMob} /> : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} hideWho={basedOn} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+        {basedOn && <BasedOn who={who} mob={props.advisedMob!} />}
         {body}
       </CardPopup>
     )
