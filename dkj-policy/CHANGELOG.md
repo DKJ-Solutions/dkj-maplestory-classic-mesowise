@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**90 / 138 minor entries** <!-- pending-tally -->
+**91 / 139 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/240-lock-scroll-behind-popup · 20261007-203807Z
+
+Repair work for the people building the app; the change a player notices is described below.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+When a popup is open, swiping now scrolls the popup and no longer the page behind it.
+
+**Score:** 3
+
+#### Pull Request
+
+Lock the page behind an open popup so scrolling moves the popup
+
+[PR #243](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/243)
+
+---
 
 ### DEPLOY: app/why-no-upgrade-title · 20261007-203558Z
 
