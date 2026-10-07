@@ -56,7 +56,7 @@ player enters neither, so all four are reworded together.
 ### TEST
 
 - [x] `rankSpots.test.ts` pins the new messages; full suite green (1939 tests), lint clean
-- [ ] Dave looks at the mana help text and the messages before the merge (visible result)
+- [x] Dave looked at the mana help text and the messages before the merge (visible result): "ship it"
 
 ### DEPLOY: app/224-stale-cost-text
 
