@@ -126,7 +126,8 @@ describe('autoFillAp: de hele catalogus per job', () => {
       for (const { slot } of EQUIP_SLOTS) {
         if (slot === 'ammo') continue
         for (const item of catalogItems(slot, job)) {
-          const eq = wear({ [slot]: item.name })
+          // Een shield telt alleen naast een wapen voor één hand (Dave, 7 oktober 2026): de beginner Sword vraagt geen stat.
+          const eq = wear(slot === 'shield' ? { claw: 'Sword', shield: item.name } : { [slot]: item.name })
           const req = itemRequirements(slot, eq[slot])
           const r = autoFillAp(job, '190', eq)
           if (!r.ok) throw new Error(`${job} ${item.name}: verwacht ok`)
@@ -151,7 +152,8 @@ describe('autoFillAp: de hele catalogus per job', () => {
       for (const { slot } of EQUIP_SLOTS) {
         if (slot === 'ammo') continue
         for (const item of catalogItems(slot, job)) {
-          const eq = wear({ [slot]: item.name })
+          // Een shield telt alleen naast een wapen voor één hand (Dave, 7 oktober 2026): de beginner Sword vraagt geen stat.
+          const eq = wear(slot === 'shield' ? { claw: 'Sword', shield: item.name } : { [slot]: item.name })
           const req = itemRequirements(slot, eq[slot]) ?? {}
           const need = STATS.reduce((n, s) => n + Math.max(4, req[s] ?? 0), 0)
           const r = autoFillAp(job, '1', eq)

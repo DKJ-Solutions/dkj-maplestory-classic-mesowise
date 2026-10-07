@@ -72,8 +72,8 @@ export function autoFillAp(job: Job, level: string, equipment: Equipment): AutoF
   const unknown: string[] = []
   const need: Record<Stat, number> = { str: STARTING_AP.perStat, dex: STARTING_AP.perStat, int: STARTING_AP.perStat, luk: STARTING_AP.perStat }
   const by: Partial<Record<Stat, string>> = {}
-  // Een slot dat de job met dit wapen niet heeft (het shield van een Bowman met een boog, #172) telt niet mee.
-  for (const { slot } of slotsFor(job, equipment.claw.pick)) {
+  // Een slot dat de job met dit wapen niet draagt (een shield naast een wapen voor twee handen) telt niet mee.
+  for (const { slot } of slotsFor(job, equipment.claw.pick, equipment.claw.weaponKind)) {
     const entry = equipment[slot]
     const name = wornName(entry)
     if (name === null || slot === 'ammo') continue

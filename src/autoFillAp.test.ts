@@ -95,7 +95,8 @@ describe('autoFillAp: items die je nog niet draagt (Dave, 5 oktober 2026)', () =
   it('te weinig AP voor de toekomstige eis: de secundaire stat krijgt wat er past, de hoofdstat haalt nog wat je draagt', () => {
     // Ruwe invoer: STR 50 (Red Cross Shield), INT 50 (Red Lutia) en LUK 50 (Red Stealer Pants) gedragen. Level 32 geeft 180 AP:
     // er blijft 30 over voor DEX, minder dan de 34 van Seclusion Wristguard. Level 30 (170): de 20 die shield en broek vragen; het shield komt eerst in slotvolgorde.
-    const eq = wear({ shield: 'Red Cross Shield', gloves: 'Red Lutia', bottom: 'Red Stealer Pants' })
+    // Een shield telt alleen naast een wapen voor één hand (Dave, 7 oktober 2026): de Razor vraagt geen stat.
+    const eq = wear({ claw: 'Razor', shield: 'Red Cross Shield', gloves: 'Red Lutia', bottom: 'Red Stealer Pants' })
     expect(autoFillAp('thief', '32', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 30, int: 50, luk: 50 }, limitedBy: 'Seclusion Wristguard' })
     expect(autoFillAp('thief', '30', eq)).toMatchObject({ ok: true, base: { str: 50, dex: 20, int: 50, luk: 50 }, limitedBy: 'Red Cross Shield' })
     expect(autoFillAp('thief', '29', eq)).toMatchObject({ ok: false, reason: 'short', need: 170, have: 165 })

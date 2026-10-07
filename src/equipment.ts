@@ -43,10 +43,10 @@ export const EQUIP_SLOTS: readonly { slot: EquipSlot; label: string }[] = [
   { slot: 'ammo', label: 'Ammo' },
   { slot: 'shield', label: 'Shield' },
   { slot: 'hat', label: 'Hat' },
+  { slot: 'shoes', label: 'Shoes' },
   { slot: 'top', label: 'Top' },
   { slot: 'bottom', label: 'Bottom' },
   { slot: 'overall', label: 'Overall' },
-  { slot: 'shoes', label: 'Shoes' },
   { slot: 'gloves', label: 'Gloves' },
   { slot: 'cape', label: 'Cape' },
   { slot: 'earrings', label: 'Earrings' },
@@ -81,14 +81,38 @@ const hasSlot = (job: Job, slot: EquipSlot, weapon = '', kind?: WeaponKind): boo
   return true
 }
 
-/** Of een job het slot heeft met het wapen dat in `eq` staat (#172): het shield van een Bowman hangt af van zijn wapen. */
-const hasSlotFor = (eq: Equipment, job: Job, slot: EquipSlot): boolean => hasSlot(job, slot, eq.claw.pick, effectiveKind(eq.claw))
+/**
+ * De wapens voor één hand: de wapens onder level 10, de daggers, de Warrior-wapens voor één hand (1H Sword, Axe en Blunt) en de
+ * wands. Een staff, een Warrior-wapen voor twee handen, een spear, een polearm, een claw en een boog of kruisboog vragen beide handen.
+ */
+const ONE_HANDED: ReadonlySet<string> = new Set([
+  ...BEGINNER_WORN_WEAPONS.map((w) => w.name),
+  ...NPC_DAGGERS.map((w) => w.name),
+  ...[...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS].filter((w) => w.kind.startsWith('1h-')).map((w) => w.name),
+  ...NPC_MAGICIAN_WEAPONS.filter((w) => w.kind === 'wand').map((w) => w.name),
+])
+
+/**
+ * Of je een wapen voor één hand vasthoudt (Dave, 7 oktober 2026): alleen dan staat er een shield-rij. Een leeg wapenslot telt niet,
+ * en een eigen wapen alleen als een Thief het een dagger noemt (#176): van een ander eigen wapen weet de app de handen niet.
+ */
+const holdsOneHanded = (weapon: string, kind?: WeaponKind): boolean => (weapon === OTHER ? kind === 'dagger' : ONE_HANDED.has(weapon))
+
+/**
+ * Of het slot op het scherm staat en meetelt: een slot dat de job heeft (hasSlot), en het shield alleen naast een wapen voor één
+ * hand (Dave, 7 oktober 2026). De catalogus kijkt alleen naar hasSlot, zodat opzoeken op naam ook zonder wapen werkt.
+ */
+const wearsSlot = (job: Job, slot: EquipSlot, weapon = '', kind?: WeaponKind): boolean =>
+  hasSlot(job, slot, weapon, kind) && (slot !== 'shield' || holdsOneHanded(weapon, kind))
+
+/** Of een job het slot draagt met het wapen dat in `eq` staat: het shield hangt af van het wapen. */
+const hasSlotFor = (eq: Equipment, job: Job, slot: EquipSlot): boolean => wearsSlot(job, slot, eq.claw.pick, effectiveKind(eq.claw))
 
 /** De soort van een eigen wapen zoals de app ermee rekent: zonder keuze een claw (#176). Alleen bij een eigen wapen. */
 const effectiveKind = (weapon: EquipEntry): WeaponKind | undefined => (weapon.pick === OTHER ? (weapon.weaponKind ?? 'claw') : undefined)
 
-/** De slots die een job heeft, in de volgorde van het scherm; `weapon` is de pick in het wapenslot (voor het shield van de Bowman, #172). */
-export const slotsFor = (job: Job, weapon = '', kind?: WeaponKind): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => hasSlot(job, s.slot, weapon, kind))
+/** De slots die een job draagt, in de volgorde van het scherm; `weapon` is de pick in het wapenslot (het shield alleen naast een wapen voor één hand). */
+export const slotsFor = (job: Job, weapon = '', kind?: WeaponKind): readonly { slot: EquipSlot; label: string }[] => EQUIP_SLOTS.filter((s) => wearsSlot(job, s.slot, weapon, kind))
 
 /** Hoe het scherm een slot noemt. Het ammo-slot heet voor elke job "Ammo" (Dave, 4 oktober 2026). */
 export const slotLabel = (slot: EquipSlot): string => EQUIP_SLOTS.find((s) => s.slot === slot)?.label ?? slot
@@ -552,12 +576,12 @@ export function displacedSlots(eq: Equipment, slot: EquipSlot): readonly EquipSl
  * Bewust anders dan het advies: is van een vervangen slot de stat onbekend (nooit ingevuld, of een eigen item zonder
  * getal), dan blijft de WDEF in het profiel staan, want je beschrijft wat je al droeg en de app weet niet wat eraf
  * moet. Het advies telt een onbekende helft juist als leeg (zie armorUpgrade.ts), de grootste besparing die kan.
- * Een shield dat het nieuwe wapen niet toelaat komt eraf (#172): wissel een Bowman een wapen voor één hand voor een
- * boog (of een leeg of eigen wapen), dan wordt het shield "nog niet ingevuld" en gaat zijn WDEF van het profiel af, zoals in het spel.
+ * Een shield dat het nieuwe wapen niet toelaat komt eraf (#172): wissel je een wapen voor één hand voor een wapen voor
+ * twee handen (of een leeg of eigen wapen), dan wordt het shield "nog niet ingevuld" en gaat zijn WDEF van het profiel af, zoals in het spel.
  * Is de stat van dat shield onbekend, dan blijft de WDEF staan (zie hierboven).
  */
 export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: EquipSlot, after: EquipEntry, job: Job): { equipment: Equipment; profile: ProfileDraft } {
-  if (slot === 'claw' && isFilled(eq.shield) && hasSlotFor(eq, job, 'shield') && !hasSlot(job, 'shield', after.pick)) {
+  if (slot === 'claw' && isFilled(eq.shield) && hasSlotFor(eq, job, 'shield') && !wearsSlot(job, 'shield', after.pick, effectiveKind(after))) {
     const bare: Equipment = { ...eq, shield: emptyEntry() }
     return changeEquipment(shiftWdef(profile, 0, [wornStat('shield', eq.shield)]), bare, slot, after, job)
   }
