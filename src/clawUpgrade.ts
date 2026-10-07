@@ -11,17 +11,21 @@
 // hele horizon, alleen de EXP per level verschilt; de verkoopwaarde van je oude claw telt niet mee
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
 // het scherm "Equip" vult die in als je een claw kiest.
+// Onder level 10 koopt alleen Advised uit de wapens met een prijs van een Beginner (data/beginnerWeapons.ts, #203), met de horizon
+// hoogstens tot level 9; wat de kaart Attack daar vergelijkt, staat open in #209.
 import { ASSUMPTION_VARIANTS } from './best'
 import { BOWMAN_WEAPONS } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
+import { BEGINNER_WORN_WARRIOR_WEAPONS, BEGINNER_WORN_WEAPONS, isBeginnerDagger } from './data/beginnerWeapons'
 import { NPC_CLAWS } from './data/claws'
 import { NPC_DAGGERS } from './data/daggers'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
+import { FIRST_JOB_LEVEL } from './data/skillPoints'
 import type { Weapon } from './data/types'
 import { byNet, horizonCost, type HorizonScope } from './horizonCost'
 import { bestExpPerMeso } from './bestExpPerMeso'
 import { MAGICIAN_WEAPONS } from './magicianGear'
-import { shortfall, thiefWithDagger, type Profile, type StatNeed } from './profile'
+import { attacksAsBeginner, shortfall, thiefWithDagger, type Profile, type StatNeed } from './profile'
 import type { SpotDraft } from './spotDraft'
 import { WARRIOR_WEAPONS } from './warriorGear'
 
@@ -69,6 +73,8 @@ export const withClaw = (p: Profile, c: Weapon): Profile => ({
   clawWatk: c.watk,
   attackMs: c.speed.attackMs,
   ...(c.mult !== undefined ? { weaponMult: c.mult } : {}),
+  // Onder level 10 slaat een Thief of Bowman als Beginner, en bij een dagger telt LUK als hoofdstat (#171): de vlag volgt het wapen, zoals in de equipment.
+  ...(attacksAsBeginner(p.job, p.level) ? { dagger: isBeginnerDagger(c.name) ? 1 : 0 } : {}),
 })
 
 /** De schade per milliseconde zonder stats: genoeg om te zeggen welk wapen "later" beter is (voor de horizon van een Warrior of Bowman). */
@@ -86,42 +92,67 @@ const rankedByModel = (p: Profile): boolean => p.job === 'warrior' || p.job === 
 /** De wapenlijst per job met een eigen winkel; de Thief heeft de claws (NPC_CLAWS). Het wapen van een Magician geeft M.ATT in `watk` (zie magicianGear.ts). */
 const WEAPONS_BY_JOB: Partial<Record<Profile['job'], readonly Weapon[]>> = { warrior: WARRIOR_WEAPONS, bowman: BOWMAN_WEAPONS, magician: MAGICIAN_WEAPONS }
 
-/** De winkellijst van dit profiel (een Thief met een dagger: de daggers), en of een wapen daarin "beter" is dan een ander (voor de horizon). */
-const shopOf = (p: Profile) =>
+/**
+ * De wapens die een Beginner onder level 10 in de winkel koopt (#203): de wapens met een prijs uit data/beginnerWeapons.ts, een Warrior zonder
+ * daggers. Een Magician heeft er geen: de wapens van Flora beginnen op level 10, dus zijn winkel is leeg.
+ */
+const beginnerShop = (job: Profile['job']): readonly Weapon[] =>
+  job === 'magician' ? [] : job === 'warrior' ? BEGINNER_WORN_WARRIOR_WEAPONS : BEGINNER_WORN_WEAPONS
+
+/** Een winkel: de wapens, of het model ze rangschikt (eigen snelheid en multiplier) en of een wapen daarin "beter" is dan een ander (voor de horizon). */
+interface Shop {
+  weapons: readonly Weapon[]
+  ranked: boolean
+  better: (c: Weapon, than: Weapon) => boolean
+}
+
+const morePower = (c: Weapon, than: Weapon): boolean => power(c) > power(than)
+
+/** De winkel van de job zelf (een Thief met een dagger: de daggers), vanaf level 10. */
+const jobShopOf = (p: Profile): Shop =>
   rankedByModel(p)
-    ? { weapons: withDagger(p) ? NPC_DAGGERS : (WEAPONS_BY_JOB[p.job] ?? []), better: (c: Weapon, than: Weapon) => power(c) > power(than) }
-    : { weapons: WEAPONS_BY_JOB[p.job] ?? NPC_CLAWS, better: (c: Weapon, than: Weapon) => c.watk > than.watk }
+    ? { weapons: withDagger(p) ? NPC_DAGGERS : (WEAPONS_BY_JOB[p.job] ?? []), ranked: true, better: morePower }
+    : { weapons: WEAPONS_BY_JOB[p.job] ?? NPC_CLAWS, ranked: false, better: (c, than) => c.watk > than.watk }
+
+/**
+ * Waar dit profiel uit koopt. Met `beginner` (alleen Advised, #203) onder level 10 de wapens van een Beginner; anders de winkel van de
+ * job, ook onder level 10: de kaart Attack noemt dan de eerstvolgende claw vanaf level 10.
+ */
+const shopOf = (p: Profile, beginner = false): Shop =>
+  beginner && p.level < FIRST_JOB_LEVEL ? { weapons: beginnerShop(p.job), ranked: true, better: morePower } : jobShopOf(p)
 
 /** Het eerste wapen van de winkel waar je level nog niet voor volstaat en dat `better` beter vindt; null als er geen meer komt. */
-const firstBetterAbove = (profile: Profile, better: (c: Weapon) => boolean): Weapon | null =>
-  shopOf(profile).weapons.find((c) => c.level > profile.level && better(c)) ?? null
+const firstBetterAbove = (profile: Profile, better: (c: Weapon) => boolean, shop: Shop): Weapon | null =>
+  shop.weapons.find((c) => c.level > profile.level && better(c)) ?? null
 
 /** De horizon van een claw: van je level tot net vóór de volgende betere claw, hoogstens de hele tabel. */
-function horizon(profile: Profile, claw: Weapon, scope: HorizonScope): { from: number; to: number; truncated: boolean } {
+function horizon(profile: Profile, claw: Weapon, scope: HorizonScope, shop: Shop): { from: number; to: number; truncated: boolean } {
   if (scope === 'this-level') return { from: profile.level, to: profile.level, truncated: false }
-  const next = firstBetterAbove(profile, (c) => shopOf(profile).better(c, claw))
-  const end = next ? next.level - 1 : Infinity
+  const next = firstBetterAbove(profile, (c) => shop.better(c, claw), shop)
+  // Onder level 10 loopt de horizon hoogstens tot level 9: vanaf 10 geldt de winkel van je job, en "tot je volgende upgrade" reikt niet voorbij je jobkeuze.
+  const end = Math.min(next ? next.level - 1 : Infinity, profile.level < FIRST_JOB_LEVEL ? FIRST_JOB_LEVEL - 1 : Infinity)
   return { from: profile.level, to: Math.min(end, LAST_TABLE_LEVEL), truncated: end > LAST_TABLE_LEVEL }
 }
 
 /**
  * Het eerstvolgende betere wapen waar je level nog niet voor volstaat. Wat je draagt komt uit het profiel: weapon attack,
  * aanvalstijd en (alleen bij wapens met een multiplier: de Warrior en de daggers van een Thief) de multiplier.
- * Zo kan het advies ook op een level zonder keuze zeggen wanneer er een upgrade komt.
+ * Zo kan het advies ook op een level zonder keuze zeggen wanneer er een upgrade komt. Altijd uit de winkel van je job (vanaf level 10), ook onder level 10.
  */
 export function nextBetterWeapon(profile: Profile): Weapon | null {
-  if (!rankedByModel(profile)) return firstBetterAbove(profile, (c) => c.watk > profile.clawWatk)
-  const hasMult = shopOf(profile).weapons.some((c) => c.mult !== undefined)
+  const shop = jobShopOf(profile)
+  if (!rankedByModel(profile)) return firstBetterAbove(profile, (c) => c.watk > profile.clawWatk, shop)
+  const hasMult = shop.weapons.some((c) => c.mult !== undefined)
   const wornPower = (profile.clawWatk * (hasMult ? profile.weaponMult : 1)) / profile.attackMs
-  return firstBetterAbove(profile, (c) => power(c) > wornPower)
+  return firstBetterAbove(profile, (c) => power(c) > wornPower, shop)
 }
 
-function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions, scope: HorizonScope) {
+function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions, scope: HorizonScope, shop: Shop) {
   const baseEpm = bestExpPerMeso(drafts, profile, a)
   if (baseEpm === undefined) return null
   const choices = candidates
     .map((claw): ClawChoice => {
-      const h = horizon(profile, claw, scope)
+      const h = horizon(profile, claw, scope, shop)
       const epm = bestExpPerMeso(drafts, withClaw(profile, claw), a)
       const without = horizonCost(h.from, h.to, baseEpm)
       const withIt = epm === undefined ? null : horizonCost(h.from, h.to, epm)
@@ -139,9 +170,10 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
  * Thief met een claw is dat meer weapon attack (bij een Magician meer M.ATT); bij een Warrior, een Bowman of een Thief met een dagger meer
  * EXP per meso volgens het model (zie de kop).
  */
-function betterClaws(drafts: readonly SpotDraft[], profile: Profile): readonly Weapon[] {
-  const inLevel = shopOf(profile).weapons.filter((c) => c.level <= profile.level)
-  if (!rankedByModel(profile)) return inLevel.filter((c) => c.watk > profile.clawWatk)
+function betterClaws(drafts: readonly SpotDraft[], profile: Profile, shop: Shop): readonly Weapon[] {
+  const inLevel = shop.weapons.filter((c) => c.level <= profile.level)
+  if (inLevel.length === 0) return inLevel
+  if (!shop.ranked) return inLevel.filter((c) => c.watk > profile.clawWatk)
   const base = bestExpPerMeso(drafts, profile, ASSUMPTIONS)
   if (base === undefined) return inLevel
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)
@@ -154,24 +186,26 @@ export type WeaponPick = Pick<ClawChoice, 'claw' | 'from' | 'to' | 'truncated'>
  * Het wapen dat Advised in je hand zet als je wapenslot leeg is (Dave, 7 oktober 2026, #202): er staat altijd een wapen in het advies. De
  * winnaar van het advies; verdient geen wapen zich terug, dan het wapen met de beste netto besparing (het kleinste verlies); vergelijkt het
  * advies geen wapen of valt geen besparing uit te rekenen (het model ziet geen verschil met een lege hand, of rekent niet), dan het goedkoopste wapen uit je winkel dat je kunt
- * dragen, bij gelijke prijs het sterkste. Null als je winkel op je level niets heeft wat je kunt dragen (onder level 10, of te lage stats).
+ * dragen, bij gelijke prijs het sterkste. `beginner` moet gelijk zijn aan dat van clawUpgradeAdvice: dezelfde winkel. Null als je winkel op je level niets heeft wat je kunt dragen (een Magician onder level 10, of te lage stats).
  */
-export function requiredWeapon(profile: Profile | null, advice: ClawUpgradeAdvice): WeaponPick | null {
+export function requiredWeapon(profile: Profile | null, advice: ClawUpgradeAdvice, beginner = false): WeaponPick | null {
   if (!profile) return null
   // Zonder netto besparing (geen wapen valt uit te rekenen) zegt de volgorde van de keuzes niets: dan het goedkoopste.
   if (advice.kind === 'advice' && advice.choices[0] && advice.choices[0].net !== null) return advice.choices[0]
-  const wearable = shopOf(profile).weapons.filter((c) => c.level <= profile.level && shortfall(c, profile).length === 0)
+  const shop = shopOf(profile, beginner)
+  const wearable = shop.weapons.filter((c) => c.level <= profile.level && shortfall(c, profile).length === 0)
   const pick = [...wearable].sort((a, b) => a.price - b.price || power(b) - power(a))[0]
-  return pick ? { claw: pick, ...horizon(profile, pick, 'next-upgrade') } : null
+  return pick ? { claw: pick, ...horizon(profile, pick, 'next-upgrade', shop) } : null
 }
 
-export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, scope: HorizonScope = 'next-upgrade'): ClawUpgradeAdvice {
+export function clawUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null, scope: HorizonScope = 'next-upgrade', beginner = false): ClawUpgradeAdvice {
   if (!profile || expToNextLevel(profile.level) === undefined) return { kind: 'none' }
-  const better = betterClaws(drafts, profile)
+  const shop = shopOf(profile, beginner)
+  const better = betterClaws(drafts, profile, shop)
   const notWearable = better.map((c): UnwearableClaw => ({ claw: c, needs: shortfall(c, profile) })).filter((u) => u.needs.length > 0)
   const wearable = better.filter((c) => !notWearable.some((u) => u.claw === c))
-  const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS, scope)
+  const main = adviseUnder(drafts, profile, wearable, ASSUMPTIONS, scope, shop)
   if (!main) return { kind: 'none' }
-  const robust = ASSUMPTION_VARIANTS.every((v) => (adviseUnder(drafts, profile, wearable, v, scope)?.winner ?? null) === main.winner)
+  const robust = ASSUMPTION_VARIANTS.every((v) => (adviseUnder(drafts, profile, wearable, v, scope, shop)?.winner ?? null) === main.winner)
   return { kind: 'advice', level: profile.level, ...main, notWearable, robust }
 }

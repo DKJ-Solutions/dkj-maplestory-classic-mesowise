@@ -3,6 +3,7 @@ import { pickUnder } from './best'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { isInvalid } from './calc/rankSpots'
 import { clawUpgradeAdvice, nextBetterWeapon, requiredWeapon, withClaw, type ClawUpgradeAdvice } from './clawUpgrade'
+import { BEGINNER_WORN_WEAPONS } from './data/beginnerWeapons'
 import { NPC_CLAWS } from './data/claws'
 import { EXP_TABLE_LEVELS } from './data/expTable'
 import { mobDraft } from './data/spots'
@@ -35,6 +36,7 @@ const advice = (d: readonly SpotDraft[], p: Profile | null) => {
 }
 const names = (a: Extract<ClawUpgradeAdvice, { kind: 'advice' }>) => a.choices.map((c) => c.claw.name)
 const claw = (name: string) => NPC_CLAWS.find((c) => c.name === name)!
+const requiredWeaponFor = (name: string): Weapon => BEGINNER_WORN_WEAPONS.find((w) => w.name === name)!
 
 /** EXP per meso op de beste plek, rechtstreeks via pickUnder (niet via de module onder test). */
 const epm = (p: Profile) => {
@@ -409,8 +411,109 @@ describe('requiredWeapon: er staat altijd een wapen in het advies (#202)', () =>
     }
   })
 
-  it('geeft null als je winkel op je level niets heeft wat je kunt dragen', () => {
-    expect(requiredWeapon({ ...empty, level: 8 }, noChoices)).toBeNull()
-    expect(requiredWeapon({ ...empty, level: 8 }, { kind: 'none' })).toBeNull()
+  it('geeft onder level 10 het goedkoopste wapen van een Beginner, en null voor een Magician (#203)', () => {
+    for (const job of ['thief', 'warrior', 'bowman'] as const) {
+      const pick = requiredWeapon({ ...empty, job, level: 8 }, noChoices, true)
+      expect(pick, job).not.toBeNull()
+      expect(pick!.claw.price, job).toBe(50)
+      expect(pick!.to, job).toBe(9)
+      expect(requiredWeapon({ ...empty, job, level: 8 }, { kind: 'none' }, true)?.claw.price, job).toBe(50)
+    }
+    expect(requiredWeapon({ ...empty, job: 'magician', level: 8 }, noChoices, true)).toBeNull()
+    expect(requiredWeapon({ ...empty, job: 'magician', level: 8 }, { kind: 'none' }, true)).toBeNull()
+  })
+
+  it('geeft een Warrior onder level 10 geen dagger, en laat de horizon van een Razor of Fruit Knife op level 9 eindigen (#203)', () => {
+    const w = requiredWeapon({ ...empty, job: 'warrior', level: 9 }, noChoices, true)!
+    expect(['Razor', 'Fruit Knife']).not.toContain(w.claw.name)
+    const t = { ...empty, job: 'thief', level: 3 } as Profile
+    const razor = clawUpgradeAdvice(drafts, t, 'next-upgrade', true)
+    expect(razor.kind).toBe('advice')
+    if (razor.kind === 'advice') for (const c of razor.choices) expect(c.to, c.claw.name).toBeLessThanOrEqual(9)
+  })
+
+  it('zet met withClaw onder level 10 de dagger-vlag bij een Razor of Fruit Knife en haalt hem weg bij een ander wapen; vanaf level 10 blijft de vlag staan (#203, #170)', () => {
+    const thief = { ...base, job: 'thief', level: 8, dagger: 0 } as Profile
+    const razor = requiredWeaponFor('Razor')
+    expect(withClaw(thief, razor).dagger).toBe(1)
+    expect(withClaw({ ...thief, dagger: 1 }, requiredWeaponFor('Sword')).dagger).toBe(0)
+    const npc = { ...thief, level: 20, dagger: 1 } as Profile
+    expect(withClaw(npc, requiredWeaponFor('Sword')).dagger).toBe(1)
+    expect(withClaw({ ...npc, dagger: 0 }, requiredWeaponFor('Razor')).dagger).toBe(0)
+  })
+})
+
+describe('de kaart Attack onder level 10 blijft zoals voor #203', () => {
+  it('vergelijkt zonder de beginner-winkel geen wapens onder level 10: een Thief op lv 9 krijgt de Garnier als volgende', () => {
+    const t = { ...base, job: 'thief', level: 9, clawWatk: 5, dagger: 0 } as Profile
+    const a = clawUpgradeAdvice(drafts, t)
+    expect(a.kind === 'advice' && a.choices).toEqual([])
+    expect(nextBetterWeapon(t)?.name).toBe('Garnier')
+  })
+})
+
+describe('clawUpgradeAdvice met de beginner-winkel onder level 10 (#203)', () => {
+  const beginnerOf = (job: Profile['job'], level: number): Profile => ({ ...base, job, level, clawWatk: 0, dagger: 0, dex: 100, luk: 100, str: 100, int: 100 })
+  const horizons = (job: Profile['job'], level: number) => {
+    const a = clawUpgradeAdvice(drafts, beginnerOf(job, level), 'next-upgrade', true)
+    if (a.kind !== 'advice') throw new Error('advies verwacht')
+    return a.choices.map((c) => `${c.claw.name}:${c.from}-${c.to}`)
+  }
+
+  it('laat de horizon nooit voorbij level 9 lopen en eindigen net voor het volgende betere beginnerwapen', () => {
+    // Sword (17 x 1,8) wordt op level 5 verslagen door de Razor (23 x 1,4): horizon tot 4. Hand Axe en Wooden Club pas door de Fruit Knife (level 8): tot 7.
+    expect(horizons('thief', 3)).toEqual(['Hand Axe:3-7', 'Wooden Club:3-7', 'Sword:3-4'])
+    expect(horizons('thief', 5)).toEqual(['Sword:5-7', 'Hand Axe:5-7', 'Wooden Club:5-7', 'Razor:5-7'])
+    // Vanaf level 8 komt er geen beter beginnerwapen meer: de horizon wordt afgekapt op 9, niet op de volgende jobupgrade (level 10).
+    expect(horizons('thief', 8)).toEqual(['Sword:8-9', 'Hand Axe:8-9', 'Wooden Club:8-9', 'Razor:8-9', 'Fruit Knife:8-9'])
+    expect(horizons('thief', 9)).toEqual(['Sword:9-9', 'Hand Axe:9-9', 'Wooden Club:9-9', 'Razor:9-9', 'Fruit Knife:9-9'])
+    expect(horizons('bowman', 5)).toEqual(['Sword:5-7', 'Hand Axe:5-7', 'Wooden Club:5-7', 'Razor:5-7'])
+    for (const job of ['thief', 'warrior', 'bowman'] as const)
+      for (let level = 1; level <= 9; level++) {
+        const a = clawUpgradeAdvice(drafts, beginnerOf(job, level), 'next-upgrade', true)
+        if (a.kind === 'advice')
+          for (const c of a.choices) {
+            expect(c.to, `${job} L${level} ${c.claw.name}`).toBeLessThanOrEqual(9)
+            expect(c.truncated, `${job} L${level} ${c.claw.name}`).toBe(false)
+          }
+      }
+  })
+
+  it('geeft een Warrior geen dagger en een Magician geen wapen, onder level 10', () => {
+    for (const level of [3, 5, 8, 9]) {
+      const w = horizons('warrior', level).map((h) => h.split(':')[0])
+      expect(w, `warrior L${level}`).not.toContain('Razor')
+      expect(w, `warrior L${level}`).not.toContain('Fruit Knife')
+      expect(horizons('magician', level), `magician L${level}`).toEqual([])
+      expect(requiredWeapon(beginnerOf('magician', level), { kind: 'none' }), `magician L${level}`).toBeNull()
+    }
+    expect(horizons('warrior', 8)).toEqual(['Sword:8-9', 'Hand Axe:8-9', 'Wooden Club:8-9'])
+  })
+
+  it('zet de dagger-vlag mee in de berekening: de Razor en de Fruit Knife rekenen als dagger, de rest niet', () => {
+    const t = beginnerOf('thief', 8)
+    for (const w of BEGINNER_WORN_WEAPONS) expect(withClaw(t, w).dagger, w.name).toBe(w.name === 'Razor' || w.name === 'Fruit Knife' ? 1 : 0)
+    for (const job of ['warrior', 'magician'] as const) expect(withClaw(beginnerOf(job, 8), requiredWeaponFor('Razor')).dagger, job).toBe(0)
+  })
+
+  it('laat vanaf level 10 de vlag beginner niets veranderen', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const)
+      for (const level of [10, 11, 15, 20, 30]) {
+        const p = beginnerOf(job, level)
+        for (const scope of ['next-upgrade', 'this-level'] as const)
+          expect(clawUpgradeAdvice(drafts, p, scope, true), `${job} L${level} ${scope}`).toEqual(clawUpgradeAdvice(drafts, p, scope, false))
+      }
+  })
+
+  it('laat de kaart Attack onder level 10 ongewijzigd: geen keuzes, en nextBetterWeapon noemt voor elke job het eerste jobwapen op level 10', () => {
+    const first = { thief: 'Garnier', warrior: 'Long Sword', bowman: 'War Bow', magician: 'Wooden Wand' } as const
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const)
+      for (const level of [1, 5, 9]) {
+        const p = beginnerOf(job, level)
+        const a = clawUpgradeAdvice(drafts, p)
+        expect(a.kind === 'advice' && a.choices, `${job} L${level}`).toEqual([])
+        expect(nextBetterWeapon(p)?.name, `${job} L${level}`).toBe(first[job])
+        expect(nextBetterWeapon(p)?.level, `${job} L${level}`).toBe(10)
+      }
   })
 })

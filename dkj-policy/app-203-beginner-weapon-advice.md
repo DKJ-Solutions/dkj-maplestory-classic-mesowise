@@ -39,19 +39,37 @@
 
 ### PLAN
 
+#203: below level 10 Advised had no priced weapon to buy. Game data chain: Rebecca read the NPC shop buy prices of the five
+beginner weapons on MeowDB (item pages, cross-checked against the Sid and Silver shop pages; Garnier's 5,000 as calibration for
+the field), Vera accepted them, Cody wired them into the Advised path only, Tycho pinned it, Victor reviewed. The Home Attack card
+below level 10 stays as it was; whether it should advise these weapons too is Dave's call in #209.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Shop buy prices with a per-row `priceSource` (2026-10-07) in `src/data/beginnerWeapons.ts`; the stats keep their 2026-10-05 source (#210)
+- [x] Below level 10, Advised buys from the priced beginner weapons (Warrior: no daggers; Magician: none sold below 10); horizon capped at level 9
+- [x] `withClaw` sets the dagger flag for Razor and Fruit Knife below level 10, untouched from level 10 (#170)
+- [x] Review follow-ups: the shop resolved once and shared with `requiredWeapon`, `morePower`, early return for an empty shop
 
 ### TEST
 
+- [x] Prices and sources pinned; exact horizons; Warrior without daggers; Magician null; dagger flag; Attack card unchanged below 10 for all jobs; no change from level 10 with or without the flag; the Advised invoice counts the price
+- [x] `npm run lint` clean, `npx vitest run` 1854 passing
+
 ### DEPLOY: app/203-beginner-weapon-advice
 
-**Score:**
+Below level 10, Advised now gives a Thief, Warrior or Bowman with an empty weapon slot a weapon from the shop: the Sword, Hand
+Axe or Wooden Club (50 mesos) or, for a Thief or Bowman, the Razor (500) or Fruit Knife (1,500), counted on the Advised invoice
+up to level 9. A Magician still gets none, because no shop sells a wand or staff below level 10. The Attack card on Home is
+unchanged (#209). The prices carry their own source date. Resolves #203, resolves #210.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A brand-new character now sees a weapon in Advised from level 1, not only from level 10.
+
+**Score:** 2
 
 #### Pull Request
 

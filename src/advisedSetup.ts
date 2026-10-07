@@ -59,8 +59,9 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
     result = cheapestSettings(input)
     const state: CheapestInput = { ...input, drafts: result.drafts, profileDraft: result.profileDraft, potionChoice: result.potionChoice }
     profile = profileOf(state)
-    const claw = clawUpgradeAdvice(state.drafts, profile)
-    const weapon = needsWeapon && isEmptyEntry(equipment.claw) ? requiredWeapon(profile, claw) : null
+    // Onder level 10 koopt Advised, en alleen Advised, uit de wapens met een prijs van een Beginner (#203): advies en wapen delen die keuze.
+    const claw = clawUpgradeAdvice(state.drafts, profile, 'next-upgrade', true)
+    const weapon = needsWeapon && isEmptyEntry(equipment.claw) ? requiredWeapon(profile, claw, true) : null
     advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, claw, armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)), weapon)
     const gear = advisedEquipment(job, profileDraft, equipment, advice)
     if (gear.purchases.length === 0) break
