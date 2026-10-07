@@ -39,19 +39,33 @@
 
 ### PLAN
 
+#### Decisions
+
+- "The screen" under the first popup is the app column: the phone width, on a computer 32rem like `main`.
+- Only the width scales; the height still follows the content, capped at the screen minus 2rem.
+- The menu drawer keeps its own width and does not count as a layer.
+- This replaces the 1rem minimum margin of October 5, 2026: at 390px a first popup now leaves about 10px per side.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/style.css`: `.stat-dialog` width is `min(100vw, 32rem) * --popup-scale`; the fixed `.item-dialog` width is gone
+- [x] `src/app.tsx`: `StatDialog` sets `--popup-scale` to `0.95^(depth + 1)`, with depth counted over enclosing popups except the menu drawer
 
 ### TEST
 
+- [x] `src/app.test.tsx`: an info popup on top of the Advised popup has a scale of 0.95 times the popup below it, down to the app; vitest 1946/1946 green, lint clean
+
 ### DEPLOY: app/popup-95-percent
 
-**Score:**
+Every popup is 95% as wide as whatever lies below it: the first one 95% of the app column, a popup on top of it 95% of that. A stacked popup is visibly a second layer without shrinking by a fixed amount.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Popups use almost the full phone width, so more fits on a line, and a popup opened from another popup stays recognisable as one layer up.
+
+**Score:** 3
 
 #### Pull Request
 

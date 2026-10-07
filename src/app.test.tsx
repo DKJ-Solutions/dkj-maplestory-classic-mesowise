@@ -508,6 +508,21 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
   })
 
+  it('maakt elke popup 95% zo breed als het scherm of de popup eronder (Dave, 7 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    const item = openItem(advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!, 'Weapon'))
+    const scale = (d: Element) => Number((d as HTMLElement).style.getPropertyValue('--popup-scale'))
+    // Elke popup tot op de app: de bovenste eerst.
+    const layers: Element[] = []
+    for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
+    expect(layers.length).toBeGreaterThan(1)
+    layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(0.95 ** (layers.length - i)))
+    closeItem(item)
+  })
+
   it('toont in de info-popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar de infoknop (Dave, 7 oktober 2026)', async () => {
     atLevel('20')
     openHomeEquipment()
