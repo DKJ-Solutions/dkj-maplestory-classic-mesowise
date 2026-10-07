@@ -21,6 +21,23 @@ describe('de wapens onder level 10', () => {
     }
   })
 
+  it('hebben elk hun winkelprijs, met de itempagina als bron (#203)', () => {
+    expect(BEGINNER_WEAPONS.map((w) => [w.name, w.price, w.source.url])).toEqual([
+      ['Sword', 50, 'https://meowdb.com/msclassic/item-db/541'],
+      ['Hand Axe', 50, 'https://meowdb.com/msclassic/item-db/576'],
+      ['Wooden Club', 50, 'https://meowdb.com/msclassic/item-db/585'],
+      ['Razor', 500, 'https://meowdb.com/msclassic/item-db/558'],
+      ['Fruit Knife', 1_500, 'https://meowdb.com/msclassic/item-db/559'],
+    ])
+    for (const w of BEGINNER_WEAPONS) {
+      expect(w.source.retrieved, w.name).toBe('2026-10-05')
+      expect(w.priceSource, w.name).toEqual({ url: w.source.url, retrieved: '2026-10-07' })
+    }
+    // Dezelfde prijs op de objecten die het advies leest (Thief, Warrior en Bowman).
+    expect(BEGINNER_WORN_WEAPONS.map((w) => [w.name, w.price])).toEqual(BEGINNER_WEAPONS.map((w) => [w.name, w.price]))
+    expect(BEGINNER_WORN_WARRIOR_WEAPONS.map((w) => [w.name, w.price])).toEqual([['Sword', 50], ['Hand Axe', 50], ['Wooden Club', 50]])
+  })
+
   it('geven elk de verwachte multiplier van hun soort (60% zwaai, 40% steek), ook een dagger (#171)', () => {
     // 1h-sword 1,8 en 1,8; 1h-axe en 1h-blunt 2,4 en 1,2: 0,6 x 2,4 + 0,4 x 1,2 = 1,92; dagger 1,0 en 2,0: 1,4.
     expect(BEGINNER_WORN_WEAPONS.map((w) => w.mult)).toEqual([1.8, 1.92, 1.92, 1.4, 1.4])

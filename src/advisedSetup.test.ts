@@ -122,6 +122,11 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     profileDraft: { ...DEFAULT_PROFILE, level: String(level) },
     potionChoice: NO_POTION_CHOICE,
   })
+  /** Een Beginner (level 1 tot 9): zonder punten in de skills van de 1e job, die heb je dan nog niet (anders parst het profiel niet). */
+  const beginner = (job: Job, level: number): CheapestInput => {
+    const user = bare(job, level)
+    return { ...user, profileDraft: { ...user.profileDraft, luckySeven: '0', energyBolt: '0', nimbleBody: '0' } }
+  }
   const levels = [10, 11, 12, 15, 20, 25, 30]
 
   it('zet bij een leeg wapenslot een wapen in het advies: gekocht met zijn winkelprijs en aan je hand', () => {
@@ -163,17 +168,64 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     }
   })
 
-  it('geeft onder level 10, zonder wapen in de winkel, geen wapen en geen crash', () => {
-    for (const job of JOBS_ALL) {
-      const user = bare(job, 8)
-      const s = advisedSetup(user)
-      expect(s.cheapest.claw.cheapest, job).toBeNull()
-      expect(s.purchases.some((p) => p.slot === 'claw'), job).toBe(false)
-      expect(isEmptyEntry(s.equipment.claw), job).toBe(true)
-      expect(s.profile.clawWatk, job).toBe(user.profileDraft.clawWatk)
-      // Zoals voorheen: met de ATT uit het profiel; een ander profiel-ATT verandert hier dus iets aan de rekening, niet aan het wapen.
-      const other = advisedSetup({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '25' } })
-      expect(other.cheapest.claw.cheapest, job).toBeNull()
+  it('zet onder level 10 het goedkoopste wapen met een prijs in de hand (#203): een Thief, Warrior of Bowman koopt er een', () => {
+    const beginnerNames = ['Sword', 'Hand Axe', 'Wooden Club', 'Razor', 'Fruit Knife']
+    for (const job of ['thief', 'warrior', 'bowman'] as Job[]) {
+      for (const level of [1, 5, 8, 9]) {
+        const s = advisedSetup(beginner(job, level))
+        const label = `${job} L${level}`
+        const bought = s.purchases.find((p) => p.slot === 'claw')
+        expect(beginnerNames, label).toContain(bought?.name)
+        expect(bought!.horizon!.to, label).toBeLessThanOrEqual(9)
+        expect(wornName(s.equipment.claw), label).toBe(bought!.name)
+      }
+    }
+  })
+
+  it('geeft een Magician onder level 10 geen wapen en geen crash: zijn winkelwapens beginnen op level 10', () => {
+    const user = bare('magician', 8)
+    const s = advisedSetup(user)
+    expect(s.cheapest.claw.cheapest).toBeNull()
+    expect(s.purchases.some((p) => p.slot === 'claw')).toBe(false)
+    expect(isEmptyEntry(s.equipment.claw)).toBe(true)
+    expect(s.profile.clawWatk).toBe(user.profileDraft.clawWatk)
+  })
+
+  it('koopt een dagger onder level 10 met de dagger-vlag aan, en een ander wapen met de vlag uit (#203)', () => {
+    // Een Thief of Bowman die een Sword koopt, slaat niet met LUK als hoofdstat; alleen bij een dagger staat de vlag aan.
+    for (const job of ['thief', 'bowman'] as Job[]) {
+      const s = advisedSetup(beginner(job, 8))
+      const name = s.purchases.find((p) => p.slot === 'claw')!.name
+      expect(s.profile.dagger, job).toBe(name === 'Razor' || name === 'Fruit Knife' ? '1' : '0')
+    }
+    expect(advisedSetup(beginner('warrior', 8)).profile.dagger).toBe('0')
+  })
+
+  it('telt de winkelprijs van het beginnerwapen op de factuur van Advised: op level 9 de volle prijs, eerder een deel (#203)', () => {
+    for (const job of ['thief', 'warrior', 'bowman'] as Job[]) {
+      for (const level of [3, 9]) {
+        const label = `${job} L${level}`
+        const user = beginner(job, level)
+        const s = advisedSetup(user)
+        const bought = s.purchases.find((p) => p.slot === 'claw')!
+        expect(bought.price, label).toBeGreaterThan(0)
+        expect(s.shop, label).toBe(s.purchases.reduce((sum, p) => sum + p.price, 0))
+        const pieces = s.purchases.map((p) => ({ ...p.horizon, name: p.name, price: p.price }))
+        const taken = afterTake(user, s)
+        const without = total(taken)
+        const withShop = total(taken, pieces)
+        expect(without, label + ' zonder').not.toBeNull()
+        expect(withShop! - without!, label + ' verschil').toBeGreaterThan(0)
+        const inv = levelInvoice(taken.drafts, profileOf(taken), pieces)
+        const line = inv.kind === 'invoice' ? inv.lines.find((l) => l.shop && l.label === bought.name) : undefined
+        expect(line, label + ' regel').toBeDefined()
+        expect(line!.why?.kind === 'shop' && line!.why.price, label + ' prijs op de regel').toBe(bought.price)
+        expect(line!.meso, label).toBeLessThanOrEqual(bought.price)
+        // De horizon stopt op level 9: op level 9 draag je het wapen nog dit ene level en betaal je de hele prijs.
+        if (level === 9) expect(line!.meso, label + ' volle prijs').toBe(bought.price)
+        const shopLines = inv.kind === 'invoice' ? inv.lines.filter((l) => l.shop).reduce((sum, l) => sum + l.meso, 0) : NaN
+        expect(withShop! - without!, label + ' som').toBe(shopLines)
+      }
     }
   })
 
