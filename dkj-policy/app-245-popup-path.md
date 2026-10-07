@@ -49,11 +49,11 @@ Dave, October 7, 2026 (#245): many `.stat-dialog-body` elements, and in the insp
 ### TEST
 
 - [x] Test: Total cost: Equip and the mob info popup inside it carry their path, and no two open bodies share one
-- [ ] Victor's review
+- [x] Victor's review: no bugs; a popup behind an i or ? button now carries its button's name in the path, because its title is often that of the popup beneath it, and the test covers three levels
 
 ### DEPLOY: app/245-popup-path
 
-Every popup, and the `.stat-dialog-body` inside it, now carries `data-popup` with the titles of the popups it sits in, outermost first: the mob info opened from Total cost: Equip reads `Total cost: Equip (advised) › Snail (lv 7)`. In the inspector you can see straight away which popup you are pointing at.
+Every popup, and the `.stat-dialog-body` inside it, now carries `data-popup` with the titles of the popups it sits in, outermost first: the mob info opened from Total cost: Equip reads `Total cost: Equip (advised) › Info over Snail`. In the inspector you can see straight away which popup you are pointing at.
 
 **Score:** 2
 
