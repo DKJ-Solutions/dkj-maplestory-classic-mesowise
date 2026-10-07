@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**79 / 123 minor entries** <!-- pending-tally -->
+**79 / 124 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/198-cheapest-npc-stars · 20261007-132120Z
+
+Advised now chooses a Thief's throwing stars between the two that an NPC sells, Subi and Wolbi. It buys the other set when
+that saves more mesos before your next weapon upgrade than the set costs (500 for Subi, 1,000 for Wolbi), and the price is
+written off on the invoice like equipment. With the current numbers Subi stays the cheapest when you already have it, so
+the advice mainly shows up when you hold a different star.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Advised picks the cheaper NPC star per level
+
+[PR #220](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/220)
+
+---
 
 ### DEPLOY: app/advised-equip-level-column · 20261007-125717Z
 
