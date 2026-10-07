@@ -32,6 +32,13 @@ export interface CheapestSlot {
   /** Bij een stuk om te kopen: de levels waarover het zich terugverdient, van je level tot je volgende upgrade in dat slot (#192). */
   horizon?: Horizon
   /**
+   * Bij een stuk om te kopen: waarom het loont (Dave, 7 oktober 2026), de uitleg achter het vraagteken in Advised. `saving` is wat het tot je
+   * volgende upgrade bespaart (null: niet uit te rekenen); `partner` het stuk waarmee het samen gekocht wordt (een top en een bottom die een
+   * overall vervangen), met `cost` wat ze samen kosten. Met `required` is het het goedkoopste wapen voor een leeg wapenslot (#202): dat koop je
+   * omdat je een wapen nodig hebt, niet om wat het bespaart.
+   */
+  why?: { saving: number | null; partner?: string; cost?: number } | { required: true }
+  /**
    * Bij een slot dat leeg blijft: het beste stuk dat je hier kunt dragen, met zijn prijs en wat het tot je volgende upgrade bespaart, maar dat
    * zich niet terugverdient (Dave, 6 oktober 2026, #188). Null als het slot niet leeg blijft of de winkel hier niets heeft.
    */
@@ -50,6 +57,7 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   const price: Partial<Record<EquipSlot, number>> = {}
   const horizon: Partial<Record<EquipSlot, Horizon>> = {}
+  const why: Partial<Record<EquipSlot, NonNullable<CheapestSlot['why']>>> = {}
   // Per slot het beste stuk dat niet gekocht wordt: de keuzes staan al per slot, van meeste naar minste netto besparing.
   const options: Partial<Record<EquipSlot, CheapestSlot['option']>> = {}
   if (claw.kind === 'advice' && !claw.winner && claw.choices[0]) {
@@ -65,11 +73,15 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     pick.claw = claw.winner.name
     price.claw = claw.winner.price
     const won = claw.choices.find((c) => c.claw === claw.winner)
-    if (won) horizon.claw = { from: won.from, to: won.to, truncated: won.truncated }
+    if (won) {
+      horizon.claw = { from: won.from, to: won.to, truncated: won.truncated }
+      why.claw = { saving: won.saving }
+    }
   } else if (weapon) {
     pick.claw = weapon.claw.name
     price.claw = weapon.claw.price
     horizon.claw = { from: weapon.from, to: weapon.to, truncated: weapon.truncated }
+    why.claw = { required: true }
   }
   if (armor.kind === 'advice') {
     // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
@@ -88,6 +100,8 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
       for (const p of pieces) {
         price[p.slot] = p.price
         horizon[p.slot] = { from: c.from, to: c.to, truncated: c.truncated }
+        const partner = pieces.find((q) => q !== p)
+        why[p.slot] = partner ? { saving: c.saving, partner: partner.name, cost: c.price } : { saving: c.saving }
       }
       if (c.bare) bare.add(c.bare)
     }
@@ -104,7 +118,7 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     const changed = cheapest !== worn
     const option = cheapest === null && !(slot in pick && pick[slot] === null) ? (options[slot] ?? null) : null
     const bought = changed && cheapest !== null
-    out[slot] = { worn, cheapest, changed, price: bought ? (price[slot] ?? null) : null, option, ...(bought && horizon[slot] ? { horizon: horizon[slot] } : {}) }
+    out[slot] = { worn, cheapest, changed, price: bought ? (price[slot] ?? null) : null, option, ...(bought && horizon[slot] ? { horizon: horizon[slot] } : {}), ...(bought && why[slot] ? { why: why[slot] } : {}) }
   }
   return out
 }

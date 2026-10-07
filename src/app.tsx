@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { nf3 } from './numberFormat'
 import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, itemLevel, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, weaponType, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -1581,66 +1581,83 @@ function StatDialog(props: {
   )
 }
 
-/**
- * De rijen van de Equip-popup achter "Advised" (#188, #192): dezelfde opmaak als die van wat je draagt, maar om te lezen. Per slot de
- * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
- * alles samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
- */
 /** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-    staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk in de accentkleur koop je in de winkel; op de factuur
+    staat alleen het deel van dit level. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
   </>
 )
 
+/**
+ * De rijen van de Equip-popup achter "Advised" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow), en onderaan wat alles
+ * samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
+ */
 function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
-      {props.slots.map((slot) => {
-        const slotAdvice = props.cheapest[slot]
-        // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen "Koop voor".
-        const counted = slot === 'ammo' && slotAdvice.cheapest === null && !slotAdvice.option && props.ammo !== null
-        const c: CheapestSlot = counted ? { ...slotAdvice, cheapest: props.ammo, changed: true } : slotAdvice
-        // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
-        const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
-        const stat = statName(slot, props.job)
-        // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
-        const value = c.cheapest === null || (counted && wornStat(slot, entry) === undefined) ? null : wornStat(slot, entry)
-        return (
-          <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
-            <span class="slot-name">{slotLabel(slot)}</span>
-            {/* Een leeg slot met een stuk dat zich dit level niet terugverdient: dat stuk, gedempt, met wat het kost en bespaart (#188). */}
-            {c.option ? (
-              <span class="equip-fixed equip-option">{nameWithLevel(slot, c.option.name)}</span>
-            ) : (
-              <span class={c.changed && c.cheapest !== null && !counted ? 'equip-fixed equip-buy' : 'equip-fixed'}>{c.cheapest === null ? '—' : entry.pick === OTHER ? c.cheapest : nameWithLevel(slot, c.cheapest)}</span>
-            )}
-            {value !== null && (
-              <div class="equip-value" aria-label={`${stat} ${value ?? 'onbekend'}`}>
-                <span class="equip-value-num">
-                  <strong>{value ?? '?'}</strong>
-                </span>
-                <span class="equip-value-head" aria-hidden="true">{stat}</span>
-              </div>
-            )}
-            {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
-            {counted && props.ammo !== OWN_AMMO && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
-            {c.option && (
-              <span class="equip-price">
-                Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
-                {c.option.saving === null ? 'besparing niet uit te rekenen' : `bespaart tot je volgende upgrade ${nfInt.format(Math.max(0, Math.round(c.option.saving)))} meso`}
-              </span>
-            )}
-          </div>
-        )
-      })}
+      {props.slots.map((slot) => (
+        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} />
+      ))}
       <p class="equip-total">
         Te kopen: <strong>{nfInt.format(total)} meso</strong>
       </p>
     </>
   )
+}
+
+/**
+ * Eén slot in Advised, op één regel (Dave, 7 oktober 2026): "Weapon: Steel Igor (CLAW, LV 20, 17 ATT)". Wat je koopt staat in de accentkleur,
+ * een stuk dat niet loont gedempt; waarom het loont (of niet) staat achter het vraagteken aan het eind van de regel.
+ */
+function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null }) {
+  const { slot } = props
+  const [open, setOpen] = useState(false)
+  const id = useId()
+  // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
+  const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
+  const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
+  const name = c.option ? c.option.name : c.cheapest
+  // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
+  const entry: EquipEntry = c.option ? { pick: c.option.name, name: '', stat: '' } : c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.worn
+  const own = entry.pick === OTHER
+  // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
+  const value = name === null ? undefined : wornStat(slot, entry)
+  const level = name === null || own ? undefined : itemLevel(slot, name)
+  const meta = [slot === 'claw' && name !== null ? weaponType(name) : undefined, level === undefined ? undefined : `LV ${level}`, value === undefined ? undefined : `${value} ${statName(slot, props.job)}`].filter((p) => p !== undefined)
+  const help = cheapestWhy(props.job, slot, c, counted)
+  const tone = c.option ? ' option' : name === null ? ' empty' : c.changed && !counted ? ' buy' : ''
+  return (
+    <div class={`advised-row${tone}`}>
+      <p class="advised-line">
+        <span class="slot-name">{slotLabel(slot)}:</span> <span class="advised-name">{name === null ? '—' : own ? name : familyName(slot, name)}</span>
+        {meta.length > 0 && <span class="advised-meta"> ({meta.join(', ')})</span>}
+      </p>
+      {help !== null && <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} />}
+      {help !== null && (
+        <p class="hint advised-help" id={id} hidden={!open}>
+          {help}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Waarom Advised dit stuk koopt, of juist niet (Dave, 7 oktober 2026): de tekst achter het vraagteken van één slot; null als er niets te zeggen is. */
+function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean): string | null {
+  const meso = (n: number) => `${nfInt.format(Math.max(0, Math.round(n)))} meso`
+  if (c.option) {
+    const saves = c.option.saving === null ? 'de besparing is niet uit te rekenen' : `het bespaart tot je volgende upgrade ${meso(c.option.saving)}`
+    return `Loont niet: het kost ${meso(c.option.price)} en ${saves}. Dit slot blijft leeg.`
+  }
+  if (counted) return c.cheapest === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.'
+  if (c.price === null || c.why === undefined) return null
+  if ('required' in c.why) return `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}.`
+  const buy = c.why.partner === undefined ? `Koop voor ${meso(c.price)}.` : `Koop samen met ${familyName(slot === 'top' ? 'bottom' : 'top', c.why.partner)} voor ${meso(c.why.cost ?? c.price)}.`
+  if (c.why.saving === null) return `${buy} De besparing is niet uit te rekenen.`
+  const span = c.horizon ? `${capitalize(skillSpan(c.horizon))} bespaart het` : 'Tot je volgende upgrade bespaart het'
+  return `${buy} ${span} ${meso(c.why.saving)}, meer dan het kost.`
 }
 
 /**

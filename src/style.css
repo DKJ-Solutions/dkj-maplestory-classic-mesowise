@@ -655,16 +655,22 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .field-fixed { margin: 0; display: flex; align-items: center; min-height: 44px; padding: 0.25rem 0.75rem; font-size: 0.9375rem; font-weight: 600; line-height: 1.2;
   overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
 .potion-group .field-fixed { margin-bottom: 0.5rem; }
-/* De Equip-popup achter Advised (#188): dezelfde rijen, om te lezen. Geen potlood, dus twee kolommen; de naam staat in een vak
-   zoals bij wat je draagt, zonder vergrootglas. Een stuk om te kopen in de accentkleur, met zijn prijs eronder. */
-.equipment .equip-row.fixed { grid-template-columns: minmax(0, 1fr) auto; }
-.equip-row.fixed .slot-name { grid-row: 1; grid-column: 1 / -1; margin: 0 0 0.25rem; text-align: center; font-weight: 600; color: var(--text); }
-.equip-fixed { grid-row: 2; grid-column: 1; display: flex; align-items: center; min-height: 44px; min-width: 0; padding: 0.25rem 0.75rem; font-size: 0.9375rem;
-  font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
-.equip-row.fixed.empty .equip-fixed { grid-column: 1 / -1; font-weight: 400; color: var(--muted); }
-.equip-row.fixed.empty .equip-fixed.equip-option { font-weight: 600; color: var(--muted); border-style: dashed; }
-.equip-fixed.equip-buy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
-.equip-price { grid-row: 3; grid-column: 1 / -1; margin-top: 0.375rem; font-size: 0.875rem; color: var(--muted); }
+/* De Equip-popup achter Advised (Dave, 7 oktober 2026): per slot één regel, "Weapon: Steel Igor (CLAW, LV 20, 17 ATT)", met het
+   vraagteken aan het eind. Past de regel niet op 360px, dan kort de naam in, niet de soort, het level of de stat. Wat je koopt staat in
+   de accentkleur, een stuk dat niet loont en een leeg slot gedempt. De uitleg klapt onder de regel open, over de volle breedte. */
+.advised-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 0.25rem; min-height: 44px;
+  padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+.advised-row:last-of-type { border-bottom: 0; }
+.advised-line { display: flex; align-items: baseline; gap: 0.3em; min-width: 0; margin: 0; font-size: 0.9375rem; line-height: 1.3; white-space: nowrap; }
+.advised-line .slot-name { flex: none; font-weight: 600; color: var(--text); }
+.advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.advised-meta { flex: none; font-size: 0.8125rem; color: var(--muted); }
+.advised-row.buy .advised-name { color: var(--accent); }
+.advised-row.option .advised-name, .advised-row.empty .advised-name { font-weight: 400; color: var(--muted); }
+.advised-row .help-toggle { margin: -0.25rem -0.5rem -0.25rem 0; }
+.advised-help { grid-column: 1 / -1; margin: 0.25rem 0 0.5rem; }
+.advised-help[hidden] { display: none; }
+.advised-row:last-of-type + .equip-total { margin-top: 0.75rem; }
 .equip-total { margin: 0 0 0.75rem; text-align: right; }
 /* De zes icoonknoppen onder de factuur van elk deel van Total cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
 /* De zin en de knoppen onder de factuur (#192), los van het totaal met een dunne lijn en ruimte (Dave, 6 oktober 2026). */

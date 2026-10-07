@@ -240,6 +240,9 @@ const WEAPON_INFO: ReadonlyMap<string, { type: string; speed: string }> = new Ma
   ),
 ])
 
+/** De soort van een wapen zoals de zoekbalk hem toont ("CLAW", "1H SWORD"); undefined bij armor, ammo of een eigen item. */
+export const weaponType = (name: string): string | undefined => WEAPON_INFO.get(name)?.type
+
 /**
  * De catalogus van een slot voor een job: de NPC-items, dan de items zonder prijs; staat een naam twee keer in,
  * dan wint de NPC-regel. De bronze pijlen van een Bowman staan er alleen in met `helpfulStranger` (#64): zonder die
