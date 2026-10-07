@@ -9,6 +9,7 @@ import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
 import { defaultEquipment, EQUIPMENT_KEY, familyName, searchCatalog } from './equipment'
 import { JOB_KEY } from './job'
+import { compactMeso } from './numberFormat'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
@@ -482,7 +483,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.classList.contains('buy')).toBe(true)
     expect(row.querySelector('.slot-name')!.textContent).toBe('Weapon')
     expect(nameOf(row)).not.toBe('—')
-    expect(row.querySelector('.advised-price')!.textContent).toMatch(/^[\d.]+$/)
+    // Kort, zoals 14.1k (Dave, 7 oktober 2026).
+    expect(row.querySelector('.advised-price')!.textContent).toMatch(/^\d+(\.\d)?[kM]?$/)
     // De details (type, level, ATT) staan er niet meer.
     expect(row.querySelector('.advised-line, .advised-meta')).toBeNull()
     expect(row.textContent).not.toMatch(/ATT|LV /)
@@ -518,7 +520,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(facts.Soort).toBe('CLAW')
     expect(facts.Level).toMatch(/^[\d]+$/)
     expect(facts.ATT).toMatch(/^[\d]+$/)
-    expect(facts.Prijs).toBe(row.querySelector('.advised-price')!.textContent + ' meso')
+    // Het volle bedrag, dat in de prijskolom kort staat (14.1k) en voluit in zijn tooltip.
+    expect(facts.Prijs).toBe(row.querySelector('.advised-price .meso-amount')!.getAttribute('title'))
     // De info-popup heeft alleen de feiten, het vraagteken het oordeel en de reden.
     expect(item.querySelector('.item-why, .item-verdict')).toBeNull()
     closeItem(item)
@@ -569,7 +572,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const bought = open(false)
     const row = advisedRow(bought, 'Weapon')
     expect(row.classList.contains('buy')).toBe(true)
-    expect(priceOf(row)).toMatch(/^[\d.]+$/)
+    expect(priceOf(row)).toMatch(/^\d+(\.\d)?[kM]?$/)
     const kept = open(true)
     expect(priceOf(advisedRow(kept, 'Weapon'))).toBe('')
     expect(priceOf(kept.querySelector<HTMLElement>('.advised-row.empty')!)).toBe('')
@@ -3732,23 +3735,33 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const rows = Array.from(d.querySelectorAll<HTMLElement>('.advised-row'))
     const bought = rows.filter((r) => r.classList.contains('buy'))
     expect(bought.length).toBeGreaterThan(0)
+    // Het bedrag staat kort (14.1k, Dave, 7 oktober 2026); het volle bedrag staat in de tooltip.
+    const full = (el: Element) => mesoOf(el.querySelector('.meso-amount')?.getAttribute('title') ?? '0')
+    for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.textContent).toBe(compactMeso(full(cell)))
     // Elk gekocht stuk: Level is zijn regel op de factuur, nooit meer dan Shop.
-    expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: mesoOf(r.querySelector('.advised-level')!.textContent) }))).toEqual(invoice)
-    for (const r of bought) expect(mesoOf(r.querySelector('.advised-level')!.textContent)).toBeLessThanOrEqual(mesoOf(r.querySelector('.advised-price')!.textContent))
-    expect(bought.some((r) => mesoOf(r.querySelector('.advised-level')!.textContent) < mesoOf(r.querySelector('.advised-price')!.textContent))).toBe(true)
+    expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: full(r.querySelector('.advised-level')!) }))).toEqual(invoice)
+    for (const r of bought) expect(full(r.querySelector('.advised-level')!)).toBeLessThanOrEqual(full(r.querySelector('.advised-price')!))
+    expect(bought.some((r) => full(r.querySelector('.advised-level')!) < full(r.querySelector('.advised-price')!))).toBe(true)
     // Achter elk bedrag een muntje, dat de schermlezer overslaat (Dave, 7 oktober 2026).
     for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.querySelector('svg.meso-icon[aria-hidden="true"]')).not.toBeNull()
     expect(d.querySelectorAll('.advised-total svg.meso-icon')).toHaveLength(2)
     // Wat je niet koopt staat niet op de factuur: Level blijft leeg.
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-level')!.textContent).toBe('')
     // Twee totalen: Shop telt de winkelprijzen van wat je koopt (een grijs stuk niet), Level wat de factuur voor de stukken rekent.
-    const [shopTotal, levelTotal] = Array.from(d.querySelectorAll('.advised-total strong')).map((s) => mesoOf(s.textContent))
-    expect(shopTotal).toBe(bought.reduce((s, r) => s + mesoOf(r.querySelector('.advised-price')!.textContent), 0))
+    const [shopTotal, levelTotal] = Array.from(d.querySelectorAll('.advised-total strong')).map(full)
+    expect(shopTotal).toBe(bought.reduce((s, r) => s + full(r.querySelector('.advised-price')!), 0))
     expect(levelTotal).toBe(invoice.reduce((s, l) => s + l.meso, 0))
+    // Het vraagteken achter Total cost zegt waarom de factuur met Level rekent en niet met Shop (Dave, 7 oktober 2026).
+    const totalHelp = within(d.querySelector<HTMLElement>('.advised-total')!).getByRole('button', { name: 'Uitleg bij Total cost' })
+    fireEvent.click(totalHelp)
+    const why = d.querySelector<HTMLElement>('.advised-total dialog.item-dialog')!
+    expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${compactMeso(levelTotal)}?`)
+    expect(why.querySelector('.item-why')!.textContent).toContain(`niet met de ${compactMeso(shopTotal)} die je in de winkel betaalt`)
+    closeItem(why)
     // Het vraagteken rekent het deel voor, met het bedrag uit de kolom.
     const item = openItem(bought[0])
     expect(item.textContent).toContain('Op deze factuur')
-    expect(item.textContent).toContain(`${bought[0].querySelector('.advised-level')!.textContent} meso`)
+    expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
     closeItem(item)
   })
 

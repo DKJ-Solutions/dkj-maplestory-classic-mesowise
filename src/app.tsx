@@ -10,7 +10,7 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Potion, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
-import { nf3 } from './numberFormat'
+import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
@@ -1775,6 +1775,15 @@ function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
           <MesoAmount n={props.level} />
         </strong>
       )}
+      {/* Waarom de factuur met Level rekent en niet met Shop (Dave, 7 oktober 2026); de popup heet naar het bedrag, zoals "Waarom 52?" in Useable. */}
+      {props.level !== undefined && (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label="Uitleg bij Total cost" title={`Waarom ${compactMeso(props.level)}?`}>
+          <p class="item-why">
+            Je draagt een stuk tot je volgende upgrade in dat slot, dus dit level betaalt alleen zijn deel van de prijs: {compactMeso(props.level)}. De rest
+            betalen de levels erna. Daarom rekent de factuur met Level, niet met de {compactMeso(props.total)} die je in de winkel betaalt.
+          </p>
+        </PopupButton>
+      )}
     </p>
   )
 }
@@ -1784,9 +1793,10 @@ function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
  * blijven buiten de repo (#14). Het muntje is versiering; de tekst blijft het getal.
  */
 function MesoAmount(props: { n: number }) {
+  // Kort, zoals 14.1k (Dave, 7 oktober 2026); het volle bedrag in de tooltip.
   return (
-    <span class="meso-amount">
-      {nfInt.format(props.n)}
+    <span class="meso-amount" title={`${nfInt.format(props.n)} meso`}>
+      {compactMeso(props.n)}
       <svg class="meso-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
         <circle cx="8" cy="8" r="7" fill="#f2c230" stroke="#b07d0e" stroke-width="1.5" />
         <circle cx="8" cy="8" r="3.75" fill="none" stroke="#b07d0e" stroke-width="1.25" />

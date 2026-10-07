@@ -680,7 +680,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-row.with-qty .help-toggle { grid-column: 4; justify-self: center; margin: -0.5rem -0.25rem; }
 /* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
    zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
-.advised-head.with-level, .advised-row.with-level, .equip-total.advised-total.with-level { grid-template-columns: 4.25rem minmax(0, 1fr) 3.75rem 4.5rem 2.25rem; }
+.advised-head.with-level, .advised-row.with-level, .equip-total.advised-total.with-level { grid-template-columns: 4.25rem minmax(0, 1fr) 3.75rem 3.5rem 2.25rem; }
 /* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */
 .meso-amount { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
 .meso-icon { flex: none; width: 0.75rem; height: 0.75rem; }
@@ -689,6 +689,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-row.buy .advised-level { color: var(--accent); }
 .advised-row.with-level .help-toggle { grid-column: 5; }
 .advised-total.with-level .advised-total-level { grid-column: 4; }
+/* Shop in gewone tekst, niet vet en zonder accent (Dave, 7 oktober 2026): het bedrag dat telt is Level. */
+.advised-row.with-level .advised-price, .advised-row.with-level.buy .advised-price, .advised-row.with-level.option .advised-price,
+.advised-total.with-level strong:not(.advised-total-level) { font-weight: 400; color: var(--text); }
+/* Het vraagteken achter Total cost (Dave, 7 oktober 2026): in de kolom van de vraagtekens erboven, zonder dat de regel hoger wordt. */
+.advised-total.with-level .help-toggle { grid-column: 5; justify-self: end; align-self: center; margin: -0.75rem -0.5rem -0.75rem 0; }
 .advised-row .slot-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
 .advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9375rem; line-height: 1.3; font-weight: 400; }
 /* Elke itemnaam in de tekstkleur, ook van een stuk dat niet loont (Dave, 7 oktober 2026); alleen het streepje van een leeg slot is grijs. */
