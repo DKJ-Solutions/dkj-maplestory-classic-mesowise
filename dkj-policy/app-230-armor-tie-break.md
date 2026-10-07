@@ -41,17 +41,27 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Measured on main across every monster, job, gender and level 8 to 30: real ties within half a meso occur for a Warrior (e.g. lv 25 on Bubbling, two body pairs at 13,500 and 9,100 mesos, 0.47 meso apart, with the dearer one first). None of them flipped the piece shown per slot in today's data
+- [x] `armorUpgrade.ts`: sort the choices by net saving rounded to whole mesos, then the lower price, then the higher WDEF (top and bottom together for a pair) (`byChoice`, as in `clawUpgrade.ts`)
 
 ### TEST
 
+- [x] New test in `armorUpgrade.test.ts`: an injected twin of the best piece with 1 WDEF more, priced to give 0.1 meso more net, loses to the cheaper original (fails on the old sort, passes now)
+- [x] New test: every equal rounded net in the advice is ordered by price, then WDEF, for levels 10 to 30
+- [x] `armorUpgrade.test.ts` green (112 tests)
+- [x] Code review (Victor)
+
 ### DEPLOY: app/230-armor-tie-break
 
-**Score:**
+When two armor choices save the same to the whole meso, the armor advice now puts the cheaper one first, and at the same price the one with more WDEF. Before, shop order or rounding noise decided, so a tiny model change could flip the pick (#230).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+In today's data no slot's advice changes. Where two pieces save within half a meso of each other, the app now steadily advises the cheaper one.
+
+**Score:** 1
 
 #### Pull Request
 
