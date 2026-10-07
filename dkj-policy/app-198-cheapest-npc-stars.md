@@ -39,19 +39,54 @@
 
 ### PLAN
 
+#### Decision (#198)
+
+Option (a), given on October 7, 2026: Advised compares only the NPC stars, Subi and Wolbi, and writes the set's buy price
+off like equipment, over the levels until the next better weapon.
+
+#### Data
+
+The buy prices come from NiaMeowDB, retrieved October 7, 2026: Subi costs 500 mesos per set
+([item 294](https://meowdb.com/msclassic/item-db/294)) and Wolbi 1,000 mesos per set, from Max only
+([item 295](https://meowdb.com/msclassic/item-db/295)). Rebecca read them through a summarising fetch. MeowDB answers a
+direct request with 403, so Vera could not read the raw HTML. She accepted the figures for two reasons: the watk and
+recharge read from the same pages match the repo's existing values, and the inferred set size (500) does not enter a
+one-off write-off.
+
+#### Finding for Dave
+
+With the current mob model, a Thief who holds Subi is never advised Wolbi. Cody scanned 13 mobs, levels 10 to 26 and
+several claws: Wolbi's +2 ATT loses to its higher recharge (0.4 against 0.3 per star). The advice shows up when you hold
+another star, for example Wolbi bought from a held Mokbi, or Subi bought back from a held Wolbi.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/data/types.ts` and `src/data/thief.ts`: an optional `buy` (price and source) on a throwing star. Subi and Wolbi have one; Mokbi to Ilbi do not (Cody).
+- [x] `src/starUpgrade.ts` (new): `starUpgradeAdvice` compares the NPC stars you do not hold over the claw's horizon. It picks the largest saving net of the set price, and only a net above 0 (Cody).
+- [x] `src/cheapestEquip.ts` and `src/advisedSetup.ts`: the star pick fills the Ammo slot as a normal purchase inside the existing `settle` loop. Overnemen writes it through `applyEquipChange` (Cody).
+- [x] Review follow-ups: comment wording for a held non-NPC star and for the round-1 baseline; `ownAmount` is exported from `levelInvoice.ts` and reused instead of repeated (Victor's review).
 
 ### TEST
 
+- [x] `src/starUpgrade.test.ts`: the guards (non-Thief, dagger, below level 10, own ammo amount, unknown recharge), Wolbi winning, Subi staying, Subi bought back, and the fixed point after Overnemen over 5 mobs × 4 levels × 3 claws × 3 held stars (Cody).
+- [x] The number itself: saving and net computed by hand over the claw horizon and the end-of-table horizon, the beyond-table case, and the invoice write-off pinned at 24 meso (Tycho).
+- [x] Victor's review: no correctness bugs. Over 680 setups in which Advised bought a star, it paid for itself every time against the final profile and claw.
+- [x] `npx vitest run` and `npm run lint` are green.
+
 ### DEPLOY: app/198-cheapest-npc-stars
 
-**Score:**
+Advised now chooses a Thief's throwing stars between the two that an NPC sells, Subi and Wolbi. It buys the other set when
+that saves more mesos before your next weapon upgrade than the set costs (500 for Subi, 1,000 for Wolbi), and the price is
+written off on the invoice like equipment. With the current numbers Subi stays the cheapest when you already have it, so
+the advice mainly shows up when you hold a different star.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 

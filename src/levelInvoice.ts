@@ -147,7 +147,7 @@ export type LevelInvoice =
 const wholeUp = (x: number): number => Math.max(0, Math.ceil(x - 1e-9))
 
 /** Of je zelf een bedrag invulde; zo'n bedrag telt de factuur als één regel zonder aantal. */
-const ownAmount = (text: string | undefined): boolean => text !== undefined && text.trim() !== ''
+export const ownAmount = (text: string | undefined): boolean => text !== undefined && text.trim() !== ''
 
 /** Hoe de munitie van een job heet: een Thief herlaadt stars, een Bowman koopt pijlen; een andere job gooit niets ("Ammo"). */
 export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : job === 'thief' ? 'Throwing stars' : 'Ammo')

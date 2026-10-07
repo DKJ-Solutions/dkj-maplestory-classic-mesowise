@@ -6,6 +6,7 @@ import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, ty
 import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
 import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
@@ -64,7 +65,7 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
     // Onder level 10 koopt Advised, en alleen Advised, uit de wapens met een prijs van een Beginner (#203): advies en wapen delen die keuze.
     const claw = clawUpgradeAdvice(state.drafts, profile, 'next-upgrade', true)
     const weapon = needsWeapon && isEmptyEntry(equipment.claw) ? requiredWeapon(profile, claw, true) : null
-    advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, claw, armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)), weapon)
+    advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, claw, armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)), weapon, starUpgradeAdvice(state.drafts, profile))
     const gear = advisedEquipment(job, profileDraft, equipment, advice)
     if (gear.purchases.length === 0) break
     if (rounds >= MAX_EQUIP_ROUNDS) {

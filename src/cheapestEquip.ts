@@ -4,6 +4,7 @@
 // (Dave, 6 oktober 2026, #192): advisedEquipment zet haar om in een Equipment en de winkelprijs van wat je koopt.
 import type { ArmorUpgradeAdvice } from './armorUpgrade'
 import type { ClawUpgradeAdvice, WeaponPick } from './clawUpgrade'
+import type { StarPick } from './starUpgrade'
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS, NPC_BOWMAN_WEAPONS } from './data/bowman'
 import { THROWING_STARS } from './data/thief'
 import type { ArmorSlot } from './data/types'
@@ -51,9 +52,9 @@ export interface CheapestSlot {
  * stuk dat een slot vult dat een eerder stuk al vulde, of een overall naast een top of bottom, valt af. Elk stuk is
  * doorgerekend tegen wat je nu draagt, dus dit is het advies per slot naast elkaar, geen nieuwe berekening van
  * alles samen. Zonder advies blijft elk slot wat je draagt. Met `weapon` (een leeg wapenslot, #202) staat dat wapen er als het advies
- * zelf geen wapen koopt: er staat altijd een wapen in het advies.
+ * zelf geen wapen koopt: er staat altijd een wapen in het advies. Met `star` (#198) staat die NPC-star in het Ammo-slot, met zijn prijs en horizon.
  */
-export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice, weapon: WeaponPick | null = null): Record<EquipSlot, CheapestSlot> {
+export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipment, claw: ClawUpgradeAdvice, armor: ArmorUpgradeAdvice, weapon: WeaponPick | null = null, star: StarPick | null = null): Record<EquipSlot, CheapestSlot> {
   const pick: Partial<Record<EquipSlot, string | null>> = {}
   const price: Partial<Record<EquipSlot, number>> = {}
   const horizon: Partial<Record<EquipSlot, Horizon>> = {}
@@ -82,6 +83,12 @@ export function cheapestEquipment(slots: readonly EquipSlot[], equipment: Equipm
     price.claw = weapon.claw.price
     horizon.claw = { from: weapon.from, to: weapon.to, truncated: weapon.truncated }
     why.claw = { required: true }
+  }
+  if (star) {
+    pick.ammo = star.star.name
+    price.ammo = star.price
+    horizon.ammo = { from: star.from, to: star.to, truncated: star.truncated }
+    why.ammo = { saving: star.saving }
   }
   if (armor.kind === 'advice') {
     // Wat de gekozen stukken vullen; wat daardoor leeg raakt volgt pas daarna, zodat twee stukken die hetzelfde slot leeg
