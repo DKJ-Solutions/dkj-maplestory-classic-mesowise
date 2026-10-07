@@ -39,21 +39,33 @@
 
 ### PLAN
 
+Dave, October 7, 2026: the popup behind the character under Based on: (e.g. "Lv. 20 Thief") as compact as the Total cost: Equip table, with the expected label and the character as its title; three tables (Ability points, Skillpoints, Total stats); Total stats purely from level, base AP and skill points, no equipment; a ? behind Lucky Seven and Nimble Body; no Beginner skills and no SP count; a reserved ? column and centered value columns so the tables line up.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `AdvisedCharacter`: three read-only tables (Ability points, Skillpoints (1e job), Total stats) in the character popup; `PopupButton` takes a `tag` ("expected"), titled after the character
+- [x] `BaseStats`: Max HP, Max MP, Accuracy and Evasion from `expectedStat` with base AP only (and M.ATT from INT for a Magician); nothing from equipment
+- [x] `SkillGroups` (shared with the Skillpoints card) with `inCharacter`: first-job skills only, no group header or SP count, a ? behind each skill with points that says why; `SkillEffects` and `AbilityHead` extracted
+- [x] `style.css`: compact rows in the info popups, a reserved ? column in every table, values centered in one 3rem column; Base and Extra in plain grey, the total bold
 
 ### TEST
 
+- [x] `app.test.tsx`: the popup's tag, title and three tables; Ability points and Skillpoints rows equal the Advised popups; Total stats equals the formula without item AP; the ? per skill with points and its popup
+- [x] Dave looked at the preview and said ship it (October 7, 2026)
+- [x] `npm test` (1937) and `npm run lint` green
+
 ### DEPLOY: app/compact-total-stats-popup
 
-**Score:**
+The info button after the character under **Based on:** (Total cost: Equip and Useable) now opens a compact popup titled after the character (e.g. "Lv. 20 Thief") with the label **expected**, in three tables: **Ability points** (Base + Extra = Totaal), **Skillpoints (1e job)** with a ? behind each skill the advice put points in, explaining why, and **Total stats** from level, base AP and skill points alone, without equipment. The values of all three tables line up in one column.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees at a glance which AP and skill points the cost advice assumes, and why a skill sits at its level, without the equipment muddying the base stats.
+
+**Score:** 2
 
 #### Pull Request
 
-Compact Total stats popup under Based on
-
+Character popup under Based on: three compact tables, base stats without equipment
