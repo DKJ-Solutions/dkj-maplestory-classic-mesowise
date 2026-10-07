@@ -45,7 +45,7 @@
 - [x] `data-based-on-mob` on the Mob row, the mob's info popup and both Monster popups
 - [x] `data-sheet="advised" | "actual"` beside them, and on every card popup's `.spot-body`
 - [x] The "Based on:" classes follow its heading: `.advised-for` becomes `.based-on-container`, `-row` becomes `.based-on-label`, `-line`/`-value` become `.based-on-line`/`-value` (app.tsx, style.css, tests)
-- [ ] Dave looked (visible in the inspector, like #245)
+- [x] Dave looked (visible in the inspector, like #245)
 
 ### TEST
 
