@@ -1718,7 +1718,7 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
 
 /**
  * Of je dit stuk moet kopen, en waarom (Dave, 7 oktober 2026): het oordeel bovenaan de popup van één slot in Advised ("Kopen", "Niet kopen",
- * "Houden", "Leeg laten") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
+ * "Houden", "Leeg laten", en bij munitie "Per stuk kopen", "Per stuk herladen" of "Eigen bedrag") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
  * `covered` zegt bij een leeg slot dat de overall het beslaat (top en bottom), of dat een losse top of bottom het leeg maakt (overall).
  */
 function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean): { verdict: string; text: string } {
@@ -1731,24 +1731,24 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
         ? 'Met meer ATT dood je een monster sneller, dus per level gaan er minder potions op.'
         : 'Met meer DEF raakt een monster je minder hard, dus per level gaan er minder potions op.'
   if (c.option) {
-    if (c.option.saving === null) return { verdict: 'Niet kopen', text: `Loont niet: het kost ${meso(c.option.price)} en de besparing is niet uit te rekenen. Dit slot blijft leeg.` }
+    if (c.option.saving === null) return { verdict: 'Niet kopen', text: `Niet zeker of het loont: het kost ${meso(c.option.price)} en de besparing is niet uit te rekenen. Dit slot blijft leeg.` }
     return {
       verdict: 'Niet kopen',
-      text: `Loont niet: het kost ${meso(c.option.price)}, maar tot je volgende upgrade bespaart het maar ${meso(c.option.saving)}. ${how} Dat is te weinig: je zou ${meso(c.option.price - c.option.saving)} verliezen, dus dit slot blijft leeg.`,
+      text: `Loont niet: het kost ${meso(c.option.price)} en bespaart tot je volgende upgrade maar ${meso(c.option.saving)}. ${how} Dat is te weinig: je zou ${meso(c.option.price - c.option.saving)} verliezen, dus dit slot blijft leeg.`,
     }
   }
   if (counted)
     return {
-      verdict: 'Per stuk kopen',
+      verdict: c.cheapest === OWN_AMMO ? 'Eigen bedrag' : job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
       text: c.cheapest === OWN_AMMO ? 'Het bedrag dat je zelf voor je munitie invulde; de factuur telt het.' : job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
     }
   if (c.cheapest === null) {
-    if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: je draagt een losse top en bottom, en die nemen de plek van een overall in.' : 'Leeg: je overall beslaat dit slot.' }
+    if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: een losse top of bottom neemt de plek van een overall in.' : 'Leeg: de overall beslaat dit slot.' }
     return { verdict: 'Leeg laten', text: 'Leeg: de winkel heeft hier niets dat je op je level kunt dragen en dat zich tot je volgende upgrade terugverdient.' }
   }
-  if (!c.changed) return { verdict: 'Houden', text: 'Je draagt dit al. Geen stuk uit de winkel bespaart tot je volgende upgrade meer dan het kost, dus je houdt het.' }
+  if (!c.changed) return { verdict: 'Houden', text: 'Je draagt dit al. Geen stuk uit de winkel loont tot je volgende upgrade, dus je houdt wat je draagt.' }
   if (c.price === null || c.why === undefined) return { verdict: 'Kopen', text: c.price === null ? 'Dit stuk komt in je equip.' : `Koop voor ${meso(c.price)}.` }
-  if ('required' in c.why) return { verdict: 'Kopen', text: `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}; zonder wapen train je niet.` }
+  if ('required' in c.why) return { verdict: 'Kopen', text: `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}; zonder wapen kun je niet trainen.` }
   const cost = c.why.cost ?? c.price
   const buy = c.why.partner === undefined ? `Koop voor ${meso(c.price)}.` : `Koop samen met ${familyName(slot === 'top' ? 'bottom' : 'top', c.why.partner)} voor ${meso(cost)}.`
   if (c.why.saving === null) return { verdict: 'Kopen', text: `${buy} De besparing is niet uit te rekenen.` }

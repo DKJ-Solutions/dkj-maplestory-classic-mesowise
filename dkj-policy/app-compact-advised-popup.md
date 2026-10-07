@@ -53,14 +53,14 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] The details in brackets (type, level, stat) are gone again, the row was too full (Dave, October 7, 2026); `weaponType` removed with them
 - [x] Tycho found that `why` never reached the app: `Purchase` now carries it and `advisedSetup` copies it
 - [x] The "?" opens a popup of its own with what the piece is (type, level, ATT or DEF, MDEF, speed, requirements, price) and the reason (Dave, October 7, 2026); `catalogInfo` exported from `src/equipment.ts`
-- [x] The "?" popup opens with a verdict (Kopen, Niet kopen, Houden, Leeg laten) and the sum: price, saving until your next upgrade, what you keep or would lose, and how the piece saves (Dave, October 7, 2026)
+- [x] The "?" popup opens with a verdict (Kopen, Niet kopen, Houden, Leeg laten; for ammo Per stuk kopen, Per stuk herladen or Eigen bedrag) and the sum: price, saving until your next upgrade, what you keep or would lose, and how the piece saves (Dave, October 7, 2026)
 - [x] An info button right after the item name opens the item facts; the "?" keeps only the verdict and the reason (Dave, October 7, 2026); both through `PopupButton`
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
 
 - [x] Tycho: existing tests on the new rows, plus tests for `why`, the info popup and the "?" popup (Kopen, Houden, Leeg laten). Not covered by a UI test: the verdicts "Niet kopen" and "Per stuk kopen", and "Leeg: je overall beslaat dit slot" (no UI scenario found in which Advised leaves top and bottom empty under a worn overall)
-- [ ] Edith: final read of the Dutch UI text
+- [x] Edith: final read of the Dutch UI text. Applied: an own ammo amount gets the verdict "Eigen bedrag" and stars "Per stuk herladen"; "Niet zeker of het loont" when the saving is unknown; no double "maar"; the covered texts no longer say "je draagt" (the piece may be one you buy). Withdrawn: the weapon slot is `claw` for every job, so a wand or bow gets the ATT sentence. Kept: "grijs" in the header help, the muted colour is grey
 - [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. His two open points were settled by Dave's later asks: the price got its own column, and every row (an empty half next to an overall too) got a "?"
 - [ ] Dave looks at it on a phone before the merge
 
@@ -68,8 +68,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 
 The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
 shop price and a question mark. It has no Report button any more. What you buy
-is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, requirements,
-price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
+is in the accent colour. An info button after the name shows what the piece is (type, level, ATT or DEF, MDEF, speed,
+requirements, price). The question mark on every row says whether to buy it, with the sum behind that: why you buy it (what it saves until your next upgrade), why you
 keep what you wear, or why the slot stays empty.
 
 **Score:** 3

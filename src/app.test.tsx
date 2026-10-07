@@ -590,7 +590,7 @@ describe('equipment: de claw past het profiel aan', () => {
     })
     const why = (slot: string) => whyOf(advisedRow(dialog, slot))
     expect(why('Weapon')).toMatch(/^Je draagt dit al/)
-    expect(why('Overall')).toBe('Leeg: je draagt een losse top en bottom, en die nemen de plek van een overall in.')
+    expect(why('Overall')).toBe('Leeg: een losse top of bottom neemt de plek van een overall in.')
     expect(rows.filter((r) => r.classList.contains('empty')).length).toBeGreaterThan(0)
     expect(why('Cape')).toMatch(/^Leeg: /)
     // Koopt Advised een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
