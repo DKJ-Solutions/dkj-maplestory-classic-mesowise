@@ -292,6 +292,28 @@ describe('begin zonder opslag', () => {
       expect(document.querySelectorAll('.card-report')).toHaveLength(0)
     })
 
+    it('geeft elke knop en popup een eigen klasse, zodat je in de HTML kunt aanwijzen welke het is (Dave, 7 oktober 2026, #242)', () => {
+      const keys = { Equip: 'equip', Skillpoints: 'skills', Monster: 'mob', Potions: 'potions', 'Ability points': 'ap', 'Total stats': 'total' } as const
+      for (const [title, key] of Object.entries(keys) as [keyof typeof keys, string][]) {
+        const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
+        const buttons = [...card.querySelectorAll('.view-actions button')]
+        expect(buttons.map((b) => b.className), title).toEqual(['card-action view-advised', 'card-action view-worn'])
+        for (const [view, dialogClass] of [['Advised', 'advised-dialog'], ['Your character', 'worn-dialog']] as const) {
+          fireEvent.click(within(card).getByRole('button', { name: view }))
+          const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
+          expect(dialog.classList.contains(`card-dialog-${key}`), `${title} ${view}`).toBe(true)
+          expect(dialog.classList.contains(dialogClass), `${title} ${view}`).toBe(true)
+          fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+        }
+      }
+      // De zes knoppen onder Total cost: elk zegt welke kaart hij opent.
+      const groups = [...document.querySelectorAll('.cost-cards')]
+      expect(groups.length).toBeGreaterThan(0)
+      for (const group of groups) {
+        expect([...group.querySelectorAll('button')].map((b) => b.className)).toEqual(['equip', 'skills', 'mob', 'potions', 'ap', 'total'].map((k) => `card-action cost-card cost-card-${k}`))
+      }
+    })
+
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = homeScreen().querySelector('section.equipment')!

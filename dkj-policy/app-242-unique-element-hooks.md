@@ -39,19 +39,29 @@
 
 ### PLAN
 
+- [x] Survey the generic elements in `src/app.tsx`: elements that share one class while doing different things
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] View buttons: `view-advised` / `view-worn`; card popups: `card-dialog-<card>` plus `advised-dialog` / `worn-dialog`
+- [x] Total cost buttons: `cost-card cost-card-<card>`; steppers: `step-down` / `step-up`; character tables: `char-table-ap/-skills/-total`; `skill-apply`, `cheapest-apply`, `cheapest-undo`
 
 ### TEST
 
+- [x] New test in `src/app.test.tsx` pins the view-button, popup and Total cost classes
+- [x] `npm run lint` clean, full suite green (1947 tests)
+
 ### DEPLOY: app/242-unique-element-hooks
 
-**Score:**
+Buttons and popups that do different things no longer share one bare class, so each can be named and found in the HTML. The Advised and Your character buttons carry `view-advised` and `view-worn`, and every card popup says which card and which view it belongs to (`card-dialog-equip`, `advised-dialog`). The six Total cost buttons, the −/+ steppers, the three character tables and the apply/undo buttons each carry a class naming their function as well. Nothing changes on screen.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Nothing a player sees changes: the classes only make the markup easier to point at.
+
+**Score:** N/A
 
 #### Pull Request
 
