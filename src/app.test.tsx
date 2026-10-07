@@ -443,8 +443,12 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Total cost: Equip advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Total cost: Equip')
     expect(dialog.getAttribute('aria-label')).toBe('Total cost: Equip (advised)')
+    // "advised" op een eigen regel boven de titel, niet in de kop (Dave, 7 oktober 2026).
+    const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
+    expect(tag.textContent).toBe('advised')
+    expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
     const weapon = advisedRow(dialog, 'Weapon')
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
     expect(weapon.classList.contains('buy')).toBe(false)
@@ -463,7 +467,7 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Total cost: Equip advised')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Total cost: Equip')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -4142,10 +4146,13 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         for (const title of CARDS) {
           const adv = openView(title, 'Advised')
           // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
+          expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
           expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(title === 'Equip' ? `Char${who}Mob${mob}` : who)
           closeView(title)
           const own = openView(title, 'Your character')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
+          // Alleen een Advised-popup is licht oranje (Dave, 7 oktober 2026).
+          expect(own.classList.contains('advised-dialog'), job + ' ' + title + ' own kleur').toBe(false)
           closeView(title)
         }
       }
@@ -4309,7 +4316,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip advised')
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
       expect(buy).not.toBeNull()
@@ -4392,7 +4399,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
     // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
     const row = button.closest('.stat-dialog-title-row')!
-    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip advised')
+    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
     // Dicht tot je tikt; dan een eigen popup, zoals elk vraagteken in Advised.
     expect(button.getAttribute('aria-haspopup')).toBe('dialog')
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()

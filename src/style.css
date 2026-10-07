@@ -20,6 +20,9 @@
   /* Skillpoints (#139): wat een punt kost in rood, wat hij geeft in groen. */
   --cost: #b91c1c;
   --gain: #15803d;
+  /* Elke Advised-popup is licht oranje (Dave, 7 oktober 2026): het advies van de app, niet wat je zelf invulde. */
+  --advised-bg: #fff7ed;
+  --advised-border: #fed7aa;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -40,6 +43,8 @@
     --on-levelup: #052e16;
     --cost: #f87171;
     --gain: #4ade80;
+    --advised-bg: #2a2118;
+    --advised-border: #57391a;
   }
 }
 
@@ -346,6 +351,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
 .stat-dialog-body { position: relative; padding: 1rem; }
+/* Een Advised-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */
+.stat-dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
 .stat-dialog { text-align: left; }
@@ -400,9 +407,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De titel van een kaart- of rapport-popup is de grootste kop erin, op de maat van een h2 (Dave, 5 oktober 2026): daaronder
    de delen van het advies (--fs-h3), het oordeel (--fs-h4), de toelichting (0.875rem) en de bron (0.75rem). */
 .card-dialog .stat-dialog-name, .report-dialog .stat-dialog-name { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
-/* Een titel met een label erachter, "Total cost: Equip" met "advised" (Dave, 7 oktober 2026): kleiner, zodat titel, label en vraagteken op een telefoon op één regel passen. */
-.card-dialog .stat-dialog-name:has(.title-tag) { font-size: var(--fs-h3); white-space: nowrap; }
-.title-tag { margin-left: 0.125rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); vertical-align: 0.125rem; }
+/* Een label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026). De titel houdt de maat van de andere kaart-popups
+   en past met zijn vraagteken op één regel vanaf 360px breed; op een nog smaller scherm breekt hij af in plaats van over het vraagteken te lopen. */
+.title-tag { display: block; margin-bottom: 0.125rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .ap-edit .stat-dialog-label { margin: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ap-edit input, .ap-edit-total { display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; margin: 0; padding: 0 0.25rem; box-sizing: border-box;
   font: inherit; font-size: 1.25rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--text);

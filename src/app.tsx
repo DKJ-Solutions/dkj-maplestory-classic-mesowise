@@ -446,7 +446,7 @@ function CardPopup(props: { title: string; tag?: string; advised?: boolean; subt
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised ? (props.subtitle ?? (who || undefined)) : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -1435,7 +1435,7 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
-  /** Een klein grijs label achter de titel, "Total cost: Equip" met "advised" (Dave, 7 oktober 2026); de toegankelijke naam krijgt het tussen haakjes. */
+  /** Een klein grijs label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026); de toegankelijke naam krijgt het tussen haakjes. */
   tag?: string
   /** Een kleine grijze regel onder de titel: bij een Advised-popup het level en de job waarop het advies rekent, "Lv. 30 Thief" (Dave, 7 oktober 2026). */
   subtitle?: ComponentChildren
@@ -1536,7 +1536,6 @@ function StatDialog(props: {
     <>
       {props.title}
       {props.titleNote && <> {props.titleNote}</>}
-      {props.tag && <> <span class="title-tag">{props.tag}</span></>}
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
@@ -1552,10 +1551,11 @@ function StatDialog(props: {
   ) : (
     <h2 class="stat-dialog-name">{name}</h2>
   )
-  const title = props.subtitle ? (
+  const title = props.subtitle || props.tag ? (
     <div class="stat-dialog-titles">
+      {props.tag && <span class="title-tag">{props.tag}</span>}
       {heading}
-      <div class="stat-dialog-sub">{props.subtitle}</div>
+      {props.subtitle && <div class="stat-dialog-sub">{props.subtitle}</div>}
     </div>
   ) : (
     heading
