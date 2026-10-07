@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ArmorChoice, ArmorUpgradeAdvice } from './armorUpgrade'
-import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo } from './cheapestEquip'
+import { advisedEquipment, buyTexts, cheapestEquipment, countedAmmo, OWN_AMMO } from './cheapestEquip'
 import type { ClawUpgradeAdvice } from './clawUpgrade'
 import type { ArmorPiece, ArmorSlot } from './data/types'
 import { changeEquipment, choosePick, defaultEquipment, EQUIP_SLOTS, OTHER, type Equipment } from './equipment'
@@ -193,8 +193,19 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
     expect(countedAmmo(parsed('thief', { starWatk: '18', starRecharge: '0.4' }), weapon('Steel Igor'))).toBe('Wolbi Throwing Stars')
   })
 
-  it('geeft niets als de herlaadprijs bij geen star uit de lijst hoort', () => {
-    expect(countedAmmo(parsed('thief', { starRecharge: '0.35' }), weapon('Steel Igor'))).toBeNull()
+  it('geeft een algemeen label met de prijs als de herlaadprijs bij geen star of pijl uit de lijst hoort (#199)', () => {
+    expect(countedAmmo(parsed('thief', { starRecharge: '0.35' }), weapon('Steel Igor'))).toBe('Throwing stars, 0,35 meso per stuk')
+    // Een Bowman rekent altijd met de prijs van zijn pijl (parseProfile), dus een getypte prijs verandert niets.
+    expect(countedAmmo(parsed('bowman', { starRecharge: '0.35' }), weapon('Battle Bow'))).toBe('Arrows for Bows')
+    // Zonder herlaadprijs telt de factuur de munitiekosten van de plek: niets te noemen.
+    expect(countedAmmo(parsed('thief', { starRecharge: '0' }), weapon('Steel Igor'))).toBeNull()
+  })
+
+  it('noemt geen munitie als je zelf het bedrag voor de munitie van de plek invulde (#199)', () => {
+    expect(countedAmmo(parsed('thief'), weapon('Steel Igor'), true)).toBe(OWN_AMMO)
+    expect(countedAmmo(parsed('bowman'), weapon('Battle Bow'), true)).toBe(OWN_AMMO)
+    // Wie niets gooit houdt null, ook met een eigen bedrag.
+    expect(countedAmmo(parsed('warrior'), weapon(''), true)).toBeNull()
   })
 
   it('geeft niets voor wie niets gooit: een Thief met een dagger, een Beginner, een Warrior of een Magician', () => {
@@ -213,5 +224,26 @@ describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot v
 
   it('geeft een Bowman met een eigen wapen de pijl voor een boog, zoals de berekening (PLAIN_ARROW)', () => {
     expect(countedAmmo(parsed('bowman'), weapon(OTHER))).toBe('Arrows for Bows')
+  })
+})
+
+describe('cheapestEquipment: het vereiste wapen (#202)', () => {
+  const weapon = { claw: { name: 'Garnier', price: 5000 }, from: 10, to: 14, truncated: false } as unknown as Parameters<typeof cheapestEquipment>[4]
+
+  it('zet het wapen in het wapenslot als het advies geen winnaar heeft, met prijs en horizon', () => {
+    for (const advice of [NONE, clawAdvice(null)]) {
+      const r = cheapestEquipment(SLOTS, defaultEquipment(), advice, NONE, weapon)
+      expect(r.claw).toEqual({ worn: null, cheapest: 'Garnier', changed: true, price: 5000, option: null, horizon: { from: 10, to: 14, truncated: false } })
+    }
+  })
+
+  it('negeert het wapen als het advies een winnaar heeft', () => {
+    const r = cheapestEquipment(SLOTS, defaultEquipment(), clawAdvice('Steel Titans'), NONE, weapon)
+    expect(r.claw.cheapest).toBe('Steel Titans')
+    expect(r.claw.price).toBe(5000)
+  })
+
+  it('verandert niets zonder wapen (null is de standaard)', () => {
+    expect(cheapestEquipment(SLOTS, defaultEquipment(), NONE, NONE).claw.cheapest).toBeNull()
   })
 })

@@ -10,7 +10,8 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Stat, Weapon } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
-import { buyTexts, type CheapestSlot } from './cheapestEquip'
+import { nf3 } from './numberFormat'
+import { buyTexts, OWN_AMMO, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, UNKNOWN, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, familyName, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
@@ -38,7 +39,6 @@ const nf = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 })
 const nfInt = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 0 })
 const nfPct = new Intl.NumberFormat('nl-NL', { style: 'percent', maximumFractionDigits: 0 })
 const nf1 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 })
-const nf3 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 3 })
 
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 /** JJJJ-MM-DD als Nederlandse datum, bijvoorbeeld "3 oktober 2026". */
@@ -70,16 +70,23 @@ function Help(props: { children: ComponentChildren; class?: string }) {
   const id = useId()
   return (
     <div class="help">
-      <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
-        </svg>
-      </button>
+      <HelpToggle open={open} controls={id} onToggle={() => setOpen(!open)} />
       <p class={props.class ? `hint ${props.class}` : 'hint'} id={id} hidden={!open}>
         {props.children}
       </p>
     </div>
+  )
+}
+
+/** Het ronde vraagteken zelf: onder Help, en naast de kop van een popup (StatDialog `help`). */
+function HelpToggle(props: { open: boolean; controls: string; onToggle: () => void }) {
+  return (
+    <button type="button" class="help-toggle" aria-label="Uitleg" aria-expanded={props.open} aria-controls={props.controls} onClick={props.onToggle}>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
+      </svg>
+    </button>
   )
 }
 
@@ -412,14 +419,14 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; ariaLabel?: string; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { title: string; opener: RefObject<HTMLButtonElement | null>; ariaLabel?: string; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
   return (
-    <StatDialog title={props.title} ariaLabel={props.ariaLabel} titleNote={props.titleNote} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} ariaLabel={props.ariaLabel} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className="card-dialog" onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.children}
@@ -1414,6 +1421,8 @@ function StatDialog(props: {
   className?: string
   /** Achter de titel: "Ability points (6)" (Dave, 5 oktober 2026, #157). */
   titleNote?: ComponentChildren
+  /** Uitleg achter een vraagteken naast de titel (Dave, 7 oktober 2026); de tekst opent onder de kop. */
+  help?: ComponentChildren
   onCancel: () => void
   /**
    * Alleen als er iets gewijzigd is: dan wordt het kruisje een vinkje dat opslaat en sluit, naast Opslaan onderin, met
@@ -1513,6 +1522,8 @@ function StatDialog(props: {
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
   const title = <h2 class="stat-dialog-name">{name}</h2>
+  const [helpOpen, setHelpOpen] = useState(false)
+  const helpId = useId()
   useEffect(() => {
     const d = ref.current
     d?.showModal()
@@ -1533,7 +1544,15 @@ function StatDialog(props: {
       {...swipe}
     >
       <div class="stat-dialog-body">
-      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>{title}</div>
+      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
+        {title}
+        {props.help && <HelpToggle open={helpOpen} controls={helpId} onToggle={() => setHelpOpen(!helpOpen)} />}
+      </div>
+      {props.help && (
+        <p class="hint stat-dialog-help" id={helpId} hidden={!helpOpen}>
+          {props.help}
+        </p>
+      )}
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
@@ -1567,15 +1586,18 @@ function StatDialog(props: {
  * goedkoopste equip met zijn ATT of DEF; een stuk dat je moet kopen staat in de accentkleur met zijn winkelprijs, en onderaan wat
  * alles samen kost. Een streepje is een slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189).
  */
+/** De uitleg bij de Equip-popup achter "Advised": achter het vraagteken naast de kop "Advised" (Dave, 7 oktober 2026; zie StatDialog `help`). */
+const CHEAPEST_HELP = (
+  <>
+    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
+    staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer; "Eigen bedrag" is wat je zelf voor de munitie invulde. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+  </>
+)
+
 function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null }) {
   const total = props.slots.reduce((sum, slot) => sum + (props.cheapest[slot].price ?? 0), 0)
   return (
     <>
-      {/* Uitleg achter een vraagteken (Dave, 7 oktober 2026): die lange alinea wil hij niet zien, zeker niet op een telefoon. */}
-      <Help>
-        De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Advised rekent. Een stuk met "Koop voor" koop je in de winkel; op de factuur
-        staat alleen het deel van dit level. Een stuk met "Loont niet" kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Bij een leeg Ammo-slot staat de munitie die de factuur telt; die koop of herlaad je per stuk, niet in één keer. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
-      </Help>
       {props.slots.map((slot) => {
         const slotAdvice = props.cheapest[slot]
         // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen "Koop voor".
@@ -1584,7 +1606,8 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
         // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
         const entry: EquipEntry = c.changed ? { pick: c.cheapest ?? UNKNOWN, name: '', stat: '' } : props.equipment[slot]
         const stat = statName(slot, props.job)
-        const value = c.cheapest === null ? null : wornStat(slot, entry)
+        // Een algemeen label (eigen bedrag, of een star-prijs die bij geen star hoort) heeft geen W.ATT om te tonen (#199).
+        const value = c.cheapest === null || (counted && wornStat(slot, entry) === undefined) ? null : wornStat(slot, entry)
         return (
           <div class={c.cheapest === null ? 'equip-row fixed empty' : 'equip-row fixed'} key={slot}>
             <span class="slot-name">{slotLabel(slot)}</span>
@@ -1603,7 +1626,7 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
               </div>
             )}
             {c.price !== null && <span class="equip-price">Koop voor {nfInt.format(c.price)} meso</span>}
-            {counted && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
+            {counted && props.ammo !== OWN_AMMO && <span class="equip-price">{props.job === 'bowman' ? 'Per pijl gekocht, op de factuur' : 'Per star herladen, op de factuur'}</span>}
             {c.option && (
               <span class="equip-price">
                 Loont niet: kost {nfInt.format(c.option.price)} meso,{' '}
@@ -1709,7 +1732,7 @@ function EquipmentCard(props: {
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} onClose={close} report={props.report} reportTitle="Equip">
+      <CardPopup title={view === 'advised' ? 'Advised' : 'Equip'} ariaLabel={view === 'advised' ? 'Advised: Equip' : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )

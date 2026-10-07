@@ -4,8 +4,10 @@
 import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
-import { clawUpgradeAdvice } from './clawUpgrade'
-import { EQUIP_SLOTS, shownSlots, wornName, wornWdef, type EquipSlot, type Equipment } from './equipment'
+import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
+import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { ammoLabel, levelInvoice } from './levelInvoice'
+import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 
 /** Hoeveel keer hoogstens equipment erbij komt en alles opnieuw wordt doorgerekend; daarna blijft de laatste stand staan (`capped`). */
@@ -32,11 +34,22 @@ export interface AdvisedSetup {
  * upgrade, zoals het Report) op wat daaruit komt. Koopt het niets, dan is dit de uitkomst; anders komen die stukken erbij en begint de ronde opnieuw
  * met je eigen mob, potions en skillpunten. Een slot dat twee keer verandert, koopt alleen het laatste stuk (met de prijs en horizon van de ronde
  * die het koos). Na de uitkomst nemen en opnieuw rekenen verandert dus niets.
+ *
+ * Er staat altijd een wapen in het advies (Dave, 7 oktober 2026, #202). Is je eigen wapenslot leeg, dan rekent Advised vanaf een lege hand
+ * (0 ATT, niet de ATT uit je profiel) en zet het het wapen van requiredWeapon in je hand, ook als dat zich niet terugverdient. Heeft je
+ * winkel op je level niets wat je kunt dragen, dan blijft het zoals het was: met de ATT uit je profiel.
  */
 export function advisedSetup(user: CheapestInput): AdvisedSetup {
+  if (!isEmptyEntry(user.equipment.claw)) return settle(user, user.profileDraft, false)
+  const armed = settle(user, { ...user.profileDraft, clawWatk: '0' }, true)
+  return isEmptyEntry(armed.equipment.claw) ? settle(user, user.profileDraft, false) : armed
+}
+
+/** Het vaste punt van advisedSetup vanaf dit profiel; met `needsWeapon` krijgt een leeg wapenslot het wapen van requiredWeapon. */
+function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: boolean): AdvisedSetup {
   const { job } = user
   let equipment = user.equipment
-  let profileDraft = user.profileDraft
+  let profileDraft = startProfile
   let purchases: Purchase[] = []
   let rounds = 0
   let advice: Record<EquipSlot, CheapestSlot> | null = null
@@ -48,7 +61,10 @@ export function advisedSetup(user: CheapestInput): AdvisedSetup {
     result = cheapestSettings(input)
     const state: CheapestInput = { ...input, drafts: result.drafts, profileDraft: result.profileDraft, potionChoice: result.potionChoice }
     profile = profileOf(state)
-    advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, clawUpgradeAdvice(state.drafts, profile), armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)))
+    // Onder level 10 koopt Advised, en alleen Advised, uit de wapens met een prijs van een Beginner (#203): advies en wapen delen die keuze.
+    const claw = clawUpgradeAdvice(state.drafts, profile, 'next-upgrade', true)
+    const weapon = needsWeapon && isEmptyEntry(equipment.claw) ? requiredWeapon(profile, claw, true) : null
+    advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, claw, armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)), weapon)
     const gear = advisedEquipment(job, profileDraft, equipment, advice)
     if (gear.purchases.length === 0) break
     if (rounds >= MAX_EQUIP_ROUNDS) {
@@ -85,6 +101,16 @@ export function advisedSetup(user: CheapestInput): AdvisedSetup {
     purchases: final,
     shop: final.reduce((sum, p) => sum + p.price, 0),
     cheapest,
-    ammo: profile ? countedAmmo(profile, equipment.claw) : null,
+    ammo: profile ? ammoOnInvoice(result.drafts, profile, job, equipment.claw) : null,
   }
+}
+
+/**
+ * Wat het Ammo-slot noemt, volgt de factuur (#199): staat er een regel met stars of pijlen (`why`), dan die munitie; staat er een bedrag zonder aantal (een
+ * eigen bedrag, of een plek zonder berekend plan), dan een eigen bedrag; staat er geen munitieregel, dan niets.
+ */
+function ammoOnInvoice(drafts: CheapestResult['drafts'], profile: NonNullable<ReturnType<typeof profileOf>>, job: Job, claw: EquipEntry): string | null {
+  const inv = levelInvoice(drafts, profile)
+  const line = inv.kind === 'invoice' ? inv.lines.find((l) => !l.shop && l.label === ammoLabel(job)) : undefined
+  return line ? countedAmmo(profile, claw, !line.why) : null
 }

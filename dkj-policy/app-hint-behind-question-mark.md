@@ -48,6 +48,7 @@ works move behind the "?". The rule is recorded in Gwen's lens.
 - [x] `Help` component in `src/app.tsx` (44px tap target, `aria-expanded`/`aria-controls`, collapsed by default) and its styles
 - [x] Applied to the Advised Equip popup paragraph and the other explanatory hints (gender, offline file, AP, weapon and armor notes, unknown-job items, contact assumption, the extra-mana clause)
 - [x] Rule in `.claude/specialists/lenses/specialist-04-12-lens.md`
+- [x] In the Advised Equip popup the "?" sits next to the "Advised" heading, the text opens under it (Dave, October 7, 2026; `StatDialog` `help`)
 
 ### TEST
 
@@ -58,7 +59,7 @@ works move behind the "?". The rule is recorded in Gwen's lens.
 
 ### DEPLOY: app/hint-behind-question-mark
 
-Long explanations no longer fill the screen: the paragraph above the Advised Equip popup and the other hints that explain how a
+Long explanations no longer fill the screen: the paragraph in the Advised Equip popup (its "?" next to the "Advised" heading) and the other hints that explain how a
 screen or the calculation works now sit behind a "?" icon, collapsed until you tap it. Results, statuses and prompts stay
 visible as before. Every new screen follows the same rule.
 

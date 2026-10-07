@@ -2,7 +2,99 @@
 
 ## [Unreleased]
 
-**73 / 113 minor entries** <!-- pending-tally -->
+**75 / 117 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/199-advised-ammo-typed-price · 20261007-094736Z
+
+The Ammo slot in the Advised view of the Equip popup now always agrees with the Advised invoice. If you typed your own ammo
+amount on the spot it shows "Eigen bedrag" instead of a star or arrow name; a Thief whose star recharge price matches no
+known star sees "Throwing stars, 0,35 meso per stuk" instead of "—"; and a custom spot that the invoice counts no ammo for
+leaves the slot empty. Resolves #199.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Advised Ammo slot agrees with the invoice when the ammo price is typed in
+
+[PR #212](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/212)
+
+---
+
+### DEPLOY: app/203-beginner-weapon-advice · 20261007-093146Z
+
+Below level 10, Advised now gives a Thief, Warrior or Bowman with an empty weapon slot a weapon from the shop: the Sword, Hand
+Axe or Wooden Club (50 mesos) or, for a Thief or Bowman, the Razor (500) or Fruit Knife (1,500), counted on the Advised invoice
+up to level 9. A Magician still gets none, because no shop sells a wand or staff below level 10. The Attack card on Home is
+unchanged (#209). The prices carry their own source date. Resolves #203, resolves #210.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A brand-new character now sees a weapon in Advised from level 1, not only from level 10.
+
+**Score:** 2
+
+#### Pull Request
+
+Advised gives a weapon below level 10
+
+[PR #211](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/211)
+
+---
+
+### DEPLOY: docs/206-changelog-capital · 20261007-090134Z
+
+Every Pull Request title in the changelog now starts with a capital letter; six entries, PR #205's among them, were
+lowercase. Cosmetic only. Resolves #206.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Capitalise the PR #205 changelog title
+
+[PR #208](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/208)
+
+---
+
+### DEPLOY: app/202-advised-always-weapon · 20261007-085517Z
+
+The Advised setup now always holds a weapon. When your own weapon slot is empty, Advised no longer assumes you hold an unnamed
+weapon with the profile's ATT (10 by default); it starts from an empty hand and buys the weapon that saves the most mesos up to
+your next upgrade, or, when none pays for itself, the one that loses the least, or else the cheapest shop weapon you can wear. A
+Thief at level 10 now gets the Garnier and a Warrior the Steel Pipe, where both used to get nothing. Below level 10 the shop has
+no priced weapon yet, so nothing changes there (#203). Resolves #202.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player who has not filled in a weapon now sees one in Advised and on its invoice, instead of an empty weapon slot that read as
+advice to fight bare-handed.
+
+**Score:** 3
+
+#### Pull Request
+
+The advised setup always holds a weapon, also when your own weapon slot is empty
+
+[PR #205](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/205)
+
+---
 
 ### DEPLOY: app/193-advised-proposes-mob · 20261006-211053Z
 
@@ -525,7 +617,7 @@ A player switching mobs now confirms the switch, so a slip in the list no longer
 
 #### Pull Request
 
-the Monster popup gets an Opslaan button for the chosen mob
+The Monster popup gets an Opslaan button for the chosen mob
 
 [PR #166](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/166)
 
@@ -568,7 +660,7 @@ is tighter now the boxes carry no borders.
 
 #### Pull Request
 
-the value box no longer looks like the pencil button next to it
+The value box no longer looks like the pencil button next to it
 
 [PR #164](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/164)
 
@@ -1171,7 +1263,7 @@ A Magician player sees a real number where the card was blank, the same one the 
 
 #### Pull Request
 
-the Total stats card shows M.ATT for a Magician
+The Total stats card shows M.ATT for a Magician
 
 [PR #110](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/110)
 
@@ -1439,7 +1531,7 @@ N/A
 
 #### Pull Request
 
-rename subtitle of app
+Rename subtitle of app
 
 [PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
 
@@ -2134,7 +2226,7 @@ is", en je hoeft na een loot je WDEF en weapon attack niet meer zelf uit te reke
 
 #### Pull Request
 
-equipment-sectie onder de Level up-knop, die meerekent
+Equipment-sectie onder de Level up-knop, die meerekent
 
 [PR #46](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/46)
 

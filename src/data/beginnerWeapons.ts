@@ -3,9 +3,11 @@
 // Beginner kan ze dragen. Opgehaald bij NiaMeowDB (meowdb.com) op 2026-10-05, per wapen de itempagina, twee keer
 // gelezen (via een samenvatting van de pagina, met twee verschillende vragen; de waarden waren gelijk).
 //
-// Ze hebben wel een winkelprijs (Sid in Amherst, Silver in Lith Harbor), maar staan hier als items zonder prijs: het
-// wapen-advies kijkt naar de wapens van je job vanaf level 10, en daar horen deze niet bij. Ze staan alleen in de
-// zoekbalk van "Equip", zodat je kunt invullen wat je draagt. Staat de naam ook in een winkellijst, dan wint die regel.
+// Ze hebben een winkelprijs (#203: NPC-winkelprijzen van COT2, gelezen op dezelfde itempagina op 2026-10-07 en gecontroleerd tegen de
+// winkelpagina van de NPC; per wapen staat dat in `priceSource`, terwijl `source` de datum van de stats houdt, #210): Sword 50 (Karl in Henesys, Sid in Amherst, Silver in Lith Harbor),
+// Hand Axe en Wooden Club 50 (Sid, Silver), Razor 500 (alleen Sid, npcs/20), Fruit Knife 1.500 (alleen Silver, npcs/110). Daarom kan het
+// wapen-advies ze onder level 10 aanbieden (clawUpgrade.ts), en staan ze ook in de zoekbalk van "Equip".
+// Een Magician onder level 10 krijgt geen wapen: wat de winkels hem verkopen (de wands en staffs van Flora) begint op level 10. Dat is zo bedoeld.
 //
 // Voor welke job (een naam bij meer jobs moet hetzelfde item zijn, zie equipment.ts):
 // - Thief en Bowman: alle vijf. Het getal is de W.ATK.
@@ -23,20 +25,27 @@ import type { Source, WarriorWeaponKind, WornClaw } from './types'
 import { effectiveMultiplier, MULT } from './warrior'
 
 const R = '2026-10-05'
-const src = (id: number): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved: R })
+const RP = '2026-10-07'
+const page = (id: number, retrieved: string): Source => ({ url: `https://meowdb.com/msclassic/item-db/${id}`, retrieved })
+const src = (id: number): Source => page(id, R)
+const priceSrc = (id: number): Source => page(id, RP)
 
-/** Een wapen onder level 10: zoals een claw zonder prijs, met zijn soort; een dagger heeft hier geen Warrior-soort. */
+/** Een wapen onder level 10: zoals een claw, met prijs en soort; een dagger heeft hier geen Warrior-soort. */
 export interface BeginnerWeapon extends WornClaw {
+  /** De winkelprijs in meso (#203). */
+  price: number
+  /** Waar de prijs vandaan komt (de itempagina, gelezen op 2026-10-07); `source` is die van de stats. */
+  priceSource: Source
   kind: WarriorWeaponKind | 'dagger'
 }
 
 /** De vijf wapens onder level 10, van laag naar hoog level. Geen level-eis op de pagina staat als level 0. */
 export const BEGINNER_WEAPONS: readonly BeginnerWeapon[] = [
-  { name: 'Sword', kind: '1h-sword', level: 0, watk: 17, speed: SPEED.fast4, source: src(541) },
-  { name: 'Hand Axe', kind: '1h-axe', level: 0, watk: 17, speed: SPEED.fast4, source: src(576) },
-  { name: 'Wooden Club', kind: '1h-blunt', level: 0, watk: 19, speed: SPEED.fast5, source: src(585) },
-  { name: 'Razor', kind: 'dagger', level: 5, watk: 23, speed: SPEED.fast4, source: src(558) },
-  { name: 'Fruit Knife', kind: 'dagger', level: 8, watk: 23, speed: SPEED.faster3, source: src(559) },
+  { name: 'Sword', kind: '1h-sword', level: 0, watk: 17, speed: SPEED.fast4, price: 50, priceSource: priceSrc(541), source: src(541) },
+  { name: 'Hand Axe', kind: '1h-axe', level: 0, watk: 17, speed: SPEED.fast4, price: 50, priceSource: priceSrc(576), source: src(576) },
+  { name: 'Wooden Club', kind: '1h-blunt', level: 0, watk: 19, speed: SPEED.fast5, price: 50, priceSource: priceSrc(585), source: src(585) },
+  { name: 'Razor', kind: 'dagger', level: 5, watk: 23, speed: SPEED.fast4, price: 500, priceSource: priceSrc(558), source: src(558) },
+  { name: 'Fruit Knife', kind: 'dagger', level: 8, watk: 23, speed: SPEED.faster3, price: 1_500, priceSource: priceSrc(559), source: src(559) },
 ]
 
 /**
@@ -56,10 +65,10 @@ const isWarriorKind = (k: BeginnerWeapon['kind']): k is WarriorWeaponKind => k !
 export const isBeginnerDagger = (name: string): boolean => BEGINNER_WEAPONS.some((w) => w.kind === 'dagger' && w.name === name)
 
 /**
- * De wapens onder level 10 als items zonder prijs, met de verwachte multiplier (60% zwaai, 40% steek) van hun soort.
+ * De wapens onder level 10 met hun prijs, en de verwachte multiplier (60% zwaai, 40% steek) van hun soort.
  * Thief, Warrior en Bowman lezen dezelfde objecten, zodat een naam bij elke job hetzelfde item is.
  */
-export const BEGINNER_WORN_WEAPONS: readonly (WornClaw & { mult: number })[] = BEGINNER_WEAPONS.map(({ kind, ...w }) => ({
+export const BEGINNER_WORN_WEAPONS: readonly (WornClaw & { mult: number; price: number; priceSource: Source })[] = BEGINNER_WEAPONS.map(({ kind, ...w }) => ({
   ...w,
   mult: effectiveMultiplier(isWarriorKind(kind) ? MULT[kind] : DAGGER.mult),
 }))

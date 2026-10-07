@@ -3946,7 +3946,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     expect(text.hidden).toBe(true)
   })
 
-  it('zet de lange alinea van de Equip-popup achter een vraagteken, dicht tot je tikt', () => {
+  it('zet de lange alinea van de Equip-popup achter een vraagteken naast de kop Advised, dicht tot je tikt', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
@@ -3954,10 +3954,18 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
     const button = within(dialog).getByRole('button', { name: 'Uitleg' })
+    // Naast de kop, niet boven de rijen (Dave, 7 oktober 2026).
+    const head = button.closest('.stat-dialog-head')!
+    expect(head.querySelector('.stat-dialog-name')!.textContent).toBe('Advised')
     const text = textOf(button)
     expect(text.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     expect(text.hidden).toBe(true)
     fireEvent.click(button)
     expect(text.hidden).toBe(false)
+    // Wat je draagt heeft die uitleg niet: daar staat geen vraagteken in de kop.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
+    const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(worn.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
   })
 })
