@@ -3736,6 +3736,9 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: mesoOf(r.querySelector('.advised-level')!.textContent) }))).toEqual(invoice)
     for (const r of bought) expect(mesoOf(r.querySelector('.advised-level')!.textContent)).toBeLessThanOrEqual(mesoOf(r.querySelector('.advised-price')!.textContent))
     expect(bought.some((r) => mesoOf(r.querySelector('.advised-level')!.textContent) < mesoOf(r.querySelector('.advised-price')!.textContent))).toBe(true)
+    // Achter elk bedrag een muntje, dat de schermlezer overslaat (Dave, 7 oktober 2026).
+    for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.querySelector('svg.meso-icon[aria-hidden="true"]')).not.toBeNull()
+    expect(d.querySelectorAll('.advised-total svg.meso-icon')).toHaveLength(2)
     // Wat je niet koopt staat niet op de factuur: Level blijft leeg.
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-level')!.textContent).toBe('')
     // Twee totalen: Shop telt de winkelprijzen van wat je koopt (een grijs stuk niet), Level wat de factuur voor de stukken rekent.

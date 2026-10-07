@@ -1769,9 +1769,29 @@ function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
   return (
     <p class={['equip-total advised-total', props.qty && 'with-qty', props.level !== undefined && 'with-level'].filter(Boolean).join(' ')}>
       <span class="advised-total-label">Total cost</span>
-      <strong>{nfInt.format(props.total)}</strong>
-      {props.level !== undefined && <strong class="advised-total-level">{nfInt.format(props.level)}</strong>}
+      <strong>{props.level !== undefined ? <MesoAmount n={props.total} /> : nfInt.format(props.total)}</strong>
+      {props.level !== undefined && (
+        <strong class="advised-total-level">
+          <MesoAmount n={props.level} />
+        </strong>
+      )}
     </p>
+  )
+}
+
+/**
+ * Een bedrag met een muntje erachter (Dave, 7 oktober 2026), in Advised: Equip. Een eigen tekening, geen meso-sprite uit het spel: Nexons beelden
+ * blijven buiten de repo (#14). Het muntje is versiering; de tekst blijft het getal.
+ */
+function MesoAmount(props: { n: number }) {
+  return (
+    <span class="meso-amount">
+      {nfInt.format(props.n)}
+      <svg class="meso-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" fill="#f2c230" stroke="#b07d0e" stroke-width="1.5" />
+        <circle cx="8" cy="8" r="3.75" fill="none" stroke="#b07d0e" stroke-width="1.25" />
+      </svg>
+    </span>
   )
 }
 
@@ -1782,11 +1802,13 @@ function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
  */
 function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren; helpTitle?: string }) {
   const title = props.name ?? props.slot
+  // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
+  const amount = (n: number | null) => (n === null ? '' : props.level !== undefined ? <MesoAmount n={n} /> : nfInt.format(n))
   const price = (
     <>
-      <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
+      <span class="advised-price">{amount(props.price)}</span>
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
-      {props.level !== undefined && <span class="advised-level">{props.level === null ? '' : nfInt.format(props.level)}</span>}
+      {props.level !== undefined && <span class="advised-level">{amount(props.level)}</span>}
     </>
   )
   return (
