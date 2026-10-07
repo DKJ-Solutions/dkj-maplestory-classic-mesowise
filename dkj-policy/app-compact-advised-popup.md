@@ -59,7 +59,8 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 
 ### TEST
 
-- [ ] Tycho: existing tests on the new rows, plus tests for `why` and the row's "?"
+- [x] Tycho: existing tests on the new rows, plus tests for `why`, the info popup and the "?" popup (Kopen, Houden, Leeg laten). Not covered by a UI test: the verdicts "Niet kopen" and "Per stuk kopen", and "Leeg: je overall beslaat dit slot" (no UI scenario found in which Advised leaves top and bottom empty under a worn overall)
+- [ ] Edith: final read of the Dutch UI text
 - [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. His two open points were settled by Dave's later asks: the price got its own column, and every row (an empty half next to an overall too) got a "?"
 - [ ] Dave looks at it on a phone before the merge
 
