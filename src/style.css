@@ -366,8 +366,12 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    popup eronder (Dave, 7 oktober 2026). --popup-scale zet StatDialog per laag (FIRST_POPUP, POPUP_STEP); 0.95 is de eerste. */
 .stat-dialog {
   width: calc(min(100vw, 32rem) * var(--popup-scale, 0.95)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+  overscroll-behavior: contain;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
+/* Staat er een popup open, dan ligt de pagina erachter stil (#240): een veeg op de achtergrond of voorbij het einde van
+   de popup scrollt de pagina niet meer. overscroll-behavior hierboven houdt het scrollen van de popup in de popup. */
+html:has(dialog:modal) { overflow: hidden; }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
 .stat-dialog-body { position: relative; padding: 1rem; }
 /* Een Advised-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */

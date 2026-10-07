@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Every popup is the native `<dialog>` opened with `showModal()` (`StatDialog`). That makes the page inert, but it can still
+scroll: a swipe on the backdrop, or past the end of the popup's own scroll, moves the page behind it. CSS-only fix, no
+state in the app.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `html:has(dialog:modal) { overflow: hidden; }` locks the page while any popup is open
+- [x] Cody: `overscroll-behavior: contain` on `.stat-dialog`, so scrolling a popup never chains to the page
 
 ### TEST
 
+- [x] `npm test` green (61 files, 1946 tests) and `scripts/lint/lint.ps1` clean
+- [~] Tycho: no automated test. jsdom has no layout, no scrolling and no `:modal`, so a test would only re-read the stylesheet and prove nothing. Dave checks by eye on the phone instead
+- [x] Victor: the selector only matches while a modal dialog is open, so nothing changes when no popup is open; the menu drawer and nested popups are covered by the same rule
+
 ### DEPLOY: fix/240-lock-scroll-behind-popup
 
-**Score:**
+Repair work for the people building the app; the change a player notices is described below.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+When a popup is open, swiping now scrolls the popup and no longer the page behind it.
+
+**Score:** 3
 
 #### Pull Request
 
