@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, noSavingText, POPUP_STEP, totalCostWho } from './app'
+import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
 
@@ -508,7 +508,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.querySelector('dialog.item-dialog')).toBeNull()
   })
 
-  it('maakt elke popup 93% zo breed als main of de popup eronder, en main 93% van het scherm (Dave, 7 oktober 2026)', () => {
+  it('maakt de eerste popup 95% zo breed als het scherm en elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
@@ -519,8 +519,8 @@ describe('equipment: de claw past het profiel aan', () => {
     const layers: Element[] = []
     for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
     expect(layers.length).toBeGreaterThan(1)
-    expect(POPUP_STEP).toBe(0.93)
-    layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(POPUP_STEP ** (layers.length - i + 1)))
+    expect([FIRST_POPUP, POPUP_STEP]).toEqual([0.95, 0.93])
+    layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(FIRST_POPUP * POPUP_STEP ** (layers.length - 1 - i)))
     closeItem(item)
   })
 

@@ -1490,6 +1490,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
 
 /** Hoe breed een popup is tegenover de laag eronder: 93% (Dave, 7 oktober 2026); gelijk aan 1 - --layer-shrink in style.css. */
 export const POPUP_STEP = 0.93
+/** Hoe breed de eerste popup is tegenover het scherm: 95% (Dave, 7 oktober 2026); gelijk aan --first-popup in style.css. */
+export const FIRST_POPUP = 0.95
 
 /** Hoeveel popups er onder deze liggen: de popups waar hij in staat, zonder het menupaneel. */
 function popupDepth(d: Element): number {
@@ -1637,9 +1639,9 @@ function StatDialog(props: {
   )
   useEffect(() => {
     const d = ref.current
-    // Elke laag is 93% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt. De eerste laag is main, dus de eerste popup is 93% van main.
+    // Elke laag is 93% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt. De eerste popup is 95% van het scherm (FIRST_POPUP), main 93%.
     // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
-    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(POPUP_STEP ** (popupDepth(d) + 2)))
+    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(FIRST_POPUP * POPUP_STEP ** popupDepth(d)))
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
     if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()

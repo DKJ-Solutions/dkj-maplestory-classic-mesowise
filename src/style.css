@@ -60,7 +60,7 @@ body {
 }
 
 /* Hoeveel kleiner elke laag is dan het scherm eronder: 7% (Dave, 7 oktober 2026; eerst 5%, toen 9%). StatDialog rekent met hetzelfde getal (POPUP_STEP). */
-:root { --layer-shrink: 0.07; }
+:root { --layer-shrink: 0.07; --first-popup: 0.95; }
 /* De inhoud is de eerste laag: 7% smaller dan het scherm, 93% van de app-kolom (Dave, 7 oktober 2026). */
 main {
   box-sizing: border-box;
@@ -366,10 +366,10 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .breakdown-note { margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon; is de inhoud hoger, dan scrollt de popup.
-   Hij is hooguit 7% smaller dan het scherm eronder (Dave, 7 oktober 2026): de eerste 93% van main (dat 93% van de app-kolom is: de telefoon,
+   Hij is hooguit 7% smaller dan het scherm eronder (Dave, 7 oktober 2026): de eerste 95% van de app-kolom (de telefoon,
    op een computer 32rem zoals main), een popup daarbovenop 93% daarvan. --popup-scale zet StatDialog per laag. */
 .stat-dialog {
-  width: calc(min(100vw, 32rem) * var(--popup-scale, calc((1 - var(--layer-shrink)) * (1 - var(--layer-shrink))))); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+  width: calc(min(100vw, 32rem) * var(--popup-scale, var(--first-popup))); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
