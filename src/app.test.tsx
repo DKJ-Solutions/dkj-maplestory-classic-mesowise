@@ -4230,8 +4230,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
       // Het vraagteken staat naast het vak van de mob, niet erin (Dave, 7 oktober 2026).
-      expect(d.querySelector('.based-on .advised-for-row .help-toggle')).toBeNull()
-      const button = d.querySelector<HTMLElement>('.based-on .advised-for-line > .help-toggle')!
+      expect(d.querySelector('.based-on .based-on-label .help-toggle')).toBeNull()
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-line > .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
@@ -4251,7 +4251,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Monster')
       expect(advisedLines.length).toBeGreaterThan(2)
       const d = openView('Equip', 'Advised')
-      const button = d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!
       expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
       expect(button.previousElementSibling!.textContent).toBe(mob)
       fireEvent.click(button)
@@ -4270,7 +4270,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView('Equip', 'Advised')
       expect(d.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
       expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
-      fireEvent.click(d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!)
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       const path = popup.getAttribute('data-popup')!
       expect(path).toBe(`Total cost: Equip (advised) › Info over ${mob}`)
@@ -4285,6 +4285,55 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Uitleg')
       fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
+    })
+
+    it('zet op de vakken onder "Based on:" data-based-on-character en data-based-on-mob, met data-sheet="advised", zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      const [char, mobRow] = d.querySelectorAll('.based-on .based-on-label')
+      expect(char.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+      expect(char.hasAttribute('data-based-on-mob')).toBe(false)
+      expect(mobRow.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(mobRow.hasAttribute('data-based-on-character')).toBe(false)
+      for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('advised')
+      closeView('Equip')
+    })
+
+    it('zet data-based-on-mob op elke popup die info over een mob toont: het i-knopje onder "Based on:" en de Monster-popup, met data-sheet advised of actual (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .stat-dialog-body')!
+      expect(info.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(info.getAttribute('data-sheet')).toBe('advised')
+      fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+      const advised = openView('Monster', 'Advised').querySelector('.spot-body')!
+      expect(advised.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(advised.getAttribute('data-sheet')).toBe('advised')
+      closeView('Monster')
+      // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
+      const worn = openView('Monster', 'Your character')
+      const saved = worn.querySelector<HTMLSelectElement>('select')!.value
+      expect(worn.querySelector('.spot-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
+      expect(worn.querySelector('.spot-body')!.getAttribute('data-sheet')).toBe('actual')
+      closeView('Monster')
+    })
+
+    it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
+        const worn = openView(card, 'Your character').querySelector('.spot-body')!
+        expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+        expect(worn.getAttribute('data-sheet')).toBe('actual')
+        closeView(card)
+        const advised = openView(card, 'Advised').querySelector('.spot-body')!
+        expect(advised.hasAttribute('data-based-on-character')).toBe(false)
+        expect(advised.getAttribute('data-sheet')).toBe('advised')
+        closeView(card)
+      }
     })
 
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
