@@ -113,8 +113,8 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     const odd = ammoLine({ ...thief, profileDraft: { ...thief.profileDraft, starRecharge: '0.35' } })
     expect(odd.s.ammo).toBe('Throwing stars, 0,35 meso per stuk')
     expect(odd.line?.why).toMatchObject({ kind: 'ammo', pricePerStar: 0.35 })
-    // Een eigen plek zonder berekend plan: de factuur telt geen stars (alleen het bedrag van de plek), dus het slot noemt er ook geen.
-    const custom = { id: 'eigen', name: 'Eigen plek', expPerHour: '50000', potions: '0', ammo: '', travel: '0' }
+    // Een eigen plek zonder berekend plan: er is geen factuur, dus het slot noemt ook geen munitie.
+    const custom = { id: 'eigen', name: 'Eigen plek', expPerHour: '50000', travel: '0' }
     const noPlan = ammoLine({ ...thief, drafts: [custom] })
     expect(noPlan.line).toBeUndefined()
     expect(noPlan.s.ammo).toBeNull()

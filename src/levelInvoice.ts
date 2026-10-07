@@ -151,7 +151,7 @@ export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : jo
 
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven
- * afgerond; reizen als bedrag. Heeft de plek geen berekend plan, dan staan potions en munitie als één regel zonder aantal. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
+ * afgerond; reizen als bedrag. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
  * staat elk gekocht stuk bovenaan als eigen regel, met zijn naam, × 1 en zijn winkelprijs (Dave, 6 oktober 2026); zonder aankopen, zoals bij je
  * character, staan die regels er niet.
  */
@@ -166,9 +166,11 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
   const hours = cost.expToNext / spot.expPerHour
   const known = spotOf(draft)
   const resolved = known ? resolvePlan(draft, known, profile) : undefined
-  const plan = resolved?.plan ?? null
+  const plan = resolved?.plan
+  // Zonder berekend plan zijn de EXP per uur of de potionkosten NaN (resolveSpot) en rangschikt de plek ongeldig, dus tot hier komt ze niet; dit is er voor het type.
+  if (!resolved || !plan) return { kind: 'none', cost }
   // Wat één kill geeft: de EXP per uur van de plek gedeeld door je kills per uur, dus wat de uren eruit laat vallen (#192). Zonder kills per uur geen kills.
-  const expPerKill = plan && plan.killsPerHour > 0 ? spot.expPerHour / plan.killsPerHour : NaN
+  const expPerKill = plan.killsPerHour > 0 ? spot.expPerHour / plan.killsPerHour : NaN
   const kills = cost.expToNext / expPerKill
   const lines: InvoiceLine[] = []
   // Alleen wat iets kost, behalve je HP- en MP-potion: die staan er altijd, ook met × 0 (Dave, 6 oktober 2026).
@@ -189,39 +191,35 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       why: { kind: 'shop', name: p.name, price: p.price, level: cost.level, from, to, truncated: p.truncated ?? false, thisExp: w.thisExp, sumExp: w.sumExp, share: w.share },
     })
   }
-  if (resolved && plan) {
-    const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
-    const hpExact = plan.hpPotionsPerHour * hours
-    const mpExact = plan.mpPotionsPerHour * hours
-    const hp = wholeUp(hpExact)
-    const mp = wholeUp(mpExact)
-    const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours, expToNext: cost.expToNext, expPerKill, kills }
-    add(hpPotion.name, hp, hp * hpPotion.price, {
-      ...base,
-      kind: 'hp',
-      hits: estimate.touchTaken > 0 ? estimate.hpLossPerKill / estimate.touchTaken : 0,
-      touch: estimate.touchTaken,
-      perKill: estimate.hpLossPerKill,
-      buffPerHour: 0,
-      need: estimate.hpLossPerKill * plan.killsPerHour * hours,
-      restores: potionRestore(resolved.suggestion, 'hp').used,
-      full: potionRestore(resolved.suggestion, 'hp').full,
-      exact: hpExact,
-    })
-    add(mpPotion.name, mp, mp * mpPotion.price, {
-      ...base,
-      kind: 'mp',
-      perKill: estimate.mpPerKill,
-      buffPerHour: buffMpPerHour,
-      need: (estimate.mpPerKill * plan.killsPerHour + buffMpPerHour) * hours,
-      restores: potionRestore(resolved.suggestion, 'mp').used,
-      full: potionRestore(resolved.suggestion, 'mp').full,
-      exact: mpExact,
-    })
-  } else {
-    add('Potions', null, Math.ceil(spot.cost.potions * hours))
-  }
-  if (resolved && plan && resolved.suggestion.rechargePerStar > 0) {
+  const { hpPotion, mpPotion, estimate, buffMpPerHour } = resolved.suggestion
+  const hpExact = plan.hpPotionsPerHour * hours
+  const mpExact = plan.mpPotionsPerHour * hours
+  const hp = wholeUp(hpExact)
+  const mp = wholeUp(mpExact)
+  const base = { mob: spot.name, killsPerHour: plan.killsPerHour, hours, expToNext: cost.expToNext, expPerKill, kills }
+  add(hpPotion.name, hp, hp * hpPotion.price, {
+    ...base,
+    kind: 'hp',
+    hits: estimate.touchTaken > 0 ? estimate.hpLossPerKill / estimate.touchTaken : 0,
+    touch: estimate.touchTaken,
+    perKill: estimate.hpLossPerKill,
+    buffPerHour: 0,
+    need: estimate.hpLossPerKill * plan.killsPerHour * hours,
+    restores: potionRestore(resolved.suggestion, 'hp').used,
+    full: potionRestore(resolved.suggestion, 'hp').full,
+    exact: hpExact,
+  })
+  add(mpPotion.name, mp, mp * mpPotion.price, {
+    ...base,
+    kind: 'mp',
+    perKill: estimate.mpPerKill,
+    buffPerHour: buffMpPerHour,
+    need: (estimate.mpPerKill * plan.killsPerHour + buffMpPerHour) * hours,
+    restores: potionRestore(resolved.suggestion, 'mp').used,
+    full: potionRestore(resolved.suggestion, 'mp').full,
+    exact: mpExact,
+  })
+  if (resolved.suggestion.rechargePerStar > 0) {
     const { estimate, rechargePerStar, monster } = resolved.suggestion
     const exact = plan.killsPerHour * estimate.starsPerKill * hours
     const stars = wholeUp(exact)
@@ -249,8 +247,6 @@ export function levelInvoice(drafts: readonly SpotDraft[], profile: Profile | nu
       pricePerStar: rechargePerStar,
       exact,
     })
-  } else {
-    add(ammoLabel(profile.job), null, Math.ceil(spot.cost.ammo * hours))
   }
   add('Travel', null, Math.ceil(spot.cost.travel * hours))
   return {

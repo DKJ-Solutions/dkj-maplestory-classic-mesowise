@@ -39,19 +39,31 @@
 
 ### PLAN
 
+Follow-up of #216 (PR #223), found in its review. In production, a spot without a computed plan always has an empty EXP per
+hour, so it ranks as invalid and `levelInvoice` returns `none` before its fallback runs. The `SpotDraft.potions/ammo` fields
+have no screen that sets them. Both go. The text the player sees that still mentions potion costs is a visible result: #224.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `levelInvoice` returns `none` without a plan (the lumped `Potions` line and the no-`why` ammo line are gone), `UseableRows` loses the "Bedrag" row, and `SpotDraft.potions/ammo` are removed from the type, `mobDraft`, `toSpot` and storage. `toDraft` and `exampleSpot` are removed; `newDraft` stays as a test helper
+- [x] Storage still loads old rows that carry `potions`/`ammo`, and drops those fields
 
 ### TEST
 
+- [x] Tycho: the own-spot test helpers now put their cost in `travel` (same cost sum, same rankings), and a back-compat test for old stored rows was added. `npm test` green (1910), `npm run lint` clean
+- [x] Victor: no number the app shows changes; the safety of the zero cost in `toSpot` now rests on the EXP per hour staying empty, and the `toSpot` comment says so
+
 ### DEPLOY: app/222-remove-no-plan-fallback
 
-**Score:**
+The level invoice no longer has a fallback for a spot without a computed plan, and saved spots no longer carry potion and ammo costs. Neither could be reached from the app any more, so no number changes. Spots saved by an older version still load; their old potion and ammo values are dropped. The failure it prevents: a stored cost that no screen shows quietly entering the ranking again.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 

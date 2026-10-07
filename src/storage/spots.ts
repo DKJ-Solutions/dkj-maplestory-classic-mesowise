@@ -1,7 +1,6 @@
 // Plekken bewaren in localStorage. Alles uit de opslag is onbetrouwbaar: bij het laden
 // wordt elke rij gecontroleerd en wat ongeldig is valt weg. De Storage komt als parameter
 // binnen (test-seam); null betekent "geen opslag beschikbaar".
-import type { Spot } from '../calc/rankSpots'
 import { MAX_KNOWN_LENGTH, MAX_NAME_LENGTH, MAX_SPOTS, MOB_KEYS, type SpotDraft } from '../spotDraft'
 
 export const STORAGE_KEY = 'mesowise.spots.v1'
@@ -10,7 +9,7 @@ const VERSION = 1
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 
-/** Mild: alleen een id en tekstvelden van het juiste type zijn nodig; getallen mogen nog fout zijn. */
+/** Mild: alleen een id en tekstvelden van het juiste type zijn nodig; getallen mogen nog fout zijn. Oude rijen met potions en ammo (tot #222) blijven geldig: die velden worden genegeerd. */
 export function isDraftRow(v: unknown): v is SpotDraft {
   return (
     isRecord(v) &&
@@ -18,8 +17,6 @@ export function isDraftRow(v: unknown): v is SpotDraft {
     v.id !== '' &&
     typeof v.name === 'string' &&
     typeof v.expPerHour === 'string' &&
-    typeof v.potions === 'string' &&
-    typeof v.ammo === 'string' &&
     typeof v.travel === 'string'
   )
 }
@@ -36,8 +33,6 @@ function clean(d: SpotDraft): SpotDraft {
     id: d.id,
     name: d.name.slice(0, MAX_NAME_LENGTH),
     expPerHour: d.expPerHour,
-    potions: d.potions,
-    ammo: d.ammo,
     travel: d.travel,
   }
   for (const key of OPTIONAL) {
@@ -45,16 +40,6 @@ function clean(d: SpotDraft): SpotDraft {
     if (typeof v === 'string' && v !== '') row[key] = v.slice(0, MAX_KNOWN_LENGTH)
   }
   return row
-}
-
-/** De voorbeeldplek voor wie de app voor het eerst opent. */
-export function exampleSpot(id: string): Spot {
-  return {
-    id,
-    name: 'Voorbeeldplek',
-    expPerHour: 60_000,
-    cost: { potions: 10_000, ammo: 4_000, travel: 1_000 },
-  }
 }
 
 /**

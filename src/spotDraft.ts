@@ -11,8 +11,6 @@ export interface SpotDraft {
   id: string
   name: string
   expPerHour: string
-  potions: string
-  ammo: string
   travel: string
   /** De id van een bekende plek uit src/data/, als de plek daaruit gekozen is. */
   known?: string
@@ -37,28 +35,21 @@ export function parseAmount(text: string): number {
   return text.trim() === '' ? NaN : Number(text)
 }
 
+/** Potions en munitie staan niet in de plek: bij een bekende plek komen ze uit het voorstel (resolveSpot), en een eigen plek heeft ze niet.
+ * Let op: 0 leest hier als "gratis". Dat is veilig zolang de app nooit een EXP per uur invult (mobDraft en initialDrafts laten hem leeg, dus NaN),
+ * want dan rangschikt een plek zonder voorstel ongeldig (#222). */
 export function toSpot(d: SpotDraft): Spot {
   return {
     id: d.id,
     name: d.name.trim(),
     expPerHour: parseAmount(d.expPerHour),
-    cost: { potions: parseAmount(d.potions), ammo: parseAmount(d.ammo), travel: parseAmount(d.travel) },
+    cost: { potions: 0, ammo: 0, travel: parseAmount(d.travel) },
   }
 }
 
-export function toDraft(s: Spot): SpotDraft {
-  return {
-    id: s.id,
-    name: s.name,
-    expPerHour: String(s.expPerHour),
-    potions: String(s.cost.potions),
-    ammo: String(s.cost.ammo),
-    travel: String(s.cost.travel),
-  }
-}
-
+/** Een lege plek, alleen voor tests: de app maakt haar plekken met mobDraft. */
 export function newDraft(id: string): SpotDraft {
-  return { id, name: '', expPerHour: '', potions: '0', ammo: '0', travel: '0' }
+  return { id, name: '', expPerHour: '', travel: '0' }
 }
 
 /** Een id voor een nieuwe plek; randomUUID bestaat alleen in veilige contexten. */
