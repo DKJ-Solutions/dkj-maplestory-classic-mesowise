@@ -974,7 +974,7 @@ describe('het ammo-slot (issue #65)', () => {
     expect(slotsFor('thief').map((s) => s.slot)).toContain('ammo')
     expect(slotsFor('bowman').map((s) => s.slot)).toContain('ammo')
     expect(slotsFor('warrior', 'Sword').map((s) => s.slot)).not.toContain('ammo')
-    expect(slotsFor('magician', 'Wooden Wand').map((s) => s.slot)).toEqual(['claw', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
+    expect(slotsFor('magician', 'Wooden Wand').map((s) => s.slot)).toEqual(['claw', 'shield', 'hat', 'shoes', 'top', 'bottom', 'overall', 'gloves', 'cape', 'earrings'])
   })
 
   it('heet voor elke job Ammo', () => {
@@ -1363,9 +1363,9 @@ describe('shield, gloves, cape en earrings (issue #117)', () => {
   const slotsOf = (job: Job, weapon?: string) => slotsFor(job, weapon).map((s) => s.slot)
 
   it('geeft een shield aan de Warrior, de Magician en de Thief (wristguards, #133) met een wapen voor één hand; een boog of kruisboog vraagt beide handen', () => {
-    expect(slotsOf('warrior', 'Sword')).toEqual(['claw', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
+    expect(slotsOf('warrior', 'Sword')).toEqual(['claw', 'shield', 'hat', 'shoes', 'top', 'bottom', 'overall', 'gloves', 'cape', 'earrings'])
     expect(slotsOf('magician', 'Wooden Wand')).toContain('shield')
-    expect(slotsOf('thief', 'Razor')).toEqual(['claw', 'ammo', 'shield', 'hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'earrings'])
+    expect(slotsOf('thief', 'Razor')).toEqual(['claw', 'ammo', 'shield', 'hat', 'shoes', 'top', 'bottom', 'overall', 'gloves', 'cape', 'earrings'])
     expect(slotsOf('bowman')).not.toContain('shield')
     // Zonder wapen is er voor geen enkele job een shield-rij (Dave, 7 oktober 2026).
     for (const job of ['warrior', 'magician', 'thief', 'bowman'] as const) expect(slotsOf(job), job).not.toContain('shield')
