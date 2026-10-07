@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Dave, October 7, 2026: the cost of equipment depends on the skill points of e.g. a Lv 20 Thief, because they decide the ATT you deal and the hits you take. At the current level that already held; over an upgrade's horizon one constant EXP per meso was used.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/growth.ts`: the character grown per level of a horizon (level, Max HP/MP, the level's AP on the main stat, accuracy/evasion, the level's skill points placed by `skillPointWinner`); non-growth fields untouched
+- [x] Claw, armor and star 'next-upgrade' advice compute without and with the item on the same grown profile; 'this-level' unchanged
+- [x] Help texts in the Claw and Armor notes and Total cost: Equip say the character grows along
 
 ### TEST
 
+- [x] `growth.test.ts`: hand-pinned Lv 20 Thief, per-job "nothing else changes" (Bowman bronze arrows, Thief dagger, Warrior multiplier), memo cap
+- [x] Shifted expectations traced by hand (Lv 20 shoes: Blue Gidder Shoes now beats Red Ninja Sandals; Bowman War Bow vs Crossbow is a tie, filed as #227)
+- [x] Victor's review (Bowman arrow bug fixed) and Edith's wording pass
+- [x] `npm test` (1940) and `npm run lint` green
+
 ### DEPLOY: app/equip-horizon-growth
 
-**Score:**
+The equipment advice (Advised, Total cost: Equip and the Report) now counts how your character grows until your next upgrade: every later level of the horizon gets its own Max HP and MP, the AP of that level on your main stat, its accuracy and evasion, and the skill points of that level placed where they save the most. A Lv 20 Thief's upgrade is no longer judged as if he stayed at Lv 20 with today's Lucky Seven and Nimble Body. Savings over a horizon are therefore usually lower than before, and a cheaper piece can now win (at Lv 20, Blue Gidder Shoes over Red Ninja Sandals).
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Upgrade advice stops overestimating what a piece saves over the coming levels, so a player buys less equipment that would not have paid back.
+
+**Score:** 3
 
 #### Pull Request
 
