@@ -1102,6 +1102,25 @@ describe('bewaren na elke wijziging', () => {
     expect(statLine('Evasion').querySelector('s')?.textContent).toBe('22')
   })
 
+  it('opent achter Accuracy en Evasion met een vraagteken de opbouw van het getal in een eigen popup (Dave, 7 oktober 2026)', () => {
+    fireEvent.click(viewButton('Total stats'))
+    for (const stat of ['Accuracy', 'Evasion']) {
+      const toggle = within(statLine(stat)).getByRole('button', { name: `Uitleg bij ${stat}` })
+      expect(toggle.getAttribute('aria-haspopup')).toBe('dialog')
+    }
+    // Evasion: LUK ÷ 3, DEX ÷ 6 en 5 basis; het voorbeeldprofiel staat in game 1 hoger dan de formule.
+    fireEvent.click(within(statLine('Evasion')).getByRole('button', { name: 'Uitleg bij Evasion' }))
+    const popup = [...document.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
+    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Evasion 22')
+    expect(popup.querySelector('.breakdown-total dd')?.textContent).toBe('22')
+    expect(popup.querySelector('.breakdown-note')?.textContent).toContain('+1')
+  })
+
+  it('heeft geen vraagteken achter een stat zonder formule', () => {
+    fireEvent.click(viewButton('Total stats'))
+    expect(statLine('Tijd per aanval (ms)').querySelector('.help-toggle')).toBeNull()
+  })
+
   it('zet een gecorrigeerde accuracy met Reset terug op de verwachting', () => {
     fireEvent.click(viewButton('Total stats'))
     const first = openStat('Accuracy')
@@ -4250,6 +4269,15 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(value('Evasion')).toBe(String(expectedStat('avoid', bare, 'thief')))
         // Alleen om te lezen: geen potlood en geen invoer.
         expect(popup.querySelector('.equip-edit, input')).toBeNull()
+        // Een vraagteken achter Accuracy en Evasion, in de kolom van de vraagtekens, met de opbouw in een eigen popup (Dave, 7 oktober 2026).
+        const statRow = (name: string) => [...stats.querySelectorAll<HTMLElement>('.stat-line')].find((l) => l.querySelector('.stat-line-name')!.textContent === name)!
+        expect(['Max HP', 'Max MP', 'Accuracy', 'Evasion'].map((n) => statRow(n).querySelector('.help-toggle') !== null)).toEqual([false, false, true, true])
+        fireEvent.click(within(statRow('Evasion')).getByRole('button', { name: 'Uitleg bij Evasion' }))
+        const opbouw = [...popup.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
+        expect(opbouw.querySelector('.stat-dialog-name')!.textContent).toBe(`Evasion ${value('Evasion')}`)
+        expect(opbouw.querySelector('.breakdown-total dd')!.textContent).toBe(value('Evasion'))
+        fireEvent.click(within(opbouw).getByRole('button', { name: 'Sluiten' }))
+        await frame()
         // Een vraagteken achter het level van elke skill van de 1e job met punten, zoals Lucky Seven en Nimble Body; niet bij 0 of bij Beginner (Dave, 7 oktober 2026).
         const rows = [...sections[1].querySelectorAll<HTMLElement>('.skill-row')]
         const level = (row: HTMLElement) => Number(row.querySelector('.equip-value strong')!.textContent)

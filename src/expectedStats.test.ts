@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { baseAccuracy, baseAvoid } from './data/thief'
 import { warriorAccuracy } from './data/warrior'
-import { expectedStat } from './expectedStats'
+import { expectedStat, statBreakdown } from './expectedStats'
 import { DEFAULT_PROFILE } from './profile'
 
 describe('expectedStat', () => {
@@ -67,5 +67,47 @@ describe('expectedStat', () => {
 
   it('heeft geen verwachting voor een stat zonder formule', () => {
     expect(expectedStat('luk', DEFAULT_PROFILE, 'thief')).toBeUndefined()
+  })
+})
+
+describe('statBreakdown', () => {
+  const JOBS = ['thief', 'warrior', 'bowman', 'magician'] as const
+  const DRAFTS = [
+    DEFAULT_PROFILE,
+    { ...DEFAULT_PROFILE, level: '30', dex: '61', luk: '13', int: '77', nimbleBody: '9', preciseStrikes: '15' },
+    { ...DEFAULT_PROFILE, level: '1', dex: '4', luk: '4', int: '4', lukExtra: '0' },
+  ]
+
+  it('telt voor elke job en elke stat precies op tot de verwachte waarde', () => {
+    for (const job of JOBS)
+      for (const draft of DRAFTS)
+        for (const key of ['accuracy', 'avoid'] as const) {
+          const b = statBreakdown(key, draft, job)!
+          expect(b.total).toBe(b.parts.reduce((sum, p) => sum + p.value, 0))
+          expect(b.total).toBe(expectedStat(key, draft, job))
+        }
+  })
+
+  it('splitst de evasion in LUK ÷ 3, DEX ÷ 6, 5 basis en Nimble Body', () => {
+    const b = statBreakdown('avoid', { ...DEFAULT_PROFILE, nimbleBody: '4' }, 'thief')!
+    expect(b.parts.map((p) => [p.label, p.value])).toEqual([['LUK 40 ÷ 3', 13], ['DEX 25 ÷ 6', 4], ['Basis', 5], ['Nimble Body (level 4)', 4]])
+    expect(b.total).toBe(26)
+  })
+
+  it('toont de accuracy-formule met jouw getallen, en de passief van je job alleen als hij geleerd is', () => {
+    const thief = statBreakdown('accuracy', DEFAULT_PROFILE, 'thief')!
+    expect(thief.parts).toHaveLength(1)
+    expect(thief.parts[0].detail).toContain('DEX 25')
+    expect(thief.parts[0].detail).toContain('level 10')
+    expect(thief.parts[0].detail).toContain('LUK 40')
+    const warrior = statBreakdown('accuracy', { ...DEFAULT_PROFILE, preciseStrikes: '15' }, 'warrior')!
+    expect(warrior.parts.at(-1)).toEqual({ label: 'Precise Strikes (level 15)', value: 20 })
+    expect(statBreakdown('accuracy', DEFAULT_PROFILE, 'magician')!.parts[0].detail).toContain('INT ')
+  })
+
+  it('heeft geen opbouw voor een stat zonder formule of met een ongeldig veld', () => {
+    expect(statBreakdown('luk', DEFAULT_PROFILE, 'thief')).toBeUndefined()
+    expect(statBreakdown('avoid', { ...DEFAULT_PROFILE, dex: '' }, 'thief')).toBeUndefined()
+    expect(statBreakdown('avoid', { ...DEFAULT_PROFILE, int: 'x' }, 'magician')).toBeUndefined()
   })
 })

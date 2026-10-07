@@ -29,7 +29,7 @@ import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
-import { expectedStat } from './expectedStats'
+import { statBreakdown, type StatBreakdown } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
@@ -563,9 +563,11 @@ function StatLine(props: {
   tone?: 'cost' | 'gain'
   /** Wat achter het getal op de regel staat, zoals "meso" of "HP" (Dave, 6 oktober 2026). De popup toont het kale getal. */
   unit?: string
+  /** Hoe de app het getal opbouwt (Dave, 7 oktober 2026): dan staat er een vraagteken achter het getal dat de opbouw in een kleine popup opent. */
+  breakdown?: StatBreakdown
   onSave: (text: string) => void
 }) {
-  const { field: f, value, expected } = props
+  const { field: f, value, expected, breakdown } = props
   const uid = useId()
   const sign = props.tone === 'cost' ? '−' : props.tone === 'gain' ? '+' : ''
   const unit = props.unit ? ` ${props.unit}` : ''
@@ -577,7 +579,7 @@ function StatLine(props: {
     setDraft(null)
   }
   return (
-    <div class="stat-line">
+    <div class={breakdown ? 'stat-line with-help' : 'stat-line'}>
       <span class="stat-line-name">{f.label}</span>
       <div class={corrected ? 'equip-value changed' : 'equip-value'} aria-label={`${f.label} ${value.trim() !== '' ? value : 'onbekend'}${corrected ? `, gecorrigeerd, verwacht ${expected}` : ''}`}>
         <span class="equip-value-num">
@@ -585,8 +587,14 @@ function StatLine(props: {
           <strong class={props.tone}>{shown === '?' ? shown : sign + shown + unit}</strong>
         </span>
       </div>
+      {breakdown && (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${f.label}`} title={`${f.label} ${nfInt.format(breakdown.total)}`}>
+          <BreakdownList breakdown={breakdown} value={value} />
+        </PopupButton>
+      )}
       {props.readOnly ? (
-        <span />
+        // Met een vraagteken is dat de laatste kolom; zonder houdt een leeg vak de plek van het potlood.
+        !breakdown && <span />
       ) : (
         <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${f.label} wijzigen`} onClick={() => setDraft(value)}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -611,6 +619,36 @@ function StatLine(props: {
         </StatDialog>
       )}
     </div>
+  )
+}
+
+/**
+ * De opbouw achter het vraagteken van een stat (Dave, 7 oktober 2026): per deel wat het is en wat het oplevert, en de som. Staat er
+ * in game een ander getal, dan zegt de laatste regel hoeveel dat scheelt: dat komt van iets wat de app niet kent, zoals een item.
+ */
+function BreakdownList(props: { breakdown: StatBreakdown; value: string }) {
+  const { parts, total } = props.breakdown
+  const typed = Number(props.value.trim())
+  const diff = props.value.trim() !== '' && Number.isInteger(typed) ? typed - total : 0
+  return (
+    <>
+      <dl class="breakdown-list">
+        {parts.map((p, i) => (
+          <div key={p.label}>
+            <dt>
+              {p.label}
+              {p.detail && <span class="breakdown-detail">{p.detail}</span>}
+            </dt>
+            <dd>{i > 0 ? `+ ${nfInt.format(p.value)}` : nfInt.format(p.value)}</dd>
+          </div>
+        ))}
+        <div class="breakdown-total">
+          <dt>Totaal</dt>
+          <dd>{nfInt.format(total)}</dd>
+        </div>
+      </dl>
+      {diff !== 0 && <p class="breakdown-note">In game {nfInt.format(typed)}: {diff > 0 ? '+' : '−'}{nfInt.format(Math.abs(diff))}, van iets wat de app niet kent, zoals een item.</p>}
+    </>
   )
 }
 
@@ -740,10 +778,11 @@ function StatRows(props: Pick<StatsCardBody, 'fields' | 'job' | 'onChange' | 'le
       {props.lead?.(draft, advised)}
       {props.fields.map((f) => {
         const derived = props.derived?.[f.key]
+        const breakdown = statBreakdown(f.key, draft, job)
         return derived !== undefined ? (
           <StatLine key={f.key} field={f} value={derived} readOnly onSave={() => {}} />
         ) : (
-          <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={advised ? undefined : expectedStat(f.key, draft, job)} readOnly={advised || READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
+          <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={advised ? undefined : breakdown?.total} readOnly={advised || READ_ONLY_STATS.has(f.key)} breakdown={breakdown} onSave={(text) => props.onChange({ [f.key]: text })} />
         )
       })}
     </>
@@ -2456,7 +2495,8 @@ function BaseStats(props: { job: Job; draft: ProfileDraft }) {
       })}
       {(['accuracy', 'avoid'] as const).map((key) => {
         const f = field(key)
-        return f && <StatLine key={key} field={f} value={shown(expectedStat(key, bare, job))} readOnly onSave={none} />
+        const breakdown = statBreakdown(key, bare, job)
+        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={breakdown} readOnly onSave={none} />
       })}
       {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>
