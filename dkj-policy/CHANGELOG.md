@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**75 / 117 minor entries** <!-- pending-tally -->
+**76 / 118 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/hint-behind-question-mark · 20261007-095832Z
+
+Long explanations no longer fill the screen: the paragraph in the Advised Equip popup (its "?" next to the "Advised" heading) and the other hints that explain how a
+screen or the calculation works now sit behind a "?" icon, collapsed until you tap it. Results, statuses and prompts stay
+visible as before. Every new screen follows the same rule.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+On a phone the cards are shorter and the answer is what you see first; the explanation is one tap away instead of a block of
+text you scroll past every time.
+
+**Score:** 3
+
+#### Pull Request
+
+Long explanations in the app sit behind a question-mark icon instead of on screen
+
+[PR #213](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/213)
+
+---
 
 ### DEPLOY: app/199-advised-ammo-typed-price · 20261007-094736Z
 
