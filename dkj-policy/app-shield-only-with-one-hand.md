@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Dave, October 7, 2026: show the shield row only when a one-handed weapon is selected. Until now a Warrior and a Magician
+always had it, and a Thief also with an empty weapon slot; only the Bowman's shield already depended on his weapon (#172).
+One-handed: the weapons under level 10, daggers, the Warrior's 1H Sword, Axe and Blunt, and wands. Two-handed or unknown:
+an empty weapon slot, staffs, 2H weapons, spears, polearms, claws, bows and crossbows, and a custom weapon unless a Thief
+marked it a dagger (#176). A hidden shield slot counts nowhere (WDEF, MDEF, AP, advice), and picking a weapon that hides
+it takes the shield off, as #172 already did for the Bowman.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `ONE_HANDED`, `holdsOneHanded` and `wearsSlot` in `src/equipment.ts`; `hasSlotFor`, `slotsFor` and `changeEquipment` use them. The catalogue keeps the job-level `hasSlot`, so a lookup by name still works without a weapon
+- [x] `autoFillAp` passes the custom weapon's kind to `slotsFor`
 
 ### TEST
 
+- [ ] Tycho: existing tests on the new rule, plus tests per job (1H against 2H, wand against staff, empty slot, custom dagger, a shield dropped on a switch)
+- [ ] Victor: code review
+- [ ] Dave looks at it on a phone before the merge
+
 ### DEPLOY: app/shield-only-with-one-hand
 
-**Score:**
+The Shield row now appears only next to a one-handed weapon: a weapon under level 10, a dagger, a 1H sword, axe or blunt
+weapon, or a wand. With an empty weapon slot or a two-handed weapon (staff, 2H weapon, spear, polearm, claw, bow) it is
+gone, and picking such a weapon takes a worn shield off, with its defence.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+The screen no longer offers a slot you cannot use in the game, and a shield you could not wear no longer counts in your
+defence or the advice.
+
+**Score:** 2
 
 #### Pull Request
 
