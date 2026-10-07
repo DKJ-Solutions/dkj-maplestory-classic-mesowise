@@ -57,7 +57,7 @@ Dave, October 7, 2026: under Advised: Equip, next to the level and job, show the
 ### TEST
 
 - [x] Tycho: subtitle test extended for Equip (same mob as Advised: Monster), new test for the ? popup; 1899 tests green, lint clean
-- [ ] Dave looks at the preview (visible result)
+- [x] Dave looked at the preview and approved it ("ship it", October 7, 2026)
 
 ### DEPLOY: app/advised-equip-mob-subtitle
 
