@@ -6,8 +6,7 @@ group: 04
 # 04-12 · repo lens
 
 > Repo lens alongside portable domain guide for specialist 04-12 in `dkj-subagents-alpha` plugin.
-> Created by `specialists-init` as empty template; agent definition reads it automatically.
-> Fill in repo-specific tasks and context below that specialist 04-12 needs in this repo.
+> The agent definition reads it automatically; only repo-specific matters belong here.
 
 ## Specific to this repo
 

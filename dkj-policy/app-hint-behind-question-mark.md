@@ -53,7 +53,7 @@ works move behind the "?". The rule is recorded in Gwen's lens.
 
 - [x] Tests: the "?" is collapsed by default and opens and closes on tap; existing tests tap it first
 - [ ] Victor: code review
-- [ ] Edith: final read
+- [x] Edith: final read
 - [ ] Dave looks at it on a phone before the merge
 
 ### DEPLOY: app/hint-behind-question-mark
@@ -73,4 +73,4 @@ text you scroll past every time.
 
 #### Pull Request
 
-long explanations in the app sit behind a question-mark icon instead of on screen
+Long explanations in the app sit behind a question-mark icon instead of on screen
