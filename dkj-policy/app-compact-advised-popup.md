@@ -49,20 +49,23 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] `.advised-*` styles in `src/style.css`: one line at 360px, the name truncates before the type, level and stat do
 - [x] Three columns per row (slot, details, "?"), the slot column fixed so the details line up; a lower row with the "?" keeping its 44px tap target (Dave, October 7, 2026)
 - [x] A fourth column with the shop price: of what you buy, and muted of a piece that does not pay (Dave, October 7, 2026)
+- [x] A "?" on every row: also why you keep what you wear, and why a slot stays empty (Dave, October 7, 2026)
+- [x] The details in brackets (type, level, stat) are gone again, the row was too full (Dave, October 7, 2026); `weaponType` removed with them
+- [x] Tycho found that `why` never reached the app: `Purchase` now carries it and `advisedSetup` copies it
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
 
 - [ ] Tycho: existing tests on the new rows, plus tests for `why` and the row's "?"
-- [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. Left for Dave's look: the price per piece now sits only behind the "?", and an empty half next to an overall has no "?"
+- [x] Victor: code review, no correctness findings. Applied: the full name as a tooltip when it truncates, each row's "?" is labelled "Uitleg bij <slot>" for a screen reader. His two open points were settled by Dave's later asks: the price got its own column, and every row (an empty half next to an overall too) got a "?"
 - [ ] Dave looks at it on a phone before the merge
 
 ### DEPLOY: app/compact-advised-popup
 
-The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor (CLAW,
-LV 20, 17 ATT)", its shop price and a question mark. It has no Report button any more. What you buy
-is in the accent colour. The price and why it pays off (what it saves until your next upgrade) sit behind a question mark at
-the end of the line.
+The Advised equip popup is compact: every slot is one line in four columns: the slot, the item such as "Steel Igor", its
+shop price and a question mark. It has no Report button any more. What you buy
+is in the accent colour. Behind the question mark on every row: why you buy it (what it saves until your next upgrade), why you
+keep what you wear, or why the slot stays empty.
 
 **Score:** 3
 
