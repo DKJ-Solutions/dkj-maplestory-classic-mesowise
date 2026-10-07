@@ -1490,8 +1490,8 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
 
 /** Hoe breed een popup is tegenover de popup eronder: 93% (Dave, 7 oktober 2026). */
 export const POPUP_STEP = 0.93
-/** Hoe breed de eerste popup is tegenover het scherm: 97% (Dave, 7 oktober 2026); ook de terugval van --popup-scale in style.css. */
-export const FIRST_POPUP = 0.97
+/** Hoe breed de eerste popup is tegenover het scherm: 96% (Dave, 7 oktober 2026); ook de terugval van --popup-scale in style.css. */
+export const FIRST_POPUP = 0.96
 
 /** Hoeveel popups er onder deze liggen: de popups waar hij in staat, zonder het menupaneel. */
 function popupDepth(d: Element): number {
@@ -1639,7 +1639,7 @@ function StatDialog(props: {
   )
   useEffect(() => {
     const d = ref.current
-    // De eerste popup is 97% van het scherm, elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
+    // De eerste popup is 96% van het scherm, elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
     // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
     if (d && !props.drawer) d.style.setProperty('--popup-scale', String(FIRST_POPUP * POPUP_STEP ** popupDepth(d)))
     d?.showModal()
