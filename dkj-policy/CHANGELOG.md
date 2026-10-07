@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**78 / 121 minor entries** <!-- pending-tally -->
+**78 / 122 minor entries** <!-- pending-tally -->
+
+### DEPLOY: claude/207-stale-plugin-entry · 20261007-123223Z
+
+`.claude/settings.json` no longer lists `dkj-policy-bwj`, a plugin the marketplace has retired (it is now `bwj-development`).
+It was already disabled, so nothing changes in how a session loads.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Drop the retired dkj-policy-bwj from enabledPlugins
+
+[PR #218](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/218)
+
+---
 
 ### DEPLOY: app/advised-popup-titles · 20261007-122905Z
 
