@@ -751,6 +751,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-facts dt { color: var(--muted); }
 .item-facts dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .item-why { margin: 0; line-height: 1.45; }
+/* De stat-regels in een info-popup, zoals de Total stats achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): even compact als de factuur
+   van Total cost: Equip (.advised-row). Een lage rij, de naam links, het getal klein en vet rechts, en geen lege kolom voor een potlood: hier is
+   alles alleen om te lezen. */
+.item-dialog .stat-line { grid-template-columns: minmax(0, 1fr) auto; min-height: 2.25rem; padding: 0.125rem 0; }
+.item-dialog .stat-line > span:empty { display: none; }
+.item-dialog .stat-line .equip-value { height: auto; min-width: 0; padding: 0; justify-content: flex-end; }
+.item-dialog .stat-line .equip-value-num { font-size: 0.875rem; }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
    met de prijzen erboven, zonder "meso" (de kop zegt Mesos), en een totaalstreep over de hele breedte, zoals op een bon: subtiel, maar net sterker dan de lijnen tussen de rijen (Dave, 7 oktober 2026). Zoals een echte factuur: het
    totaal even groot als de bedragen erboven, en lucht rond de totaalstreep. Onder het totaal een lijn over de hele breedte, net als erboven
