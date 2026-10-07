@@ -30,24 +30,24 @@ export function isInvalid(result: RankResult): result is InvalidSpot {
 
 const byName = (a: Spot, b: Spot) => a.name.localeCompare(b.name, 'nl')
 
-/** Per veld: wat de gebruiker moet invullen en hoe de meldingen luiden. */
+/** Per veld: de meldingen als een getal ontbreekt (NaN), negatief of te groot is. De speler vult deze velden niet zelf in (#224). */
 const FIELDS: { value: (s: Spot) => number; fill: string; negative: string; tooBig: string }[] = [
-  { value: (s) => s.expPerHour, fill: 'Vul EXP per uur in.', negative: 'EXP per uur kan niet negatief zijn.', tooBig: 'EXP per uur is te groot.' },
+  { value: (s) => s.expPerHour, fill: 'De EXP per uur van deze plek is onbekend.', negative: 'EXP per uur kan niet negatief zijn.', tooBig: 'EXP per uur is te groot.' },
   {
     value: (s) => s.cost.potions,
-    fill: 'Vul de potionkosten in (0 als er geen zijn).',
+    fill: 'De potionkosten van deze plek zijn onbekend.',
     negative: 'De potionkosten kunnen niet negatief zijn.',
     tooBig: 'De potionkosten zijn te groot.',
   },
   {
     value: (s) => s.cost.ammo,
-    fill: 'Vul de ammokosten in (0 als er geen zijn).',
+    fill: 'De ammokosten van deze plek zijn onbekend.',
     negative: 'De ammokosten kunnen niet negatief zijn.',
     tooBig: 'De ammokosten zijn te groot.',
   },
   {
     value: (s) => s.cost.travel,
-    fill: 'Vul de reiskosten in (0 als er geen zijn).',
+    fill: 'De reiskosten van deze plek zijn onbekend.',
     negative: 'De reiskosten kunnen niet negatief zijn.',
     tooBig: 'De reiskosten zijn te groot.',
   },

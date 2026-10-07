@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Decision on #224 (2026-10-07): reword the mana help text, remove the `rankSpots` potion/ammo messages
+if no screen can show them, otherwise reword them; tidy the "eigen plek" comments.
+
+The "fill" messages cannot be removed: `rankSpots` is a pure module and must still reject a NaN. They
+are unreachable in the app today (a spot without a plan fails on EXP per hour first), so they are
+reworded instead. The EXP-per-hour and travel "Vul ... in" messages have the same defect, since the
+player enters neither, so all four are reworded together.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `rankSpots.ts`: the four "fill" messages say the value is unknown instead of asking the player to fill it in
+- [x] `app.tsx`: the mana help text says the extra mana is always in the potion costs
+- [x] `best.ts`, `spotDraft.ts`, `suggest.ts`: "eigen plek" comments say "zonder bekende plek (alleen in tests)"
 
 ### TEST
 
+- [x] `rankSpots.test.ts` pins the new messages; full suite green (1939 tests), lint clean
+- [ ] Dave looks at the mana help text and the messages before the merge (visible result)
+
 ### DEPLOY: app/224-stale-cost-text
 
-**Score:**
+The app no longer asks the player to fill in potion, ammo, EXP-per-hour or travel values it does not
+let them enter. The skill help text says the extra mana is always included in the potion costs, and
+an invalid spot says which value is unknown.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player no longer reads a help line or an error that points at a field that does not exist.
+
+**Score:** 2
 
 #### Pull Request
 
