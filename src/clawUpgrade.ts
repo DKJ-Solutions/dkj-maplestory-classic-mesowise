@@ -148,6 +148,14 @@ export function nextBetterWeapon(profile: Profile): Weapon | null {
   return firstBetterAbove(profile, (c) => power(c) > wornPower, shop)
 }
 
+/**
+ * Van meeste naar minste netto besparing, op hele mesos; bij gelijke netto het goedkoopste wapen, dan het sterkste (#227). Zonder die
+ * volgorde besliste bij een gelijke besparing (een monster dat elk wapen even snel doodt) de winkelvolgorde of afrondingsruis.
+ */
+const roundedNet = (c: ClawChoice) => ({ net: c.net === null ? null : Math.round(c.net) })
+const byChoice = (a: ClawChoice, b: ClawChoice): number =>
+  byNet(roundedNet(a), roundedNet(b)) || a.claw.price - b.claw.price || power(b.claw) - power(a.claw)
+
 function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates: readonly Weapon[], a: Assumptions, scope: HorizonScope, shop: Shop) {
   if (bestExpPerMeso(drafts, profile, a) === undefined) return null
   // Over de horizon groeit je karakter mee (growth.ts); 'this-level' is één level en dus je profiel van nu.
@@ -161,7 +169,7 @@ function adviseUnder(drafts: readonly SpotDraft[], profile: Profile, candidates:
       const saving = without === null || withIt === null ? null : without - withIt
       return { claw, ...h, saving, net: saving === null ? null : saving - claw.price }
     })
-    .sort(byNet)
+    .sort(byChoice)
   const top = choices[0]
   return { choices, winner: top && top.net !== null && top.net > 0 ? top.claw : null }
 }

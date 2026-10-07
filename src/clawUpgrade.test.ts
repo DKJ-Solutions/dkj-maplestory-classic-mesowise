@@ -481,12 +481,13 @@ describe('clawUpgradeAdvice met de beginner-winkel onder level 10 (#203)', () =>
 
   it('laat de horizon nooit voorbij level 9 lopen en eindigen net voor het volgende betere beginnerwapen', () => {
     // Sword (17 x 1,8) wordt op level 5 verslagen door de Razor (23 x 1,4): horizon tot 4. Hand Axe en Wooden Club pas door de Fruit Knife (level 8): tot 7.
-    expect(horizons('thief', 3)).toEqual(['Hand Axe:3-7', 'Wooden Club:3-7', 'Sword:3-4'])
-    expect(horizons('thief', 5)).toEqual(['Sword:5-7', 'Hand Axe:5-7', 'Wooden Club:5-7', 'Razor:5-7'])
+    // Ze besparen evenveel en kosten alle drie 50, dus het sterkste staat voor (#227): Wooden Club, dan Hand Axe, dan Sword.
+    expect(horizons('thief', 3)).toEqual(['Wooden Club:3-7', 'Hand Axe:3-7', 'Sword:3-4'])
+    expect(horizons('thief', 5)).toEqual(['Wooden Club:5-7', 'Hand Axe:5-7', 'Sword:5-7', 'Razor:5-7'])
     // Vanaf level 8 komt er geen beter beginnerwapen meer: de horizon wordt afgekapt op 9, niet op de volgende jobupgrade (level 10).
-    expect(horizons('thief', 8)).toEqual(['Sword:8-9', 'Hand Axe:8-9', 'Wooden Club:8-9', 'Razor:8-9', 'Fruit Knife:8-9'])
-    expect(horizons('thief', 9)).toEqual(['Sword:9-9', 'Hand Axe:9-9', 'Wooden Club:9-9', 'Razor:9-9', 'Fruit Knife:9-9'])
-    expect(horizons('bowman', 5)).toEqual(['Sword:5-7', 'Hand Axe:5-7', 'Wooden Club:5-7', 'Razor:5-7'])
+    expect(horizons('thief', 8)).toEqual(['Wooden Club:8-9', 'Hand Axe:8-9', 'Sword:8-9', 'Razor:8-9', 'Fruit Knife:8-9'])
+    expect(horizons('thief', 9)).toEqual(['Wooden Club:9-9', 'Hand Axe:9-9', 'Sword:9-9', 'Razor:9-9', 'Fruit Knife:9-9'])
+    expect(horizons('bowman', 5)).toEqual(['Wooden Club:5-7', 'Hand Axe:5-7', 'Sword:5-7', 'Razor:5-7'])
     for (const job of ['thief', 'warrior', 'bowman'] as const)
       for (let level = 1; level <= 9; level++) {
         const a = clawUpgradeAdvice(drafts, beginnerOf(job, level), 'next-upgrade', true)
@@ -506,7 +507,7 @@ describe('clawUpgradeAdvice met de beginner-winkel onder level 10 (#203)', () =>
       expect(horizons('magician', level), `magician L${level}`).toEqual([])
       expect(requiredWeapon(beginnerOf('magician', level), { kind: 'none' }), `magician L${level}`).toBeNull()
     }
-    expect(horizons('warrior', 8)).toEqual(['Sword:8-9', 'Hand Axe:8-9', 'Wooden Club:8-9'])
+    expect(horizons('warrior', 8)).toEqual(['Wooden Club:8-9', 'Hand Axe:8-9', 'Sword:8-9'])
   })
 
   it('zet de dagger-vlag mee in de berekening: de Razor en de Fruit Knife rekenen als dagger, de rest niet', () => {

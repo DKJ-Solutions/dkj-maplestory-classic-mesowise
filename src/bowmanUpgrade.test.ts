@@ -319,3 +319,27 @@ describe('Bowman-armor: de winkel', () => {
     expect(armorUpgradeAdvice(drafts, strong({ level: 31 }))).toEqual({ kind: 'none' })
   })
 })
+
+describe('Bowman-wapens: een gelijke besparing (#227)', () => {
+  // Op de Snail doodt elk wapen even snel, dus elk bespaart evenveel; dan beslist de prijs en daarna de schade per milliseconde, niet de winkelvolgorde.
+  const snail = [{ ...mobDraft('Snail')!, id: 's' }]
+  const power = (w: { watk: number; speed: { attackMs: number } }) => w.watk / w.speed.attackMs
+
+  it('zet bij gelijke netto besparing het goedkoopste wapen voor, en bij gelijke prijs het sterkste (War Bow vóór Crossbow)', () => {
+    for (const [str, dex] of [[4, 25], [20, 60], [30, 90]]) {
+      const a = clawUpgradeAdvice(snail, strong({ level: 20, str, dex, clawWatk: 5 }))
+      if (a.kind !== 'advice') throw new Error('advies verwacht')
+      const names = a.choices.map((c) => c.claw.name)
+      expect(names.slice(0, 2), `${str}/${dex}`).toEqual(['War Bow', 'Crossbow'])
+      expect(a.choices[0].net, `${str}/${dex}`).toBe(a.choices[1].net) // voorwaarde: het is echt een gelijkspel
+      expect(power(a.choices[0].claw)).toBeGreaterThan(power(a.choices[1].claw))
+      expect(a.winner?.name, `${str}/${dex}`).toBe('War Bow')
+      for (let i = 1; i < a.choices.length; i++) {
+        const [x, y] = [a.choices[i - 1], a.choices[i]]
+        if (Math.round(x.net!) !== Math.round(y.net!)) continue
+        expect(x.claw.price, `${x.claw.name} vóór ${y.claw.name}`).toBeLessThanOrEqual(y.claw.price)
+        if (x.claw.price === y.claw.price) expect(power(x.claw), `${x.claw.name} vóór ${y.claw.name}`).toBeGreaterThanOrEqual(power(y.claw))
+      }
+    }
+  })
+})
