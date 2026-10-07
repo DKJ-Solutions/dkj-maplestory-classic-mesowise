@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**91 / 143 minor entries** <!-- pending-tally -->
+**91 / 144 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/card-popup-data-on-body · 20261007-213638Z
+
+In the card popups (Advised and Your character), `data-sheet`, `data-based-on-character` and `data-based-on-mob` moved from `.spot-body` to `.stat-dialog-body`, beside `data-popup`, so every popup carries its attributes on the same element (#247, #248).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Not visible on screen; only someone reading the HTML sees it.
+
+**Score:** N/A
+
+#### Pull Request
+
+card popups carry data-sheet and data-based-on-* on .stat-dialog-body, beside data-popup, like every other popup
+
+[PR #249](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/249)
+
+---
 
 ### DEPLOY: app/char-popup-based-on · 20261007-212755Z
 
