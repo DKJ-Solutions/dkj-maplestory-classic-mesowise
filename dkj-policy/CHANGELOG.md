@@ -23,7 +23,7 @@ advice to fight bare-handed.
 
 #### Pull Request
 
-the advised setup always holds a weapon, also when your own weapon slot is empty
+The advised setup always holds a weapon, also when your own weapon slot is empty
 
 [PR #205](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/205)
 
@@ -550,7 +550,7 @@ A player switching mobs now confirms the switch, so a slip in the list no longer
 
 #### Pull Request
 
-the Monster popup gets an Opslaan button for the chosen mob
+The Monster popup gets an Opslaan button for the chosen mob
 
 [PR #166](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/166)
 
@@ -593,7 +593,7 @@ is tighter now the boxes carry no borders.
 
 #### Pull Request
 
-the value box no longer looks like the pencil button next to it
+The value box no longer looks like the pencil button next to it
 
 [PR #164](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/164)
 
@@ -1196,7 +1196,7 @@ A Magician player sees a real number where the card was blank, the same one the 
 
 #### Pull Request
 
-the Total stats card shows M.ATT for a Magician
+The Total stats card shows M.ATT for a Magician
 
 [PR #110](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/110)
 
@@ -1464,7 +1464,7 @@ N/A
 
 #### Pull Request
 
-rename subtitle of app
+Rename subtitle of app
 
 [PR #104](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/104)
 
@@ -2159,7 +2159,7 @@ is", en je hoeft na een loot je WDEF en weapon attack niet meer zelf uit te reke
 
 #### Pull Request
 
-equipment-sectie onder de Level up-knop, die meerekent
+Equipment-sectie onder de Level up-knop, die meerekent
 
 [PR #46](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/46)
 

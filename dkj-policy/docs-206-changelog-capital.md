@@ -39,19 +39,30 @@
 
 ### PLAN
 
+#206 names one lowercase Pull Request title in `CHANGELOG.md` (PR #205). A scan of every `#### Pull Request`
+line found five more, so all six are capitalised here.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Capitalise the six lowercase Pull Request titles in `CHANGELOG.md`
+- [x] Capitalise the title of PR #205 on GitHub
 
 ### TEST
 
+- [x] Re-scan: no `#### Pull Request` title in `CHANGELOG.md` starts with a lowercase letter
+
 ### DEPLOY: docs/206-changelog-capital
 
-**Score:**
+Every Pull Request title in the changelog now starts with a capital letter; six entries, PR #205's among them, were
+lowercase. Cosmetic only. Resolves #206.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
