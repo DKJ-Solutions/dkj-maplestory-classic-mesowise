@@ -52,6 +52,8 @@ and shows the ammo next to the potions.
 - [x] Advised: Useable is a bill like Advised: Equip: HP, MP and Ammo rows with a Qty column, what each costs this level, an info button and a "?" with the calculation steps, and a Total cost; the bill's head, row and total are shared parts (`BillHead`, `BillRow`, `BillTotal`) (Dave, October 7, 2026)
 - [x] `ammoInfo` in `src/cheapestEquip.ts` reads a star's or arrow's ATT and price from the item lists; the profile's star fields were wrong for a Bowman (Tycho)
 - [x] In the Useable bill the "?" sits right after Qty, since it explains that number; the amount is last (Dave, October 7, 2026)
+- [x] The Useable popup is titled "Expected: Useable": it is a forecast from the calculation, not advice; Advised: Equip stays advice (Dave, October 7, 2026)
+- [x] The "?" popup of a Useable row is titled after its quantity, such as "Waarom 52?" (Dave, October 7, 2026)
 - [x] Every Advised popup has a subtitle with the level and job the advice reckons with, such as "Lv. 30 Thief" (Dave, October 7, 2026)
 
 ### TEST
@@ -67,7 +69,7 @@ and shows the ammo next to the potions.
 
 Every Advised popup now names its card in the title, such as "Advised: Equip" or "Advised: Skillpoints", so you can see which part
 of the advice you are reading. Under each title a subtitle says the level and job the advice reckons with. The potions popup is
-now "Advised: Useable": a bill like Advised: Equip, with a row per potion and for the stars or arrows, how many you use this level
+now "Expected: Useable": a bill like Advised: Equip, with a row per potion and for the stars or arrows, how many you use this level
 and what that costs. The middle column of the Advised equip bill is called Equip.
 
 **Score:** 2
