@@ -1666,9 +1666,10 @@ function BasedOn(props: { who: string; mob: string }) {
           <div class="advised-for-row">
             <span class="sr-only">Char: </span>
             <span class="advised-for-value">{props.who}</span>
-            {/* Het i-knopje: de Total stats van dit advies, met de AP en skillpoints die het plaatst (Dave, 7 oktober 2026). */}
+            {/* Het i-knopje: de Total stats van dit advies, met de AP en skillpoints die het plaatst (Dave, 7 oktober 2026). De popup heet naar
+                het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Total stats van ${props.who}`} title="Total stats">
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Total stats van ${props.who}`} title={props.who} tag="expected">
                 {stats}
               </PopupButton>
             )}
@@ -1971,7 +1972,7 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const close = () => {
@@ -1984,7 +1985,7 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
         {props.icon}
       </button>
       {open && (
-        <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        <StatDialog title={props.title} tag={props.tag} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}

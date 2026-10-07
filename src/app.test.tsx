@@ -4215,7 +4215,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Total stats')
+        // De popup heet naar het karakter, met het label expected erboven (Dave, 7 oktober 2026).
+        const who = totalCostWho('20', 'thief')
+        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(who)
+        expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
+        expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
         expect(lines(popup)).toEqual(advisedLines)
         fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
         await frame()
