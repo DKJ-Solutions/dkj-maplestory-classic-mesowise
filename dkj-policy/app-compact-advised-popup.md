@@ -60,6 +60,7 @@ Dave, October 7, 2026: make the Advised equip popup compact. Each item slot gets
 - [x] Only the amount of a bought piece is in the accent colour, not its name, and every item name is plain text colour, also of a piece that does not pay (Dave, October 7, 2026)
 - [x] A header row: Slot, Item and Mesos above the amounts (Dave, October 7, 2026)
 - [x] The total is labelled "Total cost" instead of "Te kopen" (Dave, October 7, 2026)
+- [x] The total as on a real bill: right-aligned label, the amount as large as the prices above it, a double rule under the amount only, and room around the total rule (Dave, October 7, 2026)
 - [x] No Report button in the Advised equip popup; Your character keeps it (Dave, October 7, 2026)
 
 ### TEST
