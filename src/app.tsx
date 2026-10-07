@@ -2382,10 +2382,11 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
   const { draft } = props
   const { levels, groups } = skillGroupsOf(props.job, draft)
   const wdef = profileWdef(draft)
-  // In de popup één groep: de eerste, want de Beginner staat in SKILL_GROUPS achteraan.
+  // In de popup alleen de 1e job; zonder 1e job de Beginner.
+  const firstJob = groups.filter((g) => g.job !== 'Beginner')
   return (
     <>
-      {(props.inCharacter ? groups.slice(0, 1) : groups).map(({ job, title }) => (
+      {(props.inCharacter && firstJob.length > 0 ? firstJob : groups).map(({ job, title }) => (
         <div class="skill-group" key={job}>
           {!props.inCharacter && (
             <h3>
@@ -2437,7 +2438,8 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
 /**
  * De stats van een karakter zonder equipment (Dave, 7 oktober 2026): puur wat level, base AP en skillpunten geven. Max HP en Max MP, Accuracy en
  * Evasion uit de formule (expectedStat, met Nimble Body of Precise Strikes erin) en bij een Magician de M.ATT uit zijn INT. Extra AP van items
- * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet.
+ * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet. Max HP en Max MP zijn de getallen van het profiel:
+ * de app kan HP van een item daar niet uit halen.
  */
 function BaseStats(props: { job: Job; draft: ProfileDraft }) {
   const { job } = props
@@ -2511,7 +2513,7 @@ function SkillLine(props: {
             Lv. {now} van {s.max}
           </p>
           <p class="item-why">
-            Het advies zet elk skillpunt dat nog open staat in de skill die over dit level en de 4 erna de meeste mesos bespaart. Zo komt {s.name} op {now}.
+            Het advies zet elk open skillpunt in de skill die over dit level en de 4 erna de meeste mesos bespaart.
           </p>
           {lines.length > 0 && <SkillEffects lines={lines} class="skill-why" />}
         </PopupButton>
