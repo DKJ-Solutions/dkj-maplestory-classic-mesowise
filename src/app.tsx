@@ -732,7 +732,7 @@ type StatsCardBody = {
   note?: ComponentChildren
 }
 
-/** De regels van een statpopup voor het profiel `draft`; `advised` zet ze alleen om te lezen. Ook de popup achter het i-knopje bij "Based on:" gebruikt ze (Dave, 7 oktober 2026). */
+/** De regels van een statpopup voor het profiel `draft`; `advised` zet ze alleen om te lezen. */
 function StatRows(props: Pick<StatsCardBody, 'fields' | 'job' | 'onChange' | 'lead' | 'derived'> & { draft: ProfileDraft; advised: boolean }) {
   const { draft, job, advised } = props
   return (
@@ -827,16 +827,7 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     const balance = apBalance(d)
     return (
       <>
-        {/* Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */}
-        <div class="stat-line ability-line ability-head" aria-hidden="true">
-          <span />
-          <span>Base</span>
-          <span />
-          <span>Extra</span>
-          <span />
-          <span>Totaal</span>
-          <span />
-        </div>
+        <AbilityHead />
         {shownStats(props.job)
           .filter((f) => ABILITY_KEYS.includes(f.key))
           .map((f) => (
@@ -863,6 +854,21 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
     )
   }
   return <StatsCard {...props} className="profile" card="ap" icon="person" title="Ability points" lead={lead} fields={[]} note={toDistribute(draft)} titleNote={toDistribute} />
+}
+
+/** De kop boven de AbilityLines. Per stat (Dave, 4 oktober 2026): de base AP, plus de extra AP van items (0 als je die niet hebt), is het totaal. */
+function AbilityHead() {
+  return (
+    <div class="stat-line ability-line ability-head" aria-hidden="true">
+      <span />
+      <span>Base</span>
+      <span />
+      <span>Extra</span>
+      <span />
+      <span>Totaal</span>
+      <span />
+    </div>
+  )
 }
 
 /**
@@ -969,7 +975,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
   return <StatsCard {...totalStatsBody(props)} />
 }
 
-/** Wat de Total stats toont, voor de kaart en voor de popup bij "Based on:" (Dave, 7 oktober 2026): zo zijn de getallen overal dezelfde. */
+/** Wat de Total stats toont. De popup bij "Based on:" toont in plaats daarvan de stats zonder equipment (BaseStats). */
 function totalStatsBody(props: StatsCardProps & { equipment: Equipment }): StatsCardBody {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
@@ -1666,9 +1672,10 @@ function BasedOn(props: { who: string; mob: string }) {
           <div class="advised-for-row">
             <span class="sr-only">Char: </span>
             <span class="advised-for-value">{props.who}</span>
-            {/* Het i-knopje: de Total stats van dit advies, met de AP en skillpoints die het plaatst (Dave, 7 oktober 2026). */}
+            {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
+                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Total stats van ${props.who}`} title="Total stats">
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected">
                 {stats}
               </PopupButton>
             )}
@@ -1971,7 +1978,7 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const close = () => {
@@ -1984,7 +1991,7 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
         {props.icon}
       </button>
       {open && (
-        <StatDialog title={props.title} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        <StatDialog title={props.title} tag={props.tag} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}
@@ -2294,6 +2301,25 @@ interface SkillLinePart {
   tone?: 'cost' | 'gain'
 }
 
+/** Wat een skill kost en geeft, Now en Next elk op een eigen regel (skillMpLines): onder de naam in Skillpoints, en in de uitleg achter zijn vraagteken. */
+function SkillEffects(props: { lines: SkillLinePart[][]; class?: string }) {
+  return (
+    <small class={props.class ? `skill-mp ${props.class}` : 'skill-mp'}>
+      {props.lines.map((line) => (
+        <span key={line.map((p) => p.text).join('')}>
+          {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
+        </span>
+      ))}
+    </small>
+  )
+}
+
+/** De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de skill alleen het procent. */
+function profileWdef(draft: ProfileDraft): number | null {
+  const n = Number(draft.wdef.trim())
+  return draft.wdef.trim() !== '' && Number.isInteger(n) && n >= 0 ? n : null
+}
+
 /**
  * De skillpunten die je nu hebt gezet: elke skill van je job tot de 2e job, met zijn maximum. Hier vul
  * je ze in; "Punt zetten" in het advies telt hier meteen mee. Een job die de app nog niet doorrekent (de Magician) ziet
@@ -2309,14 +2335,9 @@ function SkillsCard(props: {
   report?: ComponentChildren
 }) {
   const { view, opener, open, close } = useCardView('skills')
-  const shown = profileFieldsFor(props.job).map((f) => f.key)
   // In het advies de skillpunten van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
   const advised = view === 'advised' && props.advised !== null
   const draft = advised ? props.advised! : props.draft
-  const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
-  // De DEF uit je profiel voor wat Iron Body geeft; geen geldig getal: dan noemt de kaart alleen het procent.
-  const wdefNumber = Number(draft.wdef.trim())
-  const wdef = draft.wdef.trim() !== '' && Number.isInteger(wdefNumber) && wdefNumber >= 0 ? wdefNumber : null
   // De punten van de pot van je 1e job die je nog niet hebt gezet (#154); in de popup die van de weergave.
   const spLeft = spToDistribute(props.draft, props.job)
   const spLeftShown = advised ? spToDistribute(draft, props.job) : spLeft
@@ -2335,22 +2356,110 @@ function SkillsCard(props: {
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
         <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
-          {SKILL_GROUPS.filter(({ job }) => levels.some((s) => s.job === job)).map(({ job, title }) => (
-            <div class="skill-group" key={job}>
-              <h3>
-                {title}
-                <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />
-              </h3>
-              {levels
-                .filter((s) => s.job === job)
-                .map((s) => (
-                  <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={advised} onChange={props.onChange} />
-                ))}
-            </div>
-          ))}
+          <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
     </section>
+  )
+}
+
+/** De skills van je job die de app toont, en de groepen (1e job, Beginner) waarin ze vallen, in de volgorde van SKILL_GROUPS. */
+function skillGroupsOf(job: Job, draft: ProfileDraft) {
+  const shown = profileFieldsFor(job).map((f) => f.key)
+  const levels = skillLevels(draft, ALL_SKILLS).filter((s) => shown.includes(s.key))
+  return { levels, groups: SKILL_GROUPS.filter((g) => levels.some((s) => s.job === g.job)) }
+}
+
+/** Of het karakter een 1e job heeft: dan staan alleen zijn skills in de popup onder "Based on:" (Dave, 7 oktober 2026). */
+const hasFirstJob = (job: Job, draft: ProfileDraft) => skillGroupsOf(job, draft).groups.some((g) => g.job !== 'Beginner')
+
+/**
+ * De skills van je job per groep (Beginner, 1e job), elk met wat je van zijn pot zette: in Skillpoints en in de popup van het karakter onder "Based on:".
+ * Met `inCharacter` (die popup, Dave, 7 oktober 2026) alleen de skills van de 1e job (zonder 1e job die van de Beginner), zonder kop en zonder
+ * "31 / 31 SP": de kop van de tabel zegt welke het zijn. Wel een vraagteken achter elke skill met punten (SkillLine `why`).
+ */
+function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; inCharacter?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
+  const { draft } = props
+  const { levels, groups } = skillGroupsOf(props.job, draft)
+  const wdef = profileWdef(draft)
+  // In de popup alleen de 1e job; zonder 1e job de Beginner.
+  const firstJob = groups.filter((g) => g.job !== 'Beginner')
+  return (
+    <>
+      {(props.inCharacter && firstJob.length > 0 ? firstJob : groups).map(({ job, title }) => (
+        <div class="skill-group" key={job}>
+          {!props.inCharacter && (
+            <h3>
+              {title}
+              <PoolCount usage={skillPoolUsage(draft, props.job, skillPoolOf(job))} />
+            </h3>
+          )}
+          {levels
+            .filter((s) => s.job === job)
+            .map((s) => (
+              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.inCharacter} onChange={props.onChange} />
+            ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+/**
+ * Het karakter van het advies, achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points,
+ * Skillpoints en Total stats, met dezelfde regels als hun Advised-popups, alleen om te lezen. De popup maakt ze compact (.item-dialog).
+ */
+function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
+  const { job, draft } = props
+  const none = () => {}
+  return (
+    <>
+      <section class="char-table" aria-label="Ability points">
+        <h3 class="char-table-head">Ability points</h3>
+        <AbilityHead />
+        {shownStats(job)
+          .filter((f) => ABILITY_KEYS.includes(f.key))
+          .map((f) => (
+            <AbilityLine key={f.key} field={f} draft={draft} cap={null} readOnly onSave={none} />
+          ))}
+      </section>
+      <section class="char-table" aria-label="Skillpoints">
+        <h3 class="char-table-head">Skillpoints ({hasFirstJob(job, draft) ? '1e job' : 'Beginner'})</h3>
+        <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
+      </section>
+      <section class="char-table" aria-label="Total stats">
+        <h3 class="char-table-head">Total stats</h3>
+        <BaseStats job={job} draft={draft} />
+      </section>
+    </>
+  )
+}
+
+/**
+ * De stats van een karakter zonder equipment (Dave, 7 oktober 2026): puur wat level, base AP en skillpunten geven. Max HP en Max MP, Accuracy en
+ * Evasion uit de formule (expectedStat, met Nimble Body of Precise Strikes erin) en bij een Magician de M.ATT uit zijn INT. Extra AP van items
+ * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet. Max HP en Max MP zijn de getallen van het profiel:
+ * de app kan HP van een item daar niet uit halen.
+ */
+function BaseStats(props: { job: Job; draft: ProfileDraft }) {
+  const { job } = props
+  const bare: ProfileDraft = { ...props.draft, strExtra: '0', dexExtra: '0', intExtra: '0', lukExtra: '0', clawWatk: '0' }
+  const fields = statFieldsFor(job)
+  const field = (key: keyof ProfileDraft) => fields.find((f) => f.key === key)
+  const shown = (n: number | null | undefined) => (n == null ? '' : nfInt.format(n))
+  const none = () => {}
+  return (
+    <>
+      {(['hp', 'mp'] as const).map((key) => {
+        const f = field(key)
+        return f && <StatLine key={key} field={f} value={bare[key]} readOnly onSave={none} />
+      })}
+      {(['accuracy', 'avoid'] as const).map((key) => {
+        const f = field(key)
+        return f && <StatLine key={key} field={f} value={shown(expectedStat(key, bare, job))} readOnly onSave={none} />
+      })}
+      {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
+    </>
   )
 }
 
@@ -2359,7 +2468,16 @@ function SkillsCard(props: {
  * level dat er nu staat en het potlood, net als bij equipment. Wijzigen gaat in een eigen popup met − en +; hoger dan het
  * maximum van de skill of dan wat de pot nog over laat kan niet.
  */
-function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wdef: number | null; readOnly?: boolean; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function SkillLine(props: {
+  skill: SkillLevel
+  draft: ProfileDraft
+  job: Job
+  wdef: number | null
+  readOnly?: boolean
+  /** In het karakter onder "Based on:" (Dave, 7 oktober 2026): een vraagteken achter het level van een skill met punten, dat zegt waarom hij zo hoog staat. */
+  why?: boolean
+  onChange: (patch: Partial<ProfileDraft>) => void
+}) {
   const { skill: s, draft } = props
   const uid = useId()
   const [edit, setEdit] = useState<string | null>(null)
@@ -2382,22 +2500,24 @@ function SkillLine(props: { skill: SkillLevel; draft: ProfileDraft; job: Job; wd
     <div class="skill-row">
       <span>
         {s.name}
-        {lines.length > 0 && (
-          <small class="skill-mp">
-            {lines.map((line) => (
-              <span key={line.map((p) => p.text).join('')}>
-                {line.map((p, i) => (p.tone ? <span key={i} class={p.tone}>{p.text}</span> : p.text))}
-              </span>
-            ))}
-          </small>
-        )}
+        {lines.length > 0 && <SkillEffects lines={lines} />}
       </span>
       <div class="equip-value" aria-label={`${s.name} level ${value.trim() || 'onbekend'}`}>
         <span class="equip-value-num">
           <strong>{value.trim() || '?'}</strong>
         </span>
       </div>
-      {props.readOnly ? (
+      {props.readOnly && props.why && now > 0 ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${s.name}`} title={`Waarom ${now}?`}>
+          <p class="item-verdict">
+            Lv. {now} van {s.max}
+          </p>
+          <p class="item-why">
+            Het advies zet elk open skillpunt in de skill die over dit level en de 4 erna de meeste mesos bespaart.
+          </p>
+          {lines.length > 0 && <SkillEffects lines={lines} class="skill-why" />}
+        </PopupButton>
+      ) : props.readOnly ? (
         <span />
       ) : (
         <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${s.name} wijzigen`} onClick={() => setEdit(value)}>
@@ -3780,7 +3900,7 @@ export function App() {
     setDrafts([next])
   }
 
-  const advisedStats = advisedProfile && <StatRows {...totalStatsBody({ job, draft: profileDraft, equipment, error: null, onChange: updateProfile, advised: advisedProfile })} draft={advisedProfile} advised />
+  const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
 
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
