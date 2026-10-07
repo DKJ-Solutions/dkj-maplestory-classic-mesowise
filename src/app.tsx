@@ -489,6 +489,8 @@ interface CardViewState {
 }
 /** Op welk level en voor welke job het advies rekent, "Lv. 30 Thief": de ondertitel van elke Advised-popup (Dave, 7 oktober 2026; zie CardPopup). */
 const AdvisedWho = createContext('')
+/** De regels van Advised: Total stats (Dave, 7 oktober 2026), voor het i-knopje achter de char onder "Based on:"; null zonder advies. */
+const AdvisedStats = createContext<ComponentChildren>(null)
 
 const CardViewContext = createContext<CardViewState>({ open: {}, opener: { current: null }, openCard: () => {}, close: () => {} })
 
@@ -708,7 +710,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
  * Een kaart met een popup met een rij stat-regels (zelfde patroon als de andere kaarten). Zonder uitleg eronder: die
  * leest een speler toch niet (Dave, 4 oktober 2026).
  */
-function StatsCard(props: {
+type StatsCardBody = {
   className: string
   card: CardKey
   icon: keyof typeof ICON_PATHS
@@ -728,9 +730,28 @@ function StatsCard(props: {
   titleNote?: (draft: ProfileDraft) => ComponentChildren
   /** Achter de kop, zoals hoeveel AP je nog te verdelen hebt (zie ToDistribute). */
   note?: ComponentChildren
-}) {
+}
+
+/** De regels van een statpopup voor het profiel `draft`; `advised` zet ze alleen om te lezen. Ook de popup achter het i-knopje bij "Based on:" gebruikt ze (Dave, 7 oktober 2026). */
+function StatRows(props: Pick<StatsCardBody, 'fields' | 'job' | 'onChange' | 'lead' | 'derived'> & { draft: ProfileDraft; advised: boolean }) {
+  const { draft, job, advised } = props
+  return (
+    <>
+      {props.lead?.(draft, advised)}
+      {props.fields.map((f) => {
+        const derived = props.derived?.[f.key]
+        return derived !== undefined ? (
+          <StatLine key={f.key} field={f} value={derived} readOnly onSave={() => {}} />
+        ) : (
+          <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={advised ? undefined : expectedStat(f.key, draft, job)} readOnly={advised || READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
+        )
+      })}
+    </>
+  )
+}
+
+function StatsCard(props: StatsCardBody) {
   const { view, opener, open, close } = useCardView(props.card)
-  const { job } = props
   // In het advies het profiel van het advies, alleen om te lezen (Dave, 6 oktober 2026, #192).
   const showAdvised = view === 'advised' && props.advised !== null
   const draft = showAdvised ? props.advised! : props.draft
@@ -749,15 +770,7 @@ function StatsCard(props: {
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
         <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
-          {props.lead?.(draft, showAdvised)}
-          {props.fields.map((f) => {
-            const derived = props.derived?.[f.key]
-            return derived !== undefined ? (
-              <StatLine key={f.key} field={f} value={derived} readOnly onSave={() => {}} />
-            ) : (
-              <StatLine key={f.key} field={f.key === 'wdef' ? { ...f, label: 'Weapon Def' } : f} value={draft[f.key]} expected={showAdvised ? undefined : expectedStat(f.key, draft, job)} readOnly={showAdvised || READ_ONLY_STATS.has(f.key)} onSave={(text) => props.onChange({ [f.key]: text })} />
-            )
-          })}
+          <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
     </section>
@@ -953,6 +966,11 @@ function AbilityLine(props: {
 
 /** De Total stats uit het statvenster: Attack (schadebereik), W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
 function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
+  return <StatsCard {...totalStatsBody(props)} />
+}
+
+/** Wat de Total stats toont, voor de kaart en voor de popup bij "Based on:" (Dave, 7 oktober 2026): zo zijn de getallen overal dezelfde. */
+function totalStatsBody(props: StatsCardProps & { equipment: Equipment }): StatsCardBody {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
   // Max HP en Max MP bovenaan, zoals in het statvenster van het spel (Dave, 6 oktober 2026); Level up verhoogt ze, het potlood corrigeert.
@@ -970,9 +988,7 @@ function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
     </>
   )
   const mdef = wornMdef(props.equipment, job)
-  return (
-    <StatsCard {...props} className="total-stats" card="total" icon="chart" title="Total stats" lead={lead} derived={mdef === null ? undefined : { magicDef: String(mdef) }} fields={shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key))} />
-  )
+  return { ...props, className: 'total-stats', card: 'total', icon: 'chart', title: 'Total stats', lead, derived: mdef === null ? undefined : { magicDef: String(mdef) }, fields: shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key)) }
 }
 
 /**
@@ -1640,6 +1656,8 @@ const mobWhy = (mob: string) =>
  * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
 function BasedOn(props: { who: string; mob: string }) {
+  const stats = useContext(AdvisedStats)
+  const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
     <section class="based-on" aria-label="Based on">
       <h3 class="based-on-head">Based on:</h3>
@@ -1648,16 +1666,28 @@ function BasedOn(props: { who: string; mob: string }) {
           <div class="advised-for-row">
             <span class="sr-only">Char: </span>
             <span class="advised-for-value">{props.who}</span>
+            {/* Het i-knopje: de Total stats van dit advies, met de AP en skillpoints die het plaatst (Dave, 7 oktober 2026). */}
+            {stats && (
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Total stats van ${props.who}`} title="Total stats">
+                {stats}
+              </PopupButton>
+            )}
           </div>
         )}
-        <div class="advised-for-row">
-          <span class="sr-only">Mob: </span>
-          <span class="advised-for-value advised-for-mob">
-            {props.mob}
-            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-              <p class="item-why">{mobWhy(props.mob)}</p>
-            </PopupButton>
-          </span>
+        {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
+        <div class="advised-for-line">
+          <div class="advised-for-row">
+            <span class="sr-only">Mob: </span>
+            <span class="advised-for-value">{props.mob}</span>
+            {mobDef && (
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`}>
+                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+              </PopupButton>
+            )}
+          </div>
+          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+            <p class="item-why">{mobWhy(props.mob)}</p>
+          </PopupButton>
         </div>
       </div>
     </section>
@@ -3750,8 +3780,11 @@ export function App() {
     setDrafts([next])
   }
 
+  const advisedStats = advisedProfile && <StatRows {...totalStatsBody({ job, draft: profileDraft, equipment, error: null, onChange: updateProfile, advised: advisedProfile })} draft={advisedProfile} advised />
+
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
+    <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
@@ -3883,6 +3916,7 @@ export function App() {
       </footer>
       </main>
     </CardViewContext.Provider>
+    </AdvisedStats.Provider>
     </AdvisedWho.Provider>
   )
 }
