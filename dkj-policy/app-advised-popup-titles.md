@@ -51,6 +51,7 @@ and shows the ammo next to the potions.
 - [x] The Potions card's Advised popup is "Advised: Useable" and shows the ammo the advice counts (Dave, October 7, 2026)
 - [x] Advised: Useable is a bill like Advised: Equip: HP, MP and Ammo rows with a Qty column, what each costs this level, an info button and a "?" with the calculation steps, and a Total cost; the bill's head, row and total are shared parts (`BillHead`, `BillRow`, `BillTotal`) (Dave, October 7, 2026)
 - [x] `ammoInfo` in `src/cheapestEquip.ts` reads a star's or arrow's ATT and price from the item lists; the profile's star fields were wrong for a Bowman (Tycho)
+- [x] In the Useable bill the "?" sits right after Qty, since it explains that number; the amount is last (Dave, October 7, 2026)
 - [x] Every Advised popup has a subtitle with the level and job the advice reckons with, such as "Lv. 30 Thief" (Dave, October 7, 2026)
 
 ### TEST

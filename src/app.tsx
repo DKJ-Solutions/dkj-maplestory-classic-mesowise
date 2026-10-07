@@ -1742,6 +1742,7 @@ function BillTotal(props: { total: number; qty?: boolean }) {
  */
 function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren }) {
   const title = props.name ?? props.slot
+  const price = <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
   return (
     <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty'].filter(Boolean).join(' ')}>
       <span class="slot-name">{props.slot}</span>
@@ -1763,10 +1764,12 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       </span>
       {/* Het aantal, alleen in een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026). */}
       {props.qty !== undefined && <span class="advised-qty">{props.qty === null ? '' : nfInt.format(props.qty)}</span>}
-      <span class="advised-price">{props.price === null ? '' : nfInt.format(props.price)}</span>
+      {/* Met een Qty-kolom staat het vraagteken direct achter het aantal en het bedrag achteraan (Dave, 7 oktober 2026); zonder achter het bedrag. */}
+      {props.qty === undefined && price}
       <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={title}>
         {props.help}
       </PopupButton>
+      {props.qty !== undefined && price}
     </div>
   )
 }
