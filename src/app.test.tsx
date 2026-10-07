@@ -4287,11 +4287,11 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet op elk vak onder "Based on:" data-advised-for met wat erin staat, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+    it('zet op elk vak onder "Based on:" data-character-advised met wat erin staat, zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      const rows = [...d.querySelectorAll('.based-on .advised-for-row')].map((r) => r.getAttribute('data-advised-for'))
+      const rows = [...d.querySelectorAll('.based-on .advised-for-row')].map((r) => r.getAttribute('data-character-advised'))
       expect(rows).toHaveLength(2)
       expect(rows[0]).toMatch(/^Char: Lv\. \d+ Thief$/)
       expect(rows[1]).toBe(`Mob: ${mob}`)

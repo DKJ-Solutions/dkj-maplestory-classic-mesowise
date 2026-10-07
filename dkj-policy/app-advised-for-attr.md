@@ -41,7 +41,7 @@
 
 ### CREATE
 
-- [x] `data-advised-for` on both rows under "Based on:": "Char: <who>" and "Mob: <mob>" (src/app.tsx)
+- [x] `data-character-advised` on both rows under "Based on:": "Char: <who>" and "Mob: <mob>" (src/app.tsx)
 - [ ] Dave looked (visible in the inspector, like #245)
 
 ### TEST
@@ -50,7 +50,7 @@
 
 ### DEPLOY: app/advised-for-attr
 
-Each row under "Based on:" in Total cost carries `data-advised-for` ("Char: Lv. 21 Thief", "Mob: Snail"), so the HTML inspector shows which row you are pointing at, the way `data-popup` does for popups (#245).
+Each row under "Based on:" in Total cost carries `data-character-advised` ("Char: Lv. 21 Thief", "Mob: Snail"), so the HTML inspector shows which row you are pointing at, the way `data-popup` does for popups (#245).
 
 **Score:** 1
 
@@ -62,5 +62,5 @@ Not visible on screen; only someone reading the HTML sees it.
 
 #### Pull Request
 
-every advised-for-row carries data-advised-for with what it holds (Char or Mob), so the inspector shows which row you are pointing at
+every advised-for-row carries data-character-advised with what it holds (Char or Mob), so the inspector shows which row you are pointing at
 
