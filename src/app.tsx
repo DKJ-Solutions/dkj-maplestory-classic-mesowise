@@ -1637,9 +1637,9 @@ function StatDialog(props: {
   )
   useEffect(() => {
     const d = ref.current
-    // Elke laag is 93% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
+    // Elke laag is 93% zo breed als de laag eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt. De eerste laag is main, dus de eerste popup is 93% van main.
     // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
-    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(POPUP_STEP ** (popupDepth(d) + 1)))
+    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(POPUP_STEP ** (popupDepth(d) + 2)))
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
     if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
