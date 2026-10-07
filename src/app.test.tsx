@@ -2634,6 +2634,10 @@ describe('de menubalk bovenin (issue #86)', () => {
     const link = openMenu().getByRole('link', { name: 'Offlineversie downloaden' })
     expect(link.getAttribute('href')).toBe(`${import.meta.env.BASE_URL}mesowise-offline.html`)
     expect(link.hasAttribute('download')).toBe(true)
+    // De uitleg staat er gewoon onder, zonder vraagteken (Dave, 7 oktober 2026).
+    const download = link.closest('.menu-download')!
+    expect(download.querySelector('.help-toggle')).toBeNull()
+    expect(download.querySelector('.hint:not([hidden])')!.textContent).toMatch(/^Eén bestand dat je in je browser opent, zonder internet\./)
   })
 
   const rows = (menu: ReturnType<typeof openMenu>) =>
