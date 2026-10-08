@@ -3414,7 +3414,11 @@ const whyRows = (root: ParentNode) =>
       fireEvent.click(info)
       const popup = tr.querySelector<HTMLElement>('dialog')!
       // Een rij met een eigen uitwerking (detail) heeft geen som maar een tabel; die lees je met whyDetail.
-      calc = clean(popup.querySelector('.why-calc')?.textContent ?? '')
+      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "teken getal wat".
+      const mul = popup.querySelector('.why-mul')
+      calc = mul
+        ? Array.from(mul.querySelectorAll('tr'), (r) => Array.from(r.querySelectorAll('td'), (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
+        : clean(popup.querySelector('.why-calc')?.textContent ?? '')
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     }
     return { label, calc, result: clean(tr.querySelector('td, .why-answer-value')!.textContent!), total: tr.classList.contains('why-answer') }
@@ -3498,8 +3502,11 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Ribbon Pig heeft WDEF 0, dus geen rij Verdediging: die verandert dan niets.
     const damage = whyDetail(dialog, 'Schade per aanval')
     expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
-    expect(damage[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
-    expect(damage[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
+    expect(damage[0].calc).toMatch(/^\d+% skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ 1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = ([\d.,]+) max per star$/)
+    expect(damage[0].calc.endsWith(`= ${damage[0].result} max per star`)).toBe(true)
+    expect(damage[1].calc).toMatch(/^\d+% skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ 0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = [\d.,]+ min per star$/)
+    expect(damage[1].calc.endsWith(`= ${damage[1].result} min per star`)).toBe(true)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)

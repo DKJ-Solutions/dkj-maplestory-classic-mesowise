@@ -3393,6 +3393,31 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
   )
 }
 
+/**
+ * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links het teken, dan het getal en wat het is, en onderaan
+ * de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat.
+ */
+function MulCalc(props: { factors: readonly { value: string; what: ComponentChildren }[]; result: { value: string; what: string } }) {
+  return (
+    <table class="why-mul">
+      <tbody>
+        {props.factors.map((f, i) => (
+          <tr key={i}>
+            <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
+            <td class="why-mul-num">{f.value}</td>
+            <td class="why-mul-what">{f.what}</td>
+          </tr>
+        ))}
+        <tr class="why-mul-result">
+          <td class="why-mul-op">=</td>
+          <td class="why-mul-num">{props.result.value}</td>
+          <td class="why-mul-what">{props.result.what}</td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
 /** De rijen die het aantal kills van dit level geven: de EXP die je nog nodig hebt, wat één kill geeft, en hun deling (Dave, 6 oktober 2026, #192). */
 const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }): WhyRow[] => [
   { label: 'EXP tot volgend level', result: nfInt.format(w.expToNext) },
@@ -3488,14 +3513,33 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
+        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): de skillschade, je W.ATT en wat je stats erbij doen.
         {
           label: `Max per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfPct.format(f.k), what: 'skillschade' },
+                { value: nfInt.format(f.watk), what: 'W.ATT' },
+                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+              ]}
+              result={{ value: oneDecimal(w.rawMax), what: `max per ${piece}` }}
+            />
+          ),
           result: oneDecimal(w.rawMax),
         },
         {
           label: `Min per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfPct.format(f.k), what: 'skillschade' },
+                { value: nfInt.format(f.watk), what: 'W.ATT' },
+                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+              ]}
+              result={{ value: oneDecimal(w.rawMin), what: `min per ${piece}` }}
+            />
+          ),
           result: oneDecimal(w.rawMin),
         },
         ...(w.levelsUp > 0
