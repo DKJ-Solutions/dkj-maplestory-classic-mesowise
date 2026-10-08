@@ -3384,6 +3384,32 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
   { label: 'Kills dit level', calc: <>{nfInt.format(w.expToNext)} / {nf.format(w.expPerKill)}</>, result: nf3.format(w.kills) },
 ]
 
+/**
+ * De eindformule onderaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
+ * getal wat het is. De blokken erboven werken elk getal uit. Is de uitkomst naar boven afgerond, dan staat dat eronder.
+ */
+function WhySummary(props: { terms: readonly [{ value: string; unit: string }, '×' | '÷', { value: string; unit: string }]; result: { value: string; unit: string }; exact: number; qty: number }) {
+  const [a, op, b] = props.terms
+  const term = (t: { value: string; unit: string }, cls = 'why-term') => (
+    <span class={cls}>
+      <strong>{t.value}</strong>
+      <small>{t.unit}</small>
+    </span>
+  )
+  return (
+    <div class="why-summary">
+      <p class="why-summary-formula" aria-label={`${a.value} ${a.unit} ${op === '×' ? 'maal' : 'gedeeld door'} ${b.value} ${b.unit} is ${props.result.value} ${props.result.unit}`}>
+        {term(a)}
+        <span class="why-op" aria-hidden="true">{op}</span>
+        {term(b)}
+        <span class="why-op" aria-hidden="true">=</span>
+        {term(props.result, 'why-term why-term-result')}
+      </p>
+      {Number(props.exact.toFixed(3)) !== props.qty && <p class="why-summary-note">{nf.format(props.exact)}, naar boven afgerond.</p>}
+    </div>
+  )
+}
+
 /** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
@@ -3413,6 +3439,12 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   return (
     <>
       <WhyTable rows={rows} />
+      <WhySummary
+        terms={[{ value: nfInt.format(w.need), unit: `${unit} nodig` }, '÷', { value: nf.format(w.restores), unit: `${unit} per potion` }]}
+        result={{ value: nfInt.format(props.qty), unit: 'potions' }}
+        exact={w.exact}
+        qty={props.qty}
+      />
       {w.kind === 'hp' && (
         <Help>
           Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
@@ -3458,10 +3490,12 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
-  // Vier blokken (Dave, 8 oktober 2026): hoeveel schade je doet, wat een kill kost, wat het hele level kost, en wat je ervoor betaalt.
+  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel stars per kill, en waarom zoveel kills. Elk blok eindigt
+  // met zijn antwoord, uitgelicht; daaronder de eindformule die de twee antwoorden vermenigvuldigt, en als laatste wat herladen kost.
+  const pieces = arrows ? 'pijlen' : 'stars'
   const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
-    ...inGroup('Schade', [
+    ...inGroup(`Waarom ${nfInt.format(w.perKill)} ${pieces} per kill?`, [
     ...damageRows,
     // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
@@ -3470,15 +3504,12 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
       result: `± ${oneDecimal(w.avgHit)}`,
     },
     { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
-    ]),
-    ...inGroup('Per kill', [
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
-    { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
+    { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill), total: true },
     ]),
-    ...inGroup('Dit level', [
-    ...killsRows(w),
-    { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
-    ]),
+    ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
+  ]
+  const costs: WhyRow[] = [
     ...inGroup('Kosten', [
     {
       label: arrows ? 'Kopen' : 'Herladen',
@@ -3488,7 +3519,18 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     },
     ]),
   ]
-  return <WhyTable rows={rows} />
+  return (
+    <>
+      <WhyTable rows={rows} />
+      <WhySummary
+        terms={[{ value: nfInt.format(w.perKill), unit: `${pieces} per kill` }, '×', { value: nf3.format(w.kills), unit: 'kills' }]}
+        result={{ value: nfInt.format(props.qty), unit: pieces }}
+        exact={w.exact}
+        qty={props.qty}
+      />
+      <WhyTable rows={costs} />
+    </>
+  )
 }
 
 /**

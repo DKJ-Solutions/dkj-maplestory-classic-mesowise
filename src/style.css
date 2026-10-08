@@ -752,9 +752,19 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De berekening in blokken met een kopje (Dave, 8 oktober 2026): ruimte tussen de blokken, en het kopje klein en grijs zoals een sectiekop,
    zodat de getallen het meest opvallen. De laatste rij van een blok zonder streep: de ruimte scheidt de blokken al. */
 .why-section + .why-section { margin-top: 1.5rem; }
+/* De eindformule onderaan (Dave, 8 oktober 2026): groot, met onder elk getal klein wat het is, in een vlak met de tint van de uitkomstrij. */
+.why-summary { margin: 1.25rem 0 0.75rem; padding: 0.875rem 0.75rem; border-radius: 0.75rem; background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.why-summary-formula { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: 0.25rem 0.625rem; margin: 0; font-variant-numeric: tabular-nums; }
+.why-term { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.why-term strong { font-size: 1.375rem; line-height: 1.2; }
+.why-term small { font-size: 0.75rem; color: var(--muted); }
+.why-term-result strong { color: var(--accent); }
+.why-op { font-size: 1.375rem; line-height: 1.2; color: var(--muted); }
+.why-summary-note { margin: 0.5rem 0 0; font-size: 0.8125rem; text-align: center; color: var(--muted); }
 .why-section .why-table { margin: 0; }
 .why-section .why-table tr:last-child:not(.why-total) th, .why-section .why-table tr:last-child:not(.why-total) td { border-bottom: 0; }
-.why-group { margin: 0 0 0.125rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* Het kopje van een blok is een deelvraag (Dave, 8 oktober 2026): gewone tekst, vet, zodat hij als vraag leest. */
+.why-group { margin: 0 0 0.125rem; font-size: 1rem; font-weight: 700; color: var(--text); }
 
 /* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, rood met een min
    wat je laat liggen (groen met een plus als jouw setup goedkoper is). Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */

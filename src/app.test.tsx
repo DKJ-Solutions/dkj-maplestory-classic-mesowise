@@ -3482,7 +3482,6 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       'EXP tot volgend level',
       'EXP per kill',
       'Kills dit level',
-      'Throwing stars dit level',
       'Herladen',
     ])
     // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan het gemiddelde. Ribbon Pig heeft WDEF 0, dus geen rij
@@ -3490,22 +3489,28 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // De formule met je eigen getallen staat in de info-popup van Max en Min (Dave, 8 oktober 2026).
     expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
     expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
-    // Vier blokken met een kopje, in de volgorde van de berekening.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Schade', 'Per kill', 'Dit level', 'Kosten'])
+    // Onder de twee deelvragen de eindformule, altijd zichtbaar: stars per kill × kills = het aantal op de factuur; daaronder de kosten (Dave, 8 oktober 2026).
+    const summary = dialog.querySelector<HTMLElement>('.why-summary')!
+    expect(summary.previousElementSibling?.getAttribute('aria-label')).toMatch(/^Waarom [\d.,]+ kills\?$/)
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe('Kosten')
+    const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
+    expect(terms).toEqual([rows[5].result, rows[8].result, qty])
+    expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual(['stars per kill', 'kills', 'stars'])
+    // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([`Waarom ${rows[5].result} stars per kill?`, `Waarom ${rows[8].result} kills?`, 'Kosten'])
     expect(rows[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(rows[2].result).toMatch(/^± [\d.,]+$/)
     expect(rows[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
     expect(rows[4].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
-    // De vette rij is het aantal op de factuur.
-    expect(rows.filter((r) => r.total).map((r) => r.result)).toEqual([qty])
-    expect(rows[9].calc).toContain('naar boven afgerond')
+    // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de stars per kill en de kills (Dave, 8 oktober 2026).
+    expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Throwing stars per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
     expect(rows[8].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
     // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
-    const [stars, recharge] = rows[10].calc.split(' meso')
-    expect(stars.startsWith(`${qty} throwing stars × `), rows[10].calc).toBe(true)
-    expect(recharge, rows[10].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
-    expect(rows[10].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    const [stars, recharge] = rows[9].calc.split(' meso')
+    expect(stars.startsWith(`${qty} throwing stars × `), rows[9].calc).toBe(true)
+    expect(recharge, rows[9].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
+    expect(rows[9].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
   it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
