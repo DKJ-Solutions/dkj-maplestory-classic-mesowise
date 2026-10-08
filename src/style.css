@@ -773,6 +773,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul-box + .why-mul-row { border-top: 0; }
 .why-mul-result { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); border-radius: 0.625rem; }
 .why-mul-result .why-mul-what { font-weight: 600; }
+.why-mul-result-plain { background: none; }
 .why-mul-result .why-mul-num { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }

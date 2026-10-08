@@ -3411,7 +3411,8 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
  */
 function MulCalc(props: {
   factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
-  result: { value: string; what: string }
+  /** Zonder `what` staat alleen = en het getal, zonder label en zonder vulling: de titel van de popup zegt al wat het is (Dave, 8 oktober 2026). */
+  result: { value: string; what?: string }
   /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
   boxes?: readonly number[]
 }) {
@@ -3453,10 +3454,10 @@ function MulCalc(props: {
     <div class={boxes.length > 0 ? 'why-mul why-mul-boxed' : 'why-mul'} style={boxes.length > 0 ? { gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` } : undefined}>
       {boxes.length > 0 && box(0)}
       {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
-      <div class="why-mul-row why-mul-result">
-        <span class="why-mul-what">{props.result.what}</span>
+      <div class={props.result.what ? 'why-mul-row why-mul-result' : 'why-mul-row why-mul-result why-mul-result-plain'}>
+        {props.result.what && <span class="why-mul-what">{props.result.what}</span>}
         <span class="why-mul-op">=</span>
-        <span class="why-mul-num">{num(props.result.value, props.result.what)}</span>
+        <span class="why-mul-num">{num(props.result.value, props.result.what ?? '')}</span>
       </div>
     </div>
   )
@@ -3577,7 +3578,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         // Kaders van binnen naar buiten (Dave, 8 oktober 2026): de primaire stat met zijn vermenigvuldigers, dan wat door 100 gaat, dan de
         // deling zelf, waar de basis nog bij komt, en om de hele formule; de uitkomst staat eronder.
         boxes={[2, 3, 4, 5].map((n) => (mastery !== 1 ? n + 1 : n))}
-        result={{ value: nf.format(statFactor(base, mastery)), what: 'Statfactor' }}
+        result={{ value: nf.format(statFactor(base, mastery)) }}
       />
     )
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.

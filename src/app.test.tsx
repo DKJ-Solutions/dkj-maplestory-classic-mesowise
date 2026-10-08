@@ -3522,6 +3522,9 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
       const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
       const [formula, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      // De uitkomst zonder label en zonder vulling: de popup heet al Statfactor (Dave, 8 oktober 2026).
+      expect(steps.querySelector('.why-mul-result')!.classList.contains('why-mul-result-plain')).toBe(true)
+      expect(steps.querySelector('.why-mul-result .why-mul-what')).toBeNull()
       // Een kader om de hele formule, met de uitkomst eronder (Dave, 8 oktober 2026).
       expect(boxed(formula)).toEqual([...boxed(division), 'Basis'])
       expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
@@ -3532,10 +3535,10 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       return text
     }
     const max = statfactor('Max per star')
-    expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; Statfactor = [\d,]+$/)
+    expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; = [\d,]+$/)
     // De uitkomst onderaan is het getal in de formule erboven.
-    expect(max.endsWith(`Statfactor = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
-    expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; Statfactor = [\d,]+$/)
+    expect(max.endsWith(` ; = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
+    expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
