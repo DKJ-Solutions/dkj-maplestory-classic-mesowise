@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**10 / 16 minor entries** <!-- pending-tally -->
+**10 / 17 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/260-cheapest-row-reachable · 20261008-151109Z
+
+The Level cost bill's Cheapest equipment rows are built only for the pieces Cheapest buys, and `cheapestWhy` keeps only the
+"Kopen" verdicts. The unreachable verdicts for kept, skipped, empty and counted-ammo slots are removed with the props that fed
+them (`isCounted`, `slotCovers`, `advisedAmmo` on the Equip card, the `'option'` tone) (#260).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A: the bill already showed only bought pieces; nothing on the screen changes.
+
+**Score:** N/A
+
+#### Pull Request
+
+Cheapest's bill row keeps only what the bill can show
+
+[PR #267](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/267)
+
+---
 
 ### DEPLOY: app/258-cheapest-profile-comments · 20261008-150530Z
 
