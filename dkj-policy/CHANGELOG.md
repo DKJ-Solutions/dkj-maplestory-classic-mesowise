@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**14 / 21 minor entries** <!-- pending-tally -->
+**15 / 22 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/271-defense-minimum-hit-note · 20261008-214028Z
+
+The hit formula in the ammo explanation now reproduces its own result: when the damage per hit comes out
+below 1, a note under the formula shows the unclamped value and that a hit always does at least 1 damage.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+A player who opens the min or max damage formula against a mob with very high WDEF no longer sees a
+product that does not add up to its result.
+
+**Score:** 1
+
+#### Pull Request
+
+Defense explanation shows the minimum of 1 damage per hit
+
+[PR #275](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/275)
+
+---
 
 ### DEPLOY: app/level-cost-difference-row · 20261008-202602Z
 
