@@ -3333,17 +3333,17 @@ const roundedUpText = (exact: number, qty: number): string => {
 const oneDecimal = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
 
 /** Eén rij van de rekentabel: wat, hoe (de som, klein eronder) en wat eruit komt; `total` is de laatste rij, het aantal op de factuur. */
-type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?: boolean }
+type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?: boolean; group?: string }
 
 /**
  * De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): per rij wat er berekend wordt met de som eronder, en
  * rechts de uitkomst, zodat je van boven naar beneden ziet hoe het aantal ontstaat. De laatste rij is het aantal van de factuur.
  */
-function WhyTable(props: { rows: readonly WhyRow[] }) {
-  return (
+function WhyTable(props: { rows: readonly WhyRow[]; after?: Partial<Record<string, ComponentChildren>> }) {
+  const table = (rows: readonly WhyRow[]) => (
     <table class="why-table">
       <tbody>
-        {props.rows.map((r) => (
+        {rows.map((r) => (
           <tr key={r.label} class={r.total ? 'why-total' : undefined}>
             <th scope="row">
               {r.label}
@@ -3354,6 +3354,26 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
         ))}
       </tbody>
     </table>
+  )
+  if (!props.rows.some((r) => r.group)) return table(props.rows)
+  // In blokken met een kopje (Dave, 8 oktober 2026): opeenvolgende rijen met dezelfde `group` staan samen, met ruimte ertussen, zodat de
+  // berekening in stappen leest in plaats van als een lange lijst. `after` zet iets onder een blok, zoals de formule onder Schade.
+  const groups: { name: string; rows: WhyRow[] }[] = []
+  for (const r of props.rows) {
+    const name = r.group ?? ''
+    if (groups.length === 0 || groups[groups.length - 1].name !== name) groups.push({ name, rows: [] })
+    groups[groups.length - 1].rows.push(r)
+  }
+  return (
+    <>
+      {groups.map((g) => (
+        <section key={g.name} class="why-section" aria-label={g.name || undefined}>
+          {g.name && <h3 class="why-group">{g.name}</h3>}
+          {table(g.rows)}
+          {props.after?.[g.name]}
+        </section>
+      ))}
+    </>
   )
 }
 
@@ -3420,16 +3440,9 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
-        {
-          label: `Max per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
-          result: oneDecimal(w.rawMax),
-        },
-        {
-          label: `Min per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
-          result: oneDecimal(w.rawMin),
-        },
+        // De formules zelf staan ingeklapt onder dit blok (Dave, 8 oktober 2026): in de rij alleen je getallen, zodat de tabel leesbaar blijft.
+        { label: `Max per ${piece}`, calc: <>{nfInt.format(f.watk)} W.ATT, {nfInt.format(f.primary)} {f.primaryName}, {nfInt.format(f.secondary)} {secondary}</>, result: oneDecimal(w.rawMax) },
+        { label: `Min per ${piece}`, calc: 'dezelfde stats, met mastery', result: oneDecimal(w.rawMin) },
         ...(w.levelsUp > 0
           ? [{ label: 'Levelverschil', calc: <>{w.mob} is {w.levelsUp} {w.levelsUp === 1 ? 'level' : 'levels'} hoger: −{w.levelsUp}%</>, result: `${oneDecimal(w.rawMin * (1 - 0.01 * w.levelsUp))} – ${oneDecimal(w.rawMax * (1 - 0.01 * w.levelsUp))}` }]
           : []),
@@ -3438,7 +3451,21 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
+  const formula = f && (
+    <details class="why-formula">
+      <summary>Zo rekent de app max en min</summary>
+      <p>
+        <span class="why-formula-name">Max</span> {nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)
+      </p>
+      <p>
+        <span class="why-formula-name">Min</span> {nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)
+      </p>
+    </details>
+  )
+  // Vier blokken (Dave, 8 oktober 2026): hoeveel schade je doet, wat een kill kost, wat het hele level kost, en wat je ervoor betaalt.
+  const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
+    ...inGroup('Schade', [
     ...damageRows,
     // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
@@ -3447,18 +3474,25 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
       result: `± ${oneDecimal(w.avgHit)}`,
     },
     { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
+    ]),
+    ...inGroup('Per kill', [
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
+    ]),
+    ...inGroup('Dit level', [
     ...killsRows(w),
     { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
+    ]),
+    ...inGroup('Kosten', [
     {
       label: arrows ? 'Kopen' : 'Herladen',
       // Komt het bedrag niet op een hele meso uit, dan zegt de som dat hij naar boven is afgerond (Dave, 8 oktober 2026).
       calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso{props.qty * w.pricePerStar !== props.meso && <> = {nf.format(props.qty * w.pricePerStar)}, naar boven afgerond</>}</>,
       result: `${nfInt.format(props.meso)} meso`,
     },
+    ]),
   ]
-  return <WhyTable rows={rows} />
+  return <WhyTable rows={rows} after={{ Schade: formula }} />
 }
 
 /**

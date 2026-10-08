@@ -3479,8 +3479,13 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     ])
     // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan het gemiddelde. Ribbon Pig heeft WDEF 0, dus geen rij
     // Verdediging: die verandert dan niets (Dave, 8 oktober 2026).
-    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
-    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    // In de rij alleen je getallen; de formules zelf staan ingeklapt onder het blok Schade (Dave, 8 oktober 2026).
+    expect(rows[0].calc).toMatch(/^[\d.]+ W\.ATT, [\d.]+ LUK, [\d.]+ \(STR \+ DEX\)$/)
+    const formulas = Array.from(dialog.querySelectorAll('.why-section[aria-label="Schade"] details.why-formula p'), (p) => p.textContent!.replace(/\s+/g, ' ').trim())
+    expect(formulas[0]).toMatch(/^Max [\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    expect(formulas[1]).toMatch(/^Min [\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    // Vier blokken met een kopje, in de volgorde van de berekening.
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Schade', 'Per kill', 'Dit level', 'Kosten'])
     expect(rows[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(rows[2].result).toMatch(/^± [\d.,]+$/)
     expect(rows[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)

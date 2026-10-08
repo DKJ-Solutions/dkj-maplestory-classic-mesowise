@@ -734,12 +734,24 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): links wat, met de som klein en gedempt eronder, rechts de
    uitkomst; de rij met het aantal van de factuur vet, met de dikke lijn van het totaal op de factuur. */
 .why-table { width: 100%; margin: 0 0 0.75rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.why-table th, .why-table td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.why-table th, .why-table td { padding: 0.625rem 0; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.35; }
 .why-table th { text-align: left; font-weight: 600; overflow-wrap: anywhere; }
-.why-table th small { display: block; margin-top: 0.125rem; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+.why-table th small { display: block; margin-top: 0.25rem; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
 .why-table td { padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
 .why-table .why-total th, .why-table .why-total td { border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); font-weight: 700; font-size: 1.125rem; }
 .why-table .why-total td { color: var(--accent); }
+/* De berekening in blokken met een kopje (Dave, 8 oktober 2026): ruimte tussen de blokken, en het kopje klein en grijs zoals een sectiekop,
+   zodat de getallen het meest opvallen. De laatste rij van een blok zonder streep: de ruimte scheidt de blokken al. */
+.why-section + .why-section { margin-top: 1.5rem; }
+.why-section .why-table { margin: 0; }
+.why-section .why-table tr:last-child:not(.why-total) th, .why-section .why-table tr:last-child:not(.why-total) td { border-bottom: 0; }
+.why-group { margin: 0 0 0.125rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* De formules van max en min, ingeklapt onder Schade: wie wil, leest ze; de tabel zelf blijft rustig. */
+.why-formula { margin-top: 0.5rem; font-size: 0.8125rem; color: var(--muted); }
+.why-formula summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 0.25rem 0; }
+.why-formula summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 0.25rem; }
+.why-formula p { margin: 0.5rem 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+.why-formula-name { display: inline-block; min-width: 2.25rem; font-weight: 700; color: var(--text); }
 
 /* Difference (#183): per soort kost wat je character betaalt, wat de goedkoopste setup betaalt en het verschil, rood met een min
    wat je laat liggen (groen met een plus als jouw setup goedkoper is). Vier kolommen op 360px: bedragen zonder "meso", kolomkoppen klein en rechts boven hun bedrag. */
