@@ -3403,12 +3403,37 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 
 /** De rijen van een rekentabel (WhyTable, #192): wat, de som eronder en de uitkomst, met witruimte samengevoegd. */
 const whyRows = (root: ParentNode) =>
-  Array.from(root.querySelectorAll('.why-table tr'), (tr) => {
-    const th = tr.querySelector('th')!
-    const calc = th.querySelector('small')?.textContent ?? ''
+  // Een antwoord staat als eigen vak onder zijn tabel (.why-answer, Dave, 8 oktober 2026); in volgorde van het scherm telt het als de laatste rij.
+  Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer'), (tr) => {
     const clean = (t: string) => t.replace(/\s+/g, ' ').trim()
-    return { label: clean(th.textContent!.slice(0, th.textContent!.length - calc.length)), calc: clean(calc), result: clean(tr.querySelector('td')!.textContent!), total: tr.classList.contains('why-total') }
+    const label = clean(tr.querySelector('.why-label-text')!.textContent!)
+    // Een berekend getal heeft een vraagteken achter het getal; een vaste waarde niet (Dave, 8 oktober 2026).
+    // De som staat in de info-popup achter het i-knopje van de rij (Dave, 8 oktober 2026): even open, lezen en weer dicht.
+    const info = tr.querySelector<HTMLButtonElement>('.why-help')
+    let calc = ''
+    if (info) {
+      fireEvent.click(info)
+      const popup = tr.querySelector<HTMLElement>('dialog')!
+      // Een rij met een eigen uitwerking (detail) heeft geen som maar een tabel; die lees je met whyDetail.
+      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "wat teken getal".
+      const mul = popup.querySelector('.why-mul')
+      calc = mul
+        ? Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
+        : clean(popup.querySelector('.why-calc')?.textContent ?? '')
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+    }
+    return { label, calc, result: clean(tr.querySelector('.why-value-num')!.textContent!), total: tr.classList.contains('why-answer') }
   })
+
+/** De rijen in de info-popup van een rij met een eigen uitwerking (detail), zoals Schade per aanval (Dave, 8 oktober 2026). */
+const whyDetail = (root: ParentNode, label: string) => {
+  const tr = Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer')).find((r) => r.querySelector('.why-label-text')!.textContent === label)!
+  fireEvent.click(tr.querySelector<HTMLButtonElement>('.why-help')!)
+  const popup = tr.querySelector<HTMLElement>('dialog')!
+  const rows = whyRows(popup)
+  fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+  return rows
+}
 
 describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
@@ -3465,36 +3490,109 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
     const rows = whyRows(dialog)
     expect(rows.map((r) => r.label)).toEqual([
-      'Max per star',
-      'Min per star',
-      'Verdediging van Ribbon Pig',
-      'Schade per star',
       'Schade per aanval',
+      'HP van Ribbon Pig',
       'Aanvallen per kill',
-      'Throwing stars per kill',
       'EXP tot volgend level',
       'EXP per kill',
       'Kills dit level',
-      'Throwing stars dit level',
       'Herladen',
     ])
-    // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan de verdediging van de mob, dan het gemiddelde.
-    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
-    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
-    expect(rows[2].calc).toMatch(/^× 100 \/ \(WDEF [\d.]+ \+ 100\)$/)
-    expect(rows[2].result).toMatch(/^[\d.]+ – [\d.]+$/)
-    expect(rows[3].calc).toMatch(/^\([\d.]+ \+ [\d.]+\) \/ 2$/)
-    expect(rows[3].result).toMatch(/^± [\d.]+$/)
-    expect(rows[4].calc).toMatch(/^\d × [\d.]+ gemiddeld × \d+% raakkans$/)
-    expect(rows[5].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
-    // De vette rij is het aantal op de factuur.
-    expect(rows.filter((r) => r.total).map((r) => r.result)).toEqual([qty])
-    expect(rows[10].calc).toContain('naar boven afgerond')
+    // De schade is één rij; zijn popup werkt hem uit (Dave, 8 oktober 2026): de formule met je eigen getallen in Max en Min, dan het gemiddelde.
+    // Ribbon Pig heeft WDEF 0, dus geen rij Verdediging: die verandert dan niets.
+    const damage = whyDetail(dialog, 'Schade per aanval')
+    expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
+    // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
+    // De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal (Dave, 8 oktober 2026).
+    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Max per star = ([\d.,]+)$/)
+    expect(damage[0].calc.endsWith(`Max per star = ${damage[0].result}`)).toBe(true)
+    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Min per star = [\d.,]+$/)
+    expect(damage[1].calc.endsWith(`Min per star = ${damage[1].result}`)).toBe(true)
+    // Alleen de statfactor is berekend en heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden
+    // uitgerekend, met de uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).
+    const statfactor = (label: string) => {
+      const open = (root: ParentNode, name: string) => {
+        const button = within(root as HTMLElement).getAllByRole('button', { name }).at(-1)!
+        fireEvent.click(button)
+        return button.parentElement!.querySelector<HTMLElement>('dialog')!
+      }
+      const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
+      expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
+      const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
+      // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
+      const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
+      const [formula, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      // De uitkomst zonder label en zonder vulling: de popup heet al Statfactor (Dave, 8 oktober 2026).
+      expect(steps.querySelector('.why-mul-result')!.classList.contains('why-mul-result-plain')).toBe(true)
+      expect(steps.querySelector('.why-mul-result .why-mul-what')).toBeNull()
+      // Een kader om de hele formule, met de uitkomst eronder (Dave, 8 oktober 2026).
+      expect(boxed(formula)).toEqual([...boxed(division), 'Basis'])
+      expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
+      expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
+      expect(boxed(inner).at(-1)).toBe('Multiplier')
+      const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
+      for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+      return text
+    }
+    const max = statfactor('Max per star')
+    expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; = [\d,]+$/)
+    // De uitkomst onderaan is het getal in de formule erboven.
+    expect(max.endsWith(` ; = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
+    expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
+    expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
+    expect(damage[2].result).toMatch(/^± [\d.,]+$/)
+    expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
+    // De popup eindigt met hetzelfde getal als de rij.
+    expect(damage[3].total).toBe(true)
+    expect(damage[3].result).toBe(rows[0].result)
+    // Bovenaan de eindformule, altijd zichtbaar: aanvallen per kill × stars per aanval × kills = het aantal op de factuur; daaronder de twee
+    // deelvragen. Je valt één keer aan, ook als die aanval twee stars gooit (Dave, 8 oktober 2026).
+    const summary = dialog.querySelector<HTMLElement>('.why-summary')!
+    expect(summary.previousElementSibling).toBeNull()
+    const attacks = rows[2].result === '1' ? 'aanval' : 'aanvallen'
+    const question = `Waarom ${rows[2].result} ${attacks} per kill op Ribbon Pig?`
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(question)
+    const perAttack = damage[3].calc.split(' × ')[0]
+    const starUnit = perAttack === '1' ? 'star' : 'stars'
+    const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
+    expect(terms).toEqual([rows[2].result, perAttack, rows[5].result, qty])
+    expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual([`${attacks} per kill`, `${starUnit} per aanval`, 'kills', 'stars'])
+    expect(summary.querySelector('.why-summary-formula')!.getAttribute('aria-label')).toBe(
+      `${rows[2].result} ${attacks} per kill maal ${perAttack} ${starUnit} per aanval maal ${rows[5].result} kills is ${qty} stars`,
+    )
+    // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([question, `Waarom ${rows[5].result} kills?`, 'Kosten'])
+    // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
+    expect(rows[1].result).toMatch(/^[\d.]+$/)
+    // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026).
+    const tableRows = dialog.querySelectorAll('.why-table tr')
+    expect(tableRows[1].querySelector('.why-help')).toBeNull()
+    expect(tableRows[0].querySelector('.why-value .why-help')).not.toBeNull()
+    expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
+    // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de aanvallen per kill en de kills (Dave, 8 oktober 2026).
+    expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Aanvallen per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
-    expect(rows[9].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
-    // Herladen: het aantal maal de prijs is het bedrag op de factuur.
-    expect(rows[11].calc.startsWith(`${qty} throwing stars × `) && rows[11].calc.endsWith(' meso'), rows[11].calc).toBe(true)
-    expect(rows[11].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    expect(rows[5].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
+    // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
+    const [stars, recharge] = rows[6].calc.split(' meso')
+    expect(stars.startsWith(`${qty} throwing stars × `), rows[6].calc).toBe(true)
+    expect(recharge, rows[6].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
+    expect(rows[6].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+  })
+
+  it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Stump')] }))
+    render(<App />)
+    const row = Array.from(inGame().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('th')!.textContent!.startsWith('Throwing stars'))!
+    fireEvent.click(row.querySelector<HTMLButtonElement>('.invoice-why')!)
+    const rows = whyDetail(inGame().querySelector<HTMLElement>('dialog')!, 'Schade per aanval')
+    const defense = rows.find((r) => r.label === 'Verdediging van Stump')!
+    expect(defense.calc).toBe('× 100 / (WDEF 30 + 100)')
+    expect(defense.result).toMatch(/^[\d.]+(,\d)? – [\d.]+(,\d)?$/)
+    // Schade per star rekent met precies de getallen van die rij.
+    const [min, max] = defense.result.split(' – ')
+    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toBe(`(${min} + ${max}) / 2`)
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
@@ -3966,7 +4064,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     atLevel('10')
     expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
     // Plus wat je in het begin gratis krijgt in een leeg slot: de schoenen (zonder geslacht geen top of bottom) en de questhoed (Dave, 8 oktober 2026).
-    expect(freeOn()).toBe('Equip: 3 items (free)')
+    expect(freeOn()).toBe('Equip: 3 items equipped')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
@@ -3982,9 +4080,40 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     closeDialogs()
     // Terug op level 20 telt alles weer mee.
     atLevel('20')
-    expect(freeOn()).toBe('Equip: 4 items (free)')
+    expect(freeOn()).toBe('Equip: 4 items equipped')
     fireEvent.click(viewButton('Total stats'))
     expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
+  })
+
+  it('telt de stars waarmee je factuur rekent mee bij wat je equipped hebt, ook met een leeg ammo-slot (Dave, 8 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Steel Titans')
+    closeDialogs()
+    const equipped = () => {
+      openHomeEquipment()
+      const label = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!
+      const text = label.textContent
+      const bill = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .bill')?.textContent ?? ''
+      // De stukken zelf staan achter het oogje: per slot de waarde van zijn stat.
+      fireEvent.click(within(label).getByRole('button'))
+      const ammo = document.querySelector<HTMLElement>('.char-table-equip .stat-line[data-slot="Ammo"]')
+      const star = ammo && { name: ammo.querySelector('.stat-line-name')!.textContent, value: ammo.querySelector('.equip-value-num')!.textContent }
+      closeDialogs()
+      return { text, bill, star }
+    }
+    // Zonder mob geen factuur en dus geen stars: de claw, je startschoenen en de questhoed.
+    expect(equipped().text).toBe('Equip: 3 items equipped')
+    fireEvent.click(viewButton('Monster'))
+    chooseMob('Slime')
+    closeDialogs()
+    // Met een mob rekent de factuur met de Subi (de star van DEFAULT_PROFILE); die telt nu mee bij Equip, op naam en met zijn ATT,
+    // en blijft als kostenpost onder Useable staan (Dave, 8 oktober 2026).
+    const after = equipped()
+    expect(after.text).toBe('Equip: 4 items equipped')
+    expect(after.bill).toContain('Subi Throwing Stars')
+    expect(after.star?.name).toContain('Subi')
+    expect(after.star?.value).toMatch(/^\d+$/)
   })
 
   it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {
@@ -3998,7 +4127,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
     // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
     // Red Pao, je startschoenen en de questhoed (zonder geslacht geen startbroek).
-    expect(worn.textContent).toBe('Equip: 3 items (free)')
+    expect(worn.textContent).toBe('Equip: 3 items equipped')
     // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
     const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
     const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
@@ -4118,7 +4247,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         // Een regel die dit level 0 mesos kost staat er niet (Dave, 8 oktober 2026); een subtotaal van 0 wel, want dat telt op tot Total cost.
         for (const cell of d.querySelectorAll('section.bill .advised-row .advised-level')) expect(cell.textContent, label).not.toBe(compactMeso(0))
         // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
-        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Equip subtotal'])
+        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Upgrades subtotal'])
         const [useable, equip] = groups
         expect(rowsOf(useable).every((slot) => ['HP', 'MP', 'Ammo'].includes(slot!)), label).toBe(true)
         // Een useable: het aantal achter de naam en het bedrag onder Mesos.
@@ -4176,7 +4305,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       setJob('thief')
       const d = openView('Potions', 'Cheapest')
       const item = openItem(advisedRow(d, 'HP'))
-      expect(item.querySelector('.item-verdict')!.textContent).toMatch(/^× [0-9.]+ dit level$/)
+      // Geen aparte regel met het aantal: dat staat al in de titel en de laatste rij (Dave, 8 oktober 2026).
+      expect(item.querySelector('.item-verdict')).toBeNull()
       expect(item.querySelector('.report-body')!.textContent!.length).toBeGreaterThan(0)
       closeItem(item)
       // De info-knop noemt de prijs en wat de potion geneest.
@@ -4285,7 +4415,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Profile')
-      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? \(free\))$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? equipped)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('profile')
@@ -4918,7 +5048,7 @@ describe('equipment: Profile als tabel', () => {
     // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026).
     expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
     expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
-    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items (free)' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items equipped' })).toBeTruthy()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     closeDialogs()
@@ -4931,7 +5061,7 @@ describe('equipment: Profile als tabel', () => {
     expect(row.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
-    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items (free)' })
+    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items equipped' })
     expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4998,7 +5128,7 @@ describe('equipment: Profile als tabel', () => {
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
     // Het wapen, de questhoed en je startschoenen.
-    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items (free)' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items equipped' })).toBeTruthy()
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {

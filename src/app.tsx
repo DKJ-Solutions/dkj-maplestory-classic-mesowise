@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
-import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
+import { ammoInfo, buyTexts, countedAmmo, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, itemLevel, wearableSetup, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
@@ -331,7 +331,7 @@ function ChoiceSave(props: { onSave: () => void }) {
  * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
  * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
-function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void; computed: boolean }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
@@ -354,6 +354,18 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
       {open && (
         <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
           <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+          {/* De uitleg over de schatting stond onder de kaarten; hij staat nu hier onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
+          {props.computed && (
+            <details class="menu-help">
+              <summary>Help</summary>
+              <p class="hint">
+                Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
+                oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+                tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+                Zegt het spel iets anders over je monster, pas zijn info dan aan.
+              </p>
+            </details>
+          )}
           {/* Het offline-bestand zelf heeft geen download nodig. */}
           {import.meta.env.MODE !== 'offline' && (
             <div class="menu-download">
@@ -1605,7 +1617,7 @@ const CHEAPEST_HELP = (
 const WORN_HELP = (
   <>
     Wat dit level kost met wat je nu draagt, op dezelfde factuur als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
-    kost dit level niets, dus er staat geen equip in en Equip subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
+    kost dit level niets, dus er staat geen equip in en Upgrades subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
     Equip, kies daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
@@ -1631,13 +1643,13 @@ type BasedOnEquip = {
 }
 
 /**
- * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items (free)"), of naar
- * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of niets te kopen.
+ * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items equipped"), of naar
+ * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of "No upgrades" (Dave, 8 oktober 2026).
  */
 const equipSummary = (items: readonly unknown[], kind: 'worn' | 'bought') => {
   const n = `${items.length} ${items.length === 1 ? 'item' : 'items'}`
-  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `${n} (upgrade)`
-  return items.length === 0 ? 'Nog niets gekozen' : `${n} (free)`
+  if (kind === 'bought') return items.length === 0 ? 'No upgrades' : `${n} (upgrade)`
+  return items.length === 0 ? 'Nog niets gekozen' : `${n} equipped`
 }
 
 /**
@@ -1801,7 +1813,7 @@ function useableRows(props: UseableInput, wide: boolean) {
   const ammo = ammoName === null ? undefined : ammoInfo(ammoName)
   // Het vraagteken legt het aantal uit, dus zijn popup heet naar dat aantal: "Waarom 52?" (Dave, 7 oktober 2026); zonder aantal de naam.
   const whyTitle = (l: InvoiceLine | undefined) => (l?.qty == null ? undefined : `Waarom ${nfInt.format(l.qty)}?`)
-  const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
+  // Geen regel "× 429 dit level" boven de stappen (Dave, 8 oktober 2026): de titel ("Waarom 429?") en de vette laatste rij noemen het aantal al.
   const potionRows = POTION_KINDS.map((kind) => {
     const potion = props.potions[kind]
     const line = lineOf(kind)
@@ -1821,12 +1833,9 @@ function useableRows(props: UseableInput, wide: boolean) {
         {...amounts(line ? line.meso : null)}
         help={
           line && why ? (
-            <>
-              <p class="item-verdict">{verdict(line)}</p>
-              <div class="report-body">
-                <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
-              </div>
-            </>
+            <div class="report-body">
+              <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
+            </div>
           ) : (
             <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
           )
@@ -1850,12 +1859,9 @@ function useableRows(props: UseableInput, wide: boolean) {
       {...amounts(ammoLine ? ammoLine.meso : null)}
       help={
         ammoLine?.why?.kind === 'ammo' ? (
-          <>
-            <p class="item-verdict">{verdict(ammoLine)}</p>
-            <div class="report-body">
-              <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
-            </div>
-          </>
+          <div class="report-body">
+            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+          </div>
         ) : (
           <p class="item-why">De factuur van dit level telt deze munitie niet apart.</p>
         )
@@ -1896,7 +1902,7 @@ function LevelBill(props: { equip: { rows: ComponentChildren; level: number }; u
       )}
       <BillGroup name="Equip">
         {equip.rows}
-        <BillSum kind="subtotal" label="Equip subtotal" level={equip.level} />
+        <BillSum kind="subtotal" label="Upgrades subtotal" level={equip.level} />
       </BillGroup>
     </BillTable>
   )
@@ -2458,6 +2464,11 @@ function EquipmentCard(props: {
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
+  // Je stars of pijlen horen bij wat je equipped hebt (Dave, 8 oktober 2026): is het ammo-slot leeg, dan de ammo waarmee je factuur rekent.
+  const billAmmo = slots.includes('ammo') && !wornList.some((w) => w.item[4] === 'ammo') ? (props.useable('worn')?.ammo ?? null) : null
+  if (billAmmo !== null) {
+    wornList.push({ item: [slotLabel('ammo'), familyName('ammo', billAmmo), ...statOf('ammo', { pick: billAmmo, name: '', stat: '' }), 'ammo'] as const, id: itemId(billAmmo) ?? 'own' })
+  }
   // Wat Cheapest erbij koopt (Dave, 8 oktober 2026): de slots waar het een ander stuk neemt dan je draagt. De stars of pijlen die de factuur telt,
   // koop je per stuk; die staan onder Useable, niet hier.
   const boughtList = props.cheapest
@@ -3316,27 +3327,139 @@ const roundedUpText = (exact: number, qty: number): string => {
 const oneDecimal = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
 
 /** Eén rij van de rekentabel: wat, hoe (de som, klein eronder) en wat eruit komt; `total` is de laatste rij, het aantal op de factuur. */
-type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?: boolean }
+/** `detail` vervangt de som in de info-popup door een eigen uitwerking, zoals een tabel met de rijen die samen deze ene rij vormen. */
+type WhyRow = { label: string; calc?: ComponentChildren; detail?: ComponentChildren; result: string; total?: boolean; group?: string }
 
 /**
  * De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): per rij wat er berekend wordt met de som eronder, en
  * rechts de uitkomst, zodat je van boven naar beneden ziet hoe het aantal ontstaat. De laatste rij is het aantal van de factuur.
  */
 function WhyTable(props: { rows: readonly WhyRow[] }) {
-  return (
-    <table class="why-table">
-      <tbody>
-        {props.rows.map((r) => (
-          <tr key={r.label} class={r.total ? 'why-total' : undefined}>
-            <th scope="row">
-              {r.label}
-              {r.calc && <small>{r.calc}</small>}
-            </th>
-            <td>{r.result}</td>
-          </tr>
+  // Elke rij is één regel (Dave, 8 oktober 2026): wat en de uitkomst.
+  const label = (r: WhyRow) => (
+    <span class="why-label">
+      <span class="why-label-text">{r.label}</span>
+    </span>
+  )
+  // Een berekend getal heeft een vraagteken helemaal rechts, achter het getal (Dave, 8 oktober 2026): het is geen vaste waarde, en de popup zegt
+  // waar het vandaan komt. Een vaste waarde (de HP van een mob, de EXP tot je volgende level) heeft er geen; zijn plek blijft leeg, zodat de
+  // getallen onder elkaar blijven staan.
+  const value = (r: WhyRow) => (
+    <span class="why-value">
+      <span class="why-value-num">{r.result}</span>
+      {r.calc || r.detail ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle why-help" label={`Uitleg bij ${r.label}`} title={r.label}>
+          {r.detail ?? <p class="why-calc">{r.calc}</p>}
+        </PopupButton>
+      ) : (
+        <span class="why-help-space" aria-hidden="true" />
+      )}
+    </span>
+  )
+  // Het antwoord (`total`) staat niet als tabelrij maar als eigen vak eronder (Dave, 8 oktober 2026): een getinte tabelrij was een rechte band
+  // die niet af te ronden is, en een streep erboven las als een optelstreep.
+  const table = (rows: readonly WhyRow[]) => (
+    <>
+      <table class="why-table">
+        <tbody>
+          {rows
+            .filter((r) => !r.total)
+            .map((r) => (
+              <tr key={r.label}>
+                <th scope="row">{label(r)}</th>
+                <td>{value(r)}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      {rows
+        .filter((r) => r.total)
+        .map((r) => (
+          <div key={r.label} class="why-answer">
+            {label(r)}
+            <strong class="why-answer-value">{value(r)}</strong>
+          </div>
         ))}
-      </tbody>
-    </table>
+    </>
+  )
+  if (!props.rows.some((r) => r.group)) return table(props.rows)
+  // In blokken met een kopje (Dave, 8 oktober 2026): opeenvolgende rijen met dezelfde `group` staan samen, met ruimte ertussen, zodat de
+  // berekening in stappen leest in plaats van als een lange lijst.
+  const groups: { name: string; rows: WhyRow[] }[] = []
+  for (const r of props.rows) {
+    const name = r.group ?? ''
+    if (groups.length === 0 || groups[groups.length - 1].name !== name) groups.push({ name, rows: [] })
+    groups[groups.length - 1].rows.push(r)
+  }
+  return (
+    <>
+      {groups.map((g) => (
+        <section key={g.name} class="why-section" aria-label={g.name || undefined}>
+          {g.name && <h3 class="why-group">{g.name}</h3>}
+          {table(g.rows)}
+        </section>
+      ))}
+    </>
+  )
+}
+
+/**
+ * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links wat het is en rechts het teken en het getal, zoals
+ * de andere tabellen in de uitleg, en onderaan de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
+ * label en staat zijn uitwerking in een eigen popup, achter een vraagteken bij het getal (`detail`, Dave, 8 oktober 2026), zoals elk berekend getal in
+ * de uitleg. Een regel kan ook een ander teken hebben dan × (`op`): de regels worden dan van boven naar beneden uitgerekend, zoals je het intikt.
+ */
+function MulCalc(props: {
+  factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
+  /** Zonder `what` staat alleen = en het getal, zonder label en zonder vulling: de titel van de popup zegt al wat het is (Dave, 8 oktober 2026). */
+  result: { value: string; what?: string }
+  /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
+  boxes?: readonly number[]
+}) {
+  // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan; heeft geen enkele factor een
+  // vraagteken, dan is die plek er niet, want in een smalle popup is elke pixel voor de labels nodig (Dave, 8 oktober 2026).
+  const anyHelp = props.factors.some((f) => f.detail)
+  const num = (value: string, what: string, detail?: ComponentChildren) => (
+    <span class="why-value">
+      <span class="why-value-num">{value}</span>
+      {detail ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle why-help" label={`Uitleg bij ${what}`} title={what}>
+          {detail}
+        </PopupButton>
+      ) : (
+        anyHelp && <span class="why-help-space" aria-hidden="true" />
+      )}
+    </span>
+  )
+  const rows = (from: number, to: number) =>
+    props.factors.slice(from, to).map((f, j) => (
+      <div key={from + j} class="why-mul-row">
+        <span class="why-mul-what">{f.what}</span>
+        <span class="why-mul-op">{from + j === 0 ? '' : (f.op ?? '×')}</span>
+        <span class="why-mul-num">{num(f.value, f.what, f.detail)}</span>
+      </div>
+    ))
+  // Het grootste kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
+  const boxes = [...(props.boxes ?? [])].sort((x, y) => y - x)
+  const box = (k: number): ComponentChildren => (
+    <div class="why-mul-box">
+      {k + 1 < boxes.length && box(k + 1)}
+      {rows(k + 1 < boxes.length ? boxes[k + 1] : 0, boxes[k])}
+    </div>
+  )
+  // Elk kader heeft links en rechts een eigen smalle kolom in hetzelfde grid (Dave, 8 oktober 2026), in plaats van padding: zo staan labels,
+  // tekens en getallen in alle regels in dezelfde kolom, hoe diep een regel ook in de kaders zit.
+  const gutters = `repeat(${boxes.length}, var(--why-mul-gutter))`
+  return (
+    <div class={boxes.length > 0 ? 'why-mul why-mul-boxed' : 'why-mul'} style={boxes.length > 0 ? { gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` } : undefined}>
+      {boxes.length > 0 && box(0)}
+      {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
+      <div class={props.result.what ? 'why-mul-row why-mul-result' : 'why-mul-row why-mul-result why-mul-result-plain'}>
+        {props.result.what && <span class="why-mul-what">{props.result.what}</span>}
+        <span class="why-mul-op">=</span>
+        <span class="why-mul-num">{num(props.result.value, props.result.what ?? '')}</span>
+      </div>
+    </div>
   )
 }
 
@@ -3346,6 +3469,38 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
   { label: 'EXP per kill', calc: w.mob, result: nf.format(w.expPerKill) },
   { label: 'Kills dit level', calc: <>{nfInt.format(w.expToNext)} / {nf.format(w.expPerKill)}</>, result: nf3.format(w.kills) },
 ]
+
+/**
+ * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
+ * getal wat het is. De blokken eronder werken elk getal uit, bij de stars als deelvraag per getal. Is de uitkomst naar boven afgerond, dan staat dat eronder.
+ */
+function WhySummary(props: { terms: readonly ({ value: string; unit: string } | '×' | '÷')[]; result: { value: string; unit: string }; exact: number; qty: number }) {
+  const term = (t: { value: string; unit: string }, cls = 'why-term') => (
+    <span class={cls}>
+      <strong>{t.value}</strong>
+      <small>{t.unit}</small>
+    </span>
+  )
+  const spoken = props.terms.map((t) => (t === '×' ? 'maal' : t === '÷' ? 'gedeeld door' : `${t.value} ${t.unit}`)).join(' ')
+  return (
+    <div class="why-summary">
+      <p class="why-summary-formula" aria-label={`${spoken} is ${props.result.value} ${props.result.unit}`}>
+        {props.terms.map((t) =>
+          typeof t === 'string' ? (
+            <span class="why-op" aria-hidden="true">
+              {t}
+            </span>
+          ) : (
+            term(t)
+          ),
+        )}
+        <span class="why-op" aria-hidden="true">=</span>
+        {term(props.result, 'why-term why-term-result')}
+      </p>
+      {Number(props.exact.toFixed(3)) !== props.qty && <p class="why-summary-note">{nf.format(props.exact)}, naar boven afgerond.</p>}
+    </div>
+  )
+}
 
 /** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
@@ -3375,6 +3530,12 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   ]
   return (
     <>
+      <WhySummary
+        terms={[{ value: nfInt.format(w.need), unit: `${unit} nodig` }, '÷', { value: nf.format(w.restores), unit: `${unit} per potion` }]}
+        result={{ value: nfInt.format(props.qty), unit: 'potions' }}
+        exact={w.exact}
+        qty={props.qty}
+      />
       <WhyTable rows={rows} />
       {w.kind === 'hp' && (
         <Help>
@@ -3398,41 +3559,130 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const piece = arrows ? 'pijl' : 'star'
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
+  // Een gecombineerde stat (STR + DEX) tussen haakjes: het getal ervoor is hun som, niet alleen de STR (Dave, 8 oktober 2026).
+  // De statfactor van max (basis 1) en min (basis 0,8, met mastery): (primaire stat × mastery × multiplier + secundaire stats) / 100 + basis.
+  const statFactor = (base: number, mastery: number) => (f ? base + (f.primary * mastery * f.weaponMult + f.secondary) / 100 : 0)
+  // Zijn som onder elkaar, van boven naar beneden uitgerekend, met de uitkomst onderaan (Dave, 8 oktober 2026): op één regel paste hij
+  // niet in de vierde popup op een scherm van 360px.
+  const statSteps = (base: number, mastery: number) =>
+    f && (
+      <MulCalc
+        factors={[
+          { value: nfInt.format(f.primary), what: f.primaryName },
+          ...(mastery !== 1 ? [{ value: nf.format(mastery), what: 'Mastery' }] : []),
+          { value: nf.format(f.weaponMult), what: 'Multiplier' },
+          { value: nfInt.format(f.secondary), what: f.secondaryName, op: '+' },
+          { value: '100', what: 'Naar procent', op: '/' },
+          { value: nf.format(base), what: 'Basis', op: '+' },
+        ]}
+        // Kaders van binnen naar buiten (Dave, 8 oktober 2026): de primaire stat met zijn vermenigvuldigers, dan wat door 100 gaat, dan de
+        // deling zelf, waar de basis nog bij komt, en om de hele formule; de uitkomst staat eronder.
+        boxes={[2, 3, 4, 5].map((n) => (mastery !== 1 ? n + 1 : n))}
+        result={{ value: nf.format(statFactor(base, mastery)) }}
+      />
+    )
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
+        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): de skillschade, je W.ATT en wat je stats erbij doen.
         {
           label: `Max per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfPct.format(f.k), what: 'Skillschade' },
+                { value: nfInt.format(f.watk), what: 'W.ATT' },
+                { value: nf.format(statFactor(1, 1)), what: 'Statfactor', detail: statSteps(1, 1) },
+              ]}
+              result={{ value: oneDecimal(w.rawMax), what: `Max per ${piece}` }}
+            />
+          ),
           result: oneDecimal(w.rawMax),
         },
         {
           label: `Min per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfPct.format(f.k), what: 'Skillschade' },
+                { value: nfInt.format(f.watk), what: 'W.ATT' },
+                { value: nf.format(statFactor(0.8, f.mastery)), what: 'Statfactor', detail: statSteps(0.8, f.mastery) },
+              ]}
+              result={{ value: oneDecimal(w.rawMin), what: `Min per ${piece}` }}
+            />
+          ),
           result: oneDecimal(w.rawMin),
         },
         ...(w.levelsUp > 0
           ? [{ label: 'Levelverschil', calc: <>{w.mob} is {w.levelsUp} {w.levelsUp === 1 ? 'level' : 'levels'} hoger: −{w.levelsUp}%</>, result: `${oneDecimal(w.rawMin * (1 - 0.01 * w.levelsUp))} – ${oneDecimal(w.rawMax * (1 - 0.01 * w.levelsUp))}` }]
           : []),
-        { label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${nfInt.format(w.minHit)} – ${nfInt.format(w.maxHit)}` },
+        // Met één decimaal, zoals min en max erboven, zodat elke som in de tabel klopt met wat er staat (Dave, 8 oktober 2026); bij WDEF 0 verandert
+        // de verdediging niets en valt de rij weg.
+        ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
+  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel aanvallen per kill, en waarom zoveel kills. Elk blok
+  // eindigt met zijn antwoord, uitgelicht; bovenaan de eindformule: aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
+  // ook als die aanval twee stars gooit (Dave, 8 oktober 2026). Als laatste wat herladen kost.
+  const pieces = arrows ? 'pijlen' : 'stars'
+  const attacks = w.attacksToKill === 1 ? 'aanval' : 'aanvallen'
+  const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
-    ...damageRows,
-    // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP.
+    ...inGroup(`Waarom ${nfInt.format(w.attacksToKill)} ${attacks} per kill op ${w.mob}?`, [
+    // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
+    // die eindigt met deze rij als antwoord.
     {
-      label: `Schade per ${piece}`,
-      calc: f ? <>({nfInt.format(w.minHit)} + {nfInt.format(w.maxHit)}) / 2</> : <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
-      result: `± ${nfInt.format(w.avgHit)}`,
+      label: 'Schade per aanval',
+      detail: (
+        <WhyTable
+          rows={[
+            ...damageRows,
+            // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+            {
+              label: `Schade per ${piece}`,
+              calc: f ? <>({oneDecimal(w.minHit)} + {oneDecimal(w.maxHit)}) / 2</> : <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</>,
+              result: `± ${oneDecimal(w.avgHit)}`,
+            },
+            { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}`, total: true },
+          ]}
+        />
+      ),
+      result: `± ${oneDecimal(perAttack)}`,
     },
-    { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {nfInt.format(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
-    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
-    { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
-    ...killsRows(w),
-    { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
-    { label: arrows ? 'Kopen' : 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
+    { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
+    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill), total: true },
+    ]),
+    ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
   ]
-  return <WhyTable rows={rows} />
+  const costs: WhyRow[] = [
+    ...inGroup('Kosten', [
+    {
+      label: arrows ? 'Kopen' : 'Herladen',
+      // Komt het bedrag niet op een hele meso uit, dan zegt de som dat hij naar boven is afgerond (Dave, 8 oktober 2026).
+      calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso{props.qty * w.pricePerStar !== props.meso && <> = {nf.format(props.qty * w.pricePerStar)}, naar boven afgerond</>}</>,
+      result: `${nfInt.format(props.meso)} meso`,
+    },
+    ]),
+  ]
+  return (
+    <>
+      <WhySummary
+        terms={[
+          { value: nfInt.format(w.attacksToKill), unit: `${attacks} per kill` },
+          '×',
+          { value: nfInt.format(w.starsPerAttack), unit: `${w.starsPerAttack === 1 ? piece : pieces} per aanval` },
+          '×',
+          { value: nf3.format(w.kills), unit: 'kills' },
+        ]}
+        result={{ value: nfInt.format(props.qty), unit: pieces }}
+        exact={w.exact}
+        qty={props.qty}
+      />
+      <WhyTable rows={rows} />
+      <WhyTable rows={costs} />
+    </>
+  )
 }
 
 /**
@@ -4144,7 +4394,7 @@ export function App() {
     <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
     <ProfileProblem.Provider value={profileProblem}>
-      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} computed={computed} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
       <div class="level-row">
@@ -4194,7 +4444,9 @@ export function App() {
           const lines = v === 'advised' ? cheapestInvoice : invoice
           if (lines.kind !== 'invoice') return null
           const potions = resolvePotions(job, v === 'advised' && cheapestLive ? cheapestLive.potionChoice : potionChoice, parsedProfile)
-          const ammo = v === 'advised' ? (advisedSet?.ammo ?? null) : (wornName(equipment.ammo) ?? lines.lines.find((l) => l.why?.kind === 'ammo')?.label ?? null)
+          // Een leeg ammo-slot: de star of pijl waarmee de factuur rekent, op naam (countedAmmo), zodat zijn ATT bekend is (Dave, 8 oktober 2026); pas zonder naam het algemene label.
+          const billed = lines.lines.find((l) => l.why?.kind === 'ammo')
+          const ammo = v === 'advised' ? (advisedSet?.ammo ?? null) : (wornName(equipment.ammo) ?? (billed ? ((parsedProfile && countedAmmo(parsedProfile, equipment.claw)) ?? billed.label) : null))
           return { job, potions, ammo, lines: lines.lines }
         }}
         level={characterLevel}
@@ -4240,15 +4492,6 @@ export function App() {
       <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
         <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} bought={cheapestShown ? cheapest!.bought : bought} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
-
-      {computed && (
-        <p class="note">
-          Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
-          oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-          tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-          Zegt het spel iets anders over je monster, pas zijn info dan aan.
-        </p>
-      )}
 
       <footer class="credit">
         Spelgegevens:{' '}
