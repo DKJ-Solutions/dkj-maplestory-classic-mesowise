@@ -4791,12 +4791,20 @@ describe('equipment: Your character als tabel', () => {
     // Twee kolommen met hun naam als kop: Slot en Item (Dave, 8 oktober 2026).
     // Twee tabellen, eerst ATT en dan DEF, elk met twee kolommen: het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026).
     const tables = [...popup.querySelectorAll<HTMLElement>('section.char-table-equip')]
-    expect(tables.map((t) => [...t.querySelectorAll(':scope > .equip-head > span')].map((e) => e.textContent))).toEqual([['ATT', ''], ['DEF', '']])
-    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length]))).toEqual([[['Weapon', 2]], [['Top', 2]]])
+    expect(tables.map((t) => [...t.querySelectorAll(':scope > .equip-head > span')].map((e) => e.textContent))).toEqual([['ATT', '', ''], ['DEF', '', '']])
+    // In Profile een derde kolom met het potlood van elk slot (Dave, 8 oktober 2026).
+    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length, r.lastElementChild!.getAttribute('aria-label')]))).toEqual([[['Weapon', 3, 'Weapon wijzigen']], [['Top', 3, 'Top wijzigen']]])
     expect(tables[0].querySelector('.stat-line-name')!.textContent).toBe(IGOR.name)
     expect(tables[0].querySelector('.equip-stat')!.textContent).toBe(String(IGOR.watk))
     expect(tables[1].querySelector('.equip-stat')!.textContent).toMatch(/^\d+$/)
     expect([...popup.querySelectorAll('.char-table-equip .stat-line')].map((e) => e.getAttribute('data-slot'))).toEqual(['Weapon', 'Top'])
+    // Het potlood opent de slotpopup van dat slot, dezelfde als in de slotkeuze; sluiten laat de Equip-popup staan.
+    fireEvent.click(within(tables[1]).getByRole('button', { name: 'Top wijzigen' }))
+    const slotPopup = document.querySelector<HTMLElement>('dialog.slot-dialog')!
+    expect(slotPopup.querySelector('.stat-dialog-name')!.textContent).toBe('Top')
+    fireEvent.click(within(slotPopup).getAllByRole('button', { name: /^Sluiten/ })[0])
+    expect(document.querySelector('dialog.slot-dialog')).toBeNull()
+    expect(popup.isConnected).toBe(true)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     closeDialogs()
     // Cheapest: dezelfde rij, alleen lezen, met het label expected en zonder potlood.
@@ -4810,6 +4818,7 @@ describe('equipment: Your character als tabel', () => {
     expect(adviceToggle.classList.contains('expected-toggle')).toBe(true)
     fireEvent.click(adviceToggle)
     expect(dialog.querySelector('dialog.item-dialog .title-tag')!.textContent).toBe('expected')
+    expect(dialog.querySelector('dialog.item-dialog .char-table-equip .equip-edit')).toBeNull()
   })
 
   it('opent met het potlood bij Equip de popup waarin je een slot kiest, en zet de focus daarna terug op dat potlood (Dave, 8 oktober 2026)', async () => {

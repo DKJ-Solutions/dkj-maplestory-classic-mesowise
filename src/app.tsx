@@ -1611,7 +1611,13 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /** De derde rij onder "Based on:" in Level cost: Equip (Dave, 8 oktober 2026): per slot de naam van het stuk, en met `edit` het potlood dat de keuze opent (alleen Wearing). */
-type BasedOnEquip = { summary: string; items: readonly (readonly [slot: string, name: string, stat: string, statName: string])[]; ids: string; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
+type BasedOnEquip = {
+  summary: string
+  items: readonly (readonly [slot: string, name: string, stat: string, statName: string, key: EquipSlot])[]
+  ids: string
+  /** In Profile: het potlood naast het vak (`open`) en per regel van de popup het potlood van dat slot (`slot`, Dave, 8 oktober 2026). */
+  edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void; slot: (slot: EquipSlot, button: HTMLButtonElement) => void; editing: EquipSlot | null }
+}
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
 const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
@@ -1700,10 +1706,11 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                       <div class="char-table-head equip-head" aria-hidden="true">
                         <span>{stat}</span>
                         <span />
+                        {equip.edit && <span />}
                       </div>
                       {equip.items
                         .filter((i) => i[3] === stat)
-                        .map(([slot, name, value]) => (
+                        .map(([slot, name, value, , key]) => (
                           <div key={slot} class="stat-line" data-slot={slot}>
                             <span class="stat-line-name">{name}</span>
                             <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
@@ -1711,6 +1718,12 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                                 <strong>{value}</strong>
                               </span>
                             </div>
+                            {/* In Profile in de derde kolom het potlood, zoals in de popup van Char: het opent de slotpopup van dit slot (Dave, 8 oktober 2026). */}
+                            {equip.edit && (
+                              <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={equip.edit.editing === key} aria-label={`${slot} wijzigen`} onClick={(e) => equip.edit!.slot(key, e.currentTarget)}>
+                                {PENCIL_ICON}
+                              </button>
+                            )}
                           </div>
                         ))}
                     </section>
@@ -2245,6 +2258,11 @@ function EquipmentCard(props: {
     setPickOpen(false)
     requestAnimationFrame(() => equipPencil.current?.focus())
   }
+  // Het potlood op een regel van de Equip-popup onder "Based on:" (Dave, 8 oktober 2026): de slotpopup van dat slot, boven die popup; sluiten zet de focus terug op dat potlood.
+  const openSlotFromTable = (slot: EquipSlot, button: HTMLButtonElement) => {
+    pencils.current[slot] = button
+    setEditSlot(slot)
+  }
   const name = (
     <span class="spot-name with-icon">
       <CardIcon name="sword" />
@@ -2401,10 +2419,11 @@ function EquipmentCard(props: {
       {slots.map(wornRow)}
       <BillTotal total={slots.reduce((sum, slot) => sum + (shopPrice(slot, props.equipment[slot]) ?? 0), 0)} wide />
       {pickOpen && pickDialog()}
+      {!pickOpen && editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
     </>
   )
   // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
-  const equipRow = (list: readonly { item: readonly [string, string, string, string]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
+  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
     const items = list.map((l) => l.item)
     return { summary: equipSummary(items), items, ids: list.map((l) => l.id).join(' '), edit }
   }
@@ -2419,20 +2438,20 @@ function EquipmentCard(props: {
     const name = wornName(entry)
     if (name === null) return []
     const own = entry.pick === OTHER
-    return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry)] as const, id: (own ? null : itemId(name)) ?? 'own' }]
+    return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
   const advisedList = props.cheapest
     ? slots.flatMap((slot) => {
         const c = props.cheapest![slot]
         const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
-        return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name), ...statOf(slot, { pick: name, name: '', stat: '' })] as const, id: itemId(name) ?? 'own' }]
+        return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name), ...statOf(slot, { pick: name, name: '', stat: '' }), slot] as const, id: itemId(name) ?? 'own' }]
       })
     : []
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )

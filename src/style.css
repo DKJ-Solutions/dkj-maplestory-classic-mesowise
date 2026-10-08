@@ -860,6 +860,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De Equip-popup onder "Based on:" (Dave, 8 oktober 2026): dezelfde tabel als Char, in twee duidelijke kolommen, Slot en Item, met hun namen als kop.
    Een stuk heeft een naam en geen getal, dus Item krijgt de rest van de breedte en de naam staat links in zijn kolom. */
 .item-dialog .char-table-equip .stat-line:not(.ability-line), .char-table-equip .equip-head { display: grid; grid-template-columns: minmax(0, 1fr) 3rem; column-gap: 0.75rem; }
+/* In Profile een derde kolom met het potlood, zo breed als het potlood, zoals in de popup van Char (Dave, 8 oktober 2026). */
+.item-dialog .char-table-equip:has(.equip-edit) .stat-line:not(.ability-line), .char-table-equip:has(.equip-edit) .equip-head { grid-template-columns: minmax(0, 1fr) 3rem var(--control-h); }
 /* De tweede kolom, de ATT of DEF van het stuk, in het midden van zijn kolom zoals de getallen van Char (Dave, 8 oktober 2026). */
 .item-dialog .char-table-equip .stat-line:not(.ability-line) .equip-value.equip-stat, .char-table-equip .equip-head > :last-child { justify-content: center; text-align: center; white-space: nowrap; }
 .char-table-equip .stat-line .equip-value-num { overflow-wrap: anywhere; }
