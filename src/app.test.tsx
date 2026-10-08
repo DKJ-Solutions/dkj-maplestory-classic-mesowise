@@ -3404,10 +3404,18 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 /** De rijen van een rekentabel (WhyTable, #192): wat, de som eronder en de uitkomst, met witruimte samengevoegd. */
 const whyRows = (root: ParentNode) =>
   Array.from(root.querySelectorAll('.why-table tr'), (tr) => {
-    const th = tr.querySelector('th')!
-    const calc = th.querySelector('small')?.textContent ?? ''
     const clean = (t: string) => t.replace(/\s+/g, ' ').trim()
-    return { label: clean(th.textContent!.slice(0, th.textContent!.length - calc.length)), calc: clean(calc), result: clean(tr.querySelector('td')!.textContent!), total: tr.classList.contains('why-total') }
+    const label = clean(tr.querySelector('.why-label-text')!.textContent!)
+    // De som staat in de info-popup achter het i-knopje van de rij (Dave, 8 oktober 2026): even open, lezen en weer dicht.
+    const info = tr.querySelector<HTMLButtonElement>('.why-info')
+    let calc = ''
+    if (info) {
+      fireEvent.click(info)
+      const popup = tr.querySelector<HTMLElement>('dialog')!
+      calc = clean(popup.querySelector('.why-calc')!.textContent!)
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+    }
+    return { label, calc, result: clean(tr.querySelector('td')!.textContent!), total: tr.classList.contains('why-total') }
   })
 
 describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
@@ -3479,11 +3487,9 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     ])
     // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan het gemiddelde. Ribbon Pig heeft WDEF 0, dus geen rij
     // Verdediging: die verandert dan niets (Dave, 8 oktober 2026).
-    // In de rij alleen je getallen; de formules zelf staan ingeklapt onder het blok Schade (Dave, 8 oktober 2026).
-    expect(rows[0].calc).toMatch(/^[\d.]+ W\.ATT, [\d.]+ LUK, [\d.]+ \(STR \+ DEX\)$/)
-    const formulas = Array.from(dialog.querySelectorAll('.why-section[aria-label="Schade"] details.why-formula p'), (p) => p.textContent!.replace(/\s+/g, ' ').trim())
-    expect(formulas[0]).toMatch(/^Max [\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
-    expect(formulas[1]).toMatch(/^Min [\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    // De formule met je eigen getallen staat in de info-popup van Max en Min (Dave, 8 oktober 2026).
+    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
     // Vier blokken met een kopje, in de volgorde van de berekening.
     expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Schade', 'Per kill', 'Dit level', 'Kosten'])
     expect(rows[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
