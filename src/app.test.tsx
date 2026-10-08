@@ -3478,6 +3478,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       'Min per star',
       'Schade per star',
       'Schade per aanval',
+      'HP van Ribbon Pig',
       'Aanvallen per kill',
       'Throwing stars per kill',
       'EXP tot volgend level',
@@ -3493,25 +3494,27 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Bovenaan de eindformule, altijd zichtbaar: stars per kill × kills = het aantal op de factuur; daaronder de twee deelvragen (Dave, 8 oktober 2026).
     const summary = dialog.querySelector<HTMLElement>('.why-summary')!
     expect(summary.previousElementSibling).toBeNull()
-    expect(summary.nextElementSibling?.getAttribute('aria-label')).toMatch(/^Waarom [\d.,]+ stars per kill\?$/)
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(`Waarom ${rows[6].result} stars per kill op Ribbon Pig?`)
     const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
-    expect(terms).toEqual([rows[5].result, rows[8].result, qty])
+    expect(terms).toEqual([rows[6].result, rows[9].result, qty])
     expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual(['stars per kill', 'kills', 'stars'])
     // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([`Waarom ${rows[5].result} stars per kill?`, `Waarom ${rows[8].result} kills?`, 'Kosten'])
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([`Waarom ${rows[6].result} stars per kill op Ribbon Pig?`, `Waarom ${rows[9].result} kills?`, 'Kosten'])
     expect(rows[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(rows[2].result).toMatch(/^± [\d.,]+$/)
     expect(rows[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
-    expect(rows[4].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
+    // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
+    expect(rows[4].result).toMatch(/^[\d.]+$/)
+    expect(rows[5].calc).toBe(`${rows[4].result} HP / ${rows[3].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
     // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de stars per kill en de kills (Dave, 8 oktober 2026).
     expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Throwing stars per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
-    expect(rows[8].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
+    expect(rows[9].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
     // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
-    const [stars, recharge] = rows[9].calc.split(' meso')
-    expect(stars.startsWith(`${qty} throwing stars × `), rows[9].calc).toBe(true)
-    expect(recharge, rows[9].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
-    expect(rows[9].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    const [stars, recharge] = rows[10].calc.split(' meso')
+    expect(stars.startsWith(`${qty} throwing stars × `), rows[10].calc).toBe(true)
+    expect(recharge, rows[10].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
+    expect(rows[10].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
   it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {

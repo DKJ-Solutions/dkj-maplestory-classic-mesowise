@@ -3510,7 +3510,8 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const pieces = arrows ? 'pijlen' : 'stars'
   const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
-    ...inGroup(`Waarom ${nfInt.format(w.perKill)} ${pieces} per kill?`, [
+    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoeveel stars een kill kost, hangt af van zijn HP.
+    ...inGroup(`Waarom ${nfInt.format(w.perKill)} ${pieces} per kill op ${w.mob}?`, [
     ...damageRows,
     // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
@@ -3519,7 +3520,8 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
       result: `± ${oneDecimal(w.avgHit)}`,
     },
     { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
-    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
+    { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
+    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill), total: true },
     ]),
     ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
