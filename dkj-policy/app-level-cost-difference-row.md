@@ -39,19 +39,31 @@
 
 ### PLAN
 
+Dave, October 8, 2026: stack the two Level cost buttons, add a third row with the difference between Cheapest and Profile, let the card fill the free height of the home screen, and keep the screen free of vertical scrolling by putting the per-cost table in its own popup.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: stack the Level cost buttons in one column
+- [x] Cody: third row "Difference" with the saving in meso and as a share of Profile; the per-cost table opens in a popup
+- [x] Gwen: `main` fills the screen height and the Level cost card stretches; the extra height goes to the two buttons
 
 ### TEST
 
+- [x] Tycho: test for the third row and its popup (`src/app.test.tsx`)
+- [x] `npx vitest run` green, `scripts/lint/lint.ps1` clean
+- [ ] Dave looks at the result at phone width before the merge
+
 ### DEPLOY: app/level-cost-difference-row
 
-**Score:**
+The Level cost card on the home screen stacks its Cheapest and Profile buttons and adds a third row that shows what Cheapest saves against your own setup, in meso and as a percentage; tapping it opens the per-cost Difference table in a popup. The card fills the free height of the screen.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Players see at a glance how much they leave on the table at this level, without scrolling.
+
+**Score:** 3
 
 #### Pull Request
 
