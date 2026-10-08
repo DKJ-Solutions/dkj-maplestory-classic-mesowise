@@ -4254,7 +4254,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView('Equip', 'Advised')
       const button = d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!
       expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
-      expect(button.previousElementSibling!.textContent).toBe(mob)
+      // De hele naam is klikbaar: hij staat in de knop, voor het i-icoon (Dave, 8 oktober 2026).
+      expect(button.querySelector('.based-on-value')!.textContent).toBe(mob)
+      expect(button.parentElement!.querySelectorAll(':scope > .based-on-value')).toHaveLength(0)
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
@@ -4370,6 +4372,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         const d = openView(card, 'Advised')
         const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
         expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
+        // De hele naam is klikbaar: hij staat in de knop (Dave, 8 oktober 2026).
+        expect(button.querySelector('.based-on-value')!.textContent).toBe(who)
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!

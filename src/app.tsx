@@ -1752,26 +1752,28 @@ function BasedOn(props: { who: string; mob: string }) {
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
           <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
-            <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
-            {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
+                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop. */}
+            {stats ? (
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
                 {stats}
               </PopupButton>
+            ) : (
+              <span class="based-on-value">{props.who}</span>
             )}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
         <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
           <span class="sr-only">Mob: </span>
-          <span class="based-on-value">{props.mob}</span>
-          {mobDef && (
-            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+          {mobDef ? (
+            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
               {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
               <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
               {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
             </PopupButton>
+          ) : (
+            <span class="based-on-value">{props.mob}</span>
           )}
           <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
             <p class="item-why">{mobWhy(props.mob)}</p>
@@ -2059,7 +2061,7 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; name?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const close = () => {
@@ -2068,7 +2070,9 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
   }
   return (
     <>
-      <button ref={button} type="button" class={props.class} aria-haspopup="dialog" aria-expanded={open} aria-label={props.label} onClick={() => setOpen(true)}>
+      {/* Met `name` staat de naam in de knop, voor het icoon, zodat je op de hele naam kunt tikken en niet alleen op het icoon (Dave, 8 oktober 2026). */}
+      <button ref={button} type="button" class={props.name ? `${props.class} named` : props.class} aria-haspopup="dialog" aria-expanded={open} aria-label={props.label} onClick={() => setOpen(true)}>
+        {props.name && <span class="based-on-value">{props.name}</span>}
         {props.icon}
       </button>
       {open && (
