@@ -1763,28 +1763,22 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
   )
 }
 
-/** Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg. */
-function slotCovers(cheapest: Record<EquipSlot, CheapestSlot>, slot: EquipSlot): boolean {
-  const filled = (s: EquipSlot) => cheapest[s]?.cheapest != null
-  return slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom'))
-}
-
 /**
  * De regels van de equip in de bill van Level cost achter "Cheapest" (#188, #192): per slot de goedkoopste equip (CheapestRow). Mesos is het deel van de
  * prijs dat dit level betaalt, omdat je het stuk tot je volgende upgrade draagt: de regel van het stuk op de factuur van Cheapest (`lines`, writeOff.ts).
  * Een slot zonder bedrag staat er niet (BillRow). `level` is de som van wat dit level betaalt.
  */
-function cheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null; lines: readonly InvoiceLine[] }) {
+function cheapestRows(props: { job: Job; slots: readonly EquipSlot[]; cheapest: Record<EquipSlot, CheapestSlot>; lines: readonly InvoiceLine[] }) {
   // De factuurregel van een stuk dat je koopt: op de naam zonder kleur, zoals de factuur van Cheapest hem schrijft (familyName). Een stuk dat je
-  // houdt of niet koopt staat er niet op.
-  const lineOf = (slot: EquipSlot) => {
+  // houdt of niet koopt, en een leeg slot, staat er niet op en dus ook niet in de bill (#260).
+  const bought = props.slots.flatMap((slot) => {
     const c = props.cheapest[slot]
-    return c.changed && c.cheapest !== null ? props.lines.find((l) => l.why?.kind === 'shop' && l.why.name === familyName(slot, c.cheapest!)) : undefined
-  }
-  const level = props.slots.reduce((sum, slot) => sum + (lineOf(slot)?.meso ?? 0), 0)
-  const rows = props.slots.map((slot) => (
-    <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={slotCovers(props.cheapest, slot)} line={lineOf(slot)} />
-  ))
+    const name = c.changed ? c.cheapest : null
+    const line = name === null ? undefined : props.lines.find((l) => l.why?.kind === 'shop' && l.why.name === familyName(slot, name))
+    return name !== null && line ? [{ slot, name, line }] : []
+  })
+  const level = bought.reduce((sum, b) => sum + b.line.meso, 0)
+  const rows = bought.map((b) => <CheapestRow key={b.slot} job={props.job} slot={b.slot} name={b.name} advice={props.cheapest[b.slot]} line={b.line} />)
   return { rows, level }
 }
 
@@ -2009,7 +2003,7 @@ function MesoAmount(props: { n: number }) {
  * koopt staat in de accentkleur (`buy`), een leeg slot is een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken
  * waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; share?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price?: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'empty'; slot: string; qty?: number | null; share?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price?: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
   const title = props.name ?? props.slot
   const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
@@ -2082,31 +2076,22 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
 }
 
 /**
- * Eén slot in de bill van Level cost achter Cheapest (BillRow): onder Mesos het deel van dit level (`line`, de regel van het stuk op de factuur), het deel
- * van de prijs achter de naam, en achter het vraagteken waarom je het koopt (Dave, 8 oktober 2026).
+ * Eén stuk dat Cheapest koopt, in de bill van Level cost (BillRow): onder Mesos het deel van dit level (`line`, de regel van het stuk op de factuur), het
+ * deel van de prijs achter de naam, en achter het vraagteken waarom je het koopt (Dave, 8 oktober 2026). Alleen een gekocht stuk heeft een regel op de
+ * factuur, dus alleen dat staat in de bill (#260); `name` is het winkelstuk zelf.
  */
-function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean; line?: InvoiceLine }) {
-  const { slot } = props
-  // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
-  const counted = isCounted(slot, props.advice, props.ammo)
-  const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
-  const name = c.option ? c.option.name : c.cheapest
-  // Een eigen item dat je houdt staat onder zijn eigen naam; een winkelstuk onder de naam zonder kleur.
-  const own = !c.option && !c.changed && props.worn.pick === OTHER
-  const help = cheapestWhy(props.job, slot, c, counted, props.covered)
-  const shopPrice = c.option ? c.option.price : c.price
-  const tone = c.option ? 'option' : name === null ? 'empty' : c.changed && !counted ? 'buy' : ''
-  // Wat je al draagt houdt je eigen entry (met een correctie op de stat); een nieuw stuk is het winkelstuk zelf.
-  const entry: EquipEntry = name === null ? props.worn : c.option || c.changed ? { pick: name, name: '', stat: '' } : props.worn
+function CheapestRow(props: { job: Job; slot: EquipSlot; name: string; advice: CheapestSlot; line: InvoiceLine }) {
+  const { slot, name, line } = props
+  const help = cheapestWhy(props.job, slot, props.advice)
   return (
     <BillRow
-      tone={tone}
+      tone="buy"
       slot={slotLabel(slot)}
-      name={name === null ? null : own ? name : familyName(slot, name)}
-      fullName={name ?? undefined}
-      facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
-      share={props.line?.why?.kind === 'shop' ? props.line.why.share : null}
-      level={props.line ? props.line.meso : null}
+      name={familyName(slot, name)}
+      fullName={name}
+      facts={itemFacts(props.job, slot, name, { pick: name, name: '', stat: '' }, props.advice.price)}
+      share={line.why?.kind === 'shop' ? line.why.share : null}
+      level={line.meso}
       // Het vraagteken legt uit waarom je dit stuk koopt (Dave, 8 oktober 2026): onder de naam van het stuk het oordeel en wat het bespaart.
       help={
         <>
@@ -2165,19 +2150,15 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
   ])
 }
 
-/** Een leeg Ammo-slot dat de factuur van Cheapest met de stars of pijlen telt (#189): die koop of herlaad je per stuk. */
-const isCounted = (slot: EquipSlot, c: CheapestSlot, ammo: string | null) => slot === 'ammo' && c.cheapest === null && !c.option && ammo !== null
-
-
 /** De feiten van een info-knop die de app kent: een regel zonder waarde valt weg. */
 const knownFacts = (facts: [string, string | undefined][]): [string, string][] => facts.filter((f): f is [string, string] => f[1] !== undefined)
 
 /**
- * Of je dit stuk moet kopen, en waarom (Dave, 7 oktober 2026): het oordeel bovenaan de popup van één slot in Cheapest ("Kopen", "Niet kopen",
- * "Houden", "Leeg laten", en bij munitie "Per stuk kopen" of "Per stuk herladen") en de uitleg eronder, met de rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt.
- * `covered` zegt bij een leeg slot dat de overall het beslaat (top en bottom), of dat een losse top of bottom het leeg maakt (overall).
+ * Waarom je dit stuk koopt (Dave, 7 oktober 2026): het oordeel "Kopen" bovenaan de popup van één stuk in Cheapest en de uitleg eronder, met de
+ * rekensom: wat het kost, wat het tot je volgende upgrade bespaart en wat je overhoudt. Alleen een gekocht stuk staat in de bill (#260); de oordelen
+ * voor een stuk dat je houdt, niet koopt of leeg laat zijn er sindsdien uit.
  */
-function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean): { verdict: string; text: string } {
+function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot): { verdict: string; text: string } {
   const meso = (n: number) => `${nfInt.format(Math.max(0, Math.round(n)))} meso`
   // Hoe een stuk bespaart: de factuur van een level is vooral potions (en ammo); sneller doden of minder hard geraakt worden scheelt die.
   const how =
@@ -2186,23 +2167,6 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
       : slot === 'ammo'
         ? 'Met meer ATT dood je een monster sneller, dus per level gaan er minder potions op.'
         : 'Met meer DEF raakt een monster je minder hard, dus per level gaan er minder potions op.'
-  if (c.option) {
-    if (c.option.saving === null) return { verdict: 'Niet kopen', text: `Niet zeker of het loont: het kost ${meso(c.option.price)} en de besparing is niet uit te rekenen. Dit slot blijft leeg.` }
-    return {
-      verdict: 'Niet kopen',
-      text: `Loont niet: het kost ${meso(c.option.price)} en bespaart tot je volgende upgrade maar ${meso(c.option.saving)}. ${how} Dat is te weinig: je zou ${meso(c.option.price - c.option.saving)} verliezen, dus dit slot blijft leeg.`,
-    }
-  }
-  if (counted)
-    return {
-      verdict: job === 'bowman' ? 'Per stuk kopen' : 'Per stuk herladen',
-      text: job === 'bowman' ? 'Pijlen koop je per stuk; de factuur telt ze.' : 'Stars herlaad je per stuk; de factuur telt ze.',
-    }
-  if (c.cheapest === null) {
-    if (covered) return { verdict: 'Leeg laten', text: slot === 'overall' ? 'Leeg: een losse top of bottom neemt de plek van een overall in.' : 'Leeg: de overall beslaat dit slot.' }
-    return { verdict: 'Leeg laten', text: 'Leeg: de winkel heeft hier niets dat je op je level kunt dragen en dat zich tot je volgende upgrade terugverdient.' }
-  }
-  if (!c.changed) return { verdict: 'Houden', text: 'Je draagt dit al. Geen stuk uit de winkel loont tot je volgende upgrade, dus je houdt wat je draagt.' }
   if (c.price === null || c.why === undefined) return { verdict: 'Kopen', text: c.price === null ? 'Dit stuk komt in je equip.' : `Koop voor ${meso(c.price)}.` }
   if ('required' in c.why) return { verdict: 'Kopen', text: `Je wapenslot is leeg: dit is het goedkoopste wapen dat je kunt dragen. Koop het voor ${meso(c.price)}; zonder wapen kun je niet trainen.` }
   const cost = c.why.cost ?? c.price
@@ -2281,8 +2245,6 @@ function EquipmentCard(props: {
   gender?: Gender | null
   /** Achter de knop Cheapest (#188, #192): per slot de goedkoopste equip; null als de app deze job niet doorrekent. */
   cheapest: Record<EquipSlot, CheapestSlot> | null
-  /** De stars of pijlen die de factuur van Cheapest telt, voor een leeg Ammo-slot achter Cheapest (#189). */
-  advisedAmmo: string | null
   /** De regels van de factuur van Cheapest: per gekocht stuk wat dit level ervan betaalt, de kolom Level (Dave, 7 oktober 2026); null zonder factuur. */
   advisedLines: readonly InvoiceLine[] | null
   /** De mob waarop het advies rekent (Dave, 7 oktober 2026), onder "Based on:" in Level cost: Equip; null zonder mob. */
@@ -2466,7 +2428,7 @@ function EquipmentCard(props: {
     const useable = u && useableRows(u, true)
     const equip =
       advised && props.cheapest
-        ? cheapestRows({ job: props.job, slots, equipment: props.equipment, cheapest: props.cheapest, ammo: props.advisedAmmo, lines: props.advisedLines ?? [] })
+        ? cheapestRows({ job: props.job, slots, cheapest: props.cheapest, lines: props.advisedLines ?? [] })
         : { rows: [], level: 0 }
     return <LevelBill equip={equip} useable={useable} />
   }
@@ -4199,7 +4161,6 @@ export function App() {
         onDiscard={(slot) => setPendingFor(slot, undefined)}
         error={equipError}
         cheapest={cheapestEquip}
-        advisedAmmo={advisedSet?.ammo ?? null}
         advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
         advisedMob={advisedMob}
         wornMob={wornMob}

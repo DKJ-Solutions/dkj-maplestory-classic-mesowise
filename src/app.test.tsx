@@ -423,7 +423,7 @@ const whyOf = (row: HTMLElement) => {
   closeItem(item)
   return text
 }
-/** Het oordeel in de popup van het vraagteken: Kopen, Niet kopen, Houden, Leeg laten of Per stuk kopen. */
+/** Het oordeel in de popup van het vraagteken: Kopen bij een stuk equip, het aantal dit level bij een useable. */
 const verdictOf = (row: HTMLElement) => {
   const item = openItem(row)
   const text = item.querySelector('.item-verdict')!.textContent!
