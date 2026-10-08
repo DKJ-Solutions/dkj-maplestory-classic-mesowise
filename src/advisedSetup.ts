@@ -85,10 +85,13 @@ export function freshStart(user: CheapestInput): CheapestInput {
 export function cheapestFor(user: CheapestInput): AdvisedSetup {
   const setup = advisedSetup(freshStart(user))
   const r = setup.result
-  const after: CheapestInput = { ...user, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
-  const costBefore = costOf(user)
+  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt.
+  const wearable = dropAboveLevel(user.profileDraft, user.equipment, user.job)
+  const own: CheapestInput = { ...user, equipment: wearable.equipment, profileDraft: wearable.profile }
+  const after: CheapestInput = { ...own, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
+  const costBefore = costOf(own)
   const saving = typeof costBefore === 'number' && typeof r.costAfter === 'number' ? costBefore - r.costAfter : null
-  return { ...setup, result: { ...r, changes: changesBetween(user, after), costBefore, saving } }
+  return { ...setup, result: { ...r, changes: changesBetween(own, after), costBefore, saving } }
 }
 
 /**

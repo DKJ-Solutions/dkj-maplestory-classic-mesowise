@@ -1609,7 +1609,7 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
   })
 
-  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: de stats blijven, en een wapen boven het nieuwe level gaat uit je hand (Dave, 8 oktober 2026, #264)', () => {
+  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: de stats blijven, en een wapen boven het nieuwe level blijft bewaard maar staat grijs (Dave, 8 oktober 2026, #264)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', 'Garnier')
@@ -1619,7 +1619,7 @@ describe('level-up en Back (#154)', () => {
     fireEvent.click(backButton())
     expect(profileFields()).toEqual({ ...before, level: '19' })
     expect(worn(cards()[0], 'Weapon')).toBe('Garnier')
-    // Steel Igor vraagt level 20: op level 19 kun je hem niet dragen, dus hij gaat uit je hand, met een lege hand (0 ATT).
+    // Steel Igor vraagt level 20: op level 19 kun je hem niet dragen. Hij blijft bewaard, maar staat grijs met het level vanaf wanneer hij meetelt.
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -1627,8 +1627,12 @@ describe('level-up en Back (#154)', () => {
     fireEvent.click(backButton())
     fireEvent.click(backButton())
     expect(profileFields().level).toBe('19')
-    expect(worn(cards()[0], 'Weapon')).toBeNull()
-    expect(profileFields().clawWatk).toBe('0')
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
+    const row = advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!, 'Weapon')
+    expect(row.classList.contains('empty')).toBe(true)
+    expect(nameOf(row)).toBe('Steel Igor (vanaf lv 20)')
   })
 
   it('leest de snapshot synchroon: Level up en meteen Back in één stap zet het profiel terug', () => {
@@ -1808,14 +1812,14 @@ describe('Auto assign (#157)', () => {
     expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
   })
 
-  it('haalt een wapen boven je level uit je hand (Dave, 8 oktober 2026, #264), zodat Auto assign daarna gewoon invult in plaats van "te weinig AP"', () => {
+  it('laat een wapen boven je level niet meetellen (Dave, 8 oktober 2026, #264), zodat Auto assign gewoon invult in plaats van "te weinig AP"', () => {
     // Steel Igor vraagt lv 20: je draagt hem op lv 20 en zakt dan terug naar lv 9. Vroeger vroeg hij daar meer AP dan je had (de melding staat in
-    // autoFillAp.test.ts); nu kun je hem op lv 9 niet dragen.
+    // autoFillAp.test.ts); nu blijft hij bewaard maar telt hij op lv 9 niet mee.
     atLevel('20')
     wear(IGOR.name)
     atLevel('9')
     openHomeEquipment()
-    expect(worn(cards()[0], 'Weapon')).toBeNull()
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
     closeDialogs()
     fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
@@ -3923,6 +3927,36 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         closeView(title)
       }
     }
+  })
+
+  it('bewaart equip boven je level, telt het niet mee en zet het grijs; terug op je level telt het weer (Dave, 8 oktober 2026, #264)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Steel Titans')
+    pick(cards()[0], 'Hat', 'Red Loosecap')
+    pick(cards()[0], 'Bottom', 'Red Cloth Pants')
+    closeDialogs()
+    const stored20 = stored(EQUIPMENT_KEY)
+    const freeOn = () => {
+      openHomeEquipment()
+      const text = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!.textContent
+      closeDialogs()
+      return text
+    }
+    // Op level 10: Steel Titans (lv 15) en Red Loosecap (lv 20) tellen niet mee, Red Cloth Pants (lv 10) wel. De opslag verandert niet.
+    atLevel('10')
+    expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
+    expect(freeOn()).toBe('Equip: 1 item (free)')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
+    const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
+    expect(nameOf(advisedRow(picker, 'Hat'))).toBe('Red Loosecap (vanaf lv 20)')
+    expect(advisedRow(picker, 'Hat').classList.contains('empty')).toBe(true)
+    expect(advisedRow(picker, 'Bottom').classList.contains('empty')).toBe(false)
+    closeDialogs()
+    // Terug op level 20 telt alles weer mee.
+    atLevel('20')
+    expect(freeOn()).toBe('Equip: 3 items (free)')
   })
 
   it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {

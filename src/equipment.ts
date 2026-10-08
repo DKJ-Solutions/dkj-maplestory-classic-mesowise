@@ -627,8 +627,9 @@ export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: Equi
 }
 
 /**
- * Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): een stuk dat een hoger level vraagt dan je character heeft (een Steel Titans
- * van level 15 op level 10), gaat uit zijn slot, met zijn ATT of DEF eraf zoals bij een slot dat je zelf leegmaakt. Een wapen laat een lege hand
+ * Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): de stand zoals de berekening hem ziet, zonder elk stuk dat een hoger level vraagt
+ * dan je character heeft (een Steel Titans van level 15 op level 10), met zijn ATT of DEF eraf zoals bij een slot dat je zelf leegmaakt. De opslag
+ * verandert niet: het stuk blijft bewaard en telt weer mee zodra je level hoog genoeg is. Een wapen laat een lege hand
  * achter: 0 weapon attack, zoals Cheapest met een leeg wapenslot rekent (#202). Een eigen item kent de app niet, dat blijft. `dropped` zegt welke
  * slots leeg werden; zonder heel level verandert er niets.
  */

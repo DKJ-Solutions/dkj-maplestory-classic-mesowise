@@ -13,7 +13,7 @@ import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, dropAboveLevel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, dropAboveLevel, itemLevel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawUpgradeAdvice } from './clawUpgrade'
@@ -2415,17 +2415,25 @@ function EquipmentCard(props: {
       </StatDialog>
     )
   }
+  /** Het level dat een stuk vraagt als dat boven je eigen level ligt (#264), anders null. */
+  const aboveLevel = (slot: EquipSlot, name: string | null): number | null => {
+    const needs = name === null ? undefined : itemLevel(slot, name)
+    return needs !== undefined && props.level !== undefined && needs > props.level ? needs : null
+  }
   // De slotkeuze achter het potlood bij Equip (Dave, 8 oktober 2026): een popup met de slots, elk met het potlood dat de slotpopup opent (zoeken, kiezen, de stat corrigeren).
   const pickRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const label = slotLabel(slot)
+    // Een stuk boven je level staat grijs, met het level vanaf wanneer je het kunt dragen (Dave, 8 oktober 2026, #264): het blijft bewaard, maar telt niet mee.
+    const from = aboveLevel(slot, name)
+    const shown = name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)
     return (
       <BillRow
         key={slot}
-        tone={name === null ? 'empty' : ''}
+        tone={name === null || from !== null ? 'empty' : ''}
         slot={label}
-        name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
+        name={shown === null ? null : from === null ? shown : `${shown} (vanaf lv ${from})`}
         fullName={name ?? undefined}
         facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice(slot, entry) ?? null)}
         action={
@@ -2473,10 +2481,11 @@ function EquipmentCard(props: {
     const value = wornStat(slot, entry)
     return [value === undefined ? '?' : nfInt.format(value), statName(slot, props.job)] as const
   }
+  // Wat je draagt en op je level kunt dragen (#264): een stuk boven je level telt niet mee, dus het staat niet bij de items die je gratis houdt.
   const wornList = slots.flatMap((slot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
-    if (name === null) return []
+    if (name === null || aboveLevel(slot, name) !== null) return []
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
@@ -3860,7 +3869,11 @@ export function App() {
   const computed = isComputed(job)
   const jobDirty = useRef(false)
   const [gender, setGender] = useState<Gender | null>(() => loadGender(storage))
-  const parsed = useMemo(() => parseProfile(profileDraft, job, gender), [profileDraft, job, gender])
+  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
+  // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zo'n stuk blijft bewaard, maar de berekening rekent zonder, met zijn ATT of
+  // DEF eraf. Ga je weer een level omhoog, dan telt het vanzelf weer mee. Wat je ziet en bewerkt, blijft `profileDraft` en `equipment`.
+  const wearable = useMemo(() => dropAboveLevel(profileDraft, equipment, job), [profileDraft, equipment, job])
+  const parsed = useMemo(() => parseProfile(wearable.profile, job, gender), [wearable, job, gender])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
   // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
@@ -3884,7 +3897,6 @@ export function App() {
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
-  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
   const equipmentDirty = useRef(false)
   // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
   // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
@@ -3915,7 +3927,7 @@ export function App() {
   const potionAdvice = useMemo(() => advisePotions(drafts, profile), [drafts, profile])
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
-  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
+  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(wearable.equipment, job)), [drafts, profile, wearable, job])
   // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
   const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
 
@@ -4051,14 +4063,6 @@ export function App() {
     equipmentRef.current = next
     setEquipment(next)
   }
-  // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zakt je level onder dat van een stuk, of staat zo'n stuk al in de opslag,
-  // dan gaat het uit zijn slot. Pas na de render, zodat het ook geldt voor wat bij het openen is geladen.
-  useEffect(() => {
-    const out = dropAboveLevel(profileRef.current, equipmentRef.current, job)
-    if (out.dropped.length === 0) return
-    writeEquipment(out.equipment)
-    writeProfile(() => out.profile)
-  }, [profileDraft.level, equipment, job])
   const setPendingFor = (slot: EquipSlot, text: string | undefined) => {
     const next = { ...pendingRef.current }
     if (text === undefined) delete next[slot]
@@ -4233,8 +4237,9 @@ export function App() {
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
-        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
-        <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
+        {/* Auto assign en je stats rekenen met wat je op je level kunt dragen (#264). */}
+        <ProfileCard job={job} draft={profileDraft} equipment={wearable.equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
+        <TotalStatsCard job={job} draft={profileDraft} equipment={wearable.equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
       </section>
 
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}

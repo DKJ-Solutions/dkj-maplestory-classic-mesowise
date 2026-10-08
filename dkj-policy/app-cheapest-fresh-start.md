@@ -52,8 +52,9 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 - [x] "Based on:" in the Cheapest popup: Equip (what you wear) and New equip (what Cheapest buys)
 - [x] The two rows say what they are in visible text (Dave's wording): "3 items (free)" for what you wear (also in Profile) and "1 item (upgrade)" or "Niets te kopen" for what Cheapest buys
 - [x] Victor's review of that step: a gear field is only taken over when `parseProfile` accepts it (range and whole number), the item stat bonuses (STR/DEX/INT/LUK extra) are taken over too, and the stale comments say what the code now does
-- [x] Rule (Dave, #264): equipment above your level cannot be worn. `dropAboveLevel` takes such an item out of its slot (ATT or DEF off, an empty hand for a weapon) in the app when the level drops or on load, and in Cheapest's fresh start
-- [x] Tests: unit tests for `dropAboveLevel` (armor DEF, empty hand, own item kept, empty level is not level 0); Back and Auto assign app tests now show the item leaving instead of the old "te weinig AP" path (that message stays covered in autoFillAp.test.ts)
+- [x] Rule (Dave, #264): equipment above your level cannot be worn. `dropAboveLevel` gives the stand as the calculation sees it (ATT or DEF off, an empty hand for a weapon); the app uses it for the parse, the armor advice, Auto assign, Total stats and Cheapest, and keeps the stored equipment as it is
+- [x] Revised after Dave lost his gear testing level 10: the first version wiped such items from storage; now they stay stored, show grey in the Equip popup as "(vanaf lv N)", leave the "(free)" count, and count again once the level is high enough
+- [x] Tests: unit tests for `dropAboveLevel` (armor DEF, empty hand, own item kept, empty level is not level 0); app tests: storage unchanged from level 20 to 10 and back, the item grey with "(vanaf lv N)", the "(free)" count, Back and Auto assign (the old "te weinig AP" message stays covered in autoFillAp.test.ts)
 - [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
 - [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
 - [x] Overnemen writes only mob and potions (Dave's choice after the reviews); its button shows only when those differ, the saving is what the player's own level then costs less, and Ongedaan maken puts them back
@@ -72,8 +73,8 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 
 Cheapest's input is built by `freshStart` from job, level, gender, Max HP and the worn equipment, and `cheapestFor` measures its changes and
 saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest, and
-Overnemen writes only the mob and the potions. Equipment above the character's level cannot be worn: `dropAboveLevel` takes it
-out of its slot, in the app and in Cheapest's start.
+Overnemen writes only the mob and the potions. Equipment above the character's level cannot be worn: `dropAboveLevel` leaves it
+out of every calculation, while the stored equipment stays as it is.
 
 **Score:** 2
 
@@ -82,8 +83,8 @@ out of its slot, in the app and in Cheapest's start.
 Cheapest now works out your setup by itself from your job and level: skill points, AP, mob and potions, starting from the
 equipment you already wear and buying only what pays off on top. What you filled in no longer gets in the way, so a profile
 with a mistake (more skill points than your level allows) no longer leaves Cheapest with only a question mark. "Based on:"
-shows the equipment you wear and the new equipment Cheapest buys. Equipment above your level can no longer be worn: when your
-level goes down, such a piece leaves its slot. Overnemen lists what differs from your own setup and takes over only the mob and
+shows the equipment you wear ("3 items (free)") and the new equipment Cheapest buys ("1 item (upgrade)"). Equipment above your
+level no longer counts: it stays saved, shows grey with the level it needs, and counts again once you reach that level. Overnemen lists what differs from your own setup and takes over only the mob and
 the potions, which you can change freely in the game; your skill points, AP and equipment stay as they are.
 
 **Score:** 4
