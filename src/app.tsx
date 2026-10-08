@@ -529,9 +529,9 @@ function useCardView(card: CardKey) {
 
 /**
  * De twee knoppen onder de kop van elke kaart met een popup (Dave, 6 oktober 2026, #188, #192), in plaats van het oog in de kop. Ze openen
- * dezelfde popup: "Advised" toont wat de app verwacht (om te lezen), "Your character" wat je character in game heeft (om te wijzigen).
+ * dezelfde popup: "Advised" toont wat de app verwacht (om te lezen), "Wearing" wat je character in game heeft (om te wijzigen).
  * Eerst het advies, dan jij: je kijkt eerst wat de app verwacht en bepaalt dan of je het overneemt. Zonder advies (een job die de
- * app niet doorrekent) alleen "Your character".
+ * app niet doorrekent) alleen "Wearing".
  */
 function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
   const button = (view: CardView, label: string) => (
@@ -544,7 +544,7 @@ function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (
     <div class="view-actions">
       <div class="card-actions view-buttons">
         {props.advised && button('advised', 'Advised')}
-        {button('worn', 'Your character')}
+        {button('worn', 'Wearing')}
       </div>
     </div>
   )
@@ -2194,7 +2194,7 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
 function CostCardButtons(props: { part: 'worn' | 'advised' }) {
   const ctx = useContext(CardViewContext)
   const advised = props.part === 'advised'
-  const label = advised ? 'Advised' : 'Your character'
+  const label = advised ? 'Advised' : 'Wearing'
   return (
     <>
       {/* Boven de knoppen de zin wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. Zonder kopje (Dave). */}
@@ -3550,7 +3550,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         <thead>
           <tr>
             <td />
-            <th scope="col">Your character</th>
+            <th scope="col">Wearing</th>
             <th scope="col">Advised</th>
             <th scope="col">Difference</th>
           </tr>
@@ -3579,7 +3579,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         </tfoot>
       </table>
       {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
-      {props.inGame.kind === 'none' && <p class="hint">Your character: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+      {props.inGame.kind === 'none' && <p class="hint">Wearing: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
     </>
   ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Advised; hier niet nog eens.
   null
@@ -3646,7 +3646,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
       ) : (
         <>
           <div class="total-cost-part cost-ingame">
-            <h3>Your character</h3>
+            <h3>Wearing</h3>
             <p class="total-cost-sub">
               This is how much it cost to level up your <strong>{who}</strong>
             </p>

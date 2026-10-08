@@ -46,7 +46,7 @@ const levelCostText = () => {
 /** De kaartklassen op het scherm, per titel (#192): de kaarten hebben geen oog meer, maar twee knoppen onder de kop. */
 const CARD_CLASS = { Equip: '.equipment', Skillpoints: '.skills', Monster: '.hunted', Potions: '.potions', 'Ability points': '.profile', 'Total stats': '.total-stats' } as const
 /** De knop "Your character" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
-const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Your character' })
+const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Wearing' })
 /** De titel in de kop van een kaart (Dave, 5 oktober 2026). */
 const headTitle = (card: keyof typeof CARD_CLASS) => viewButton(card).closest('.card')!.querySelector('.spot-head .spot-name')!.textContent
 /** Zet een skill via zijn potlood en de popup (Dave, 5 oktober 2026): typ het level en sla op met Enter. */
@@ -179,7 +179,7 @@ const openHomeSkills = () => {
   fireEvent.click(head)
   return head.closest('section')!
 }
-const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
+const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Wearing' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 /** De open Monster-popup. */
 const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
@@ -269,9 +269,9 @@ describe('begin zonder opslag', () => {
       for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         expect(card.querySelector('.spot-head button'), title).toBeNull()
-        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Your character'])
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Wearing'])
         expect(report(title), title).toBeNull()
-        for (const view of ['Advised', 'Your character']) {
+        for (const view of ['Advised', 'Wearing']) {
           fireEvent.click(within(card).getByRole('button', { name: view }))
           const button = report(title)
           // De Advised-popups van Equip en Potions (Total cost: Equip en Useable) hebben geen Report: elke regel heeft zijn eigen vraagteken (Dave, 7 oktober 2026).
@@ -288,8 +288,8 @@ describe('begin zonder opslag', () => {
       }
       for (const title of ['Ability points', 'Total stats'] as const) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
-        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Your character'])
-        fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Wearing'])
+        fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
         expect(report(title)).toBeNull()
         fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
       }
@@ -302,7 +302,7 @@ describe('begin zonder opslag', () => {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         const buttons = [...card.querySelectorAll('.view-actions button')]
         expect(buttons.map((b) => b.className), title).toEqual(['card-action view-advised', 'card-action view-worn'])
-        for (const [view, dialogClass] of [['Advised', 'advised-dialog'], ['Your character', 'worn-dialog']] as const) {
+        for (const [view, dialogClass] of [['Advised', 'advised-dialog'], ['Wearing', 'worn-dialog']] as const) {
           fireEvent.click(within(card).getByRole('button', { name: view }))
           const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
           expect(dialog.classList.contains(`card-dialog-${key}`), `${title} ${view}`).toBe(true)
@@ -489,7 +489,7 @@ describe('equipment: de claw past het profiel aan', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     expect(cards()[0].querySelector('table')).toBeNull()
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Your character' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Wearing' }))
     expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
@@ -674,7 +674,7 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
-    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Wearing' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
     expect(head.querySelector('svg')).not.toBeNull()
     // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
@@ -699,7 +699,7 @@ describe('equipment: de claw past het profiel aan', () => {
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
-    const head = within(cards()[0]).getByRole('button', { name: 'Your character' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Wearing' })
     expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')
@@ -3127,7 +3127,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     expect(group.getAttribute('aria-label')).toBe('Stats')
     expect(group.querySelector('h2')).toBeNull()
     expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
-    expect(within(group as HTMLElement).getAllByRole('button', { name: 'Your character' })).toHaveLength(2)
+    expect(within(group as HTMLElement).getAllByRole('button', { name: 'Wearing' })).toHaveLength(2)
     expect(viewButton('Ability points')).toBeTruthy()
     expect(viewButton('Total stats')).toBeTruthy()
     // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen. Potions heeft een rapport en staat erboven.
@@ -3722,7 +3722,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
     expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Total cost')
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
     expect(yours().nextElementSibling).toBe(cheapestCard())
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
     // Onder de h3 van In game en Advised de zin over hun factuur (Dave, #183).
@@ -3740,7 +3740,7 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
   it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
     // Kolommen: de soort, Your character, Advised en Difference (Dave, #183).
-    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
+    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
     expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['Shop', 'HP Potions', 'MP Potions', 'Ammo'])
@@ -3954,7 +3954,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
   const cardOf = (title: keyof typeof CARD_CLASS) => homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
   const labels = (title: keyof typeof CARD_CLASS) => [...cardOf(title).querySelectorAll('.view-actions button')].map((b) => b.textContent)
   /** Opent de popup van een kaart achter een van de twee knoppen en geeft hem terug. */
-  const openView = (title: keyof typeof CARD_CLASS, view: 'Advised' | 'Your character') => {
+  const openView = (title: keyof typeof CARD_CLASS, view: 'Advised' | 'Wearing') => {
     fireEvent.click(within(cardOf(title)).getByRole('button', { name: view }))
     return cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
   }
@@ -3984,7 +3984,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
   it('zet bij elke kaart eerst Advised en dan Your character, en geen oog of knop in de kop (#192)', () => {
     for (const title of CARDS) {
-      expect(labels(title), title).toEqual(['Advised', 'Your character'])
+      expect(labels(title), title).toEqual(['Advised', 'Wearing'])
       expect(cardOf(title).querySelectorAll('.spot-head button'), title).toHaveLength(0)
       expect(cardOf(title).querySelector('.spot-head .card-report'), title).toBeNull()
       expect(cardOf(title).querySelector('dialog'), title + ' dicht').toBeNull()
@@ -3994,7 +3994,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
   it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Advised en Your character om beurten (#192)', () => {
     for (const title of CARDS) {
       const advised = within(cardOf(title)).getByRole('button', { name: 'Advised' })
-      const own = within(cardOf(title)).getByRole('button', { name: 'Your character' })
+      const own = within(cardOf(title)).getByRole('button', { name: 'Wearing' })
       fireEvent.click(advised)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['true', 'false'])
       expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^(Advised|Expected|Total cost)/)
@@ -4014,7 +4014,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
       render(<App />)
       for (const title of CARDS) {
-        expect(labels(title), job + ' ' + title).toEqual(['Advised', 'Your character'])
+        expect(labels(title), job + ' ' + title).toEqual(['Advised', 'Wearing'])
         expect(cardOf(title).querySelectorAll('.spot-head button'), job + ' ' + title).toHaveLength(0)
         // Advised opent zonder te crashen en is alleen-lezen.
         const d = openView(title, 'Advised')
@@ -4047,7 +4047,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect(d.querySelector('.field-fixed')!.textContent).toContain(advisedMob)
     expect(d.textContent).not.toContain('Kies een mob')
     closeView('Monster')
-    const own = openView('Monster', 'Your character')
+    const own = openView('Monster', 'Wearing')
     expect((within(own).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
   })
 
@@ -4061,7 +4061,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect(level(d, 'Nimble Body')).toBe(r.profileDraft.nimbleBody)
     expect(r.profileDraft.luckySeven).not.toBe(before.luckySeven)
     closeView('Skillpoints')
-    const own = openView('Skillpoints', 'Your character')
+    const own = openView('Skillpoints', 'Wearing')
     expect(level(own, 'Lucky Seven')).toBe(before.luckySeven)
     expect(level(own, 'Nimble Body')).toBe(before.nimbleBody)
     // Wat je character heeft is niet door het advies overschreven.
@@ -4081,7 +4081,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
     closeView('Potions')
-    const own = openView('Potions', 'Your character')
+    const own = openView('Potions', 'Wearing')
     expect((within(own).getByLabelText('HP potions') as HTMLSelectElement).value).toBe('White Potion')
     expect(stored(POTION_CHOICE_KEY).hp).toBe('White Potion')
   })
@@ -4224,7 +4224,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
           // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
           expect(adv.querySelector('.based-on')?.textContent, job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
-          const own = openView(title, 'Your character')
+          const own = openView(title, 'Wearing')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
           // Alleen een Advised-popup is licht oranje (Dave, 7 oktober 2026).
           expect(own.classList.contains('advised-dialog'), job + ' ' + title + ' own kleur').toBe(false)
@@ -4240,7 +4240,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       fireEvent.click(viewButton('Monster'))
       chooseMob('Slime')
       closeView('Monster')
-      const d = openView('Equip', 'Your character')
+      const d = openView('Equip', 'Wearing')
       expect(d.querySelector('.based-on')?.textContent).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
@@ -4266,7 +4266,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('toont in Your character van Total cost: Equip het vak Mob ook zonder gekozen mob, leeg en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
       setJob('thief')
-      let d = openView('Equip', 'Your character')
+      let d = openView('Equip', 'Wearing')
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char).toBeTruthy()
       expect(mob.querySelector('.sr-only')?.textContent).toBe('Mob: ')
@@ -4278,7 +4278,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       chooseMob('Slime')
       const shown = within(mobDialog()).getByLabelText<HTMLSelectElement>('De mob die je het meest killt').value
       closeView('Monster')
-      d = openView('Equip', 'Your character')
+      d = openView('Equip', 'Wearing')
       expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
     })
 
@@ -4286,7 +4286,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setJob('thief')
       expect(openView('Equip', 'Advised').querySelector('.based-on .info-toggle[aria-label$=" wijzigen"]')).toBeNull()
       closeView('Equip')
-      const d = openView('Equip', 'Your character')
+      const d = openView('Equip', 'Wearing')
       const [char, mob] = d.querySelectorAll<HTMLElement>('.based-on .based-on-label')
       // Mob, leeg: het potlood staat er al.
       expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
@@ -4412,7 +4412,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(advised.getAttribute('data-sheet')).toBe('advised')
       closeView('Monster')
       // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
-      const worn = openView('Monster', 'Your character')
+      const worn = openView('Monster', 'Wearing')
       const saved = worn.querySelector<HTMLSelectElement>('select')!.value
       expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
       expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
@@ -4422,7 +4422,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
-        const worn = openView(card, 'Your character').querySelector(':scope > .stat-dialog-body')!
+        const worn = openView(card, 'Wearing').querySelector(':scope > .stat-dialog-body')!
         expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
         expect(worn.getAttribute('data-sheet')).toBe('actual')
         closeView(card)
@@ -4519,7 +4519,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const d = openView('Ability points', 'Advised')
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(d, k.toUpperCase()), k).toBe(r.profileDraft[k])
     closeView('Ability points')
-    const own = openView('Ability points', 'Your character')
+    const own = openView('Ability points', 'Wearing')
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(own, k.toUpperCase()), k).toBe(before[k])
     expect(profileFields()).toEqual(before)
   })
@@ -4538,14 +4538,14 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const d = openView('Total stats', 'Advised')
     expect(attack(d)).toBe(range(r.profileDraft))
     closeView('Total stats')
-    const own = openView('Total stats', 'Your character')
+    const own = openView('Total stats', 'Wearing')
     expect(attack(own)).toBe(range(before))
   })
 
   it('zet het rapport van Equip, Skillpoints, Monster en Potions in de popup, in beide weergaven, en nooit in de kop (#192)', () => {
     for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
       expect(cardOf(title).querySelector('.card-report'), title + ' dicht').toBeNull()
-      for (const view of ['Advised', 'Your character'] as const) {
+      for (const view of ['Advised', 'Wearing'] as const) {
         const d = openView(title, view)
         if ((title === 'Equip' || title === 'Potions') && view === 'Advised') {
           expect(within(d).queryByRole('button', { name: /^Report/ })).toBeNull()
@@ -4559,7 +4559,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     }
     for (const title of ['Ability points', 'Total stats'] as const) {
-      for (const view of ['Advised', 'Your character'] as const) {
+      for (const view of ['Advised', 'Wearing'] as const) {
         expect(openView(title, view).querySelector('.card-report'), title + ' ' + view).toBeNull()
         closeView(title)
       }
@@ -4584,7 +4584,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       await frame()
       expect(document.activeElement, title).toBe(advised)
       // En bij Your character op zijn eigen knop, niet op Advised.
-      const own = within(cardOf(title)).getByRole('button', { name: 'Your character' })
+      const own = within(cardOf(title)).getByRole('button', { name: 'Wearing' })
       fireEvent.click(own)
       closeView(title)
       await frame()
@@ -4595,8 +4595,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
   it('noemt de goedkoopste setup nergens meer Cheapest: Total cost zegt Advised in de kop en in de kolom van Difference (#192)', () => {
     setUpAdvisedDiffers()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
-    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Your character', 'Advised', 'Difference'])
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
+    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
     // Koppen, knoppen, kolomkoppen en namen van popups, met alle Advised-popups open.
     for (const title of CARDS) openView(title, 'Advised')
     fireEvent.click(within(card).getByRole('button', { name: 'Equip van Advised' }))
@@ -4613,7 +4613,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('zet onder elke factuur zes knoppen met een icoon, in de volgorde van de pagina, met een naam en een title', () => {
       setUpAdvisedDiffers()
-      for (const [which, label] of [['cost-ingame', 'Your character'], ['cheapest-cost', 'Advised']] as const) {
+      for (const [which, label] of [['cost-ingame', 'Wearing'], ['cheapest-cost', 'Advised']] as const) {
         const buttons = row(which)
         expect(buttons.map((b) => b.getAttribute('aria-label')), which).toEqual(OWN.map((t) => `${t} van ${label}`))
         for (const b of buttons) {
@@ -4629,7 +4629,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('opent in Your character de popup van die kaart om te wijzigen, en in Advised zijn Advised-popup om te lezen', () => {
       setUpAdvisedDiffers()
       for (const title of OWN.filter((t) => t !== 'Equip')) {
-        fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Your character` }))
+        fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Wearing` }))
         const own = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
         expect(own.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + title))
         expect(own.querySelector('.equip-edit') ?? own.querySelector('select'), title + ' wijzigbaar').not.toBeNull()
@@ -4644,7 +4644,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
       }
-      fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: 'Equip van Your character' }))
+      fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: 'Equip van Wearing' }))
       expect(cardOf('Equip').querySelector('dialog.card-dialog .equip-edit, dialog.card-dialog [aria-label$=" wijzigen"]')).not.toBeNull()
     })
 
@@ -4666,7 +4666,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('zet aria-expanded op de aangetikte knop en brengt de focus na sluiten terug naar die knop', async () => {
       setUpAdvisedDiffers()
       for (const which of ['cost-ingame', 'cheapest-cost'] as const) {
-        const label = which === 'cost-ingame' ? 'Your character' : 'Advised'
+        const label = which === 'cost-ingame' ? 'Wearing' : 'Advised'
         for (const title of OWN) {
           const b = within(part(which)).getByRole('button', { name: `${title} van ${label}` })
           fireEvent.click(b)
@@ -4746,7 +4746,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft zijn eigen uitleg (Dave, 8 oktober 2026), over wat de kolommen daar betekenen.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
     const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
     expect(worn.querySelector('.stat-dialog-head .help-toggle')).not.toBeNull()
   })

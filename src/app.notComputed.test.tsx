@@ -22,10 +22,10 @@ describe('een job die de app niet doorrekent (#192)', () => {
     render(<App />)
     for (const [title, cls] of Object.entries(CARD_CLASS)) {
       const card = document.querySelector<HTMLElement>(`main section${cls}`)!
-      expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Your character'])
+      expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Wearing'])
       expect(within(card).queryByRole('button', { name: 'Advised' }), title).toBeNull()
       expect(card.querySelectorAll('.spot-head button'), title).toHaveLength(0)
-      fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
+      fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
       const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')
       expect(dialog, title).not.toBeNull()
       expect(dialog!.querySelector('.stat-dialog-name')!.textContent, title).not.toMatch(/^Advised/)
