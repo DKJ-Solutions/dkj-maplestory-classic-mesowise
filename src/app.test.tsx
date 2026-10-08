@@ -4025,6 +4025,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost een kopregel, zijn regels en een subtotaal.
         expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
+        // Met de kop Bill erboven, zoals "Based on:" (Dave, 8 oktober 2026).
+        expect(d.querySelector('section.bill > h3.based-on-head')!.textContent, label).toBe('Bill')
         // Geen kolom Slot, Qty of Price (Dave, 8 oktober 2026): de kop is Item en Mesos, het slot staat alleen voor de schermlezer in de naam van de
         // rij, het aantal achter de naam en de winkelprijs in de info-popup.
         expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Mesos'])

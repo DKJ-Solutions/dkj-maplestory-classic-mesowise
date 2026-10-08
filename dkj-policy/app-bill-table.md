@@ -53,6 +53,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] Qty column dropped again: the count (× 1.6k) or the share (13%) sits right behind the item name, columns Item, Price, Level
 - [x] Price column dropped, the shop price stays in an item's info popup; Level renamed Mesos; Useable on top (it always costs mesos); a row with nothing in it is left out
 - [x] The question mark sits right behind the amount behind the item name (and behind the Equip subtotal label); no column for question marks left
+- [x] A Bill heading above the Level cost bill, styled like Based on:
 
 ### TEST
 
@@ -62,7 +63,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 
 ### DEPLOY: app/bill-table
 
-The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
+The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill, headed Bill like the Based on: section above it,
 with two cost groups, Useable on top and Equip below, each with its own subtotal; the columns are only Item and Mesos.
 Behind the item name sits how much of it the level pays, a useable's count (written short, × 12.2k) or the share of an
 equipment piece's price (13%), with the question mark that explains it right after. The shop price lives in the item's info popup, and a slot with nothing in it is left out.

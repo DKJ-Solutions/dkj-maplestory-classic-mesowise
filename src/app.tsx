@@ -1871,7 +1871,7 @@ function UseableRows(props: UseableInput) {
 function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; level: number; help: boolean }; useable: { rows: ComponentChildren; total: number } | null }) {
   const { equip, useable } = props
   return (
-    <BillTable variant="with-level" grouped head={<BillHead item="Item" level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
+    <BillTable variant="with-level" grouped heading="Bill" head={<BillHead item="Item" level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
       {/* Useable bovenaan (Dave, 8 oktober 2026): potions en ammo kosten elk level geld, equip alleen als er iets geüpgraded moet worden. */}
       {useable && (
         <BillGroup name="Useable">
@@ -1939,9 +1939,11 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; level: numb
  * en het totaal in tfoot; met `grouped` brengen de regels hun eigen tbody's mee (BillGroup). `variant` zegt welke kolommen er zijn: `with-qty`
  * (Useable), `with-level` (Level cost) of `no-price` (de slotkeuze achter Equip).
  */
-function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; grouped?: boolean; head: ComponentChildren; total?: ComponentChildren; children: ComponentChildren }) {
+function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; grouped?: boolean; heading?: string; head: ComponentChildren; total?: ComponentChildren; children: ComponentChildren }) {
   return (
     <section class="bill" aria-label="Bill">
+      {/* Een kop boven de bill, zoals "Based on:" erboven (Dave, 8 oktober 2026). */}
+      {props.heading && <h3 class="based-on-head bill-head">{props.heading}</h3>}
       <table class={`advised-bill ${props.variant}`}>
         <thead>{props.head}</thead>
         {props.grouped ? props.children : <tbody>{props.children}</tbody>}
