@@ -3533,7 +3533,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(tableRows[2].querySelector('.why-value .why-help')).not.toBeNull()
     expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
     // Het antwoord noemt de aanvallen met hun stars (Dave, 8 oktober 2026).
-    expect(rows[3].calc).toMatch(new RegExp(`^${rows[2].result} aanval(len)? met \d stars?$`))
+    expect(rows[3].calc).toMatch(new RegExp(`^${rows[2].result} aanval(len)? met \\d stars?$`))
     // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de hits per kill en de kills (Dave, 8 oktober 2026).
     expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Hits per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
