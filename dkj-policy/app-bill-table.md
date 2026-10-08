@@ -39,21 +39,39 @@
 
 ### PLAN
 
+Dave, October 8, 2026, in three steps: put the advised rows in a table; give that table its own section like Based on;
+then make Level cost one bill, grouped into the equipment you buy and the useables you use from 0 to 100% of the level,
+whose two subtotals add up to Total cost. Dave chose five columns with a useable's quantity under Shop.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Bill components (BillHead, BillRow, totals) render table rows; BillTable wraps them in thead/tbody/tfoot inside `section.bill`
+- [x] Level cost popup (Cheapest and Profile): one LevelBill with an Equip and a Useable group, each with a subtotal, and Total cost as their sum
+- [x] CSS from grid columns to a fixed table layout, plus category and subtotal rows
 
 ### TEST
 
+- [x] Existing bill tests rescoped to the Equip group; new test: one table, two groups, subtotals sum to Total cost, equal to the Level cost button (Cheapest and Profile)
+- [x] Full suite and lint gate green
+- [ ] Dave has looked at the preview at phone width
+
 ### DEPLOY: app/bill-table
 
-**Score:**
+The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
+with two cost groups, Equip and Useable, each with its own subtotal; a useable's quantity sits under Shop and its cost
+under Level.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Level cost now shows the whole level on one bill: the equipment you buy and the potions and ammo you use from 0 to 100%,
+each with a subtotal, adding up to the Total cost on the Level cost button. Before, the popup showed only the equipment,
+so its total did not match the button.
+
+**Score:** 4
 
 #### Pull Request
 
-Advised bills as one table
+Level cost as one bill, grouped into Equip and Useable
 
