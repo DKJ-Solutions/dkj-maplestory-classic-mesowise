@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**0 / 5 patch entries** <!-- pending-tally -->
+**1 / 6 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/250-no-double-tap-zoom · 20261008-071029Z
+
+The whole page now carries `touch-action: manipulation`, so a double-tap on text or background no longer zooms in; before, only the buttons had it. Pinch zoom stays available.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On a phone, a double-tap no longer zooms the app in by accident, with no obvious way back out.
+
+**Score:** 3
+
+#### Pull Request
+
+Double-tap no longer zooms the page in on a phone; pinch zoom still works
+
+[PR #251](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/251)
+
+---
 
 ### DEPLOY: app/card-popup-data-on-body · 20261007-213638Z
 
@@ -103,3 +123,4 @@ every element names what it is, so two buttons that do different things no longe
 [PR #244](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/244)
 
 ---
+
