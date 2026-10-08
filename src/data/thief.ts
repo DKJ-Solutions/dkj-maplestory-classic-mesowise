@@ -73,7 +73,7 @@ export const SUBI: ThrowingStar = star(294, 'Subi Throwing Stars', 15, 0.3, 500)
  * Subi (twaalf NPC's) en Wolbi (alleen Max, Kerning City Civic Center) verkoopt een NPC; de rest is een drop of
  * Free Market, maar wie ze heeft, laat ze net zo herladen. Steely Throwing Knives staan erbij: de pagina noemt
  * de waarden, alleen waar je ze krijgt nog niet ("Coming soon"). Alleen Subi en Wolbi hebben een koopprijs per set (`buy`, 1.000 meso
- * voor Wolbi): Advised koopt alleen uit de NPC-stars (#198).
+ * voor Wolbi): Cheapest koopt alleen uit de NPC-stars (#198).
  */
 export const THROWING_STARS: readonly ThrowingStar[] = [
   SUBI,

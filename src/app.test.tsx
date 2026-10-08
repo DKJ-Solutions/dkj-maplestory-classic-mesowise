@@ -41,13 +41,13 @@ const [SHOE_A] = twoItems('shoes')
 const [TOP_A] = twoItems('top')
 
 /**
- * Wat het level kost, zoals Level cost het toont: het totaal onder "Your character". De Report-kaart met het losse
+ * Wat het level kost, zoals Level cost het toont: het totaal onder "Profile". De Report-kaart met het losse
  * bedrag bestaat niet meer (Dave, 8 oktober 2026); de rekensom zelf staat onder src/levelCost.test.ts.
  */
 const levelCostText = () => document.querySelector('.total-cost .cost-ingame tfoot td:last-child')?.textContent ?? undefined
 /** De kaartklassen op het scherm, per titel (#192): de kaarten hebben geen oog meer, maar twee knoppen onder de kop. */
 const CARD_CLASS = { Equip: '.equipment', Skillpoints: '.skills', Monster: '.hunted', Potions: '.potions', 'Ability points': '.profile', 'Total stats': '.total-stats' } as const
-/** De knop "Your character" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
+/** De knop "Profile" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
 const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Profile' })
 /** De titel in de kop van een kaart (Dave, 5 oktober 2026). */
 const headTitle = (card: keyof typeof CARD_CLASS) => viewButton(card).closest('.card')!.querySelector('.spot-head .spot-name')!.textContent
@@ -105,7 +105,7 @@ const reportCard = () => {
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
 
 // Een slot heet in het scherm Weapon, Hat, Top, Bottom, Overall of Shoes; de zoekbalk heet "Zoek je <Slot>".
-// In Your character kies je de slots achter het potlood bij Equip onder "Based on:" (Dave, 8 oktober 2026): daar staat elk slot als regel met een potlood dat de popup van het slot opent, met de zoekbalk. Staat een van die popups al open, dan blijft hij.
+// In Profile kies je de slots achter het potlood bij Equip onder "Based on:" (Dave, 8 oktober 2026): daar staat elk slot als regel met een potlood dat de popup van het slot opent, met de zoekbalk. Staat een van die popups al open, dan blijft hij.
 const searchBox = (card: HTMLElement, slot: string) => {
   if (!within(card).queryByLabelText(`Zoek je ${slot}`)) {
     if (!within(card).queryByRole('button', { name: `${slot} wijzigen` })) fireEvent.click(within(card).getByRole('button', { name: 'Equip wijzigen' }))
@@ -296,7 +296,7 @@ describe('begin zonder opslag', () => {
     }
 
     it('staat bij Skillpoints, Monster en Potions in de popup van de kaart, in beide weergaven, en niet bij Equip (Dave, 8 oktober 2026), Ability points en Total stats', () => {
-      // Geen kaart heeft een oog in de kop (#188, #192): onder de kop Cheapest en Your character, het rapport zit in hun popup.
+      // Geen kaart heeft een oog in de kop (#188, #192): onder de kop Cheapest en Profile, het rapport zit in hun popup.
       for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         expect(card.querySelector('.spot-head button'), title).toBeNull()
@@ -3428,7 +3428,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
     expect(card().querySelector('table')).not.toBeNull()
-    // Your character blijft de reden tonen: hij heeft zelf geen mob.
+    // Profile blijft de reden tonen: hij heeft zelf geen mob.
     expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
     expect(card().textContent).toContain('Monster: — → ')
   })
@@ -3575,7 +3575,7 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', () => {
+describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', () => {
   const cheapestCard = () => document.querySelector<HTMLElement>('.total-cost .cheapest-cost')!
   const diffCard = () => document.querySelector<HTMLElement>('.total-cost .cost-difference')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
@@ -3627,7 +3627,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(popupOf(left)).not.toBe(popupOf(right))
   })
 
-  it('toont In game, Cheapest en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
+  it('toont Profile, Cheapest en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
     toLevel20()
     const profileBefore = profileFields()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
@@ -3636,7 +3636,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
     expect(yours().nextElementSibling).toBe(cheapestCard())
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
-    // Onder de h3 van In game en Cheapest de zin over hun factuur (Dave, #183).
+    // Onder de h3 van Profile en Cheapest de zin over hun factuur (Dave, #183).
     expect(yours().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 20 Thief')
     expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
@@ -3650,7 +3650,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
 
   it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
-    // Kolommen: de soort, Your character, Cheapest en Difference (Dave, #183).
+    // Kolommen: de soort, Profile, Cheapest en Difference (Dave, #183).
     expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
@@ -3675,7 +3675,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(-mesoOf(diffTotal.textContent))
   })
 
-  it('zet elk stuk dat Cheapest in de winkel koopt als eigen regel op de factuur van Cheapest, samen als Shop in Difference, en nooit op die van Your character (#192)', () => {
+  it('zet elk stuk dat Cheapest in de winkel koopt als eigen regel op de factuur van Cheapest, samen als Shop in Difference, en nooit op die van Profile (#192)', () => {
     toLevel20()
     const labels = (card: HTMLElement) => Array.from(card.querySelectorAll('tbody tr th')).map((th) => th.textContent)
     expect(labels(yours())).not.toContain('Shop')
@@ -3855,7 +3855,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
   })
 })
 
-describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
+describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
   const CARDS = Object.keys(CARD_CLASS) as (keyof typeof CARD_CLASS)[]
   const cardOf = (title: keyof typeof CARD_CLASS) => homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
   const labels = (title: keyof typeof CARD_CLASS) => [...cardOf(title).querySelectorAll('.view-actions button')].map((b) => b.textContent)
@@ -3888,7 +3888,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     return advisedSetup(input).result
   }
 
-  it('zet bij elke kaart eerst Cheapest en dan Your character, en geen oog of knop in de kop (#192)', () => {
+  it('zet bij elke kaart eerst Cheapest en dan Profile, en geen oog of knop in de kop (#192)', () => {
     for (const title of CARDS) {
       expect(labels(title), title).toEqual(['Cheapest', 'Profile'])
       expect(cardOf(title).querySelectorAll('.spot-head button'), title).toHaveLength(0)
@@ -3897,7 +3897,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     }
   })
 
-  it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Cheapest en Your character om beurten (#192)', () => {
+  it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Cheapest en Profile om beurten (#192)', () => {
     for (const title of CARDS) {
       const advised = within(cardOf(title)).getByRole('button', { name: 'Cheapest' })
       const own = within(cardOf(title)).getByRole('button', { name: 'Profile' })
@@ -3914,7 +3914,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
   })
 
   // Elke job die de app kent wordt doorgerekend (isComputed), dus elke job krijgt het advies. De tak zonder advies staat in app.notComputed.test.tsx.
-  it('geeft bij elke job (Thief, Warrior, Bowman, Magician) op elke kaart Cheapest en Your character, in die volgorde', () => {
+  it('geeft bij elke job (Thief, Warrior, Bowman, Magician) op elke kaart Cheapest en Profile, in die volgorde', () => {
     for (const job of ['warrior', 'bowman', 'magician'] as const) {
       cleanup()
       localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
@@ -4005,7 +4005,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     }
   })
 
-  it('toont achter Cheapest bij Monster de mob uit cheapestSettings en laat Your character op je eigen mob staan (#192)', () => {
+  it('toont achter Cheapest bij Monster de mob uit cheapestSettings en laat Profile op je eigen mob staan (#192)', () => {
     const r = setUpAdvisedDiffers()
     const advisedMob = r.drafts[0].name
     expect(advisedMob).not.toBe('Slime')
@@ -4017,7 +4017,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     expect((within(own).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
   })
 
-  it('toont achter Cheapest bij Skillpoints de skillpunten uit cheapestSettings en laat Your character op wat je zette (#192)', () => {
+  it('toont achter Cheapest bij Skillpoints de skillpunten uit cheapestSettings en laat Profile op wat je zette (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.changes.some((c) => c.kind === 'skills'), 'het advies zet skillpunten').toBe(true)
     const level = (d: HTMLElement, name: string) => d.querySelector(`[aria-label^="${name} level "]`)!.getAttribute('aria-label')!.replace(`${name} level `, '')
@@ -4034,7 +4034,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     expect(profileFields()).toEqual(before)
   })
 
-  it('toont achter Cheapest bij Potions de potions uit cheapestSettings en laat Your character op je eigen keuze (#192)', () => {
+  it('toont achter Cheapest bij Potions de potions uit cheapestSettings en laat Profile op je eigen keuze (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.potions.hp).not.toBe('White Potion')
     const d = openView('Potions', 'Cheapest')
@@ -4234,7 +4234,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       return name
     }
 
-    it('zet onder elke Cheapest-popup de ondertitel "Lv. <n> <Job>", behalve in Level cost en Useable, die bovenaan onder "Based on:" Char (Lv. <n> <Job>) en Mob (<mob>) zetten; onder Your character geen', () => {
+    it('zet onder elke Cheapest-popup de ondertitel "Lv. <n> <Job>", behalve in Level cost en Useable, die bovenaan onder "Based on:" Char (Lv. <n> <Job>) en Mob (<mob>) zetten; onder Profile geen', () => {
       for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
         setJob(job)
         const who = totalCostWho('20', job)
@@ -4259,10 +4259,10 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('zet in Your character van Level cost dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet profile en het label profile (Dave, 8 oktober 2026)', () => {
+    it('zet in Profile van Level cost dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet profile en het label profile (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       const who = totalCostWho('20', 'thief')
-      // Je eigen mob: de mob die je in Your character van Monster koos, niet die van het advies.
+      // Je eigen mob: de mob die je in Profile van Monster koos, niet die van het advies.
       fireEvent.click(viewButton('Monster'))
       chooseMob('Slime')
       closeView('Monster')
@@ -4330,7 +4330,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
     })
 
-    it('toont in Your character van Level cost het vak Mob ook zonder gekozen mob, met een placeholder en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
+    it('toont in Profile van Level cost het vak Mob ook zonder gekozen mob, met een placeholder en zonder i-knopje, en daarna dezelfde mob als Monster in Profile (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       let d = openView('Equip', 'Profile')
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
@@ -4348,7 +4348,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
     })
 
-    it('zet in Your character van Level cost een potlood naast de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Cheapest heeft ze niet (Dave, 8 oktober 2026)', () => {
+    it('zet in Profile van Level cost een potlood naast de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Cheapest heeft ze niet (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       expect(openView('Equip', 'Cheapest').querySelector('.based-on .equip-edit[aria-label$=" wijzigen"]')).toBeNull()
       closeView('Equip')
@@ -4375,7 +4375,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       // Gevuld: i-knopje en potlood naast elkaar.
       expect(within(mob).getByRole('button', { name: 'Info over Slime' })).toBeTruthy()
       expect(within(mobRow).getByRole('button', { name: 'Mob wijzigen' })).toBeTruthy()
-      // Char: het potlood opent Ability points van Your character; het i-knopje blijft.
+      // Char: het potlood opent Ability points van Profile; het i-knopje blijft.
       expect(within(char).getByRole('button', { name: /^Stats van / })).toBeTruthy()
       fireEvent.click(within(charRow).getByRole('button', { name: 'Char wijzigen' }))
       const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
@@ -4490,7 +4490,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(advised.getAttribute('data-based-on-monster')).toBe(mob)
       expect(advised.getAttribute('data-sheet')).toBe('cheapest')
       closeView('Monster')
-      // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
+      // In Profile de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
       const worn = openView('Monster', 'Profile')
       const saved = worn.querySelector<HTMLSelectElement>('select')!.value
       expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-monster') ?? '').toBe(saved)
@@ -4603,7 +4603,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     })
   })
 
-  it('toont achter Cheapest bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {
+  it('toont achter Cheapest bij Ability points de base AP uit cheapestSettings en bij Profile wat je zette (#192)', () => {
     const r = setUpAdvisedDiffers()
     const before = profileFields() as ProfileDraft
     expect(r.profileDraft.luk).not.toBe(before.luk)
@@ -4616,7 +4616,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     expect(profileFields()).toEqual(before)
   })
 
-  it('leidt Total stats achter Cheapest af van de base AP van het advies, en laat Your character op je eigen AP (#192)', () => {
+  it('leidt Total stats achter Cheapest af van de base AP van het advies, en laat Profile op je eigen AP (#192)', () => {
     const r = setUpAdvisedDiffers()
     const before = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const range = (draft: ProfileDraft) => {
@@ -4659,7 +4659,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
   })
 
   it('toont bij Monster Cheapest zonder gekozen mob de goedkoopste mob, zonder te crashen (#192, #193)', () => {
-    // Zonder mob gekozen stelt het advies er een voor (#193); Your character blijft leeg.
+    // Zonder mob gekozen stelt het advies er een voor (#193); Profile blijft leeg.
     const advised = cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: [], profileDraft: DEFAULT_PROFILE, potionChoice: NO_POTION_CHOICE }).drafts[0]
     expect(advised).toBeDefined()
     const d = openView('Monster', 'Cheapest')
@@ -4675,7 +4675,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       closeView(title)
       await frame()
       expect(document.activeElement, title).toBe(advised)
-      // En bij Your character op zijn eigen knop, niet op Cheapest.
+      // En bij Profile op zijn eigen knop, niet op Cheapest.
       const own = within(cardOf(title)).getByRole('button', { name: 'Profile' })
       fireEvent.click(own)
       closeView(title)
@@ -4698,7 +4698,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     expect(named.filter((t) => /cheapest/i.test(t)).length).toBeGreaterThan(0)
   })
 
-  // Dave, 6 oktober 2026, #192: onder de factuur van Your character en van Cheapest zes icoonknoppen, een per kaart.
+  // Dave, 6 oktober 2026, #192: onder de factuur van Profile en van Cheapest zes icoonknoppen, een per kaart.
   describe('de zes kaartknoppen in Level cost', () => {
     const OWN = ['Equip', 'Skillpoints', 'Monster', 'Potions', 'Ability points', 'Total stats'] as const
     const part = (which: 'cost-ingame' | 'cheapest-cost') => document.querySelector<HTMLElement>(`section.total-cost .${which}`)!
@@ -4719,7 +4719,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('opent in Your character de popup van die kaart om te wijzigen, en in Cheapest zijn Cheapest-popup om te lezen', () => {
+    it('opent in Profile de popup van die kaart om te wijzigen, en in Cheapest zijn Cheapest-popup om te lezen', () => {
       setUpAdvisedDiffers()
       for (const title of OWN.filter((t) => t !== 'Equip')) {
         fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Profile` }))
@@ -4848,8 +4848,8 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
   })
 })
 
-// Your character als tabel (Dave, 8 oktober 2026): dezelfde regels als Cheapest, met wat je draagt.
-describe('equipment: Your character als tabel', () => {
+// Profile als tabel (Dave, 8 oktober 2026): dezelfde regels als Cheapest, met wat je draagt.
+describe('equipment: Profile als tabel', () => {
 
   it('toont de popup met de tag profile, en de slots in de slotkeuze achter het potlood bij Equip', () => {
     openHomeEquipment()

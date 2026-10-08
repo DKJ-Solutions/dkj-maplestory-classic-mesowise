@@ -184,7 +184,7 @@ describe('levelInvoice: de uitleg achter het aantal stars (Dave, 6 oktober 2026,
   })
 })
 
-describe('levelInvoice: een regel per stuk equipment uit de winkel voor Advised (Dave, 6 oktober 2026, #192)', () => {
+describe('levelInvoice: een regel per stuk equipment uit de winkel voor Cheapest (Dave, 6 oktober 2026, #192)', () => {
   it('zet zonder aankopen geen winkelregel op de factuur', () => {
     expect(invoiceOf(thief).lines.some((l) => l.shop)).toBe(false)
     const none = levelInvoice(drafts, thief, [])

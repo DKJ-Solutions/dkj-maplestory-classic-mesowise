@@ -19,7 +19,7 @@ const input = (job: Job, level: number, mob: string): CheapestInput => ({
   potionChoice: NO_POTION_CHOICE,
 })
 
-/** Wat je hebt na Overnemen van deze uitkomst: de equip, het profiel, de mob en de potions van Advised. */
+/** Wat je hebt na Overnemen van deze uitkomst: de equip, het profiel, de mob en de potions van Cheapest. */
 const afterTake = (user: CheapestInput, s: ReturnType<typeof advisedSetup>): CheapestInput => ({
   ...user,
   equipment: s.equipment,
@@ -42,7 +42,7 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     }
   }
 
-  it('koopt na Overnemen niets meer en verandert niets meer: Advised is dan je eigen setup (Difference 0)', () => {
+  it('koopt na Overnemen niets meer en verandert niets meer: Cheapest is dan je eigen setup (Difference 0)', () => {
     let bought = 0
     for (const [job, level, mob] of cases) {
       const user = input(job, level, mob)
@@ -54,7 +54,7 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
       expect(again.purchases.map((p) => p.name), label + ' koopt').toEqual([])
       expect(again.result.changes, label + ' verandert').toEqual([])
       expect(again.shop, label).toBe(0)
-      // Difference: het totaal van je factuur na Overnemen is dat van Advised erna.
+      // Difference: het totaal van je factuur na Overnemen is dat van Cheapest erna.
       const mine = total(taken)
       const advised = total(afterTake(taken, again), again.purchases.map((p) => ({ ...p.horizon, name: p.name, price: p.price })))
       expect(advised, label + ' totaal').toBe(mine)
@@ -76,7 +76,7 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     expect(MAX_EQUIP_ROUNDS).toBeGreaterThan(0)
   })
 
-  it('noemt de stars die de factuur van Advised telt, voor een leeg Ammo-slot (#189)', () => {
+  it('noemt de stars die de factuur van Cheapest telt, voor een leeg Ammo-slot (#189)', () => {
     const user = { ...input('thief', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Steel Igor', name: '', stat: '' } } }
     const s = advisedSetup(user)
     expect(s.ammo).toBe(SUBI.name)
@@ -88,8 +88,8 @@ describe('advisedSetup: een vast punt (Dave, 6 oktober 2026, #192)', () => {
     expect(advisedSetup(input('warrior', 20, 'Snail')).ammo).toBeNull()
   })
 
-  it('noemt bij een Bowman de pijl voor het wapen van Advised, en bij een Thief met een dagger niets, net als de factuur (#189)', () => {
-    // Met een Balanche koopt Advised op level 20 een War Bow of een Crossbow (voor de groei was dat een War Bow, Dave 7 oktober 2026; beide geven op Snail
+  it('noemt bij een Bowman de pijl voor het wapen van Cheapest, en bij een Thief met een dagger niets, net als de factuur (#189)', () => {
+    // Met een Balanche koopt Cheapest op level 20 een War Bow of een Crossbow (voor de groei was dat een War Bow, Dave 7 oktober 2026; beide geven op Snail
     // dezelfde EXP per meso en dezelfde besparing, dus de keuze is een gelijkspel): de pijl volgt het wapen waarmee de factuur rekent, niet wat je draagt.
     const bowman = { ...input('bowman', 20, 'Snail'), equipment: { ...defaultEquipment(), claw: { pick: 'Balanche', name: '', stat: '' } } }
     const b = advisedSetup(bowman)
@@ -177,7 +177,7 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     expect(warrior.cheapest.claw).toMatchObject({ cheapest: 'Steel Pipe', changed: true, price: 3000 })
   })
 
-  it('blijft een vast punt: na Overnemen koopt Advised niets meer en verandert niets meer', () => {
+  it('blijft een vast punt: na Overnemen koopt Cheapest niets meer en verandert niets meer', () => {
     for (const job of JOBS_ALL) {
       for (const level of levels) {
         const user = bare(job, level)
@@ -224,7 +224,7 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     expect(advisedSetup(beginner('warrior', 8)).profile.dagger).toBe('0')
   })
 
-  it('telt de winkelprijs van het beginnerwapen op de factuur van Advised: op level 9 de volle prijs, eerder een deel (#203)', () => {
+  it('telt de winkelprijs van het beginnerwapen op de factuur van Cheapest: op level 9 de volle prijs, eerder een deel (#203)', () => {
     for (const job of ['thief', 'warrior', 'bowman'] as Job[]) {
       for (const level of [3, 9]) {
         const label = `${job} L${level}`

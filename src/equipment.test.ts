@@ -1869,7 +1869,7 @@ describe('choosePick met "Empty" (#188)', () => {
   })
 })
 
-describe('shopPrice: de winkelprijs van wat je draagt (Your character, Shop)', () => {
+describe('shopPrice: de winkelprijs van wat je draagt (Profile, Shop)', () => {
   it('geeft de prijs van een winkelwapen en van winkelarmor', () => {
     expect(shopPrice('claw', shop('Steel Igor'))).toBe(14_100)
     expect(shopPrice('top', shop('Red Pao'))).toBe(6_000)

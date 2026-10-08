@@ -1,6 +1,6 @@
-// De equip van Advised in de Equip-popup (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst omhoog gaat. Was dit level
+// De equip van Cheapest in de Equip-popup (Dave, 6 oktober 2026, #188): per slot de equip waarmee je het goedkoopst omhoog gaat. Was dit level
 // (#188); sinds #192 tot je volgende upgrade in dat slot, het advies uit het Report, met afschrijving op de factuur (writeOff.ts).
-// Puur, zonder UI-import; leest alleen wat het wapen- en armor-advies al uitrekenden. De factuur van Advised rekent met deze equip
+// Puur, zonder UI-import; leest alleen wat het wapen- en armor-advies al uitrekenden. De factuur van Cheapest rekent met deze equip
 // (Dave, 6 oktober 2026, #192): advisedEquipment zet haar om in een Equipment en de winkelprijs van wat je koopt.
 import type { ArmorUpgradeAdvice } from './armorUpgrade'
 import type { ClawUpgradeAdvice, WeaponPick } from './clawUpgrade'
@@ -33,7 +33,7 @@ export interface CheapestSlot {
   /** Bij een stuk om te kopen: de levels waarover het zich terugverdient, van je level tot je volgende upgrade in dat slot (#192). */
   horizon?: Horizon
   /**
-   * Bij een stuk om te kopen: waarom het loont (Dave, 7 oktober 2026), de uitleg achter het vraagteken in Advised. `saving` is wat het tot je
+   * Bij een stuk om te kopen: waarom het loont (Dave, 7 oktober 2026), de uitleg achter het vraagteken in Cheapest. `saving` is wat het tot je
    * volgende upgrade bespaart (null: niet uit te rekenen); `partner` het stuk waarmee het samen gekocht wordt (een top en een bottom die een
    * overall vervangen), met `cost` wat ze samen kosten. Met `required` is het het goedkoopste wapen voor een leeg wapenslot (#202): dat koop je
    * omdat je een wapen nodig hebt, niet om wat het bespaart.
@@ -137,7 +137,7 @@ export interface AdvisedEquipment {
   profile: ProfileDraft
   /** Wat de stukken samen in de winkel kosten; 0 als je niets koopt. */
   shop: number
-  /** Elk stuk dat je koopt, met zijn winkelprijs: één regel per stuk op de factuur van Advised (Dave, 6 oktober 2026, #192). */
+  /** Elk stuk dat je koopt, met zijn winkelprijs: één regel per stuk op de factuur van Cheapest (Dave, 6 oktober 2026, #192). */
   purchases: Purchase[]
 }
 
@@ -153,7 +153,7 @@ export interface Purchase {
 }
 
 /**
- * De equip waarmee de factuur van Advised rekent (Dave, 6 oktober 2026, #192): wat je draagt, plus elk stuk dat het advies koopt. Een
+ * De equip waarmee de factuur van Cheapest rekent (Dave, 6 oktober 2026, #192): wat je draagt, plus elk stuk dat het advies koopt. Een
  * slot dat verandert krijgt het winkelstuk zoals een keuze op de Equip-kaart het zet (choosePick), en een slot dat leeg raakt wordt bekend leeg.
  * Het profiel volgt via changeEquipment, dezelfde stap als een keuze op de kaart, dus weapon attack, aanvalssnelheid, WDEF en een overall die
  * top en bottom vult kloppen vanzelf. Zonder wijziging komen dezelfde objecten terug.
@@ -190,7 +190,7 @@ export function ammoInfo(name: string): { watk: number; price: number; level?: n
 }
 
 /**
- * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Advised. Een Thief
+ * De munitie waarmee de factuur rekent, op naam (Dave, 6 oktober 2026, #189): voor het Ammo-slot van Cheapest. Een Thief
  * gooit de star met de herlaadprijs uit zijn profiel (zonder keuze de Subi uit DEFAULT_PROFILE); een Bowman schiet de pijl die zijn profiel rekent
  * (arrowFor), voor zijn boog of kruisboog, en bij een eigen wapen voor een boog zoals PLAIN_ARROW. Null als hij niets gooit (throwsNothing).
  * Hoort de herlaadprijs van een Thief bij geen enkele star uit de lijst, dan een algemeen label met die prijs (#199), zoals de factuur hem telt;
