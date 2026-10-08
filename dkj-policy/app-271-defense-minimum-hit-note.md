@@ -56,7 +56,7 @@ van <mob>" line the issue names no longer exists; the gap now sits in `hitSteps`
   No real mob reaches the clamp, so `<App />` cannot be tested on it.
 - [x] Victor reviewed the code, Edith read the Dutch; their findings are folded in
 - [x] `npm run lint` clean, `npm test` green
-- [ ] Dave has looked at the result
+- [x] Dave has looked at the result and approved it (October 8, 2026)
 
 ### DEPLOY: app/271-defense-minimum-hit-note
 
