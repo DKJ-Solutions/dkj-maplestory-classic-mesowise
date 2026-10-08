@@ -752,54 +752,61 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .field-fixed { margin: 0; display: flex; align-items: center; min-height: 44px; padding: 0.25rem 0.75rem; font-size: 0.9375rem; font-weight: 600; line-height: 1.2;
   overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
 .potion-group .field-fixed { margin-bottom: 0.5rem; }
-/* De Equip-popup achter Advised (Dave, 7 oktober 2026): per slot één regel in vier kolommen: het slot, de naam ("Steel Igor"),
-   de winkelprijs en het vraagteken. De slotkolom is vast, zodat de details van elke rij recht onder elkaar beginnen; een rij zonder vraagteken
-   houdt zijn kolom leeg, net als een rij zonder prijs. Past de naam niet op 360px, dan kort hij in. Van wat je koopt staat
-   alleen het bedrag in de accentkleur, niet de naam, en de naam is nooit vet en nooit grijs (Dave, 7 oktober 2026); van een stuk dat niet loont is het bedrag gedempt, van een leeg slot het streepje. Het vraagteken opent de popup van het stuk (.item-dialog). */
-.advised-row { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr) auto 2.25rem; align-items: center; column-gap: 0.25rem; min-height: 2.25rem;
-  padding: 0.125rem 0; border-bottom: 1px solid var(--border); }
-.advised-row:last-of-type { border-bottom: 0; }
-/* De kop van de factuur (Dave, 7 oktober 2026): hetzelfde raster, kleine grijze kopjes, "Mesos" rechts boven de bedragen. */
-.advised-head { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr) auto 2.25rem; column-gap: 0.25rem; padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-.advised-head-price { grid-column: 3; text-align: right; }
+/* De facturen (Dave, 7 en 8 oktober 2026): past de naam niet op 360px, dan kort hij in. Van wat je koopt staat alleen het bedrag in de accentkleur, niet
+   de naam, en de naam is nooit vet en nooit grijs; van een leeg slot het streepje. Het vraagteken opent de popup van het stuk (.item-dialog). */
+/* Eén tabel per factuur (Dave, 8 oktober 2026): kop in thead, regels in tbody, het totaal in tfoot. De breedtes staan op de kop (table-layout: fixed);
+   elke kolom na de eerste begint met 0.25rem lucht, de tussenruimte van het oude raster, en is daarom 0.25rem breder dan zijn inhoud. */
+/* De factuur in een eigen section, zoals .based-on (Dave, 8 oktober 2026). */
+.bill { margin-bottom: 0.75rem; }
+.advised-bill { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.advised-bill th, .advised-bill td { height: 2.25rem; padding: 0.125rem 0 0.125rem 0.25rem; vertical-align: middle; }
+/* De regels van de bill van Level cost iets hoger (Dave, 8 oktober 2026), zodat ze minder op elkaar staan. */
+.with-level .advised-row > * { height: 2.75rem; }
+.advised-bill th { text-align: left; }
+.advised-bill tr > :first-child { padding-left: 0; }
+.advised-bill tbody tr { border-bottom: 1px solid var(--border); }
+.advised-bill tbody tr:last-child { border-bottom: 0; }
+.advised-head > :nth-child(1) { width: 4.75rem; }
+.advised-head > :nth-child(3) { width: calc(var(--control-h) + 0.25rem); }
+/* De kop van de factuur (Dave, 7 oktober 2026): kleine grijze kopjes boven de kolommen, "Mesos" rechts boven de bedragen. */
+.advised-bill thead tr { border-bottom: 1px solid var(--border); }
+.advised-bill .advised-head > * { height: auto; padding-top: 0; padding-bottom: 0.25rem; vertical-align: bottom; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted); }
+.advised-bill .advised-head-price { text-align: right; }
 /* Een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026): aantal en bedrag krijgen een vaste breedte, zodat ze in elke regel onder elkaar staan.
    Het vraagteken staat direct achter het aantal, want het legt uit hoe de app op dat aantal komt; het bedrag staat achteraan.
    Smaller dan de Equip-factuur (HP, MP, Ammo en Potions zijn korte slotnamen), zodat de naam van het stuk op 360px leesbaar blijft. */
-.advised-head.with-qty, .advised-row.with-qty, .equip-total.advised-total.with-qty { grid-template-columns: 3.5rem minmax(0, 1fr) 2.25rem 2.25rem 3.75rem; }
-.advised-head-qty, .advised-qty { grid-column: 3; text-align: right; font-variant-numeric: tabular-nums; }
+.with-qty .advised-head > :nth-child(1) { width: 3.5rem; }
+.with-qty .advised-head > :nth-child(3), .with-qty .advised-head > :nth-child(4) { width: 2.5rem; }
+.with-qty .advised-head > :nth-child(5) { width: 4rem; }
+.advised-bill .advised-head-qty, .advised-qty { text-align: right; font-variant-numeric: tabular-nums; }
 .advised-qty { font-size: 0.875rem; color: var(--muted); }
-.with-qty .advised-head-price, .with-qty .advised-price, .advised-total.with-qty strong { grid-column: 5; }
-.advised-total.with-qty .advised-total-label { grid-column: 1 / 5; }
-.advised-row.with-qty .help-toggle { grid-column: 4; justify-self: center; margin: -0.5rem -0.25rem; }
+.with-qty .advised-row .help-toggle { margin: -0.5rem -0.25rem; }
 /* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
    zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
-.advised-head.with-level, .advised-row.with-level, .equip-total.advised-total.with-level { grid-template-columns: 4.25rem minmax(0, 1fr) 3.75rem 3.5rem 2.25rem; }
+/* Item en Mesos (Dave, 8 oktober 2026): de naam van het stuk met zijn aantal en vraagteken erachter houdt de ruimte; de winkelprijs staat in de
+   info-popup. */
+.with-level .advised-head > :nth-child(1) { width: auto; }
+.with-level .advised-head > :nth-child(2) { width: 3.75rem; }
+/* Het vraagteken achter het aantal (Dave, 8 oktober 2026): 44px om te tikken, maar het steekt boven en onder buiten de rij, zoals de info-knop. */
+.advised-row .advised-item > .help-toggle { flex: none; margin: -0.5rem -0.5rem -0.5rem -0.25rem; }
+/* Het aantal achter de naam (Dave, 8 oktober 2026): grijs en klein zoals de kolom Qty van Useable, en het kort nooit in. */
+.advised-item > .advised-qty { flex: none; margin-left: 0.25rem; white-space: nowrap; }
 /* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */
 .meso-amount { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
 .meso-icon { flex: none; width: 0.75rem; height: 0.75rem; }
-.advised-head-level, .advised-level { grid-column: 4; text-align: right; }
+.advised-bill .advised-head-level, .advised-level { text-align: right; }
 .advised-level { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .advised-row.buy .advised-level { color: var(--accent); }
-.advised-row.with-level .help-toggle { grid-column: 5; }
-/* Het woord "Upgrade" in Level van Wearing (Dave, 8 oktober 2026): in de accentkleur van .buy, een maat kleiner zodat het in de kolom past. */
-.advised-level.verdict { font-size: 0.75rem; }
 /* Het potlood dat een slot opent (Dave, 8 oktober 2026) is dezelfde knop als elk ander potlood (.equip-edit), op de plek van het vraagteken; het staat alleen in de slotkeuze achter Equip, een factuur zonder Level. */
-.advised-row:not(.with-level) > .equip-edit { grid-row: auto; grid-column: 4; justify-self: end; }
-.advised-total.with-level .advised-total-level { grid-column: 4; }
-/* Shop in gewone tekst, niet vet en zonder accent (Dave, 7 oktober 2026): het bedrag dat telt is Level. */
-.advised-row.with-level .advised-price, .advised-row.with-level.buy .advised-price, .advised-row.with-level.option .advised-price,
-.advised-total.with-level strong:not(.advised-total-level) { font-weight: 400; color: var(--text); }
-/* Het vraagteken achter Total cost (Dave, 7 oktober 2026): in de kolom van de vraagtekens erboven, zonder dat de regel hoger wordt. */
-.advised-total.with-level .help-toggle { grid-column: 5; justify-self: end; align-self: center; margin: -0.75rem -0.5rem -0.75rem 0; }
+.advised-help .equip-edit { margin-left: auto; }
 .advised-row .slot-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
 .advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9375rem; line-height: 1.3; font-weight: 400; }
 /* Elke itemnaam in de tekstkleur, ook van een stuk dat niet loont (Dave, 7 oktober 2026); alleen het streepje van een leeg slot is grijs. */
 .advised-row.empty .advised-name { color: var(--muted); }
 /* Het knopje houdt zijn 44px om te tikken, maar steekt boven en onder buiten de rij: zo blijft de rij laag (Dave, 7 oktober 2026). */
-.advised-price { grid-column: 3; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.advised-price { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .advised-row.buy .advised-price { color: var(--accent); }
-.advised-row.option .advised-price { font-weight: 400; color: var(--muted); }
 /* De naam met de info-knop er direct achter (Dave, 7 oktober 2026): de naam kort in, de knop blijft staan. Hij is kleiner dan het vraagteken
    (20px) maar houdt 44px om te tikken; dat vlak steekt boven, onder en links over de rij heen, zodat de rij niet hoger wordt. */
 .advised-item { display: flex; align-items: center; min-width: 0; }
@@ -818,7 +825,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .skill-name.with-info { display: flex; flex-wrap: wrap; align-items: center; }
 .based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
-.advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
+.advised-row .help-toggle { margin: -0.5rem -0.5rem -0.5rem 0; }
 /* De twee popups van één stuk in Advised (Dave, 7 oktober 2026): achter het vraagteken het oordeel (Kopen, Niet kopen, Houden, Leeg laten)
    en waarom; achter de info-knop wat het stuk is, als lijst met het label links en de waarde rechts. */
 .item-verdict { margin: 0 0 0.375rem; font-size: 1.125rem; font-weight: 700; }
@@ -871,19 +878,30 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    met de prijzen erboven, zonder "meso" (de kop zegt Mesos), en een totaalstreep over de hele breedte, zoals op een bon: subtiel, maar net sterker dan de lijnen tussen de rijen (Dave, 7 oktober 2026). Zoals een echte factuur: het
    totaal even groot als de bedragen erboven, en lucht rond de totaalstreep. Onder het totaal een lijn over de hele breedte, net als erboven
    (Dave, 7 oktober 2026). */
-.equip-total.advised-total { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr) auto 2.25rem; column-gap: 0.25rem; align-items: baseline;
-  margin: 0.5rem 0 0.75rem; padding: 0.5rem 0; border-top: 1px solid var(--muted); border-bottom: 1px solid var(--muted); text-align: left; }
+/* Een streep boven Total cost en geen eronder (Dave, 8 oktober 2026). */
+.advised-bill tfoot tr { border-top: 1px solid var(--muted); }
+.advised-bill tfoot th, .advised-bill tfoot td { height: auto; padding-top: 0.5rem; padding-bottom: 0.5rem; vertical-align: baseline; }
+/* De 0.5rem lucht boven de totaalstreep zit onder de laatste regel; die wordt even veel hoger, zodat zijn inhoud niet verschuift. In de bill van
+   Level cost is die regel een subtotaal, dat zijn eigen lucht heeft. */
+.advised-bill:has(tfoot) tbody:not(.bill-group) tr:last-child > * { height: 2.75rem; padding-bottom: 0.625rem; }
+/* De kostenposten van de bill van Level cost (Dave, 8 oktober 2026): elk sluit af met een subtotaal, met een lijn erboven die net sterker is dan die
+   tussen de regels. */
+/* Boven en onder elk subtotaal een dikkere lijn (Dave, 8 oktober 2026): de post sluit af met zijn subtotaal. */
+.advised-bill .advised-subtotal { border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
+.advised-bill tbody tr.advised-subtotal { border-bottom: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
+.advised-subtotal > th, .advised-subtotal > td { height: auto; padding-top: 0.375rem; padding-bottom: 0.375rem; vertical-align: baseline; }
+.advised-subtotal td { text-align: right; white-space: nowrap; }
+.advised-subtotal strong { font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.advised-subtotal .advised-total-level { color: var(--text); }
 /* Het label rechts voor het bedrag, met 1rem ruimte ertussen (Dave, 7 oktober 2026). */
-.advised-total-label { grid-column: 1 / 3; padding-right: 1rem; font-size: 0.875rem; text-align: right; font-weight: 600; }
-.advised-total strong { grid-column: 3; font-size: 0.875rem; text-align: right;
-  font-variant-numeric: tabular-nums; white-space: nowrap; }
-.equip-total { margin: 0 0 0.75rem; text-align: right; }
+.advised-bill .advised-total-label { padding-right: 1rem; font-size: 0.875rem; text-align: right; font-weight: 600; }
+.advised-total td { text-align: right; white-space: nowrap; }
+.advised-total strong { font-size: 0.875rem; font-variant-numeric: tabular-nums; color: var(--accent); }
 /* De zes icoonknoppen onder de factuur van elk deel van Level cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
 /* De zin en de knoppen onder de factuur (#192), los van het totaal met een dunne lijn en ruimte (Dave, 6 oktober 2026). */
 .cost-setup { margin-top: 1rem; padding-top: 0.875rem; border-top: 1px solid var(--border); }
 .cost-setup .total-cost-sub { margin: 0 0 0.5rem; }
 .cost-cards { gap: 0.375rem; }
-.equip-total strong { color: var(--accent); }
 
 /* Uitleg achter een vraagteken (Dave, 7 oktober 2026; Help in app.tsx): het ronde knopje rechts, 44px om te tikken maar met een
    icoon van 24px en negatieve marge boven en onder, zodat het geen eigen rij van 44px kost. De tekst eronder is dicht tot je tikt. */
