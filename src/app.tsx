@@ -1745,7 +1745,8 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             ) : (
-              <span class="based-on-value">{props.mob}</span>
+              // Zonder gekozen mob (Wearing) zegt het vak dat je er nog een kiest, met het potlood ernaast (Dave, 8 oktober 2026).
+              props.mob === null ? <span class="based-on-value placeholder">Nog geen mob gekozen</span> : <span class="based-on-value">{props.mob}</span>
             )}
             {advised && props.mob !== null && (
               <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>

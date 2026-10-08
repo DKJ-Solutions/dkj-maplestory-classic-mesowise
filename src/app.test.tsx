@@ -4287,13 +4287,13 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
     })
 
-    it('toont in Your character van Total cost: Equip het vak Mob ook zonder gekozen mob, leeg en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
+    it('toont in Your character van Total cost: Equip het vak Mob ook zonder gekozen mob, met een placeholder en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       let d = openView('Equip', 'Wearing')
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char).toBeTruthy()
       expect(mob.querySelector('.sr-only')?.textContent).toBe('Mob: ')
-      expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
+      expect(mob.querySelector('.based-on-value.placeholder')?.textContent).toBe('Nog geen mob gekozen')
       expect(mob.querySelector('button[aria-label^="Info over"]')).toBeNull()
       expect(mob.hasAttribute('data-based-on-mob')).toBe(false)
       closeView('Equip')
@@ -4314,8 +4314,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       // Het potlood staat in een eigen kolom naast het vak, in dezelfde rij (Dave, 8 oktober 2026).
       const [charRow, mobRow] = d.querySelectorAll<HTMLElement>('.based-on .based-on-row')
       expect(mob.querySelector('.equip-edit')).toBeNull()
-      // Mob, leeg: het potlood staat er al.
-      expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
+      // Mob, nog niet gekozen: een placeholder, en het potlood staat er al.
+      expect(mob.querySelector('.based-on-value.placeholder')?.textContent).toBe('Nog geen mob gekozen')
       const mobPencil = within(mobRow).getByRole('button', { name: 'Mob wijzigen' })
       expect(mobPencil.getAttribute('aria-haspopup')).toBe('dialog')
       fireEvent.click(mobPencil)
