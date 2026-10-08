@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**2 / 7 minor entries** <!-- pending-tally -->
+**3 / 8 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/remove-report-card · 20261008-073655Z
+
+The home screen no longer shows the separate Report card below Total cost. Its five pieces of advice (ATT, DEF, Skill, Mob, Potions) remain in the report behind each card, and the EXP-table source line now sits at the bottom of Total cost. The tests that read the advice through the Report card now read it from the per-card reports.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player sees one card fewer on the home screen: what a level costs is read from Total cost, and the advice from the report on each card.
+
+**Score:** 3
+
+#### Pull Request
+
+Remove the Report card from the home screen
+
+[PR #253](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/253)
+
+---
 
 ### DEPLOY: app/info-popup-tag · 20261008-072815Z
 
