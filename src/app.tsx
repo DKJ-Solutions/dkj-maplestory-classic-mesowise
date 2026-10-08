@@ -1787,7 +1787,7 @@ function BasedOn(props: { who: string; mob: string }) {
           ) : (
             <span class="based-on-value">{props.mob}</span>
           )}
-          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob} tag="help">
+          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
             <p class="item-why">{mobWhy(props.mob)}</p>
           </PopupButton>
         </div>
@@ -2076,6 +2076,8 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; name?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
+  // Elke popup achter een vraagteken heeft het label help boven zijn titel (Dave, 8 oktober 2026), zoals info en expected bij het i-knopje.
+  const tag = props.tag ?? (props.class.split(' ').includes('help-toggle') ? 'help' : undefined)
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())
@@ -2089,7 +2091,7 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
       </button>
       {open && (
         // In data-popup heet hij naar zijn knop, "Info over Snail" of "Uitleg": zijn titel is vaak die van de popup eronder (#245).
-        <StatDialog title={props.title} tag={props.tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        <StatDialog title={props.title} tag={tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}

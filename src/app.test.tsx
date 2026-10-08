@@ -3835,6 +3835,8 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const item = openItem(bought[0])
     // De popup heet naar het bedrag uit de kolom Level (Dave, 7 oktober 2026).
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${bought[0].querySelector('.advised-level')!.textContent}?`)
+    // Elke popup achter een vraagteken heeft het label help boven zijn titel (Dave, 8 oktober 2026).
+    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('help')
     expect(item.textContent).toContain('Op deze factuur')
     expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
     closeItem(item)
