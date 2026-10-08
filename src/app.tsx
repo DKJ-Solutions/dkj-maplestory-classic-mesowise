@@ -1165,53 +1165,6 @@ function PotionsCard(props: {
   )
 }
 
-/**
- * Wat dit level kost, en de vijf adviezen die het goedkoper maken, in één kaart (Dave, 4 oktober 2026, #126):
- * loont een beter wapen (ATT), een beter stuk armor (DEF), een skillpunt (de extra mana meegerekend), een andere mob en een andere
- * potion (Dave, 6 oktober 2026). Kan de app
- * de job nog niet doorrekenen, dan staat er alleen waarom niet.
- */
-function LevelAdviceCard(props: {
-  job: Job
-  /** Of de Thief een dagger draagt (#170): dan gaan het wapen- en het skillpunt-advies over daggers en Double Stab. */
-  dagger: boolean
-  computed: boolean
-  cost: LevelCost
-  clawAdvice: ClawUpgradeAdvice
-  /** Het eerstvolgende betere wapen; null = er komt er geen meer, undefined = onbekend (geen geldig profiel). */
-  nextWeapon: Weapon | null | undefined
-  armorAdvice: ArmorUpgradeAdvice
-  equipment: Equipment
-  gender: Gender | null
-  mobAdvice: MobAdvice
-  potionAdvice: PotionAdvice
-  /** Per potion wat hij per punt kost en van je balk vult (PotionInfo). */
-  potionInfo: ComponentChildren
-  skillAdvice: SkillPointAdvice
-  placed: string | null
-  onApply: (choice: SkillChoice) => void
-}) {
-  return (
-    <section class="card level-cost" aria-live="polite">
-      <h2>Report</h2>
-      {props.computed ? (
-        <>
-          <LevelCostPart cost={props.cost} />
-          <ClawQuestion advice={props.clawAdvice} cost={props.cost} equipment={props.equipment} next={props.nextWeapon} job={props.job} dagger={props.dagger} part />
-          <ArmorQuestion advice={props.armorAdvice} cost={props.cost} equipment={props.equipment} job={props.job} gender={props.gender} part />
-          <SkillQuestion advice={props.skillAdvice} cost={props.cost} job={props.job} dagger={props.dagger} placed={props.placed} onApply={props.onApply} part>
-            <SkillSources job={props.job} dagger={props.dagger} />
-          </SkillQuestion>
-          <MobQuestion advice={props.mobAdvice} cost={props.cost} part />
-          <PotionQuestion advice={props.potionAdvice} cost={props.cost} info={props.potionInfo} part />
-        </>
-      ) : (
-        <NotComputed job={props.job} />
-      )}
-    </section>
-  )
-}
-
 /** Waar de skills vandaan komen die het skilladvies doorrekent. */
 function SkillSources(props: { job: Job; dagger?: boolean }) {
   // Een Thief met een dagger rekent ook met Double Stab (#170).
@@ -1228,46 +1181,6 @@ function SkillSources(props: { job: Job; dagger?: boolean }) {
         </p>
       ))}
     </>
-  )
-}
-
-/** De centrale vraag: wat kost je huidige level in mesos op de beste plek (issue #24). */
-function LevelCostPart(props: { cost: LevelCost }) {
-  const c = props.cost
-  const first = EXP_TABLE_LEVELS[0]
-  const last = EXP_TABLE_LEVELS[EXP_TABLE_LEVELS.length - 1]
-  const step = c.kind === 'cost' || c.kind === 'noBest' ? `Van lv ${c.level} naar ${c.level + 1}: ${nfInt.format(c.expToNext)} EXP.` : null
-  return (
-    <div class="advice-part">
-      {c.kind === 'noProfile' && <p class="hint">Vul je karakter in, dan rekent de app uit wat je level kost.</p>}
-      {c.kind === 'noTable' && (
-        <p class="hint">
-          Voor lv {c.level} kent de app de EXP nog niet: de tabel loopt van lv {first} tot en met lv {last}.
-        </p>
-      )}
-      {c.kind === 'noBest' && (
-        <p class="hint">{step} Kies de mob waarop je jaagt, dan staat hier wat dat level in mesos kost.</p>
-      )}
-      {c.kind === 'cost' && (
-        <>
-          <p class="level-cost-value">
-            {c.meso === null ? <strong>Niet haalbaar</strong> : c.meso === 0 ? <strong>Gratis</strong> : <strong>± {nfInt.format(Math.ceil(c.meso))} meso</strong>}
-          </p>
-          <p class="hint">
-            {step} Op {c.spotName}.
-            {c.meso === null && ' Die mob levert geen EXP op.'}
-            {c.meso === 0 && ' Die mob kost niets.'}
-          </p>
-        </>
-      )}
-      <p class="source">
-        EXP-tabel:{' '}
-        <a href={EXP_TABLE_SOURCE.url} target="_blank" rel="noopener noreferrer">
-          NiaMeowDB
-        </a>
-        , opgehaald op {formatDate(EXP_TABLE_SOURCE.retrieved)}.
-      </p>
-    </div>
   )
 }
 
@@ -3493,7 +3406,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
 
 /**
  * Total cost (Dave, 6 oktober 2026): wat je huidige level kost, als factuur. Per regel hoeveel potions (en munitie en reizen) je
- * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de Report-kaart (levelInvoice.ts);
+ * nodig hebt en wat ze kosten, eronder het totaal. Rekent met dezelfde mob, kills en potions als de rapporten van de kaarten (levelInvoice.ts);
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
 function InvoiceTable(props: { invoice: LevelInvoice }) {
@@ -3578,6 +3491,13 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
           )}
         </>
       )}
+      <p class="source">
+        EXP-tabel:{' '}
+        <a href={EXP_TABLE_SOURCE.url} target="_blank" rel="noopener noreferrer">
+          NiaMeowDB
+        </a>
+        , opgehaald op {formatDate(EXP_TABLE_SOURCE.retrieved)}.
+      </p>
     </section>
   )
 }
@@ -4078,29 +3998,10 @@ export function App() {
         <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
       </section>
 
-      {/* Total cost staat boven Report: eerst wat het level kost, dan hoe het goedkoper kan (Dave, 6 oktober 2026). */}
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
       <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
         <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} bought={cheapestShown ? cheapest!.bought : bought} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
-
-      <LevelAdviceCard
-        job={job}
-        dagger={dagger}
-        computed={computed}
-        cost={cost}
-        clawAdvice={clawAdvice}
-        nextWeapon={nextWeapon}
-        armorAdvice={armorAdvice}
-        equipment={equipment}
-        gender={gender}
-        mobAdvice={mobAdvice}
-        potionAdvice={potionAdvice}
-        potionInfo={potionLines}
-        skillAdvice={skillAdvice}
-        placed={placed}
-        onApply={applyPoint}
-      />
 
       {computed && (
         <p class="note">

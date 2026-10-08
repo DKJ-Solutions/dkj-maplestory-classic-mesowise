@@ -39,19 +39,30 @@
 
 ### PLAN
 
+Dave (October 8, 2026): remove the second card on the home screen, the level-cost "Report" card.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: remove `LevelAdviceCard` and `LevelCostPart`, trim the `.level-cost` CSS, move the EXP-table source line into Total cost
+- [x] Tycho: rewire the tests that read advice through the Report card to the per-card reports; add a regression test
 
 ### TEST
 
+- [x] Victor: review; stale comments fixed, the "no number before a mob is chosen" check restored
+- [x] `npm run lint` and `npx vitest run` green
+- [ ] Dave looks at the preview before the merge
+
 ### DEPLOY: app/remove-report-card
 
-**Score:**
+The home screen no longer shows the separate Report card below Total cost. Its five pieces of advice (ATT, DEF, Skill, Mob, Potions) remain in the report behind each card, and the EXP-table source line now sits at the bottom of Total cost. The tests that read the advice through the Report card now read it from the per-card reports.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player sees one card fewer on the home screen: what a level costs is read from Total cost, and the advice from the report on each card.
+
+**Score:** 3
 
 #### Pull Request
 
