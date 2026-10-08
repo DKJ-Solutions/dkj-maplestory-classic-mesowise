@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**12 / 19 minor entries** <!-- pending-tally -->
+**13 / 20 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/boxed-formulas · 20261008-201040Z
+
+Every calculation behind a question mark in the Level cost explanations is now a stacked formula: one line per number with
+what it is, each calculation step in its own box, and only the result below it. A result that was rounded up says so on one
+line under the formula. The potion and ammo explanations are each one formula now (HP or MP this level / restore per
+potion; attacks per kill × stars per attack × kills), with every computed number opening its own formula, down to your own
+stats. The one-line summary, the tables and the cost section are gone. `MulCalc` places the boxes itself, so a new formula
+only passes its numbers.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Tapping the number of potions or stars now opens a single formula, and every number in it can be tapped again to see where
+it comes from, down to your own LUK and STR + DEX. Each step is boxed, so you can see what was divided by what.
+
+**Score:** 3
+
+#### Pull Request
+
+Every formula in the explanations is built step by step in boxes
+
+[PR #272](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/272)
+
+---
 
 ### DEPLOY: app/home-only-level-cost · 20261008-192942Z
 
