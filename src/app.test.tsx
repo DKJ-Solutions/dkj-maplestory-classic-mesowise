@@ -3954,11 +3954,19 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
     expect(nameOf(advisedRow(picker, 'Hat'))).toBe('Red Loosecap (vanaf lv 20)')
     expect(advisedRow(picker, 'Hat').classList.contains('empty')).toBe(true)
+    expect(nameOf(advisedRow(picker, 'Weapon'))).toBe('Steel Titans (vanaf lv 15)')
+    expect(advisedRow(picker, 'Weapon').classList.contains('empty')).toBe(true)
     expect(advisedRow(picker, 'Bottom').classList.contains('empty')).toBe(false)
+    closeDialogs()
+    // Total stats rekent zonder het wapen boven je level: de weapon attack van Steel Titans (13) telt niet mee (Victor, 8 oktober 2026).
+    fireEvent.click(viewButton('Total stats'))
+    const watkAt10 = Number(statShown('W.ATT'))
     closeDialogs()
     // Terug op level 20 telt alles weer mee.
     atLevel('20')
     expect(freeOn()).toBe('Equip: 4 items (free)')
+    fireEvent.click(viewButton('Total stats'))
+    expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
   })
 
   it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {

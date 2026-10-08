@@ -1966,3 +1966,15 @@ describe('wearableSetup: de questhoed en het Beginner-mes (Dave, 8 oktober 2026)
     expect(wearableSetup(at('8'), sword, 'thief', null).equipment.claw).toBe(sword.claw)
   })
 })
+
+describe('wearableSetup: een overall boven je level (Victor, 8 oktober 2026)', () => {
+  it('haalt hem eraf met zijn DEF, en geeft top en bottom de startkleding met hun DEF erbij', () => {
+    // Blue Sauna Robe (overall, level 30, 75 DEF) op level 20: top en bottom waren leeg door de overall.
+    const robe = changeEquipment({ ...DEFAULT_PROFILE, level: '20', wdef: '100' }, defaultEquipment(), 'overall', choosePick('overall', defaultEquipment().overall, 'Blue Sauna Robe'), 'thief')
+    const out = wearableSetup(robe.profile, robe.equipment, 'thief', 'male')
+    expect(out.dropped).toEqual(['overall'])
+    expect([out.equipment.top.pick, out.equipment.bottom.pick]).toEqual([STARTER_CLOTHES.top.male, STARTER_CLOTHES.bottom.male])
+    // De DEF van de overall eraf, die van White Undershirt (6) en Blue Jean Shorts (4) erbij.
+    expect(out.profile.wdef).toBe(String(Number(robe.profile.wdef) - 75 + 6 + 4))
+  })
+})

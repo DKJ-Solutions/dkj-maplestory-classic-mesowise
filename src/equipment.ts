@@ -675,7 +675,8 @@ const BEGINNER_LAST_LEVEL = 9
  * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en wat je in het begin
  * gratis krijgt in een leeg slot: je startkleding (STARTER_CLOTHES; een top of bottom alleen zonder overall, zonder geslacht alleen de schoenen), vanaf
  * level 5 de questhoed (QUEST_HAT), en op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen. Een slot dat nog niet was
- * ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij.
+ * ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het mes zet wel zijn eigen weapon attack:
+ * een leeg wapenslot is op dat level het mes, ook als je zelf een getal had getypt.
  */
 export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
   const below = dropAboveLevel(profile, eq, job)
@@ -695,7 +696,9 @@ export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, ge
     // Wat een level vraagt (de hoed 5, het mes 8), alleen met een geldig level dat hoog genoeg is.
     const needs = itemLevel(slot, name) ?? 0
     if (needs > 0 && !(Number.isInteger(level) && needs <= level)) continue
-    out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], name), job)
+    // Viel er een overall af (boven je level), dan zijn top en bottom echt leeg en komt de DEF van de startkleding erbij (Victor, 8 oktober 2026).
+    const before = (slot === 'top' || slot === 'bottom') && below.dropped.includes('overall') ? { ...emptyEntry(), pick: NONE } : out.equipment[slot]
+    out = changeEquipment(out.profile, { ...out.equipment, [slot]: before }, slot, choosePick(slot, before, name), job)
   }
   return { ...out, dropped: below.dropped }
 }

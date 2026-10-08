@@ -1074,28 +1074,32 @@ function AbilityLine(props: {
 }
 
 /** De Total stats uit het statvenster: Attack (schadebereik), W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
-function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
+function TotalStatsCard(props: StatsCardProps & { equipment: Equipment; wearableDraft?: ProfileDraft }) {
   return <StatsCard {...totalStatsBody(props)} />
 }
 
 /** Wat de Total stats toont. De popup bij "Based on:" toont in plaats daarvan de stats zonder equipment (BaseStats). */
-function totalStatsBody(props: StatsCardProps & { equipment: Equipment }): StatsCardBody {
+function totalStatsBody(props: StatsCardProps & { equipment: Equipment; wearableDraft?: ProfileDraft }): StatsCardBody {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
   // Max HP en Max MP bovenaan, zoals in het statvenster van het spel (Dave, 6 oktober 2026); Level up verhoogt ze, het potlood corrigeert.
   const bars = statFieldsFor(job).filter((f) => f.key === 'hp' || f.key === 'mp')
   // In het advies (Dave, 6 oktober 2026, #192) dezelfde afleiding, gevoed met het profiel van het advies en je huidige equipment, alleen om te lezen.
-  const lead = (d: ProfileDraft, advised: boolean) => (
+  const lead = (d: ProfileDraft, advised: boolean) => {
+    // De afgeleide regels rekenen met wat je echt draagt (#264): zonder wapen boven je level, met wat je in het begin krijgt.
+    const w = advised ? d : (props.wearableDraft ?? d)
+    return (
     <>
       {bars.map((f) => (
         <StatLine key={f.key} field={f} value={d[f.key]} readOnly={advised} onSave={(text) => props.onChange({ [f.key]: text })} />
       ))}
-      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(d, job)} readOnly onSave={() => {}} />
-      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(d, job))} readOnly onSave={() => {}} />
-      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(d, job))} readOnly onSave={() => {}} />
+      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(w, job)} readOnly onSave={() => {}} />
+      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(w, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(w, job))} readOnly onSave={() => {}} />
       {!advised && isComputed(job) && <Help class="total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</Help>}
     </>
-  )
+    )
+  }
   const mdef = wornMdef(props.equipment, job)
   return { ...props, className: 'total-stats', card: 'total', icon: 'chart', title: 'Total stats', lead, derived: mdef === null ? undefined : { magicDef: String(mdef) }, fields: shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key)) }
 }
@@ -1624,7 +1628,6 @@ type BasedOnEquip = {
   edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void; slot: (slot: EquipSlot, button: HTMLButtonElement) => void; editing: EquipSlot | null }
 }
 
-/** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
 /**
  * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items (free)"), of naar
  * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of niets te kopen.
@@ -3885,7 +3888,7 @@ export function App() {
   const usedPotions = useMemo(() => resolvePotions(job, potionChoice, parsedProfile), [job, potionChoice, parsedProfile])
   const profile = useMemo(() => (computed && parsedProfile ? { ...parsedProfile, potions: usedPotions } : null), [computed, parsedProfile, usedPotions])
   // Een Thief met een dagger (#170): het wapen- en het skillpunt-advies gaan dan over daggers en Double Stab.
-  const dagger = job === 'thief' && profileDraft.dagger.trim() === '1'
+  const dagger = job === 'thief' && wearable.profile.dagger.trim() === '1'
   // De melding staat bij de kaart waar het foute veld staat.
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
@@ -4243,7 +4246,7 @@ export function App() {
       <section class="stats-group" aria-label="Stats">
         {/* Auto assign en je stats rekenen met wat je op je level kunt dragen (#264). */}
         <ProfileCard job={job} draft={profileDraft} equipment={wearable.equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
-        <TotalStatsCard job={job} draft={profileDraft} equipment={wearable.equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
+        <TotalStatsCard job={job} draft={profileDraft} wearableDraft={wearable.profile} equipment={wearable.equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
       </section>
 
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}

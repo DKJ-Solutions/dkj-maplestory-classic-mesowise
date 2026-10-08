@@ -69,6 +69,7 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 - [x] Victor's review: fixed the 1st-job skill point below level 10 in the fresh start, Double Stab missing from the change list, a guard so Overnemen never writes a profile the app cannot compute, and the help text; dead code noted on #260
 - [x] Marlowe's second read: the framing points (saving and "al de goedkoopste" compare a from-scratch build with owned gear; Overnemen overwrites SP, AP and equipment) are handed to Dave as one decision
 - [x] App tests for Overnemen: profile and equipment unchanged, the saving is the player's own difference, undo restores, and "al de goedkoopste" exactly when the player's level is not dearer
+- [x] Victor's final review: Total stats' attack lines and the dagger flag for the skill text read the wearable setup, an overall above the level gives the starter top and bottom their DEF, the knife's weapon attack is documented; tests for both
 - [x] Dave has looked at the preview and said ship it
 
 ### DEPLOY: app/cheapest-fresh-start
