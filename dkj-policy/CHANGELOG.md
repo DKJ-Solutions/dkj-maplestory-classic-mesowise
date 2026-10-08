@@ -2,7 +2,37 @@
 
 ## [Unreleased]
 
-**9 / 14 minor entries** <!-- pending-tally -->
+**10 / 15 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/cheapest-fresh-start · 20261008-144817Z
+
+Cheapest's input is built by `freshStart` from job, level, gender, Max HP and the worn equipment, and `cheapestFor` measures its changes and
+saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest, and
+Overnemen writes only the mob and the potions. `wearableSetup` is the setup as every calculation sees it: equipment above the
+character's level left out (it stays stored), and the free starting items in an empty slot.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Cheapest now works out your setup by itself from your job and level: skill points, AP, mob and potions, starting from the
+equipment you already wear and buying only what pays off on top. What you filled in no longer gets in the way, so a profile
+with a mistake (more skill points than your level allows) no longer leaves Cheapest with only a question mark. "Based on:"
+shows the equipment you wear ("3 items (free)") and the new equipment Cheapest buys ("1 item (upgrade)"). Equipment above your
+level no longer counts: it stays saved, shows grey with the level it needs, and counts again once you reach that level.
+An empty slot counts as what every character gets at the start: the starter clothes, from level 5 the quest hat, and on
+level 8 and 9 the Fruit Knife. Overnemen lists what differs from your own setup and takes over only the mob and
+the potions, which you can change freely in the game; your skill points, AP and equipment stay as they are.
+
+**Score:** 4
+
+#### Pull Request
+
+Cheapest builds its own setup from your level and gear; starting items count as free
+
+[PR #265](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/265)
+
+---
 
 ### DEPLOY: app/bill-table · 20261008-122735Z
 
