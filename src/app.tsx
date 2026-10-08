@@ -1626,13 +1626,13 @@ type BasedOnEquip = {
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
 /**
- * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("Je draagt 3 items"), of naar
- * equip die je nog moet kopen ("Te kopen: 1 item"). Zonder stukken: nog niets gekozen, of niets te kopen.
+ * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items (free)"), of naar
+ * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of niets te kopen.
  */
 const equipSummary = (items: readonly unknown[], kind: 'worn' | 'bought') => {
   const n = `${items.length} ${items.length === 1 ? 'item' : 'items'}`
-  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `Te kopen: ${n}`
-  return items.length === 0 ? 'Nog niets gekozen' : `Je draagt ${n}`
+  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `${n} (upgrade)`
+  return items.length === 0 ? 'Nog niets gekozen' : `${n} (free)`
 }
 
 /**

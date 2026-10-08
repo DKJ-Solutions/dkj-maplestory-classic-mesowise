@@ -3935,14 +3935,14 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     // Equip: wat je draagt, ook als Cheapest het houdt; Cheapest rekent ermee en het kost niets.
     const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
     // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
-    expect(worn.textContent).toBe('Equip: Je draagt 1 item')
+    expect(worn.textContent).toBe('Equip: 1 item (free)')
     // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
     const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
     const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
     expect(buys).toBeGreaterThan(0)
     // En dat je dit nog moet kopen (Dave, 8 oktober 2026).
-    expect(bought.textContent).toBe(`New equip: Te kopen: ${buys} ${buys === 1 ? 'item' : 'items'}`)
-    expect(within(bought).getByRole('button', { name: `New equip: Te kopen: ${buys} ${buys === 1 ? 'item' : 'items'}` })).toBeTruthy()
+    expect(bought.textContent).toBe(`New equip: ${buys} ${buys === 1 ? 'item' : 'items'} (upgrade)`)
+    expect(within(bought).getByRole('button', { name: `New equip: ${buys} ${buys === 1 ? 'item' : 'items'} (upgrade)` })).toBeTruthy()
   })
 
   it('maakt elke Cheapest-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
@@ -4222,7 +4222,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Profile')
-      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|Je draagt \d+ items?)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? \(free\))$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('profile')
@@ -4868,7 +4868,7 @@ describe('equipment: Your character als tabel', () => {
     expect(row.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
-    const toggle = within(row).getByRole('button', { name: 'Equip: Je draagt 2 items' })
+    const toggle = within(row).getByRole('button', { name: 'Equip: 2 items (free)' })
     expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4934,7 +4934,7 @@ describe('equipment: Your character als tabel', () => {
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
-    expect(within(dialog).getByRole('button', { name: 'Equip: Je draagt 1 item' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 1 item (free)' })).toBeTruthy()
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {
