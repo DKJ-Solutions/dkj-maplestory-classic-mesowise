@@ -3443,20 +3443,26 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
  * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
  * getal wat het is. De blokken eronder werken elk getal uit, bij de stars als deelvraag per getal. Is de uitkomst naar boven afgerond, dan staat dat eronder.
  */
-function WhySummary(props: { terms: readonly [{ value: string; unit: string }, '×' | '÷', { value: string; unit: string }]; result: { value: string; unit: string }; exact: number; qty: number }) {
-  const [a, op, b] = props.terms
+function WhySummary(props: { terms: readonly ({ value: string; unit: string } | '×' | '÷')[]; result: { value: string; unit: string }; exact: number; qty: number }) {
   const term = (t: { value: string; unit: string }, cls = 'why-term') => (
     <span class={cls}>
       <strong>{t.value}</strong>
       <small>{t.unit}</small>
     </span>
   )
+  const spoken = props.terms.map((t) => (t === '×' ? 'maal' : t === '÷' ? 'gedeeld door' : `${t.value} ${t.unit}`)).join(' ')
   return (
     <div class="why-summary">
-      <p class="why-summary-formula" aria-label={`${a.value} ${a.unit} ${op === '×' ? 'maal' : 'gedeeld door'} ${b.value} ${b.unit} is ${props.result.value} ${props.result.unit}`}>
-        {term(a)}
-        <span class="why-op" aria-hidden="true">{op}</span>
-        {term(b)}
+      <p class="why-summary-formula" aria-label={`${spoken} is ${props.result.value} ${props.result.unit}`}>
+        {props.terms.map((t) =>
+          typeof t === 'string' ? (
+            <span class="why-op" aria-hidden="true">
+              {t}
+            </span>
+          ) : (
+            term(t)
+          ),
+        )}
         <span class="why-op" aria-hidden="true">=</span>
         {term(props.result, 'why-term why-term-result')}
       </p>
@@ -3564,16 +3570,15 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
-  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): hoe vaak je deze mob aanvalt tot hij dood is, en waarom zoveel kills. Elk blok eindigt
-  // met zijn antwoord, uitgelicht; bovenaan de eindformule die de twee antwoorden vermenigvuldigt, en als laatste wat herladen kost. Een hit is
-  // één star of pijl, dus de formule zegt hits per kill en niet stars per aanval (Dave, 8 oktober 2026).
+  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel aanvallen per kill, en waarom zoveel kills. Elk blok
+  // eindigt met zijn antwoord, uitgelicht; bovenaan de eindformule: aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
+  // ook als die aanval twee stars gooit (Dave, 8 oktober 2026). Als laatste wat herladen kost.
   const pieces = arrows ? 'pijlen' : 'stars'
-  const hits = `${w.perKill === 1 ? 'hit' : 'hits'} per kill`
+  const attacks = w.attacksToKill === 1 ? 'aanval' : 'aanvallen'
   const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
-    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP. Het antwoord noemt de aanvallen
-    // met hun stars, en telt die als hits voor de formule bovenaan.
-    ...inGroup(`Hoe vaak moet je ${w.mob} gemiddeld aanvallen tot hij dood is?`, [
+    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP.
+    ...inGroup(`Waarom ${nfInt.format(w.attacksToKill)} ${attacks} per kill op ${w.mob}?`, [
     // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
     // die eindigt met deze rij als antwoord.
     {
@@ -3595,8 +3600,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
       result: `± ${oneDecimal(perAttack)}`,
     },
     { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
-    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
-    { label: 'Hits per kill', calc: <>{nfInt.format(w.attacksToKill)} {w.attacksToKill === 1 ? 'aanval' : 'aanvallen'} met {w.starsPerAttack} {w.starsPerAttack === 1 ? piece : pieces}</>, result: nfInt.format(w.perKill), total: true },
+    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill), total: true },
     ]),
     ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
   ]
@@ -3613,7 +3617,13 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   return (
     <>
       <WhySummary
-        terms={[{ value: nfInt.format(w.perKill), unit: hits }, '×', { value: nf3.format(w.kills), unit: 'kills' }]}
+        terms={[
+          { value: nfInt.format(w.attacksToKill), unit: `${attacks} per kill` },
+          '×',
+          { value: nfInt.format(w.starsPerAttack), unit: `${w.starsPerAttack === 1 ? piece : pieces} per aanval` },
+          '×',
+          { value: nf3.format(w.kills), unit: 'kills' },
+        ]}
         result={{ value: nfInt.format(props.qty), unit: pieces }}
         exact={w.exact}
         qty={props.qty}

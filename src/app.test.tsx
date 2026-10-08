@@ -3493,7 +3493,6 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       'Schade per aanval',
       'HP van Ribbon Pig',
       'Aanvallen per kill',
-      'Hits per kill',
       'EXP tot volgend level',
       'EXP per kill',
       'Kills dit level',
@@ -3515,34 +3514,39 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // De popup eindigt met hetzelfde getal als de rij.
     expect(damage[3].total).toBe(true)
     expect(damage[3].result).toBe(rows[0].result)
-    // Bovenaan de eindformule, altijd zichtbaar: hits per kill × kills = het aantal op de factuur; daaronder de twee deelvragen (Dave, 8 oktober 2026).
-    // Een hit is één star, dus geen stars per aanval in de formule (Dave, 8 oktober 2026).
+    // Bovenaan de eindformule, altijd zichtbaar: aanvallen per kill × stars per aanval × kills = het aantal op de factuur; daaronder de twee
+    // deelvragen. Je valt één keer aan, ook als die aanval twee stars gooit (Dave, 8 oktober 2026).
     const summary = dialog.querySelector<HTMLElement>('.why-summary')!
     expect(summary.previousElementSibling).toBeNull()
-    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe('Hoe vaak moet je Ribbon Pig gemiddeld aanvallen tot hij dood is?')
+    const attacks = rows[2].result === '1' ? 'aanval' : 'aanvallen'
+    const question = `Waarom ${rows[2].result} ${attacks} per kill op Ribbon Pig?`
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(question)
+    const perAttack = damage[3].calc.split(' × ')[0]
+    const starUnit = perAttack === '1' ? 'star' : 'stars'
     const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
-    expect(terms).toEqual([rows[3].result, rows[6].result, qty])
-    expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual(['hits per kill', 'kills', 'stars'])
+    expect(terms).toEqual([rows[2].result, perAttack, rows[5].result, qty])
+    expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual([`${attacks} per kill`, `${starUnit} per aanval`, 'kills', 'stars'])
+    expect(summary.querySelector('.why-summary-formula')!.getAttribute('aria-label')).toBe(
+      `${rows[2].result} ${attacks} per kill maal ${perAttack} ${starUnit} per aanval maal ${rows[5].result} kills is ${qty} stars`,
+    )
     // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Hoe vaak moet je Ribbon Pig gemiddeld aanvallen tot hij dood is?', `Waarom ${rows[6].result} kills?`, 'Kosten'])
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([question, `Waarom ${rows[5].result} kills?`, 'Kosten'])
     // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
     expect(rows[1].result).toMatch(/^[\d.]+$/)
     // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026).
     const tableRows = dialog.querySelectorAll('.why-table tr')
     expect(tableRows[1].querySelector('.why-help')).toBeNull()
-    expect(tableRows[2].querySelector('.why-value .why-help')).not.toBeNull()
+    expect(tableRows[0].querySelector('.why-value .why-help')).not.toBeNull()
     expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
-    // Het antwoord noemt de aanvallen met hun stars (Dave, 8 oktober 2026).
-    expect(rows[3].calc).toMatch(new RegExp(`^${rows[2].result} aanval(len)? met \\d stars?$`))
-    // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de hits per kill en de kills (Dave, 8 oktober 2026).
-    expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Hits per kill', 'Kills dit level'])
+    // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de aanvallen per kill en de kills (Dave, 8 oktober 2026).
+    expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Aanvallen per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
-    expect(rows[6].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
+    expect(rows[5].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
     // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
-    const [stars, recharge] = rows[7].calc.split(' meso')
-    expect(stars.startsWith(`${qty} throwing stars × `), rows[7].calc).toBe(true)
-    expect(recharge, rows[7].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
-    expect(rows[7].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    const [stars, recharge] = rows[6].calc.split(' meso')
+    expect(stars.startsWith(`${qty} throwing stars × `), rows[6].calc).toBe(true)
+    expect(recharge, rows[6].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
+    expect(rows[6].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
   it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
