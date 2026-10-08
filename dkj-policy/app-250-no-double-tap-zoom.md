@@ -47,7 +47,7 @@
 
 - [x] Vitest 1951/1951 green, lint clean
 - [~] No automated test: jsdom cannot simulate a double-tap zoom gesture; Dave checks it on the phone
-- [ ] Dave looked (visible result)
+- [x] Dave looked (visible result): "ship it", October 8, 2026
 
 ### DEPLOY: app/250-no-double-tap-zoom
 
