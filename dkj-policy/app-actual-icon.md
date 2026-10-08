@@ -39,21 +39,33 @@
 
 ### PLAN
 
+Dave (October 8, 2026): the toggle of a popup with your own data used the i, which is reserved for fixed game data. Give it its own icon, and tidy the Wearing side of Total cost: Equip on the way.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] ACTUAL_ICON: a person (head and shoulders) in the filled circle, picked by Dave from seven candidates after sliders were rejected
+- [x] The glyph of the Based on toggles is cut out in the blue box color in Wearing
+- [x] Every pencil is the same `.equip-edit` button (Based on, the slot rows of the Wearing table)
+- [x] Based on as a table: one row per box (Char, Mob), the pencil in its own column, equal 0.5rem padding, 1rem value text, a placeholder and min height for an empty Mob
+- [x] The Wearing table gets the Level column of Advised instead of Stat; the unused `stat` props are gone
 
 ### TEST
 
+- [x] Tests pin the actual-toggle class, the `.equip-edit` pencils, the pencil outside the box, the Mob placeholder and the empty Level column; 1960 pass, `tsc` green
+- [x] Dave judged it in the preview
+
 ### DEPLOY: app/actual-icon
 
-**Score:**
+Code review by Victor: no defects; one stale comment fixed.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A popup with your own numbers now shows a person icon instead of the i, which stays for fixed game info. In Wearing, Based on is a small table with the pencil beside each row and a placeholder until you pick a mob, every pencil looks the same, and the equipment table has the same columns as Advised.
+
+**Score:** 2
 
 #### Pull Request
 
-Own icon for popups with your own adjustable data
-
+Own icon for your own data, one pencil style, and Based on as a table
