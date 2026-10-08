@@ -1702,7 +1702,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
   const advised = sheet === 'advised'
   // In Your character (`edit`, Dave, 8 oktober 2026) een potlood achter elk vak (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
   const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
-    <button type="button" class="info-toggle" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
+    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
     </button>
   )
@@ -2336,7 +2336,7 @@ function EquipmentCard(props: {
         price={price ?? null}
         stat={name === null ? '' : String(value ?? '?')}
         action={
-          <button ref={(el) => { pencils.current[slot] = el }} type="button" class="help-toggle" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
+          <button ref={(el) => { pencils.current[slot] = el }} type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
             {PENCIL_ICON}
           </button>
         }

@@ -423,6 +423,9 @@ html:has(dialog:modal) { overflow: hidden; }
    niet verder uit elkaar staan dan nodig, en het vraagteken eindigt waar het i-knopje bij Char eindigt. */
 .based-on .based-on-label .info-toggle:has(+ .help-toggle) { margin-right: -0.25rem; }
 .based-on .based-on-label .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.25rem; }
+/* Het potlood in een vak is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026), met wat lucht na de naam. Zijn rand blijft
+   binnen de padding van het vak: geen negatieve marge (Dave, 8 oktober 2026). */
+.based-on .based-on-label .equip-edit { grid-row: auto; grid-column: auto; flex: none; margin: 0 0 0 0.375rem; }
 /* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
    Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
 .based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.4375rem;
@@ -767,6 +770,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-level { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .advised-row.buy .advised-level { color: var(--accent); }
 .advised-row.with-level .help-toggle { grid-column: 5; }
+/* Het potlood dat in Your character een slot opent, is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026), op de plek van het vraagteken. */
+.advised-row.with-level .equip-edit { grid-row: auto; grid-column: 5; justify-self: end; }
 .advised-total.with-level .advised-total-level { grid-column: 4; }
 /* Shop in gewone tekst, niet vet en zonder accent (Dave, 7 oktober 2026): het bedrag dat telt is Level. */
 .advised-row.with-level .advised-price, .advised-row.with-level.buy .advised-price, .advised-row.with-level.option .advised-price,

@@ -704,7 +704,9 @@ describe('equipment: de claw past het profiel aan', () => {
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
     expect(dialog.getAttribute('aria-label')).toBe('Total cost: Equip (wearing)')
-    expect(within(dialog).getByRole('button', { name: 'Weapon wijzigen' })).toBeTruthy()
+    // Elk potlood is dezelfde knop, .equip-edit (Dave, 8 oktober 2026): ook die van een slot en van Char en Mob.
+    expect(within(dialog).getByRole('button', { name: 'Weapon wijzigen' }).classList.contains('equip-edit')).toBe(true)
+    for (const name of ['Char wijzigen', 'Mob wijzigen']) expect(within(dialog).getByRole('button', { name }).classList.contains('equip-edit'), name).toBe(true)
     expect(within(cards()[0]).queryByRole('button', { name: 'Inklappen' })).toBeNull()
   })
 
@@ -4305,7 +4307,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('zet in Your character van Total cost: Equip een potlood in de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Advised heeft ze niet (Dave, 8 oktober 2026)', () => {
       setJob('thief')
-      expect(openView('Equip', 'Advised').querySelector('.based-on .info-toggle[aria-label$=" wijzigen"]')).toBeNull()
+      expect(openView('Equip', 'Advised').querySelector('.based-on .equip-edit[aria-label$=" wijzigen"]')).toBeNull()
       closeView('Equip')
       const d = openView('Equip', 'Wearing')
       const [char, mob] = d.querySelectorAll<HTMLElement>('.based-on .based-on-label')
