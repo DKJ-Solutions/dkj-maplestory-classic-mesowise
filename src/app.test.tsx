@@ -3606,6 +3606,24 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours()))
     expect(left.disabled).toBe(false)
     expect(right.disabled).toBe(false)
+    // Met een bedrag op beide knoppen hoeft er niets onder.
+    expect(homeScreen().querySelectorAll('.level-cost-reason')).toHaveLength(0)
+  })
+
+  it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
+    cleanup()
+    localStorage.clear()
+    localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '19', nimbleBody: '15', luckySeven: '17' } }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Slime')] }))
+    render(<App />)
+    const top = homeScreen().querySelector<HTMLElement>('section.level-cost')!
+    expect(top.querySelector('.level-cost-worn .level-cost-total')!.textContent).toBe('?')
+    // Cheapest rekent vanuit je job en level, en heeft dus wel een bedrag en geen reden.
+    expect(top.querySelector('.level-cost-advised .level-cost-total')!.textContent).not.toBe('?')
+    const reason = 'Je hebt 32 skillpunten in de skills van je 1e job gezet, maar op level 19 heb je er slechts 28.'
+    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([`Profile: ${reason}`])
+    expect(document.body.textContent).not.toContain('niet volledig ingevuld')
   })
 
   it('opent met de knoppen onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {

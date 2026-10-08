@@ -3048,9 +3048,16 @@ const buyText = (win: ArmorChoice) =>
 /** Het label van de chip bij ATT en DEF; bij "niet uit te rekenen" geldt de gewone tekst van de chip. `complete`: nu niets beters te dragen of te kopen; een beter stuk op een hoger level vraagt nu geen actie. */
 const upgradeChipText = (win: boolean, unknown: boolean, complete: boolean) => (win ? 'Upgraden' : unknown ? undefined : complete ? 'Upgrade complete' : 'Niet upgraden')
 
-/** Waarom de kosten van het level ontbreken, in gewoon Nederlands; null als ze er wel zijn. */
-function noCostReason(c: LevelCost): string | null {
-  if (c.kind === 'noProfile') return 'Je karakter is niet volledig ingevuld.'
+/**
+ * Waarom de berekening geen profiel heeft (#262): de melding van het eerste veld van je karakter dat niet klopt (parseProfile), of dat de app
+ * deze job niet doorrekent; null als er een profiel is. Zonder profiel heeft Profile geen kosten; zo zegt elke plek met een vraagteken waarom,
+ * zoals "Je hebt 32 skillpunten ...", en niet alleen de kaart waar het veld staat.
+ */
+const ProfileProblem = createContext<string | null>(null)
+
+/** Waarom de kosten van het level ontbreken, in gewoon Nederlands; null als ze er wel zijn. `problem` is de melding van ProfileProblem. */
+function noCostReason(c: LevelCost, problem: string | null): string | null {
+  if (c.kind === 'noProfile') return problem ?? 'Je karakter is niet volledig ingevuld.'
   if (c.kind === 'noTable') return `Voor lv ${c.level} kent de app de EXP nog niet.`
   if (c.kind === 'noBest') return 'Je hebt nog geen mob gekozen.'
   if (c.meso === null) return `${placeName(c.spotName)} levert geen EXP op.`
@@ -3098,6 +3105,7 @@ const skillOptionText = (saving: number | null) =>
   saving === null ? 'niet uit te rekenen' : saving > 0 ? `bespaart ${formatMeso(saving)}` : saving < 0 ? `kost ${formatMeso(-saving)} extra` : 'scheelt niets'
 
 function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: Job; dagger?: boolean; placed: string | null; onApply: (choice: SkillChoice) => void; part?: boolean; children?: ComponentChildren }) {
+  const problem = useContext(ProfileProblem)
   const a = props.advice
   const title = QUESTION_TITLE.skill
   const winner = a.kind === 'advice' ? a.choices.find((c) => c.id === a.winner) : undefined
@@ -3117,7 +3125,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown" lead={QUESTION_LEAD.skill} headingRef={heading} part={props.part}>
-        <p class="hint">{noCostReason(props.cost)} Zonder de kosten van je level kan de app geen skillpunt afwegen.</p>
+        <p class="hint">{noCostReason(props.cost, problem)} Zonder de kosten van je level kan de app geen skillpunt afwegen.</p>
         {placed}
         {props.children}
       </Question>
@@ -3210,13 +3218,14 @@ const costClause = (meso: number | null, first: boolean) =>
  * advies, niet de plek, want de mob draagt de HP en de EXP.
  */
 function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean }) {
+  const problem = useContext(ProfileProblem)
   const a = props.advice
   const title = QUESTION_TITLE.mob
   if (a.kind === 'none' || a.best === null) {
     return (
       <Question title={title} chip="unknown" lead={QUESTION_LEAD.mob} part={props.part}>
         <p class="hint">
-          {a.kind === 'none' ? `${noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen mob afwegen.` : 'Geen enkele mob levert nu een getal op.'}
+          {a.kind === 'none' ? `${noCostReason(props.cost, problem) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen mob afwegen.` : 'Geen enkele mob levert nu een getal op.'}
         </p>
       </Question>
     )
@@ -3244,12 +3253,13 @@ function MobQuestion(props: { advice: MobAdvice; cost: LevelCost; part?: boolean
  * goedkoopste per punt herstel, net als het mob-advies.
  */
 function PotionQuestion(props: { advice: PotionAdvice; cost: LevelCost; info: ComponentChildren; part?: boolean }) {
+  const problem = useContext(ProfileProblem)
   const a = props.advice
   const title = QUESTION_TITLE.potion
   if (a.kind === 'none') {
     return (
       <Question title={title} chip="unknown" lead={QUESTION_LEAD.potion} part={props.part}>
-        <p class="hint">{noCostReason(props.cost) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen potion afwegen.</p>
+        <p class="hint">{noCostReason(props.cost, problem) ?? 'Er is niets uit te rekenen.'} Zonder de kosten van dit level kan de app geen potion afwegen.</p>
         {props.info}
       </Question>
     )
@@ -3510,6 +3520,7 @@ const invoiceRowKey = (l: InvoiceLine): string => (l.shop ? SHOP_LABEL : l.why &
  * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
  */
 function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; job: Job }) {
+  const problem = useContext(ProfileProblem)
   const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
   const [ig, ch] = cols
   const keys: string[] = []
@@ -3559,7 +3570,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         </tfoot>
       </table>
       {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
-      {props.inGame.kind === 'none' && <p class="hint">Profile: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+      {props.inGame.kind === 'none' && <p class="hint">Profile: {noCostReason(props.inGame.cost, problem) ?? 'er is niets uit te rekenen.'}</p>}
     </>
   ) : // Zonder factuur aan beide kanten staat de reden al onder Profile en Cheapest; hier niet nog eens.
   null
@@ -3571,10 +3582,11 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
  * de aantallen zijn naar boven afgerond, want je koopt hele potions. Kosten in rood met een min, zoals op de Potions-kaart.
  */
 function InvoiceTable(props: { invoice: LevelInvoice }) {
+  const problem = useContext(ProfileProblem)
   const inv = props.invoice
   const meso = (n: number) => (n === 0 ? '0 meso' : `−${nfInt.format(n)} meso`)
   return inv.kind === 'none' ? (
-    <p class="hint">{noCostReason(inv.cost) ?? 'Er is niets uit te rekenen.'}</p>
+    <p class="hint">{noCostReason(inv.cost, problem) ?? 'Er is niets uit te rekenen.'}</p>
   ) : (
     <table class="invoice">
       <tbody>
@@ -3608,14 +3620,17 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 /**
  * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen naast elkaar (Dave, 8 oktober 2026): links wat het level kost met de setup van Cheapest, rechts met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
- * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken.
+ * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, en onder de knoppen waarom (#262).
  */
 function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice }) {
   const ctx = useContext(CardViewContext)
+  const problem = useContext(ProfileProblem)
   const parts = [
     { view: 'advised', label: 'Cheapest', invoice: props.advised },
     { view: 'worn', label: 'Profile', invoice: props.wearing },
   ] as const
+  // Een vraagteken zonder reden laat je raden (#262): bij een karakter dat niet klopt de melding van het foute veld, anders waarom de kosten ontbreken.
+  const reasons = parts.flatMap((p) => (p.invoice?.kind === 'none' ? [{ view: p.view, text: `${p.label}: ${noCostReason(p.invoice.cost, problem) ?? 'er is niets uit te rekenen.'}` }] : []))
   return (
     <section class="card level-cost">
       <CardHead>
@@ -3645,6 +3660,11 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           )
         })}
       </div>
+      {reasons.map((r) => (
+        <p key={r.view} class="hint level-cost-reason">
+          {r.text}
+        </p>
+      ))}
     </section>
   )
 }
@@ -3864,6 +3884,9 @@ export function App() {
   const totalError = equipError === null && (totalKey || hpKey) ? statError : null
   const characterError = equipError === null && !totalKey && !hpKey ? statError : null
   const skillError = 'error' in parsed && isSkillKey(parsed.key) ? parsed.error : null
+  // Dezelfde melding is de reden achter elk vraagteken van Profile (#262), waar het foute veld ook staat. Een job die de app niet doorrekent
+  // heeft ook geen profiel, en dan is dat de reden.
+  const profileProblem = !computed ? notComputedText(job) : 'error' in parsed ? parsed.error : null
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
@@ -4120,6 +4143,7 @@ export function App() {
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
     <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
+    <ProfileProblem.Provider value={profileProblem}>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
@@ -4233,6 +4257,7 @@ export function App() {
         </a>
       </footer>
       </main>
+    </ProfileProblem.Provider>
     </CardViewContext.Provider>
     </AdvisedStats.Provider>
     </AdvisedWho.Provider>
