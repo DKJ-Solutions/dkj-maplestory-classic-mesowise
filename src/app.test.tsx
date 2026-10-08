@@ -3637,20 +3637,25 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const dialog = card().querySelector<HTMLElement>('dialog')!
     // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
     expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
-    const rows = whyRows(dialog)
-    expect(rows.map((r) => r.label)).toEqual(['HP kwijt per kill', 'EXP tot volgend level', 'EXP per kill', 'Kills dit level', 'HP dit level', 'Herstel per Orange Potion', 'Orange Potion'])
-    expect(rows[0].calc).toMatch(/^Keer geraakt door Ribbon Pig ± [\d,]+ ; Schade per keer × ± [\d,]+ ; = [\d,]+$/)
-    expect(rows[3].result).toMatch(/^[\d.,]+$/)
-    // De laatste, vette rij is het aantal op de factuur.
+    // De popup is één formule (Dave, 8 oktober 2026): wat je dit level aan HP kwijt bent, gedeeld door wat één potion herstelt.
+    expect(dialog.querySelector('.why-table')).toBeNull()
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
-    expect(rows[6]).toMatchObject({ result: qty, total: true })
-    expect(rows[5]).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(rows[6].calc).toMatch(new RegExp(`^HP dit level [\\d.]+ ; Herstel per Orange Potion / 222 ; = ${qty} ; Uitkomst: [\\d,]+, naar boven afgerond\\.$`))
-    // De aanname staat achter het vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
-    const help = within(dialog).getByRole('button', { name: 'Uitleg' })
+    const main = dialog.querySelector<HTMLElement>(':scope .report-body > .why-mul')!
+    expect(formulaText(main)).toMatch(new RegExp(`^HP dit level [\\d.]+ ; Herstel per Orange Potion / 222 ; = ${qty}$`))
+    expect(dialog.querySelector(':scope .report-body > .why-mul-note')!.textContent).toMatch(/^Uitkomst: [\d,]+, naar boven afgerond\.$/)
+    // HP dit level: HP kwijt per kill maal de kills; de kills zijn de EXP tot het volgende level gedeeld door de EXP per kill.
+    const need = formulaAt(dialog, ['HP dit level'])
+    expect(need).toMatch(/^HP kwijt per kill [\d,]+ ; Kills dit level × [\d.,]+ ; = [\d.]+$/)
+    expect(formulaText(main).startsWith(`HP dit level ${need.split(' ; = ')[1]} ;`)).toBe(true)
+    expect(formulaAt(dialog, ['HP dit level', 'Kills dit level'])).toMatch(/^EXP tot volgend level [\d.]+ ; EXP per kill op Ribbon Pig \/ [\d.,]+ ; = [\d.,]+$/)
+    expect(formulaAt(dialog, ['HP dit level', 'HP kwijt per kill'])).toMatch(/^Keer geraakt door Ribbon Pig ± [\d,]+ ; Schade per keer × ± [\d,]+ ; = [\d,]+$/)
+    // De aanname staat in de popup van HP kwijt per kill, achter een vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
+    const perKill = openPath(dialog, ['HP dit level', 'HP kwijt per kill'])
+    const help = within(perKill).getByRole('button', { name: 'Uitleg' })
     expect(help.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(help)
-    expect(dialog.querySelector('#' + help.getAttribute('aria-controls')!)!.textContent).toContain('aanname zonder bron')
+    expect(perKill.querySelector('#' + help.getAttribute('aria-controls')!)!.textContent).toContain('aanname zonder bron')
+    closeAll(dialog)
   })
 })
 
@@ -3670,33 +3675,38 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
 
 describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
-  /** De laatste twee rijen van de rekentabel: het herstel per potion en het aantal. */
-  const lastRows = (fields: Partial<ProfileDraft>) => {
+  /** De formule van het aantal, en wat er achter het vraagteken bij het herstel staat (leeg zonder vraagteken). */
+  const potionWhy = (fields: Partial<ProfileDraft>) => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     render(<App />)
     fireEvent.click(card().querySelector<HTMLButtonElement>('.invoice-why')!)
-    const rows = whyRows(card().querySelector('dialog')!)
-    return { restore: rows[rows.length - 2], count: rows[rows.length - 1] }
+    const dialog = card().querySelector<HTMLElement>('dialog')!
+    const count = formulaText(dialog.querySelector(':scope .report-body > .why-mul')!)
+    const name = 'Uitleg bij Herstel per Orange Potion'
+    if (!within(dialog).queryByRole('button', { name })) return { count, restore: '' }
+    const restore = openPath(dialog, ['Herstel per Orange Potion']).querySelector('.why-calc')!.textContent!
+    closeAll(dialog)
+    return { count, restore }
   }
 
   it('zegt bij een potion die overvult dat je bij 50% van je balk drinkt en er maar 222 van de 250 meetelt', () => {
-    const { restore, count } = lastRows({ hp: '444' })
-    expect(restore).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 222 ; = \d+ ; Uitkomst: [\d,]+, naar boven afgerond\.$/)
+    const { restore, count } = potionWhy({ hp: '444' })
+    expect(restore).toBe('Herstelt 250, maar bij 50% van je balk mist er maar 222.')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 222 ; = \d+$/)
   })
 
   it('laat de capped-zin weg als de potion binnen het plafond blijft (Max HP 2000): gewoon 250 en delen door 250', () => {
-    const { restore, count } = lastRows({ hp: '2000' })
-    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
-    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = \d+ ; Uitkomst: [\d,]+, naar boven afgerond\.$/)
+    const { restore, count } = potionWhy({ hp: '2000' })
+    expect(restore).toBe('')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = \d+$/)
   })
 
   it('laat de capped-zin weg als de potion het plafond precies haalt (Max HP 500: er mist 250 en de Orange herstelt 250)', () => {
-    const { restore, count } = lastRows({ hp: '500' })
-    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
-    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = /)
+    const { restore, count } = potionWhy({ hp: '500' })
+    expect(restore).toBe('')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = /)
   })
 })
 

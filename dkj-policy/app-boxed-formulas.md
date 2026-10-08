@@ -48,6 +48,7 @@ larger box around a smaller one, and only `=` and the result below it.
 - [x] Every sum behind a "?" in the potion, ammo and shop explanations is a `MulCalc`; a rounded-up result gets one line under it
 - [x] The "Schade per aanval" popup is itself a formula (stars per attack × damage per star × hit chance); min and max per star each carry their whole chain, level difference and defense included, so the separate table rows are gone
 - [x] The ammo popup ("Waarom 429?") is one formula, attacks per kill × stars per attack × kills, with each computed number opening its own formula; the one-line summary, the tables and the cost section are gone, because the popup is only about how many stars this level needs
+- [x] The potion popup (HP and MP) is one formula too: HP or MP this level / restore per potion, with per kill, kills, buffs and hours each behind their own question mark; the one-line summary (`WhySummary`) and its CSS are gone, and the kills formula is shared with the ammo popup
 - [x] The rule is in Gwen's lens, so the next formula follows it
 - [x] Edith's wording points and Victor's review applied: rounding note uses the model's 1e-9 margin, the shop amount is computed from the EXP itself; the minimum-damage gap is #271
 

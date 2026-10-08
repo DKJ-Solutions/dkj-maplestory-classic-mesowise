@@ -3471,24 +3471,19 @@ export function MulCalc(props: {
   )
 }
 
-/** De rijen die het aantal kills van dit level geven: de EXP die je nog nodig hebt, wat één kill geeft, en hun deling (Dave, 6 oktober 2026, #192). */
-const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }): WhyRow[] => [
-  { label: 'EXP tot volgend level', result: nfInt.format(w.expToNext) },
-  { label: 'EXP per kill', calc: w.mob, result: nf.format(w.expPerKill) },
-  {
-    label: 'Kills dit level',
-    detail: (
-      <MulCalc
-        factors={[
-          { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
-          { value: nf.format(w.expPerKill), what: 'EXP per kill', op: '/' },
-        ]}
-        result={nf3.format(w.kills)}
-      />
-    ),
-    result: nf3.format(w.kills),
-  },
-]
+/**
+ * Het aantal kills van dit level als formule (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft. Het
+ * hangt niet van de uren af. Achter "Kills dit level" in de uitleg van een potion en van de stars.
+ */
+const killsSteps = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }) => (
+  <MulCalc
+    factors={[
+      { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
+      { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
+    ]}
+    result={nf3.format(w.kills)}
+  />
+)
 
 /** Onder een formule waarvan de uitkomst naar boven is afgerond: het getal dat eruit kwam, en dat het is afgerond. Met dezelfde marge als het
  * model (writeOff, wholeUp): rekenruis als 944,9999999 is geen afronding. */
@@ -3496,169 +3491,100 @@ const roundedNote = (exact: number, shown: number): ComponentChildren =>
   shown - exact > 1e-9 ? <>Uitkomst: {roundedUpText(exact, shown)}, naar boven afgerond.</> : undefined
 
 /**
- * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
- * getal wat het is. De blokken eronder werken elk getal uit, bij de stars als deelvraag per getal. Is de uitkomst naar boven afgerond, dan staat dat eronder.
+ * De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts), als één formule (Dave, 8 oktober 2026): wat je dit level aan HP
+ * of MP kwijt bent, gedeeld door wat één potion herstelt. Achter elk berekend getal staat zijn eigen formule, zoals bij de stars.
  */
-function WhySummary(props: { terms: readonly ({ value: string; unit: string } | '×' | '÷')[]; result: { value: string; unit: string }; exact: number; qty: number }) {
-  const term = (t: { value: string; unit: string }, cls = 'why-term') => (
-    <span class={cls}>
-      <strong>{t.value}</strong>
-      <small>{t.unit}</small>
-    </span>
-  )
-  const spoken = props.terms.map((t) => (t === '×' ? 'maal' : t === '÷' ? 'gedeeld door' : `${t.value} ${t.unit}`)).join(' ')
-  return (
-    <div class="why-summary">
-      <p class="why-summary-formula" aria-label={`${spoken} is ${props.result.value} ${props.result.unit}`}>
-        {props.terms.map((t) =>
-          typeof t === 'string' ? (
-            <span class="why-op" aria-hidden="true">
-              {t}
-            </span>
-          ) : (
-            term(t)
-          ),
-        )}
-        <span class="why-op" aria-hidden="true">=</span>
-        {term(props.result, 'why-term why-term-result')}
-      </p>
-      {Number(props.exact.toFixed(3)) !== props.qty && <p class="why-summary-note">{nf.format(props.exact)}, naar boven afgerond.</p>}
-    </div>
-  )
-}
-
-/** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
   const unit = w.kind === 'hp' ? 'HP' : 'MP'
-  // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): kills per uur valt weg. Alleen de buffs van een MP potion lopen per uur, en dan staat de duur erbij.
-  const buffs = w.buffPerHour > 0
+  const perKill = w.kind === 'hp' ? 'HP kwijt per kill' : 'MP per kill'
+  const kills = { value: nf3.format(w.kills), what: 'Kills dit level', detail: killsSteps(w) }
+  // Wat je per kill kwijt bent: bij HP hoe vaak de mob je raakt maal wat dat kost, bij MP wat je aanval kost (een vast getal, zonder vraagteken).
+  const perKillFactor = {
+    value: oneDecimal(w.perKill),
+    what: perKill,
+    detail:
+      w.kind === 'hp' ? (
+        <>
+          <MulCalc
+            factors={[
+              { value: `± ${oneDecimal(w.hits!)}`, what: `Keer geraakt door ${w.mob}` },
+              { value: `± ${oneDecimal(w.touch!)}`, what: 'Schade per keer' },
+            ]}
+            result={oneDecimal(w.perKill)}
+          />
+          <Help>
+            Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
+            spel iets anders, pas dan de mob aan op de Monster-kaart.
+          </Help>
+        </>
+      ) : undefined,
+  }
+  // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192). Alleen de buffs van een MP potion lopen per uur: dan is het MP van je
+  // aanvallen plus je buffs, en de duur van het level staat achter de uren.
   const attackMp = w.perKill * w.kills
   const buffMp = w.buffPerHour * w.hours
-  const rows: WhyRow[] = [
-    w.kind === 'hp'
-      ? {
-          label: 'HP kwijt per kill',
-          detail: (
-            <MulCalc
-              factors={[
-                { value: `± ${oneDecimal(w.hits!)}`, what: `Keer geraakt door ${w.mob}` },
-                { value: `± ${oneDecimal(w.touch!)}`, what: 'Schade per keer' },
-              ]}
-              result={oneDecimal(w.perKill)}
-            />
-          ),
-          result: `${oneDecimal(w.perKill)} HP`,
-        }
-      : { label: 'MP per kill', calc: 'wat je aanval kost', result: `${oneDecimal(w.perKill)} MP` },
-    ...killsRows(w),
-    ...(buffs
-      ? [
+  const need =
+    w.buffPerHour > 0 ? (
+      <MulCalc
+        factors={[
           {
-            label: 'MP van je aanvallen',
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: oneDecimal(w.perKill), what: 'MP per kill' },
-                  { value: nf3.format(w.kills), what: 'Kills dit level' },
-                ]}
-                result={nfInt.format(attackMp)}
-              />
-            ),
-            result: `${nfInt.format(attackMp)} MP`,
+            value: nfInt.format(attackMp),
+            what: 'MP van je aanvallen',
+            detail: <MulCalc factors={[perKillFactor, kills]} result={nfInt.format(attackMp)} />,
           },
           {
-            label: 'Duur van dit level',
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: nf3.format(w.kills), what: 'Kills dit level' },
-                  { value: nfInt.format(w.killsPerHour), what: 'Kills per uur', op: '/' },
-                ]}
-                result={formatHours(w.hours)}
-              />
-            ),
-            result: formatHours(w.hours),
-          },
-          {
-            label: 'Buffs dit level',
+            value: nfInt.format(buffMp),
+            what: 'Buffs dit level',
+            op: '+',
             detail: (
               <MulCalc
                 factors={[
                   { value: nfInt.format(w.buffPerHour), what: 'MP per uur' },
-                  { value: nf.format(w.hours), what: 'Uren' },
+                  {
+                    value: nf.format(w.hours),
+                    what: 'Uren dit level',
+                    detail: (
+                      <MulCalc
+                        factors={[
+                          { value: nf3.format(w.kills), what: 'Kills dit level' },
+                          { value: nfInt.format(w.killsPerHour), what: 'Kills per uur', op: '/' },
+                        ]}
+                        result={formatHours(w.hours)}
+                      />
+                    ),
+                  },
                 ]}
                 result={nfInt.format(buffMp)}
               />
             ),
-            result: `${nfInt.format(buffMp)} MP`,
           },
-          {
-            label: `${unit} dit level`,
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: nfInt.format(attackMp), what: 'MP van je aanvallen' },
-                  { value: nfInt.format(buffMp), what: 'Buffs dit level', op: '+' },
-                ]}
-                result={nfInt.format(w.need)}
-              />
-            ),
-            result: `${nfInt.format(w.need)} ${unit}`,
-          },
-        ]
-      : [
-          {
-            label: `${unit} dit level`,
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: oneDecimal(w.perKill), what: w.kind === 'hp' ? 'HP kwijt per kill' : 'MP per kill' },
-                  { value: nf3.format(w.kills), what: 'Kills dit level' },
-                ]}
-                result={nfInt.format(w.need)}
-              />
-            ),
-            result: `${nfInt.format(w.need)} ${unit}`,
-          },
-        ]),
-    {
-      label: `Herstel per ${props.label}`,
-      calc: w.full > w.restores ? <>herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}</> : undefined,
-      result: `${nf.format(w.restores)} ${unit}`,
-    },
-    {
-      label: props.label,
-      detail: (
-        <MulCalc
-          factors={[
-            { value: nfInt.format(w.need), what: `${unit} dit level` },
-            { value: nf.format(w.restores), what: `Herstel per ${props.label}`, op: '/' },
-          ]}
-          result={nfInt.format(props.qty)}
-          note={roundedNote(w.exact, props.qty)}
-        />
-      ),
-      result: nfInt.format(props.qty),
-      total: true,
-    },
-  ]
-  return (
-    <>
-      <WhySummary
-        terms={[{ value: nfInt.format(w.need), unit: `${unit} nodig` }, '÷', { value: nf.format(w.restores), unit: `${unit} per potion` }]}
-        result={{ value: nfInt.format(props.qty), unit: 'potions' }}
-        exact={w.exact}
-        qty={props.qty}
+        ]}
+        result={nfInt.format(w.need)}
       />
-      <WhyTable rows={rows} />
-      {w.kind === 'hp' && (
-        <Help>
-          Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
-          spel iets anders, pas dan de mob aan op de Monster-kaart.
-        </Help>
-      )}
-    </>
+    ) : (
+      <MulCalc factors={[perKillFactor, kills]} result={nfInt.format(w.need)} />
+    )
+  return (
+    <MulCalc
+      factors={[
+        { value: nfInt.format(w.need), what: `${unit} dit level`, detail: need },
+        {
+          value: nf.format(w.restores),
+          what: `Herstel per ${props.label}`,
+          op: '/',
+          // Vult de potion meer dan je bij het drinken mist, dan telt alleen wat er mist (#181); anders is het herstel een vast getal.
+          detail:
+            w.full > w.restores ? (
+              <p class="why-calc">
+                Herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}.
+              </p>
+            ) : undefined,
+        },
+      ]}
+      result={nfInt.format(props.qty)}
+      note={roundedNote(w.exact, props.qty)}
+    />
   )
 }
 
@@ -3769,16 +3695,7 @@ function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
         {
           value: nf3.format(w.kills),
           what: 'Kills dit level',
-          // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft.
-          detail: (
-            <MulCalc
-              factors={[
-                { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
-                { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
-              ]}
-              result={nf3.format(w.kills)}
-            />
-          ),
+          detail: killsSteps(w),
         },
       ]}
       result={nfInt.format(props.qty)}
