@@ -88,14 +88,25 @@ function HelpToggle(props: { open: boolean; controls: string; onToggle: () => vo
 }
 
 /**
- * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in een zachte tint van de
- * tekstkleur, met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje), naast het vraagteken hieronder.
+ * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in de kleur van de naam ernaast,
+ * met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje) in de achtergrondkleur (Dave, 8 oktober 2026).
  */
 const INFO_ICON = (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.16" />
-    <circle cx="12" cy="7.6" r="1.4" fill="currentColor" />
-    <path d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <circle class="info-dot" cx="12" cy="7.6" r="1.4" />
+    <path class="info-stem" d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+)
+
+/**
+ * Het icoon van een popup met wat de app verwacht in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
+ * een ≈ erin, "ongeveer": het getal is voorspeld en kan in het spel afwijken. Zo zie je het verschil voordat je tikt.
+ */
+const EXPECTED_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <path class="info-stem" d="M7.5 10Q9.75 8 12 10T16.5 10M7.5 14.5Q9.75 12.5 12 14.5T16.5 14.5" fill="none" stroke-width="1.8" stroke-linecap="round" />
   </svg>
 )
 
@@ -1638,12 +1649,12 @@ function StatDialog(props: {
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
-  // Het vraagteken van de popup staat direct achter de titel, op dezelfde regel, ook met een ondertitel eronder (Dave, 7 oktober 2026); het opent
-  // een eigen popup, zoals elk vraagteken in Advised.
+  // De knop van de popup staat direct achter de titel, op dezelfde regel, ook met een ondertitel eronder (Dave, 7 oktober 2026); hij opent
+  // een eigen popup. Het is een i-knopje met het label info, geen vraagteken: hij zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
   const heading = props.help ? (
     <div class="stat-dialog-title-row">
       <h2 class="stat-dialog-name">{name}</h2>
-      <PopupButton icon={QUESTION_ICON} class="help-toggle" label="Uitleg" title={props.title}>
+      <PopupButton icon={INFO_ICON} class="info-toggle" label="Info" title={props.title} tag="info">
         <p class="item-why">{props.help}</p>
       </PopupButton>
     </div>
@@ -1752,27 +1763,30 @@ function BasedOn(props: { who: string; mob: string }) {
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
           <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
-            <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
-            {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
+                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
+                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). */}
+            {stats ? (
+              <PopupButton icon={EXPECTED_ICON} class="info-toggle expected-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
                 {stats}
               </PopupButton>
+            ) : (
+              <span class="based-on-value">{props.who}</span>
             )}
           </div>
         )}
-        {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
-        <div class="based-on-line">
-          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
-            <span class="sr-only">Mob: </span>
+        {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
+        <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
+          <span class="sr-only">Mob: </span>
+          {mobDef ? (
+            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+              {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+              <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
+              {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+            </PopupButton>
+          ) : (
             <span class="based-on-value">{props.mob}</span>
-            {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
-                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
-              </PopupButton>
-            )}
-          </div>
+          )}
           <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
             <p class="item-why">{mobWhy(props.mob)}</p>
           </PopupButton>
@@ -1979,7 +1993,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
         <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
         {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
         {props.facts.length > 0 && (
-          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title}>
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title} tag="info">
             <dl class="item-facts">
               {props.facts.map(([term, value]) => (
                 <div key={term}>
@@ -2059,21 +2073,25 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; name?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
+  // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026), zoals info en expected bij het i-knopje.
+  const tag = props.tag ?? (props.class.split(' ').includes('help-toggle') ? 'why' : undefined)
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())
   }
   return (
     <>
-      <button ref={button} type="button" class={props.class} aria-haspopup="dialog" aria-expanded={open} aria-label={props.label} onClick={() => setOpen(true)}>
+      {/* Met `name` staat de naam in de knop, voor het icoon, zodat je op de hele naam kunt tikken en niet alleen op het icoon (Dave, 8 oktober 2026). */}
+      <button ref={button} type="button" class={props.name ? `${props.class} named` : props.class} aria-haspopup="dialog" aria-expanded={open} aria-label={props.label} onClick={() => setOpen(true)}>
+        {props.name && <span class="based-on-value">{props.name}</span>}
         {props.icon}
       </button>
       {open && (
         // In data-popup heet hij naar zijn knop, "Info over Snail" of "Uitleg": zijn titel is vaak die van de popup eronder (#245).
-        <StatDialog title={props.title} tag={props.tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        <StatDialog title={props.title} tag={tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}
