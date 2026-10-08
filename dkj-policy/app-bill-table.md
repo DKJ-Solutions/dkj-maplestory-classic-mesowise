@@ -52,6 +52,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] One set of columns for both groups, an invoice's Item, Price, Qty, Level: a useable's unit price and count, an equip piece's shop price and the share of it this level pays; Level = Price × Qty
 - [x] Qty column dropped again: the count (× 1.6k) or the share (13%) sits right behind the item name, columns Item, Price, Level
 - [x] Price column dropped, the shop price stays in an item's info popup; Level renamed Mesos; Useable on top (it always costs mesos); a row with nothing in it is left out
+- [x] The question mark sits right behind the amount behind the item name (and behind the Equip subtotal label); no column for question marks left
 
 ### TEST
 
@@ -63,8 +64,8 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
 with two cost groups, Useable on top and Equip below, each with its own subtotal; the columns are only Item and Mesos.
-Behind the item name sits how much of it the level pays: a useable's count (written short, × 12.2k) or the share of an
-equipment piece's price (13%). The shop price lives in the item's info popup, and a slot with nothing in it is left out.
+Behind the item name sits how much of it the level pays, a useable's count (written short, × 12.2k) or the share of an
+equipment piece's price (13%), with the question mark that explains it right after. The shop price lives in the item's info popup, and a slot with nothing in it is left out.
 
 **Score:** 2
 

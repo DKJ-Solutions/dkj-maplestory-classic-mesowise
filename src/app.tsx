@@ -1907,7 +1907,7 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
       <tr class="bill-category">
-        <th scope="rowgroup" colSpan={3}>
+        <th scope="rowgroup" colSpan={2}>
           {props.name}
         </th>
       </tr>
@@ -1920,15 +1920,16 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
 function BillSum(props: { kind: 'subtotal' | 'total'; label: string; level: number; help?: ComponentChildren }) {
   return (
     <tr class={props.kind === 'total' ? 'equip-total advised-total' : 'advised-subtotal'}>
+      {/* Het vraagteken achter het label (Dave, 8 oktober 2026), zoals achter het aantal van een regel: de bill heeft geen kolom voor vraagtekens. */}
       <th scope="row" class="advised-total-label">
         {props.label}
+        {props.help}
       </th>
       <td>
         <strong class="advised-total-level">
           <MesoAmount n={props.level} />
         </strong>
       </td>
-      <td class="advised-help">{props.help}</td>
     </tr>
   )
 }
@@ -1970,7 +1971,7 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice
       {!props.noPrice && !props.level && <th scope="col" class="advised-head-price">Mesos</th>}
       {/* De kolom heet Mesos (Dave, 8 oktober 2026): wat dit level ervan betaalt. */}
       {props.level && <th scope="col" class="advised-head-level">Mesos</th>}
-      {!props.qty && <td />}
+      {!props.qty && !props.level && <td />}
     </tr>
   )
 }
@@ -2034,15 +2035,13 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       {wide && (props.levelWord ? <td class="advised-level verdict">{props.levelWord}</td> : <td class="advised-level">{amount(props.level ?? null)}</td>)}
     </>
   )
-  const last = (
-    <td class="advised-help">
-      {props.action ?? (
-        <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={props.helpTitle ?? title}>
-          {props.help}
-        </PopupButton>
-      )}
-    </td>
+  const helpButton = props.action ?? (
+    <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={props.helpTitle ?? title}>
+      {props.help}
+    </PopupButton>
   )
+  // In de bill van Level cost staat het vraagteken in de cel van het stuk, achter het aantal (BillRow hieronder); anders in zijn eigen kolom.
+  const last = !wide && <td class="advised-help">{helpButton}</td>
   // In de bill van Level cost blijft een rij zonder stuk, bedrag of oordeel weg (Dave, 8 oktober 2026), zoals een leeg slot dat leeg blijft.
   if (wide && props.name === null && props.level == null && !props.levelWord) return null
   // Zonder kolom Slot (de bill van Level cost, Dave, 8 oktober 2026) is de naam de kop van de rij, met het slot erin voor de schermlezer.
@@ -2054,13 +2053,6 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
         {wide && <span class="slot-name sr-only">{props.slot}</span>}
         <span class="advised-item">
           <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
-          {/* In de bill van Level cost staat het aantal direct achter de naam (Dave, 8 oktober 2026): × 1.6k van een useable, of het deel van de prijs
-              van een stuk equip (13%). Alleen de naam kort in; het aantal blijft heel. */}
-          {wide && qtyText !== '' && (
-            <span class="advised-qty" title={qtyTitle ?? (props.share == null ? undefined : `${nf1.format(props.share * 100)}% van de prijs`)}>
-              {qtyText}
-            </span>
-          )}
           {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
           {props.facts.length > 0 && (
             <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title} tag="info">
@@ -2074,6 +2066,14 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
               </dl>
             </PopupButton>
           )}
+          {/* In de bill van Level cost staat het aantal achter de naam (Dave, 8 oktober 2026): × 1.6k van een useable, of het deel van de prijs van een
+              stuk equip (13%). Alleen de naam kort in; het aantal blijft heel. Het vraagteken staat erachter, want dat aantal vraagt de meeste uitleg. */}
+          {wide && qtyText !== '' && (
+            <span class="advised-qty" title={qtyTitle ?? (props.share == null ? undefined : `${nf1.format(props.share * 100)}% van de prijs`)}>
+              {qtyText}
+            </span>
+          )}
+          {wide && helpButton}
         </span>
       </Item>
       {/* Het aantal, alleen in een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026). */}

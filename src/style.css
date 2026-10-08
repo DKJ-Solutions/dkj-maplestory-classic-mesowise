@@ -784,11 +784,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .with-qty .advised-row .help-toggle { margin: -0.5rem -0.25rem; }
 /* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
    zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
-/* Item, Level en het vraagteken (Dave, 8 oktober 2026): de naam van het stuk met zijn aantal erachter houdt de ruimte; de winkelprijs staat in de
+/* Item en Mesos (Dave, 8 oktober 2026): de naam van het stuk met zijn aantal en vraagteken erachter houdt de ruimte; de winkelprijs staat in de
    info-popup. */
 .with-level .advised-head > :nth-child(1) { width: auto; }
 .with-level .advised-head > :nth-child(2) { width: 3.75rem; }
-.with-level .advised-head > :nth-child(3) { width: 2.5rem; }
+/* Het vraagteken achter het aantal (Dave, 8 oktober 2026): 44px om te tikken, maar het steekt boven en onder buiten de rij, zoals de info-knop. */
+.advised-row .advised-item > .help-toggle { flex: none; margin: -0.5rem -0.5rem -0.5rem -0.25rem; }
+.advised-total-label > .help-toggle { display: inline-flex; vertical-align: middle; margin: -0.75rem -0.75rem -0.75rem -0.25rem; }
 /* Het aantal achter de naam (Dave, 8 oktober 2026): grijs en klein zoals de kolom Qty van Useable, en het kort nooit in. */
 .advised-item > .advised-qty { flex: none; margin-left: 0.25rem; white-space: nowrap; }
 /* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */
@@ -801,8 +803,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-level.verdict { font-size: 0.75rem; }
 /* Het potlood dat een slot opent (Dave, 8 oktober 2026) is dezelfde knop als elk ander potlood (.equip-edit), op de plek van het vraagteken; het staat alleen in de slotkeuze achter Equip, een factuur zonder Level. */
 .advised-help .equip-edit { margin-left: auto; }
-/* Het vraagteken achter Total cost (Dave, 7 oktober 2026): in de kolom van de vraagtekens erboven, zonder dat de regel hoger wordt. */
-.advised-subtotal .help-toggle { margin: -0.75rem -0.5rem -0.75rem 0; }
 .advised-row .slot-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
 .advised-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9375rem; line-height: 1.3; font-weight: 400; }
 /* Elke itemnaam in de tekstkleur, ook van een stuk dat niet loont (Dave, 7 oktober 2026); alleen het streepje van een leeg slot is grijs. */

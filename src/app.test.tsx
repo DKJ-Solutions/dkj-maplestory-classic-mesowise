@@ -4037,6 +4037,15 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         expect(rowsOf(useable), label).toEqual(['HP', 'MP', 'Ammo'])
         // Een useable: het aantal achter de naam en het bedrag onder Mesos.
         for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.parentElement!.classList.contains('advised-item'), label).toBe(true)
+        // Het vraagteken direct achter het aantal (Dave, 8 oktober 2026): daar is de meeste uitleg nodig. Geen kolom meer voor vraagtekens.
+        for (const r of d.querySelectorAll<HTMLElement>('section.bill .advised-row')) {
+          const help = r.querySelector('.help-toggle')
+          if (!help) continue
+          expect(help.parentElement!.classList.contains('advised-item'), label).toBe(true)
+          const qty = r.querySelector('.advised-qty')
+          if (qty) expect(qty.nextElementSibling, label).toBe(help)
+        }
+        expect(d.querySelector('section.bill td.advised-help'), label).toBeNull()
         // Kort, zoals de bedragen (Dave, 8 oktober 2026): 12.201 wordt 12.2k; het volle aantal in de tooltip.
         for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.textContent, label).toBe(`× ${compactMeso(n(cell.title))}`)
         // Wat dit level betaalt: van de equip de kolom Level (Profile koopt niets), plus potions en ammo van 0 tot 100%.
