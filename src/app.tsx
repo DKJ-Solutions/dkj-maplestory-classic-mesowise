@@ -3569,8 +3569,9 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           { value: '100', what: 'Naar procent', op: '/' },
           { value: nf.format(base), what: 'Basis', op: '+' },
         ]}
-        // Wat door 100 gaat in een kader, en de primaire stat met zijn vermenigvuldigers in een kader daarbinnen (Dave, 8 oktober 2026).
-        boxes={[mastery !== 1 ? 3 : 2, mastery !== 1 ? 4 : 3]}
+        // Kaders van binnen naar buiten (Dave, 8 oktober 2026): de primaire stat met zijn vermenigvuldigers, dan wat door 100 gaat, dan de
+        // deling zelf, waar de basis nog bij komt.
+        boxes={[2, 3, 4].map((n) => (mastery !== 1 ? n + 1 : n))}
         result={{ value: nf.format(statFactor(base, mastery)), what: 'Statfactor' }}
       />
     )

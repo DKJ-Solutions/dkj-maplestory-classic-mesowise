@@ -3519,9 +3519,10 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
       expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
       const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
-      // Een kader om wat door 100 gaat, en daarbinnen een om de primaire stat met zijn vermenigvuldigers (Dave, 8 oktober 2026).
+      // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
       const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
-      const [outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      const [division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
       expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
       expect(boxed(inner).at(-1)).toBe('Multiplier')
       const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
