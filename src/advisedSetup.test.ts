@@ -275,13 +275,17 @@ describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (
   }
   const clean = (job: Job): CheapestInput => ({ ...input(job, 19, 'Pig'), drafts: [] })
 
-  it('neemt alleen job, level, geslacht en Max HP over: de rest begint leeg of standaard', () => {
-    const start = freshStart(filled('thief'))
-    expect(start.equipment).toEqual(defaultEquipment())
+  it('neemt job, level, geslacht, Max HP en je equip over: mob, potions, skills en AP beginnen leeg of standaard', () => {
+    const user = filled('thief')
+    const start = freshStart(user)
+    // Je equip, met de velden die erbij horen (Dave, 8 oktober 2026): wat je draagt is gratis.
+    expect(start.equipment).toBe(user.equipment)
     expect(start.drafts).toEqual([])
     expect(start.potionChoice).toBe(NO_POTION_CHOICE)
     // Het standaardprofiel, met alleen het punt in de aanvalsskill; onder level 10 ook dat niet (geen punten van de 1e job).
     expect(start.profileDraft).toEqual({ ...DEFAULT_PROFILE, level: '19', hp: DEFAULT_PROFILE.hp })
+    const gear = freshStart({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '13', wdef: '' } }).profileDraft
+    expect([gear.clawWatk, gear.wdef]).toEqual(['13', DEFAULT_PROFILE.wdef])
     const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
     expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
     // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.
@@ -291,15 +295,16 @@ describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (
 
   it('geeft dezelfde setup, ook als het ingevulde profiel niet klopt', () => {
     for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      // Met dezelfde equip: alleen de skillpunten (te veel) en de mob verschillen, en die bouwt Cheapest zelf op.
       const a = cheapestFor(filled(job))
-      const b = cheapestFor(clean(job))
+      const b = cheapestFor({ ...clean(job), equipment: filled(job).equipment })
       // Het ingevulde profiel zelf rekent niet (te veel skillpunten), Cheapest wel.
       if (job === 'thief') expect(profileOf(filled(job)), job).toBeNull()
       expect(profileOf({ ...filled(job), ...a.result }), job).not.toBeNull()
       expect(a.result.profileDraft, job).toEqual(b.result.profileDraft)
       expect(a.result.drafts, job).toEqual(b.result.drafts)
       expect(a.purchases, job).toEqual(b.purchases)
-      // Er staat altijd een wapen in, ook al droeg de speler er zelf een (#202): Cheapest koopt het zijne.
+      // Het wapen dat de speler draagt, houdt Cheapest of vervangt het: er staat altijd een wapen in (#202).
       expect(isEmptyEntry(a.equipment.claw), job).toBe(false)
     }
   })

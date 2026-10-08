@@ -43,11 +43,13 @@ Dave, October 8, 2026 (#263): Cheapest should work out by itself which setup giv
 level from the profile. Then, for the Overnemen part: compare the player's setup with Cheapest's, and say "al de
 goedkoopste" when the player's level is not dearer than Cheapest. After the reviews: Overnemen takes over only the mob
 and the potions, which a player can change freely; skill points, AP and equipment stay, and the list shows their
-difference for information only.
+difference for information only. Then, after seeing a level 19 thief get only a claw and stars: Cheapest starts from the
+equipment the player wears (free) and buys only what pays off on top; "Based on:" shows Equip (worn) and New equip (bought).
 
 ### CREATE
 
-- [x] `freshStart`: Cheapest's input from job, level, gender and a valid Max HP only (empty equipment, no mob, no potion choice, default stats, no skill points)
+- [x] `freshStart`: Cheapest's input from job, level, gender, a valid Max HP and the worn equipment with its gear fields (no mob, no potion choice, default stats, skill points from scratch)
+- [x] "Based on:" in the Cheapest popup: Equip (what you wear) and New equip (what Cheapest buys)
 - [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
 - [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
 - [x] Overnemen writes only mob and potions (Dave's choice after the reviews); its button shows only when those differ, the saving is what the player's own level then costs less, and Ongedaan maken puts them back
@@ -64,7 +66,7 @@ difference for information only.
 
 ### DEPLOY: app/cheapest-fresh-start
 
-Cheapest's input is built by `freshStart` from job, level, gender and Max HP only, and `cheapestFor` measures its changes and
+Cheapest's input is built by `freshStart` from job, level, gender, Max HP and the worn equipment, and `cheapestFor` measures its changes and
 saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest, and
 Overnemen writes only the mob and the potions.
 
@@ -72,9 +74,10 @@ Overnemen writes only the mob and the potions.
 
 #### What makes this deploy extra special
 
-Cheapest now works out the whole setup by itself from your job and level: skill points, AP, equipment, mob and potions. What
-you filled in no longer gets in the way, so a profile with a mistake (more skill points than your level allows) no longer
-leaves Cheapest with only a question mark. Overnemen lists what differs from your own setup and takes over only the mob and
+Cheapest now works out your setup by itself from your job and level: skill points, AP, mob and potions, starting from the
+equipment you already wear and buying only what pays off on top. What you filled in no longer gets in the way, so a profile
+with a mistake (more skill points than your level allows) no longer leaves Cheapest with only a question mark. "Based on:"
+shows the equipment you wear and the new equipment Cheapest buys. Overnemen lists what differs from your own setup and takes over only the mob and
 the potions, which you can change freely in the game; your skill points, AP and equipment stay as they are.
 
 **Score:** 4

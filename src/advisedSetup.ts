@@ -5,7 +5,7 @@ import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { defaultEquipment, EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -33,6 +33,9 @@ export interface AdvisedSetup {
   ammo: string | null
 }
 
+/** De velden van het profiel die bij je equip horen en die de Equip-kaart bijhoudt: wapen, WDEF, stars, snelheid, en de keuzes van dagger en pijlen. */
+const GEAR_FIELDS = ['clawWatk', 'wdef', 'attackMs', 'weaponMult', 'starWatk', 'starRecharge', 'dagger', 'bronzeArrows', 'helpfulStranger'] as const satisfies readonly (keyof ProfileDraft)[]
+
 /** Elke skill van de 1e job op 0: onder level 10 heb je daar nog geen punten voor (skillPointCap), ook niet het ene punt van het standaardprofiel. */
 const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
   Object.keys(DEFAULT_PROFILE)
@@ -41,8 +44,9 @@ const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
 )
 
 /**
- * Waar Cheapest begint (Dave, 8 oktober 2026, #263): alleen je job, je level en je geslacht (sommige equip is er alleen voor het ene). Al de rest
- * bouwt Cheapest zelf op, alsof je op dit level opnieuw begint: geen equip, geen mob, geen gekozen potions en het standaardprofiel, met alleen het ene
+ * Waar Cheapest begint (Dave, 8 oktober 2026, #263): je job, je level, je geslacht (sommige equip is er alleen voor het ene) en de equip die je draagt,
+ * met de velden die bij die equip horen (GEAR_FIELDS): wat je al hebt is gratis, Cheapest koopt alleen wat daarbovenop loont. Al de rest bouwt
+ * Cheapest zelf op, alsof je op dit level opnieuw begint: geen mob, geen gekozen potions en het standaardprofiel, met alleen het ene
  * punt in de aanvalsskill (Lucky Seven, Energy Bolt) dat het nodig heeft om aan te vallen; de rest van de skillpunten zet Cheapest zelf. Onder level 10
  * heb je nog geen punten van je 1e job, dus daar staat ook dat punt op 0.
  * Wat je zelf invulde telt niet mee, ook een fout niet (meer skillpunten dan je level toelaat). Alleen je Max HP blijft staan als het een getal is:
@@ -50,13 +54,21 @@ const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
  */
 export function freshStart(user: CheapestInput): CheapestInput {
   const hp = user.profileDraft.hp.trim()
+  // De velden van je equip neemt Cheapest over waar ze een getal zijn; een leeg of fout veld valt terug op de standaard.
+  const gear = Object.fromEntries(GEAR_FIELDS.filter((k) => user.profileDraft[k].trim() !== '' && Number.isFinite(Number(user.profileDraft[k]))).map((k) => [k, user.profileDraft[k].trim()]))
   return {
     job: user.job,
     gender: user.gender,
-    equipment: defaultEquipment(),
+    equipment: user.equipment,
     drafts: [],
     potionChoice: NO_POTION_CHOICE,
-    profileDraft: { ...DEFAULT_PROFILE, ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}), level: user.profileDraft.level, hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp },
+    profileDraft: {
+      ...DEFAULT_PROFILE,
+      ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}),
+      ...gear,
+      level: user.profileDraft.level,
+      hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
+    },
   }
 }
 

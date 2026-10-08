@@ -491,8 +491,8 @@ describe('equipment: de claw past het profiel aan', () => {
     const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
     expect(tag.textContent).toBe('cheapest')
     expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
-    // Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263): ook als je al een wapen draagt, koopt het er zelf een.
-    expect(advisedRow(dialog, 'Weapon').classList.contains('buy')).toBe(true)
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
   })
 
@@ -517,8 +517,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
-    // Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263): het wapen dat je draagt telt niet mee, Cheapest koopt er zelf een.
-    expect(advisedRow(dialog, 'Weapon').classList.contains('buy')).toBe(true)
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
   it('zet een gekocht wapen in Cheapest als slot, naam en bedrag (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
@@ -619,11 +619,11 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    // Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263): wat je draagt telt niet mee, dus het koopt hetzelfde wapen met hetzelfde oordeel.
-    expect(verdictOf(advisedRow(dialog, 'Weapon'))).toBe('Kopen')
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
-  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en koopt hetzelfde stuk als je zelf al een wapen draagt (Dave, 8 oktober 2026)', () => {
+  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en laat een wapen dat je draagt weg (Dave, 8 oktober 2026)', () => {
     const open = (wear: boolean) => {
       cleanup()
       localStorage.clear()
@@ -639,14 +639,13 @@ describe('equipment: de claw past het profiel aan', () => {
     const row = advisedRow(bought, 'Weapon')
     expect(row.classList.contains('buy')).toBe(true)
     expect(bought.querySelector('.advised-price')).toBeNull()
-    const price = infoPrice(row)
-    expect(price).toMatch(/^[\d.]+ meso$/)
-    // Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263): draag je zelf een wapen, dan koopt het toch het zijne, met dezelfde prijs in de info-popup.
+    expect(infoPrice(row)).toMatch(/^[\d.]+ meso$/)
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
     const worn = open(true)
-    expect(infoPrice(advisedRow(worn, 'Weapon'))).toBe(price)
+    expect(advisedRow(worn, 'Weapon')).toBeUndefined()
   })
 
-  it('geeft elke regel een dicht vraagteken, koopt zijn eigen wapen ook als je er een draagt, laat een slot weg dat leeg blijft (ook de overall naast een losse top), en koopt top en bottom elk voor zich naast een eigen overall (Dave, 7 en 8 oktober 2026)', () => {
+  it('geeft elke regel een dicht vraagteken, laat weg wat dit level niets kost (een stuk dat je houdt, een slot dat leeg blijft, ook de overall naast een losse top), en noemt bij top en bottom samen de partner (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -660,13 +659,13 @@ describe('equipment: de claw past het profiel aan', () => {
       expect(within(r).getByRole('button', { name: 'Uitleg bij ' + r.querySelector('.slot-name')!.textContent }).getAttribute('aria-expanded')).toBe('false')
       expect(r.querySelector('dialog.item-dialog')).toBeNull()
     })
-    // Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263): wat je draagt telt niet mee, dus het wapen koopt het zelf. De overall (een losse top neemt zijn plek in) en een cape die leeg
-    // blijft staan er niet: alleen wat dit level mesos kost staat in de bill.
-    expect(advisedRow(dialog, 'Weapon').classList.contains('buy')).toBe(true)
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill. Net zo de top die je houdt, de overall (een losse top neemt zijn plek in) en een cape die leeg blijft.
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
+    expect(advisedRow(dialog, 'Top')).toBeUndefined()
     expect(advisedRow(dialog, 'Overall')).toBeUndefined()
     expect(advisedRow(dialog, 'Cape')).toBeUndefined()
     expect(rows.filter((r) => r.classList.contains('empty'))).toHaveLength(0)
-    // Een eigen overall telt ook niet mee: Cheapest begint zonder equip (#263), dus het koopt top en bottom elk voor zich.
+    // Koopt Cheapest een top en bottom samen in plaats van je eigen overall, dan noemen beide regels hun partner.
     cleanup()
     localStorage.clear()
     render(<App />)
@@ -676,8 +675,8 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const withOverall = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(whyOf(advisedRow(withOverall, 'Top'))).toMatch(/^Koop voor [0-9.]+ meso/)
-    expect(whyOf(advisedRow(withOverall, 'Bottom'))).toMatch(/^Koop voor [0-9.]+ meso/)
+    expect(whyOf(advisedRow(withOverall, 'Top'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
+    expect(whyOf(advisedRow(withOverall, 'Bottom'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
   })
 
   it('zet de stars die de factuur telt bij een leeg Ammo-slot onder Useable, niet als slot onder Equip (#189, Dave, 8 oktober 2026)', () => {
@@ -3915,13 +3914,31 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     }
   })
 
+  it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Top', 'Red Pao')
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    const d = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    // Equip: wat je draagt, ook als Cheapest het houdt; Cheapest rekent ermee en het kost niets.
+    const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
+    expect(worn.textContent).toBe('Equip: 1 item')
+    // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
+    const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
+    const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
+    expect(buys).toBeGreaterThan(0)
+    expect(bought.textContent).toBe(`New equip: ${buys} ${buys === 1 ? 'item' : 'items'}`)
+    expect(within(bought).getByRole('button', { name: `New equip: ${buys} ${buys === 1 ? 'item' : 'items'}` })).toBeTruthy()
+  })
+
   it('maakt elke Cheapest-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
     setUpAdvisedDiffers()
     for (const title of CARDS) {
       const d = openView(title, 'Cheapest')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Equip: /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^(New equip|Equip): /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4172,8 +4189,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
           expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
           // Dezelfde mob als in Cheapest: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
-          // In Equip staat onder Char en Mob een derde rij, Equip, met het aantal stukken (Dave, 8 oktober 2026); die hoort niet bij deze controle.
-          expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: \d+ items?$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
+          // In Equip staan onder Char en Mob de rijen Equip en New equip (Dave, 8 oktober 2026); die horen niet bij deze controle.
+          expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: .*$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
           const own = openView(title, 'Profile')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()

@@ -476,7 +476,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; equip?: BasedOnEquip; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; equip?: BasedOnEquip; bought?: BasedOnEquip; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Level cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -503,7 +503,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
-        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} bought={props.bought} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -1585,9 +1585,10 @@ function StatDialog(props: {
 /** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest bouwt die setup zelf op uit je job en level (en je geslacht en Max HP), alsof je
-    opnieuw begint: wat je zelf invulde telt niet mee, ook equip die je al hebt niet. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die Cheapest koopt omdat die
-    zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
+    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest rekent met de equip die je draagt (die heb je al, dus die is gratis) en bouwt de
+    rest zelf op uit je job en level: skillpunten, AP, mob en potions, alsof je opnieuw begint. Bovenaan de potions en ammo die je van 0 tot 100% van het
+    level gebruikt, eronder de equip die Cheapest erbij koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Onder "Based on:" staat
+    wat je draagt (Equip) en wat Cheapest erbij koopt (New equip). Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
     Overnemen zet alleen de mob en potions van Cheapest in je setup; je skillpunten, AP en equip blijven zoals ze zijn.
@@ -1624,7 +1625,7 @@ type BasedOnEquip = {
 }
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
-const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
+const equipSummary = (items: readonly unknown[], none = 'Nog niets gekozen') => (items.length === 0 ? none : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
 
 /**
  * Bovenaan Level cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
@@ -1632,8 +1633,8 @@ const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog n
  * vraagteken achter de mob dat zegt waarom juist die. In Wearing een tweede kolom met het potlood van die rij (Dave, 8 oktober 2026). Het staat in de
  * popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'cheapest' | 'profile'; equip?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
-  const { stats, sheet, equip } = props
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'cheapest' | 'profile'; equip?: BasedOnEquip; bought?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
+  const { stats, sheet, equip, bought } = props
   // Your character (sheet profile): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan profile in plaats van expected.
   const advised = sheet === 'cheapest'
   // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
@@ -1641,6 +1642,52 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
     <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={expanded} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
     </button>
+  )
+  // Een rij met equipment: wat je draagt (Equip), en in Cheapest wat het erbij koopt (New equip, Dave, 8 oktober 2026).
+  const equipRow = (equip: BasedOnEquip, title: string, dataKey: 'data-based-on-equip' | 'data-based-on-bought') => (
+    // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
+    // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
+    <div class="based-on-row">
+      <div class="based-on-label" {...{ [dataKey]: equip.ids }} data-sheet={sheet}>
+        <span class="sr-only">{title}: </span>
+        {equip.items.length > 0 ? (
+          <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`${title}: ${equip.summary}`} title={title} tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ [dataKey]: equip.ids, 'data-sheet': sheet }}>
+            {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die
+                voor DEF (armor), elk met twee kolommen: de naam van het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026). */}
+            {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
+              <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
+                <div class="char-table-head equip-head" aria-hidden="true">
+                  <span>{stat}</span>
+                  <span />
+                  {equip.edit && <span />}
+                </div>
+                {equip.items
+                  .filter((i) => i[3] === stat)
+                  .map(([slot, name, value, , key]) => (
+                    <div key={slot} class="stat-line" data-slot={slot}>
+                      <span class="stat-line-name">{name}</span>
+                      <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
+                        <span class="equip-value-num">
+                          <strong>{value}</strong>
+                        </span>
+                      </div>
+                      {/* In Profile in de derde kolom het potlood, zoals in de popup van Char: het opent de slotpopup van dit slot (Dave, 8 oktober 2026). */}
+                      {equip.edit && (
+                        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={equip.edit.editing === key} aria-label={`${slot} wijzigen`} onClick={(e) => equip.edit!.slot(key, e.currentTarget)}>
+                          {PENCIL_ICON}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+              </section>
+            ))}
+          </PopupButton>
+        ) : (
+          <span class="based-on-value placeholder">{equip.summary}</span>
+        )}
+      </div>
+      {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
+    </div>
   )
   const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
@@ -1695,51 +1742,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           </div>
           {props.edit && pencil('Mob', props.edit.open.mob === 'worn', props.edit.mob)}
         </div>
-        {equip && (
-          // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
-          // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
-          <div class="based-on-row">
-            <div class="based-on-label" data-based-on-equip={equip.ids} data-sheet={sheet}>
-              <span class="sr-only">Equip: </span>
-              {equip.items.length > 0 ? (
-                <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
-                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die
-                      voor DEF (armor), elk met twee kolommen: de naam van het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026). */}
-                  {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
-                    <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
-                      <div class="char-table-head equip-head" aria-hidden="true">
-                        <span>{stat}</span>
-                        <span />
-                        {equip.edit && <span />}
-                      </div>
-                      {equip.items
-                        .filter((i) => i[3] === stat)
-                        .map(([slot, name, value, , key]) => (
-                          <div key={slot} class="stat-line" data-slot={slot}>
-                            <span class="stat-line-name">{name}</span>
-                            <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
-                              <span class="equip-value-num">
-                                <strong>{value}</strong>
-                              </span>
-                            </div>
-                            {/* In Profile in de derde kolom het potlood, zoals in de popup van Char: het opent de slotpopup van dit slot (Dave, 8 oktober 2026). */}
-                            {equip.edit && (
-                              <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={equip.edit.editing === key} aria-label={`${slot} wijzigen`} onClick={(e) => equip.edit!.slot(key, e.currentTarget)}>
-                                {PENCIL_ICON}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                    </section>
-                  ))}
-                </PopupButton>
-              ) : (
-                <span class="based-on-value placeholder">{equip.summary}</span>
-              )}
-            </div>
-            {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
-          </div>
-        )}
+        {equip && equipRow(equip, 'Equip', 'data-based-on-equip')}
+        {/* In Cheapest een vierde rij (Dave, 8 oktober 2026): de equip die Cheapest erbij koopt, naast de equip die je al draagt hierboven. */}
+        {bought && equipRow(bought, 'New equip', 'data-based-on-bought')}
       </div>
     </section>
   )
@@ -2450,9 +2455,9 @@ function EquipmentCard(props: {
     </>
   )
   // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
-  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
+  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit'], none?: string): BasedOnEquip => {
     const items = list.map((l) => l.item)
-    return { summary: equipSummary(items), items, ids: list.map((l) => l.id).join(' '), edit }
+    return { summary: equipSummary(items, none), items, ids: list.map((l) => l.id).join(' '), edit }
   }
   // Per stuk ook zijn item-id, voor data-based-on-equip (Dave, 8 oktober 2026); een eigen item heeft er geen en heet daar "own".
   // En de ATT of DEF die het stuk geeft, met de naam van die stat, voor de Equip-popup onder "Based on:" (Dave, 8 oktober 2026); onbekend: een vraagteken.
@@ -2467,10 +2472,12 @@ function EquipmentCard(props: {
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
-  const advisedList = props.cheapest
+  // Wat Cheapest erbij koopt (Dave, 8 oktober 2026): de slots waar het een ander stuk neemt dan je draagt. De stars of pijlen die de factuur telt,
+  // koop je per stuk; die staan onder Useable, niet hier.
+  const boughtList = props.cheapest
     ? slots.flatMap((slot) => {
         const c = props.cheapest![slot]
-        const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
+        const name = c.changed ? c.cheapest : null
         return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name), ...statOf(slot, { pick: name, name: '', stat: '' }), slot] as const, id: itemId(name) ?? 'own' }]
       })
     : []
@@ -2478,7 +2485,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={view === 'advised' && props.cheapest ? equipRow(boughtList, undefined, 'Niets te kopen') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )
