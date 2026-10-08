@@ -55,22 +55,25 @@ larger box around a smaller one, and only `=` and the result below it.
 ### TEST
 
 - [x] `npx vitest run`: 1970 tests pass, three new ones pin the box rule; `scripts/lint/lint.ps1` is clean
-- [ ] Dave looks at the popups in the preview before the merge
+- [x] Dave reviewed the popups in the preview and said to ship it (October 8, 2026)
 
 ### DEPLOY: app/boxed-formulas
 
 Every calculation behind a question mark in the Level cost explanations is now a stacked formula: one line per number with
 what it is, each calculation step in its own box, and only the result below it. A result that was rounded up says so on one
-line under the formula. `MulCalc` places the boxes itself, so a new formula only passes its numbers.
+line under the formula. The potion and ammo explanations are each one formula now (HP or MP this level / restore per
+potion; attacks per kill × stars per attack × kills), with every computed number opening its own formula, down to your own
+stats. The one-line summary, the tables and the cost section are gone. `MulCalc` places the boxes itself, so a new formula
+only passes its numbers.
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
-Every "?" in the explanation of a potion, ammo or shop amount now shows its sum the same way: each number named, each step
-boxed, so you can see what was divided by what.
+Tapping the number of potions or stars now opens a single formula, and every number in it can be tapped again to see where
+it comes from, down to your own LUK and STR + DEX. Each step is boxed, so you can see what was divided by what.
 
-**Score:** 2
+**Score:** 3
 
 #### Pull Request
 
