@@ -4233,6 +4233,37 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     })
 
+    it('zet in Your character van Total cost: Equip dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet actual en het label actual (Dave, 8 oktober 2026)', () => {
+      setJob('thief')
+      const who = totalCostWho('20', 'thief')
+      // Je eigen mob: de mob die je in Your character van Monster koos, niet die van het advies.
+      fireEvent.click(viewButton('Monster'))
+      chooseMob('Slime')
+      closeView('Monster')
+      const d = openView('Equip', 'Your character')
+      expect(d.querySelector('.based-on')?.textContent).toBe(`Based on:Char: ${who}Mob: Slime`)
+      const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
+      expect(char.getAttribute('data-based-on-character')).toBe(who)
+      expect(char.getAttribute('data-sheet')).toBe('actual')
+      expect(mob.getAttribute('data-based-on-mob')).toBe('Slime')
+      expect(mob.getAttribute('data-sheet')).toBe('actual')
+      // Wat je zelf zette: geen uitleg waarom juist deze mob.
+      expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
+      // Het i-knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual.
+      fireEvent.click(within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` }))
+      const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(stats.querySelector('.title-tag')?.textContent).toBe('actual')
+      expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])
+      expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
+      // Het i-knopje bij de mob toont de stats van Slime.
+      fireEvent.click(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }))
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob')).toBe('Slime')
+      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
+    })
+
     it('zet achter de mob onder "Based on:" in Total cost: Equip een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()

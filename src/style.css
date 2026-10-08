@@ -387,8 +387,9 @@ html:has(dialog:modal) { overflow: hidden; }
 /* Een Advised-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */
 .stat-dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
 /* Your character in Total cost: Equip (Dave, 8 oktober 2026): dezelfde tabel als Advised, in blauw. Het accent van de popup en alles erin (het label, de gecorrigeerde stat,
-   de focusranden, Opslaan) is blauw in plaats van oranje; de melding bij een job zonder items staat in een vak (--worn-box), een tint dieper. */
+   de focusranden, Opslaan) is blauw in plaats van oranje; de vakken van Based on: en de melding bij een job zonder items staan in --worn-box, een tint dieper. */
 .stat-dialog.worn-dialog.card-dialog-equip { --card: var(--worn-bg); --accent: var(--worn-accent); --on-accent: var(--on-worn-accent); border-color: var(--worn-border); }
+.worn-dialog.card-dialog-equip .based-on-label { background: var(--worn-box); }
 .worn-dialog.card-dialog-equip .hint { padding: 0.375rem 0.4375rem; background: var(--worn-box); border-radius: 0.5rem; }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 /* Alles links uitgelijnd; het kruisje rechtsboven */

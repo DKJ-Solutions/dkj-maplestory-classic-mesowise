@@ -451,10 +451,11 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
+  const advisedStats = useContext(AdvisedStats)
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
@@ -472,7 +473,8 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
     <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} data={data} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
-        {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
+        {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -1755,8 +1757,10 @@ const mobWhy = (mob: string) =>
  * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
  * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string }) {
-  const stats = useContext(AdvisedStats)
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual' }) {
+  const { stats, sheet } = props
+  // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
+  const advised = sheet === 'advised'
   const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
     <section class="based-on" aria-label="Based on">
@@ -1765,33 +1769,37 @@ function BasedOn(props: { who: string; mob: string }) {
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
+          <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
             <span class="sr-only">Char: </span>
             <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                 {stats}
               </PopupButton>
             )}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
+        {props.mob !== null && (
         <div class="based-on-line">
-          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
+          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet={sheet}>
             <span class="sr-only">Mob: </span>
             <span class="based-on-value">{props.mob}</span>
             {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}
           </div>
-          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-            <p class="item-why">{mobWhy(props.mob)}</p>
-          </PopupButton>
+          {advised && (
+            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+              <p class="item-why">{mobWhy(props.mob)}</p>
+            </PopupButton>
+          )}
         </div>
+        )}
       </div>
     </section>
   )
@@ -2244,6 +2252,10 @@ function EquipmentCard(props: {
   advisedLines: readonly InvoiceLine[] | null
   /** De mob waarop het advies rekent (Dave, 7 oktober 2026), onder "Based on:" in Total cost: Equip; null zonder mob. */
   advisedMob: string | null
+  /** De mob die je zelf koos in Monster (Dave, 8 oktober 2026), onder "Based on:" in Your character; null zonder mob. */
+  wornMob: string | null
+  /** Je eigen karakter achter het i-knopje onder "Based on:" in Your character: dezelfde drie tabellen als Advised, met je eigen profiel. */
+  wornStats: ComponentChildren
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -2389,7 +2401,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Total cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title="Total cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -4057,6 +4069,9 @@ export function App() {
   }
 
   const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
+  // Your character onder "Based on:" in Total cost: Equip (Dave, 8 oktober 2026): je eigen profiel (profileDraft, het level en de job van de kaart Ability points) en de mob die je in Monster koos (de eerste van je eigen drafts met een mob, zoals initialDrafts).
+  const wornStats = <AdvisedCharacter job={job} draft={profileDraft} />
+  const wornMob = huntedMob(drafts.find((d) => huntedMob(d) !== undefined))?.name ?? null
 
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
@@ -4103,6 +4118,8 @@ export function App() {
         advisedAmmo={advisedSet?.ammo ?? null}
         advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
         advisedMob={advisedMob}
+        wornMob={wornMob}
+        wornStats={wornStats}
         level={characterLevel}
         gender={gender}
         report={
