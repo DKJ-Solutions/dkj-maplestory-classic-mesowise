@@ -3406,26 +3406,36 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 /**
  * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links wat het is en rechts het teken en het getal, zoals
  * de andere tabellen in de uitleg, en onderaan de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
- * label en staat de som klein eronder (`note`), zodat de kolom met labels rustig blijft.
+ * label en staat de som in zijn eigen popup, achter een vraagteken bij het getal (`calc`, Dave, 8 oktober 2026), zoals elk berekend getal in de uitleg.
  */
-function MulCalc(props: { factors: readonly { value: string; what: string; note?: ComponentChildren }[]; result: { value: string; what: string } }) {
+function MulCalc(props: { factors: readonly { value: string; what: string; calc?: ComponentChildren }[]; result: { value: string; what: string } }) {
+  // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan.
+  const num = (value: string, what: string, calc?: ComponentChildren) => (
+    <span class="why-value">
+      <span class="why-value-num">{value}</span>
+      {calc ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle why-help" label={`Uitleg bij ${what}`} title={what}>
+          <p class="why-calc">{calc}</p>
+        </PopupButton>
+      ) : (
+        <span class="why-help-space" aria-hidden="true" />
+      )}
+    </span>
+  )
   return (
     <table class="why-mul">
       <tbody>
         {props.factors.map((f, i) => (
           <tr key={i}>
-            <td class="why-mul-what">
-              {f.what}
-              {f.note && <small class="why-mul-note">{f.note}</small>}
-            </td>
+            <td class="why-mul-what">{f.what}</td>
             <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
-            <td class="why-mul-num">{f.value}</td>
+            <td class="why-mul-num">{num(f.value, f.what, f.calc)}</td>
           </tr>
         ))}
         <tr class="why-mul-result">
           <td class="why-mul-what">{props.result.what}</td>
           <td class="why-mul-op">=</td>
-          <td class="why-mul-num">{props.result.value}</td>
+          <td class="why-mul-num">{num(props.result.value, props.result.what)}</td>
         </tr>
       </tbody>
     </table>
@@ -3541,7 +3551,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
               factors={[
                 { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: 'Statfactor', note: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: 'Statfactor', calc: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
               ]}
               result={{ value: oneDecimal(w.rawMax), what: `Max per ${piece}` }}
             />
@@ -3555,7 +3565,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
               factors={[
                 { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: 'Statfactor', note: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: 'Statfactor', calc: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
               ]}
               result={{ value: oneDecimal(w.rawMin), what: `Min per ${piece}` }}
             />

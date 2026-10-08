@@ -752,7 +752,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul td.why-mul-op { width: 1rem; padding: 0.5rem 0.5rem; font-size: 1.125rem; text-align: center; color: var(--muted); }
 .why-mul td.why-mul-num { padding-right: 0.75rem; text-align: right; font-size: 1.125rem; font-weight: 700; white-space: nowrap; }
 .why-mul td.why-mul-what { width: 100%; padding-left: 0.75rem; overflow-wrap: anywhere; }
-.why-mul-note { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--muted); }
 .why-mul-result td { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .why-mul-result td:first-child { border-radius: 0.625rem 0 0 0.625rem; }
 .why-mul-result td:last-child { border-radius: 0 0.625rem 0.625rem 0; }

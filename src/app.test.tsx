@@ -3503,11 +3503,26 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const damage = whyDetail(dialog, 'Schade per aanval')
     expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
     // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
-    // De stats als kort label, met hun som klein eronder (Dave, 8 oktober 2026).
-    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor ?1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 × [\d,]+ ; Max per star = ([\d.,]+)$/)
+    // De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal (Dave, 8 oktober 2026).
+    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Max per star = ([\d.,]+)$/)
     expect(damage[0].calc.endsWith(`Max per star = ${damage[0].result}`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor ?0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 × [\d,]+ ; Min per star = [\d.,]+$/)
+    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Min per star = [\d.,]+$/)
     expect(damage[1].calc.endsWith(`Min per star = ${damage[1].result}`)).toBe(true)
+    // Alleen de statfactor is berekend en heeft een vraagteken; de popup toont zijn som met je eigen stats.
+    const statfactor = (label: string) => {
+      const open = (root: ParentNode, name: string) => {
+        const button = within(root as HTMLElement).getAllByRole('button', { name }).at(-1)!
+        fireEvent.click(button)
+        return button.parentElement!.querySelector<HTMLElement>('dialog')!
+      }
+      const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
+      expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
+      const text = open(mul, 'Uitleg bij Statfactor').querySelector('.why-calc')!.textContent!.replace(/\s+/g, ' ').trim()
+      for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+      return text
+    }
+    expect(statfactor('Max per star')).toMatch(/^1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100$/)
+    expect(statfactor('Min per star')).toMatch(/^0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100$/)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
