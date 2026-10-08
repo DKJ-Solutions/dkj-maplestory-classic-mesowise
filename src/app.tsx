@@ -1907,7 +1907,7 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
       <tr class="bill-category">
-        <th scope="rowgroup" colSpan={5}>
+        <th scope="rowgroup" colSpan={4}>
           {props.name}
         </th>
       </tr>
@@ -1920,7 +1920,7 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
 function BillSum(props: { kind: 'subtotal' | 'total'; label: string; shop?: number; level: number; help?: ComponentChildren }) {
   return (
     <tr class={props.kind === 'total' ? 'equip-total advised-total' : 'advised-subtotal'}>
-      <th scope="row" colSpan={2} class="advised-total-label">
+      <th scope="row" class="advised-total-label">
         {props.label}
       </th>
       <td class="advised-total-price">
@@ -1964,7 +1964,8 @@ function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; gro
 function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice?: boolean }) {
   return (
     <tr class="advised-head">
-      <th scope="col">Slot</th>
+      {/* De bill van Level cost heeft geen kolom Slot (Dave, 8 oktober 2026): op 360px kreeg de naam van het stuk te weinig ruimte. */}
+      {!props.level && <th scope="col">Slot</th>}
       <th scope="col">{props.item}</th>
       {props.qty && (
         <>
@@ -2024,12 +2025,14 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
   // Een useable in de bill van Level cost (Dave, 8 oktober 2026): het aantal onder Shop, het bedrag onder Level.
-  const qtyText = props.qty == null ? '' : `× ${nfInt.format(props.qty)}`
+  // Het aantal kort, zoals de bedragen: 12.201 wordt 12.2k (Dave, 8 oktober 2026); het volle aantal in de tooltip.
+  const qtyText = props.qty == null ? '' : `× ${compactMeso(props.qty)}`
+  const qtyTitle = props.qty == null ? undefined : nfInt.format(props.qty)
   const qtyColumn = props.qty !== undefined && !wide
   // Zonder `price` (de slotkeuze achter Equip, Dave, 8 oktober 2026) heeft de rij geen bedragkolom.
   const price = props.price !== undefined && (
     <>
-      {wide && props.qty !== undefined ? <td class="advised-qty">{qtyText}</td> : <td class="advised-price">{amount(props.price)}</td>}
+      {wide && props.qty !== undefined ? <td class="advised-qty" title={qtyTitle}>{qtyText}</td> : <td class="advised-price">{amount(props.price)}</td>}
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
       {/* In Wearing (Dave, 8 oktober 2026) staat in de lege kolom Level het woord "Upgrade" voor een slot dat je nu moet upgraden, in de accentkleur van een koop in Advised (.buy). */}
       {wide && (props.levelWord ? <td class="advised-level verdict">{props.levelWord}</td> : <td class="advised-level">{amount(props.level ?? null)}</td>)}
@@ -2044,10 +2047,13 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       )}
     </td>
   )
+  // Zonder kolom Slot (de bill van Level cost, Dave, 8 oktober 2026) is de naam de kop van de rij, met het slot erin voor de schermlezer.
+  const Item = wide ? 'th' : 'td'
   return (
     <tr class={['advised-row', props.tone].filter(Boolean).join(' ')}>
-      <th scope="row" class="slot-name">{props.slot}</th>
-      <td>
+      {!wide && <th scope="row" class="slot-name">{props.slot}</th>}
+      <Item scope={wide ? 'row' : undefined}>
+        {wide && <span class="slot-name sr-only">{props.slot}</span>}
         <span class="advised-item">
           <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
           {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
@@ -2064,9 +2070,9 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
             </PopupButton>
           )}
         </span>
-      </td>
+      </Item>
       {/* Het aantal, alleen in een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026). */}
-      {qtyColumn && <td class="advised-qty">{props.qty == null ? '' : nfInt.format(props.qty)}</td>}
+      {qtyColumn && <td class="advised-qty" title={qtyTitle}>{props.qty == null ? '' : compactMeso(props.qty)}</td>}
       {/* Met een Qty-kolom staat het vraagteken direct achter het aantal en het bedrag achteraan (Dave, 7 oktober 2026); zonder achter het bedrag. */}
       {!qtyColumn && price}
       {last}

@@ -784,10 +784,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .with-qty .advised-row .help-toggle { margin: -0.5rem -0.25rem; }
 /* Een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026): Shop (de winkelprijs) en Level (het deel van dit level) krijgen een vaste breedte,
    zodat ze in elke regel onder elkaar staan; het vraagteken achteraan. De slotkolom is smaller dan zonder, zodat de naam op 360px leesbaar blijft. */
-.with-level .advised-head > :nth-child(1) { width: 4.25rem; }
-.with-level .advised-head > :nth-child(3) { width: 4rem; }
-.with-level .advised-head > :nth-child(4) { width: 3.75rem; }
-.with-level .advised-head > :nth-child(5) { width: 2.5rem; }
+.with-level .advised-head > :nth-child(1) { width: auto; }
+.with-level .advised-head > :nth-child(2) { width: 4rem; }
+.with-level .advised-head > :nth-child(3) { width: 3.75rem; }
+.with-level .advised-head > :nth-child(4) { width: 2.5rem; }
 /* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */
 .meso-amount { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
 .meso-icon { flex: none; width: 0.75rem; height: 0.75rem; }

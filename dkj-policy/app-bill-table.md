@@ -48,6 +48,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] Bill components (BillHead, BillRow, totals) render table rows; BillTable wraps them in thead/tbody/tfoot inside `section.bill`
 - [x] Level cost popup (Cheapest and Profile): one LevelBill with an Equip and a Useable group, each with a subtotal, and Total cost as their sum
 - [x] CSS from grid columns to a fixed table layout, plus category and subtotal rows
+- [x] Level cost bill without the Slot column (the slot stays in the row header for screen readers); quantities compact like amounts (12.2k)
 
 ### TEST
 
@@ -58,8 +59,8 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 ### DEPLOY: app/bill-table
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
-with two cost groups, Equip and Useable, each with its own subtotal; a useable's quantity sits under Shop and its cost
-under Level.
+with two cost groups, Equip and Useable, each with its own subtotal, and no Slot column; a useable's quantity sits under
+Shop, written short like the amounts (12.2k), and its cost under Level.
 
 **Score:** 2
 
