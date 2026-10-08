@@ -4788,7 +4788,13 @@ describe('equipment: Your character als tabel', () => {
     expect(popup.querySelector('.title-tag')!.textContent).toBe('profile')
     expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     // Dezelfde tabel als de popup van het karakter (Dave, 8 oktober 2026): een kop en per slot een regel.
-    expect(popup.querySelector('section.char-table-equip > .char-table-head')!.textContent).toBe('Equip')
+    // Twee kolommen met hun naam als kop: Slot en Item (Dave, 8 oktober 2026).
+    // Twee tabellen, eerst ATT en dan DEF, elk met de kolommen Slot, Item en zijn stat (Dave, 8 oktober 2026).
+    const tables = [...popup.querySelectorAll<HTMLElement>('section.char-table-equip')]
+    expect(tables.map((t) => [...t.querySelectorAll(':scope > .equip-head > span')].map((e) => e.textContent))).toEqual([['Slot', 'Item', 'ATT'], ['Slot', 'Item', 'DEF']])
+    expect(tables.map((t) => [...t.querySelectorAll('.stat-line-name')].map((e) => e.textContent))).toEqual([['Weapon'], ['Top']])
+    expect(tables[0].querySelector('.equip-stat')!.textContent).toBe(String(IGOR.watk))
+    expect(tables[1].querySelector('.equip-stat')!.textContent).toMatch(/^\d+$/)
     expect([...popup.querySelectorAll('.char-table-equip .stat-line-name')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     closeDialogs()

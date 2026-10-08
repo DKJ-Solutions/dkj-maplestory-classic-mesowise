@@ -1611,7 +1611,7 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /** De derde rij onder "Based on:" in Level cost: Equip (Dave, 8 oktober 2026): per slot de naam van het stuk, en met `edit` het potlood dat de keuze opent (alleen Wearing). */
-type BasedOnEquip = { summary: string; items: readonly (readonly [string, string])[]; ids: string; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
+type BasedOnEquip = { summary: string; items: readonly (readonly [slot: string, name: string, stat: string, statName: string])[]; ids: string; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
 const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
@@ -1693,21 +1693,34 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
                 <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
-                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): een tabel met een kop en per slot een regel, het stuk in de waardekolom. */}
-                  <section class="char-table char-table-equip" aria-label="Equip">
-                    <h3 class="char-table-head">Equip</h3>
-                    {equip.items.map(([slot, name]) => (
-                      <div key={slot} class="stat-line">
-                        <span class="stat-line-name">{slot}</span>
-                        <div class="equip-value" aria-label={`${slot} ${name}`}>
-                          <span class="equip-value-num">
-                            <strong>{name}</strong>
-                          </span>
-                        </div>
-                        <span />
+                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels, in duidelijke kolommen met hun naam als kop: Slot, Item en
+                      de stat die het stuk geeft. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die voor DEF (armor) (Dave, 8 oktober 2026). */}
+                  {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
+                    <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
+                      <div class="char-table-head equip-head" aria-hidden="true">
+                        <span>Slot</span>
+                        <span>Item</span>
+                        <span>{stat}</span>
                       </div>
-                    ))}
-                  </section>
+                      {equip.items
+                        .filter((i) => i[3] === stat)
+                        .map(([slot, name, value]) => (
+                          <div key={slot} class="stat-line">
+                            <span class="stat-line-name">{slot}</span>
+                            <div class="equip-value" aria-label={`${slot} ${name}`}>
+                              <span class="equip-value-num">
+                                <strong>{name}</strong>
+                              </span>
+                            </div>
+                            <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
+                              <span class="equip-value-num">
+                                <strong>{value}</strong>
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </section>
+                  ))}
                 </PopupButton>
               ) : (
                 <span class="based-on-value placeholder">{equip.summary}</span>
@@ -2397,23 +2410,28 @@ function EquipmentCard(props: {
     </>
   )
   // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
-  const equipRow = (list: readonly { item: readonly [string, string]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
+  const equipRow = (list: readonly { item: readonly [string, string, string, string]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
     const items = list.map((l) => l.item)
     return { summary: equipSummary(items), items, ids: list.map((l) => l.id).join(' '), edit }
   }
   // Per stuk ook zijn item-id, voor data-based-on-equip (Dave, 8 oktober 2026); een eigen item heeft er geen en heet daar "own".
+  // En de ATT of DEF die het stuk geeft, met de naam van die stat, voor de Equip-popup onder "Based on:" (Dave, 8 oktober 2026); onbekend: een vraagteken.
+  const statOf = (slot: EquipSlot, entry: EquipEntry) => {
+    const value = wornStat(slot, entry)
+    return [value === undefined ? '?' : nfInt.format(value), statName(slot, props.job)] as const
+  }
   const wornList = slots.flatMap((slot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     if (name === null) return []
     const own = entry.pick === OTHER
-    return [{ item: [slotLabel(slot), own ? name : familyName(slot, name)] as const, id: (own ? null : itemId(name)) ?? 'own' }]
+    return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry)] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
   const advisedList = props.cheapest
     ? slots.flatMap((slot) => {
         const c = props.cheapest![slot]
         const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
-        return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name)] as const, id: itemId(name) ?? 'own' }]
+        return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name), ...statOf(slot, { pick: name, name: '', stat: '' })] as const, id: itemId(name) ?? 'own' }]
       })
     : []
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
