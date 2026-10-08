@@ -44,13 +44,13 @@ Dave (October 8, 2026): Based on gets a third row, Equip, whose pencil opens a p
 ### CREATE
 
 - [x] Third Based on row Equip in both sheets (`data-based-on-equip`): Wearing with an ACTUAL_ICON list of what you wear and a pencil that opens a pick popup hosting the existing slot popups; Advised read-only with EXPECTED_ICON
-- [x] The Wearing table loses its per-row pencil; per slot a question mark gives Upgraden or Houden from the existing `cheapestWhy`, and an upgrade shows "Upgrade" in the Level column with the accent
+- [x] The Wearing table loses its per-row pencil; per slot a question mark gives Advised's own verdict (Upgraden, Houden, Vervangen when Advised's overall or top+bottom takes the slot, per-piece ammo) from the existing `cheapestWhy`, and an upgrade shows "Upgrade" in the Level column with the accent
 - [x] `slotCovers` shared between Advised and Wearing; closing the Equip popup closes its nested popups; WORN_HELP describes the new flow
 
 ### TEST
 
 - [x] Tests for the Equip row in both sheets, the pick popup (nested slot popup, Escape, focus return) and verdicts matching Advised's buy per slot; 1964 pass, `tsc` green
-- [x] Code review by Victor
+- [x] Code review by Victor: two verdicts could contradict Advised (covered top/bottom/overall, counted ammo) -- fixed and unit-tested
 - [x] Dave judged it in the preview
 
 ### DEPLOY: app/based-on-equip
