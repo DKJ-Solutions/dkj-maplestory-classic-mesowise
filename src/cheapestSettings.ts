@@ -135,10 +135,12 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
       }
     }
 
-    // De skillpunten: elk punt in de skill die het meeste bespaart, tot de pot leeg is.
+    // De skillpunten: elk punt in de skill die het meeste bespaart, tot de pot leeg is. Een punt dat het level duurder maakt, blijft liggen (#273):
+    // Arrow Blow kost MP per schot, en een Bowman op level 10 betaalde daarvoor drie keer zoveel als met zijn gewone aanval.
     for (let i = 0; i < MAX_POINTS; i++) {
       const advice = skillPointAdvice(s.drafts, profileOf(s))
       if (advice.kind !== 'advice' || advice.left <= 0 || advice.winner === null) break
+      if ((advice.choices.find((c) => c.id === advice.winner)?.saving ?? 0) < 0) break
       // Zonder gender: een punt raakt alleen de skillvelden en gender heeft op geen enkele skill invloed (net als bij "Punt zetten").
       const profileDraft = applySkillPoint(s.profileDraft, advice.winner, job)
       if (profileDraft === s.profileDraft) break

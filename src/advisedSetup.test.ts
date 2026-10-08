@@ -4,7 +4,7 @@ import type { CheapestInput } from './cheapestSettings'
 import { changesBetween, profileOf } from './cheapestSettings'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
-import { defaultEquipment, isEmptyEntry, wornName } from './equipment'
+import { defaultEquipment, familyName, isEmptyEntry, wornName } from './equipment'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
 import { NO_POTION_CHOICE } from './potions'
@@ -355,4 +355,36 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
     const same = { ...user, profileDraft: r.profileDraft, drafts: r.drafts, potionChoice: r.potionChoice }
     expect(changesBetween(same, same)).toEqual([])
   })
+})
+
+describe('cheapestFor: Cheapest is nooit duurder dan je eigen setup (#273)', () => {
+  // Een speler met het wapen dat Cheapest zou kopen, het standaardprofiel (geen skillpunten gezet) en de mob van Cheapest: alleen skills, AP en potions verschillen.
+  const player = (job: Job, level: number): CheapestInput => {
+    const base: CheapestInput = { ...input(job, level, 'Snail'), drafts: [] }
+    const armed = cheapestFor(base)
+    return { ...base, equipment: { ...base.equipment, claw: armed.equipment.claw }, drafts: armed.result.drafts, profileDraft: { ...base.profileDraft, clawWatk: armed.profile.clawWatk } }
+  }
+  /** Het totaal van de factuur van Cheapest zoals Level cost hem toont: met het deel van de winkelprijs van wat het koopt. */
+  const cheapestTotal = (user: CheapestInput) => {
+    const s = cheapestFor(user)
+    return total(afterTake(user, s), s.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price })))
+  }
+
+  it('zet geen skillpunt dat het level duurder maakt: een Bowman op level 10 laat Arrow Blow liggen (MP per schot)', () => {
+    const user = player('bowman', 10)
+    const s = cheapestFor(user)
+    expect(s.result.profileDraft.arrowBlow).toBe('0')
+    expect(cheapestTotal(user)).toBeLessThanOrEqual(total(user)!)
+  })
+
+  it('geeft per job op de levels 10 tot 25 een totaal dat niet boven dat van de speler uitkomt', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      for (const level of [10, 12, 15, 18, 20, 25]) {
+        const user = player(job, level)
+        const own = total(user)
+        if (own === null) continue
+        expect(cheapestTotal(user), `${job} ${level}`).toBeLessThanOrEqual(own)
+      }
+    }
+  }, 20_000)
 })
