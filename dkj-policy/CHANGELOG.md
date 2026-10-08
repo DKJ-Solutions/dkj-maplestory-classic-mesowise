@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**7 / 12 minor entries** <!-- pending-tally -->
+**8 / 13 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-cost-top · 20261008-101927Z
+
+The home screen answers its own question right under it: a Level cost card with what the level costs with the cheapest
+setup and with your profile, each opening the matching Equip popup. "Advised" is now called "Cheapest" and "Wearing"
+"Profile" throughout; the Equip popup no longer carries the ATT/DEF report.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Players see at a glance, at the top of the screen, how many mesos the level costs with their profile and with the cheapest
+setup, under names that say what they are.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost card at the top; Advised becomes Cheapest, Wearing becomes Profile
+
+[PR #259](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/259)
+
+---
 
 ### DEPLOY: app/based-on-equip · 20261008-084404Z
 
