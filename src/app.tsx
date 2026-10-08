@@ -1860,7 +1860,7 @@ function useableRows(props: UseableInput, wide: boolean) {
       help={
         ammoLine?.why?.kind === 'ammo' ? (
           <div class="report-body">
-            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} w={ammoLine.why} />
           </div>
         ) : (
           <p class="item-why">De factuur van dit level telt deze munitie niet apart.</p>
@@ -3666,7 +3666,7 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
  * De berekening achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een
  * kill kost, hoeveel stars dat zijn, hoeveel kills het level kost, en wat herladen (of bij een Bowman kopen) kost.
  */
-function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy }) {
+function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
   const { w } = props
   // Een Bowman schiet pijlen en koopt ze; een Thief gooit stars en herlaadt ze.
   const arrows = props.label === ammoLabel('bowman')
@@ -3717,7 +3717,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     )
   // De hoofdvraag (Waarom 429?) als één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
   // ook als die aanval twee stars gooit. Achter de aanvallen per kill en de kills staat elk hun eigen formule, en daarin weer de schade per aanval;
-  // zo klik je van het aantal tot je eigen stats. Daaronder wat herladen (of bij een Bowman kopen) kost.
+  // zo klik je van het aantal tot je eigen stats. Wat de stars kosten staat er niet in: de popup gaat over het aantal (Dave, 8 oktober 2026).
   const pieces = arrows ? 'pijlen' : 'stars'
   const starsPerAttack = `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase())
   // De schade per aanval: stars per aanval × schade per star × raakkans. De schade per star is het gemiddelde van min en max, met ± ervoor
@@ -3748,56 +3748,42 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     />
   )
   return (
-    <>
-      <MulCalc
-        factors={[
-          {
-            value: nfInt.format(w.attacksToKill),
-            what: `Aanvallen per kill op ${w.mob}`,
-            // Hoe vaak je de mob aanvalt, hangt af van zijn HP (Dave, 8 oktober 2026).
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: nfInt.format(w.mobHp), what: `HP van ${w.mob}` },
-                  { value: `± ${oneDecimal(perAttack)}`, what: 'Schade per aanval', op: '/', detail: perAttackSteps },
-                ]}
-                result={nfInt.format(w.attacksToKill)}
-                note={roundedNote(w.mobHp / perAttack, w.attacksToKill)}
-              />
-            ),
-          },
-          { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
-          {
-            value: nf3.format(w.kills),
-            what: 'Kills dit level',
-            // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft.
-            detail: (
-              <MulCalc
-                factors={[
-                  { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
-                  { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
-                ]}
-                result={nf3.format(w.kills)}
-              />
-            ),
-          },
-        ]}
-        result={nfInt.format(props.qty)}
-        note={roundedNote(w.exact, props.qty)}
-      />
-      <section class="why-section" aria-label="Kosten">
-        <h3 class="why-group">Kosten</h3>
-        {/* Komt het bedrag niet op een hele meso uit, dan zegt de regel onder de som dat hij naar boven is afgerond (Dave, 8 oktober 2026). */}
-        <MulCalc
-          factors={[
-            { value: nfInt.format(props.qty), what: props.label },
-            { value: nf.format(w.pricePerStar), what: `${arrows ? 'Prijs' : 'Herladen'} per ${piece}` },
-          ]}
-          result={`${nfInt.format(props.meso)} meso`}
-          note={roundedNote(props.qty * w.pricePerStar, props.meso)}
-        />
-      </section>
-    </>
+    <MulCalc
+      factors={[
+        {
+          value: nfInt.format(w.attacksToKill),
+          what: `Aanvallen per kill op ${w.mob}`,
+          // Hoe vaak je de mob aanvalt, hangt af van zijn HP (Dave, 8 oktober 2026).
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfInt.format(w.mobHp), what: `HP van ${w.mob}` },
+                { value: `± ${oneDecimal(perAttack)}`, what: 'Schade per aanval', op: '/', detail: perAttackSteps },
+              ]}
+              result={nfInt.format(w.attacksToKill)}
+              note={roundedNote(w.mobHp / perAttack, w.attacksToKill)}
+            />
+          ),
+        },
+        { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
+        {
+          value: nf3.format(w.kills),
+          what: 'Kills dit level',
+          // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft.
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
+                { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
+              ]}
+              result={nf3.format(w.kills)}
+            />
+          ),
+        },
+      ]}
+      result={nfInt.format(props.qty)}
+      note={roundedNote(w.exact, props.qty)}
+    />
   )
 }
 
@@ -3827,7 +3813,7 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy | Sh
       {open && (
         <StatDialog title={`Hoezo ${what}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">
-            {w.kind === 'shop' ? <ShopSteps meso={line.meso} w={w} /> : w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} meso={line.meso} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
+            {w.kind === 'shop' ? <ShopSteps meso={line.meso} w={w} /> : w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
           </div>
         </StatDialog>
       )}

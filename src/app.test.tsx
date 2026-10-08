@@ -3527,7 +3527,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(card().textContent).not.toContain('Van lv')
   })
 
-  it('legt achter het aantal throwing stars uit hoe de app eraan komt, tot en met wat herladen kost (#192)', () => {
+  it('legt achter het aantal throwing stars uit hoe de app eraan komt, als één formule tot aan je eigen stats (#192)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
@@ -3541,7 +3541,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // aan, ook als die aanval twee stars gooit. Geen tabellen meer, en geen eindformule op één regel erboven.
     expect(dialog.querySelector('.why-summary')).toBeNull()
     expect(dialog.querySelector('.why-table')).toBeNull()
-    const [main, cost] = Array.from(dialog.querySelectorAll<HTMLElement>(':scope .report-body > .why-mul, :scope .report-body > section > .why-mul'))
+    const main = dialog.querySelector<HTMLElement>(':scope .report-body > .why-mul')!
     const formula = formulaText(main)
     const [, attacks, perAttack, kills] = formula.match(/^Aanvallen per kill op Ribbon Pig (\d+) ; Stars? per aanval × (\d) ; Kills dit level × ([\d.,]+) ; = (\d[\d.]*)$/)!
     expect(formula.endsWith(` ; = ${qty}`)).toBe(true)
@@ -3597,11 +3597,9 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
     // De kills hangen niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
     expect(formulaAt(dialog, ['Kills dit level'])).toMatch(new RegExp(`^EXP tot volgend level [\\d.]+ ; EXP per kill op Ribbon Pig / [\\d.,]+ ; = ${kills}$`))
-    // Kosten: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de regel onder de som dat hij naar boven is afgerond.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Kosten'])
-    const meso = row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, '')
-    expect(formulaText(cost).endsWith(` ; = ${meso} meso`)).toBe(true)
-    expect(formulaText(cost)).toMatch(new RegExp(`^Throwing stars ${qty.replace('.', '\\.')} ; Herladen per star × [\\d.,]+ ; = `))
+    // De popup gaat alleen over het aantal stars dit level (Dave, 8 oktober 2026): geen kopjes en geen kosten.
+    expect(dialog.querySelector('.why-group')).toBeNull()
+    expect(dialog.querySelectorAll(':scope .report-body > .why-mul')).toHaveLength(1)
   })
 
   it('zet de verdediging van een mob als stappen in de formule van min en max, alleen als hij WDEF heeft (Dave, 8 oktober 2026)', () => {
