@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**1 / 6 minor entries** <!-- pending-tally -->
+**2 / 7 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/info-popup-tag · 20261008-072815Z
+
+Every popup now says what kind of content it holds: `info` for fixed facts (a mob, an item, what a Total cost popup is), `expected` for the app's predictions, with a ≈ icon instead of the i, and `why` for every popup behind a question mark. Under "Based on:" the whole name opens its popup, the mob's question mark sits inside its label, and the mob popup shows its level as a row instead of in the title. The info icon is now a solid circle in the text colour with the i in the background colour, and behind the title of Total cost: Equip and Useable it replaces the question mark.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends see at a glance whether a number is fixed or predicted, and can tap the name rather than aiming for a small icon on a phone.
+
+**Score:** 3
+
+#### Pull Request
+
+Popup labels info, expected and why, clickable names under Based on, and a level row in the mob popup
+
+[PR #252](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/252)
+
+---
 
 ### DEPLOY: app/250-no-double-tap-zoom · 20261008-071029Z
 
