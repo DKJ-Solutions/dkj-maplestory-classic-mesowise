@@ -4266,8 +4266,12 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(mob.getAttribute('data-sheet')).toBe('actual')
       // Wat je zelf zette: geen uitleg waarom juist deze mob.
       expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
-      // Het i-knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual.
-      fireEvent.click(within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` }))
+      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual. Het heeft een eigen icoon, schuifjes: getallen
+      // die je zelf zet; de i blijft voor vaste info, zoals die van de mob (Dave, 8 oktober 2026).
+      const ownStats = within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` })
+      expect(ownStats.classList.contains('actual-toggle')).toBe(true)
+      expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('actual-toggle')).toBe(false)
+      fireEvent.click(ownStats)
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(stats.querySelector('.title-tag')?.textContent).toBe('actual')
       expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])

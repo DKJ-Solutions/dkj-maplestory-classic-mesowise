@@ -110,6 +110,20 @@ const EXPECTED_ICON = (
   </svg>
 )
 
+/**
+ * Het icoon van een popup met je eigen getallen in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
+ * twee schuifjes erin, elk met het knopje op een andere plek: waarden die jij instelt. Het teken van "instellingen" leest het snelst als "van jou
+ * en aan te passen", en het lijkt in niets op de i, de ≈ of het potlood ernaast. De knopjes zijn dik genoeg (r 2,3) om op 20px nog als knopje te lezen.
+ */
+const ACTUAL_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <path class="info-stem" d="M6.5 8.5H17.5M6.5 15.5H17.5" fill="none" stroke-width="1.8" stroke-linecap="round" />
+    <circle class="info-dot" cx="9" cy="8.5" r="2.3" />
+    <circle class="info-dot" cx="15" cy="15.5" r="2.3" />
+  </svg>
+)
+
 /** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised uitlegt of je een stuk koopt (Dave, 7 oktober 2026). */
 const QUESTION_ICON = (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1703,12 +1717,12 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
           <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
             <span class="sr-only">Char: </span>
-            {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
+            {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
                 het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                getallen: dan het i-icoon en het label actual. */}
+                getallen: dan het schuifjes-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
             {stats ? (
-              <PopupButton icon={advised ? EXPECTED_ICON : INFO_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
+              <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                 {stats}
               </PopupButton>
             ) : (
