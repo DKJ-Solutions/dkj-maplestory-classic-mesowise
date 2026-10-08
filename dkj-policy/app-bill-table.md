@@ -41,7 +41,7 @@
 
 Dave, October 8, 2026, in three steps: put the advised rows in a table; give that table its own section like Based on;
 then make Level cost one bill, grouped into the equipment you buy and the useables you use from 0 to 100% of the level,
-whose two subtotals add up to Total cost. Dave chose five columns with a useable's quantity under Shop.
+whose two subtotals add up to Total cost. The columns were then pared down step by step, at Dave's word, to Items and Mesos.
 
 ### CREATE
 
@@ -65,27 +65,27 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 
 - [x] Existing bill tests rescoped to the Equip group; new test: one table, two groups, subtotals sum to Total cost, equal to the Level cost button (Cheapest and Profile)
 - [x] Full suite and lint gate green
-- [ ] Dave has looked at the preview at phone width
+- [x] Dave has looked at the preview and said ship it
 
 ### DEPLOY: app/bill-table
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
-with two cost groups, Useable on top and Equip below, under one head, Items and Mesos; each group ends in its subtotal with a thicker line below.
-Behind the item name sits how much of it the level pays, a useable's count (written short, × 12.2k) or the share of an
-equipment piece's price (13%), with the question mark that explains it right after. The shop price lives in the item's info popup, and the bill lists only what costs mesos this level, so Profile shows
-no equipment and its per-slot Upgrade verdict is gone. The question mark behind a bought piece says why to buy it.
+under a single head, Items and Mesos, with two cost groups that each end in a subtotal. Only what costs mesos this level is
+listed, so Profile shows no equipment and its per-slot Upgrade verdict is removed. The shop price moved to the item's info
+popup.
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
-Level cost now shows the whole level on one bill: the equipment you buy and the potions and ammo you use from 0 to 100%,
-each with a subtotal, adding up to the Total cost on the Level cost button. Before, the popup showed only the equipment,
-so its total did not match the button.
+Level cost now shows the whole level on one bill: the potions and ammo you use from 0 to 100% on top, then the equipment
+you buy, each with a subtotal, adding up to the Total cost on the Level cost button. Before, the popup showed only the
+equipment, so its total did not match the button. Behind each item sits how much of it this level pays (× 1.6k, or 13% of
+an equipment price), and its question mark says why you buy it.
 
 **Score:** 4
 
 #### Pull Request
 
-Level cost as one bill, grouped into Equip and Useable
+Level cost as one bill, grouped into Useable and Equip
 
