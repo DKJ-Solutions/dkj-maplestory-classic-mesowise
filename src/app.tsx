@@ -1860,7 +1860,7 @@ function useableRows(props: UseableInput, wide: boolean) {
       help={
         ammoLine?.why?.kind === 'ammo' ? (
           <div class="report-body">
-            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} w={ammoLine.why} />
           </div>
         ) : (
           <p class="item-why">De factuur van dit level telt deze munitie niet apart.</p>
@@ -3408,13 +3408,17 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
  * de andere tabellen in de uitleg, en onderaan de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
  * label en staat zijn uitwerking in een eigen popup, achter een vraagteken bij het getal (`detail`, Dave, 8 oktober 2026), zoals elk berekend getal in
  * de uitleg. Een regel kan ook een ander teken hebben dan × (`op`): de regels worden dan van boven naar beneden uitgerekend, zoals je het intikt.
+ *
+ * Elke formule in de uitleg is zo opgebouwd (Dave, 8 oktober 2026): elke rekenstap in een eigen kader, een groter kader om een kleiner, en
+ * onderaan alleen = en de uitkomst, zonder label en zonder vulling, want de titel van de popup zegt al wat het is. Ook opeenvolgende ×
+ * krijgen elk een eigen kader (Dave, 8 oktober 2026): de volgorde van de factoren is de volgorde van de berekening, dus wat het laatst
+ * gebeurt (zoals de skillschade over je basisschade) staat onderaan, buiten de kaders erboven.
  */
-function MulCalc(props: {
+export function MulCalc(props: {
   factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
-  /** Zonder `what` staat alleen = en het getal, zonder label en zonder vulling: de titel van de popup zegt al wat het is (Dave, 8 oktober 2026). */
-  result: { value: string; what?: string }
-  /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
-  boxes?: readonly number[]
+  result: string
+  /** Een regel onder de formule, zoals dat de uitkomst naar boven is afgerond. */
+  note?: ComponentChildren
 }) {
   // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan; heeft geen enkele factor een
   // vraagteken, dan is die plek er niet, want in een smalle popup is elke pixel voor de labels nodig (Dave, 8 oktober 2026).
@@ -3431,16 +3435,19 @@ function MulCalc(props: {
       )}
     </span>
   )
+  const op = (i: number) => props.factors[i].op ?? '×'
   const rows = (from: number, to: number) =>
     props.factors.slice(from, to).map((f, j) => (
       <div key={from + j} class="why-mul-row">
         <span class="why-mul-what">{f.what}</span>
-        <span class="why-mul-op">{from + j === 0 ? '' : (f.op ?? '×')}</span>
+        <span class="why-mul-op">{from + j === 0 ? '' : op(from + j)}</span>
         <span class="why-mul-num">{num(f.value, f.what, f.detail)}</span>
       </div>
     ))
-  // Het grootste kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
-  const boxes = [...(props.boxes ?? [])].sort((x, y) => y - x)
+  // Een kader om de eerste k regels voor elke k vanaf 2, dus om elke rekenstap; het grootste kader buiten, elk kleiner kader erin, met de
+  // regels die alleen in het grotere vallen eronder. Een formule van één regel krijgt één kader.
+  const n = props.factors.length
+  const boxes = Array.from({ length: Math.max(1, n - 1) }, (_, i) => n - i)
   const box = (k: number): ComponentChildren => (
     <div class="why-mul-box">
       {k + 1 < boxes.length && box(k + 1)}
@@ -3451,99 +3458,133 @@ function MulCalc(props: {
   // tekens en getallen in alle regels in dezelfde kolom, hoe diep een regel ook in de kaders zit.
   const gutters = `repeat(${boxes.length}, var(--why-mul-gutter))`
   return (
-    <div class={boxes.length > 0 ? 'why-mul why-mul-boxed' : 'why-mul'} style={boxes.length > 0 ? { gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` } : undefined}>
-      {boxes.length > 0 && box(0)}
-      {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
-      <div class={props.result.what ? 'why-mul-row why-mul-result' : 'why-mul-row why-mul-result why-mul-result-plain'}>
-        {props.result.what && <span class="why-mul-what">{props.result.what}</span>}
-        <span class="why-mul-op">=</span>
-        <span class="why-mul-num">{num(props.result.value, props.result.what ?? '')}</span>
+    <>
+      <div class="why-mul why-mul-boxed" style={{ gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` }}>
+        {box(0)}
+        <div class="why-mul-row why-mul-result">
+          <span class="why-mul-op">=</span>
+          <span class="why-mul-num">{num(props.result, '')}</span>
+        </div>
       </div>
-    </div>
+      {props.note && <p class="hint why-mul-note">{props.note}</p>}
+    </>
   )
 }
-
-/** De rijen die het aantal kills van dit level geven: de EXP die je nog nodig hebt, wat één kill geeft, en hun deling (Dave, 6 oktober 2026, #192). */
-const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }): WhyRow[] => [
-  { label: 'EXP tot volgend level', result: nfInt.format(w.expToNext) },
-  { label: 'EXP per kill', calc: w.mob, result: nf.format(w.expPerKill) },
-  { label: 'Kills dit level', calc: <>{nfInt.format(w.expToNext)} / {nf.format(w.expPerKill)}</>, result: nf3.format(w.kills) },
-]
 
 /**
- * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
- * getal wat het is. De blokken eronder werken elk getal uit, bij de stars als deelvraag per getal. Is de uitkomst naar boven afgerond, dan staat dat eronder.
+ * Het aantal kills van dit level als formule (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft. Het
+ * hangt niet van de uren af. Achter "Kills dit level" in de uitleg van een potion en van de stars.
  */
-function WhySummary(props: { terms: readonly ({ value: string; unit: string } | '×' | '÷')[]; result: { value: string; unit: string }; exact: number; qty: number }) {
-  const term = (t: { value: string; unit: string }, cls = 'why-term') => (
-    <span class={cls}>
-      <strong>{t.value}</strong>
-      <small>{t.unit}</small>
-    </span>
-  )
-  const spoken = props.terms.map((t) => (t === '×' ? 'maal' : t === '÷' ? 'gedeeld door' : `${t.value} ${t.unit}`)).join(' ')
-  return (
-    <div class="why-summary">
-      <p class="why-summary-formula" aria-label={`${spoken} is ${props.result.value} ${props.result.unit}`}>
-        {props.terms.map((t) =>
-          typeof t === 'string' ? (
-            <span class="why-op" aria-hidden="true">
-              {t}
-            </span>
-          ) : (
-            term(t)
-          ),
-        )}
-        <span class="why-op" aria-hidden="true">=</span>
-        {term(props.result, 'why-term why-term-result')}
-      </p>
-      {Number(props.exact.toFixed(3)) !== props.qty && <p class="why-summary-note">{nf.format(props.exact)}, naar boven afgerond.</p>}
-    </div>
-  )
-}
+const killsSteps = (w: { mob: string; expToNext: number; expPerKill: number; kills: number }) => (
+  <MulCalc
+    factors={[
+      { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
+      { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
+    ]}
+    result={nf3.format(w.kills)}
+  />
+)
 
-/** De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts). */
+/** Onder een formule waarvan de uitkomst naar boven is afgerond: het getal dat eruit kwam, en dat het is afgerond. Met dezelfde marge als het
+ * model (writeOff, wholeUp): rekenruis als 944,9999999 is geen afronding. */
+const roundedNote = (exact: number, shown: number): ComponentChildren =>
+  shown - exact > 1e-9 ? <>Uitkomst: {roundedUpText(exact, shown)}, naar boven afgerond.</> : undefined
+
+/**
+ * De berekening achter het aantal van een potion (PotionWhy in levelInvoice.ts), als één formule (Dave, 8 oktober 2026): wat je dit level aan HP
+ * of MP kwijt bent, gedeeld door wat één potion herstelt. Achter elk berekend getal staat zijn eigen formule, zoals bij de stars.
+ */
 function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   const { w } = props
   const unit = w.kind === 'hp' ? 'HP' : 'MP'
-  // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): kills per uur valt weg. Alleen de buffs van een MP potion lopen per uur, en dan staat de duur erbij.
-  const buffs = w.buffPerHour > 0
-  const rows: WhyRow[] = [
-    w.kind === 'hp'
-      ? { label: 'HP kwijt per kill', calc: <>{w.mob} raakt je ± {oneDecimal(w.hits!)} × voor ± {oneDecimal(w.touch!)} schade</>, result: `${oneDecimal(w.perKill)} HP` }
-      : { label: 'MP per kill', calc: 'wat je aanval kost', result: `${oneDecimal(w.perKill)} MP` },
-    ...killsRows(w),
-    ...(buffs
-      ? [
-          { label: 'MP van je aanvallen', calc: <>{oneDecimal(w.perKill)} × {nf3.format(w.kills)} kills</>, result: `${nfInt.format(w.perKill * w.kills)} MP` },
-          { label: 'Duur van dit level', calc: <>{nf3.format(w.kills)} kills / {nfInt.format(w.killsPerHour)} kills per uur</>, result: formatHours(w.hours) },
-          { label: 'Buffs dit level', calc: <>{nfInt.format(w.buffPerHour)} MP per uur × {nf.format(w.hours)} uur</>, result: `${nfInt.format(w.buffPerHour * w.hours)} MP` },
-          { label: `${unit} dit level`, calc: <>{nfInt.format(w.perKill * w.kills)} + {nfInt.format(w.buffPerHour * w.hours)}</>, result: `${nfInt.format(w.need)} ${unit}` },
-        ]
-      : [{ label: `${unit} dit level`, calc: <>{oneDecimal(w.perKill)} × {nf3.format(w.kills)} kills</>, result: `${nfInt.format(w.need)} ${unit}` }]),
-    {
-      label: `Herstel per ${props.label}`,
-      calc: w.full > w.restores ? <>herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}</> : undefined,
-      result: `${nf.format(w.restores)} ${unit}`,
-    },
-    { label: props.label, calc: <>{nfInt.format(w.need)} / {nf.format(w.restores)} = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
-  ]
-  return (
-    <>
-      <WhySummary
-        terms={[{ value: nfInt.format(w.need), unit: `${unit} nodig` }, '÷', { value: nf.format(w.restores), unit: `${unit} per potion` }]}
-        result={{ value: nfInt.format(props.qty), unit: 'potions' }}
-        exact={w.exact}
-        qty={props.qty}
+  const perKill = w.kind === 'hp' ? 'HP kwijt per kill' : 'MP per kill'
+  const kills = { value: nf3.format(w.kills), what: 'Kills dit level', detail: killsSteps(w) }
+  // Wat je per kill kwijt bent: bij HP hoe vaak de mob je raakt maal wat dat kost, bij MP wat je aanval kost (een vast getal, zonder vraagteken).
+  const perKillFactor = {
+    value: oneDecimal(w.perKill),
+    what: perKill,
+    detail:
+      w.kind === 'hp' ? (
+        <>
+          <MulCalc
+            factors={[
+              { value: `± ${oneDecimal(w.hits!)}`, what: `Keer geraakt door ${w.mob}` },
+              { value: `± ${oneDecimal(w.touch!)}`, what: 'Schade per keer' },
+            ]}
+            result={oneDecimal(w.perKill)}
+          />
+          <Help>
+            Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
+            spel iets anders, pas dan de mob aan op de Monster-kaart.
+          </Help>
+        </>
+      ) : undefined,
+  }
+  // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192). Alleen de buffs van een MP potion lopen per uur: dan is het MP van je
+  // aanvallen plus je buffs, en de duur van het level staat achter de uren.
+  const attackMp = w.perKill * w.kills
+  const buffMp = w.buffPerHour * w.hours
+  const need =
+    w.buffPerHour > 0 ? (
+      <MulCalc
+        factors={[
+          {
+            value: nfInt.format(attackMp),
+            what: 'MP van je aanvallen',
+            detail: <MulCalc factors={[perKillFactor, kills]} result={nfInt.format(attackMp)} />,
+          },
+          {
+            value: nfInt.format(buffMp),
+            what: 'Buffs dit level',
+            op: '+',
+            detail: (
+              <MulCalc
+                factors={[
+                  { value: nfInt.format(w.buffPerHour), what: 'MP per uur' },
+                  {
+                    value: nf.format(w.hours),
+                    what: 'Uren dit level',
+                    detail: (
+                      <MulCalc
+                        factors={[
+                          { value: nf3.format(w.kills), what: 'Kills dit level' },
+                          { value: nfInt.format(w.killsPerHour), what: 'Kills per uur', op: '/' },
+                        ]}
+                        result={formatHours(w.hours)}
+                      />
+                    ),
+                  },
+                ]}
+                result={nfInt.format(buffMp)}
+              />
+            ),
+          },
+        ]}
+        result={nfInt.format(w.need)}
       />
-      <WhyTable rows={rows} />
-      {w.kind === 'hp' && (
-        <Help>
-          Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
-          spel iets anders, pas dan de mob aan op de Monster-kaart.
-        </Help>
-      )}
-    </>
+    ) : (
+      <MulCalc factors={[perKillFactor, kills]} result={nfInt.format(w.need)} />
+    )
+  return (
+    <MulCalc
+      factors={[
+        { value: nfInt.format(w.need), what: `${unit} dit level`, detail: need },
+        {
+          value: nf.format(w.restores),
+          what: `Herstel per ${props.label}`,
+          op: '/',
+          // Vult de potion meer dan je bij het drinken mist, dan telt alleen wat er mist (#181); anders is het herstel een vast getal.
+          detail:
+            w.full > w.restores ? (
+              <p class="why-calc">
+                Herstelt {nf.format(w.full)}, maar bij {nfPct.format(ASSUMPTIONS.drinkAtPct)} van je balk mist er maar {nf.format(w.restores)}.
+              </p>
+            ) : undefined,
+        },
+      ]}
+      result={nfInt.format(props.qty)}
+      note={roundedNote(w.exact, props.qty)}
+    />
   )
 }
 
@@ -3551,14 +3592,15 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
  * De berekening achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een
  * kill kost, hoeveel stars dat zijn, hoeveel kills het level kost, en wat herladen (of bij een Bowman kopen) kost.
  */
-function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy }) {
+function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
   const { w } = props
-  const unit = props.label.toLowerCase()
   // Een Bowman schiet pijlen en koopt ze; een Thief gooit stars en herlaadt ze.
   const arrows = props.label === ammoLabel('bowman')
   const piece = arrows ? 'pijl' : 'star'
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
+  // Wat het levelverschil van de schade overlaat (−1% per level dat de mob hoger is).
+  const levelFactor = 1 - 0.01 * w.levelsUp
   // Een gecombineerde stat (STR + DEX) tussen haakjes: het getal ervoor is hun som, niet alleen de STR (Dave, 8 oktober 2026).
   // De statfactor van max (basis 1) en min (basis 0,8, met mastery): (primaire stat × mastery × multiplier + secundaire stats) / 100 + basis.
   const statFactor = (base: number, mastery: number) => (f ? base + (f.primary * mastery * f.weaponMult + f.secondary) / 100 : 0)
@@ -3575,113 +3617,90 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           { value: '100', what: 'Naar procent', op: '/' },
           { value: nf.format(base), what: 'Basis', op: '+' },
         ]}
-        // Kaders van binnen naar buiten (Dave, 8 oktober 2026): de primaire stat met zijn vermenigvuldigers, dan wat door 100 gaat, dan de
-        // deling zelf, waar de basis nog bij komt, en om de hele formule; de uitkomst staat eronder.
-        boxes={[2, 3, 4, 5].map((n) => (mastery !== 1 ? n + 1 : n))}
-        result={{ value: nf.format(statFactor(base, mastery)) }}
+        result={nf.format(statFactor(base, mastery))}
       />
     )
-  // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
-  const damageRows: WhyRow[] = f
-    ? [
-        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): de skillschade, je W.ATT en wat je stats erbij doen.
-        {
-          label: `Max per ${piece}`,
-          detail: (
-            <MulCalc
-              factors={[
-                { value: nfPct.format(f.k), what: 'Skillschade' },
-                { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(statFactor(1, 1)), what: 'Statfactor', detail: statSteps(1, 1) },
-              ]}
-              result={{ value: oneDecimal(w.rawMax), what: `Max per ${piece}` }}
-            />
-          ),
-          result: oneDecimal(w.rawMax),
-        },
-        {
-          label: `Min per ${piece}`,
-          detail: (
-            <MulCalc
-              factors={[
-                { value: nfPct.format(f.k), what: 'Skillschade' },
-                { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(statFactor(0.8, f.mastery)), what: 'Statfactor', detail: statSteps(0.8, f.mastery) },
-              ]}
-              result={{ value: oneDecimal(w.rawMin), what: `Min per ${piece}` }}
-            />
-          ),
-          result: oneDecimal(w.rawMin),
-        },
-        ...(w.levelsUp > 0
-          ? [{ label: 'Levelverschil', calc: <>{w.mob} is {w.levelsUp} {w.levelsUp === 1 ? 'level' : 'levels'} hoger: −{w.levelsUp}%</>, result: `${oneDecimal(w.rawMin * (1 - 0.01 * w.levelsUp))} – ${oneDecimal(w.rawMax * (1 - 0.01 * w.levelsUp))}` }]
-          : []),
-        // Met één decimaal, zoals min en max erboven, zodat elke som in de tabel klopt met wat er staat (Dave, 8 oktober 2026); bij WDEF 0 verandert
-        // de verdediging niets en valt de rij weg.
-        ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
-      ]
-    : []
-  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel aanvallen per kill, en waarom zoveel kills. Elk blok
-  // eindigt met zijn antwoord, uitgelicht; bovenaan de eindformule: aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
-  // ook als die aanval twee stars gooit (Dave, 8 oktober 2026). Als laatste wat herladen kost.
-  const pieces = arrows ? 'pijlen' : 'stars'
-  const attacks = w.attacksToKill === 1 ? 'aanval' : 'aanvallen'
-  const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
-  const rows: WhyRow[] = [
-    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP.
-    ...inGroup(`Waarom ${nfInt.format(w.attacksToKill)} ${attacks} per kill op ${w.mob}?`, [
-    // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
-    // die eindigt met deze rij als antwoord.
-    {
-      label: 'Schade per aanval',
-      detail: (
-        <WhyTable
-          rows={[
-            ...damageRows,
-            // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
-            {
-              label: `Schade per ${piece}`,
-              calc: f ? <>({oneDecimal(w.minHit)} + {oneDecimal(w.maxHit)}) / 2</> : <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</>,
-              result: `± ${oneDecimal(w.avgHit)}`,
-            },
-            { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}`, total: true },
-          ]}
-        />
-      ),
-      result: `± ${oneDecimal(perAttack)}`,
-    },
-    { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
-    { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill), total: true },
-    ]),
-    ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
-  ]
-  const costs: WhyRow[] = [
-    ...inGroup('Kosten', [
-    {
-      label: arrows ? 'Kopen' : 'Herladen',
-      // Komt het bedrag niet op een hele meso uit, dan zegt de som dat hij naar boven is afgerond (Dave, 8 oktober 2026).
-      calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso{props.qty * w.pricePerStar !== props.meso && <> = {nf.format(props.qty * w.pricePerStar)}, naar boven afgerond</>}</>,
-      result: `${nfInt.format(props.meso)} meso`,
-    },
-    ]),
-  ]
-  return (
-    <>
-      <WhySummary
-        terms={[
-          { value: nfInt.format(w.attacksToKill), unit: `${attacks} per kill` },
-          '×',
-          { value: nfInt.format(w.starsPerAttack), unit: `${w.starsPerAttack === 1 ? piece : pieces} per aanval` },
-          '×',
-          { value: nf3.format(w.kills), unit: 'kills' },
+  // Waar min en max per star vandaan komen (Dave, 6 oktober 2026, #192), als één formule per getal (Dave, 8 oktober 2026): je W.ATT maal wat
+  // je stats erbij doen is je basisschade, daarvan doet de skill zijn percentage, dan gaat het levelverschil eraf en de verdediging van de mob
+  // (bij WDEF 0 verandert die niets en valt de stap weg). Elke stap staat onder de vorige, dus wat het laatst gebeurt staat onderaan.
+  const hitSteps = (base: number, mastery: number, hit: number) =>
+    f && (
+      <MulCalc
+        factors={[
+          { value: nfInt.format(f.watk), what: 'W.ATT' },
+          { value: nf.format(statFactor(base, mastery)), what: 'Statfactor', detail: statSteps(base, mastery) },
+          { value: nfPct.format(f.k), what: 'Skillschade' },
+          ...(w.levelsUp > 0 ? [{ value: nfPct.format(levelFactor), what: `Levelverschil (−${w.levelsUp}%)` }] : []),
+          ...(w.mobWdef > 0
+            ? [
+                { value: nfInt.format(w.mobWdef + 100), what: `WDEF ${nfInt.format(w.mobWdef)} + 100`, op: '/' },
+                { value: '100', what: 'Naar procent', op: '×' },
+              ]
+            : []),
         ]}
-        result={{ value: nfInt.format(props.qty), unit: pieces }}
-        exact={w.exact}
-        qty={props.qty}
+        result={oneDecimal(hit)}
       />
-      <WhyTable rows={rows} />
-      <WhyTable rows={costs} />
-    </>
+    )
+  // De hoofdvraag (Waarom 429?) als één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
+  // ook als die aanval twee stars gooit. Achter de aanvallen per kill en de kills staat elk hun eigen formule, en daarin weer de schade per aanval;
+  // zo klik je van het aantal tot je eigen stats. Wat de stars kosten staat er niet in: de popup gaat over het aantal (Dave, 8 oktober 2026).
+  const pieces = arrows ? 'pijlen' : 'stars'
+  const starsPerAttack = `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase())
+  // De schade per aanval: stars per aanval × schade per star × raakkans. De schade per star is het gemiddelde van min en max, met ± ervoor
+  // (Dave, 6 oktober 2026, #192), en min en max werken elk hun eigen formule uit.
+  const perAttackSteps = (
+    <MulCalc
+      factors={[
+        { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
+        {
+          value: `± ${oneDecimal(w.avgHit)}`,
+          what: `Schade per ${piece}`,
+          detail: f ? (
+            <MulCalc
+              factors={[
+                { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit) },
+                { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit) },
+                { value: '2', what: 'Twee waarden', op: '/' },
+              ]}
+              result={`± ${oneDecimal(w.avgHit)}`}
+            />
+          ) : (
+            <p class="why-calc">schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</p>
+          ),
+        },
+        { value: nfPct.format(w.hitChance), what: 'Raakkans' },
+      ]}
+      result={`± ${oneDecimal(perAttack)}`}
+    />
+  )
+  return (
+    <MulCalc
+      factors={[
+        {
+          value: nfInt.format(w.attacksToKill),
+          what: `Aanvallen per kill op ${w.mob}`,
+          // Hoe vaak je de mob aanvalt, hangt af van zijn HP (Dave, 8 oktober 2026).
+          detail: (
+            <MulCalc
+              factors={[
+                { value: nfInt.format(w.mobHp), what: `HP van ${w.mob}` },
+                { value: `± ${oneDecimal(perAttack)}`, what: 'Schade per aanval', op: '/', detail: perAttackSteps },
+              ]}
+              result={nfInt.format(w.attacksToKill)}
+              note={roundedNote(w.mobHp / perAttack, w.attacksToKill)}
+            />
+          ),
+        },
+        { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
+        {
+          value: nf3.format(w.kills),
+          what: 'Kills dit level',
+          detail: killsSteps(w),
+        },
+      ]}
+      result={nfInt.format(props.qty)}
+      note={roundedNote(w.exact, props.qty)}
+    />
   )
 }
 
@@ -3711,7 +3730,7 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy | Sh
       {open && (
         <StatDialog title={`Hoezo ${what}?`} closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
           <div class="report-body">
-            {w.kind === 'shop' ? <ShopSteps meso={line.meso} w={w} /> : w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} meso={line.meso} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
+            {w.kind === 'shop' ? <ShopSteps meso={line.meso} w={w} /> : w.kind === 'ammo' ? <AmmoSteps label={line.label} qty={qty} w={w} /> : <PotionSteps label={line.label} qty={qty} w={w} />}
           </div>
         </StatDialog>
       )}
@@ -3726,13 +3745,41 @@ function InvoiceWhy(props: { line: InvoiceLine & { why: PotionWhy | AmmoWhy | Sh
 function ShopSteps(props: { meso: number; w: ShopWhy }) {
   const { w } = props
   const levels = w.from === w.to ? `level ${w.from}` : `level ${w.from} – ${w.to}`
+  const share = `${nf1.format(w.share * 100)}%`
   const rows: WhyRow[] = [
     { label: 'Prijs', calc: w.name, result: `${nfInt.format(w.price)} meso` },
     { label: 'Je draagt het tot', calc: 'tot je volgende upgrade in dat slot', result: levels },
     { label: 'EXP van dit level', calc: `level ${w.level}`, result: nfInt.format(w.thisExp) },
     { label: 'EXP tot je volgende upgrade', calc: levels, result: nfInt.format(w.sumExp) },
-    { label: 'Deel van dit level', calc: <>{nfInt.format(w.thisExp)} / {nfInt.format(w.sumExp)}</>, result: `${nf1.format(w.share * 100)}%` },
-    { label: 'Op deze factuur', calc: <>{nfInt.format(w.price)} × {nf1.format(w.share * 100)}%, naar boven afgerond</>, result: `${nfInt.format(props.meso)} meso`, total: true },
+    {
+      label: 'Deel van dit level',
+      detail: (
+        <MulCalc
+          factors={[
+            { value: nfInt.format(w.thisExp), what: 'EXP van dit level' },
+            { value: nfInt.format(w.sumExp), what: 'EXP tot je volgende upgrade', op: '/' },
+          ]}
+          result={share}
+        />
+      ),
+      result: share,
+    },
+    {
+      label: 'Op deze factuur',
+      detail: (
+        <MulCalc
+          factors={[
+            { value: nfInt.format(w.price), what: 'Prijs' },
+            { value: nfInt.format(w.thisExp), what: 'EXP van dit level' },
+            { value: nfInt.format(w.sumExp), what: 'EXP tot je volgende upgrade', op: '/' },
+          ]}
+          result={nfInt.format(props.meso)}
+          note={roundedNote(w.price * w.share, props.meso)}
+        />
+      ),
+      result: `${nfInt.format(props.meso)} meso`,
+      total: true,
+    },
   ]
   return (
     <>

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
+import { App, FIRST_POPUP, MulCalc, noSavingText, POPUP_STEP, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
 
@@ -3415,25 +3415,74 @@ const whyRows = (root: ParentNode) =>
       fireEvent.click(info)
       const popup = tr.querySelector<HTMLElement>('dialog')!
       // Een rij met een eigen uitwerking (detail) heeft geen som maar een tabel; die lees je met whyDetail.
-      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "wat teken getal".
+      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "wat teken getal", met de regel eronder
+      // (dat de uitkomst naar boven is afgerond) als laatste deel.
       const mul = popup.querySelector('.why-mul')
+      const note = popup.querySelector('.why-mul-note')
       calc = mul
-        ? Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
+        ? [...Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => clean(td.textContent!)).filter(Boolean).join(' ')), ...(note ? [clean(note.textContent!)] : [])].join(' ; ')
         : clean(popup.querySelector('.why-calc')?.textContent ?? '')
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     }
     return { label, calc, result: clean(tr.querySelector('.why-value-num')!.textContent!), total: tr.classList.contains('why-answer') }
   })
 
-/** De rijen in de info-popup van een rij met een eigen uitwerking (detail), zoals Schade per aanval (Dave, 8 oktober 2026). */
-const whyDetail = (root: ParentNode, label: string) => {
-  const tr = Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer')).find((r) => r.querySelector('.why-label-text')!.textContent === label)!
-  fireEvent.click(tr.querySelector<HTMLButtonElement>('.why-help')!)
-  const popup = tr.querySelector<HTMLElement>('dialog')!
-  const rows = whyRows(popup)
-  fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
-  return rows
+/** De regels van een formule (MulCalc) als tekst: "wat teken getal" per regel, gescheiden door " ; ". */
+const formulaText = (mul: Element) =>
+  Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
+/** Opent de popups achter de vraagtekens "Uitleg bij <naam>" na elkaar, elk binnen de vorige, en geeft de laatste. */
+const openPath = (root: HTMLElement, names: string[]) =>
+  names.reduce((popup, name) => {
+    const button = within(popup).getAllByRole('button', { name: `Uitleg bij ${name}` }).at(-1)!
+    fireEvent.click(button)
+    return button.parentElement!.querySelector<HTMLElement>('dialog')!
+  }, root)
+/** Sluit alle popups binnen een popup, de binnenste eerst. */
+const closeAll = (root: HTMLElement) => {
+  for (const d of Array.from(root.querySelectorAll<HTMLElement>('dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
 }
+/** De formule in de popup aan het eind van een pad van vraagtekens, waarna alles weer dicht gaat. */
+const formulaAt = (root: HTMLElement, names: string[]) => {
+  const text = formulaText(openPath(root, names).querySelector('.why-mul')!)
+  closeAll(root)
+  return text
+}
+
+describe('elke formule in de uitleg (MulCalc, Dave, 8 oktober 2026)', () => {
+  /** De labels per kader, van buiten naar binnen. */
+  const boxesOf = (factors: { value: string; what: string; op?: string }[]) => {
+    cleanup()
+    const { container } = render(<MulCalc factors={factors} result="9" />)
+    return Array.from(container.querySelectorAll('.why-mul-box'), (b) => Array.from(b.querySelectorAll('.why-mul-what'), (w) => w.textContent))
+  }
+
+  it('zet elke rekenstap in een eigen kader, een groter kader om een kleiner, en een kader om de hele formule', () => {
+    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b', op: '+' }, { value: '3', what: 'c', op: '/' }, { value: '4', what: 'd', op: '+' }])).toEqual([
+      ['a', 'b', 'c', 'd'],
+      ['a', 'b', 'c'],
+      ['a', 'b'],
+    ])
+  })
+
+  it('geeft ook opeenvolgende × elk een eigen kader: de laatste stap staat buiten het kader van de stappen ervoor (Dave, 8 oktober 2026)', () => {
+    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }, { value: '3', what: 'c' }])).toEqual([
+      ['a', 'b', 'c'],
+      ['a', 'b'],
+    ])
+    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }])).toEqual([['a', 'b']])
+  })
+
+  it('toont onderaan alleen = en de uitkomst, zonder label, en een afrondingsregel alleen als die er is', () => {
+    cleanup()
+    const { container } = render(<MulCalc factors={[{ value: '7', what: 'a' }, { value: '2', what: 'b', op: '/' }]} result="4" note="Uitkomst: 3,5, naar boven afgerond." />)
+    const result = container.querySelector('.why-mul-result')!
+    expect(result.querySelector('.why-mul-what')).toBeNull()
+    expect(result.textContent!.replace(/\s+/g, '')).toBe('=4')
+    expect(container.querySelector('.why-mul-note')!.textContent).toBe('Uitkomst: 3,5, naar boven afgerond.')
+    cleanup()
+    expect(render(<MulCalc factors={[{ value: '6', what: 'a' }, { value: '2', what: 'b', op: '/' }]} result="3" />).container.querySelector('.why-mul-note')).toBeNull()
+  })
+})
 
 describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
@@ -3478,7 +3527,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(card().textContent).not.toContain('Van lv')
   })
 
-  it('legt achter het aantal throwing stars uit hoe de app eraan komt, tot en met wat herladen kost (#192)', () => {
+  it('legt achter het aantal throwing stars uit hoe de app eraan komt, als één formule tot aan je eigen stats (#192)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
@@ -3488,111 +3537,89 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     fireEvent.click(why)
     const dialog = inGame().querySelector<HTMLElement>('dialog')!
     expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
-    const rows = whyRows(dialog)
-    expect(rows.map((r) => r.label)).toEqual([
-      'Schade per aanval',
-      'HP van Ribbon Pig',
-      'Aanvallen per kill',
-      'EXP tot volgend level',
-      'EXP per kill',
-      'Kills dit level',
-      'Herladen',
+    // De popup is één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills = het aantal op de factuur. Je valt één keer
+    // aan, ook als die aanval twee stars gooit. Geen tabellen meer, en geen eindformule op één regel erboven.
+    expect(dialog.querySelector('.why-summary')).toBeNull()
+    expect(dialog.querySelector('.why-table')).toBeNull()
+    const main = dialog.querySelector<HTMLElement>(':scope .report-body > .why-mul')!
+    const formula = formulaText(main)
+    const [, attacks, perAttack, kills] = formula.match(/^Aanvallen per kill op Ribbon Pig (\d+) ; Stars? per aanval × (\d) ; Kills dit level × ([\d.,]+) ; = (\d[\d.]*)$/)!
+    expect(formula.endsWith(` ; = ${qty}`)).toBe(true)
+    // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026): de stars per aanval niet, de andere twee wel.
+    expect(Array.from(main.querySelectorAll(':scope > .why-mul-box .why-help'), (b) => b.getAttribute('aria-label'))).toEqual([
+      'Uitleg bij Aanvallen per kill op Ribbon Pig',
+      'Uitleg bij Kills dit level',
     ])
-    // De schade is één rij; zijn popup werkt hem uit (Dave, 8 oktober 2026): de formule met je eigen getallen in Max en Min, dan het gemiddelde.
-    // Ribbon Pig heeft WDEF 0, dus geen rij Verdediging: die verandert dan niets.
-    const damage = whyDetail(dialog, 'Schade per aanval')
-    expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
-    // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
-    // De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal (Dave, 8 oktober 2026).
-    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Max per star = ([\d.,]+)$/)
-    expect(damage[0].calc.endsWith(`Max per star = ${damage[0].result}`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; Min per star = [\d.,]+$/)
-    expect(damage[1].calc.endsWith(`Min per star = ${damage[1].result}`)).toBe(true)
-    // Alleen de statfactor is berekend en heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden
-    // uitgerekend, met de uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).
+    // Aanvallen per kill: de HP van de mob gedeeld door de schade per aanval, naar boven afgerond.
+    const attacksFormula = formulaAt(dialog, ['Aanvallen per kill op Ribbon Pig'])
+    const [, perAttackDamage] = attacksFormula.match(new RegExp(`^HP van Ribbon Pig [\\d.]+ ; Schade per aanval / (± [\\d.,]+) ; = ${attacks}$`))!
+    // De schade per aanval: stars per aanval × schade per star × raakkans; de schade per star werkt het gemiddelde van min en max uit, en min en
+    // max elk hun eigen formule.
+    const perAttackFormula = formulaAt(dialog, ['Aanvallen per kill op Ribbon Pig', 'Schade per aanval'])
+    expect(perAttackFormula).toMatch(new RegExp(`^Stars? per aanval ${perAttack} ; Schade per star × ± [\\d.,]+ ; Raakkans × \\d+% ; = ${perAttackDamage}$`))
+    const toStar = ['Aanvallen per kill op Ribbon Pig', 'Schade per aanval', 'Schade per star']
+    const perStar = formulaAt(dialog, toStar)
+    const [, minHit, maxHit, avg] = perStar.match(/^Min per star ([\d.,]+) ; Max per star \+ ([\d.,]+) ; Twee waarden \/ 2 ; = (± [\d.,]+)$/)!
+    expect(perAttackFormula).toContain(`Schade per star × ${avg} ;`)
+    // Min en max: W.ATT maal wat je stats doen, dan als laatste stap de skillschade, en de uitkomst zonder label (Dave, 8 oktober 2026).
+    // Ribbon Pig heeft WDEF 0 en geen hoger level, dus geen stap Levelverschil of Verdediging: die veranderen dan niets.
+    const maxFormula = formulaAt(dialog, [...toStar, 'Max per star'])
+    expect(maxFormula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
+    expect(maxFormula.endsWith(` ; = ${maxHit}`)).toBe(true)
+    const minFormula = formulaAt(dialog, [...toStar, 'Min per star'])
+    expect(minFormula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
+    expect(minFormula.endsWith(` ; = ${minHit}`)).toBe(true)
+    // De statfactor heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden uitgerekend, met de
+    // uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).
     const statfactor = (label: string) => {
-      const open = (root: ParentNode, name: string) => {
-        const button = within(root as HTMLElement).getAllByRole('button', { name }).at(-1)!
-        fireEvent.click(button)
-        return button.parentElement!.querySelector<HTMLElement>('dialog')!
-      }
-      const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
-      expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
-      const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
+      const path = [...toStar, label]
+      const popup = openPath(dialog, path)
+      expect(Array.from(popup.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
+      closeAll(dialog)
+      const steps = openPath(dialog, [...path, 'Statfactor']).querySelector('.why-mul')!
       // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
       const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
-      const [formula, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
-      // De uitkomst zonder label en zonder vulling: de popup heet al Statfactor (Dave, 8 oktober 2026).
-      expect(steps.querySelector('.why-mul-result')!.classList.contains('why-mul-result-plain')).toBe(true)
+      const [whole, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      // De uitkomst zonder label: de popup heet al Statfactor (Dave, 8 oktober 2026).
       expect(steps.querySelector('.why-mul-result .why-mul-what')).toBeNull()
-      // Een kader om de hele formule, met de uitkomst eronder (Dave, 8 oktober 2026).
-      expect(boxed(formula)).toEqual([...boxed(division), 'Basis'])
+      expect(boxed(whole)).toEqual([...boxed(division), 'Basis'])
       expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
       expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
       expect(boxed(inner).at(-1)).toBe('Multiplier')
-      const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
-      for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+      const text = formulaText(steps)
+      closeAll(dialog)
       return text
     }
     const max = statfactor('Max per star')
     expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; = [\d,]+$/)
     // De uitkomst onderaan is het getal in de formule erboven.
-    expect(max.endsWith(` ; = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
+    expect(max.endsWith(` ; = ${maxFormula.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
     expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
-    expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
-    expect(damage[2].result).toMatch(/^± [\d.,]+$/)
-    expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
-    // De popup eindigt met hetzelfde getal als de rij.
-    expect(damage[3].total).toBe(true)
-    expect(damage[3].result).toBe(rows[0].result)
-    // Bovenaan de eindformule, altijd zichtbaar: aanvallen per kill × stars per aanval × kills = het aantal op de factuur; daaronder de twee
-    // deelvragen. Je valt één keer aan, ook als die aanval twee stars gooit (Dave, 8 oktober 2026).
-    const summary = dialog.querySelector<HTMLElement>('.why-summary')!
-    expect(summary.previousElementSibling).toBeNull()
-    const attacks = rows[2].result === '1' ? 'aanval' : 'aanvallen'
-    const question = `Waarom ${rows[2].result} ${attacks} per kill op Ribbon Pig?`
-    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(question)
-    const perAttack = damage[3].calc.split(' × ')[0]
-    const starUnit = perAttack === '1' ? 'star' : 'stars'
-    const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
-    expect(terms).toEqual([rows[2].result, perAttack, rows[5].result, qty])
-    expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual([`${attacks} per kill`, `${starUnit} per aanval`, 'kills', 'stars'])
-    expect(summary.querySelector('.why-summary-formula')!.getAttribute('aria-label')).toBe(
-      `${rows[2].result} ${attacks} per kill maal ${perAttack} ${starUnit} per aanval maal ${rows[5].result} kills is ${qty} stars`,
-    )
-    // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([question, `Waarom ${rows[5].result} kills?`, 'Kosten'])
-    // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
-    expect(rows[1].result).toMatch(/^[\d.]+$/)
-    // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026).
-    const tableRows = dialog.querySelectorAll('.why-table tr')
-    expect(tableRows[1].querySelector('.why-help')).toBeNull()
-    expect(tableRows[0].querySelector('.why-value .why-help')).not.toBeNull()
-    expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
-    // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de aanvallen per kill en de kills (Dave, 8 oktober 2026).
-    expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Aanvallen per kill', 'Kills dit level'])
-    // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
-    expect(rows[5].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
-    // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
-    const [stars, recharge] = rows[6].calc.split(' meso')
-    expect(stars.startsWith(`${qty} throwing stars × `), rows[6].calc).toBe(true)
-    expect(recharge, rows[6].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
-    expect(rows[6].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    // De kills hangen niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
+    expect(formulaAt(dialog, ['Kills dit level'])).toMatch(new RegExp(`^EXP tot volgend level [\\d.]+ ; EXP per kill op Ribbon Pig / [\\d.,]+ ; = ${kills}$`))
+    // De popup gaat alleen over het aantal stars dit level (Dave, 8 oktober 2026): geen kopjes en geen kosten.
+    expect(dialog.querySelector('.why-group')).toBeNull()
+    expect(dialog.querySelectorAll(':scope .report-body > .why-mul')).toHaveLength(1)
   })
 
-  it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
+  it('zet de verdediging van een mob als stappen in de formule van min en max, alleen als hij WDEF heeft (Dave, 8 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Stump')] }))
     render(<App />)
     const row = Array.from(inGame().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('th')!.textContent!.startsWith('Throwing stars'))!
     fireEvent.click(row.querySelector<HTMLButtonElement>('.invoice-why')!)
-    const rows = whyDetail(inGame().querySelector<HTMLElement>('dialog')!, 'Schade per aanval')
-    const defense = rows.find((r) => r.label === 'Verdediging van Stump')!
-    expect(defense.calc).toBe('× 100 / (WDEF 30 + 100)')
-    expect(defense.result).toMatch(/^[\d.]+(,\d)? – [\d.]+(,\d)?$/)
-    // Schade per star rekent met precies de getallen van die rij.
-    const [min, max] = defense.result.split(' – ')
-    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toBe(`(${min} + ${max}) / 2`)
+    const dialog = inGame().querySelector<HTMLElement>('dialog')!
+    const perStar = formulaAt(dialog, ['Aanvallen per kill op Stump', 'Schade per aanval', 'Schade per star'])
+    const [, min, max] = perStar.match(/^Min per star ([\d.,]+) ; Max per star \+ ([\d.,]+) ; Twee waarden \/ 2 ; = ± [\d,]+$/)!
+    // Na de skillschade gaat de verdediging eraf: delen door WDEF + 100, maal 100; de uitkomst is het getal in de formule erboven.
+    for (const [label, hit] of [
+      ['Max per star', max],
+      ['Min per star', min],
+    ]) {
+      const formula = formulaAt(dialog, ['Aanvallen per kill op Stump', 'Schade per aanval', 'Schade per star', label])
+      expect(formula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; (Levelverschil \(−\d+%\) × \d+% ; )?WDEF 30 \+ 100 \/ 130 ; Naar procent × 100 ; = [\d.,]+$/)
+      expect(formula.endsWith(` ; = ${hit}`)).toBe(true)
+    }
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
@@ -3610,20 +3637,25 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const dialog = card().querySelector<HTMLElement>('dialog')!
     // De titel vraagt naar het aantal (Dave, 6 oktober 2026).
     expect(dialog.getAttribute('aria-label')).toMatch(/^Hoezo \d+\?$/)
-    const rows = whyRows(dialog)
-    expect(rows.map((r) => r.label)).toEqual(['HP kwijt per kill', 'EXP tot volgend level', 'EXP per kill', 'Kills dit level', 'HP dit level', 'Herstel per Orange Potion', 'Orange Potion'])
-    expect(rows[0].calc).toMatch(/^Ribbon Pig raakt je ± [\d,]+ × voor ± [\d,]+ schade$/)
-    expect(rows[3].result).toMatch(/^[\d.,]+$/)
-    // De laatste, vette rij is het aantal op de factuur.
+    // De popup is één formule (Dave, 8 oktober 2026): wat je dit level aan HP kwijt bent, gedeeld door wat één potion herstelt.
+    expect(dialog.querySelector('.why-table')).toBeNull()
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
-    expect(rows[6]).toMatchObject({ result: qty, total: true })
-    expect(rows[5]).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(rows[6].calc).toMatch(/^[\d.]+ \/ 222 = [\d,]+, naar boven afgerond$/)
-    // De aanname staat achter het vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
-    const help = within(dialog).getByRole('button', { name: 'Uitleg' })
+    const main = dialog.querySelector<HTMLElement>(':scope .report-body > .why-mul')!
+    expect(formulaText(main)).toMatch(new RegExp(`^HP dit level [\\d.]+ ; Herstel per Orange Potion / 222 ; = ${qty}$`))
+    expect(dialog.querySelector(':scope .report-body > .why-mul-note')!.textContent).toMatch(/^Uitkomst: [\d,]+, naar boven afgerond\.$/)
+    // HP dit level: HP kwijt per kill maal de kills; de kills zijn de EXP tot het volgende level gedeeld door de EXP per kill.
+    const need = formulaAt(dialog, ['HP dit level'])
+    expect(need).toMatch(/^HP kwijt per kill [\d,]+ ; Kills dit level × [\d.,]+ ; = [\d.]+$/)
+    expect(formulaText(main).startsWith(`HP dit level ${need.split(' ; = ')[1]} ;`)).toBe(true)
+    expect(formulaAt(dialog, ['HP dit level', 'Kills dit level'])).toMatch(/^EXP tot volgend level [\d.]+ ; EXP per kill op Ribbon Pig \/ [\d.,]+ ; = [\d.,]+$/)
+    expect(formulaAt(dialog, ['HP dit level', 'HP kwijt per kill'])).toMatch(/^Keer geraakt door Ribbon Pig ± [\d,]+ ; Schade per keer × ± [\d,]+ ; = [\d,]+$/)
+    // De aanname staat in de popup van HP kwijt per kill, achter een vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
+    const perKill = openPath(dialog, ['HP dit level', 'HP kwijt per kill'])
+    const help = within(perKill).getByRole('button', { name: 'Uitleg' })
     expect(help.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(help)
-    expect(dialog.querySelector('#' + help.getAttribute('aria-controls')!)!.textContent).toContain('aanname zonder bron')
+    expect(perKill.querySelector('#' + help.getAttribute('aria-controls')!)!.textContent).toContain('aanname zonder bron')
+    closeAll(dialog)
   })
 })
 
@@ -3643,33 +3675,38 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
 
 describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181)', () => {
   const card = () => homeScreen().querySelector<HTMLElement>('section.total-cost')!
-  /** De laatste twee rijen van de rekentabel: het herstel per potion en het aantal. */
-  const lastRows = (fields: Partial<ProfileDraft>) => {
+  /** De formule van het aantal, en wat er achter het vraagteken bij het herstel staat (leeg zonder vraagteken). */
+  const potionWhy = (fields: Partial<ProfileDraft>) => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     render(<App />)
     fireEvent.click(card().querySelector<HTMLButtonElement>('.invoice-why')!)
-    const rows = whyRows(card().querySelector('dialog')!)
-    return { restore: rows[rows.length - 2], count: rows[rows.length - 1] }
+    const dialog = card().querySelector<HTMLElement>('dialog')!
+    const count = formulaText(dialog.querySelector(':scope .report-body > .why-mul')!)
+    const name = 'Uitleg bij Herstel per Orange Potion'
+    if (!within(dialog).queryByRole('button', { name })) return { count, restore: '' }
+    const restore = openPath(dialog, ['Herstel per Orange Potion']).querySelector('.why-calc')!.textContent!
+    closeAll(dialog)
+    return { count, restore }
   }
 
   it('zegt bij een potion die overvult dat je bij 50% van je balk drinkt en er maar 222 van de 250 meetelt', () => {
-    const { restore, count } = lastRows({ hp: '444' })
-    expect(restore).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(count.calc).toMatch(/^[\d.]+ \/ 222 = [\d,]+, naar boven afgerond$/)
+    const { restore, count } = potionWhy({ hp: '444' })
+    expect(restore).toBe('Herstelt 250, maar bij 50% van je balk mist er maar 222.')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 222 ; = \d+$/)
   })
 
   it('laat de capped-zin weg als de potion binnen het plafond blijft (Max HP 2000): gewoon 250 en delen door 250', () => {
-    const { restore, count } = lastRows({ hp: '2000' })
-    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
-    expect(count.calc).toMatch(/^[\d.]+ \/ 250 = [\d,]+, naar boven afgerond$/)
+    const { restore, count } = potionWhy({ hp: '2000' })
+    expect(restore).toBe('')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = \d+$/)
   })
 
   it('laat de capped-zin weg als de potion het plafond precies haalt (Max HP 500: er mist 250 en de Orange herstelt 250)', () => {
-    const { restore, count } = lastRows({ hp: '500' })
-    expect(restore).toMatchObject({ calc: '', result: '250 HP' })
-    expect(count.calc).toMatch(/^[\d.]+ \/ 250 = /)
+    const { restore, count } = potionWhy({ hp: '500' })
+    expect(restore).toBe('')
+    expect(count).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = /)
   })
 })
 
@@ -3889,7 +3926,14 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     // Het bedrag is de prijs maal het deel, naar boven afgerond, en kleiner dan de volle prijs.
     expect(n(rows[5].result)).toBeLessThan(n(rows[0].result))
     expect(n(rows[3].result)).toBeGreaterThan(n(rows[2].result))
-    expect(rows[4].calc).toBe(`${rows[2].result} / ${rows[3].result}`)
+    expect(rows[4].calc).toBe(`EXP van dit level ${rows[2].result} ; EXP tot je volgende upgrade / ${rows[3].result} ; = ${rows[4].result}`)
+    // Het bedrag rekent met de EXP zelf, niet met het afgeronde percentage, zodat de formule precies op zijn uitkomst uitkomt.
+    const esc = (t: string) => t.replace(/\./g, '\\.')
+    expect(rows[5].calc).toMatch(
+      new RegExp(`^Prijs ${esc(rows[0].result.replace(' meso', ''))} ; EXP van dit level × ${esc(rows[2].result)} ; EXP tot je volgende upgrade / ${esc(rows[3].result)} ; = ${esc(amount)}( ; Uitkomst: [\\d.,]+, naar boven afgerond\\.)?$`),
+    )
+    const [price, thisExp, sumExp] = [rows[0], rows[2], rows[3]].map((r) => n(r.result))
+    expect(n(amount)).toBe(Math.ceil((price * thisExp) / sumExp - 1e-9))
   })
 
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal (Dave, 8 oktober 2026, #263)', () => {

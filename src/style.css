@@ -745,7 +745,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-help-space { flex: none; width: calc(44px - 0.625rem); }
 /* Een formule onder elkaar (Dave, 8 oktober 2026): links wat het is, rechts het teken en het getal (rechts uitgelijnd, zodat de cijfers
    onder elkaar staan), zoals de andere tabellen in de uitleg, over de volle breedte met een dunne lijn tussen de factoren. Het label in de gewone tekstkleur; is een factor zelf een som, dan staat die
-   klein en grijs eronder. De uitkomst staat in het afgeronde accentvak van de andere antwoorden (.why-answer), met lucht erboven. */
+   klein en grijs eronder.
+   De uitkomst staat onder de kaders, zonder label. */
 .why-mul { display: grid; grid-template-columns: [what] minmax(0, 1fr) [op] auto [num] auto; font-variant-numeric: tabular-nums; }
 /* Rijen en kaders lopen over de volle breedte en delen de kolommen van .why-mul (subgrid), zodat de getallen ook in een kader onder elkaar staan. */
 .why-mul-row, .why-mul-box { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
@@ -773,10 +774,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul-boxed .why-mul-num { padding-inline: 0.5rem; }
 /* Lucht links van de getallen (Dave, 8 oktober 2026): de tekens staan dan los van het getal, ook het = naast de grote uitkomst. */
 .why-mul-box + .why-mul-row { border-top: 0; }
-.why-mul-result { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); border-radius: 0.625rem; }
-.why-mul-result .why-mul-what { font-weight: 600; }
-.why-mul-result-plain { background: none; }
+/* De uitkomst zonder label en zonder vulling (Dave, 8 oktober 2026): de titel van de popup zegt al wat het is. */
+.why-mul-result { border-bottom: 0; }
 .why-mul-result .why-mul-num { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+.why-mul-note { margin: 0.5rem 0 0; }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
 /* Het antwoord van een blok (Dave, 8 oktober 2026): een eigen afgerond vak onder de rijen, met de tint van de eindformule, het label links en
@@ -788,15 +789,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De berekening in blokken met een kopje (Dave, 8 oktober 2026): ruimte tussen de blokken, en het kopje klein en grijs zoals een sectiekop,
    zodat de getallen het meest opvallen. De laatste rij van een blok zonder streep: de ruimte scheidt de blokken al. */
 .why-section + .why-section { margin-top: 1.5rem; }
-/* De eindformule bovenaan (Dave, 8 oktober 2026): groot, met onder elk getal klein wat het is, in een vlak met de tint van de uitkomstrij. */
-.why-summary { margin: 0 0 1.25rem; padding: 0.875rem 0.75rem; border-radius: 0.75rem; background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
-.why-summary-formula { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: 0.25rem 0.625rem; margin: 0; font-variant-numeric: tabular-nums; }
-.why-term { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.why-term strong { font-size: 1.375rem; line-height: 1.2; }
-.why-term small { font-size: 0.75rem; color: var(--muted); }
-.why-term-result strong { color: var(--accent); }
-.why-op { font-size: 1.375rem; line-height: 1.2; color: var(--muted); }
-.why-summary-note { margin: 0.5rem 0 0; font-size: 0.8125rem; text-align: center; color: var(--muted); }
 .why-section .why-table { margin: 0; }
 .why-table tr:last-child th, .why-table tr:last-child td { border-bottom: 0; }
 /* Het kopje van een blok is een deelvraag (Dave, 8 oktober 2026): gewone tekst, vet, zodat hij als vraag leest. */
