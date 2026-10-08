@@ -43,19 +43,35 @@ Step 1 of a no-scroll home screen: hide every card except Level cost; their popu
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Home screen hides every card except Level cost; their popups keep working, and the estimate note moves to Help in the settings menu
+- [x] Equip labels renamed to No upgrades, items equipped and Upgrades subtotal; the ammo the bill uses counts among your equipped items
+- [x] Ammo explanation ("Hoezo 429?") rebuilt: end formula on top (attacks per kill × stars per attack × kills), two sub-questions with a highlighted answer each, then the costs
+- [x] Every computed number in the explanations gets a question mark with its own popup; fixed data gets none
+- [x] Damage worked out in its own popup as a stacked formula (skill damage × W.ATT × stat factor), the stat factor stacked again in its own popup, with nested boxes showing what goes through 100
+- [x] Stacked formulas in the font of the skill rows, numbers and operators lined up across the boxes, fitting a 360px screen
 
 ### TEST
 
+- [x] `npx vitest run`: 1967 tests pass; `npm run lint` (tsc) is clean
+- [x] The stat factor popup checked at 208px (its width on a 360px screen) in headless Chromium against a static copy of the markup and CSS
+- [x] Dave looked at every visible step in the preview while the branch was built
+
 ### DEPLOY: app/home-only-level-cost
 
-**Score:**
+The home screen shows only the Level cost card. Behind the number of throwing stars on the bill, the explanation now reads top
+down: attacks per kill × stars per attack × kills, then why that many attacks on this mob, why that many kills, and what
+recharging costs. The damage per attack opens as a stacked formula, and the stat factor in it opens as its own stacked sum, with
+boxes around what is divided by 100.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Opening the app now lands straight on what a level costs, and every number in the throwing-stars explanation can be tapped to
+see where it comes from, down to your own LUK and STR + DEX.
+
+**Score:** 3
 
 #### Pull Request
 
-Home screen shows only the Level cost card
-
+Home screen shows only Level cost, with the ammo bill explained step by step
