@@ -41,17 +41,25 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `html { touch-action: manipulation; }` in `src/style.css`: no double-tap zoom anywhere, pinch zoom kept (no `user-scalable=no`)
 
 ### TEST
 
+- [x] Vitest 1951/1951 green, lint clean
+- [~] No automated test: jsdom cannot simulate a double-tap zoom gesture; Dave checks it on the phone
+- [ ] Dave looked (visible result)
+
 ### DEPLOY: app/250-no-double-tap-zoom
 
-**Score:**
+The whole page now carries `touch-action: manipulation`, so a double-tap on text or background no longer zooms in; before, only the buttons had it. Pinch zoom stays available.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+On a phone, a double-tap no longer zooms the app in by accident, with no obvious way back out.
+
+**Score:** 3
 
 #### Pull Request
 
