@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
+import { App, FIRST_POPUP, isCounted, noSavingText, POPUP_STEP, slotVerdict, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
+import type { CheapestSlot } from './cheapestEquip'
 
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
@@ -104,9 +105,12 @@ const reportCard = () => {
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
 
 // Een slot heet in het scherm Weapon, Hat, Top, Bottom, Overall of Shoes; de zoekbalk heet "Zoek je <Slot>".
-// In Your character staat elk slot als regel in de tabel (Dave, 8 oktober 2026); het potlood achter de regel opent de popup van het slot, met de zoekbalk. Staat hij al open, dan blijft hij.
+// In Your character kies je de slots achter het potlood bij Equip onder "Based on:" (Dave, 8 oktober 2026): daar staat elk slot als regel met een potlood dat de popup van het slot opent, met de zoekbalk. Staat een van die popups al open, dan blijft hij.
 const searchBox = (card: HTMLElement, slot: string) => {
-  if (!within(card).queryByLabelText(`Zoek je ${slot}`)) fireEvent.click(within(card).getByRole('button', { name: `${slot} wijzigen` }))
+  if (!within(card).queryByLabelText(`Zoek je ${slot}`)) {
+    if (!within(card).queryByRole('button', { name: `${slot} wijzigen` })) fireEvent.click(within(card).getByRole('button', { name: 'Equip wijzigen' }))
+    fireEvent.click(within(card).getByRole('button', { name: `${slot} wijzigen` }))
+  }
   return within(card).getByLabelText(`Zoek je ${slot}`) as HTMLInputElement
 }
 const rowOf = (card: HTMLElement, slot: string) => searchBox(card, slot).closest<HTMLElement>('.equip-row')!
@@ -509,8 +513,12 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     expect(cards()[0].querySelector('table')).toBeNull()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Wearing' }))
+    // Wat je draagt kies je achter het potlood bij Equip (Dave, 8 oktober 2026); de slotkeuze staat niet meer open na het sluiten.
+    expect(within(cards()[0]).queryByLabelText('Zoek je Weapon')).toBeNull()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Weapon wijzigen' }))
     expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    closeDialogs()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost: Equip')
@@ -704,9 +712,11 @@ describe('equipment: de claw past het profiel aan', () => {
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
     expect(dialog.getAttribute('aria-label')).toBe('Level cost: Equip (wearing)')
-    // Elk potlood is dezelfde knop, .equip-edit (Dave, 8 oktober 2026): ook die van een slot en van Char en Mob.
+    // Elk potlood is dezelfde knop, .equip-edit (Dave, 8 oktober 2026): ook die van Equip, Char en Mob, en achter dat van Equip die van een slot.
+    for (const name of ['Equip wijzigen', 'Char wijzigen', 'Mob wijzigen']) expect(within(dialog).getByRole('button', { name }).classList.contains('equip-edit'), name).toBe(true)
+    expect(within(dialog).queryByRole('button', { name: 'Weapon wijzigen' })).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Equip wijzigen' }))
     expect(within(dialog).getByRole('button', { name: 'Weapon wijzigen' }).classList.contains('equip-edit')).toBe(true)
-    for (const name of ['Char wijzigen', 'Mob wijzigen']) expect(within(dialog).getByRole('button', { name }).classList.contains('equip-edit'), name).toBe(true)
     expect(within(cards()[0]).queryByRole('button', { name: 'Inklappen' })).toBeNull()
   })
 
@@ -4049,7 +4059,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Equip: /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4241,7 +4251,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
           expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
           // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
-          expect(adv.querySelector('.based-on')?.textContent, job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
+          // In Equip staat onder Char en Mob een derde rij, Equip, met het aantal stukken (Dave, 8 oktober 2026); die hoort niet bij deze controle.
+          expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: \d+ items?$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
           const own = openView(title, 'Wearing')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
@@ -4260,7 +4271,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Wearing')
-      expect(d.querySelector('.based-on')?.textContent).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items?)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('actual')
@@ -4804,6 +4815,9 @@ describe('equipment: Your character als tabel', () => {
     expect(dialog.getAttribute('aria-label')).toBe('Level cost: Equip (wearing)')
     const names = Array.from(dialog.querySelectorAll('.advised-row .slot-name')).map((e) => e.textContent)
     expect(names.length).toBeGreaterThan(0)
+    // De tabel heeft geen potloden meer (Dave, 8 oktober 2026): die staan in de popup achter het potlood bij Equip.
+    expect(dialog.querySelector('.advised-row .equip-edit')).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Equip wijzigen' }))
     for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
   })
 
@@ -4829,11 +4843,179 @@ describe('equipment: Your character als tabel', () => {
     atLevel('30')
     openHomeEquipment()
     expect(cards()[0].querySelector('dialog.slot-dialog')).toBeNull()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Weapon wijzigen' }))
     expect(cards()[0].querySelector('dialog.slot-dialog')).not.toBeNull()
     pick(cards()[0], 'Weapon', IGOR.name)
     expect(billRow('Weapon').querySelector('.advised-name')!.textContent).toContain('Igor')
     expect(billRow('Weapon').querySelector('.advised-price')!.textContent).toBe(compactMeso(14_100))
+  })
+
+  const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+  const equipRow = (dialog: HTMLElement) => dialog.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
+
+  it('zet onder "Based on:" een derde rij Equip: in Wearing met het aantal stukken, het toggle-knopje (actual) en het potlood; in Advised alleen lezen met het toggle-knopje expected (Dave, 8 oktober 2026)', () => {
+    atLevel('30')
+    openHomeEquipment()
+    let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    // Nog niets gedragen: een placeholder zonder toggle, met het potlood.
+    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe('Nog niets gekozen')
+    expect(equipRow(dialog).getAttribute('data-sheet')).toBe('actual')
+    expect(within(dialog).queryByRole('button', { name: /^Equip: / })).toBeNull()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Top', 'Red Pao')
+    closeDialogs()
+    openHomeEquipment()
+    dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const row = equipRow(dialog)
+    expect(row.getAttribute('data-based-on-equip')).toBe('2 items')
+    expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
+    expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
+    const toggle = within(row).getByRole('button', { name: 'Equip: 2 items' })
+    expect(toggle.classList.contains('actual-toggle')).toBe(true)
+    fireEvent.click(toggle)
+    const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
+    expect(popup.querySelector('.title-tag')!.textContent).toBe('actual')
+    expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-equip')).toBe('2 items')
+    expect([...popup.querySelectorAll('dt')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
+    fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+    closeDialogs()
+    // Advised: dezelfde rij, alleen lezen, met het label expected en zonder potlood.
+    openAdvised()
+    dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const advised = equipRow(dialog)
+    expect(advised.getAttribute('data-sheet')).toBe('advised')
+    expect(advised.getAttribute('data-based-on-equip')).toMatch(/^\d+ items?$/)
+    expect(advised.parentElement!.querySelector('.equip-edit')).toBeNull()
+    const adviceToggle = within(advised).getByRole('button', { name: /^Equip: / })
+    expect(adviceToggle.classList.contains('expected-toggle')).toBe(true)
+    fireEvent.click(adviceToggle)
+    expect(dialog.querySelector('dialog.item-dialog .title-tag')!.textContent).toBe('expected')
+  })
+
+  it('opent met het potlood bij Equip de popup waarin je een slot kiest, en zet de focus daarna terug op dat potlood (Dave, 8 oktober 2026)', async () => {
+    atLevel('30')
+    openHomeEquipment()
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const pencil = within(dialog).getByRole('button', { name: 'Equip wijzigen' })
+    expect(pencil.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(pencil.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(pencil)
+    expect(pencil.getAttribute('aria-expanded')).toBe('true')
+    const pickPopup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
+    expect(pickPopup.querySelector('.title-tag')!.textContent).toBe('edit')
+    // Elke slotregel heeft zijn potlood dat de slotpopup opent, binnen deze popup.
+    fireEvent.click(within(pickPopup).getByRole('button', { name: 'Weapon wijzigen' }))
+    expect(pickPopup.querySelector('dialog.slot-dialog')).not.toBeNull()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    expect(slots().claw.pick).toBe(IGOR.name)
+    // Escape sluit eerst de slotpopup, de focus gaat naar het slotpotlood.
+    fireEvent(pickPopup.querySelector('dialog.slot-dialog')!, new Event('cancel', { cancelable: true }))
+    expect(pickPopup.querySelector('dialog.slot-dialog')).toBeNull()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    expect(document.activeElement).toBe(within(pickPopup).getByRole('button', { name: 'Weapon wijzigen' }))
+    // Daarna de slotkeuze zelf; de focus gaat terug naar het potlood bij Equip.
+    fireEvent(pickPopup, new Event('cancel', { cancelable: true }))
+    expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    expect(document.activeElement).toBe(pencil)
+    expect(within(dialog).getByRole('button', { name: 'Equip: 1 item' })).toBeTruthy()
+  })
+
+  it('geeft in Wearing per slot hetzelfde oordeel als Advised: Upgraden waar Advised koopt, met "Upgrade" in Level en zonder potlood (Dave, 8 oktober 2026)', () => {
+    atLevel('30')
+    const bought = (dialog: HTMLElement) =>
+      Object.fromEntries([...dialog.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body .advised-row')].map((r) => [r.querySelector('.slot-name')!.textContent, r.classList.contains('buy')]))
+    for (const worn of [false, true]) {
+      openHomeEquipment()
+      if (worn) {
+        pick(cards()[0], 'Weapon', IGOR.name)
+        closeDialogs()
+        openHomeEquipment()
+      }
+      const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+      const own = bought(dialog)
+      for (const r of dialog.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body .advised-row')) {
+        const slot = r.querySelector('.slot-name')!.textContent!
+        expect(r.querySelector('.equip-edit'), slot).toBeNull()
+        if (!own[slot]) {
+          expect(r.querySelector('.advised-level')!.textContent, slot).toBe('')
+          continue
+        }
+        expect(r.querySelector('.advised-level')!.textContent, slot).toBe('Upgrade')
+        fireEvent.click(r.querySelector('.help-toggle')!)
+        const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
+        expect(popup.querySelector('.item-verdict')!.textContent, slot).toBe('Upgraden')
+        expect(popup.querySelector('.item-why')!.textContent, slot).toMatch(/^(Koop|Je wapenslot is leeg)/)
+        fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+      }
+      closeDialogs()
+      openAdvised()
+      const advised = bought(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!)
+      closeDialogs()
+      // Met een lege equip koopt Advised minstens het wapen, en Wearing noemt precies dezelfde slots.
+      if (!worn) expect(Object.values(advised).some(Boolean)).toBe(true)
+      expect(own).toEqual(advised)
+    }
+  })
+
+  it('geeft een slot dat je draagt en Advised niet vervangt het oordeel Houden met de uitleg van Advised, en een leeg slot zonder aankoop geen oordeel (Dave, 8 oktober 2026)', () => {
+    atLevel('30')
+    openHomeEquipment()
+    const dialog = () => cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    const rows = () => [...dialog().querySelectorAll<HTMLElement>(':scope > .stat-dialog-body .advised-row')]
+    const rowOf2 = (slot: string) => rows().find((r) => r.querySelector('.slot-name')!.textContent === slot)!
+    // Een leeg slot dat Advised niet koopt heeft niets om te houden: geen vraagteken.
+    const empty = rows().filter((r) => !r.classList.contains('buy'))
+    expect(empty.length).toBeGreaterThan(0)
+    for (const r of empty) expect(r.querySelector('.help-toggle'), r.querySelector('.slot-name')!.textContent!).toBeNull()
+    // Je draagt wat Advised ook kiest: dan houdt de app het, met de uitleg van Advised.
+    closeDialogs()
+    openAdvised()
+    const advisedWeapon = [...cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')].find((r) => r.querySelector('.slot-name')!.textContent === 'Weapon')!.querySelector('.advised-name')!.getAttribute('title')!
+    closeDialogs()
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', advisedWeapon)
+    closeDialogs()
+    openHomeEquipment()
+    const weapon = rowOf2('Weapon')
+    expect(weapon.classList.contains('buy')).toBe(false)
+    expect(weapon.querySelector('.advised-level')!.textContent).toBe('')
+    fireEvent.click(weapon.querySelector('.help-toggle')!)
+    const popup = dialog().querySelector<HTMLElement>('dialog.item-dialog')!
+    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom houden?')
+    expect(popup.querySelector('.item-verdict')!.textContent).toBe('Houden')
+    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Je draagt dit al\./)
+  })
+
+  // Het oordeel van Wearing mag Advised nooit tegenspreken (Dave, 8 oktober 2026): ook niet bij een overall tegenover top en bottom, en niet bij munitie.
+  describe('slotVerdict', () => {
+    const none: CheapestSlot = { worn: null, cheapest: null, changed: false, price: null, option: null }
+    it('zegt van een top of bottom die je draagt terwijl Advised een overall koopt Vervangen, en van een overall terwijl Advised top of bottom koopt', () => {
+      for (const slot of ['top', 'bottom'] as const) {
+        const v = slotVerdict('thief', slot, { ...none, worn: 'Cloth Vest', changed: true }, false, true, true)!
+        expect(v.word).toBe('Vervangen')
+        expect(v.text).toMatch(/overall/)
+      }
+      const v = slotVerdict('thief', 'overall', { ...none, worn: 'Doros Robe', changed: true }, false, true, true)!
+      expect(v.word).toBe('Vervangen')
+      expect(v.text).toMatch(/top of bottom/)
+      // Niets aan in dat slot: niets om te vervangen, dus geen oordeel.
+      expect(slotVerdict('thief', 'top', none, false, true, false)).toBeNull()
+    })
+    it('geeft een draagbaar stuk dat Advised leeg laat zonder dat een ander stuk het slot beslaat het eigen woord van Advised, niet Houden', () => {
+      const v = slotVerdict('thief', 'hat', { ...none, worn: 'Ghetto Beanie', changed: true }, false, false, true)!
+      expect(v.kind).toBe('other')
+      expect(v.word).toBe('Leeg laten')
+      expect(v.text).toMatch(/^Leeg: de winkel heeft hier niets/)
+    })
+    it('geeft een leeg Ammo-slot dat de factuur telt hetzelfde oordeel als Advised: Per stuk herladen (Thief) of kopen (Bowman), ook zonder stuk', () => {
+      expect(isCounted('ammo', none, 'Subi Throwing Stars')).toBe(true)
+      expect(isCounted('ammo', none, null)).toBe(false)
+      expect(isCounted('hat', none, 'Subi Throwing Stars')).toBe(false)
+      expect(slotVerdict('thief', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk herladen' })
+      expect(slotVerdict('bowman', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk kopen' })
+    })
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {

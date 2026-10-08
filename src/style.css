@@ -771,8 +771,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-level { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .advised-row.buy .advised-level { color: var(--accent); }
 .advised-row.with-level .help-toggle { grid-column: 5; }
-/* Het potlood dat in Your character een slot opent, is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026), op de plek van het vraagteken. */
-.advised-row.with-level .equip-edit { grid-row: auto; grid-column: 5; justify-self: end; }
+/* Het woord "Upgrade" in Level van Wearing (Dave, 8 oktober 2026): in de accentkleur van .buy, een maat kleiner zodat het in de kolom past. */
+.advised-level.verdict { font-size: 0.75rem; }
+/* Het potlood dat een slot opent (Dave, 8 oktober 2026) is dezelfde knop als elk ander potlood (.equip-edit), op de plek van het vraagteken; het staat alleen in de slotkeuze achter Equip, een factuur zonder Level. */
+.advised-row:not(.with-level) > .equip-edit { grid-row: auto; grid-column: 4; justify-self: end; }
 .advised-total.with-level .advised-total-level { grid-column: 4; }
 /* Shop in gewone tekst, niet vet en zonder accent (Dave, 7 oktober 2026): het bedrag dat telt is Level. */
 .advised-row.with-level .advised-price, .advised-row.with-level.buy .advised-price, .advised-row.with-level.option .advised-price,
