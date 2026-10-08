@@ -1930,7 +1930,7 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; shop?: numb
           </strong>
         )}
       </td>
-      <td class="advised-total-level-cell">
+      <td>
         <strong class="advised-total-level">
           <MesoAmount n={props.level} />
         </strong>
@@ -1962,7 +1962,6 @@ function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; gro
  * bedragkolommen: "Shop" boven de winkelprijs (of het aantal van een useable) en "Level" boven het deel van dit level.
  */
 function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice?: boolean }) {
-  const wide = props.level
   return (
     <tr class="advised-head">
       <th scope="col">Slot</th>
@@ -1974,8 +1973,8 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice
         </>
       )}
       {/* De slotkeuze achter Equip (Dave, 8 oktober 2026) heeft geen bedragen: dan geen kolom met een kopje boven niets. */}
-      {!props.noPrice && <th scope="col" class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</th>}
-      {wide && <th scope="col" class="advised-head-level">Level</th>}
+      {!props.noPrice && <th scope="col" class="advised-head-price">{props.level ? 'Shop' : 'Mesos'}</th>}
+      {props.level && <th scope="col" class="advised-head-level">Level</th>}
       {!props.qty && <td />}
     </tr>
   )
@@ -2024,10 +2023,10 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
   const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
-  // Zonder `price` (de slotkeuze achter Equip, Dave, 8 oktober 2026) heeft de rij geen bedragkolom.
   // Een useable in de bill van Level cost (Dave, 8 oktober 2026): het aantal onder Shop, het bedrag onder Level.
   const qtyText = props.qty == null ? '' : `× ${nfInt.format(props.qty)}`
   const qtyColumn = props.qty !== undefined && !wide
+  // Zonder `price` (de slotkeuze achter Equip, Dave, 8 oktober 2026) heeft de rij geen bedragkolom.
   const price = props.price !== undefined && (
     <>
       {wide && props.qty !== undefined ? <td class="advised-qty">{qtyText}</td> : <td class="advised-price">{amount(props.price)}</td>}

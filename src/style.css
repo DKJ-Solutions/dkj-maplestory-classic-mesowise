@@ -770,7 +770,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-head > :nth-child(3) { width: calc(var(--control-h) + 0.25rem); }
 /* De kop van de factuur (Dave, 7 oktober 2026): kleine grijze kopjes boven de kolommen, "Mesos" rechts boven de bedragen. */
 .advised-bill thead tr { border-bottom: 1px solid var(--border); }
-.advised-head > * { height: auto; padding-top: 0; padding-bottom: 0.25rem; vertical-align: bottom; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+.advised-bill .advised-head > * { height: auto; padding-top: 0; padding-bottom: 0.25rem; vertical-align: bottom; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--muted); }
 .advised-bill .advised-head-price { text-align: right; }
 /* Een factuur met een Qty-kolom (Useable, Dave, 7 oktober 2026): aantal en bedrag krijgen een vaste breedte, zodat ze in elke regel onder elkaar staan.
@@ -900,13 +900,11 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-bill .advised-total-label { padding-right: 1rem; font-size: 0.875rem; text-align: right; font-weight: 600; }
 .advised-total td { text-align: right; white-space: nowrap; }
 .advised-total strong { font-size: 0.875rem; font-variant-numeric: tabular-nums; color: var(--accent); }
-.equip-total { margin: 0 0 0.75rem; text-align: right; }
 /* De zes icoonknoppen onder de factuur van elk deel van Level cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
 /* De zin en de knoppen onder de factuur (#192), los van het totaal met een dunne lijn en ruimte (Dave, 6 oktober 2026). */
 .cost-setup { margin-top: 1rem; padding-top: 0.875rem; border-top: 1px solid var(--border); }
 .cost-setup .total-cost-sub { margin: 0 0 0.5rem; }
 .cost-cards { gap: 0.375rem; }
-.equip-total strong { color: var(--accent); }
 
 /* Uitleg achter een vraagteken (Dave, 7 oktober 2026; Help in app.tsx): het ronde knopje rechts, 44px om te tikken maar met een
    icoon van 24px en negatieve marge boven en onder, zodat het geen eigen rij van 44px kost. De tekst eronder is dicht tot je tikt. */
