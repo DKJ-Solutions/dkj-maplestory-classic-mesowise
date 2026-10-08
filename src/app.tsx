@@ -1870,16 +1870,17 @@ function UseableRows(props: UseableInput) {
  */
 function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; level: number; help: boolean }; useable: { rows: ComponentChildren; total: number } | null }) {
   const { equip, useable } = props
+  // De kop van de tabel noemt de eerste kostenpost (Dave, 8 oktober 2026): Useable, of Equip als er geen useables zijn. Die post heeft dan geen eigen kopregel.
   return (
-    <BillTable variant="with-level" grouped heading="Bill" head={<BillHead item="Item" level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
+    <BillTable variant="with-level" grouped heading="Bill" head={<BillHead item={useable ? 'Useable' : 'Equip'} level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
       {/* Useable bovenaan (Dave, 8 oktober 2026): potions en ammo kosten elk level geld, equip alleen als er iets geüpgraded moet worden. */}
       {useable && (
-        <BillGroup name="Useable">
+        <BillGroup name="Useable" headless>
           {useable.rows}
           <BillSum kind="subtotal" label="Useable subtotal" level={useable.total} />
         </BillGroup>
       )}
-      <BillGroup name="Equip">
+      <BillGroup name="Equip" headless={!useable}>
         {equip.rows}
         <BillSum
           kind="subtotal"
@@ -1903,14 +1904,17 @@ function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; leve
 }
 
 /** Een kostenpost in de bill van Level cost (Dave, 8 oktober 2026): een kopregel met zijn naam, dan zijn regels en zijn subtotaal. */
-function BillGroup(props: { name: string; children: ComponentChildren }) {
+function BillGroup(props: { name: string; headless?: boolean; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
-      <tr class="bill-category">
-        <th scope="rowgroup" colSpan={2}>
-          {props.name}
-        </th>
-      </tr>
+      {/* Met `headless` noemt de kop van de tabel deze post al (LevelBill). */}
+      {!props.headless && (
+        <tr class="bill-category">
+          <th scope="rowgroup" colSpan={2}>
+            {props.name}
+          </th>
+        </tr>
+      )}
       {props.children}
     </tbody>
   )

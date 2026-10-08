@@ -891,7 +891,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    die net sterker is dan die tussen de regels. Tussen Equip en Useable lucht, zodat de twee posten uit elkaar lopen. */
 .bill-category > th { height: auto; padding-top: 0.75rem; padding-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--text); }
-.bill-group:first-of-type .bill-category > th { padding-top: 0.5rem; }
 .advised-bill .advised-subtotal { border-top: 1px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
 .advised-subtotal > th, .advised-subtotal > td { height: auto; padding-top: 0.375rem; padding-bottom: 0.375rem; vertical-align: baseline; }
 .advised-subtotal td { text-align: right; white-space: nowrap; }

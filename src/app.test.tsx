@@ -4029,11 +4029,12 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         expect(d.querySelector('section.bill > h3.based-on-head')!.textContent, label).toBe('Bill')
         // Geen kolom Slot, Qty of Price (Dave, 8 oktober 2026): de kop is Item en Mesos, het slot staat alleen voor de schermlezer in de naam van de
         // rij, het aantal achter de naam en de winkelprijs in de info-popup.
-        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Mesos'])
+        // De kop noemt de eerste post, Useable (Dave, 8 oktober 2026); die heeft dan geen eigen kopregel, Equip wel.
+        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Useable', 'Mesos'])
         for (const r of d.querySelectorAll('section.bill .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
         const groups = [...d.querySelectorAll<HTMLElement>('section.bill tbody.bill-group')]
         // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
-        expect(groups.map((g) => g.querySelector('.bill-category')!.textContent), label).toEqual(['Useable', 'Equip'])
+        expect(groups.map((g) => g.querySelector('.bill-category')?.textContent ?? null), label).toEqual([null, 'Equip'])
         expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Equip subtotal'])
         const [useable, equip] = groups
         expect(rowsOf(useable), label).toEqual(['HP', 'MP', 'Ammo'])
