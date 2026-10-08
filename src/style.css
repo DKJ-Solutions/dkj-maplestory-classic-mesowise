@@ -414,7 +414,7 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on { margin-bottom: 1rem; }
 .based-on-head { margin: 0 0 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
 .based-on-container { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
-.based-on-label { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
+.based-on-label { display: flex; align-items: center; padding: 0.5rem; background: var(--advised-box); border-radius: 0.5rem; }
 .based-on-value:empty { min-width: 4rem; }
 .based-on-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 .based-on-label[data-based-on-mob] { min-width: 0; }
@@ -428,8 +428,8 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on .based-on-label .equip-edit { grid-row: auto; grid-column: auto; flex: none; margin: 0 0 0 0.375rem; }
 /* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
    Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
-.based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.4375rem;
-  padding: 0 0.4375rem; gap: 0.25rem; justify-content: flex-start; font: inherit; text-align: left; border-radius: 0.5rem; }
+.based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.5rem;
+  padding: 0 0.5rem; gap: 0.25rem; justify-content: flex-start; font: inherit; text-align: left; border-radius: 0.5rem; }
 .based-on .based-on-label .info-toggle.named > svg { flex: none; }
 .based-on .based-on-label .info-toggle.named:has(+ .help-toggle) { margin-right: 0; padding-right: 0; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
