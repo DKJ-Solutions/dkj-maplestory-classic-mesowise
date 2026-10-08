@@ -9,7 +9,7 @@ import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Potion, Source, Stat } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { advisedSetup } from './advisedSetup'
+import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
@@ -1585,8 +1585,9 @@ function StatDialog(props: {
 /** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    Wat dit level kost met de setup van Cheapest, op één factuur. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die
-    Cheapest koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
+    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest bouwt die setup zelf op uit alleen je job en level, alsof je opnieuw begint: wat
+    je zelf invulde telt niet mee. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die Cheapest koopt omdat die
+    zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
     Overnemen zet de stukken alleen in je equip hier.
@@ -3814,8 +3815,9 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
   return (
     <>
       {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste, ook je equip.</p>}
-      {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
-      {!props.applied && !props.bought && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
+      {/* "Al de goedkoopste" als jouw setup dit level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263): Cheapest rekent vanaf nul en koopt
+          dus altijd zijn equip, ook wat jij al hebt. */}
+      {!props.applied && saving !== null && saving < 1 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
   )
 }
@@ -3928,7 +3930,8 @@ export function App() {
   // De setup van Advised (Dave, 6 oktober 2026, #192), één berekening voor alles: de goedkoopste instellingen met de equip die Advised koopt (tot je volgende upgrade
   // in dat slot, zoals het Report; was dit level, #188), om en om uitgerekend tot het equip-advies niets meer koopt. Daaruit komen de Equip-popup, de factuur van
   // Advised met zijn Shop-regels, Difference en Overnemen.
-  const advisedSet = useMemo(() => (computed ? advisedSetup(userInput) : null), [computed, userInput])
+  // Cheapest bouwt zijn setup zelf op uit je job en level (Dave, 8 oktober 2026, #263), niet uit wat je invulde; de wijzigingen gaan tegen jouw stand.
+  const advisedSet = useMemo(() => (computed ? cheapestFor(userInput) : null), [computed, userInput])
   const cheapestLive = advisedSet?.result ?? null
   const cheapestEquip = advisedSet?.cheapest ?? null
   // De mob waarop het advies rekent, zoals Advised: Monster hem toont: onder "Based on:" in Level cost: Equip en Useable (Dave, 7 oktober 2026).

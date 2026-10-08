@@ -3,13 +3,14 @@
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
-import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { defaultEquipment, EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
-import type { ProfileDraft } from './profile'
+import { NO_POTION_CHOICE } from './potions'
+import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 
 /** Hoeveel keer hoogstens equipment erbij komt en alles opnieuw wordt doorgerekend; daarna blijft de laatste stand staan (`capped`). */
 export const MAX_EQUIP_ROUNDS = 4
@@ -28,6 +29,37 @@ export interface AdvisedSetup {
   cheapest: Record<EquipSlot, CheapestSlot>
   /** De munitie die de factuur van Advised telt (countedAmmo, #189), voor een leeg Ammo-slot in de Equip-popup; null als hij niets gooit. */
   ammo: string | null
+}
+
+/**
+ * Waar Cheapest begint (Dave, 8 oktober 2026, #263): alleen je job, je level en je geslacht (sommige equip is er alleen voor het ene). Al de rest
+ * bouwt Cheapest zelf op, alsof je op dit level opnieuw begint: geen equip, geen mob, geen gekozen potions, de standaard-stats en geen skillpunten.
+ * Wat je zelf invulde telt niet mee, ook een fout niet (meer skillpunten dan je level toelaat). Alleen je Max HP blijft staan als het een getal is:
+ * dat kies je niet, en de app kent geen HP per level met een bron voor elke job.
+ */
+export function freshStart(user: CheapestInput): CheapestInput {
+  const hp = user.profileDraft.hp.trim()
+  return {
+    job: user.job,
+    gender: user.gender,
+    equipment: defaultEquipment(),
+    drafts: [],
+    potionChoice: NO_POTION_CHOICE,
+    profileDraft: { ...DEFAULT_PROFILE, level: user.profileDraft.level, hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp },
+  }
+}
+
+/**
+ * Cheapest voor jouw stand (Dave, 8 oktober 2026, #263): de setup die het vanaf nul opbouwt (freshStart), met de wijzigingen en de besparing
+ * gemeten tegen jouw eigen stand, zodat Overnemen zegt wat er voor jou verandert.
+ */
+export function cheapestFor(user: CheapestInput): AdvisedSetup {
+  const setup = advisedSetup(freshStart(user))
+  const r = setup.result
+  const after: CheapestInput = { ...user, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
+  const costBefore = costOf(user)
+  const saving = typeof costBefore === 'number' && typeof r.costAfter === 'number' ? costBefore - r.costAfter : null
+  return { ...setup, result: { ...r, changes: changesBetween(user, after), costBefore, saving } }
 }
 
 /**

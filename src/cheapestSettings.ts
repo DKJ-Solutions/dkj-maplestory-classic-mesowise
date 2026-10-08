@@ -11,7 +11,7 @@ import { applySkillPoint } from './levelUp'
 import { cheapestMob, mobAdvice } from './mobAdvice'
 import { parseProfile, type Profile, type ProfileDraft } from './profile'
 import { pickPotion, potionAdvice, POTION_KINDS, resolvePotions, type PotionChoice, type PotionPair } from './potions'
-import { skillPointAdvice } from './skillPoint'
+import { skillPointAdvice, skillsOf } from './skillPoint'
 import type { SpotDraft } from './spotDraft'
 
 /** Hoeveel keer alles achter elkaar wordt toegepast: de keuzes beïnvloeden elkaar (een andere mob maakt een andere skill de beste). */
@@ -73,7 +73,7 @@ const usedPotions = (s: CheapestInput): PotionPair => profileOf(s)?.potions ?? r
  * Wat het level kost zoals de factuur het toont: hele potions, dus naar boven afgerond (#195). Op de kosten zonder afronding kan
  * een stand goedkoper lijken en op de factuur toch duurder uitkomen. Zonder factuur de kosten van het level.
  */
-function costOf(s: CheapestInput): number | null | undefined {
+export function costOf(s: CheapestInput): number | null | undefined {
   const invoice = levelInvoice(s.drafts, profileOf(s))
   if (invoice.kind === 'invoice') return invoice.total
   return invoice.cost.kind === 'cost' ? invoice.cost.meso : undefined
@@ -184,6 +184,27 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
   }
 }
 
+/** De mob van een stand in woorden: het monster van zijn eerste plek, of een streepje zonder plek. */
+const mobName = (s: CheapestInput): string => s.drafts[0]?.monster || s.drafts[0]?.name || NO_MOB
+
+/**
+ * Wat er per kaart verschilt tussen twee standen (Dave, 8 oktober 2026, #263): Cheapest rekent vanaf nul, dus de regels van Overnemen vergelijken
+ * jouw stand met die van Cheapest, niet met waar de berekening begon. Per skill het verschil in punten, met een min waar Cheapest er minder heeft.
+ */
+export function changesBetween(before: CheapestInput, after: CheapestInput): Change[] {
+  const mobs = mobName(before) === mobName(after) ? [] : [mobName(before), mobName(after)]
+  const level = (s: CheapestInput, id: string) => {
+    const n = Number((s.profileDraft as Record<string, string>)[id] ?? '')
+    return Number.isFinite(n) ? n : 0
+  }
+  const points = new Map<string, number>()
+  for (const skill of skillsOf(after.job, after.profileDraft.dagger === '1')) {
+    const n = level(after, skill.id) - level(before, skill.id)
+    if (n !== 0) points.set(skill.name, n)
+  }
+  return describe(before, after, mobs, points)
+}
+
 /** De namen van de HP- en MP-potion die een stand gebruikt. */
 function potionNames(s: CheapestInput): Record<'hp' | 'mp', string> {
   const p = usedPotions(s)
@@ -199,7 +220,7 @@ function describe(before: CheapestInput, after: CheapestInput, mobs: readonly st
   const now = usedPotions(after)
   // Per soort een eigen regel (Dave, #183): HP en MP los.
   for (const k of POTION_KINDS) if (was[k].name !== now[k].name) out.push({ kind: k, text: `${was[k].name} → ${now[k].name}` })
-  if (points.size > 0) out.push({ kind: 'skills', text: [...points].map(([name, n]) => `${name} +${n}`).join(', ') })
+  if (points.size > 0) out.push({ kind: 'skills', text: [...points].map(([name, n]) => `${name} ${n > 0 ? '+' : '−'}${Math.abs(n)}`).join(', ') })
   const ap = STATS.filter((k) => before.profileDraft[k] !== after.profileDraft[k]).map(
     (k) => `${STAT_LABEL[k]} ${before.profileDraft[k].trim() || '0'} → ${after.profileDraft[k]}`,
   )
