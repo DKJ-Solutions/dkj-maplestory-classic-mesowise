@@ -1775,7 +1775,7 @@ function BasedOn(props: { who: string; mob: string }) {
           ) : (
             <span class="based-on-value">{props.mob}</span>
           )}
-          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob} tag="help">
             <p class="item-why">{mobWhy(props.mob)}</p>
           </PopupButton>
         </div>

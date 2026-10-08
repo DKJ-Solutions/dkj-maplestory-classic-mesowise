@@ -4239,6 +4239,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      // Het label boven de titel zegt "help": de uitleg waarom deze mob (Dave, 8 oktober 2026).
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('help')
       expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
