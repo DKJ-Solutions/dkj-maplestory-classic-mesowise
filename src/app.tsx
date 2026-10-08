@@ -3415,23 +3415,27 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const piece = arrows ? 'pijl' : 'star'
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
+  // Een gecombineerde stat (STR + DEX) tussen haakjes: het getal ervoor is hun som, niet alleen de STR (Dave, 8 oktober 2026).
+  const secondary = f && (f.secondaryName.includes('+') ? `(${f.secondaryName})` : f.secondaryName)
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
         {
           label: `Max per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
           result: oneDecimal(w.rawMax),
         },
         {
           label: `Min per ${piece}`,
-          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {f.secondaryName}) / 100)</>,
+          calc: <>{nf.format(f.k)} × {nfInt.format(f.watk)} W.ATT × (0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100)</>,
           result: oneDecimal(w.rawMin),
         },
         ...(w.levelsUp > 0
           ? [{ label: 'Levelverschil', calc: <>{w.mob} is {w.levelsUp} {w.levelsUp === 1 ? 'level' : 'levels'} hoger: −{w.levelsUp}%</>, result: `${oneDecimal(w.rawMin * (1 - 0.01 * w.levelsUp))} – ${oneDecimal(w.rawMax * (1 - 0.01 * w.levelsUp))}` }]
           : []),
-        { label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${nfInt.format(w.minHit)} – ${nfInt.format(w.maxHit)}` },
+        // Met één decimaal, zoals min en max erboven, zodat elke som in de tabel klopt met wat er staat (Dave, 8 oktober 2026); bij WDEF 0 verandert
+        // de verdediging niets en valt de rij weg.
+        ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
   const rows: WhyRow[] = [
@@ -3439,15 +3443,20 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
     {
       label: `Schade per ${piece}`,
-      calc: f ? <>({nfInt.format(w.minHit)} + {nfInt.format(w.maxHit)}) / 2</> : <>schommelt per worp tussen {nfInt.format(w.minHit)} en {nfInt.format(w.maxHit)}; de app rekent met het gemiddelde</>,
-      result: `± ${nfInt.format(w.avgHit)}`,
+      calc: f ? <>({oneDecimal(w.minHit)} + {oneDecimal(w.maxHit)}) / 2</> : <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</>,
+      result: `± ${oneDecimal(w.avgHit)}`,
     },
-    { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {nfInt.format(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
+    { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP van {w.mob} / {oneDecimal(perAttack)}, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill) },
     ...killsRows(w),
     { label: `${props.label} dit level`, calc: <>{nfInt.format(w.perKill)} × {nf3.format(w.kills)} kills = {roundedUpText(w.exact, props.qty)}, naar boven afgerond</>, result: nfInt.format(props.qty), total: true },
-    { label: arrows ? 'Kopen' : 'Herladen', calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso</>, result: `${nfInt.format(props.meso)} meso` },
+    {
+      label: arrows ? 'Kopen' : 'Herladen',
+      // Komt het bedrag niet op een hele meso uit, dan zegt de som dat hij naar boven is afgerond (Dave, 8 oktober 2026).
+      calc: <>{nfInt.format(props.qty)} {unit} × {nf.format(w.pricePerStar)} meso{props.qty * w.pricePerStar !== props.meso && <> = {nf.format(props.qty * w.pricePerStar)}, naar boven afgerond</>}</>,
+      result: `${nfInt.format(props.meso)} meso`,
+    },
   ]
   return <WhyTable rows={rows} />
 }

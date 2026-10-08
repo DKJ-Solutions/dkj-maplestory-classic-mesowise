@@ -3467,7 +3467,6 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(rows.map((r) => r.label)).toEqual([
       'Max per star',
       'Min per star',
-      'Verdediging van Ribbon Pig',
       'Schade per star',
       'Schade per aanval',
       'Aanvallen per kill',
@@ -3478,23 +3477,39 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       'Throwing stars dit level',
       'Herladen',
     ])
-    // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan de verdediging van de mob, dan het gemiddelde.
-    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
-    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ STR \+ DEX\) \/ 100\)$/)
-    expect(rows[2].calc).toMatch(/^× 100 \/ \(WDEF [\d.]+ \+ 100\)$/)
-    expect(rows[2].result).toMatch(/^[\d.]+ – [\d.]+$/)
-    expect(rows[3].calc).toMatch(/^\([\d.]+ \+ [\d.]+\) \/ 2$/)
-    expect(rows[3].result).toMatch(/^± [\d.]+$/)
-    expect(rows[4].calc).toMatch(/^\d × [\d.]+ gemiddeld × \d+% raakkans$/)
-    expect(rows[5].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
+    // Waar min en max vandaan komen (Dave, #192): de formule met de echte getallen, dan het gemiddelde. Ribbon Pig heeft WDEF 0, dus geen rij
+    // Verdediging: die verandert dan niets (Dave, 8 oktober 2026).
+    expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
+    expect(rows[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
+    expect(rows[2].result).toMatch(/^± [\d.,]+$/)
+    expect(rows[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
+    expect(rows[4].calc).toMatch(/^[\d.]+ HP van Ribbon Pig \/ [\d,]+, naar boven afgerond$/)
     // De vette rij is het aantal op de factuur.
     expect(rows.filter((r) => r.total).map((r) => r.result)).toEqual([qty])
-    expect(rows[10].calc).toContain('naar boven afgerond')
+    expect(rows[9].calc).toContain('naar boven afgerond')
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
-    expect(rows[9].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
-    // Herladen: het aantal maal de prijs is het bedrag op de factuur.
-    expect(rows[11].calc.startsWith(`${qty} throwing stars × `) && rows[11].calc.endsWith(' meso'), rows[11].calc).toBe(true)
-    expect(rows[11].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+    expect(rows[8].calc).toMatch(/^[\d.]+ \/ [\d.,]+$/)
+    // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de som dat hij naar boven is afgerond.
+    const [stars, recharge] = rows[10].calc.split(' meso')
+    expect(stars.startsWith(`${qty} throwing stars × `), rows[10].calc).toBe(true)
+    expect(recharge, rows[10].calc).toMatch(/^( = [\d.,]+, naar boven afgerond)?$/)
+    expect(rows[10].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
+  })
+
+  it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
+    cleanup()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Stump')] }))
+    render(<App />)
+    const row = Array.from(inGame().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('th')!.textContent!.startsWith('Throwing stars'))!
+    fireEvent.click(row.querySelector<HTMLButtonElement>('.invoice-why')!)
+    const rows = whyRows(inGame().querySelector<HTMLElement>('dialog')!)
+    const defense = rows.find((r) => r.label === 'Verdediging van Stump')!
+    expect(defense.calc).toBe('× 100 / (WDEF 30 + 100)')
+    expect(defense.result).toMatch(/^[\d.]+(,\d)? – [\d.]+(,\d)?$/)
+    // Schade per star rekent met precies de getallen van die rij.
+    const [min, max] = defense.result.split(' – ')
+    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toBe(`(${min} + ${max}) / 2`)
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
