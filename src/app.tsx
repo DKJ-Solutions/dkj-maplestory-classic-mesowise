@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
-import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
+import { ammoInfo, buyTexts, countedAmmo, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, itemLevel, wearableSetup, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
@@ -4211,7 +4211,9 @@ export function App() {
           const lines = v === 'advised' ? cheapestInvoice : invoice
           if (lines.kind !== 'invoice') return null
           const potions = resolvePotions(job, v === 'advised' && cheapestLive ? cheapestLive.potionChoice : potionChoice, parsedProfile)
-          const ammo = v === 'advised' ? (advisedSet?.ammo ?? null) : (wornName(equipment.ammo) ?? lines.lines.find((l) => l.why?.kind === 'ammo')?.label ?? null)
+          // Een leeg ammo-slot: de star of pijl waarmee de factuur rekent, op naam (countedAmmo), zodat zijn ATT bekend is (Dave, 8 oktober 2026); pas zonder naam het algemene label.
+          const billed = lines.lines.find((l) => l.why?.kind === 'ammo')
+          const ammo = v === 'advised' ? (advisedSet?.ammo ?? null) : (wornName(equipment.ammo) ?? (billed ? ((parsedProfile && countedAmmo(parsedProfile, equipment.claw)) ?? billed.label) : null))
           return { job, potions, ammo, lines: lines.lines }
         }}
         level={characterLevel}

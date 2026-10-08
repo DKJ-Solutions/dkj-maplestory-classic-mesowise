@@ -3994,20 +3994,28 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     closeDialogs()
     const equipped = () => {
       openHomeEquipment()
-      const text = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!.textContent
+      const label = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!
+      const text = label.textContent
       const bill = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .bill')?.textContent ?? ''
+      // De stukken zelf staan achter het oogje: per slot de waarde van zijn stat.
+      fireEvent.click(within(label).getByRole('button'))
+      const ammo = document.querySelector<HTMLElement>('.char-table-equip .stat-line[data-slot="Ammo"]')
+      const star = ammo && { name: ammo.querySelector('.stat-line-name')!.textContent, value: ammo.querySelector('.equip-value-num')!.textContent }
       closeDialogs()
-      return { text, bill }
+      return { text, bill, star }
     }
     // Zonder mob geen factuur en dus geen stars: de claw, je startschoenen en de questhoed.
     expect(equipped().text).toBe('Equip: 3 items equipped')
     fireEvent.click(viewButton('Monster'))
     chooseMob('Slime')
     closeDialogs()
-    // Met een mob rekent de factuur met Throwing stars; die tellen nu mee bij Equip, en blijven als kostenpost onder Useable staan.
+    // Met een mob rekent de factuur met de Subi (de star van DEFAULT_PROFILE); die telt nu mee bij Equip, op naam en met zijn ATT,
+    // en blijft als kostenpost onder Useable staan (Dave, 8 oktober 2026).
     const after = equipped()
     expect(after.text).toBe('Equip: 4 items equipped')
-    expect(after.bill).toContain('Throwing stars')
+    expect(after.bill).toContain('Subi Throwing Stars')
+    expect(after.star?.name).toContain('Subi')
+    expect(after.star?.value).toMatch(/^\d+$/)
   })
 
   it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {
