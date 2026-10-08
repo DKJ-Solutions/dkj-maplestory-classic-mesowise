@@ -745,7 +745,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-help-space { flex: none; width: calc(44px - 0.625rem); }
 /* Een formule onder elkaar (Dave, 8 oktober 2026): links wat het is, rechts het teken en het getal (rechts uitgelijnd, zodat de cijfers
    onder elkaar staan), zoals de andere tabellen in de uitleg, over de volle breedte met een dunne lijn tussen de factoren. Het label in de gewone tekstkleur; is een factor zelf een som, dan staat die
-   klein en grijs eronder. De uitkomst staat in het afgeronde accentvak van de andere antwoorden (.why-answer), met lucht erboven. */
+   klein en grijs eronder.
+   De uitkomst staat onder de kaders, zonder label. */
 .why-mul { display: grid; grid-template-columns: [what] minmax(0, 1fr) [op] auto [num] auto; font-variant-numeric: tabular-nums; }
 /* Rijen en kaders lopen over de volle breedte en delen de kolommen van .why-mul (subgrid), zodat de getallen ook in een kader onder elkaar staan. */
 .why-mul-row, .why-mul-box { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }

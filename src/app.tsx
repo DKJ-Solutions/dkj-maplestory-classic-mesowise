@@ -3434,17 +3434,17 @@ export function MulCalc(props: {
       )}
     </span>
   )
+  const op = (i: number) => props.factors[i].op ?? '×'
   const rows = (from: number, to: number) =>
     props.factors.slice(from, to).map((f, j) => (
       <div key={from + j} class="why-mul-row">
         <span class="why-mul-what">{f.what}</span>
-        <span class="why-mul-op">{from + j === 0 ? '' : (f.op ?? '×')}</span>
+        <span class="why-mul-op">{from + j === 0 ? '' : op(from + j)}</span>
         <span class="why-mul-num">{num(f.value, f.what, f.detail)}</span>
       </div>
     ))
   // Een kader om de eerste k regels waar het teken van regel k anders is dan dat van de regel erboven, en een om alle regels; het grootste
   // kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
-  const op = (i: number) => props.factors[i].op ?? '×'
   const n = props.factors.length
   const boxes = Array.from({ length: n }, (_, k) => k)
     .filter((k) => k >= 2 && op(k) !== op(k - 1))
@@ -3492,9 +3492,10 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
   },
 ]
 
-/** Onder een formule waarvan de uitkomst naar boven is afgerond: het getal dat eruit kwam, en dat het is afgerond. */
+/** Onder een formule waarvan de uitkomst naar boven is afgerond: het getal dat eruit kwam, en dat het is afgerond. Met dezelfde marge als het
+ * model (writeOff, wholeUp): rekenruis als 944,9999999 is geen afronding. */
 const roundedNote = (exact: number, shown: number): ComponentChildren =>
-  exact !== shown ?<>{roundedUpText(exact, shown)}, naar boven afgerond.</> : undefined
+  shown - exact > 1e-9 ? <>Uitkomst: {roundedUpText(exact, shown)}, naar boven afgerond.</> : undefined
 
 /**
  * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
@@ -3614,7 +3615,7 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
             detail: (
               <MulCalc
                 factors={[
-                  { value: oneDecimal(w.perKill), what: `${unit} per kill` },
+                  { value: oneDecimal(w.perKill), what: w.kind === 'hp' ? 'HP kwijt per kill' : 'MP per kill' },
                   { value: nf3.format(w.kills), what: 'Kills dit level' },
                 ]}
                 result={nfInt.format(w.need)}
@@ -3736,7 +3737,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
                   <MulCalc
                     factors={[
                       { value: range(w.rawMin, w.rawMax), what: 'Schade' },
-                      { value: nfPct.format(levelFactor), what: `${w.mob} is ${w.levelsUp} ${w.levelsUp === 1 ? 'level' : 'levels'} hoger` },
+                      { value: nfPct.format(levelFactor), what: `Levelverschil (−${w.levelsUp}%)` },
                     ]}
                     result={range(w.rawMin * levelFactor, w.rawMax * levelFactor)}
                   />
@@ -3794,7 +3795,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
                         factors={[
                           { value: oneDecimal(w.minHit), what: `Min per ${piece}` },
                           { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+' },
-                          { value: '2', what: 'Gemiddelde', op: '/' },
+                          { value: '2', what: 'Twee waarden', op: '/' },
                         ]}
                         result={`± ${oneDecimal(w.avgHit)}`}
                       />
@@ -3947,7 +3948,8 @@ function ShopSteps(props: { meso: number; w: ShopWhy }) {
         <MulCalc
           factors={[
             { value: nfInt.format(w.price), what: 'Prijs' },
-            { value: share, what: 'Deel van dit level' },
+            { value: nfInt.format(w.thisExp), what: 'EXP van dit level' },
+            { value: nfInt.format(w.sumExp), what: 'EXP tot je volgende upgrade', op: '/' },
           ]}
           result={nfInt.format(props.meso)}
           note={roundedNote(w.price * w.share, props.meso)}

@@ -3463,11 +3463,11 @@ describe('elke formule in de uitleg (MulCalc, Dave, 8 oktober 2026)', () => {
 
   it('toont onderaan alleen = en de uitkomst, zonder label, en een afrondingsregel alleen als die er is', () => {
     cleanup()
-    const { container } = render(<MulCalc factors={[{ value: '7', what: 'a' }, { value: '2', what: 'b', op: '/' }]} result="4" note="3,5, naar boven afgerond." />)
+    const { container } = render(<MulCalc factors={[{ value: '7', what: 'a' }, { value: '2', what: 'b', op: '/' }]} result="4" note="Uitkomst: 3,5, naar boven afgerond." />)
     const result = container.querySelector('.why-mul-result')!
     expect(result.querySelector('.why-mul-what')).toBeNull()
     expect(result.textContent!.replace(/\s+/g, '')).toBe('=4')
-    expect(container.querySelector('.why-mul-note')!.textContent).toBe('3,5, naar boven afgerond.')
+    expect(container.querySelector('.why-mul-note')!.textContent).toBe('Uitkomst: 3,5, naar boven afgerond.')
     cleanup()
     expect(render(<MulCalc factors={[{ value: '6', what: 'a' }, { value: '2', what: 'b', op: '/' }]} result="3" />).container.querySelector('.why-mul-note')).toBeNull()
   })
@@ -3576,7 +3576,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // De uitkomst onderaan is het getal in de formule erboven.
     expect(max.endsWith(` ; = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
     expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
-    expect(damage[2].calc).toMatch(/^Min per star [\d.,]+ ; Max per star \+ [\d.,]+ ; Gemiddelde \/ 2 ; = ± [\d.,]+$/)
+    expect(damage[2].calc).toMatch(/^Min per star [\d.,]+ ; Max per star \+ [\d.,]+ ; Twee waarden \/ 2 ; = ± [\d.,]+$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[2].calc.endsWith(` ; = ${damage[2].result}`)).toBe(true)
     expect(damage[3].calc).toMatch(/^Stars? per aanval \d ; Schade per star × ± [\d.,]+ ; Raakkans × \d+% ; = ± [\d.,]+$/)
@@ -3606,13 +3606,13 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const tableRows = dialog.querySelectorAll('.why-table tr')
     expect(tableRows[1].querySelector('.why-help')).toBeNull()
     expect(tableRows[0].querySelector('.why-value .why-help')).not.toBeNull()
-    expect(rows[2].calc).toMatch(new RegExp(`^HP van Ribbon Pig ${rows[1].result.replace('.', '\\.')} ; Schade per aanval / ${rows[0].result} ; = ${rows[2].result}( ; [\\d.,]+, naar boven afgerond\\.)?$`))
+    expect(rows[2].calc).toMatch(new RegExp(`^HP van Ribbon Pig ${rows[1].result.replace('.', '\\.')} ; Schade per aanval / ${rows[0].result} ; = ${rows[2].result}( ; Uitkomst: [\\d.,]+, naar boven afgerond\\.)?$`))
     // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de aanvallen per kill en de kills (Dave, 8 oktober 2026).
     expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Aanvallen per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.
     expect(rows[5].calc).toBe(`EXP tot volgend level ${rows[3].result} ; EXP per kill / ${rows[4].result} ; = ${rows[5].result}`)
     // Herladen: het aantal maal de prijs is het bedrag op de factuur; geen hele meso, dan zegt de regel onder de som dat hij naar boven is afgerond.
-    expect(rows[6].calc).toMatch(new RegExp(`^Throwing stars ${qty.replace('.', '\\.')} ; Meso per star × [\\d.,]+ ; = [\\d.]+( ; [\\d.,]+, naar boven afgerond\\.)?$`))
+    expect(rows[6].calc).toMatch(new RegExp(`^Throwing stars ${qty.replace('.', '\\.')} ; Meso per star × [\\d.,]+ ; = [\\d.]+( ; Uitkomst: [\\d.,]+, naar boven afgerond\\.)?$`))
     expect(rows[6].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
@@ -3629,7 +3629,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(defense.calc.endsWith(` ; = ${defense.result}`)).toBe(true)
     // Schade per star rekent met precies de getallen van die rij.
     const [min, max] = defense.result.split(' – ')
-    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toMatch(new RegExp(`^Min per star ${min} ; Max per star \\+ ${max} ; Gemiddelde / 2 ; = ± [\\d,]+$`))
+    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toMatch(new RegExp(`^Min per star ${min} ; Max per star \\+ ${max} ; Twee waarden / 2 ; = ± [\\d,]+$`))
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
@@ -3655,7 +3655,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const qty = /op (\d+) Orange/.exec(whys[0].getAttribute('aria-label')!)![1]
     expect(rows[6]).toMatchObject({ result: qty, total: true })
     expect(rows[5]).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(rows[6].calc).toMatch(new RegExp(`^HP dit level [\\d.]+ ; Herstel per Orange Potion / 222 ; = ${qty} ; [\\d,]+, naar boven afgerond\\.$`))
+    expect(rows[6].calc).toMatch(new RegExp(`^HP dit level [\\d.]+ ; Herstel per Orange Potion / 222 ; = ${qty} ; Uitkomst: [\\d,]+, naar boven afgerond\\.$`))
     // De aanname staat achter het vraagteken (Dave, 7 oktober 2026): dicht tot je tikt.
     const help = within(dialog).getByRole('button', { name: 'Uitleg' })
     expect(help.getAttribute('aria-expanded')).toBe('false')
@@ -3694,13 +3694,13 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   it('zegt bij een potion die overvult dat je bij 50% van je balk drinkt en er maar 222 van de 250 meetelt', () => {
     const { restore, count } = lastRows({ hp: '444' })
     expect(restore).toMatchObject({ calc: 'herstelt 250, maar bij 50% van je balk mist er maar 222', result: '222 HP' })
-    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 222 ; = \d+ ; [\d,]+, naar boven afgerond\.$/)
+    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 222 ; = \d+ ; Uitkomst: [\d,]+, naar boven afgerond\.$/)
   })
 
   it('laat de capped-zin weg als de potion binnen het plafond blijft (Max HP 2000): gewoon 250 en delen door 250', () => {
     const { restore, count } = lastRows({ hp: '2000' })
     expect(restore).toMatchObject({ calc: '', result: '250 HP' })
-    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = \d+ ; [\d,]+, naar boven afgerond\.$/)
+    expect(count.calc).toMatch(/^HP dit level [\d.]+ ; Herstel per Orange Potion \/ 250 ; = \d+ ; Uitkomst: [\d,]+, naar boven afgerond\.$/)
   })
 
   it('laat de capped-zin weg als de potion het plafond precies haalt (Max HP 500: er mist 250 en de Orange herstelt 250)', () => {
@@ -3927,7 +3927,13 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(n(rows[5].result)).toBeLessThan(n(rows[0].result))
     expect(n(rows[3].result)).toBeGreaterThan(n(rows[2].result))
     expect(rows[4].calc).toBe(`EXP van dit level ${rows[2].result} ; EXP tot je volgende upgrade / ${rows[3].result} ; = ${rows[4].result}`)
-    expect(rows[5].calc).toMatch(new RegExp(`^Prijs ${rows[0].result.replace(' meso', '').replace(/\./g, '\\.')} ; Deel van dit level × ${rows[4].result} ; = ${amount.replace(/\./g, '\\.')}( ; [\\d.,]+, naar boven afgerond\\.)?$`))
+    // Het bedrag rekent met de EXP zelf, niet met het afgeronde percentage, zodat de formule precies op zijn uitkomst uitkomt.
+    const esc = (t: string) => t.replace(/\./g, '\\.')
+    expect(rows[5].calc).toMatch(
+      new RegExp(`^Prijs ${esc(rows[0].result.replace(' meso', ''))} ; EXP van dit level × ${esc(rows[2].result)} ; EXP tot je volgende upgrade / ${esc(rows[3].result)} ; = ${esc(amount)}( ; Uitkomst: [\\d.,]+, naar boven afgerond\\.)?$`),
+    )
+    const [price, thisExp, sumExp] = [rows[0], rows[2], rows[3]].map((r) => n(r.result))
+    expect(n(amount)).toBe(Math.ceil((price * thisExp) / sumExp - 1e-9))
   })
 
   it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal (Dave, 8 oktober 2026, #263)', () => {

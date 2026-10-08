@@ -47,6 +47,7 @@ larger box around a smaller one, and only `=` and the result below it.
 - [x] `MulCalc` draws the boxes itself: one closes wherever the operator changes, one goes around the whole formula; the result has no label
 - [x] Every sum behind a "?" in the potion, ammo and shop explanations is a `MulCalc`; a rounded-up result gets one line under it
 - [x] The rule is in Gwen's lens, so the next formula follows it
+- [x] Edith's wording points and Victor's review applied: rounding note uses the model's 1e-9 margin, the shop amount is computed from the EXP itself; the minimum-damage gap is #271
 
 ### TEST
 
@@ -63,7 +64,7 @@ line under the formula. `MulCalc` places the boxes itself, so a new formula only
 
 #### What makes this deploy extra special
 
-Every "?" in the explanation of a potion, star or shop amount now shows its sum the same way: each number named, each step
+Every "?" in the explanation of a potion, ammo or shop amount now shows its sum the same way: each number named, each step
 boxed, so you can see what was divided by what.
 
 **Score:** 2
