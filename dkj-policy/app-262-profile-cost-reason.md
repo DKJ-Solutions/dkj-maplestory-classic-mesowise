@@ -39,19 +39,45 @@
 
 ### PLAN
 
+#### #262
+
+Re-measured on the trunk after `app/cheapest-fresh-start` (October 8, 2026), with the issue's level 19 Thief (Nimble Body 15 +
+Lucky Seven 17 = 32 of 28 job skill points): Cheapest now has a total (−22.857 meso), but Profile still shows `?` with no
+reason near the button, and the only place naming the cause is the `.error` on the skills card. The Level cost texts said
+"Je karakter is niet volledig ingevuld." for every missing profile.
+
+#### Visible result
+
+This changes what the home screen shows, so the branch stops for Dave's look before any pull request.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `ProfileProblem` context: the parse error of the profile (or `notComputedText` for a job the app does not compute),
+  provided by `App`. `noCostReason(c, problem)` returns that message for `noProfile`, and keeps "niet volledig ingevuld" only
+  as the fallback; its five callers read the context.
+- [x] Under the two Level cost buttons, one line per button that shows `?`: "Profile: <reason>" (`.level-cost-reason`,
+  with the buttons' side margin).
 
 ### TEST
 
+- [x] New test in `app.test.tsx`: the issue's profile shows `?` on Profile, a total on Cheapest, exactly one reason line
+  "Profile: Je hebt 32 skillpunten …", and "niet volledig ingevuld" nowhere on the page; the existing top-buttons test now
+  also asserts no reason line when both have a total.
+- [x] `npm run lint` clean; the full gate runs with `open-pr -GatesOnly` before the branch is parked.
+
 ### DEPLOY: app/262-profile-cost-reason
 
-**Score:**
+When Profile has no level cost, a line under the Level cost buttons says why, and every Level cost text names the field that
+is wrong ("Je hebt 32 skillpunten …") instead of "Je karakter is niet volledig ingevuld." (#262).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A question mark on Profile at the top now comes with the reason right under it, such as too many skill points for your level,
+so you no longer have to search the cards for what is wrong.
+
+**Score:** 3
 
 #### Pull Request
 
