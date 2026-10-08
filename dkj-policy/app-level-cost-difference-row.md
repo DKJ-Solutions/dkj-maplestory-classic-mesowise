@@ -51,7 +51,7 @@ Dave, October 8, 2026: stack the two Level cost buttons, add a third row with th
 
 - [x] Tycho: test for the third row and its popup (`src/app.test.tsx`)
 - [x] `npx vitest run` green, `scripts/lint/lint.ps1` clean
-- [ ] Dave looks at the result at phone width before the merge
+- [x] Dave looked at the result and said "ship it" (October 8, 2026)
 
 ### DEPLOY: app/level-cost-difference-row
 
