@@ -39,19 +39,38 @@
 
 ### PLAN
 
+Issue #271: `estimateMob` clamps the min and max hit to at least 1, while the hit formula in the ammo
+explanation showed that clamped 1 as the result of a product that comes out lower. The old "Verdediging
+van <mob>" line the issue names no longer exists; the gap now sits in `hitSteps` in `AmmoSteps`.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `hitSteps` takes the raw hit and passes a note to its `MulCalc` when the unclamped value is
+  below 1: "Uitkomst: <x>, maar een raak doet minstens 1 schade."
+- [x] Cody: the note truncates to two decimals, so 0,96 never reads as "1,0" (Victor's finding)
 
 ### TEST
 
+- [x] Tycho: four tests in `src/app.test.tsx` render `AmmoSteps` with a crafted `AmmoWhy` (a clamped
+  min, the level difference counted, truncation just below 1, no note at exactly 1 or at WDEF 0).
+  No real mob reaches the clamp, so `<App />` cannot be tested on it.
+- [x] Victor reviewed the code, Edith read the Dutch; their findings are folded in
+- [x] `npm run lint` clean, `npm test` green
+- [ ] Dave has looked at the result
+
 ### DEPLOY: app/271-defense-minimum-hit-note
 
-**Score:**
+The hit formula in the ammo explanation now reproduces its own result: when the damage per hit comes out
+below 1, a note under the formula shows the unclamped value and that a hit always does at least 1 damage.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A player who opens the min or max damage formula against a mob with very high WDEF no longer sees a
+product that does not add up to its result.
+
+**Score:** 1
 
 #### Pull Request
 

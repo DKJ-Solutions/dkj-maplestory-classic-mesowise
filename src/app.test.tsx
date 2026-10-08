@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, FIRST_POPUP, MulCalc, noSavingText, POPUP_STEP, totalCostWho } from './app'
+import { AmmoSteps, App, FIRST_POPUP, MulCalc, noSavingText, POPUP_STEP, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
+import type { AmmoWhy } from './levelInvoice'
 import { cheapestSettings } from './cheapestSettings'
 
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
@@ -3620,6 +3621,58 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       expect(formula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; (Levelverschil \(−\d+%\) × \d+% ; )?WDEF 30 \+ 100 \/ 130 ; Naar procent × 100 ; = [\d.,]+$/)
       expect(formula.endsWith(` ; = ${hit}`)).toBe(true)
     }
+  })
+
+  describe('de minimumschade van een raak in de formule van min en max (#271)', () => {
+    // Een AmmoWhy op maat: estimateMob laat een raak nooit onder 1 komen (Math.max(1, ...)), en met echte mobs komt de ruwe schade nooit onder 1,
+    // dus de test bouwt een eigen AmmoWhy.
+    const ammoWhy = (over: Partial<AmmoWhy>): AmmoWhy => ({
+      kind: 'ammo', mob: 'Testmob', expToNext: 1000, expPerKill: 10, kills: 100, mobHp: 50, avgHit: 5.5, minHit: 1, maxHit: 10,
+      rawMin: 2, rawMax: 40, levelsUp: 0, mobWdef: 300,
+      formula: { k: 1, watk: 20, primary: 50, secondary: 20, weaponMult: 3.6, mastery: 0.6, primaryName: 'LUK', secondaryName: 'STR + DEX' },
+      hitChance: 1, starsPerAttack: 1, attacksToKill: 10, perKill: 10, killsPerHour: 100, hours: 1, pricePerStar: 1, exact: 1000,
+      ...over,
+    })
+    const stepsOf = (w: AmmoWhy) => {
+      cleanup()
+      const { container } = render(<AmmoSteps label="Throwing stars" qty={1000} w={w} />)
+      const root = container as HTMLElement
+      const path = ['Aanvallen per kill op Testmob', 'Schade per aanval', 'Schade per star']
+      const note = (label: string) => {
+        const popup = openPath(root, [...path, label])
+        const text = popup.querySelector('.why-mul-note')?.textContent ?? null
+        const formula = formulaText(popup.querySelector('.why-mul')!)
+        closeAll(root)
+        return { note: text, formula }
+      }
+      return { min: note('Min per star'), max: note('Max per star') }
+    }
+
+    it('zet onder de formule de ongeklemde uitkomst en dat een raak minstens 1 doet, als de schade onder 1 uitkomt', () => {
+      // ruw 2 × 100 / (300 + 100) = 0,5: onder 1, dus de formule toont 1 en de noot de 0,5. Max (40 → 10) heeft geen noot.
+      const { min, max } = stepsOf(ammoWhy({}))
+      expect(min.note).toBe('Uitkomst: 0,5, maar een raak doet minstens 1 schade.')
+      expect(min.formula.endsWith(' ; = 1')).toBe(true)
+      expect(max.note).toBeNull()
+      expect(max.formula.endsWith(' ; = 10')).toBe(true)
+    })
+
+    it('rekent het levelverschil mee in die ongeklemde uitkomst', () => {
+      // ruw 4 × 0,5 (50 levels hoger) × 100 / 400 = 0,5.
+      expect(stepsOf(ammoWhy({ rawMin: 4, levelsUp: 50 })).min.note).toBe('Uitkomst: 0,5, maar een raak doet minstens 1 schade.')
+    })
+
+    it('kapt de ongeklemde uitkomst af op twee decimalen, zodat net onder 1 niet als 1 in de noot staat', () => {
+      // ruw 3,98 × 100 / 400 = 0,995: afgerond zou dat "1" of "1,0" zijn, afgekapt is het 0,99.
+      expect(stepsOf(ammoWhy({ rawMin: 3.98 })).min.note).toBe('Uitkomst: 0,99, maar een raak doet minstens 1 schade.')
+    })
+
+    it('zet geen noot onder de formule als de schade op of boven 1 uitkomt', () => {
+      // ruw 4 × 100 / 400 = 1: precies op de grens, geen klem. En een gewone mob zonder WDEF.
+      expect(stepsOf(ammoWhy({ rawMin: 4, minHit: 1 })).min.note).toBeNull()
+      const plain = stepsOf(ammoWhy({ rawMin: 8, rawMax: 12, mobWdef: 0, minHit: 8, maxHit: 12, avgHit: 10 }))
+      expect([plain.min.note, plain.max.note]).toEqual([null, null])
+    })
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
