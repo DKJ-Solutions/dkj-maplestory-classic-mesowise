@@ -3407,8 +3407,9 @@ const whyRows = (root: ParentNode) =>
   Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer'), (tr) => {
     const clean = (t: string) => t.replace(/\s+/g, ' ').trim()
     const label = clean(tr.querySelector('.why-label-text')!.textContent!)
+    // Een berekend getal heeft een vraagteken achter het getal; een vaste waarde niet (Dave, 8 oktober 2026).
     // De som staat in de info-popup achter het i-knopje van de rij (Dave, 8 oktober 2026): even open, lezen en weer dicht.
-    const info = tr.querySelector<HTMLButtonElement>('.why-info')
+    const info = tr.querySelector<HTMLButtonElement>('.why-help')
     let calc = ''
     if (info) {
       fireEvent.click(info)
@@ -3421,13 +3422,13 @@ const whyRows = (root: ParentNode) =>
         : clean(popup.querySelector('.why-calc')?.textContent ?? '')
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     }
-    return { label, calc, result: clean(tr.querySelector('td, .why-answer-value')!.textContent!), total: tr.classList.contains('why-answer') }
+    return { label, calc, result: clean(tr.querySelector('.why-value-num')!.textContent!), total: tr.classList.contains('why-answer') }
   })
 
 /** De rijen in de info-popup van een rij met een eigen uitwerking (detail), zoals Schade per aanval (Dave, 8 oktober 2026). */
 const whyDetail = (root: ParentNode, label: string) => {
   const tr = Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer')).find((r) => r.querySelector('.why-label-text')!.textContent === label)!
-  fireEvent.click(tr.querySelector<HTMLButtonElement>('.why-info')!)
+  fireEvent.click(tr.querySelector<HTMLButtonElement>('.why-help')!)
   const popup = tr.querySelector<HTMLElement>('dialog')!
   const rows = whyRows(popup)
   fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
@@ -3524,6 +3525,10 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([`Waarom ${rows[3].result} stars per kill op Ribbon Pig?`, `Waarom ${rows[6].result} kills?`, 'Kosten'])
     // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
     expect(rows[1].result).toMatch(/^[\d.]+$/)
+    // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026).
+    const tableRows = dialog.querySelectorAll('.why-table tr')
+    expect(tableRows[1].querySelector('.why-help')).toBeNull()
+    expect(tableRows[2].querySelector('.why-value .why-help')).not.toBeNull()
     expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
     // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de stars per kill en de kills (Dave, 8 oktober 2026).
     expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Throwing stars per kill', 'Kills dit level'])

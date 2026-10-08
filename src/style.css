@@ -739,7 +739,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Eén regel per rij (Dave, 8 oktober 2026): een te lang label krijgt een beletselteken in plaats van een tweede regel; het i-knopje erachter blijft staan. */
 .why-label { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
 .why-label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.why-table .why-info { margin: -0.75rem -0.5rem; }
+/* Het getal en, helemaal rechts, het vraagteken van een berekend getal; zonder vraagteken een lege plek even breed, zodat de getallen uitlijnen. */
+.why-value { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
+.why-table .why-help, .why-answer .why-help { margin: -0.75rem -0.625rem -0.75rem 0; }
+.why-help-space { flex: none; width: calc(44px - 0.625rem); }
 /* Een formule onder elkaar (Dave, 8 oktober 2026): teken, getal (rechts uitgelijnd, zodat de cijfers onder elkaar staan) en wat het is;
    de uitkomst onder een dunne streep, want hier wordt echt vermenigvuldigd. */
 .why-mul { border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -750,13 +753,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul-result td { border-top: 1px solid var(--border); padding-top: 0.375rem; }
 .why-mul-result .why-mul-num { color: var(--accent); }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.why-table td { width: 7.5rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
+.why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
 /* Het antwoord van een blok (Dave, 8 oktober 2026): een eigen afgerond vak onder de rijen, met de tint van de eindformule, het label links en
    het getal rechts in de accentkleur; geen tabelrij, want een getinte rij is een rechte band en een streep erboven leest als een optelstreep. */
 .why-answer { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.625rem;
   background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .why-answer .why-label { flex: 1; font-weight: 600; }
-.why-answer .why-info { margin: -0.625rem -0.5rem; }
 .why-answer-value { font-size: 1.125rem; font-weight: 700; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* De berekening in blokken met een kopje (Dave, 8 oktober 2026): ruimte tussen de blokken, en het kopje klein en grijs zoals een sectiekop,
    zodat de getallen het meest opvallen. De laatste rij van een blok zonder streep: de ruimte scheidt de blokken al. */

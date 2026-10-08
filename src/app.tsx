@@ -3335,14 +3335,24 @@ type WhyRow = { label: string; calc?: ComponentChildren; detail?: ComponentChild
  * rechts de uitkomst, zodat je van boven naar beneden ziet hoe het aantal ontstaat. De laatste rij is het aantal van de factuur.
  */
 function WhyTable(props: { rows: readonly WhyRow[] }) {
-  // Elke rij is één regel (Dave, 8 oktober 2026): wat en de uitkomst. De som erachter staat in een info-popup achter het i-knopje naast het label.
+  // Elke rij is één regel (Dave, 8 oktober 2026): wat en de uitkomst.
   const label = (r: WhyRow) => (
     <span class="why-label">
       <span class="why-label-text">{r.label}</span>
-      {(r.calc || r.detail) && (
-        <PopupButton icon={INFO_ICON} class="info-toggle why-info" label={`Info over ${r.label}`} title={r.label} tag="info">
+    </span>
+  )
+  // Een berekend getal heeft een vraagteken helemaal rechts, achter het getal (Dave, 8 oktober 2026): het is geen vaste waarde, en de popup zegt
+  // waar het vandaan komt. Een vaste waarde (de HP van een mob, de EXP tot je volgende level) heeft er geen; zijn plek blijft leeg, zodat de
+  // getallen onder elkaar blijven staan.
+  const value = (r: WhyRow) => (
+    <span class="why-value">
+      <span class="why-value-num">{r.result}</span>
+      {r.calc || r.detail ? (
+        <PopupButton icon={QUESTION_ICON} class="help-toggle why-help" label={`Uitleg bij ${r.label}`} title={r.label}>
           {r.detail ?? <p class="why-calc">{r.calc}</p>}
         </PopupButton>
+      ) : (
+        <span class="why-help-space" aria-hidden="true" />
       )}
     </span>
   )
@@ -3357,7 +3367,7 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
             .map((r) => (
               <tr key={r.label}>
                 <th scope="row">{label(r)}</th>
-                <td>{r.result}</td>
+                <td>{value(r)}</td>
               </tr>
             ))}
         </tbody>
@@ -3367,7 +3377,7 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
         .map((r) => (
           <div key={r.label} class="why-answer">
             {label(r)}
-            <strong class="why-answer-value">{r.result}</strong>
+            <strong class="why-answer-value">{value(r)}</strong>
           </div>
         ))}
     </>
