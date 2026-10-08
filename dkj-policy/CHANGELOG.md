@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**6 / 11 minor entries** <!-- pending-tally -->
+**7 / 12 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/based-on-equip · 20261008-084404Z
+
+Slot selection in Wearing moved from the table rows to the popup behind the Equip pencil; the verdict reuses Advised's own reasoning, so the two tables cannot disagree.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Level cost: Equip now shows under Based on which equipment it counts, and in Wearing you pick what you wear from that row. The table of what you wear tells you per slot whether to upgrade it now or keep it, with the reason behind a question mark.
+
+**Score:** 4
+
+#### Pull Request
+
+Based on gets an Equip row, and Wearing says per slot whether to upgrade
+
+[PR #257](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/257)
+
+---
 
 ### DEPLOY: app/level-cost-title · 20261008-082509Z
 
