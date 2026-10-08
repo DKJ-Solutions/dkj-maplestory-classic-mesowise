@@ -627,6 +627,83 @@ export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: Equi
 }
 
 /**
+ * Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): de stand zoals de berekening hem ziet, zonder elk stuk dat een hoger level vraagt
+ * dan je character heeft (een Steel Titans van level 15 op level 10), met zijn ATT of DEF eraf zoals bij een slot dat je zelf leegmaakt. De opslag
+ * verandert niet: het stuk blijft bewaard en telt weer mee zodra je level hoog genoeg is. Een wapen laat een lege hand
+ * achter: 0 weapon attack, zoals Cheapest met een leeg wapenslot rekent (#202). Een eigen item kent de app niet, dat blijft. `dropped` zegt welke
+ * slots leeg werden; zonder heel level verandert er niets.
+ */
+export function dropAboveLevel(profile: ProfileDraft, eq: Equipment, job: Job): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
+  // Een leeg of ongeldig levelveld is geen level 0: dan verandert er niets.
+  const text = profile.level.trim()
+  const level = text === '' ? NaN : Number(text)
+  if (!Number.isInteger(level) || level < 1) return { equipment: eq, profile, dropped: [] }
+  let out = { equipment: eq, profile }
+  const dropped: EquipSlot[] = []
+  for (const { slot } of EQUIP_SLOTS) {
+    const name = wornName(out.equipment[slot])
+    const needs = name === null ? undefined : itemLevel(slot, name)
+    if (needs === undefined || needs <= level) continue
+    out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], NONE), job)
+    if (slot === 'claw') out = { ...out, profile: { ...out.profile, clawWatk: '0' } }
+    dropped.push(slot)
+  }
+  return { ...out, dropped }
+}
+
+/**
+ * De startkleding (Dave, 8 oktober 2026): elk karakter begint met een top, een bottom en schoenen. De stukken staan met hun bron in
+ * data/wornItems.ts; welke het precies zijn kies je bij het maken van je karakter, de app neemt de gewone keuze per geslacht.
+ */
+export const STARTER_CLOTHES: { readonly top: Readonly<Record<Gender, string>>; readonly bottom: Readonly<Record<Gender, string>>; readonly shoes: string } = {
+  top: { male: 'White Undershirt', female: 'White Tube Top' },
+  bottom: { male: 'Blue Jean Shorts', female: 'Red Miniskirt' },
+  shoes: 'Leather Sandals',
+}
+
+/**
+ * De hoed van de quest Lucas's Reply op Maple Island (Dave, 8 oktober 2026; meowdb.com/msclassic/quest-tracker/1008, gelezen 2026-10-08): een
+ * Beginner krijgt willekeurig een van zeven hoeden van level 5 met 6 DEF. Ze zijn gelijk, dus de app rekent met de eerste, de Brown Skullcap (708).
+ */
+export const QUEST_HAT = 'Brown Skullcap'
+
+/** Het mes dat je als Beginner krijgt (Dave, 8 oktober 2026): de Fruit Knife (559, level 8, dagger). Alleen op level 8 en 9; daarna het wapen van je job. */
+export const BEGINNER_KNIFE = 'Fruit Knife'
+const BEGINNER_LAST_LEVEL = 9
+
+/**
+ * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en wat je in het begin
+ * gratis krijgt in een leeg slot: je startkleding (STARTER_CLOTHES; een top of bottom alleen zonder overall, zonder geslacht alleen de schoenen), vanaf
+ * level 5 de questhoed (QUEST_HAT), en op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen. Een slot dat nog niet was
+ * ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het mes zet wel zijn eigen weapon attack:
+ * een leeg wapenslot is op dat level het mes, ook als je zelf een getal had getypt.
+ */
+export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
+  const below = dropAboveLevel(profile, eq, job)
+  let out = { equipment: below.equipment, profile: below.profile }
+  const text = profile.level.trim()
+  const level = text === '' ? NaN : Number(text)
+  const free: [EquipSlot, string | null][] = [
+    ['top', gender ? STARTER_CLOTHES.top[gender] : null],
+    ['bottom', gender ? STARTER_CLOTHES.bottom[gender] : null],
+    ['shoes', STARTER_CLOTHES.shoes],
+    ['hat', QUEST_HAT],
+    ['claw', level <= BEGINNER_LAST_LEVEL && catalogItems('claw', job).some((i) => i.name === BEGINNER_KNIFE) ? BEGINNER_KNIFE : null],
+  ]
+  for (const [slot, name] of free) {
+    if (name === null || wornName(out.equipment[slot]) !== null) continue
+    if ((slot === 'top' || slot === 'bottom') && wornName(out.equipment.overall) !== null) continue
+    // Wat een level vraagt (de hoed 5, het mes 8), alleen met een geldig level dat hoog genoeg is.
+    const needs = itemLevel(slot, name) ?? 0
+    if (needs > 0 && !(Number.isInteger(level) && needs <= level)) continue
+    // Viel er een overall af (boven je level), dan zijn top en bottom echt leeg en komt de DEF van de startkleding erbij (Victor, 8 oktober 2026).
+    const before = (slot === 'top' || slot === 'bottom') && below.dropped.includes('overall') ? { ...emptyEntry(), pick: NONE } : out.equipment[slot]
+    out = changeEquipment(out.profile, { ...out.equipment, [slot]: before }, slot, choosePick(slot, before, name), job)
+  }
+  return { ...out, dropped: below.dropped }
+}
+
+/**
  * De nieuwe invulling na een keuze in de zoekbalk. Een catalogusitem begint met de waarde uit de database.
  * Kies je een eigen item (met de getypte naam) terwijl de app wist wat je droeg, dan begint de stat op die
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.

@@ -3,13 +3,16 @@
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
-import { cheapestSettings, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { EQUIP_SLOTS, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
-import type { ProfileDraft } from './profile'
+import { FIRST_JOB_LEVEL, skillPoolOf } from './data/skillPoints'
+import { isSkillKey, skillInfo } from './data/skills'
+import { NO_POTION_CHOICE } from './potions'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, type ProfileDraft } from './profile'
 
 /** Hoeveel keer hoogstens equipment erbij komt en alles opnieuw wordt doorgerekend; daarna blijft de laatste stand staan (`capped`). */
 export const MAX_EQUIP_ROUNDS = 4
@@ -28,6 +31,67 @@ export interface AdvisedSetup {
   cheapest: Record<EquipSlot, CheapestSlot>
   /** De munitie die de factuur van Advised telt (countedAmmo, #189), voor een leeg Ammo-slot in de Equip-popup; null als hij niets gooit. */
   ammo: string | null
+}
+
+/**
+ * De velden van het profiel die bij je equip horen: wapen, WDEF, stars, snelheid, de keuzes van dagger en pijlen (die houdt de Equip-kaart bij), en wat
+ * je items per stat extra geven (STR, DEX, INT, LUK). Je base AP en je accuracy bouwt Cheapest zelf op.
+ */
+const GEAR_FIELDS = ['clawWatk', 'wdef', 'attackMs', 'weaponMult', 'starWatk', 'starRecharge', 'dagger', 'bronzeArrows', 'helpfulStranger', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'] as const satisfies readonly (keyof ProfileDraft)[]
+
+/** Of een veld een waarde heeft die parseProfile goedkeurt: een getal binnen zijn grenzen, en heel waar dat moet. */
+const validField = (key: keyof ProfileDraft, text: string): boolean => {
+  const f = DRAFT_FIELDS.find((d) => d.key === key)
+  const n = text.trim() === '' ? NaN : Number(text)
+  return f !== undefined && Number.isFinite(n) && n >= f.min && n <= f.max && (!f.integer || Number.isInteger(n))
+}
+
+/** Elke skill van de 1e job op 0: onder level 10 heb je daar nog geen punten voor (skillPointCap), ook niet het ene punt van het standaardprofiel. */
+const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
+  Object.keys(DEFAULT_PROFILE)
+    .filter((k) => isSkillKey(k) && skillPoolOf(skillInfo(k).job) === 'job')
+    .map((k) => [k, '0']),
+)
+
+/**
+ * Waar Cheapest begint (Dave, 8 oktober 2026, #263): je job, je level, je geslacht (sommige equip is er alleen voor het ene) en de equip die je draagt,
+ * met de velden die bij die equip horen (GEAR_FIELDS): wat je al hebt is gratis, Cheapest koopt alleen wat daarbovenop loont. Al de rest bouwt
+ * Cheapest zelf op, alsof je op dit level opnieuw begint: geen mob, geen gekozen potions en het standaardprofiel, met alleen het ene
+ * punt in de aanvalsskill (Lucky Seven, Energy Bolt) dat het nodig heeft om aan te vallen; de rest van de skillpunten zet Cheapest zelf. Onder level 10
+ * heb je nog geen punten van je 1e job, dus daar staat ook dat punt op 0.
+ * Wat je zelf invulde telt niet mee, ook een fout niet (meer skillpunten dan je level toelaat). Alleen je Max HP blijft staan als het een getal is:
+ * dat kies je niet, en de app kent geen HP per level met een bron voor elke job.
+ */
+export function freshStart(user: CheapestInput): CheapestInput {
+  const hp = user.profileDraft.hp.trim()
+  // De velden van je equip neemt Cheapest over waar parseProfile ze goedkeurt; een leeg of fout veld valt terug op de standaard (Victor, 8 oktober 2026).
+  const gear = Object.fromEntries(GEAR_FIELDS.filter((k) => validField(k, user.profileDraft[k])).map((k) => [k, user.profileDraft[k].trim()]))
+  const start: ProfileDraft = {
+    ...DEFAULT_PROFILE,
+    ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}),
+    ...gear,
+    level: user.profileDraft.level,
+    hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
+  }
+  // Wat je echt draagt (wearableSetup): een stuk boven je level telt niet mee (#264), en een leeg top-, bottom- of schoenenslot is je startkleding.
+  const { equipment, profile: profileDraft } = wearableSetup(start, user.equipment, user.job, user.gender)
+  return { job: user.job, gender: user.gender, equipment, drafts: [], potionChoice: NO_POTION_CHOICE, profileDraft }
+}
+
+/**
+ * Cheapest voor jouw stand (Dave, 8 oktober 2026, #263): de setup die het zelf opbouwt vanaf je job, level en equip (freshStart), met de wijzigingen en de besparing
+ * gemeten tegen jouw eigen stand, zodat Overnemen zegt wat er voor jou verandert.
+ */
+export function cheapestFor(user: CheapestInput): AdvisedSetup {
+  const setup = advisedSetup(freshStart(user))
+  const r = setup.result
+  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt, en met je startkleding.
+  const wearable = wearableSetup(user.profileDraft, user.equipment, user.job, user.gender)
+  const own: CheapestInput = { ...user, equipment: wearable.equipment, profileDraft: wearable.profile }
+  const after: CheapestInput = { ...own, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
+  const costBefore = costOf(own)
+  const saving = typeof costBefore === 'number' && typeof r.costAfter === 'number' ? costBefore - r.costAfter : null
+  return { ...setup, result: { ...r, changes: changesBetween(own, after), costBefore, saving } }
 }
 
 /**

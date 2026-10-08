@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { advisedSetup, MAX_EQUIP_ROUNDS } from './advisedSetup'
+import { advisedSetup, cheapestFor, freshStart, MAX_EQUIP_ROUNDS } from './advisedSetup'
 import type { CheapestInput } from './cheapestSettings'
-import { profileOf } from './cheapestSettings'
+import { changesBetween, profileOf } from './cheapestSettings'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
 import { defaultEquipment, isEmptyEntry, wornName } from './equipment'
@@ -260,5 +260,99 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
     expect(s.purchases.find((p) => p.slot === 'claw')).toBeUndefined()
     expect(wornName(s.equipment.claw)).toBe('Steel Igor')
     expect(s.profile.clawWatk).toBe(user.profileDraft.clawWatk)
+  })
+})
+
+describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de equip die je draagt (Dave, 8 oktober 2026, #263)', () => {
+  // Wat een speler invulde: een eigen wapen, een mob, en meer skillpunten dan level 19 toelaat (32 in de skills van de 1e job, de pot is 28).
+  const filled = (job: Job): CheapestInput => {
+    const user = input(job, 19, 'Pig')
+    return {
+      ...user,
+      equipment: { ...defaultEquipment(), claw: { pick: 'Steel Titans', name: '', stat: '' } },
+      profileDraft: { ...user.profileDraft, nimbleBody: '15', luckySeven: '17' },
+    }
+  }
+  const clean = (job: Job): CheapestInput => ({ ...input(job, 19, 'Pig'), drafts: [] })
+
+  it('neemt job, level, geslacht, Max HP en je equip over: mob, potions, skills en AP beginnen leeg of standaard', () => {
+    const user = filled('thief')
+    const start = freshStart(user)
+    // Je equip, met de velden die erbij horen (Dave, 8 oktober 2026): wat je draagt is gratis, en een leeg schoenenslot is je startkleding.
+    expect(start.equipment.claw).toBe(user.equipment.claw)
+    expect(wornName(start.equipment.shoes)).toBe('Leather Sandals')
+    expect(start.drafts).toEqual([])
+    expect(start.potionChoice).toBe(NO_POTION_CHOICE)
+    // Het standaardprofiel, met alleen het punt in de aanvalsskill; onder level 10 ook dat niet (geen punten van de 1e job).
+    expect(start.profileDraft).toEqual({ ...DEFAULT_PROFILE, level: '19', hp: DEFAULT_PROFILE.hp })
+    const gear = freshStart({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '13', wdef: '', lukExtra: '5', attackMs: '660' } }).profileDraft
+    expect([gear.clawWatk, gear.wdef, gear.lukExtra, gear.attackMs]).toEqual(['13', DEFAULT_PROFILE.wdef, '5', '660'])
+    // Een veld buiten zijn grenzen, geen heel getal of geen getal valt terug op de standaard, zodat Cheapest altijd kan rekenen (Victor, 8 oktober 2026).
+    const bad = { clawWatk: '1000', wdef: '-3', attackMs: '50', starWatk: '1.5', helpfulStranger: '2', dexExtra: 'x' }
+    const fixed = freshStart({ ...user, profileDraft: { ...user.profileDraft, ...bad } })
+    for (const k of Object.keys(bad) as (keyof typeof bad)[]) expect(fixed.profileDraft[k], k).toBe(DEFAULT_PROFILE[k])
+    expect(profileOf(fixed), 'fout in een equip-veld').not.toBeNull()
+    // Een stuk boven je level telt als leeg: een Steel Titans (level 15) op level 10, en Cheapest koopt er zelf een wapen voor (Dave, 8 oktober 2026).
+    const atTen = { ...user, profileDraft: { ...user.profileDraft, level: '10' } }
+    expect(isEmptyEntry(freshStart(atTen).equipment.claw)).toBe(true)
+    expect(freshStart(user).equipment.claw.pick).toBe('Steel Titans')
+    const armed = cheapestFor(atTen)
+    expect(wornName(armed.equipment.claw)).not.toBe('Steel Titans')
+    expect(armed.purchases.some((p) => p.slot === 'claw')).toBe(true)
+    const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
+    expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
+    // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.
+    expect(freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '19', hp: '796' } }).profileDraft.hp).toBe('796')
+    expect(freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '19', hp: 'abc' } }).profileDraft.hp).toBe(DEFAULT_PROFILE.hp)
+  })
+
+  it('geeft dezelfde setup, ook als het ingevulde profiel niet klopt', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      // Met dezelfde equip: alleen de skillpunten (te veel) en de mob verschillen, en die bouwt Cheapest zelf op.
+      const a = cheapestFor(filled(job))
+      const b = cheapestFor({ ...clean(job), equipment: filled(job).equipment })
+      // Het ingevulde profiel zelf rekent niet (te veel skillpunten), Cheapest wel.
+      if (job === 'thief') expect(profileOf(filled(job)), job).toBeNull()
+      expect(profileOf({ ...filled(job), ...a.result }), job).not.toBeNull()
+      expect(a.result.profileDraft, job).toEqual(b.result.profileDraft)
+      expect(a.result.drafts, job).toEqual(b.result.drafts)
+      expect(a.purchases, job).toEqual(b.purchases)
+      // Het wapen dat de speler draagt, houdt Cheapest of vervangt het: er staat altijd een wapen in (#202).
+      expect(isEmptyEntry(a.equipment.claw), job).toBe(false)
+    }
+  })
+
+  it('geeft op de levels van 1 tot 30 een profiel dat de app kan doorrekenen, en een prijs vanaf het level waarop de job kan aanvallen (Victor, 8 oktober 2026)', () => {
+    // De grensniveaus (Beginner, de questhoed op 5, het mes op 8 en 9, de 1e job op 10) en een paar daarboven; alle 30 duurt op CI te lang.
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      for (const level of [1, 4, 5, 7, 8, 9, 10, 11, 15, 20, 25, 30]) {
+        const r = cheapestFor({ ...clean(job), profileDraft: { ...DEFAULT_PROFILE, level: String(level) } }).result
+        expect(profileOf({ ...clean(job), ...r }), `${job} ${level}`).not.toBeNull()
+        // Een Magician valt aan met Energy Bolt, een skill van zijn 1e job: daaronder kent het model geen mob voor hem.
+        if (job !== 'magician' || level >= 10) expect(typeof r.costAfter, `${job} ${level}`).toBe('number')
+      }
+    }
+  }, 20_000)
+
+  it('meet de wijzigingen tegen jouw stand: per skill het verschil, met een min waar Cheapest er minder heeft', () => {
+    const user = filled('thief')
+    const r = cheapestFor(user).result
+    const skills = r.changes.find((c) => c.kind === 'skills')?.text ?? ''
+    // Cheapest kent dit level 28 punten toe, de speler zette er 32 in deze twee: minstens een van beide gaat omlaag.
+    const diff = (id: 'nimbleBody' | 'luckySeven') => Number(r.profileDraft[id]) - Number(user.profileDraft[id])
+    expect(diff('nimbleBody') + diff('luckySeven')).toBeLessThan(0)
+    for (const [id, name] of [['nimbleBody', 'Nimble Body'], ['luckySeven', 'Lucky Seven']] as const) {
+      const n = diff(id)
+      expect(skills.includes(`${name} `), name).toBe(n !== 0)
+      if (n !== 0) expect(skills, name).toContain(`${name} ${n > 0 ? '+' : '−'}${Math.abs(n)}`)
+    }
+    // Een Thief met een dagger heeft Double Stab; zet Cheapest die op 0, dan staat dat in de regel (Victor, 8 oktober 2026).
+    const dagger = { ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1', doubleStab: '12' } }
+    const withDagger = cheapestFor(dagger).result
+    const lost = Number(withDagger.profileDraft.doubleStab) - 12
+    if (lost !== 0) expect(withDagger.changes.find((c) => c.kind === 'skills')?.text ?? '').toContain(`Double Stab ${lost > 0 ? '+' : '−'}${Math.abs(lost)}`)
+    // Zonder verschil geen regel.
+    const same = { ...user, profileDraft: r.profileDraft, drafts: r.drafts, potionChoice: r.potionChoice }
+    expect(changesBetween(same, same)).toEqual([])
   })
 })

@@ -491,7 +491,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
     expect(tag.textContent).toBe('cheapest')
     expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
-    // Het wapen dat je al draagt kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
     expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
   })
@@ -517,7 +517,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
-    // Het wapen dat je draagt houdt Cheapest, dus het kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
     expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
@@ -619,10 +619,11 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
     expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
-  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en laat een stuk dat je houdt weg (Dave, 8 oktober 2026)', () => {
+  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en laat een wapen dat je draagt weg (Dave, 8 oktober 2026)', () => {
     const open = (wear: boolean) => {
       cleanup()
       localStorage.clear()
@@ -639,12 +640,12 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.classList.contains('buy')).toBe(true)
     expect(bought.querySelector('.advised-price')).toBeNull()
     expect(infoPrice(row)).toMatch(/^[\d.]+ meso$/)
-    // Een stuk dat je houdt kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
-    const kept = open(true)
-    expect(advisedRow(kept, 'Weapon')).toBeUndefined()
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
+    const worn = open(true)
+    expect(advisedRow(worn, 'Weapon')).toBeUndefined()
   })
 
-  it('geeft elke regel een dicht vraagteken, laat weg wat dit level niets kost (een stuk dat je houdt, een slot dat leeg blijft, ook omdat een losse top de overall beslaat), en noemt bij top en bottom samen de partner (Dave, 7 en 8 oktober 2026)', () => {
+  it('geeft elke regel een dicht vraagteken, laat weg wat dit level niets kost (een stuk dat je houdt, een slot dat leeg blijft, ook de overall naast een losse top), en noemt bij top en bottom samen de partner (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -658,13 +659,13 @@ describe('equipment: de claw past het profiel aan', () => {
       expect(within(r).getByRole('button', { name: 'Uitleg bij ' + r.querySelector('.slot-name')!.textContent }).getAttribute('aria-expanded')).toBe('false')
       expect(r.querySelector('dialog.item-dialog')).toBeNull()
     })
-    // Het wapen en de top die je houdt, de overall (een losse top neemt zijn plek in) en een cape die leeg blijft staan er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill. Net zo de top die je houdt, de overall (een losse top neemt zijn plek in) en een cape die leeg blijft.
     expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
     expect(advisedRow(dialog, 'Top')).toBeUndefined()
     expect(advisedRow(dialog, 'Overall')).toBeUndefined()
     expect(advisedRow(dialog, 'Cape')).toBeUndefined()
     expect(rows.filter((r) => r.classList.contains('empty'))).toHaveLength(0)
-    // Koopt Cheapest een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
+    // Koopt Cheapest een top en bottom samen in plaats van je eigen overall, dan noemen beide regels hun partner.
     cleanup()
     localStorage.clear()
     render(<App />)
@@ -1385,11 +1386,12 @@ describe('bewaren na elke wijziging', () => {
     h.type('5')
     h.save()
     expect(statShown('Magic Def')).toBe('5')
-    pick(cards()[0], 'Hat', 'Bronze Pride')
+    // Schoenen en hoed zijn nooit open: een leeg slot is je startkleding of de questhoed (Dave, 8 oktober 2026). Zonder geslacht zijn top en bottom
+    // dat wel, tot je ze kiest.
     pick(cards()[0], 'Top', 'Red Pao')
-    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
     expect(statShown('Magic Def')).toBe('5')
-    pick(cards()[0], 'Shoes', 'Red Enamel Boots')
+    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
+    pick(cards()[0], 'Hat', 'Bronze Pride')
     expect(statShown('Magic Def')).toBe('18')
     expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
   })
@@ -1608,16 +1610,30 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
   })
 
-  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: stats en equipment blijven', () => {
+  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: de stats blijven, en een wapen boven het nieuwe level blijft bewaard maar staat grijs (Dave, 8 oktober 2026, #264)', () => {
     atLevel('20')
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Weapon', 'Garnier')
     levelUp()
     fireEvent.click(backButton())
     const before = profileFields()
     fireEvent.click(backButton())
     expect(profileFields()).toEqual({ ...before, level: '19' })
+    expect(worn(cards()[0], 'Weapon')).toBe('Garnier')
+    // Steel Igor vraagt level 20: op level 19 kun je hem niet dragen. Hij blijft bewaard, maar staat grijs met het level vanaf wanneer hij meetelt.
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    fireEvent.click(backButton())
+    fireEvent.click(backButton())
+    expect(profileFields().level).toBe('19')
     expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    expect(profileFields().clawWatk).toBe(String(IGOR.watk))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
+    const row = advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!, 'Weapon')
+    expect(row.classList.contains('empty')).toBe(true)
+    expect(nameOf(row)).toBe('Steel Igor (vanaf lv 20)')
   })
 
   it('leest de snapshot synchroon: Level up en meteen Back in één stap zet het profiel terug', () => {
@@ -1797,24 +1813,25 @@ describe('Auto assign (#157)', () => {
     expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
   })
 
-  it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {
-    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
+  it('laat een wapen boven je level niet meetellen (Dave, 8 oktober 2026, #264), zodat Auto assign gewoon invult in plaats van "te weinig AP"', () => {
+    // Steel Igor vraagt lv 20: je draagt hem op lv 20 en zakt dan terug naar lv 9. Vroeger vroeg hij daar meer AP dan je had (de melding staat in
+    // autoFillAp.test.ts); nu blijft hij bewaard maar telt hij op lv 9 niet mee.
     atLevel('20')
     wear(IGOR.name)
     atLevel('9')
-    const before = { ...profileFields() }
+    openHomeEquipment()
+    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    closeDialogs()
     fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
-    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: je hebt er 65 en je equipment vraagt er 73. Er is niets ingevuld.')).toBeTruthy()
-    const after = profileFields()
-    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
+    expect(screen.queryByText(/Er is niets ingevuld/)).toBeNull()
   })
 
   it('past de speler daarna een stat aan, dan verdwijnt de melding van een mislukte poging', () => {
-    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
-    atLevel('20')
-    wear(IGOR.name)
-    atLevel('9')
+    // Een mislukte poging: zonder geldig level vult Auto assign niets in.
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '' } }))
+    render(<App />)
     fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()
@@ -3759,55 +3776,51 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(rows[4].calc).toBe(`${rows[2].result} / ${rows[3].result}`)
   })
 
-  it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {
+  it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     const first = mesoOf(total(yours()))
-    const before = mesoOf(diffCard().querySelector('tfoot td.invoice-diff')!.textContent)
-    // Wat de equip van Cheapest in de winkel kost: Difference toont het op de rij Shop (#192).
-    const shop = mesoOf(diffCard().querySelector('tbody tr td.invoice-meso:nth-child(3)')!.textContent)
-    expect(shop).toBeGreaterThan(0)
     take()
     const shown = mesoOf(diffCard().querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
-    // Na Overnemen draag je de equip, dus staat hij niet meer als Shop op je factuur; de besparing telt wat hij kostte wel mee.
-    expect(shown).toBe(first - mesoOf(total(yours())) - shop)
-    expect(shown).toBe(before)
+    // Overnemen zet alleen mob en potions over: wat je bespaart is wat jouw eigen factuur daarmee minder kost.
+    expect(shown).toBe(first - mesoOf(total(yours())))
+    expect(shown).toBeGreaterThan(0)
   })
 
-  it('zet met Overnemen de setup toe: jouw Total cost krijgt het totaal van de kaart, en Ongedaan maken zet alles terug', () => {
+  it('neemt met Overnemen alleen mob en potions over, laat je profiel en equip staan, en Ongedaan maken zet alles terug (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     const profileBefore = profileFields()
     const costBefore = levelCostText()
     const yoursBefore = total(yours())
-    const cheaperTotal = total(cheapestCard())
     const equipBefore = stored(EQUIPMENT_KEY)
     take()
-    // De equip van Cheapest staat nu in je setup (je koopt haar in het spel): zijn winkelprijs is geen kost van dit level meer op je eigen factuur.
-    expect(stored(EQUIPMENT_KEY)).not.toEqual(equipBefore)
-    expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(cheaperTotal))
-    // Ook na Overnemen staat de volledige factuur op de kaart.
-    expect(total(cheapestCard())).toBe(total(yours()))
+    // Je skillpunten, AP en equip blijven zoals ze waren: die wissel je in het spel niet vrij.
+    expect(profileFields()).toEqual(profileBefore)
+    expect(stored(EQUIPMENT_KEY)).toEqual(equipBefore)
+    expect(diffCard().textContent).toContain('Je skillpunten, AP en equip blijven zoals ze waren')
+    // Met de mob en potions van Cheapest kost jouw level minder.
+    expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(yoursBefore))
     expect(levelCostText()).not.toBe(costBefore)
     expect(diffCard().querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
     expect(profileFields()).toEqual(profileBefore)
     expect(levelCostText()).toBe(costBefore)
     expect(total(yours())).toBe(yoursBefore)
-    // Ongedaan maken zet ook je equip terug.
     expect(stored(EQUIPMENT_KEY)?.slots ?? defaultEquipment()).toEqual(equipBefore?.slots ?? defaultEquipment())
     const potions = stored(POTION_CHOICE_KEY)
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
   })
 
-  it('zegt dat je setup al de goedkoopste is als er niets te winnen valt, en toont ook dan de volledige factuur', () => {
+  it('toont na Overnemen en herladen geen Overnemen meer, en zegt "al de goedkoopste" precies als jouw level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     take()
-    // Na herladen (de gekozen setup staat in de opslag) is er niets meer te winnen.
+    // Na herladen (mob en potions staan in de opslag) zijn mob en potions al die van Cheapest: niets meer over te nemen.
     cleanup()
     render(<App />)
-    expect(diffCard().textContent).toContain('al de goedkoopste')
-    expect(total(cheapestCard())).toBe(total(yours()))
-    expect(total(cheapestCard())).toBeTruthy()
     expect(within(diffCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
+    expect(total(cheapestCard())).toBeTruthy()
+    // "Al de goedkoopste" hangt alleen aan of jouw level duurder is dan Cheapest (#263).
+    const notDearer = mesoOf(total(yours())) <= mesoOf(total(cheapestCard()))
+    expect(diffCard().textContent!.includes('al de goedkoopste')).toBe(notDearer)
   })
 
   it('zet onder Difference je HP Potion, MP Potion, Skill, ATT en DEF, en het monster alleen als dat verandert; geen AP-regel', () => {
@@ -3917,13 +3930,73 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     }
   })
 
+  it('bewaart equip boven je level, telt het niet mee en zet het grijs; terug op je level telt het weer (Dave, 8 oktober 2026, #264)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Steel Titans')
+    pick(cards()[0], 'Hat', 'Red Loosecap')
+    pick(cards()[0], 'Bottom', 'Red Cloth Pants')
+    closeDialogs()
+    const stored20 = stored(EQUIPMENT_KEY)
+    const freeOn = () => {
+      openHomeEquipment()
+      const text = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!.textContent
+      closeDialogs()
+      return text
+    }
+    // Op level 10: Steel Titans (lv 15) en Red Loosecap (lv 20) tellen niet mee, Red Cloth Pants (lv 10) wel. De opslag verandert niet.
+    atLevel('10')
+    expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
+    // Plus wat je in het begin gratis krijgt in een leeg slot: de schoenen (zonder geslacht geen top of bottom) en de questhoed (Dave, 8 oktober 2026).
+    expect(freeOn()).toBe('Equip: 3 items (free)')
+    openHomeEquipment()
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
+    const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
+    expect(nameOf(advisedRow(picker, 'Hat'))).toBe('Red Loosecap (vanaf lv 20)')
+    expect(advisedRow(picker, 'Hat').classList.contains('empty')).toBe(true)
+    expect(nameOf(advisedRow(picker, 'Weapon'))).toBe('Steel Titans (vanaf lv 15)')
+    expect(advisedRow(picker, 'Weapon').classList.contains('empty')).toBe(true)
+    expect(advisedRow(picker, 'Bottom').classList.contains('empty')).toBe(false)
+    closeDialogs()
+    // Total stats rekent zonder het wapen boven je level: de weapon attack van Steel Titans (13) telt niet mee (Victor, 8 oktober 2026).
+    fireEvent.click(viewButton('Total stats'))
+    const watkAt10 = Number(statShown('W.ATT'))
+    closeDialogs()
+    // Terug op level 20 telt alles weer mee.
+    atLevel('20')
+    expect(freeOn()).toBe('Equip: 4 items (free)')
+    fireEvent.click(viewButton('Total stats'))
+    expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
+  })
+
+  it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Top', 'Red Pao')
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    const d = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    // Equip: wat je draagt, ook als Cheapest het houdt; Cheapest rekent ermee en het kost niets.
+    const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
+    // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
+    // Red Pao, je startschoenen en de questhoed (zonder geslacht geen startbroek).
+    expect(worn.textContent).toBe('Equip: 3 items (free)')
+    // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
+    const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
+    const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
+    expect(buys).toBeGreaterThan(0)
+    // En dat je dit nog moet kopen (Dave, 8 oktober 2026).
+    expect(bought.textContent).toBe(`New equip: ${buys} ${buys === 1 ? 'item' : 'items'} (upgrade)`)
+    expect(within(bought).getByRole('button', { name: `New equip: ${buys} ${buys === 1 ? 'item' : 'items'} (upgrade)` })).toBeTruthy()
+  })
+
   it('maakt elke Cheapest-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
     setUpAdvisedDiffers()
     for (const title of CARDS) {
       const d = openView(title, 'Cheapest')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Equip: /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^(New equip|Equip): /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4174,8 +4247,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
           expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
           // Dezelfde mob als in Cheapest: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
-          // In Equip staat onder Char en Mob een derde rij, Equip, met het aantal stukken (Dave, 8 oktober 2026); die hoort niet bij deze controle.
-          expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: \d+ items?$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
+          // In Equip staan onder Char en Mob de rijen Equip en New equip (Dave, 8 oktober 2026); die horen niet bij deze controle.
+          expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: .*$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
           const own = openView(title, 'Profile')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
@@ -4194,7 +4267,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Profile')
-      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items?)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? \(free\))$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('profile')
@@ -4824,10 +4897,10 @@ describe('equipment: Your character als tabel', () => {
     atLevel('30')
     openHomeEquipment()
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    // Nog niets gedragen: een placeholder zonder toggle, met het potlood.
-    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe('')
+    // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026).
+    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
     expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
-    expect(within(dialog).queryByRole('button', { name: /^Equip: / })).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items (free)' })).toBeTruthy()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     closeDialogs()
@@ -4835,12 +4908,12 @@ describe('equipment: Your character als tabel', () => {
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = equipRow(dialog)
     // Het item-id van elk gedragen stuk, in de volgorde van de slots (Dave, 8 oktober 2026).
-    const ids = [itemId(IGOR.name), itemId('Red Pao')]
+    const ids = [itemId(IGOR.name), itemId('Brown Skullcap'), itemId('Leather Sandals'), itemId('Red Pao')]
     expect(ids.every((id) => /^\d+$/.test(id ?? ''))).toBe(true)
     expect(row.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
-    const toggle = within(row).getByRole('button', { name: 'Equip: 2 items' })
+    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items (free)' })
     expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4852,11 +4925,11 @@ describe('equipment: Your character als tabel', () => {
     const tables = [...popup.querySelectorAll<HTMLElement>('section.char-table-equip')]
     expect(tables.map((t) => [...t.querySelectorAll(':scope > .equip-head > span')].map((e) => e.textContent))).toEqual([['ATT', '', ''], ['DEF', '', '']])
     // In Profile een derde kolom met het potlood van elk slot (Dave, 8 oktober 2026).
-    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length, r.lastElementChild!.getAttribute('aria-label')]))).toEqual([[['Weapon', 3, 'Weapon wijzigen']], [['Top', 3, 'Top wijzigen']]])
+    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length, r.lastElementChild!.getAttribute('aria-label')]))).toEqual([[['Weapon', 3, 'Weapon wijzigen']], [['Hat', 3, 'Hat wijzigen'], ['Shoes', 3, 'Shoes wijzigen'], ['Top', 3, 'Top wijzigen']]])
     expect(tables[0].querySelector('.stat-line-name')!.textContent).toBe(IGOR.name)
     expect(tables[0].querySelector('.equip-stat')!.textContent).toBe(String(IGOR.watk))
     expect(tables[1].querySelector('.equip-stat')!.textContent).toMatch(/^\d+$/)
-    expect([...popup.querySelectorAll('.char-table-equip .stat-line')].map((e) => e.getAttribute('data-slot'))).toEqual(['Weapon', 'Top'])
+    expect([...popup.querySelectorAll('.char-table-equip .stat-line')].map((e) => e.getAttribute('data-slot'))).toEqual(['Weapon', 'Hat', 'Shoes', 'Top'])
     // Het potlood opent de slotpopup van dat slot, dezelfde als in de slotkeuze; sluiten laat de Equip-popup staan.
     fireEvent.click(within(tables[1]).getByRole('button', { name: 'Top wijzigen' }))
     const slotPopup = document.querySelector<HTMLElement>('dialog.slot-dialog')!
@@ -4906,7 +4979,8 @@ describe('equipment: Your character als tabel', () => {
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
-    expect(within(dialog).getByRole('button', { name: 'Equip: 1 item' })).toBeTruthy()
+    // Het wapen, de questhoed en je startschoenen.
+    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items (free)' })).toBeTruthy()
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {

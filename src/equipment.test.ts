@@ -9,6 +9,11 @@ import {
   commitStat,
   databaseStat,
   defaultEquipment,
+  dropAboveLevel,
+  wearableSetup,
+  STARTER_CLOTHES,
+  QUEST_HAT,
+  BEGINNER_KNIFE,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
@@ -1880,5 +1885,96 @@ describe('shopPrice: de winkelprijs van wat je draagt (Your character, Shop)', (
     expect(shopPrice('shoes', shop('Leather Sandals'))).toBeUndefined()
     // Een naam die in geen lijst staat.
     expect(shopPrice('hat', shop('Bestaat Niet'))).toBeUndefined()
+  })
+})
+
+describe('dropAboveLevel: equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264)', () => {
+  // Red Pao (top, level 20, 32 DEF) en Steel Titans (claw, level 15, 13 ATT), met een eigen hoed die de app niet kent.
+  const eq = { ...defaultEquipment(), top: choosePick('top', defaultEquipment().top, 'Red Pao'), claw: choosePick('claw', defaultEquipment().claw, 'Steel Titans'), hat: { pick: OTHER, name: 'Mijn muts', stat: '5' } }
+  const at = (level: string) => ({ ...DEFAULT_PROFILE, level, wdef: '100', clawWatk: '13' })
+
+  it('haalt elk stuk boven je level uit zijn slot, met zijn DEF eraf en een lege hand voor een wapen', () => {
+    const out = dropAboveLevel(at('14'), eq, 'thief')
+    expect(out.dropped.sort()).toEqual(['claw', 'top'])
+    expect(out.equipment.top.pick).toBe(NONE)
+    expect(out.equipment.claw.pick).not.toBe('Steel Titans')
+    expect(out.profile.wdef).toBe(String(100 - 32))
+    expect(out.profile.clawWatk).toBe('0')
+    // Een eigen item kent de app niet: dat blijft.
+    expect(out.equipment.hat).toBe(eq.hat)
+  })
+
+  it('laat staan wat je op je level kunt dragen, en doet niets zonder heel level', () => {
+    const fits = dropAboveLevel(at('20'), eq, 'thief')
+    expect(fits.dropped).toEqual([])
+    expect(fits.equipment).toBe(eq)
+    expect(dropAboveLevel(at('17'), eq, 'thief').dropped).toEqual(['top'])
+    expect(dropAboveLevel(at(''), eq, 'thief').dropped).toEqual([])
+  })
+})
+
+describe('wearableSetup: een leeg top-, bottom- of schoenenslot is je startkleding (Dave, 8 oktober 2026)', () => {
+  const prof = (over: Partial<ProfileDraft> = {}): ProfileDraft => ({ ...DEFAULT_PROFILE, level: '15', wdef: '50', ...over })
+
+  it('kleedt een leeg karakter in de startkleding van zijn geslacht, zonder geslacht alleen de schoenen', () => {
+    const male = wearableSetup(prof(), defaultEquipment(), 'thief', 'male').equipment
+    expect([male.top.pick, male.bottom.pick, male.shoes.pick]).toEqual([STARTER_CLOTHES.top.male, STARTER_CLOTHES.bottom.male, STARTER_CLOTHES.shoes])
+    const female = wearableSetup(prof(), defaultEquipment(), 'thief', 'female').equipment
+    expect([female.top.pick, female.bottom.pick]).toEqual([STARTER_CLOTHES.top.female, STARTER_CLOTHES.bottom.female])
+    const none = wearableSetup(prof(), defaultEquipment(), 'thief', null).equipment
+    expect([none.top.pick, none.bottom.pick, none.shoes.pick]).toEqual(['unknown', 'unknown', STARTER_CLOTHES.shoes])
+    // Een slot dat nog niet was ingevuld, laat je WDEF staan: die rekent al met wat je droeg.
+    expect(wearableSetup(prof(), defaultEquipment(), 'thief', 'male').profile.wdef).toBe('50')
+  })
+
+  it('laat staan wat je zelf draagt, en geen top of bottom naast een overall', () => {
+    const own = { ...defaultEquipment(), top: choosePick('top', defaultEquipment().top, 'Red Pao') }
+    expect(wearableSetup(prof({ level: '20' }), own, 'thief', 'male').equipment.top).toBe(own.top)
+    const overall = { ...defaultEquipment(), overall: { pick: OTHER, name: 'Mijn overall', stat: '20' } }
+    const dressed = wearableSetup(prof(), overall, 'thief', 'male').equipment
+    expect([dressed.top.pick, dressed.bottom.pick]).toEqual(['unknown', 'unknown'])
+  })
+
+  it('geeft een slot dat leeg raakt door een stuk boven je level de startkleding, met zijn DEF erbij', () => {
+    // Red Pao (top, level 20, 32 DEF) op level 15: eraf, en de White Undershirt (6 DEF) erin.
+    const eq = { ...defaultEquipment(), top: choosePick('top', defaultEquipment().top, 'Red Pao') }
+    const out = wearableSetup(prof(), eq, 'thief', 'male')
+    expect(out.dropped).toEqual(['top'])
+    expect(out.equipment.top.pick).toBe(STARTER_CLOTHES.top.male)
+    expect(out.profile.wdef).toBe(String(50 - 32 + 6))
+  })
+})
+
+describe('wearableSetup: de questhoed en het Beginner-mes (Dave, 8 oktober 2026)', () => {
+  const at = (level: string): ProfileDraft => ({ ...DEFAULT_PROFILE, level, clawWatk: '0', dagger: '0' })
+
+  it('geeft een leeg hat-slot vanaf level 5 de hoed van de quest Lucas Reply, voor elke job', () => {
+    expect(wearableSetup(at('4'), defaultEquipment(), 'thief', null).equipment.hat.pick).toBe('unknown')
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) expect(wearableSetup(at('5'), defaultEquipment(), job, null).equipment.hat.pick, job).toBe(QUEST_HAT)
+  })
+
+  it('geeft een leeg wapenslot alleen op level 8 en 9 de Fruit Knife, en alleen een job die hem kan dragen', () => {
+    for (const level of ['7', '10']) expect(wearableSetup(at(level), defaultEquipment(), 'thief', null).equipment.claw.pick, level).toBe('unknown')
+    const thief = wearableSetup(at('8'), defaultEquipment(), 'thief', null)
+    expect(thief.equipment.claw.pick).toBe(BEGINNER_KNIFE)
+    // Een dagger: de weapon attack van het mes, en de app rekent als met een dagger.
+    expect([thief.profile.clawWatk, thief.profile.dagger]).toEqual(['23', '1'])
+    expect(wearableSetup(at('9'), defaultEquipment(), 'bowman', null).equipment.claw.pick).toBe(BEGINNER_KNIFE)
+    expect(wearableSetup(at('9'), defaultEquipment(), 'warrior', null).equipment.claw.pick).toBe('unknown')
+    // Een eigen wapen gaat voor.
+    const sword = { ...defaultEquipment(), claw: choosePick('claw', defaultEquipment().claw, 'Sword') }
+    expect(wearableSetup(at('8'), sword, 'thief', null).equipment.claw).toBe(sword.claw)
+  })
+})
+
+describe('wearableSetup: een overall boven je level (Victor, 8 oktober 2026)', () => {
+  it('haalt hem eraf met zijn DEF, en geeft top en bottom de startkleding met hun DEF erbij', () => {
+    // Blue Sauna Robe (overall, level 30, 75 DEF) op level 20: top en bottom waren leeg door de overall.
+    const robe = changeEquipment({ ...DEFAULT_PROFILE, level: '20', wdef: '100' }, defaultEquipment(), 'overall', choosePick('overall', defaultEquipment().overall, 'Blue Sauna Robe'), 'thief')
+    const out = wearableSetup(robe.profile, robe.equipment, 'thief', 'male')
+    expect(out.dropped).toEqual(['overall'])
+    expect([out.equipment.top.pick, out.equipment.bottom.pick]).toEqual([STARTER_CLOTHES.top.male, STARTER_CLOTHES.bottom.male])
+    // De DEF van de overall eraf, die van White Undershirt (6) en Blue Jean Shorts (4) erbij.
+    expect(out.profile.wdef).toBe(String(Number(robe.profile.wdef) - 75 + 6 + 4))
   })
 })

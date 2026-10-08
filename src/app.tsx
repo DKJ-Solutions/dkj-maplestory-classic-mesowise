@@ -9,11 +9,11 @@ import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
 import type { ArmorSlot, Potion, Source, Stat } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
-import { advisedSetup } from './advisedSetup'
+import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, itemLevel, wearableSetup, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawUpgradeAdvice } from './clawUpgrade'
@@ -476,7 +476,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; equip?: BasedOnEquip; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; equip?: BasedOnEquip; bought?: BasedOnEquip; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Level cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -503,7 +503,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
-        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} bought={props.bought} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -1074,28 +1074,32 @@ function AbilityLine(props: {
 }
 
 /** De Total stats uit het statvenster: Attack (schadebereik), W.ATT en M.ATT (een van de twee 0), Accuracy, Evasion, tijd per aanval en bij een Warrior de weapon multiplier. */
-function TotalStatsCard(props: StatsCardProps & { equipment: Equipment }) {
+function TotalStatsCard(props: StatsCardProps & { equipment: Equipment; wearableDraft?: ProfileDraft }) {
   return <StatsCard {...totalStatsBody(props)} />
 }
 
 /** Wat de Total stats toont. De popup bij "Based on:" toont in plaats daarvan de stats zonder equipment (BaseStats). */
-function totalStatsBody(props: StatsCardProps & { equipment: Equipment }): StatsCardBody {
+function totalStatsBody(props: StatsCardProps & { equipment: Equipment; wearableDraft?: ProfileDraft }): StatsCardBody {
   const { job } = props
   const shown = (n: number | null) => (n === null ? '' : nfInt.format(n))
   // Max HP en Max MP bovenaan, zoals in het statvenster van het spel (Dave, 6 oktober 2026); Level up verhoogt ze, het potlood corrigeert.
   const bars = statFieldsFor(job).filter((f) => f.key === 'hp' || f.key === 'mp')
   // In het advies (Dave, 6 oktober 2026, #192) dezelfde afleiding, gevoed met het profiel van het advies en je huidige equipment, alleen om te lezen.
-  const lead = (d: ProfileDraft, advised: boolean) => (
+  const lead = (d: ProfileDraft, advised: boolean) => {
+    // De afgeleide regels rekenen met wat je echt draagt (#264): zonder wapen boven je level, met wat je in het begin krijgt.
+    const w = advised ? d : (props.wearableDraft ?? d)
+    return (
     <>
       {bars.map((f) => (
         <StatLine key={f.key} field={f} value={d[f.key]} readOnly={advised} onSave={(text) => props.onChange({ [f.key]: text })} />
       ))}
-      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(d, job)} readOnly onSave={() => {}} />
-      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(d, job))} readOnly onSave={() => {}} />
-      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(d, job))} readOnly onSave={() => {}} />
+      <StatLine key="attack" field={ATTACK_FIELD} value={attackText(w, job)} readOnly onSave={() => {}} />
+      <StatLine key="weapon-attack" field={WEAPON_ATTACK_FIELD} value={shown(totalAttack(w, job))} readOnly onSave={() => {}} />
+      <StatLine key="magic-attack" field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(w, job))} readOnly onSave={() => {}} />
       {!advised && isComputed(job) && <Help class="total-stats-hint">Verdeel je AP en controleer dan Accuracy en Avoid met het statvenster in het spel: de app telt het effect van je AP daar niet zelf in mee.</Help>}
     </>
-  )
+    )
+  }
   const mdef = wornMdef(props.equipment, job)
   return { ...props, className: 'total-stats', card: 'total', icon: 'chart', title: 'Total stats', lead, derived: mdef === null ? undefined : { magicDef: String(mdef) }, fields: shownStats(job).filter((f) => !ABILITY_KEYS.includes(f.key)) }
 }
@@ -1585,11 +1589,13 @@ function StatDialog(props: {
 /** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    Wat dit level kost met de setup van Cheapest, op één factuur. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die
-    Cheapest koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
+    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest rekent met de equip die je draagt (die heb je al, dus die is gratis) en bouwt de
+    rest zelf op uit je job en level: skillpunten, AP, mob en potions, alsof je opnieuw begint. Bovenaan de potions en ammo die je van 0 tot 100% van het
+    level gebruikt, eronder de equip die Cheapest erbij koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Onder "Based on:" staat
+    wat je draagt (Equip) en wat Cheapest erbij koopt (New equip). Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
-    Overnemen zet de stukken alleen in je equip hier.
+    Overnemen zet alleen de mob en potions van Cheapest in je setup; je skillpunten, AP en equip blijven zoals ze zijn.
   </>
 )
 
@@ -1622,8 +1628,15 @@ type BasedOnEquip = {
   edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void; slot: (slot: EquipSlot, button: HTMLButtonElement) => void; editing: EquipSlot | null }
 }
 
-/** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
-const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
+/**
+ * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items (free)"), of naar
+ * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of niets te kopen.
+ */
+const equipSummary = (items: readonly unknown[], kind: 'worn' | 'bought') => {
+  const n = `${items.length} ${items.length === 1 ? 'item' : 'items'}`
+  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `${n} (upgrade)`
+  return items.length === 0 ? 'Nog niets gekozen' : `${n} (free)`
+}
 
 /**
  * Bovenaan Level cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
@@ -1631,8 +1644,8 @@ const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog n
  * vraagteken achter de mob dat zegt waarom juist die. In Wearing een tweede kolom met het potlood van die rij (Dave, 8 oktober 2026). Het staat in de
  * popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'cheapest' | 'profile'; equip?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
-  const { stats, sheet, equip } = props
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'cheapest' | 'profile'; equip?: BasedOnEquip; bought?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
+  const { stats, sheet, equip, bought } = props
   // Your character (sheet profile): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan profile in plaats van expected.
   const advised = sheet === 'cheapest'
   // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
@@ -1640,6 +1653,52 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
     <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={expanded} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
     </button>
+  )
+  // Een rij met equipment: wat je draagt (Equip), en in Cheapest wat het erbij koopt (New equip, Dave, 8 oktober 2026).
+  const basedOnEquipRow = (equip: BasedOnEquip, title: string, dataKey: 'data-based-on-equip' | 'data-based-on-bought') => (
+    // Kort ("3 items") met het toggle-knopje dat de stukken toont, zoals Char (Dave, 8 oktober 2026); in Profile met het potlood dat de popup opent waar je
+    // kiest wat je draagt, in Cheapest alleen om te lezen. data-based-on-equip of data-based-on-bought zegt in de HTML wat het vak toont.
+    <div class="based-on-row">
+      <div class="based-on-label" {...{ [dataKey]: equip.ids }} data-sheet={sheet}>
+        <span class="sr-only">{title}: </span>
+        {equip.items.length > 0 ? (
+          <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`${title}: ${equip.summary}`} title={title} tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ [dataKey]: equip.ids, 'data-sheet': sheet }}>
+            {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die
+                voor DEF (armor), elk met twee kolommen: de naam van het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026). */}
+            {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
+              <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
+                <div class="char-table-head equip-head" aria-hidden="true">
+                  <span>{stat}</span>
+                  <span />
+                  {equip.edit && <span />}
+                </div>
+                {equip.items
+                  .filter((i) => i[3] === stat)
+                  .map(([slot, name, value, , key]) => (
+                    <div key={slot} class="stat-line" data-slot={slot}>
+                      <span class="stat-line-name">{name}</span>
+                      <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
+                        <span class="equip-value-num">
+                          <strong>{value}</strong>
+                        </span>
+                      </div>
+                      {/* In Profile in de derde kolom het potlood, zoals in de popup van Char: het opent de slotpopup van dit slot (Dave, 8 oktober 2026). */}
+                      {equip.edit && (
+                        <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={equip.edit.editing === key} aria-label={`${slot} wijzigen`} onClick={(e) => equip.edit!.slot(key, e.currentTarget)}>
+                          {PENCIL_ICON}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+              </section>
+            ))}
+          </PopupButton>
+        ) : (
+          <span class="based-on-value placeholder">{equip.summary}</span>
+        )}
+      </div>
+      {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
+    </div>
   )
   const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
@@ -1694,51 +1753,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           </div>
           {props.edit && pencil('Mob', props.edit.open.mob === 'worn', props.edit.mob)}
         </div>
-        {equip && (
-          // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
-          // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
-          <div class="based-on-row">
-            <div class="based-on-label" data-based-on-equip={equip.ids} data-sheet={sheet}>
-              <span class="sr-only">Equip: </span>
-              {equip.items.length > 0 ? (
-                <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
-                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die
-                      voor DEF (armor), elk met twee kolommen: de naam van het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026). */}
-                  {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
-                    <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
-                      <div class="char-table-head equip-head" aria-hidden="true">
-                        <span>{stat}</span>
-                        <span />
-                        {equip.edit && <span />}
-                      </div>
-                      {equip.items
-                        .filter((i) => i[3] === stat)
-                        .map(([slot, name, value, , key]) => (
-                          <div key={slot} class="stat-line" data-slot={slot}>
-                            <span class="stat-line-name">{name}</span>
-                            <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
-                              <span class="equip-value-num">
-                                <strong>{value}</strong>
-                              </span>
-                            </div>
-                            {/* In Profile in de derde kolom het potlood, zoals in de popup van Char: het opent de slotpopup van dit slot (Dave, 8 oktober 2026). */}
-                            {equip.edit && (
-                              <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={equip.edit.editing === key} aria-label={`${slot} wijzigen`} onClick={(e) => equip.edit!.slot(key, e.currentTarget)}>
-                                {PENCIL_ICON}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                    </section>
-                  ))}
-                </PopupButton>
-              ) : (
-                <span class="based-on-value placeholder">{equip.summary}</span>
-              )}
-            </div>
-            {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
-          </div>
-        )}
+        {equip && basedOnEquipRow(equip, 'Equip', 'data-based-on-equip')}
+        {/* In Cheapest een vierde rij (Dave, 8 oktober 2026): de equip die Cheapest erbij koopt, naast de equip die je al draagt hierboven. */}
+        {bought && basedOnEquipRow(bought, 'New equip', 'data-based-on-bought')}
       </div>
     </section>
   )
@@ -2239,6 +2256,8 @@ function EquipmentCard(props: {
   job: Job
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
+  /** Wat je echt draagt zoals de berekening het ziet (wearableSetup): zonder equip boven je level, met je startkleding; voor de free items onder "Based on:". */
+  wearable: Equipment
   /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   /** Alleen een Bowman: of hij Helpful Stranger heeft (#64); met de schakelaar aan biedt de ammo-lijst de bronze pijlen aan. */
@@ -2401,17 +2420,25 @@ function EquipmentCard(props: {
       </StatDialog>
     )
   }
+  /** Het level dat een stuk vraagt als dat boven je eigen level ligt (#264), anders null. */
+  const aboveLevel = (slot: EquipSlot, name: string | null): number | null => {
+    const needs = name === null ? undefined : itemLevel(slot, name)
+    return needs !== undefined && props.level !== undefined && needs > props.level ? needs : null
+  }
   // De slotkeuze achter het potlood bij Equip (Dave, 8 oktober 2026): een popup met de slots, elk met het potlood dat de slotpopup opent (zoeken, kiezen, de stat corrigeren).
   const pickRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const label = slotLabel(slot)
+    // Een stuk boven je level staat grijs, met het level vanaf wanneer je het kunt dragen (Dave, 8 oktober 2026, #264): het blijft bewaard, maar telt niet mee.
+    const from = aboveLevel(slot, name)
+    const shown = name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)
     return (
       <BillRow
         key={slot}
-        tone={name === null ? 'empty' : ''}
+        tone={name === null || from !== null ? 'empty' : ''}
         slot={label}
-        name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
+        name={shown === null ? null : from === null ? shown : `${shown} (vanaf lv ${from})`}
         fullName={name ?? undefined}
         facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice(slot, entry) ?? null)}
         action={
@@ -2448,10 +2475,10 @@ function EquipmentCard(props: {
       {!pickOpen && editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
     </>
   )
-  // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
-  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
+  // De rijen onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Equip; in Profile met het potlood, in Cheapest alleen lezen) en in Cheapest wat het erbij koopt (New equip).
+  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], kind: 'worn' | 'bought', edit?: BasedOnEquip['edit']): BasedOnEquip => {
     const items = list.map((l) => l.item)
-    return { summary: equipSummary(items), items, ids: list.map((l) => l.id).join(' '), edit }
+    return { summary: equipSummary(items, kind), items, ids: list.map((l) => l.id).join(' '), edit }
   }
   // Per stuk ook zijn item-id, voor data-based-on-equip (Dave, 8 oktober 2026); een eigen item heeft er geen en heet daar "own".
   // En de ATT of DEF die het stuk geeft, met de naam van die stat, voor de Equip-popup onder "Based on:" (Dave, 8 oktober 2026); onbekend: een vraagteken.
@@ -2459,17 +2486,20 @@ function EquipmentCard(props: {
     const value = wornStat(slot, entry)
     return [value === undefined ? '?' : nfInt.format(value), statName(slot, props.job)] as const
   }
+  // Wat je echt draagt (wearableSetup): zonder stukken boven je level (#264), met je startkleding in een leeg top-, bottom- of schoenenslot.
   const wornList = slots.flatMap((slot) => {
-    const entry = props.equipment[slot]
+    const entry = props.wearable[slot]
     const name = wornName(entry)
     if (name === null) return []
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
-  const advisedList = props.cheapest
+  // Wat Cheapest erbij koopt (Dave, 8 oktober 2026): de slots waar het een ander stuk neemt dan je draagt. De stars of pijlen die de factuur telt,
+  // koop je per stuk; die staan onder Useable, niet hier.
+  const boughtList = props.cheapest
     ? slots.flatMap((slot) => {
         const c = props.cheapest![slot]
-        const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
+        const name = c.changed ? c.cheapest : null
         return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name), ...statOf(slot, { pick: name, name: '', stat: '' }), slot] as const, id: itemId(name) ?? 'own' }]
       })
     : []
@@ -2477,7 +2507,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList, 'worn') : undefined) : equipRow(wornList, 'worn', { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={view === 'advised' && props.cheapest ? equipRow(boughtList, 'bought') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -3805,17 +3835,20 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
           Ongedaan maken
         </button>
       ) : (
-        <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
-          Overnemen
-        </button>
+        // Overnemen neemt alleen mob en potions over (#263): verschillen die niet, dan valt er niets over te nemen.
+        r.changes.some((c) => c.kind === 'mob' || c.kind === 'hp' || c.kind === 'mp') && (
+          <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
+            Overnemen
+          </button>
+        )
       )}
     </div>
   )
   return (
     <>
-      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste, ook je equip.</p>}
-      {/* Alleen andere base AP die geen meso scheelt, is ook "al de goedkoopste": de AP-regel staat niet in de lijst. */}
-      {!props.applied && !props.bought && r.changes.every((c) => c.kind === 'ap') && !(saving !== null && saving >= 1) ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
+      {props.applied && <p class="hint">Overgenomen: je mob en potions zijn nu die van Cheapest. Je skillpunten, AP en equip blijven zoals ze waren.</p>}
+      {/* "Al de goedkoopste" als jouw setup dit level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263). */}
+      {!props.applied && saving !== null && saving < 1 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
   )
 }
@@ -3841,7 +3874,12 @@ export function App() {
   const computed = isComputed(job)
   const jobDirty = useRef(false)
   const [gender, setGender] = useState<Gender | null>(() => loadGender(storage))
-  const parsed = useMemo(() => parseProfile(profileDraft, job, gender), [profileDraft, job, gender])
+  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
+  // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zo'n stuk blijft bewaard, maar de berekening rekent zonder, met zijn ATT of
+  // DEF eraf. Ga je weer een level omhoog, dan telt het vanzelf weer mee. Wat je ziet en bewerkt, blijft `profileDraft` en `equipment`.
+  // En een leeg top-, bottom- of schoenenslot telt als je startkleding (Dave, 8 oktober 2026, wearableSetup).
+  const wearable = useMemo(() => wearableSetup(profileDraft, equipment, job, gender), [profileDraft, equipment, job, gender])
+  const parsed = useMemo(() => parseProfile(wearable.profile, job, gender), [wearable, job, gender])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
   // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
   // (een getal met de verkeerde formule is erger dan geen getal); wat je getoond krijgt, is `computed` hieronder.
@@ -3850,7 +3888,7 @@ export function App() {
   const usedPotions = useMemo(() => resolvePotions(job, potionChoice, parsedProfile), [job, potionChoice, parsedProfile])
   const profile = useMemo(() => (computed && parsedProfile ? { ...parsedProfile, potions: usedPotions } : null), [computed, parsedProfile, usedPotions])
   // Een Thief met een dagger (#170): het wapen- en het skillpunt-advies gaan dan over daggers en Double Stab.
-  const dagger = job === 'thief' && profileDraft.dagger.trim() === '1'
+  const dagger = job === 'thief' && wearable.profile.dagger.trim() === '1'
   // De melding staat bij de kaart waar het foute veld staat.
   const statError = 'error' in parsed && !isSkillKey(parsed.key) ? parsed.error : null
   // Weapon attack en WDEF volgen uit je equipment; hun melding staat dus op de equipment-kaart.
@@ -3865,7 +3903,6 @@ export function App() {
   // Pas schrijven na een wijziging van de gebruiker, zodat de eerste render niets overschrijft.
   const dirty = useRef(false)
   const profileDirty = useRef(false)
-  const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
   const equipmentDirty = useRef(false)
   // `equipment` is altijd de toegepaste stand: die zit verwerkt in het profiel, wordt bewaard, voedt het
   // advies en gaat in de undo-snapshot. De refs ernaast zijn voor synchrone reads: twee events vóór een
@@ -3896,7 +3933,7 @@ export function App() {
   const potionAdvice = useMemo(() => advisePotions(drafts, profile), [drafts, profile])
   const invoice = useMemo(() => levelInvoice(drafts, profile), [drafts, profile])
   const potionLines = <PotionInfo potions={usedPotions} draft={profileDraft} profile={parsedProfile} />
-  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(equipment, job)), [drafts, profile, equipment, job])
+  const armorAdvice = useMemo(() => armorUpgradeAdvice(drafts, profile, wornWdef(wearable.equipment, job)), [drafts, profile, wearable, job])
   // Het level uit het profiel, voor de zoekbalk van de equipment (#188); een ongeldig level beperkt niets.
   const characterLevel = /^\d+$/.test(profileDraft.level.trim()) ? Number(profileDraft.level) : undefined
 
@@ -3916,9 +3953,10 @@ export function App() {
   // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
   // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
   // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
-  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipment: Equipment; equipTexts: EquipTexts; bought: boolean; saving: number | null } | null>(null)
+  // Overnemen raakt alleen mob en potions (#263): je profiel en equip blijven, dus die vergelijkt de snapshot met wat er vóór stond.
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipTexts: EquipTexts; bought: boolean; saving: number | null } | null>(null)
   const cheapestShown =
-    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.equipment === equipment && cheapest.before.job === job
+    cheapest !== null && cheapest.result.drafts === drafts && cheapest.before.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.equipment === equipment && cheapest.before.job === job
       ? cheapest.result
       : null
   const appliedSaving = cheapestShown ? cheapest!.saving : null
@@ -3928,7 +3966,8 @@ export function App() {
   // De setup van Advised (Dave, 6 oktober 2026, #192), één berekening voor alles: de goedkoopste instellingen met de equip die Advised koopt (tot je volgende upgrade
   // in dat slot, zoals het Report; was dit level, #188), om en om uitgerekend tot het equip-advies niets meer koopt. Daaruit komen de Equip-popup, de factuur van
   // Advised met zijn Shop-regels, Difference en Overnemen.
-  const advisedSet = useMemo(() => (computed ? advisedSetup(userInput) : null), [computed, userInput])
+  // Cheapest bouwt zijn setup zelf op uit je job en level (Dave, 8 oktober 2026, #263), niet uit wat je invulde; de wijzigingen gaan tegen jouw stand.
+  const advisedSet = useMemo(() => (computed ? cheapestFor(userInput) : null), [computed, userInput])
   const cheapestLive = advisedSet?.result ?? null
   const cheapestEquip = advisedSet?.cheapest ?? null
   // De mob waarop het advies rekent, zoals Advised: Monster hem toont: onder "Based on:" in Level cost: Equip en Useable (Dave, 7 oktober 2026).
@@ -3953,31 +3992,26 @@ export function App() {
     if (!cheapestLive) return
     const result = cheapestLive
     const before = userInput
-    // De equip van Advised gaat in je setup (je koopt haar in het spel), met het profiel dat erbij hoort; de uitkomst van de berekening volgt daarna.
-    if (advisedGear.equipment !== before.equipment) {
-      clearPending()
-      writeEquipment(advisedGear.equipment)
-    }
+    // Overnemen zet alleen de mob en de potions van Cheapest in je setup (Dave, 8 oktober 2026, #263): die wissel je in het spel vrij. Je skillpunten,
+    // AP en equip blijven zoals ze zijn; de lijst noemt hun verschil alleen. Wat je bespaart, is wat dit level met die mob en potions minder kost.
+    const taken: CheapestInput = { ...before, drafts: result.drafts, potionChoice: result.potionChoice }
+    const now = levelInvoice(taken.drafts, cheapestProfile(taken))
+    if (now.kind !== 'invoice') return
     if (result.drafts !== before.drafts) {
       dirty.current = true
       setDrafts(result.drafts)
     }
-    if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
     if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
     setPlaced(null)
-    setCheapest({ result, before, equipment: advisedGear.equipment, equipTexts: liveEquipTexts, bought, saving: cheapestSaving })
+    setCheapest({ result, before, equipTexts: liveEquipTexts, bought, saving: invoiceSaving(invoice, now, null) })
   }
+
   const undoCheapest = () => {
     if (!cheapestShown || !cheapest) return
     const { before } = cheapest
     dirty.current = true
     setDrafts(before.drafts)
-    writeProfile(() => before.profileDraft)
     writePotionChoice(before.potionChoice)
-    if (before.equipment !== equipmentRef.current) {
-      clearPending()
-      writeEquipment(before.equipment)
-    }
     setPlaced(null)
     setCheapest(null)
   }
@@ -4152,6 +4186,7 @@ export function App() {
       <EquipmentCard
         job={job}
         equipment={equipment}
+        wearable={wearable.equipment}
         pending={pending}
         helpfulStranger={profileDraft.helpfulStranger === '1'}
         onHelpfulStranger={changeHelpfulStranger}
@@ -4209,8 +4244,9 @@ export function App() {
 
       {/* Ability points en Total stats zijn vaste feiten, zonder advies: een eigen blok "Stats" onder Monster en Potions, zodat de kaarten met een rapport (Equip, Skillpoints, Monster, Potions) bovenaan bij elkaar staan (Dave, 5 oktober 2026). Zonder zichtbare kop en met wat extra ruimte erboven; de naam staat in aria-label. */}
       <section class="stats-group" aria-label="Stats">
-        <ProfileCard job={job} draft={profileDraft} equipment={equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
-        <TotalStatsCard job={job} draft={profileDraft} equipment={equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
+        {/* Auto assign en je stats rekenen met wat je op je level kunt dragen (#264). */}
+        <ProfileCard job={job} draft={profileDraft} equipment={wearable.equipment} error={characterError} onChange={updateProfile} advised={advisedProfile} />
+        <TotalStatsCard job={job} draft={profileDraft} wearableDraft={wearable.profile} equipment={wearable.equipment} error={totalError} onChange={updateProfile} advised={advisedProfile} />
       </section>
 
       {/* Eén kaart met je setup in game, de goedkoopste setup en het verschil, met wat er verandert en Overnemen (Dave, 6 oktober 2026, #183). */}
