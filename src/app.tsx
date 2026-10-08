@@ -3405,9 +3405,10 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 
 /**
  * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links het teken, dan het getal en wat het is, en onderaan
- * de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat.
+ * de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
+ * label en staat de som klein eronder (`note`), zodat de kolom met labels rustig blijft.
  */
-function MulCalc(props: { factors: readonly { value: string; what: ComponentChildren }[]; result: { value: string; what: string } }) {
+function MulCalc(props: { factors: readonly { value: string; what: string; note?: ComponentChildren }[]; result: { value: string; what: string } }) {
   return (
     <table class="why-mul">
       <tbody>
@@ -3415,7 +3416,10 @@ function MulCalc(props: { factors: readonly { value: string; what: ComponentChil
           <tr key={i}>
             <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
             <td class="why-mul-num">{f.value}</td>
-            <td class="why-mul-what">{f.what}</td>
+            <td class="why-mul-what">
+              {f.what}
+              {f.note && <small class="why-mul-note">{f.note}</small>}
+            </td>
           </tr>
         ))}
         <tr class="why-mul-result">
@@ -3529,11 +3533,11 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           detail: (
             <MulCalc
               factors={[
-                { value: nfPct.format(f.k), what: 'skillschade' },
+                { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: 'Statfactor', note: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
               ]}
-              result={{ value: oneDecimal(w.rawMax), what: `max per ${piece}` }}
+              result={{ value: oneDecimal(w.rawMax), what: `Max per ${piece}` }}
             />
           ),
           result: oneDecimal(w.rawMax),
@@ -3543,11 +3547,11 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           detail: (
             <MulCalc
               factors={[
-                { value: nfPct.format(f.k), what: 'skillschade' },
+                { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: 'Statfactor', note: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
               ]}
-              result={{ value: oneDecimal(w.rawMin), what: `min per ${piece}` }}
+              result={{ value: oneDecimal(w.rawMin), what: `Min per ${piece}` }}
             />
           ),
           result: oneDecimal(w.rawMin),

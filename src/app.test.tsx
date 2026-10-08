@@ -3504,10 +3504,11 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const damage = whyDetail(dialog, 'Schade per aanval')
     expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
     // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
-    expect(damage[0].calc).toMatch(/^\d+% skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ 1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = ([\d.,]+) max per star$/)
-    expect(damage[0].calc.endsWith(`= ${damage[0].result} max per star`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^\d+% skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ 0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = [\d.,]+ min per star$/)
-    expect(damage[1].calc.endsWith(`= ${damage[1].result} min per star`)).toBe(true)
+    // De stats als kort label, met hun som klein eronder (Dave, 8 oktober 2026).
+    expect(damage[0].calc).toMatch(/^\d+% Skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ Statfactor ?1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = ([\d.,]+) Max per star$/)
+    expect(damage[0].calc.endsWith(`= ${damage[0].result} Max per star`)).toBe(true)
+    expect(damage[1].calc).toMatch(/^\d+% Skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ Statfactor ?0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = [\d.,]+ Min per star$/)
+    expect(damage[1].calc.endsWith(`= ${damage[1].result} Min per star`)).toBe(true)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)
