@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-**11 / 18 minor entries** <!-- pending-tally -->
+**12 / 19 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/home-only-level-cost · 20261008-192942Z
+
+The home screen shows only the Level cost card. Behind the number of throwing stars on the bill, the explanation now reads top
+down: attacks per kill × stars per attack × kills, then why that many attacks on this mob, why that many kills, and what
+recharging costs. The damage per attack opens as a stacked formula, and the stat factor in it opens as its own stacked sum, with
+boxes around what is divided by 100.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Opening the app now lands straight on what a level costs, and every number in the throwing-stars explanation can be tapped to
+see where it comes from, down to your own LUK and STR + DEX.
+
+**Score:** 3
+
+#### Pull Request
+
+Home screen shows only Level cost, with the ammo bill explained step by step
+
+[PR #270](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/270)
+
+---
 
 ### DEPLOY: app/262-profile-cost-reason · 20261008-152130Z
 
