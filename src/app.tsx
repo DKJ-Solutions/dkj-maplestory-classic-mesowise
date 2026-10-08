@@ -331,7 +331,7 @@ function ChoiceSave(props: { onSave: () => void }) {
  * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
  * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
-function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void; computed: boolean }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
@@ -354,6 +354,18 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
       {open && (
         <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
           <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+          {/* De uitleg over de schatting stond onder de kaarten; hij staat nu hier onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
+          {props.computed && (
+            <details class="menu-help">
+              <summary>Help</summary>
+              <p class="hint">
+                Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
+                oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+                tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+                Zegt het spel iets anders over je monster, pas zijn info dan aan.
+              </p>
+            </details>
+          )}
           {/* Het offline-bestand zelf heeft geen download nodig. */}
           {import.meta.env.MODE !== 'offline' && (
             <div class="menu-download">
@@ -4144,7 +4156,7 @@ export function App() {
     <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
     <ProfileProblem.Provider value={profileProblem}>
-      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} computed={computed} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
       <div class="level-row">
@@ -4240,15 +4252,6 @@ export function App() {
       <TotalCostCard invoice={invoice} cheapest={computed && cheapestLive ? cheapestInvoice : null} computed={computed} job={job} level={profileDraft.level}>
         <CheapestDetails live={cheapestLive} saving={cheapestShown ? appliedSaving : cheapestSaving} applied={cheapestShown} equipTexts={cheapestShown ? cheapest!.equipTexts : liveEquipTexts} bought={cheapestShown ? cheapest!.bought : bought} onApply={applyCheapest} onUndo={undoCheapest} />
       </TotalCostCard>
-
-      {computed && (
-        <p class="note">
-          Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
-          oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-          tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-          Zegt het spel iets anders over je monster, pas zijn info dan aan.
-        </p>
-      )}
 
       <footer class="credit">
         Spelgegevens:{' '}
