@@ -55,6 +55,7 @@ Dave, October 8, 2026, given in steps during the session:
 - the buttons in the "Based on:" boxes (Char, Mob, Equip) show the plain eye of the card buttons, no circle.
 - the Profile character popup behind that eye gets a pencil in the last column of every row, as on the cards, and no question marks there.
 - behind Accuracy and Evasion in that popup an info button explains the calculation: what goes in, the breakdown with your numbers, and the formula's source.
+- Nimble Body in that popup gets an info button too: what it gives per level, where you stand, and its skill page as source.
 
 ### CREATE
 
@@ -67,6 +68,7 @@ Dave, October 8, 2026, given in steps during the session:
 - [x] `src/itemIds.ts`: item name to its MeowDB item-db id, read from the source URL every item row already carries (the app holds no other id); an own item reads `own`
 - [x] Head coin class renamed to `level-cost-icon`: `meso-icon` already sized the small coins next to amounts
 - [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
+- [x] `SkillLine` takes `info`: Nimble Body shows `NimbleBodyInfo`; the rule hiding a skill's effects in that compact popup now targets only the row's own effects, so the popup's effects show
 - [x] `StatLine` takes an `info` popup after the name; `StatFormula` fills it for Accuracy and Evasion, with `statFormulaSource` in `src/expectedStats.ts` naming the MeowDB page per job
 - [x] `AdvisedCharacter` takes an optional `onChange`: in Profile the rows are editable (pencils, writing the profile), in Cheapest read-only; CSS gives the pencil column its own width in that compact popup
 - [x] Based-on boxes use `EyeIcon`; the `≈` and person badges (`EXPECTED_ICON`, `ACTUAL_ICON`) had no other user and are removed

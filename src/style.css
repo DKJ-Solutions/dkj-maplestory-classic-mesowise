@@ -814,7 +814,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
 /* Het i-knopje direct achter de naam van Accuracy en Evasion in je profiel (Dave, 8 oktober 2026), in de tekstkleur, zoals achter een stuk. */
 .stat-line-name:has(> .info-toggle) { display: flex; align-items: center; gap: 0; }
-.stat-line-name > .info-toggle { color: var(--text); }
+.stat-line-name > .info-toggle, .skill-name.with-info > .info-toggle { color: var(--text); }
+.skill-name.with-info { display: flex; flex-wrap: wrap; align-items: center; }
 .based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
@@ -836,7 +837,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-dialog .equip-value-num, .item-dialog .ability-line .ap-total .equip-value-num { font-size: 0.875rem; }
 .item-dialog .skill-row > span:first-child { font-size: 0.9375rem; }
 /* Wat een skill kost en geeft staat in Skillpoints zelf; hier alleen de naam en het level, zoals een factuurregel. */
-.item-dialog .skill-row > span:first-child .skill-mp { display: none; }
+.item-dialog .skill-row > span:first-child > .skill-mp { display: none; }
 /* Diezelfde regels in de uitleg achter het vraagteken, onder de tekst. */
 .skill-mp.skill-why { margin-top: 0.5rem; font-size: 0.875rem; }
 /* Het karakter achter "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points, Skillpoints en Total stats, elk met een kop

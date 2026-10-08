@@ -4154,6 +4154,15 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         expect(row.lastElementChild!.classList.contains('equip-edit') || row.lastElementChild!.tagName === 'DIALOG', row.textContent!).toBe(true)
       }
       expect(stats.querySelector('.char-table .help-toggle')).toBeNull()
+      // Achter Nimble Body een i-knopje met wat hij geeft en zijn bron (Dave, 8 oktober 2026); de andere skills hebben er geen.
+      expect([...stats.querySelectorAll('.char-table-skills .info-toggle')].map((b) => b.getAttribute('aria-label'))).toEqual(['Info over Nimble Body'])
+      fireEvent.click(within(stats).getByRole('button', { name: 'Info over Nimble Body' }))
+      const nb = stats.querySelector<HTMLElement>('.char-table-skills dialog.item-dialog')!
+      expect(nb.querySelector('.title-tag')!.textContent).toBe('info')
+      expect(nb.querySelector('.item-why')!.textContent).toMatch(/^Een passieve skill van de Thief: elk level geeft \+1 Accuracy en \+1 Evasion, tot level 15\./)
+      expect(getComputedStyle(nb.querySelector('.skill-mp')!).display).not.toBe('none')
+      expect(nb.querySelector('.source a')!.getAttribute('href')).toBe('https://meowdb.com/msclassic/skills/thief/nimble-body')
+      fireEvent.click(within(nb).getByRole('button', { name: 'Sluiten' }))
       // Wel een i-knopje achter Accuracy en Evasion, met de uitleg, de opbouw en de bron van de formule (Dave, 8 oktober 2026).
       for (const name of ['Accuracy', 'Evasion']) {
         const row = [...stats.querySelectorAll<HTMLElement>('.char-table-total .stat-line')].find((r) => r.firstElementChild!.textContent === name)!

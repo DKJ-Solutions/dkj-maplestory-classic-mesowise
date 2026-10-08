@@ -2572,7 +2572,7 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
           {levels
             .filter((s) => s.job === job)
             .map((s) => (
-              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.inCharacter} onChange={props.onChange} />
+              <SkillLine key={s.key} skill={s} draft={draft} job={props.job} wdef={wdef} readOnly={props.readOnly} why={props.inCharacter} info={props.inCharacter && !props.readOnly} onChange={props.onChange} />
             ))}
         </div>
       ))}
@@ -2673,6 +2673,35 @@ function BaseStats(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Pa
 }
 
 /**
+ * Wat Nimble Body geeft, achter zijn i-knopje in je profiel (Dave, 8 oktober 2026): per level evenveel Accuracy en Evasion, waar je nu staat
+ * en wat het volgende level geeft, en dat de app het meetelt in Accuracy en Evasion. Met de pagina van de skill als bron.
+ */
+function NimbleBodyInfo(props: { level: number; lines: SkillLinePart[][] }) {
+  const { level } = props
+  const nb = NIMBLE_BODY
+  return (
+    <>
+      <p class="item-verdict">
+        Lv. {level} van {nb.maxLevel}
+      </p>
+      <p class="item-why">
+        Een passieve skill van de Thief: elk level geeft +{nb.accuracyPerLevel} Accuracy en +{nb.avoidPerLevel} Evasion, tot level {nb.maxLevel}.{' '}
+        {level > 0 ? `Nu geeft hij +${level * nb.accuracyPerLevel} Accuracy en +${level * nb.avoidPerLevel} Evasion.` : 'Je hebt hem nog niet geleerd.'} De app telt hem mee in je
+        Accuracy en Evasion{level > 0 ? '; hun i-knopje toont hem als eigen regel' : ''}.
+      </p>
+      {props.lines.length > 0 && <SkillEffects lines={props.lines} class="skill-why" />}
+      <p class="source">
+        Bron:{' '}
+        <a href={nb.source.url} target="_blank" rel="noopener noreferrer">
+          NiaMeowDB
+        </a>
+        , opgehaald op {formatDate(nb.source.retrieved)}.
+      </p>
+    </>
+  )
+}
+
+/**
  * Eén skill in de popup van Skillpoints (Dave, 5 oktober 2026): links de naam met wat hij kost en geeft, rechts alleen het
  * level dat er nu staat en het potlood, net als bij equipment. Wijzigen gaat in een eigen popup met − en +; hoger dan het
  * maximum van de skill of dan wat de pot nog over laat kan niet.
@@ -2685,6 +2714,8 @@ function SkillLine(props: {
   readOnly?: boolean
   /** In het karakter onder "Based on:" (Dave, 7 oktober 2026): een vraagteken achter het level van een skill met punten, dat zegt waarom hij zo hoog staat. */
   why?: boolean
+  /** In je profiel onder "Based on:" (Dave, 8 oktober 2026): een i-knopje achter de naam van Nimble Body, met wat hij geeft. */
+  info?: boolean
   onChange: (patch: Partial<ProfileDraft>) => void
 }) {
   const { skill: s, draft } = props
@@ -2707,8 +2738,13 @@ function SkillLine(props: {
   const lines = skillMpLines(s, props.wdef)
   return (
     <div class="skill-row">
-      <span>
+      <span class={props.info && s.key === 'nimbleBody' ? 'skill-name with-info' : undefined}>
         {s.name}
+        {props.info && s.key === 'nimbleBody' && (
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${s.name}`} title={s.name} tag="info">
+            <NimbleBodyInfo level={now} lines={lines} />
+          </PopupButton>
+        )}
         {lines.length > 0 && <SkillEffects lines={lines} />}
       </span>
       <div class="equip-value" aria-label={`${s.name} level ${value.trim() || 'onbekend'}`}>
