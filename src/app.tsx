@@ -2470,6 +2470,11 @@ function EquipmentCard(props: {
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
+  // Je stars of pijlen horen bij wat je equipped hebt (Dave, 8 oktober 2026): is het ammo-slot leeg, dan de ammo waarmee je factuur rekent.
+  const billAmmo = slots.includes('ammo') && !wornList.some((w) => w.item[4] === 'ammo') ? (props.useable('worn')?.ammo ?? null) : null
+  if (billAmmo !== null) {
+    wornList.push({ item: [slotLabel('ammo'), familyName('ammo', billAmmo), ...statOf('ammo', { pick: billAmmo, name: '', stat: '' }), 'ammo'] as const, id: itemId(billAmmo) ?? 'own' })
+  }
   // Wat Cheapest erbij koopt (Dave, 8 oktober 2026): de slots waar het een ander stuk neemt dan je draagt. De stars of pijlen die de factuur telt,
   // koop je per stuk; die staan onder Useable, niet hier.
   const boughtList = props.cheapest

@@ -3987,6 +3987,29 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
   })
 
+  it('telt de stars waarmee je factuur rekent mee bij wat je equipped hebt, ook met een leeg ammo-slot (Dave, 8 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', 'Steel Titans')
+    closeDialogs()
+    const equipped = () => {
+      openHomeEquipment()
+      const text = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!.textContent
+      const bill = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .bill')?.textContent ?? ''
+      closeDialogs()
+      return { text, bill }
+    }
+    // Zonder mob geen factuur en dus geen stars: de claw, je startschoenen en de questhoed.
+    expect(equipped().text).toBe('Equip: 3 items equipped')
+    fireEvent.click(viewButton('Monster'))
+    chooseMob('Slime')
+    closeDialogs()
+    // Met een mob rekent de factuur met Throwing stars; die tellen nu mee bij Equip, en blijven als kostenpost onder Useable staan.
+    const after = equipped()
+    expect(after.text).toBe('Equip: 4 items equipped')
+    expect(after.bill).toContain('Throwing stars')
+  })
+
   it('zet onder "Based on:" van Cheapest de equip die je draagt (Equip) en de equip die Cheapest erbij koopt (New equip) (Dave, 8 oktober 2026, #263)', () => {
     atLevel('20')
     openHomeEquipment()
