@@ -4154,12 +4154,18 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         expect(row.lastElementChild!.classList.contains('equip-edit') || row.lastElementChild!.tagName === 'DIALOG', row.textContent!).toBe(true)
       }
       expect(stats.querySelector('.char-table .help-toggle')).toBeNull()
-      // Achter Nimble Body een i-knopje met wat hij geeft en zijn bron (Dave, 8 oktober 2026); de andere skills hebben er geen.
-      expect([...stats.querySelectorAll('.char-table-skills .info-toggle')].map((b) => b.getAttribute('aria-label'))).toEqual(['Info over Nimble Body'])
+      // Achter elke skill een i-knopje met wat hij is en zijn bron (Dave, 8 oktober 2026); Nimble Body zegt ook wat hij aan Accuracy en Evasion geeft.
+      const skillNames = [...stats.querySelectorAll('.char-table-skills .skill-row > span:first-child')].map((n) => n.firstChild!.textContent)
+      expect([...stats.querySelectorAll('.char-table-skills .skill-row > span:first-child > .info-toggle')].map((b) => b.getAttribute('aria-label'))).toEqual(skillNames.map((n) => `Info over ${n}`))
+      fireEvent.click(within(stats).getByRole('button', { name: 'Info over Lucky Seven' }))
+      const l7 = stats.querySelector<HTMLElement>('.char-table-skills dialog.item-dialog')!
+      expect(l7.querySelector('.item-why')!.textContent).toMatch(/^Een Thief-skill die MP kost/)
+      expect(l7.querySelector('.source a')!.getAttribute('href')).toBe('https://meowdb.com/msclassic/skills/thief/lucky-seven')
+      fireEvent.click(within(l7).getByRole('button', { name: 'Sluiten' }))
       fireEvent.click(within(stats).getByRole('button', { name: 'Info over Nimble Body' }))
       const nb = stats.querySelector<HTMLElement>('.char-table-skills dialog.item-dialog')!
       expect(nb.querySelector('.title-tag')!.textContent).toBe('info')
-      expect(nb.querySelector('.item-why')!.textContent).toMatch(/^Een passieve skill van de Thief: elk level geeft \+1 Accuracy en \+1 Evasion, tot level 15\./)
+      expect(nb.querySelector('.item-why')!.textContent).toMatch(/^Een passieve Thief-skill: elk level geeft \+1 Accuracy en \+1 Evasion, tot level 15\./)
       expect(getComputedStyle(nb.querySelector('.skill-mp')!).display).not.toBe('none')
       expect(nb.querySelector('.source a')!.getAttribute('href')).toBe('https://meowdb.com/msclassic/skills/thief/nimble-body')
       fireEvent.click(within(nb).getByRole('button', { name: 'Sluiten' }))

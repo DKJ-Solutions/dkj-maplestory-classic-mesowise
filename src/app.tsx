@@ -2673,29 +2673,33 @@ function BaseStats(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Pa
 }
 
 /**
- * Wat Nimble Body geeft, achter zijn i-knopje in je profiel (Dave, 8 oktober 2026): per level evenveel Accuracy en Evasion, waar je nu staat
- * en wat het volgende level geeft, en dat de app het meetelt in Accuracy en Evasion. Met de pagina van de skill als bron.
+ * Wat een skill is, achter zijn i-knopje in je profiel (Dave, 8 oktober 2026): je level van het maximum, of hij MP kost of passief is, wat
+ * dit en het volgende level doen (dezelfde regels als in Skillpoints) en zijn skillpagina als bron. Nimble Body zegt ook wat hij aan Accuracy en
+ * Evasion geeft; een skill die het skillpunt-advies niet doorrekent, zegt dat, net als het rapport.
  */
-function NimbleBodyInfo(props: { level: number; lines: SkillLinePart[][] }) {
-  const { level } = props
+function SkillInfoText(props: { skill: SkillLevel; level: number; lines: SkillLinePart[][]; job: Job; dagger: boolean }) {
+  const { skill: s, level } = props
   const nb = NIMBLE_BODY
+  const kind = s.mp ? `Een ${s.job}-skill die MP kost` : `Een passieve ${s.job}-skill`
+  const skipped = notModelled(props.job, props.dagger).includes(s.name)
   return (
     <>
       <p class="item-verdict">
-        Lv. {level} van {nb.maxLevel}
+        Lv. {level} van {s.max}
       </p>
       <p class="item-why">
-        Een passieve skill van de Thief: elk level geeft +{nb.accuracyPerLevel} Accuracy en +{nb.avoidPerLevel} Evasion, tot level {nb.maxLevel}.{' '}
-        {level > 0 ? `Nu geeft hij +${level * nb.accuracyPerLevel} Accuracy en +${level * nb.avoidPerLevel} Evasion.` : 'Je hebt hem nog niet geleerd.'} De app telt hem mee in je
-        Accuracy en Evasion{level > 0 ? '; hun i-knopje toont hem als eigen regel' : ''}.
+        {s.key === 'nimbleBody'
+          ? `${kind}: elk level geeft +${nb.accuracyPerLevel} Accuracy en +${nb.avoidPerLevel} Evasion, tot level ${nb.maxLevel}. ${level > 0 ? `Nu geeft hij +${level * nb.accuracyPerLevel} Accuracy en +${level * nb.avoidPerLevel} Evasion.` : 'Je hebt hem nog niet geleerd.'} De app telt hem mee in je Accuracy en Evasion${level > 0 ? '; hun i-knopje toont hem als eigen regel' : ''}.`
+          : `${kind}${level > 0 ? '' : '; je hebt hem nog niet geleerd'}.`}
+        {skipped && ' Het skillpunt-advies rekent hem niet door.'}
       </p>
       {props.lines.length > 0 && <SkillEffects lines={props.lines} class="skill-why" />}
       <p class="source">
         Bron:{' '}
-        <a href={nb.source.url} target="_blank" rel="noopener noreferrer">
+        <a href={s.source.url} target="_blank" rel="noopener noreferrer">
           NiaMeowDB
         </a>
-        , opgehaald op {formatDate(nb.source.retrieved)}.
+        , opgehaald op {formatDate(s.source.retrieved)}.
       </p>
     </>
   )
@@ -2714,7 +2718,7 @@ function SkillLine(props: {
   readOnly?: boolean
   /** In het karakter onder "Based on:" (Dave, 7 oktober 2026): een vraagteken achter het level van een skill met punten, dat zegt waarom hij zo hoog staat. */
   why?: boolean
-  /** In je profiel onder "Based on:" (Dave, 8 oktober 2026): een i-knopje achter de naam van Nimble Body, met wat hij geeft. */
+  /** In je profiel onder "Based on:" (Dave, 8 oktober 2026): een i-knopje achter de naam van elke skill, met wat hij is en zijn bron. */
   info?: boolean
   onChange: (patch: Partial<ProfileDraft>) => void
 }) {
@@ -2738,11 +2742,11 @@ function SkillLine(props: {
   const lines = skillMpLines(s, props.wdef)
   return (
     <div class="skill-row">
-      <span class={props.info && s.key === 'nimbleBody' ? 'skill-name with-info' : undefined}>
+      <span class={props.info ? 'skill-name with-info' : undefined}>
         {s.name}
-        {props.info && s.key === 'nimbleBody' && (
+        {props.info && (
           <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${s.name}`} title={s.name} tag="info">
-            <NimbleBodyInfo level={now} lines={lines} />
+            <SkillInfoText skill={s} level={now} lines={lines} job={props.job} dagger={draft.dagger.trim() === '1'} />
           </PopupButton>
         )}
         {lines.length > 0 && <SkillEffects lines={lines} />}
