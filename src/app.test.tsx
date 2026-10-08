@@ -4230,9 +4230,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      // Het vraagteken staat naast het vak van de mob, niet erin (Dave, 7 oktober 2026).
-      expect(d.querySelector('.based-on .based-on-label .help-toggle')).toBeNull()
-      const button = d.querySelector<HTMLElement>('.based-on .based-on-line > .help-toggle')!
+      // Het vraagteken staat in het vak van de mob, achter het i-knopje, zonder .based-on-line eromheen (Dave, 8 oktober 2026).
+      expect(d.querySelector('.based-on .based-on-line')).toBeNull()
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-label[data-based-on-mob] > .info-toggle + .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()

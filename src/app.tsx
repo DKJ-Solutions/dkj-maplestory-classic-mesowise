@@ -1762,19 +1762,17 @@ function BasedOn(props: { who: string; mob: string }) {
             )}
           </div>
         )}
-        {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
-        <div class="based-on-line">
-          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
-            <span class="sr-only">Mob: </span>
-            <span class="based-on-value">{props.mob}</span>
-            {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
-                {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
-                <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
-                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
-              </PopupButton>
-            )}
-          </div>
+        {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
+        <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
+          <span class="sr-only">Mob: </span>
+          <span class="based-on-value">{props.mob}</span>
+          {mobDef && (
+            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+              {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+              <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
+              {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+            </PopupButton>
+          )}
           <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
             <p class="item-why">{mobWhy(props.mob)}</p>
           </PopupButton>
