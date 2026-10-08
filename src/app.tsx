@@ -1907,7 +1907,7 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
       <tr class="bill-category">
-        <th scope="rowgroup" colSpan={5}>
+        <th scope="rowgroup" colSpan={4}>
           {props.name}
         </th>
       </tr>
@@ -1930,7 +1930,6 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; shop?: numb
           </strong>
         )}
       </td>
-      <td />
       <td>
         <strong class="advised-total-level">
           <MesoAmount n={props.level} />
@@ -1959,9 +1958,9 @@ function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; gro
 }
 
 /**
- * De kop van een factuur (Dave, 7 oktober 2026): boven de kolommen van de rijen, "Mesos" boven de bedragen. Met `level` (Level cost) de kolommen
- * van een gewone factuur (Dave, 8 oktober 2026): Price (de winkelprijs, of de prijs per stuk van een useable), Qty (hoeveel je ervan betaalt: het
- * aantal useables, of het deel van een stuk equip) en Level (wat dit level betaalt, Price × Qty).
+ * De kop van een factuur (Dave, 7 oktober 2026): boven de kolommen van de rijen, "Mesos" boven de bedragen. Met `level` (Level cost, Dave,
+ * 8 oktober 2026) Price (de winkelprijs, of de prijs per stuk van een useable) en Level (wat dit level betaalt, Price × hoeveel je ervan betaalt;
+ * dat aantal staat achter de naam, BillRow).
  */
 function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice?: boolean }) {
   return (
@@ -1977,12 +1976,7 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice
       )}
       {/* De slotkeuze achter Equip (Dave, 8 oktober 2026) heeft geen bedragen: dan geen kolom met een kopje boven niets. */}
       {!props.noPrice && <th scope="col" class="advised-head-price">{props.level ? 'Price' : 'Mesos'}</th>}
-      {props.level && (
-        <>
-          <th scope="col" class="advised-head-qty">Qty</th>
-          <th scope="col" class="advised-head-level">Level</th>
-        </>
-      )}
+      {props.level && <th scope="col" class="advised-head-level">Level</th>}
       {!props.qty && <td />}
     </tr>
   )
@@ -2042,11 +2036,6 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
   const price = props.price !== undefined && (
     <>
       <td class="advised-price">{amount(props.price)}</td>
-      {wide && (
-        <td class="advised-qty" title={qtyTitle ?? (props.share == null ? undefined : `${nf1.format(props.share * 100)}% van de prijs`)}>
-          {qtyText}
-        </td>
-      )}
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
       {/* In Wearing (Dave, 8 oktober 2026) staat in de lege kolom Level het woord "Upgrade" voor een slot dat je nu moet upgraden, in de accentkleur van een koop in Advised (.buy). */}
       {wide && (props.levelWord ? <td class="advised-level verdict">{props.levelWord}</td> : <td class="advised-level">{amount(props.level ?? null)}</td>)}
@@ -2070,6 +2059,13 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
         {wide && <span class="slot-name sr-only">{props.slot}</span>}
         <span class="advised-item">
           <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
+          {/* In de bill van Level cost staat het aantal direct achter de naam (Dave, 8 oktober 2026): × 1.6k van een useable, of het deel van de prijs
+              van een stuk equip (13%). Alleen de naam kort in; het aantal blijft heel. */}
+          {wide && qtyText !== '' && (
+            <span class="advised-qty" title={qtyTitle ?? (props.share == null ? undefined : `${nf1.format(props.share * 100)}% van de prijs`)}>
+              {qtyText}
+            </span>
+          )}
           {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
           {props.facts.length > 0 && (
             <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title} tag="info">

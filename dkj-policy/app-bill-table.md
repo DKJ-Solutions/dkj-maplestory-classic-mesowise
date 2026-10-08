@@ -50,6 +50,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] CSS from grid columns to a fixed table layout, plus category and subtotal rows
 - [x] Level cost bill without the Slot column (the slot stays in the row header for screen readers); quantities compact like amounts (12.2k)
 - [x] One set of columns for both groups, an invoice's Item, Price, Qty, Level: a useable's unit price and count, an equip piece's shop price and the share of it this level pays; Level = Price × Qty
+- [x] Qty column dropped again: the count (× 1.6k) or the share (13%) sits right behind the item name, columns Item, Price, Level
 
 ### TEST
 
@@ -60,9 +61,9 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 ### DEPLOY: app/bill-table
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
-with two cost groups, Equip and Useable, each with its own subtotal, and no Slot column. Both groups share an invoice's
-columns, Item, Price, Qty and Level, with Level = Price × Qty: a useable's unit price and count (written short, 12.2k), or
-an equipment piece's shop price and the share of it this level pays.
+with two cost groups, Equip and Useable, each with its own subtotal, and no Slot column. Both groups share the columns
+Item, Price and Level, with Level = Price × the amount behind the item name: a useable's unit price and count (written
+short, × 12.2k), or an equipment piece's shop price and the share of it this level pays (13%).
 
 **Score:** 2
 
