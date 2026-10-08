@@ -291,6 +291,13 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
     const fixed = freshStart({ ...user, profileDraft: { ...user.profileDraft, ...bad } })
     for (const k of Object.keys(bad) as (keyof typeof bad)[]) expect(fixed.profileDraft[k], k).toBe(DEFAULT_PROFILE[k])
     expect(profileOf(fixed), 'fout in een equip-veld').not.toBeNull()
+    // Een stuk boven je level telt als leeg: een Steel Titans (level 15) op level 10, en Cheapest koopt er zelf een wapen voor (Dave, 8 oktober 2026).
+    const atTen = { ...user, profileDraft: { ...user.profileDraft, level: '10' } }
+    expect(isEmptyEntry(freshStart(atTen).equipment.claw)).toBe(true)
+    expect(freshStart(user).equipment.claw.pick).toBe('Steel Titans')
+    const armed = cheapestFor(atTen)
+    expect(wornName(armed.equipment.claw)).not.toBe('Steel Titans')
+    expect(armed.purchases.some((p) => p.slot === 'claw')).toBe(true)
     const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
     expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
     // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.

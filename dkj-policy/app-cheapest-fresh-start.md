@@ -51,6 +51,7 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 - [x] `freshStart`: Cheapest's input from job, level, gender, a valid Max HP and the worn equipment with its gear fields (no mob, no potion choice, default stats, skill points from scratch)
 - [x] "Based on:" in the Cheapest popup: Equip (what you wear) and New equip (what Cheapest buys)
 - [x] Victor's review of that step: a gear field is only taken over when `parseProfile` accepts it (range and whole number), the item stat bonuses (STR/DEX/INT/LUK extra) are taken over too, and the stale comments say what the code now does
+- [x] A worn item above the character's level (Steel Titans, level 15, on a level 10 thief) counts as an empty slot in the fresh start, with its ATT or DEF taken off; the Profile side is #264
 - [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
 - [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
 - [x] Overnemen writes only mob and potions (Dave's choice after the reviews); its button shows only when those differ, the saving is what the player's own level then costs less, and Ongedaan maken puts them back

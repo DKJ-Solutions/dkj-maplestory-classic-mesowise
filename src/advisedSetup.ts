@@ -5,7 +5,7 @@ import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, EQUIP_SLOTS, isEmptyEntry, itemLevel, NONE, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -66,20 +66,26 @@ export function freshStart(user: CheapestInput): CheapestInput {
   const hp = user.profileDraft.hp.trim()
   // De velden van je equip neemt Cheapest over waar parseProfile ze goedkeurt; een leeg of fout veld valt terug op de standaard (Victor, 8 oktober 2026).
   const gear = Object.fromEntries(GEAR_FIELDS.filter((k) => validField(k, user.profileDraft[k])).map((k) => [k, user.profileDraft[k].trim()]))
-  return {
-    job: user.job,
-    gender: user.gender,
-    equipment: user.equipment,
-    drafts: [],
-    potionChoice: NO_POTION_CHOICE,
-    profileDraft: {
-      ...DEFAULT_PROFILE,
-      ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}),
-      ...gear,
-      level: user.profileDraft.level,
-      hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
-    },
+  let profileDraft: ProfileDraft = {
+    ...DEFAULT_PROFILE,
+    ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}),
+    ...gear,
+    level: user.profileDraft.level,
+    hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
   }
+  // Een stuk dat je op dit level nog niet kunt dragen (een Steel Titans van level 15 op level 10, Dave, 8 oktober 2026), telt als een leeg slot: zijn
+  // ATT of DEF gaat eraf, en Cheapest kiest er zelf iets voor.
+  let equipment = user.equipment
+  const level = Number(user.profileDraft.level)
+  for (const { slot } of EQUIP_SLOTS) {
+    const name = wornName(equipment[slot])
+    const needs = name === null ? undefined : itemLevel(slot, name)
+    if (needs === undefined || !(needs > level)) continue
+    const out = changeEquipment(profileDraft, equipment, slot, choosePick(slot, equipment[slot], NONE), user.job)
+    equipment = out.equipment
+    profileDraft = out.profile
+  }
+  return { job: user.job, gender: user.gender, equipment, drafts: [], potionChoice: NO_POTION_CHOICE, profileDraft }
 }
 
 /**
