@@ -52,6 +52,7 @@ Dave, October 8, 2026, given in steps during the session:
 - `data-based-on-equip` lists the item id of every piece worn.
 - the popup label "actual" becomes "profile" (and the `actual-toggle` class `profile-toggle`).
 - the popup label "edit" becomes "edit profile".
+- the buttons in the "Based on:" boxes (Char, Mob, Equip) show the plain eye of the card buttons, no circle.
 
 ### CREATE
 
@@ -64,6 +65,7 @@ Dave, October 8, 2026, given in steps during the session:
 - [x] `src/itemIds.ts`: item name to its MeowDB item-db id, read from the source URL every item row already carries (the app holds no other id); an own item reads `own`
 - [x] Head coin class renamed to `level-cost-icon`: `meso-icon` already sized the small coins next to amounts
 - [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
+- [x] Based-on boxes use `EyeIcon`; the `≈` and person badges (`EXPECTED_ICON`, `ACTUAL_ICON`) had no other user and are removed
 
 ### TEST
 

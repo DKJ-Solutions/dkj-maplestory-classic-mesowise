@@ -100,30 +100,6 @@ const INFO_ICON = (
   </svg>
 )
 
-/**
- * Het icoon van een popup met wat de app verwacht in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
- * een ≈ erin, "ongeveer": het getal is voorspeld en kan in het spel afwijken. Zo zie je het verschil voordat je tikt.
- */
-const EXPECTED_ICON = (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="currentColor" />
-    <path class="info-stem" d="M7.5 10Q9.75 8 12 10T16.5 10M7.5 14.5Q9.75 12.5 12 14.5T16.5 14.5" fill="none" stroke-width="1.8" stroke-linecap="round" />
-  </svg>
-)
-
-/**
- * Het icoon van een popup met je eigen getallen in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
- * een persoon erin, hoofd en schouders: jouw eigen getallen, die je zelf zet. Het lijkt in niets op de i, de ≈ of het potlood ernaast; gekozen uit
- * zeven ontwerpen, nadat schuifjes afvielen (Dave, 8 oktober 2026).
- */
-const ACTUAL_ICON = (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="currentColor" />
-    <circle class="info-dot" cx="12" cy="8.9" r="2.6" />
-    <path class="info-dot" d="M6.9 17.4Q6.9 13.2 12 13.2Q17.1 13.2 17.1 17.4Z" />
-  </svg>
-)
-
 /** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised uitlegt of je een stuk koopt (Dave, 7 oktober 2026). */
 const QUESTION_ICON = (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1660,11 +1636,10 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
             <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
               <span class="sr-only">Char: </span>
               {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                  popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Level cost: Useable. De naam staat in de knop, en
-                  het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                  getallen: dan het persoon-icoon (ACTUAL_ICON) en het label profile; de i blijft voor vaste info. */}
+                  popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Level cost: Useable. De naam staat in de knop, met
+                  het oog van de kaartknoppen (EyeIcon), zonder rondje, zoals Mob en Equip (Dave, 8 oktober 2026). In Profile zijn het je eigen getallen, met het label profile. */}
               {stats ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'profile'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
+                <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'profile'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                   {stats}
                 </PopupButton>
               ) : (
@@ -1680,7 +1655,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           <div class="based-on-label" data-based-on-monster={props.mob ?? undefined} data-sheet={sheet}>
             <span class="sr-only">Mob: </span>
             {mobDef ? (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-monster': mobDef.name, 'data-sheet': sheet }}>
+              <PopupButton icon={<EyeIcon />} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-monster': mobDef.name, 'data-sheet': sheet }}>
                 {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
                 <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
@@ -1704,7 +1679,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
             <div class="based-on-label" data-based-on-equip={equip.ids} data-sheet={sheet}>
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
+                <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
                   <dl class="item-facts">
                     {equip.items.map(([slot, name]) => (
                       <div key={slot}>
