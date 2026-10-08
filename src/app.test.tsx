@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, FIRST_POPUP, isCounted, noSavingText, POPUP_STEP, slotVerdict, totalCostWho } from './app'
+import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
-import type { CheapestSlot } from './cheapestEquip'
 
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
@@ -492,10 +491,8 @@ describe('equipment: de claw past het profiel aan', () => {
     const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
     expect(tag.textContent).toBe('cheapest')
     expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
-    const weapon = advisedRow(dialog, 'Weapon')
-    // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
-    expect(weapon.classList.contains('buy')).toBe(false)
-    expect(whyOf(weapon)).toMatch(/^Je draagt dit al/)
+    // Het wapen dat je al draagt kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
   })
 
@@ -520,7 +517,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
     expect(dialog.querySelector('.equip-edit')).toBeNull()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
-    expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
+    // Het wapen dat je draagt houdt Cheapest, dus het kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
   it('zet een gekocht wapen in Cheapest als slot, naam en bedrag (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
@@ -600,7 +598,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(document.activeElement).toBe(toggle)
   })
 
-  it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, bij een stuk dat je houdt Houden, en laat een leeg slot weg (Dave, 7 en 8 oktober 2026)', () => {
+  it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, en laat een leeg slot en een stuk dat je houdt weg (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
@@ -611,7 +609,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(whyOf(weapon)).toContain('je houdt')
     // Een slot dat leeg blijft staat niet in de bill (Dave, 8 oktober 2026): er staat niets in.
     expect(dialog.querySelector('.advised-row.empty')).toBeNull()
-    // Draag je het wapen al, dan houdt Cheapest het.
+    // Draag je het wapen al, dan houdt Cheapest het: dat kost dit level niets, dus de regel staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
     cleanup()
     localStorage.clear()
     render(<App />)
@@ -621,10 +619,10 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(verdictOf(advisedRow(dialog, 'Weapon'))).toBe('Houden')
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
   })
 
-  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en geen prijs bij een stuk dat je houdt (Dave, 8 oktober 2026)', () => {
+  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en laat een stuk dat je houdt weg (Dave, 8 oktober 2026)', () => {
     const open = (wear: boolean) => {
       cleanup()
       localStorage.clear()
@@ -641,12 +639,12 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.classList.contains('buy')).toBe(true)
     expect(bought.querySelector('.advised-price')).toBeNull()
     expect(infoPrice(row)).toMatch(/^[\d.]+ meso$/)
-    // Een stuk dat je houdt koop je niet: zijn info noemt geen prijs.
+    // Een stuk dat je houdt kost dit level niets en staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
     const kept = open(true)
-    expect(infoPrice(advisedRow(kept, 'Weapon'))).toBeUndefined()
+    expect(advisedRow(kept, 'Weapon')).toBeUndefined()
   })
 
-  it('geeft elke regel een vraagteken met de reden, en laat een slot weg dat leeg blijft, ook omdat een overall of losse top het beslaat (Dave, 7 en 8 oktober 2026)', () => {
+  it('geeft elke regel een vraagteken met de reden, en laat weg wat dit level niets kost: een stuk dat je houdt, en een slot dat leeg blijft, ook omdat een overall of losse top het beslaat (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -660,9 +658,9 @@ describe('equipment: de claw past het profiel aan', () => {
       expect(within(r).getByRole('button', { name: 'Uitleg bij ' + r.querySelector('.slot-name')!.textContent }).getAttribute('aria-expanded')).toBe('false')
       expect(r.querySelector('dialog.item-dialog')).toBeNull()
     })
-    const why = (slot: string) => whyOf(advisedRow(dialog, slot))
-    expect(why('Weapon')).toMatch(/^Je draagt dit al/)
-    // De overall (een losse top neemt zijn plek in) en een cape die leeg blijft staan er niet: er staat niets in (Dave, 8 oktober 2026).
+    // Het wapen en de top die je houdt, de overall (een losse top neemt zijn plek in) en een cape die leeg blijft staan er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
+    expect(advisedRow(dialog, 'Top')).toBeUndefined()
     expect(advisedRow(dialog, 'Overall')).toBeUndefined()
     expect(advisedRow(dialog, 'Cape')).toBeUndefined()
     expect(rows.filter((r) => r.classList.contains('empty'))).toHaveLength(0)
@@ -680,18 +678,17 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(whyOf(advisedRow(withOverall, 'Bottom'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
   })
 
-  it('toont in een leeg Ammo-slot van Cheapest de stars die de factuur telt, zonder "Koop voor" (#189)', () => {
+  it('zet de stars die de factuur telt bij een leeg Ammo-slot onder Useable, niet als slot onder Equip (#189, Dave, 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    const ammo = advisedRow(dialog, 'Ammo')
+    // Stars herlaad je per stuk: Equip rekent ze niet, dus het Ammo-slot staat er niet. Alleen wat dit level mesos kost staat in de bill (Dave, 8 oktober 2026).
+    expect(advisedRow(dialog, 'Ammo')).toBeUndefined()
+    const ammo = [...dialog.querySelectorAll<HTMLElement>('tbody.bill-group-useable .advised-row')].find((r) => r.querySelector('.slot-name')!.textContent === 'Ammo')!
     expect(nameOf(ammo)).toContain('Subi Throwing Stars')
-    expect(ammo.classList.contains('buy')).toBe(false)
-    expect(ammo.classList.contains('empty')).toBe(false)
-    expect(whyOf(ammo)).toBe('Stars herlaad je per stuk; de factuur telt ze.')
     expect(ammo.textContent).not.toContain('Koop voor')
   })
 
@@ -4786,35 +4783,30 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
 
 // Your character als tabel (Dave, 8 oktober 2026): dezelfde regels als Cheapest, met wat je draagt.
 describe('equipment: Your character als tabel', () => {
-  const billRow = (slot: string) => Array.from(cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')).find((r) => r.querySelector('.slot-name')?.textContent === slot)!
 
-  it('toont de popup met de tag wearing en een regel per getoond slot', () => {
+  it('toont de popup met de tag profile, en de slots in de slotkeuze achter het potlood bij Equip', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.getAttribute('aria-label')).toBe('Level cost (profile)')
-    const names = Array.from(dialog.querySelectorAll('.advised-row .slot-name')).map((e) => e.textContent)
-    expect(names.length).toBeGreaterThan(0)
-    // De tabel heeft geen potloden meer (Dave, 8 oktober 2026): die staan in de popup achter het potlood bij Equip.
+    // De bill heeft geen potloden (Dave, 8 oktober 2026): die staan in de popup achter het potlood bij Equip, een per slot.
     expect(dialog.querySelector('.advised-row .equip-edit')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Equip wijzigen' }))
-    for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
+    for (const n of ['Weapon', 'Hat', 'Top']) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
   })
 
-  it('zet in Profile de winkelprijs van wat je draagt in de info-popup, met een lege Mesos en een subtotaal 0, want het kost dit level niets (Dave, 8 oktober 2026)', () => {
+  it('zet in Profile geen equip in de bill, want wat je draagt kost dit level niets, en een subtotaal 0 (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
-    // een eigen item heeft geen winkelprijs
     pickOwn(cards()[0], 'Hat', 'Mijn muts')
-    expect(cards()[0].querySelector('dialog.card-dialog .advised-head-level')!.textContent).toBe('Mesos')
-    expect(cards()[0].querySelector('dialog.card-dialog .advised-price')).toBeNull()
-    expect(billRow('Weapon').querySelector('.advised-level')!.textContent).toBe('')
-    expect(infoPrice(billRow('Weapon'))).toBe('14.100 meso')
-    expect(infoPrice(billRow('Top'))).toBe('6.000 meso')
-    expect(billRow('Hat').querySelector('.advised-level')!.textContent).toBe('')
-    expect(infoPrice(billRow('Hat'))).toBeUndefined()
-    expect(cards()[0].querySelector('tbody.bill-group-equip .advised-subtotal .advised-total-level')!.textContent).toBe(compactMeso(0))
+    closeDialogs()
+    openHomeEquipment()
+    const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    expect(dialog.querySelector('.advised-head-level')!.textContent).toBe('Mesos')
+    // Alleen wat dit level mesos kost staat in de bill, ook geen "Upgrade" in de kolom Mesos (Dave, 8 oktober 2026).
+    expect(dialog.querySelectorAll('tbody.bill-group-equip .advised-row')).toHaveLength(0)
+    expect(dialog.querySelector('tbody.bill-group-equip .advised-subtotal .advised-total-level')!.textContent).toBe(compactMeso(0))
   })
 
   it('opent met het potlood de slotpopup en laat een gekozen stuk de regel bijwerken', () => {
@@ -4825,8 +4817,10 @@ describe('equipment: Your character als tabel', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Weapon wijzigen' }))
     expect(cards()[0].querySelector('dialog.slot-dialog')).not.toBeNull()
     pick(cards()[0], 'Weapon', IGOR.name)
-    expect(billRow('Weapon').querySelector('.advised-name')!.textContent).toContain('Igor')
-    expect(infoPrice(billRow('Weapon'))).toBe('14.100 meso')
+    // De regel in de slotkeuze toont het stuk, met de winkelprijs in zijn info-popup.
+    const row = advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!, 'Weapon')
+    expect(row.querySelector('.advised-name')!.textContent).toContain('Igor')
+    expect(infoPrice(row)).toBe('14.100 meso')
   })
 
   const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
@@ -4919,102 +4913,6 @@ describe('equipment: Your character als tabel', () => {
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
     expect(within(dialog).getByRole('button', { name: 'Equip: 1 item' })).toBeTruthy()
-  })
-
-  it('geeft in Profile per slot hetzelfde oordeel als Cheapest: Upgraden waar Cheapest koopt, met "Upgrade" in Level en zonder potlood (Dave, 8 oktober 2026)', () => {
-    atLevel('30')
-    const bought = (dialog: HTMLElement) =>
-      Object.fromEntries([...dialog.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body tbody.bill-group-equip .advised-row')].map((r) => [r.querySelector('.slot-name')!.textContent, r.classList.contains('buy')]))
-    for (const worn of [false, true]) {
-      openHomeEquipment()
-      if (worn) {
-        pick(cards()[0], 'Weapon', IGOR.name)
-        closeDialogs()
-        openHomeEquipment()
-      }
-      const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-      const own = bought(dialog)
-      for (const r of dialog.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body tbody.bill-group-equip .advised-row')) {
-        const slot = r.querySelector('.slot-name')!.textContent!
-        expect(r.querySelector('.equip-edit'), slot).toBeNull()
-        if (!own[slot]) {
-          expect(r.querySelector('.advised-level')!.textContent, slot).toBe('')
-          continue
-        }
-        expect(r.querySelector('.advised-level')!.textContent, slot).toBe('Upgrade')
-        fireEvent.click(r.querySelector('.help-toggle')!)
-        const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
-        expect(popup.querySelector('.item-verdict')!.textContent, slot).toBe('Upgraden')
-        expect(popup.querySelector('.item-why')!.textContent, slot).toMatch(/^(Koop|Je wapenslot is leeg)/)
-        fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
-      }
-      closeDialogs()
-      openAdvised()
-      const advised = bought(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!)
-      closeDialogs()
-      // Met een lege equip koopt Cheapest minstens het wapen, en Profile zegt Upgrade bij precies de slots die Cheapest koopt.
-      if (!worn) expect(Object.values(advised).some(Boolean)).toBe(true)
-      const buys = (b: Record<string, boolean>) => Object.keys(b).filter((k) => b[k]).sort()
-      expect(buys(own)).toEqual(buys(advised))
-    }
-  })
-
-  it('geeft een slot dat je draagt en Cheapest niet vervangt het oordeel Houden met de uitleg van Cheapest, en laat een leeg slot zonder aankoop weg (Dave, 8 oktober 2026)', () => {
-    atLevel('30')
-    openHomeEquipment()
-    const dialog = () => cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    const rows = () => [...dialog().querySelectorAll<HTMLElement>(':scope > .stat-dialog-body tbody.bill-group-equip .advised-row')]
-    const rowOf2 = (slot: string) => rows().find((r) => r.querySelector('.slot-name')!.textContent === slot)!
-    // Een leeg slot dat Cheapest niet koopt heeft niets om te houden, en staat er dus niet (Dave, 8 oktober 2026).
-    expect(rows().length).toBeGreaterThan(0)
-    expect(rows().filter((r) => r.classList.contains('empty'))).toHaveLength(0)
-    // Je draagt wat Cheapest ook kiest: dan houdt de app het, met de uitleg van Cheapest.
-    closeDialogs()
-    openAdvised()
-    const advisedWeapon = [...cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')].find((r) => r.querySelector('.slot-name')!.textContent === 'Weapon')!.querySelector('.advised-name')!.getAttribute('title')!
-    closeDialogs()
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', advisedWeapon)
-    closeDialogs()
-    openHomeEquipment()
-    const weapon = rowOf2('Weapon')
-    expect(weapon.classList.contains('buy')).toBe(false)
-    expect(weapon.querySelector('.advised-level')!.textContent).toBe('')
-    fireEvent.click(weapon.querySelector('.help-toggle')!)
-    const popup = dialog().querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom houden?')
-    expect(popup.querySelector('.item-verdict')!.textContent).toBe('Houden')
-    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Je draagt dit al\./)
-  })
-
-  // Het oordeel van Profile mag Cheapest nooit tegenspreken (Dave, 8 oktober 2026): ook niet bij een overall tegenover top en bottom, en niet bij munitie.
-  describe('slotVerdict', () => {
-    const none: CheapestSlot = { worn: null, cheapest: null, changed: false, price: null, option: null }
-    it('zegt van een top of bottom die je draagt terwijl Cheapest een overall koopt Vervangen, en van een overall terwijl Cheapest top of bottom koopt', () => {
-      for (const slot of ['top', 'bottom'] as const) {
-        const v = slotVerdict('thief', slot, { ...none, worn: 'Cloth Vest', changed: true }, false, true, true)!
-        expect(v.word).toBe('Vervangen')
-        expect(v.text).toMatch(/overall/)
-      }
-      const v = slotVerdict('thief', 'overall', { ...none, worn: 'Doros Robe', changed: true }, false, true, true)!
-      expect(v.word).toBe('Vervangen')
-      expect(v.text).toMatch(/top of bottom/)
-      // Niets aan in dat slot: niets om te vervangen, dus geen oordeel.
-      expect(slotVerdict('thief', 'top', none, false, true, false)).toBeNull()
-    })
-    it('geeft een draagbaar stuk dat Cheapest leeg laat zonder dat een ander stuk het slot beslaat het eigen woord van Cheapest, niet Houden', () => {
-      const v = slotVerdict('thief', 'hat', { ...none, worn: 'Ghetto Beanie', changed: true }, false, false, true)!
-      expect(v.kind).toBe('other')
-      expect(v.word).toBe('Leeg laten')
-      expect(v.text).toMatch(/^Leeg: de winkel heeft hier niets/)
-    })
-    it('geeft een leeg Ammo-slot dat de factuur telt hetzelfde oordeel als Cheapest: Per stuk herladen (Thief) of kopen (Bowman), ook zonder stuk', () => {
-      expect(isCounted('ammo', none, 'Subi Throwing Stars')).toBe(true)
-      expect(isCounted('ammo', none, null)).toBe(false)
-      expect(isCounted('hat', none, 'Subi Throwing Stars')).toBe(false)
-      expect(slotVerdict('thief', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk herladen' })
-      expect(slotVerdict('bowman', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk kopen' })
-    })
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {
