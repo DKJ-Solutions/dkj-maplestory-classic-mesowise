@@ -10,6 +10,7 @@ import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './d
 import type { ArmorSlot, Potion, Stat } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
+import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
 import { changeEquipment, choosePick, commitStat, databaseStat, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
@@ -428,7 +429,7 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
  * lichtrandje linksboven. Een eigen tekening van een gewoon esdoornblad; Nexons meso-sprite en logo blijven buiten de repo (#14).
  */
 const MesoIcon = () => (
-  <svg class="card-icon meso-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+  <svg class="card-icon level-cost-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
     <defs>
       <linearGradient id="meso-gold" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#fde68a" />
@@ -513,11 +514,14 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
   // De klassen zeggen van welke kaart en welke weergave de popup is (Dave, 7 oktober 2026, #242), zodat je hem in de HTML kunt aanwijzen.
   const className = `card-dialog card-dialog-${props.card} ${props.advised ? 'advised-dialog' : 'worn-dialog'}`
   // De HTML zegt welke sheet dit is en waar hij over gaat (Dave, 7 en 8 oktober 2026): data-sheet "cheapest" (de goedkoopste setup) of "profile" (je
-  // karakter uit het spel), met data-based-on-profile "Lv. 21 Thief" in Profile (in Cheapest staat het karakter onder "Based on:") en
-  // data-based-on-monster in de Monster-popup. Ze staan op .stat-dialog-body naast data-popup, zoals in elke andere popup.
+  // karakter uit het spel), en per ding waarop de popup rekent een eigen attribuut, dezelfde als op de vakken onder "Based on:":
+  // data-based-on-character "Lv. 21 Thief", data-based-on-monster "Snail" en data-based-on-equip met het item-id van elk stuk, "680 732". Ze staan op .stat-dialog-body naast data-popup.
+  const basedOnMob = props.advised ? props.basedOn : props.own?.mob
   const data: Record<`data-${string}`, string> = { 'data-sheet': props.advised ? 'cheapest' : 'profile' }
-  if (!props.advised) data['data-based-on-profile'] = who
-  if (props.mob) data['data-based-on-monster'] = props.mob
+  if (who) data['data-based-on-character'] = who
+  const monster = props.mob ?? basedOnMob
+  if (monster) data['data-based-on-monster'] = monster
+  if (props.equip && (props.advised ? props.basedOn : props.own)) data['data-based-on-equip'] = props.equip.ids
   return (
     <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} data={data} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
@@ -1622,7 +1626,7 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /** De derde rij onder "Based on:" in Level cost: Equip (Dave, 8 oktober 2026): per slot de naam van het stuk, en met `edit` het potlood dat de keuze opent (alleen Wearing). */
-type BasedOnEquip = { summary: string; items: readonly (readonly [string, string])[]; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
+type BasedOnEquip = { summary: string; items: readonly (readonly [string, string])[]; ids: string; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
 const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
@@ -1651,7 +1655,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245), met een eigen attribuut per vak (Dave, 8 oktober 2026):
           // data-based-on-character="Lv. 21 Thief", data-based-on-monster="Snail" en data-based-on-equip; data-sheet zegt of het over profile of cheapest gaat.
-          // De popup achter het knopje van de char heet naar zijn sheet: data-based-on-profile of data-based-on-cheapest (zie CardPopup).
+          // De popups zelf dragen dezelfde attributen (zie CardPopup).
           <div class="based-on-row">
             <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
               <span class="sr-only">Char: </span>
@@ -1660,7 +1664,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                   het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
                   getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
               {stats ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ [`data-based-on-${sheet}`]: props.who, 'data-sheet': sheet }}>
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                   {stats}
                 </PopupButton>
               ) : (
@@ -1697,10 +1701,10 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
           // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
           <div class="based-on-row">
-            <div class="based-on-label" data-based-on-equip={equip.summary} data-sheet={sheet}>
+            <div class="based-on-label" data-based-on-equip={equip.ids} data-sheet={sheet}>
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'actual'} name={equip.summary} data={{ 'data-based-on-equip': equip.summary, 'data-sheet': sheet }}>
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'actual'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
                   <dl class="item-facts">
                     {equip.items.map(([slot, name]) => (
                       <div key={slot}>
@@ -2398,24 +2402,30 @@ function EquipmentCard(props: {
     </>
   )
   // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
-  const equipRow = (items: readonly (readonly [string, string])[], edit?: BasedOnEquip['edit']): BasedOnEquip => ({ summary: equipSummary(items), items, edit })
-  const wornItems = slots.flatMap((slot) => {
+  const equipRow = (list: readonly { item: readonly [string, string]; id: string }[], edit?: BasedOnEquip['edit']): BasedOnEquip => {
+    const items = list.map((l) => l.item)
+    return { summary: equipSummary(items), items, ids: list.map((l) => l.id).join(' '), edit }
+  }
+  // Per stuk ook zijn item-id, voor data-based-on-equip (Dave, 8 oktober 2026); een eigen item heeft er geen en heet daar "own".
+  const wornList = slots.flatMap((slot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
-    return name === null ? [] : [[slotLabel(slot), entry.pick === OTHER ? name : familyName(slot, name)] as const]
+    if (name === null) return []
+    const own = entry.pick === OTHER
+    return [{ item: [slotLabel(slot), own ? name : familyName(slot, name)] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
-  const advisedItems = props.cheapest
+  const advisedList = props.cheapest
     ? slots.flatMap((slot) => {
         const c = props.cheapest![slot]
         const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
-        return name === null ? [] : [[slotLabel(slot), familyName(slot, name)] as const]
+        return name === null ? [] : [{ item: [slotLabel(slot), familyName(slot, name)] as const, id: itemId(name) ?? 'own' }]
       })
     : []
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedItems) : undefined) : equipRow(wornItems, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )

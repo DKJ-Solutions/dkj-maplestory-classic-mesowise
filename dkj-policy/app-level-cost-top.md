@@ -48,7 +48,8 @@ Dave, October 8, 2026, given in steps during the session:
   "never call it Cheapest");
 - both Equip popups are titled "Level cost", and the Profile one loses its Report button;
 - `data-sheet` reads `cheapest` or `profile`; each "Based on:" box has its own attribute (`data-based-on-character`,
-  `data-based-on-monster`, `data-based-on-equip`), and the popups say `data-based-on-profile` / `data-based-on-cheapest`.
+  `data-based-on-monster`, `data-based-on-equip`), and the popup itself carries the same attributes;
+- `data-based-on-equip` lists the item id of every piece worn.
 
 ### CREATE
 
@@ -57,14 +58,17 @@ Dave, October 8, 2026, given in steps during the session:
 - [x] `MesoIcon`: an own drawing of a gold coin with a plain maple leaf (no Nexon sprite or logo, #14)
 - [x] Visible labels renamed (Advised -> Cheapest, Wearing -> Profile, popup tags too); internal identifiers unchanged
 - [x] Equip popup title "Level cost" in both views; the Equip report is gone, and with it the ATT/DEF advice components it alone rendered (`ClawQuestion`, `ArmorQuestion` and their helpers)
-- [x] Data attributes as above; `data-based-on-mob` is now `data-based-on-monster` everywhere, so the box and its info popup use one name
+- [x] Data attributes as above, on the boxes and on the popup body; `data-based-on-mob` is now `data-based-on-monster` everywhere
+- [x] `src/itemIds.ts`: item name to its MeowDB item-db id, read from the source URL every item row already carries (the app holds no other id); an own item reads `own`
+- [x] Head coin class renamed to `level-cost-icon`: `meso-icon` already sized the small coins next to amounts
 - [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
 
 ### TEST
 
 - [x] `src/app.test.tsx`: the new card (placement, head, icon, totals, same popups as Equip), the renamed labels and attributes, and the naming test inverted to "no Advised anywhere"
 - [x] Tests that covered only the ATT/DEF report removed; the report tests now expect Skill, Mob and Potions
-- [x] Full suite (1951 tests), typecheck and `scripts/lint/lint.ps1` green
+- [x] `src/itemIds.test.ts`, and the equip-row test now expects the ids
+- [x] Full suite (1953 tests), typecheck and `scripts/lint/lint.ps1` green
 - [x] Code review (Victor): Cheapest disables on the same condition as the Equip card; indentation and CSS comment tidied
 - [ ] Dave looks at the result in the preview before the merge (visible result)
 
