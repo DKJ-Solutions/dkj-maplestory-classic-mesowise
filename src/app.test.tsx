@@ -4025,7 +4025,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4071,7 +4071,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Useable')
     // Zoals Total cost: Equip (Dave, 7 oktober 2026): het label "expected" op een eigen regel erboven, en een vraagteken naast de titel.
     expect(d.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
-    expect(d.querySelector('.stat-dialog-title-row .help-toggle')).not.toBeNull()
+    expect(d.querySelector('.stat-dialog-title-row .info-toggle')).not.toBeNull()
     expect(nameOf(advisedRow(d, 'HP'))).toContain(r.potions.hp)
     expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
@@ -4290,10 +4290,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
       expect(new Set(paths).size).toBe(paths.length)
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
-      // Het vraagteken naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
-      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .help-toggle')!)
+      // Het i-knopje naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
+      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .info-toggle')!)
       const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Uitleg')
+      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Info')
       fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
     })
@@ -4657,7 +4657,9 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
     fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
-    const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
+    // Een i-knopje, geen vraagteken: het zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
+    expect(dialog.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
+    const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .info-toggle')!
     // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
     const row = button.closest('.stat-dialog-title-row')!
     expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
@@ -4667,12 +4669,13 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(button)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
+    expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft die uitleg niet: daar staat geen vraagteken in de kop.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(card).getByRole('button', { name: 'Your character' }))
     const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(worn.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
+    expect(worn.querySelector('.stat-dialog-head .info-toggle')).toBeNull()
   })
 })

@@ -1649,12 +1649,12 @@ function StatDialog(props: {
     </>
   )
   // De titel is altijd een kop, in elke popup en in het menu (Dave, 5 oktober 2026).
-  // Het vraagteken van de popup staat direct achter de titel, op dezelfde regel, ook met een ondertitel eronder (Dave, 7 oktober 2026); het opent
-  // een eigen popup, zoals elk vraagteken in Advised.
+  // De knop van de popup staat direct achter de titel, op dezelfde regel, ook met een ondertitel eronder (Dave, 7 oktober 2026); hij opent
+  // een eigen popup. Het is een i-knopje met het label info, geen vraagteken: hij zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
   const heading = props.help ? (
     <div class="stat-dialog-title-row">
       <h2 class="stat-dialog-name">{name}</h2>
-      <PopupButton icon={QUESTION_ICON} class="help-toggle" label="Uitleg" title={props.title}>
+      <PopupButton icon={INFO_ICON} class="info-toggle" label="Info" title={props.title} tag="info">
         <p class="item-why">{props.help}</p>
       </PopupButton>
     </div>
