@@ -743,19 +743,20 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-value { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.125rem; }
 .why-table .why-help, .why-answer .why-help { margin: -0.75rem -0.625rem -0.75rem 0; }
 .why-help-space { flex: none; width: calc(44px - 0.625rem); }
-/* Een formule onder elkaar (Dave, 8 oktober 2026): teken, getal (rechts uitgelijnd, zodat de cijfers onder elkaar staan) en wat het is,
-   over de volle breedte met een dunne lijn tussen de factoren. Het label in de gewone tekstkleur; is een factor zelf een som, dan staat die
+/* Een formule onder elkaar (Dave, 8 oktober 2026): links wat het is, rechts het teken en het getal (rechts uitgelijnd, zodat de cijfers
+   onder elkaar staan), zoals de andere tabellen in de uitleg, over de volle breedte met een dunne lijn tussen de factoren. Het label in de gewone tekstkleur; is een factor zelf een som, dan staat die
    klein en grijs eronder. De uitkomst staat in het afgeronde accentvak van de andere antwoorden (.why-answer), met lucht erboven. */
 .why-mul { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
 .why-mul td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: baseline; line-height: 1.35; }
 .why-mul tr:nth-last-child(2) td { padding-bottom: 1rem; border-bottom: 0; }
-.why-mul td.why-mul-op { width: 1rem; padding: 0.5rem 0.5rem 0.5rem 0.75rem; font-size: 1.125rem; text-align: center; color: var(--muted); }
+.why-mul td.why-mul-op { width: 1rem; padding: 0.5rem 0.5rem; font-size: 1.125rem; text-align: center; color: var(--muted); }
 .why-mul td.why-mul-num { padding-right: 0.75rem; text-align: right; font-size: 1.125rem; font-weight: 700; white-space: nowrap; }
-.why-mul td.why-mul-what { width: 100%; padding-right: 0.75rem; overflow-wrap: anywhere; }
+.why-mul td.why-mul-what { width: 100%; padding-left: 0.75rem; overflow-wrap: anywhere; }
 .why-mul-note { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--muted); }
 .why-mul-result td { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .why-mul-result td:first-child { border-radius: 0.625rem 0 0 0.625rem; }
-.why-mul-result td:last-child { border-radius: 0 0.625rem 0.625rem 0; font-weight: 600; }
+.why-mul-result td:last-child { border-radius: 0 0.625rem 0.625rem 0; }
+.why-mul-result td.why-mul-what { font-weight: 600; }
 .why-mul-result td.why-mul-num { font-size: 1.25rem; color: var(--accent); }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }

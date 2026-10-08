@@ -3415,7 +3415,7 @@ const whyRows = (root: ParentNode) =>
       fireEvent.click(info)
       const popup = tr.querySelector<HTMLElement>('dialog')!
       // Een rij met een eigen uitwerking (detail) heeft geen som maar een tabel; die lees je met whyDetail.
-      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "teken getal wat".
+      // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "wat teken getal".
       const mul = popup.querySelector('.why-mul')
       calc = mul
         ? Array.from(mul.querySelectorAll('tr'), (r) => Array.from(r.querySelectorAll('td'), (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
@@ -3505,10 +3505,10 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
     // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst, die de rij zelf is (Dave, 8 oktober 2026).
     // De stats als kort label, met hun som klein eronder (Dave, 8 oktober 2026).
-    expect(damage[0].calc).toMatch(/^\d+% Skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ Statfactor ?1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = ([\d.,]+) Max per star$/)
-    expect(damage[0].calc.endsWith(`= ${damage[0].result} Max per star`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^\d+% Skillschade ; × [\d.]+ W\.ATT ; × [\d,]+ Statfactor ?0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 ; = [\d.,]+ Min per star$/)
-    expect(damage[1].calc.endsWith(`= ${damage[1].result} Min per star`)).toBe(true)
+    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor ?1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 × [\d,]+ ; Max per star = ([\d.,]+)$/)
+    expect(damage[0].calc.endsWith(`Max per star = ${damage[0].result}`)).toBe(true)
+    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor ?0,8 \+ \([\d.]+ LUK × [\d,]+ mastery × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100 × [\d,]+ ; Min per star = [\d.,]+$/)
+    expect(damage[1].calc.endsWith(`Min per star = ${damage[1].result}`)).toBe(true)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)

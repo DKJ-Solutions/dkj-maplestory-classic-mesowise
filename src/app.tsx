@@ -3404,8 +3404,8 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 }
 
 /**
- * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links het teken, dan het getal en wat het is, en onderaan
- * de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
+ * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links wat het is en rechts het teken en het getal, zoals
+ * de andere tabellen in de uitleg, en onderaan de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
  * label en staat de som klein eronder (`note`), zodat de kolom met labels rustig blijft.
  */
 function MulCalc(props: { factors: readonly { value: string; what: string; note?: ComponentChildren }[]; result: { value: string; what: string } }) {
@@ -3414,18 +3414,18 @@ function MulCalc(props: { factors: readonly { value: string; what: string; note?
       <tbody>
         {props.factors.map((f, i) => (
           <tr key={i}>
-            <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
-            <td class="why-mul-num">{f.value}</td>
             <td class="why-mul-what">
               {f.what}
               {f.note && <small class="why-mul-note">{f.note}</small>}
             </td>
+            <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
+            <td class="why-mul-num">{f.value}</td>
           </tr>
         ))}
         <tr class="why-mul-result">
+          <td class="why-mul-what">{props.result.what}</td>
           <td class="why-mul-op">=</td>
           <td class="why-mul-num">{props.result.value}</td>
-          <td class="why-mul-what">{props.result.what}</td>
         </tr>
       </tbody>
     </table>
