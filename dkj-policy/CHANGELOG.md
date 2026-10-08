@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**10 / 15 minor entries** <!-- pending-tally -->
+**10 / 16 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/258-cheapest-profile-comments · 20261008-150530Z
+
+The comments and test titles in `src/` call the two views Cheapest and Profile, as the screen does. The internal identifiers
+(`advised`, `worn`, `advisedSetup`) keep their names, and the `CardView` doc comment maps them to the visible ones (#258).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A: nothing changes on the screen.
+
+**Score:** N/A
+
+#### Pull Request
+
+Comments and test titles call the views Cheapest and Profile
+
+[PR #266](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/266)
+
+---
 
 ### DEPLOY: app/cheapest-fresh-start · 20261008-144817Z
 
