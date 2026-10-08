@@ -55,6 +55,7 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 - [x] Rule (Dave, #264): equipment above your level cannot be worn. `dropAboveLevel` gives the stand as the calculation sees it (ATT or DEF off, an empty hand for a weapon); the app uses it for the parse, the armor advice, Auto assign, Total stats and Cheapest, and keeps the stored equipment as it is
 - [x] Revised after Dave lost his gear testing level 10: the first version wiped such items from storage; now they stay stored, show grey in the Equip popup as "(vanaf lv N)", leave the "(free)" count, and count again once the level is high enough
 - [x] Starter clothes (Dave): an empty top, bottom or shoes slot counts as the starting outfit (male White Undershirt + Blue Jean Shorts, female White Tube Top + Red Miniskirt, Leather Sandals; sources in data/wornItems.ts), free; `wearableSetup` = items above level off, then the starter clothes in, used by the app's calculation, the "(free)" list and Cheapest; unit tests for it
+- [x] Also free in an empty slot (Dave): from level 5 the hat of the Lucas's Reply quest (Brown Skullcap 708, one of seven equal level 5 hats; meowdb quest-tracker/1008, read 2026-10-08), and on level 8 and 9 the Fruit Knife (559) for a job that can wear it; from level 10 Cheapest uses the job's own weapon. There is no "Leather Bandana" on MeowDB
 - [x] Tests: unit tests for `dropAboveLevel` (armor DEF, empty hand, own item kept, empty level is not level 0); app tests: storage unchanged from level 20 to 10 and back, the item grey with "(vanaf lv N)", the "(free)" count, Back and Auto assign (the old "te weinig AP" message stays covered in autoFillAp.test.ts)
 - [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
 - [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
@@ -86,7 +87,8 @@ equipment you already wear and buying only what pays off on top. What you filled
 with a mistake (more skill points than your level allows) no longer leaves Cheapest with only a question mark. "Based on:"
 shows the equipment you wear ("3 items (free)") and the new equipment Cheapest buys ("1 item (upgrade)"). Equipment above your
 level no longer counts: it stays saved, shows grey with the level it needs, and counts again once you reach that level.
-An empty top, bottom or shoes slot counts as the clothes every character starts with. Overnemen lists what differs from your own setup and takes over only the mob and
+An empty slot counts as what every character gets at the start: the starter clothes, from level 5 the quest hat, and on
+level 8 and 9 the Fruit Knife. Overnemen lists what differs from your own setup and takes over only the mob and
 the potions, which you can change freely in the game; your skill points, AP and equipment stay as they are.
 
 **Score:** 4

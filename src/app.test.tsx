@@ -1386,11 +1386,11 @@ describe('bewaren na elke wijziging', () => {
     h.type('5')
     h.save()
     expect(statShown('Magic Def')).toBe('5')
-    // Top, bottom en schoenen zijn nooit open: een leeg slot is je startkleding (Dave, 8 oktober 2026). De hoed wel.
+    // Schoenen en hoed zijn nooit open: een leeg slot is je startkleding of de questhoed (Dave, 8 oktober 2026). Zonder geslacht zijn top en bottom
+    // dat wel, tot je ze kiest.
     pick(cards()[0], 'Top', 'Red Pao')
-    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
-    pick(cards()[0], 'Shoes', 'Red Enamel Boots')
     expect(statShown('Magic Def')).toBe('5')
+    pick(cards()[0], 'Bottom', 'Red Pao Bottoms')
     pick(cards()[0], 'Hat', 'Bronze Pride')
     expect(statShown('Magic Def')).toBe('18')
     expect(within(statLine('Magic Def')).queryByRole('button')).toBeNull()
@@ -3947,8 +3947,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     // Op level 10: Steel Titans (lv 15) en Red Loosecap (lv 20) tellen niet mee, Red Cloth Pants (lv 10) wel. De opslag verandert niet.
     atLevel('10')
     expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
-    // Plus je startkleding in een leeg slot: zonder geslacht alleen de schoenen (Dave, 8 oktober 2026).
-    expect(freeOn()).toBe('Equip: 2 items (free)')
+    // Plus wat je in het begin gratis krijgt in een leeg slot: de schoenen (zonder geslacht geen top of bottom) en de questhoed (Dave, 8 oktober 2026).
+    expect(freeOn()).toBe('Equip: 3 items (free)')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
@@ -3971,8 +3971,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     // Equip: wat je draagt, ook als Cheapest het houdt; Cheapest rekent ermee en het kost niets.
     const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
     // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
-    // Red Pao en je startschoenen (zonder geslacht geen starttop of -broek; de top is Red Pao).
-    expect(worn.textContent).toBe('Equip: 2 items (free)')
+    // Red Pao, je startschoenen en de questhoed (zonder geslacht geen startbroek).
+    expect(worn.textContent).toBe('Equip: 3 items (free)')
     // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
     const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
     const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
@@ -4889,10 +4889,10 @@ describe('equipment: Your character als tabel', () => {
     atLevel('30')
     openHomeEquipment()
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    // Niets zelf gekozen: je startkleding, zonder geslacht alleen de schoenen (Dave, 8 oktober 2026).
-    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe(itemId('Leather Sandals'))
+    // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026).
+    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
     expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
-    expect(within(dialog).getByRole('button', { name: 'Equip: 1 item (free)' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items (free)' })).toBeTruthy()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     closeDialogs()
@@ -4900,12 +4900,12 @@ describe('equipment: Your character als tabel', () => {
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = equipRow(dialog)
     // Het item-id van elk gedragen stuk, in de volgorde van de slots (Dave, 8 oktober 2026).
-    const ids = [itemId(IGOR.name), itemId('Leather Sandals'), itemId('Red Pao')]
+    const ids = [itemId(IGOR.name), itemId('Brown Skullcap'), itemId('Leather Sandals'), itemId('Red Pao')]
     expect(ids.every((id) => /^\d+$/.test(id ?? ''))).toBe(true)
     expect(row.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
-    const toggle = within(row).getByRole('button', { name: 'Equip: 3 items (free)' })
+    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items (free)' })
     expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4917,11 +4917,11 @@ describe('equipment: Your character als tabel', () => {
     const tables = [...popup.querySelectorAll<HTMLElement>('section.char-table-equip')]
     expect(tables.map((t) => [...t.querySelectorAll(':scope > .equip-head > span')].map((e) => e.textContent))).toEqual([['ATT', '', ''], ['DEF', '', '']])
     // In Profile een derde kolom met het potlood van elk slot (Dave, 8 oktober 2026).
-    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length, r.lastElementChild!.getAttribute('aria-label')]))).toEqual([[['Weapon', 3, 'Weapon wijzigen']], [['Shoes', 3, 'Shoes wijzigen'], ['Top', 3, 'Top wijzigen']]])
+    expect(tables.map((t) => [...t.querySelectorAll('.stat-line')].map((r) => [r.getAttribute('data-slot'), r.children.length, r.lastElementChild!.getAttribute('aria-label')]))).toEqual([[['Weapon', 3, 'Weapon wijzigen']], [['Hat', 3, 'Hat wijzigen'], ['Shoes', 3, 'Shoes wijzigen'], ['Top', 3, 'Top wijzigen']]])
     expect(tables[0].querySelector('.stat-line-name')!.textContent).toBe(IGOR.name)
     expect(tables[0].querySelector('.equip-stat')!.textContent).toBe(String(IGOR.watk))
     expect(tables[1].querySelector('.equip-stat')!.textContent).toMatch(/^\d+$/)
-    expect([...popup.querySelectorAll('.char-table-equip .stat-line')].map((e) => e.getAttribute('data-slot'))).toEqual(['Weapon', 'Shoes', 'Top'])
+    expect([...popup.querySelectorAll('.char-table-equip .stat-line')].map((e) => e.getAttribute('data-slot'))).toEqual(['Weapon', 'Hat', 'Shoes', 'Top'])
     // Het potlood opent de slotpopup van dat slot, dezelfde als in de slotkeuze; sluiten laat de Equip-popup staan.
     fireEvent.click(within(tables[1]).getByRole('button', { name: 'Top wijzigen' }))
     const slotPopup = document.querySelector<HTMLElement>('dialog.slot-dialog')!
@@ -4971,8 +4971,8 @@ describe('equipment: Your character als tabel', () => {
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
-    // Het wapen en je startschoenen.
-    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items (free)' })).toBeTruthy()
+    // Het wapen, de questhoed en je startschoenen.
+    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items (free)' })).toBeTruthy()
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {

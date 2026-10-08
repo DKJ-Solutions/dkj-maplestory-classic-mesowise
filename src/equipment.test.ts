@@ -12,6 +12,8 @@ import {
   dropAboveLevel,
   wearableSetup,
   STARTER_CLOTHES,
+  QUEST_HAT,
+  BEGINNER_KNIFE,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
@@ -1940,5 +1942,27 @@ describe('wearableSetup: een leeg top-, bottom- of schoenenslot is je startkledi
     expect(out.dropped).toEqual(['top'])
     expect(out.equipment.top.pick).toBe(STARTER_CLOTHES.top.male)
     expect(out.profile.wdef).toBe(String(50 - 32 + 6))
+  })
+})
+
+describe('wearableSetup: de questhoed en het Beginner-mes (Dave, 8 oktober 2026)', () => {
+  const at = (level: string): ProfileDraft => ({ ...DEFAULT_PROFILE, level, clawWatk: '0', dagger: '0' })
+
+  it('geeft een leeg hat-slot vanaf level 5 de hoed van de quest Lucas Reply, voor elke job', () => {
+    expect(wearableSetup(at('4'), defaultEquipment(), 'thief', null).equipment.hat.pick).toBe('unknown')
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) expect(wearableSetup(at('5'), defaultEquipment(), job, null).equipment.hat.pick, job).toBe(QUEST_HAT)
+  })
+
+  it('geeft een leeg wapenslot alleen op level 8 en 9 de Fruit Knife, en alleen een job die hem kan dragen', () => {
+    for (const level of ['7', '10']) expect(wearableSetup(at(level), defaultEquipment(), 'thief', null).equipment.claw.pick, level).toBe('unknown')
+    const thief = wearableSetup(at('8'), defaultEquipment(), 'thief', null)
+    expect(thief.equipment.claw.pick).toBe(BEGINNER_KNIFE)
+    // Een dagger: de weapon attack van het mes, en de app rekent als met een dagger.
+    expect([thief.profile.clawWatk, thief.profile.dagger]).toEqual(['23', '1'])
+    expect(wearableSetup(at('9'), defaultEquipment(), 'bowman', null).equipment.claw.pick).toBe(BEGINNER_KNIFE)
+    expect(wearableSetup(at('9'), defaultEquipment(), 'warrior', null).equipment.claw.pick).toBe('unknown')
+    // Een eigen wapen gaat voor.
+    const sword = { ...defaultEquipment(), claw: choosePick('claw', defaultEquipment().claw, 'Sword') }
+    expect(wearableSetup(at('8'), sword, 'thief', null).equipment.claw).toBe(sword.claw)
   })
 })

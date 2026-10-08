@@ -662,21 +662,39 @@ export const STARTER_CLOTHES: { readonly top: Readonly<Record<Gender, string>>; 
 }
 
 /**
- * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en een leeg top-, bottom-
- * of schoenenslot telt als je startkleding (STARTER_CLOTHES), gratis. Een top of bottom alleen als er geen overall is; zonder geslacht alleen de
- * schoenen. Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij.
+ * De hoed van de quest Lucas's Reply op Maple Island (Dave, 8 oktober 2026; meowdb.com/msclassic/quest-tracker/1008, gelezen 2026-10-08): een
+ * Beginner krijgt willekeurig een van zeven hoeden van level 5 met 6 DEF. Ze zijn gelijk, dus de app rekent met de eerste, de Brown Skullcap (708).
+ */
+export const QUEST_HAT = 'Brown Skullcap'
+
+/** Het mes dat je als Beginner krijgt (Dave, 8 oktober 2026): de Fruit Knife (559, level 8, dagger). Alleen op level 8 en 9; daarna het wapen van je job. */
+export const BEGINNER_KNIFE = 'Fruit Knife'
+const BEGINNER_LAST_LEVEL = 9
+
+/**
+ * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en wat je in het begin
+ * gratis krijgt in een leeg slot: je startkleding (STARTER_CLOTHES; een top of bottom alleen zonder overall, zonder geslacht alleen de schoenen), vanaf
+ * level 5 de questhoed (QUEST_HAT), en op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen. Een slot dat nog niet was
+ * ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij.
  */
 export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
   const below = dropAboveLevel(profile, eq, job)
   let out = { equipment: below.equipment, profile: below.profile }
-  const starter: [EquipSlot, string | null][] = [
+  const text = profile.level.trim()
+  const level = text === '' ? NaN : Number(text)
+  const free: [EquipSlot, string | null][] = [
     ['top', gender ? STARTER_CLOTHES.top[gender] : null],
     ['bottom', gender ? STARTER_CLOTHES.bottom[gender] : null],
     ['shoes', STARTER_CLOTHES.shoes],
+    ['hat', QUEST_HAT],
+    ['claw', level <= BEGINNER_LAST_LEVEL && catalogItems('claw', job).some((i) => i.name === BEGINNER_KNIFE) ? BEGINNER_KNIFE : null],
   ]
-  for (const [slot, name] of starter) {
+  for (const [slot, name] of free) {
     if (name === null || wornName(out.equipment[slot]) !== null) continue
     if ((slot === 'top' || slot === 'bottom') && wornName(out.equipment.overall) !== null) continue
+    // Wat een level vraagt (de hoed 5, het mes 8), alleen met een geldig level dat hoog genoeg is.
+    const needs = itemLevel(slot, name) ?? 0
+    if (needs > 0 && !(Number.isInteger(level) && needs <= level)) continue
     out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], name), job)
   }
   return { ...out, dropped: below.dropped }
