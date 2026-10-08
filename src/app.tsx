@@ -456,6 +456,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
   const advisedStats = useContext(AdvisedStats)
+  const cards = useContext(CardViewContext)
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
@@ -474,7 +475,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
-        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" />}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -508,7 +509,8 @@ const COST_CARDS: readonly { key: CardKey; title: string; icon: keyof typeof ICO
 interface CardViewState {
   /** Per kaart de weergave die openstaat; ontbreekt de kaart, dan is zijn popup dicht. */
   open: Partial<Record<CardKey, CardView>>
-  opener: { current: HTMLButtonElement | null }
+  /** Per kaart de knop die zijn popup opende (Dave, 8 oktober 2026): zo gaat de focus terug naar de goede knop als een kaart een andere opent, zoals het potlood bij Based on: in Your character. */
+  openers: { current: Partial<Record<CardKey, HTMLButtonElement | null>> }
   openCard: (card: CardKey, view: CardView, button: HTMLButtonElement) => void
   close: (card: CardKey) => void
 }
@@ -517,12 +519,12 @@ const AdvisedWho = createContext('')
 /** De regels van Advised: Total stats (Dave, 7 oktober 2026), voor het i-knopje achter de char onder "Based on:"; null zonder advies. */
 const AdvisedStats = createContext<ComponentChildren>(null)
 
-const CardViewContext = createContext<CardViewState>({ open: {}, opener: { current: null }, openCard: () => {}, close: () => {} })
+const CardViewContext = createContext<CardViewState>({ open: {}, openers: { current: {} }, openCard: () => {}, close: () => {} })
 
 /** De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende. */
 function useCardView(card: CardKey) {
   const ctx = useContext(CardViewContext)
-  return { view: ctx.open[card] ?? null, opener: ctx.opener, open: (v: CardView, button: HTMLButtonElement) => ctx.openCard(card, v, button), close: () => ctx.close(card) }
+  return { view: ctx.open[card] ?? null, opener: { get current() { return ctx.openers.current[card] ?? null } }, open: (v: CardView, button: HTMLButtonElement) => ctx.openCard(card, v, button), close: () => ctx.close(card) }
 }
 
 /**
@@ -833,7 +835,7 @@ function StatsCard(props: StatsCardBody) {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} tag={showAdvised ? undefined : 'edit'} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
@@ -1123,7 +1125,7 @@ function PotionsCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="potions" title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
+        <CardPopup card="potions" title={title} tag="edit" opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -1757,10 +1759,16 @@ const mobWhy = (mob: string) =>
  * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
  * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual' }) {
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
   const { stats, sheet } = props
   // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
   const advised = sheet === 'advised'
+  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood achter elk vak (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
+  const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
+    <button type="button" class="info-toggle" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
+      {PENCIL_ICON}
+    </button>
+  )
   const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
     <section class="based-on" aria-label="Based on">
@@ -1779,6 +1787,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                 {stats}
               </PopupButton>
             )}
+            {props.edit && pencil('Char', 'ap', props.edit.char)}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
@@ -1792,6 +1801,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}
+            {props.edit && pencil('Mob', 'mob', props.edit.mob)}
           </div>
           {advised && props.mob !== null && (
             <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
@@ -2299,7 +2309,7 @@ function EquipmentCard(props: {
       setEditing(null)
     }
     return (
-      <StatDialog title={label} closeLabel={`Sluiten ${label}`} focusInput={false} className="item-dialog slot-dialog" onCancel={() => closeSlot(slot)}>
+      <StatDialog title={label} tag="edit" closeLabel={`Sluiten ${label}`} focusInput={false} className="item-dialog slot-dialog" onCancel={() => closeSlot(slot)}>
         <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'}>
           <div class="field equip-head">
             <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} gender={props.gender} onPick={(pick, name) => props.onPick(slot, pick, name)} />
@@ -2337,7 +2347,7 @@ function EquipmentCard(props: {
               </button>
               {isEditing && (
                 // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
-                <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
+                <StatDialog title={wornName(entry) ?? label} tag="edit" onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
                   <StatEditor
                     stat={stat}
                     labelId={`${uid}-${slot}-game`}
@@ -2521,7 +2531,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} tag={advised ? undefined : 'edit'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
@@ -2803,7 +2813,7 @@ function HuntedMobCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="mob" title={title} mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
+        <CardPopup card="mob" title={title} tag="edit" mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
@@ -3776,11 +3786,11 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
 export function App() {
   // De popup van een kaart die openstaat (#192): hier, zodat Total cost er een kan openen.
   const [openCard, setOpenCard] = useState<CardViewState['open']>({})
-  const cardOpener = useRef<HTMLButtonElement | null>(null)
+  const cardOpeners = useRef<CardViewState['openers']['current']>({})
   const cardViews: CardViewState = {
     open: openCard,
-    opener: cardOpener,
-    openCard: (card, view, button) => { cardOpener.current = button; setOpenCard((o) => ({ ...o, [card]: view })) },
+    openers: cardOpeners,
+    openCard: (card, view, button) => { cardOpeners.current[card] = button; setOpenCard((o) => ({ ...o, [card]: view })) },
     close: (card) => setOpenCard(({ [card]: _, ...rest }) => rest),
   }
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)

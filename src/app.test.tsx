@@ -1660,8 +1660,8 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     levelUp()
     fireEvent.click(viewButton('Ability points'))
     // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
-    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
-    expect(homeScreen().querySelector('dialog .stat-dialog-head > h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
+    expect(homeScreen().querySelector('dialog .stat-dialog-head h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
+    expect(homeScreen().querySelector('dialog .stat-dialog-head h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
     const head = homeScreen().querySelector('dialog .ap-group h3')!
     expect(head.textContent).toBe('70 / 75 BASE AP')
     expect(head.querySelector('.skill-sp')?.classList.contains('over')).toBe(false)
@@ -1670,7 +1670,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   it('zet ook achter de titel van de popup van Skillpoints de SP die nog vrij zijn: Skillpoints (3)', () => {
     levelUp()
     fireEvent.click(viewButton('Skillpoints'))
-    expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head > h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
+    expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
   })
 
   it('kleurt het aantal als fout als er meer base AP staan dan je level geeft', () => {
@@ -4271,7 +4271,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(char).toBeTruthy()
       expect(mob.querySelector('.sr-only')?.textContent).toBe('Mob: ')
       expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
-      expect(mob.querySelector('button')).toBeNull()
+      expect(mob.querySelector('button[aria-label^="Info over"]')).toBeNull()
       expect(mob.hasAttribute('data-based-on-mob')).toBe(false)
       closeView('Equip')
       fireEvent.click(viewButton('Monster'))
@@ -4280,6 +4280,39 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Monster')
       d = openView('Equip', 'Your character')
       expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
+    })
+
+    it('zet in Your character van Total cost: Equip een potlood in de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Advised heeft ze niet (Dave, 8 oktober 2026)', () => {
+      setJob('thief')
+      expect(openView('Equip', 'Advised').querySelector('.based-on .info-toggle[aria-label$=" wijzigen"]')).toBeNull()
+      closeView('Equip')
+      const d = openView('Equip', 'Your character')
+      const [char, mob] = d.querySelectorAll<HTMLElement>('.based-on .based-on-label')
+      // Mob, leeg: het potlood staat er al.
+      expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
+      const mobPencil = within(mob).getByRole('button', { name: 'Mob wijzigen' })
+      expect(mobPencil.getAttribute('aria-haspopup')).toBe('dialog')
+      fireEvent.click(mobPencil)
+      expect(mobPencil.getAttribute('aria-expanded')).toBe('true')
+      // De popup van Monster staat open, terwijl die van Equip open blijft.
+      expect(cardOf('Equip').querySelector<HTMLDialogElement>('dialog.card-dialog')!.open).toBe(true)
+      expect((mobDialog() as HTMLDialogElement).open).toBe(true)
+      // Een popup waarin je iets wijzigt heeft het label edit (Dave, 8 oktober 2026).
+      expect(mobDialog().querySelector('.title-tag')?.textContent).toBe('edit')
+      fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: 'Slime' } })
+      fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
+      expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
+      expect(mob.querySelector('.based-on-value')?.textContent).toBe('Slime')
+      // Gevuld: i-knopje en potlood naast elkaar.
+      expect(within(mob).getByRole('button', { name: 'Info over Slime' })).toBeTruthy()
+      expect(within(mob).getByRole('button', { name: 'Mob wijzigen' })).toBeTruthy()
+      // Char: het potlood opent Ability points van Your character; het i-knopje blijft.
+      expect(within(char).getByRole('button', { name: /^Stats van / })).toBeTruthy()
+      fireEvent.click(within(char).getByRole('button', { name: 'Char wijzigen' }))
+      const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
+      expect(ap.open).toBe(true)
+      expect(ap.querySelector('.title-tag')?.textContent).toBe('edit')
+      expect(ap.querySelector('.stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
     })
 
     it('zet achter de mob onder "Based on:" in Total cost: Equip een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {

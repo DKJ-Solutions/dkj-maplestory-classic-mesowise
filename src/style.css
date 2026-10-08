@@ -389,6 +389,8 @@ html:has(dialog:modal) { overflow: hidden; }
 /* Your character in Total cost: Equip (Dave, 8 oktober 2026): dezelfde tabel als Advised, in blauw. Het accent van de popup en alles erin (het label, de gecorrigeerde stat,
    de focusranden, Opslaan) is blauw in plaats van oranje; de vakken van Based on: en de melding bij een job zonder items staan in --worn-box, een tint dieper. */
 .stat-dialog.worn-dialog.card-dialog-equip { --card: var(--worn-bg); --accent: var(--worn-accent); --on-accent: var(--on-worn-accent); border-color: var(--worn-border); }
+/* Het label edit en wearing op een popup van Your character staat in het blauw van die popup, ook in de kaarten zonder blauwe popup. */
+.worn-dialog .title-tag { color: var(--on-worn-accent); background: var(--worn-accent); }
 .worn-dialog.card-dialog-equip .based-on-label { background: var(--worn-box); }
 .worn-dialog.card-dialog-equip .hint { padding: 0.375rem 0.4375rem; background: var(--worn-box); border-radius: 0.5rem; }
 .stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
