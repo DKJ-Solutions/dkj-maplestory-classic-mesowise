@@ -1769,6 +1769,8 @@ function BasedOn(props: { who: string; mob: string }) {
             <span class="based-on-value">{props.mob}</span>
             {mobDef && (
               <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+                {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+                <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}

@@ -14,7 +14,7 @@ import { expectedStat } from './expectedStats'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
-import { mobDraft } from './data/spots'
+import { MOBS, mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
 
 const claw = (name: string) => {
@@ -4260,7 +4260,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
       expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
-      expect(lines(popup)).toEqual(advisedLines)
+      // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Advised: Monster.
+      const level = MOBS.find((m) => m.name === mob)!.level
+      expect(lines(popup)).toEqual([`Level${level}`, ...advisedLines])
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       await frame()
       expect(document.activeElement).toBe(button)
