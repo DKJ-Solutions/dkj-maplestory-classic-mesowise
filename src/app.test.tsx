@@ -644,7 +644,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(advisedRow(kept, 'Weapon')).toBeUndefined()
   })
 
-  it('geeft elke regel een vraagteken met de reden, en laat weg wat dit level niets kost: een stuk dat je houdt, en een slot dat leeg blijft, ook omdat een overall of losse top het beslaat (Dave, 7 en 8 oktober 2026)', () => {
+  it('geeft elke regel een dicht vraagteken, laat weg wat dit level niets kost (een stuk dat je houdt, een slot dat leeg blijft, ook omdat een losse top de overall beslaat), en noemt bij top en bottom samen de partner (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -3704,9 +3704,9 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     // Het bedrag staat kort (14.1k, Dave, 7 oktober 2026); het volle bedrag staat in de tooltip.
     const full = (el: Element) => mesoOf(el.querySelector('.meso-amount')?.getAttribute('title') ?? '0')
     for (const r of bought) for (const cell of r.querySelectorAll('.advised-level')) expect(cell.textContent).toBe(compactMeso(full(cell)))
-    // Achter de naam het deel van de prijs dat dit level betaalt (Dave, 8 oktober 2026), als percentage; een stuk dat je niet koopt heeft er niets.
+    // Achter de naam het deel van de prijs dat dit level betaalt (Dave, 8 oktober 2026), als percentage; alleen wat je koopt staat in de bill.
     for (const r of bought) expect(r.querySelector('.advised-item > .advised-qty')!.textContent).toMatch(/^(<1|\d+)%$/)
-    for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-qty')).toBeNull()
+    expect(rows.every((r) => r.classList.contains('buy'))).toBe(true)
     // Elk gekocht stuk: Mesos is zijn regel op de factuur, nooit meer dan de winkelprijs uit zijn info-popup.
     expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: full(r.querySelector('.advised-level')!) }))).toEqual(invoice)
     const shopOf = new Map(bought.map((r) => [r, mesoOf(infoPrice(r))]))
@@ -4000,7 +4000,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
     }
     const rowsOf = (d: HTMLElement) => [...d.querySelectorAll<HTMLElement>('.advised-row')].map((r) => r.querySelector('.slot-name')!.textContent)
 
-    it('zet Level cost in één bill met twee kostenposten, Equip en Useable, waarvan de subtotalen samen Total cost zijn, het totaal van de knop (Dave, 8 oktober 2026)', () => {
+    it('zet Level cost in één bill met twee kostenposten, Useable en dan Equip, waarvan de subtotalen samen Total cost zijn, het totaal van de knop (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       // Met een wapen en een mob kan ook Profile zijn level uitrekenen; zonder heeft het geen factuur en dus geen Useable.
       wearWeapon(IGOR.name)
@@ -4014,7 +4014,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const buttonTotal = n(button.querySelector('.level-cost-total')!.textContent)
         fireEvent.click(button)
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
-        // Eén tabel, met per kostenpost een kopregel, zijn regels en een subtotaal.
+        // Eén tabel, met per kostenpost zijn regels en een subtotaal, zonder eigen kopregel.
         expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
         // Geen kop boven de bill (Dave, 8 oktober 2026).
         expect(d.querySelector('section.bill > h3'), label).toBeNull()
@@ -4765,7 +4765,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
     expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
-    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
+    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Wat dit level kost met de setup van Cheapest, op één bill./)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft zijn eigen uitleg (Dave, 8 oktober 2026), over wat de kolommen daar betekenen.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))

@@ -752,10 +752,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .field-fixed { margin: 0; display: flex; align-items: center; min-height: 44px; padding: 0.25rem 0.75rem; font-size: 0.9375rem; font-weight: 600; line-height: 1.2;
   overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
 .potion-group .field-fixed { margin-bottom: 0.5rem; }
-/* De Equip-popup achter Advised (Dave, 7 oktober 2026): per slot één regel in vier kolommen: het slot, de naam ("Steel Igor"),
-   de winkelprijs en het vraagteken. De slotkolom is vast, zodat de details van elke rij recht onder elkaar beginnen; een rij zonder vraagteken
-   houdt zijn kolom leeg, net als een rij zonder prijs. Past de naam niet op 360px, dan kort hij in. Van wat je koopt staat
-   alleen het bedrag in de accentkleur, niet de naam, en de naam is nooit vet en nooit grijs (Dave, 7 oktober 2026); van een stuk dat niet loont is het bedrag gedempt, van een leeg slot het streepje. Het vraagteken opent de popup van het stuk (.item-dialog). */
+/* De facturen (Dave, 7 en 8 oktober 2026): past de naam niet op 360px, dan kort hij in. Van wat je koopt staat alleen het bedrag in de accentkleur, niet
+   de naam, en de naam is nooit vet en nooit grijs; van een leeg slot het streepje. Het vraagteken opent de popup van het stuk (.item-dialog). */
 /* Eén tabel per factuur (Dave, 8 oktober 2026): kop in thead, regels in tbody, het totaal in tfoot. De breedtes staan op de kop (table-layout: fixed);
    elke kolom na de eerste begint met 0.25rem lucht, de tussenruimte van het oude raster, en is daarom 0.25rem breder dan zijn inhoud. */
 /* De factuur in een eigen section, zoals .based-on (Dave, 8 oktober 2026). */
@@ -809,7 +807,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Het knopje houdt zijn 44px om te tikken, maar steekt boven en onder buiten de rij: zo blijft de rij laag (Dave, 7 oktober 2026). */
 .advised-price { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .advised-row.buy .advised-price { color: var(--accent); }
-.advised-row.option .advised-price { font-weight: 400; color: var(--muted); }
 /* De naam met de info-knop er direct achter (Dave, 7 oktober 2026): de naam kort in, de knop blijft staan. Hij is kleiner dan het vraagteken
    (20px) maar houdt 44px om te tikken; dat vlak steekt boven, onder en links over de rij heen, zodat de rij niet hoger wordt. */
 .advised-item { display: flex; align-items: center; min-width: 0; }
@@ -891,7 +888,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    tussen de regels. */
 /* Boven en onder elk subtotaal een dikkere lijn (Dave, 8 oktober 2026): de post sluit af met zijn subtotaal. */
 .advised-bill .advised-subtotal { border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
-/* Onder elk subtotaal een dikkere lijn (Dave, 8 oktober 2026), zoals de totaalstreep in de uitleg (.why-table): daar sluit een post af. */
 .advised-bill tbody tr.advised-subtotal { border-bottom: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
 .advised-subtotal > th, .advised-subtotal > td { height: auto; padding-top: 0.375rem; padding-bottom: 0.375rem; vertical-align: baseline; }
 .advised-subtotal td { text-align: right; white-space: nowrap; }

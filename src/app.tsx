@@ -1582,20 +1582,23 @@ function StatDialog(props: {
   )
 }
 
-/** De uitleg bij Level cost: Equip: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`). */
+/** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    De equip die zich terugverdient tot je volgende upgrade in dat slot (zoals het Report), en waarmee de factuur van Cheapest rekent. Je karakter groeit daarbij mee (AP, skillpunten). Een bedrag in de accentkleur is een stuk dat je in de winkel koopt. Shop is wat het
-    in de winkel kost; Level is het deel van dit level, want je draagt het tot je volgende upgrade. Dat deel staat op de factuur. Een grijs stuk kost meer dan het tot je volgende upgrade bespaart, dus dat slot blijft leeg. Het vraagteken achter een regel zegt per stuk waarom. De app koopt niets voor je: Overnemen zet de stukken alleen in je equip hier.
+    Wat dit level kost met de setup van Cheapest, op één bill. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die
+    Cheapest koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
+    het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
+    wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
+    Overnemen zet de stukken alleen in je equip hier.
   </>
 )
 
-/** De uitleg bij Level cost: Equip in Your character (Dave, 8 oktober 2026): dezelfde tabel als Advised, met wat je draagt in plaats van wat de app adviseert; het vraagteken is het oordeel per slot, het potlood bij Equip onder "Based on:" kiest wat je draagt. */
+/** De uitleg bij Level cost in Profile (Dave, 8 oktober 2026): dezelfde bill als Cheapest, met wat je draagt; het potlood bij Equip onder "Based on:" kiest wat je draagt. */
 const WORN_HELP = (
   <>
-    Wat je nu draagt, in dezelfde tabel als Cheapest. Shop is wat het stuk in de winkel kost; een eigen item, munitie en een stuk zonder winkelprijs hebben er geen en tellen niet mee in Total cost. Level is leeg: wat je al
-    draagt, kost dit level niets. Alleen bij een slot dat de app nu zou upgraden staat "Upgrade". Waar een vraagteken staat, zegt het of je dat slot upgradet of houdt, en waarom. Wat je draagt kies je onder "Based on:": tik op het potlood achter Equip, kies
-    daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
+    Wat dit level kost met wat je nu draagt, op dezelfde bill als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
+    kost dit level niets, dus er staat geen equip in en het subtotaal van Equip is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
+    Equip, kies daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
 
@@ -1748,10 +1751,9 @@ function slotCovers(cheapest: Record<EquipSlot, CheapestSlot>, slot: EquipSlot):
 }
 
 /**
- * De regels van de equip in Level cost achter "Cheapest" (#188, #192): per slot de goedkoopste equip op één regel (CheapestRow). Een streepje is een
- * slot dat leeg blijft. Een leeg Ammo-slot toont de stars of pijlen die de factuur telt (`ammo`, #189). Twee bedragen per regel (Dave, 7 oktober 2026):
- * Shop, wat je in de winkel betaalt, en Level, het deel daarvan dat dit level betaalt omdat je het stuk tot je volgende upgrade draagt; dat is de regel
- * van het stuk op de factuur van Advised (`lines`, writeOff.ts). `level` is de som van wat dit level betaalt.
+ * De regels van de equip in de bill van Level cost achter "Cheapest" (#188, #192): per slot de goedkoopste equip (CheapestRow). Mesos is het deel van de
+ * prijs dat dit level betaalt, omdat je het stuk tot je volgende upgrade draagt: de regel van het stuk op de factuur van Cheapest (`lines`, writeOff.ts).
+ * Een slot zonder bedrag staat er niet (BillRow). `level` is de som van wat dit level betaalt.
  */
 function cheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment: Equipment; cheapest: Record<EquipSlot, CheapestSlot>; ammo: string | null; lines: readonly InvoiceLine[] }) {
   // De factuurregel van een stuk dat je koopt: op de naam zonder kleur, zoals de factuur van Advised hem schrijft (familyName). Een stuk dat je
@@ -1773,7 +1775,7 @@ type UseableInput = { job: Job; potions: Record<PotionKind, Potion>; ammo: strin
 /**
  * De regels van de useables (Dave, 7 oktober 2026): dezelfde regels als die van de equip (BillRow), een per potion en een voor de munitie. Het
  * bedrag is wat het dit level kost, uit de factuur; de info-knop toont wat het stuk is, het vraagteken hoe de app op dat aantal komt. Met `wide`
- * (de bill van Level cost, Dave, 8 oktober 2026) staan ze in de kolommen van de equip: het aantal onder Shop, het bedrag onder Level.
+ * (de bill van Level cost, Dave, 8 oktober 2026) staat het aantal achter de naam en het bedrag onder Mesos.
  * `total` is wat de factuur voor potions en munitie rekent.
  */
 function useableRows(props: UseableInput, wide: boolean) {
@@ -1982,14 +1984,14 @@ function MesoAmount(props: { n: number }) {
 }
 
 /**
- * Eén regel van een factuur in Advised, in vier kolommen (Dave, 7 oktober 2026): het slot, de naam met de info-knop erachter, het bedrag en het
- * vraagteken (in Equip vijf, met Shop en Level; `action` vervangt het vraagteken: de slotkeuze heeft er een potlood, een slot zonder oordeel een leeg vak). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
- * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
+ * Eén regel van een factuur (Dave, 7 en 8 oktober 2026). In de bill van Level cost (met `level`) twee kolommen: de naam met de info-knop, het aantal
+ * (`qty` of `share`) en het vraagteken erachter, en het bedrag onder Mesos; een regel zonder bedrag staat er niet. Elders het slot, de naam, een bedrag
+ * (of met `qty` het aantal en het bedrag) en het vraagteken; `action` vervangt het vraagteken, zoals het potlood in de slotkeuze. Het bedrag van wat je
+ * koopt staat in de accentkleur (`buy`), een leeg slot is een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken
+ * waarom (`help`): elk in een eigen popup.
  */
 function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; share?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price?: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
   const title = props.name ?? props.slot
-  // Met `action` (Your character, Dave, 8 oktober 2026) staat achteraan in plaats
-  // van het vraagteken het potlood dat het slot opent.
   const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
@@ -2013,7 +2015,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       {props.help}
     </PopupButton>
   )
-  // In de bill van Level cost staat het vraagteken in de cel van het stuk, achter het aantal (BillRow hieronder); anders in zijn eigen kolom.
+  // In de bill van Level cost staat het vraagteken in de cel van het stuk, achter het aantal (zie de return); anders in zijn eigen kolom.
   const last = !wide && <td class="advised-help">{helpButton}</td>
   // In de bill van Level cost staat alleen wat dit level mesos kost (Dave, 8 oktober 2026): geen leeg slot, geen stuk dat je houdt of niet koopt, geen
   // potion die je niet gebruikt, en in Profile ook geen "Upgrade" in de kolom Mesos.
@@ -2061,8 +2063,8 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
 }
 
 /**
- * Eén slot in de Equip-factuur van Advised (BillRow): de winkelprijs onder Shop, het deel van dit level onder Level (`line`, de regel van het stuk
- * op de factuur), en of je het stuk moet kopen en waarom achter het vraagteken, met de afschrijving eronder.
+ * Eén slot in de bill van Level cost achter Cheapest (BillRow): onder Mesos het deel van dit level (`line`, de regel van het stuk op de factuur), het deel
+ * van de prijs achter de naam, en achter het vraagteken waarom je het koopt (Dave, 8 oktober 2026).
  */
 function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean; line?: InvoiceLine }) {
   const { slot } = props
@@ -2084,7 +2086,6 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       name={name === null ? null : own ? name : familyName(slot, name)}
       fullName={name ?? undefined}
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
-      price={shopPrice}
       share={props.line?.why?.kind === 'shop' ? props.line.why.share : null}
       level={props.line ? props.line.meso : null}
       // Het vraagteken legt uit waarom je dit stuk koopt (Dave, 8 oktober 2026): onder de naam van het stuk het oordeel en wat het bespaart.

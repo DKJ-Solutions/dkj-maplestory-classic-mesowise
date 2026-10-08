@@ -65,6 +65,7 @@ whose two subtotals add up to Total cost. The columns were then pared down step 
 
 - [x] Existing bill tests rescoped to the Equip group; new test: one table, two groups, subtotals sum to Total cost, equal to the Level cost button (Cheapest and Profile)
 - [x] Full suite and lint gate green
+- [x] Victor's final review: popup help texts rewritten for the new bill, stale comments and test titles fixed, ignored `price` prop and dead CSS dropped; the now unreachable advice branches filed as #260
 - [x] Dave has looked at the preview and said ship it
 
 ### DEPLOY: app/bill-table
