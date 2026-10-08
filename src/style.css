@@ -200,7 +200,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Je volgende level (issue #24) */
 /* Kopschaal: h2 (paneel en kaart) 1.5rem > h3 (deel van het advies) 1.125rem > h4-niveau (label in een popup) 0.9375rem; elk niveau verschilt in grootte, niet alleen in gewicht of kleur */
 :root { --fs-h2: 1.5rem; --fs-h3: 1.125rem; --fs-h4: 0.9375rem; }
-.level-cost h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); line-height: 1.2; }
 .job h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 .job h2.with-icon { display: flex; align-items: center; gap: 0.5rem; }
 .job-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; margin: -0.5rem 0 0.375rem; }
@@ -232,14 +231,12 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .job-choice { min-width: 0; padding: 0.5rem 0.125rem; font-size: clamp(0.6875rem, 3.2vw, 0.875rem); white-space: nowrap; }
 .job-choice[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
 .job .hint:last-child { margin-bottom: 0; }
-.level-cost-value { margin: 0 0 0.25rem; }
-.level-cost-value strong { font-size: 2rem; color: var(--accent); }
-/* De bron onder het advies: in de Report-kaart en in het rapport van een kaart gelijk. */
-.level-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.level-cost .source a, .report-body .source a { color: var(--accent); }
+/* De bron onder het advies en onder Total cost: in het rapport van een kaart en in Total cost gelijk. */
+.total-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.total-cost .source a, .report-body .source a { color: var(--accent); }
 
-/* Wat dit level kost en de drie adviezen in één kaart (#126): elk advies onder een lijn. */
-.level-cost .advice-part + .advice-part, .report-body .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+/* In het rapport van een kaart staat elk advies onder een lijn. */
+.report-body .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
@@ -646,7 +643,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-value strong.cost { color: var(--cost); }
 .equip-value strong.gain { color: var(--gain); }
 
-/* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
+/* Total cost (Dave, 6 oktober 2026): een grote kop, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
 /* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Advised en Difference uitsteekt (Dave, #183). */
 .total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
