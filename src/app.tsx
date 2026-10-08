@@ -1,6 +1,6 @@
 import { createContext, type ComponentChildren, type Ref, type RefObject } from 'preact'
 import { useContext, useEffect, useId, useMemo, useRef, useState } from 'preact/hooks'
-import { ASSUMPTIONS } from './calc/mobModel'
+import { ASSUMPTIONS, defended } from './calc/mobModel'
 import { isInvalid, type RankResult } from './calc/rankSpots'
 import { bestVerdict } from './best'
 import { browserStorage, loadSpots, saveSpots } from './storage/spots'
@@ -3592,7 +3592,7 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
  * De berekening achter het aantal stars of pijlen (Dave, 6 oktober 2026, #192; AmmoWhy in levelInvoice.ts): hoeveel aanvallen een
  * kill kost, hoeveel stars dat zijn, hoeveel kills het level kost, en wat herladen (of bij een Bowman kopen) kost.
  */
-function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
+export function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
   const { w } = props
   // Een Bowman schiet pijlen en koopt ze; een Thief gooit stars en herlaadt ze.
   const arrows = props.label === ammoLabel('bowman')
@@ -3623,7 +3623,12 @@ function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
   // Waar min en max per star vandaan komen (Dave, 6 oktober 2026, #192), als één formule per getal (Dave, 8 oktober 2026): je W.ATT maal wat
   // je stats erbij doen is je basisschade, daarvan doet de skill zijn percentage, dan gaat het levelverschil eraf en de verdediging van de mob
   // (bij WDEF 0 verandert die niets en valt de stap weg). Elke stap staat onder de vorige, dus wat het laatst gebeurt staat onderaan.
-  const hitSteps = (base: number, mastery: number, hit: number) =>
+  // Het model laat een raak nooit onder 1 schade komen (estimateMob); komt het product lager uit, dan staat dat eronder, anders reproduceert de
+  // formule zijn eigen uitkomst niet (#271). Twee decimalen, naar beneden afgekapt: afgerond zou 0,96 als "1,0" onder een uitkomst van 1 staan.
+  const clampNote = (unclamped: number): ComponentChildren =>
+    unclamped < 1 ? <>Uitkomst: {nf.format(Math.floor(unclamped * 100) / 100)}, maar een raak doet minstens 1 schade.</> : undefined
+  // `raw` is de schade vóór levelverschil en verdediging (w.rawMin / w.rawMax).
+  const hitSteps = (base: number, mastery: number, hit: number, raw: number) =>
     f && (
       <MulCalc
         factors={[
@@ -3639,6 +3644,7 @@ function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
             : []),
         ]}
         result={oneDecimal(hit)}
+        note={clampNote(defended(raw * levelFactor, w.mobWdef))}
       />
     )
   // De hoofdvraag (Waarom 429?) als één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
@@ -3658,8 +3664,8 @@ function AmmoSteps(props: { label: string; qty: number; w: AmmoWhy }) {
           detail: f ? (
             <MulCalc
               factors={[
-                { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit) },
-                { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit) },
+                { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit, w.rawMin) },
+                { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit, w.rawMax) },
                 { value: '2', what: 'Twee waarden', op: '/' },
               ]}
               result={`± ${oneDecimal(w.avgHit)}`}
