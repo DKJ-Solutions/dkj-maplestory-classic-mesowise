@@ -1676,7 +1676,7 @@ const CHEAPEST_HELP = (
 const WORN_HELP = (
   <>
     Wat je nu draagt, in dezelfde tabel als Advised. Shop is wat het stuk in de winkel kost; een eigen item, munitie en een stuk zonder winkelprijs hebben er geen en tellen niet mee in Total cost. Level is leeg: wat je al
-    draagt, kost dit level niets. Het vraagteken achter een regel zegt of je dat slot nu moet upgraden of houden, en waarom. Wat je draagt kies je onder "Based on:": tik op het potlood achter Equip, kies
+    draagt, kost dit level niets. Alleen bij een slot dat de app nu zou upgraden staat "Upgrade". Waar een vraagteken staat, zegt het of je dat slot upgradet of houdt, en waarom. Wat je draagt kies je onder "Based on:": tik op het potlood achter Equip, kies
     daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
@@ -1913,7 +1913,7 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
  * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
  * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level; met `stat` (Your character) staat de tweede kolom voor de stat van het stuk.
  */
-function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
+function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice?: boolean }) {
   // Your character heeft dezelfde kolommen als Advised, ook Level (Dave, 8 oktober 2026).
   const wide = props.level
   return (
@@ -1921,7 +1921,8 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
       <span>Slot</span>
       <span>{props.item}</span>
       {props.qty && <span class="advised-head-qty">Qty</span>}
-      <span class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</span>
+      {/* De slotkeuze achter Equip (Dave, 8 oktober 2026) heeft geen bedragen: dan geen kopje boven een lege kolom. */}
+      {!props.noPrice && <span class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</span>}
       {wide && <span class="advised-head-level">Level</span>}
     </div>
   )
@@ -1975,7 +1976,7 @@ function MesoAmount(props: { n: number }) {
 
 /**
  * Eén regel van een factuur in Advised, in vier kolommen (Dave, 7 oktober 2026): het slot, de naam met de info-knop erachter, het bedrag en het
- * vraagteken (in Your character vijf: Shop en Stat, met het potlood van het slot (`action`) in plaats van het vraagteken). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
+ * vraagteken (in Equip vijf, met Shop en Level; in Your character staat in Level soms het woord `levelWord`, en `action` vervangt het vraagteken: de slotkeuze heeft er een potlood, een slot zonder oordeel een leeg vak). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
 function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren; levelWord?: string }) {
@@ -2034,7 +2035,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
 function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advice: CheapestSlot; ammo: string | null; covered: boolean; line?: InvoiceLine }) {
   const { slot } = props
   // Een leeg Ammo-slot krijgt de munitie die de factuur telt (#189): die koop of herlaad je per stuk, dus geen winkelprijs.
-  const counted = slot === 'ammo' && props.advice.cheapest === null && !props.advice.option && props.ammo !== null
+  const counted = isCounted(slot, props.advice, props.ammo)
   const c: CheapestSlot = counted ? { ...props.advice, cheapest: props.ammo, changed: true } : props.advice
   const name = c.option ? c.option.name : c.cheapest
   // Een eigen item dat je houdt staat onder zijn eigen naam; een winkelstuk onder de naam zonder kleur.
@@ -2129,15 +2130,26 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
   ])
 }
 
+/** Een leeg Ammo-slot dat de factuur van Advised met de stars of pijlen telt (#189): die koop of herlaad je per stuk. */
+export const isCounted = (slot: EquipSlot, c: CheapestSlot, ammo: string | null) => slot === 'ammo' && c.cheapest === null && !c.option && ammo !== null
+
 /**
  * Het oordeel van Advised voor één slot, gelezen in Wearing (Dave, 8 oktober 2026): "Upgraden" waar Advised koopt (cheapestWhy: Kopen), "Houden" voor wat je
- * draagt en Advised niet vervangt, met dezelfde uitleg. Een leeg slot zonder aankoop heeft niets om te houden: dan geen oordeel (null).
+ * draagt en Advised niet vervangt, met dezelfde uitleg. Wat Advised anders zegt (Niet kopen, Leeg laten, Per stuk kopen) staat er met Advised' eigen woord en uitleg,
+ * zodat Wearing Advised nooit tegenspreekt; een slot dat een overall of top en bottom van Advised beslaat, heet "Vervangen". Een leeg slot zonder aankoop heeft niets om te
+ * houden: dan geen oordeel (null).
  */
-function slotVerdict(job: Job, slot: EquipSlot, c: CheapestSlot, covered: boolean, hasItem: boolean): { upgrade: boolean; text: string } | null {
-  const why = cheapestWhy(job, slot, c, false, covered)
-  if (why.verdict === 'Kopen') return { upgrade: true, text: why.text }
+export function slotVerdict(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolean, covered: boolean, hasItem: boolean): { kind: 'upgrade' | 'keep' | 'other'; word: string; text: string } | null {
+  const why = cheapestWhy(job, slot, c, counted, covered)
+  if (why.verdict === 'Kopen') return { kind: 'upgrade', word: 'Upgraden', text: why.text }
+  if (counted) return { kind: 'other', word: why.verdict, text: why.text }
   if (!hasItem) return null
-  return { upgrade: false, text: why.verdict === 'Houden' ? why.text : 'Geen stuk uit de winkel loont tot je volgende upgrade in dit slot, dus je houdt wat je draagt.' }
+  if (why.verdict === 'Houden') return { kind: 'keep', word: 'Houden', text: why.text }
+  if (covered && c.cheapest === null && !c.option) {
+    const text = slot === 'overall' ? 'Advised koopt een losse top of bottom: die nemen de plek van je overall in.' : 'Advised koopt een overall: die beslaat dit slot, dus je draagt hier niets meer.'
+    return { kind: 'other', word: 'Vervangen', text }
+  }
+  return { kind: 'other', word: why.verdict, text: why.text }
 }
 
 /** De feiten van een info-knop die de app kent: een regel zonder waarde valt weg. */
@@ -2287,13 +2299,14 @@ function EquipmentCard(props: {
     equipPencil.current = button
     setPickOpen(true)
   }
-  // Sluit je de hele popup, dan gaat ook de slotkeuze dicht, zodat hij niet weer openstaat als je terugkomt.
-  const closeAll = () => {
-    setPickOpen(false)
-    setEditSlot(null)
-    setEditing(null)
-    close()
-  }
+  // Sluit de popup, hoe dan ook (kruisje, Escape of een andere kaart die de weergave sluit), dan gaat ook de slotkeuze dicht, zodat hij niet weer openstaat als je terugkomt.
+  useEffect(() => {
+    if (view !== 'worn') {
+      setPickOpen(false)
+      setEditSlot(null)
+      setEditing(null)
+    }
+  }, [view])
   const closePick = () => {
     setPickOpen(false)
     requestAnimationFrame(() => equipPencil.current?.focus())
@@ -2387,30 +2400,30 @@ function EquipmentCard(props: {
   }
   // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels en kolommen als die van Advised (BillRow), met wat je draagt: de winkelprijs onder
   // Shop en een lege Level, want wat je al draagt kost dit level niets, net als een stuk dat Advised je laat houden. Waar Advised zijn vraagteken heeft, geeft
-  // de app zijn oordeel per slot (slotVerdict, het oordeel van CheapestRow): upgraden of houden, met het woord "Upgrade" in Level voor een slot dat je nu
+  // de app zijn oordeel per slot (slotVerdict, het oordeel van CheapestRow): upgraden, houden of wat Advised verder zegt, met het woord "Upgrade" in Level voor een slot dat je nu
   // moet upgraden. Zonder advies (geen cheapest) of zonder iets om te houden geen oordeel.
   const wornRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const price = shopPrice(slot, entry)
     const advice = props.cheapest?.[slot]
-    const verdict = props.cheapest && advice ? slotVerdict(props.job, slot, advice, slotCovers(props.cheapest, slot), name !== null) : null
+    const verdict = props.cheapest && advice ? slotVerdict(props.job, slot, advice, isCounted(slot, advice, props.advisedAmmo), slotCovers(props.cheapest, slot), name !== null) : null
     return (
       <BillRow
         key={slot}
-        tone={verdict?.upgrade ? 'buy' : name === null ? 'empty' : ''}
+        tone={verdict?.kind === 'upgrade' ? 'buy' : name === null ? 'empty' : ''}
         slot={slotLabel(slot)}
         name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
         fullName={name ?? undefined}
         facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
         price={price ?? null}
         level={null}
-        levelWord={verdict?.upgrade ? 'Upgrade' : undefined}
-        helpTitle={verdict?.upgrade ? 'Waarom upgraden?' : 'Waarom houden?'}
+        levelWord={verdict?.kind === 'upgrade' ? 'Upgrade' : undefined}
+        helpTitle={verdict?.kind === 'upgrade' ? 'Waarom upgraden?' : verdict?.kind === 'keep' ? 'Waarom houden?' : `Waarom ${verdict?.word.toLowerCase()}?`}
         help={
           verdict && (
             <>
-              <p class="item-verdict">{verdict.upgrade ? 'Upgraden' : 'Houden'}</p>
+              <p class="item-verdict">{verdict.word}</p>
               <p class="item-why">{verdict.text}</p>
             </>
           )
@@ -2443,7 +2456,7 @@ function EquipmentCard(props: {
   }
   const pickDialog = () => (
     <StatDialog title="Equip" tag="edit" closeLabel="Sluiten Equip" focusInput={false} className="item-dialog" onCancel={closePick}>
-      <BillHead item="Equip" />
+      <BillHead item="Equip" noPrice />
       {slots.map(pickRow)}
       {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
     </StatDialog>
@@ -2474,7 +2487,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedItems) : undefined) : equipRow(wornItems, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={closeAll} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedItems) : undefined) : equipRow(wornItems, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )

@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, FIRST_POPUP, noSavingText, POPUP_STEP, totalCostWho } from './app'
+import { App, FIRST_POPUP, isCounted, noSavingText, POPUP_STEP, slotVerdict, totalCostWho } from './app'
 import { advisedSetup } from './advisedSetup'
 import { cheapestSettings } from './cheapestSettings'
+import type { CheapestSlot } from './cheapestEquip'
 
 import { HELPFUL_STRANGER_ARROWS, NPC_ARROWS } from './data/bowman'
 import { NPC_CLAWS } from './data/claws'
@@ -4985,6 +4986,36 @@ describe('equipment: Your character als tabel', () => {
     expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom houden?')
     expect(popup.querySelector('.item-verdict')!.textContent).toBe('Houden')
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Je draagt dit al\./)
+  })
+
+  // Het oordeel van Wearing mag Advised nooit tegenspreken (Dave, 8 oktober 2026): ook niet bij een overall tegenover top en bottom, en niet bij munitie.
+  describe('slotVerdict', () => {
+    const none: CheapestSlot = { worn: null, cheapest: null, changed: false, price: null, option: null }
+    it('zegt van een top of bottom die je draagt terwijl Advised een overall koopt Vervangen, en van een overall terwijl Advised top of bottom koopt', () => {
+      for (const slot of ['top', 'bottom'] as const) {
+        const v = slotVerdict('thief', slot, { ...none, worn: 'Cloth Vest', changed: true }, false, true, true)!
+        expect(v.word).toBe('Vervangen')
+        expect(v.text).toMatch(/overall/)
+      }
+      const v = slotVerdict('thief', 'overall', { ...none, worn: 'Doros Robe', changed: true }, false, true, true)!
+      expect(v.word).toBe('Vervangen')
+      expect(v.text).toMatch(/top of bottom/)
+      // Niets aan in dat slot: niets om te vervangen, dus geen oordeel.
+      expect(slotVerdict('thief', 'top', none, false, true, false)).toBeNull()
+    })
+    it('geeft een draagbaar stuk dat Advised leeg laat zonder dat een ander stuk het slot beslaat het eigen woord van Advised, niet Houden', () => {
+      const v = slotVerdict('thief', 'hat', { ...none, worn: 'Ghetto Beanie', changed: true }, false, false, true)!
+      expect(v.kind).toBe('other')
+      expect(v.word).toBe('Leeg laten')
+      expect(v.text).toMatch(/^Leeg: de winkel heeft hier niets/)
+    })
+    it('geeft een leeg Ammo-slot dat de factuur telt hetzelfde oordeel als Advised: Per stuk herladen (Thief) of kopen (Bowman), ook zonder stuk', () => {
+      expect(isCounted('ammo', none, 'Subi Throwing Stars')).toBe(true)
+      expect(isCounted('ammo', none, null)).toBe(false)
+      expect(isCounted('hat', none, 'Subi Throwing Stars')).toBe(false)
+      expect(slotVerdict('thief', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk herladen' })
+      expect(slotVerdict('bowman', 'ammo', none, true, false, false)).toMatchObject({ kind: 'other', word: 'Per stuk kopen' })
+    })
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {
