@@ -1778,8 +1778,8 @@ type UseableInput = { job: Job; potions: Record<PotionKind, Potion>; ammo: strin
  * `total` is wat de factuur voor potions en munitie rekent.
  */
 function useableRows(props: UseableInput, wide: boolean) {
-  // In de kolommen van de equip is het bedrag Level, en het aantal staat onder Shop (BillRow).
-  const amounts = (meso: number | null) => (wide ? { level: meso, price: null } : { price: meso })
+  // In de bill van Level cost (Dave, 8 oktober 2026): Price is de prijs per stuk, Qty het aantal en Level het bedrag, dus Level = Price × Qty.
+  const amounts = (meso: number | null, unit: number | undefined) => (wide ? { level: meso, price: unit ?? null } : { price: meso })
   const lineOf = (kind: 'hp' | 'mp' | 'ammo') => props.lines.find((l) => l.why?.kind === kind)
   const ammoLine = lineOf('ammo')
   // Staat er munitie op de factuur, dan staat ze ook hier, zodat de regels optellen tot het totaal.
@@ -1804,7 +1804,7 @@ function useableRows(props: UseableInput, wide: boolean) {
           ['Price', `${nfInt.format(potion.price)} meso`],
           ['Recovery', `${nfInt.format(potionStat(potion, kind, 'restores'))} ${kind === 'hp' ? 'HP' : 'MP'}`],
         ])}
-        {...amounts(line ? line.meso : null)}
+        {...amounts(line ? line.meso : null, potion.price)}
         help={
           line && why ? (
             <>
@@ -1833,7 +1833,7 @@ function useableRows(props: UseableInput, wide: boolean) {
         ['Level', ammo?.level === undefined ? undefined : String(ammo.level)],
         [props.job === 'bowman' ? 'Prijs per pijl' : 'Herladen per star', ammo && `${nf3.format(ammo.price)} meso`],
       ])}
-      {...amounts(ammoLine ? ammoLine.meso : null)}
+      {...amounts(ammoLine ? ammoLine.meso : null, ammoLine?.why?.kind === 'ammo' ? ammoLine.why.pricePerStar : ammo?.price)}
       help={
         ammoLine?.why?.kind === 'ammo' ? (
           <>
@@ -1907,7 +1907,7 @@ function BillGroup(props: { name: string; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
       <tr class="bill-category">
-        <th scope="rowgroup" colSpan={4}>
+        <th scope="rowgroup" colSpan={5}>
           {props.name}
         </th>
       </tr>
@@ -1930,6 +1930,7 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; shop?: numb
           </strong>
         )}
       </td>
+      <td />
       <td>
         <strong class="advised-total-level">
           <MesoAmount n={props.level} />
@@ -1958,8 +1959,9 @@ function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; gro
 }
 
 /**
- * De kop van een factuur (Dave, 7 oktober 2026): boven de kolommen van de rijen, "Mesos" boven de bedragen. Met `level` (Level cost) twee
- * bedragkolommen: "Shop" boven de winkelprijs (of het aantal van een useable) en "Level" boven het deel van dit level.
+ * De kop van een factuur (Dave, 7 oktober 2026): boven de kolommen van de rijen, "Mesos" boven de bedragen. Met `level` (Level cost) de kolommen
+ * van een gewone factuur (Dave, 8 oktober 2026): Price (de winkelprijs, of de prijs per stuk van een useable), Qty (hoeveel je ervan betaalt: het
+ * aantal useables, of het deel van een stuk equip) en Level (wat dit level betaalt, Price × Qty).
  */
 function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice?: boolean }) {
   return (
@@ -1974,8 +1976,13 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean; noPrice
         </>
       )}
       {/* De slotkeuze achter Equip (Dave, 8 oktober 2026) heeft geen bedragen: dan geen kolom met een kopje boven niets. */}
-      {!props.noPrice && <th scope="col" class="advised-head-price">{props.level ? 'Shop' : 'Mesos'}</th>}
-      {props.level && <th scope="col" class="advised-head-level">Level</th>}
+      {!props.noPrice && <th scope="col" class="advised-head-price">{props.level ? 'Price' : 'Mesos'}</th>}
+      {props.level && (
+        <>
+          <th scope="col" class="advised-head-qty">Qty</th>
+          <th scope="col" class="advised-head-level">Level</th>
+        </>
+      )}
       {!props.qty && <td />}
     </tr>
   )
@@ -2002,8 +2009,9 @@ function BillTotal(props: { total: number }) {
 function MesoAmount(props: { n: number }) {
   // Kort, zoals 14.1k (Dave, 7 oktober 2026); het volle bedrag in de tooltip.
   return (
-    <span class="meso-amount" title={`${nfInt.format(props.n)} meso`}>
-      {compactMeso(props.n)}
+    <span class="meso-amount" title={`${Number.isInteger(props.n) ? nfInt.format(props.n) : nf3.format(props.n)} meso`}>
+      {/* Een prijs per stuk onder de duizend met decimalen, zoals herladen per star (0,35), houdt die decimalen (Dave, 8 oktober 2026). */}
+      {Number.isInteger(props.n) || props.n >= 1000 ? compactMeso(props.n) : nf3.format(props.n)}
       <svg class="meso-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
         <circle cx="8" cy="8" r="7" fill="#f2c230" stroke="#b07d0e" stroke-width="1.5" />
         <circle cx="8" cy="8" r="3.75" fill="none" stroke="#b07d0e" stroke-width="1.25" />
@@ -2017,22 +2025,28 @@ function MesoAmount(props: { n: number }) {
  * vraagteken (in Equip vijf, met Shop en Level; in Your character staat in Level soms het woord `levelWord`, en `action` vervangt het vraagteken: de slotkeuze heeft er een potlood, een slot zonder oordeel een leeg vak). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price?: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren; levelWord?: string }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; share?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price?: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren; levelWord?: string }) {
   const title = props.name ?? props.slot
   // Met `action` (Your character, Dave, 8 oktober 2026) staat achteraan in plaats
   // van het vraagteken het potlood dat het slot opent.
   const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
-  // Een useable in de bill van Level cost (Dave, 8 oktober 2026): het aantal onder Shop, het bedrag onder Level.
   // Het aantal kort, zoals de bedragen: 12.201 wordt 12.2k (Dave, 8 oktober 2026); het volle aantal in de tooltip.
-  const qtyText = props.qty == null ? '' : `× ${compactMeso(props.qty)}`
   const qtyTitle = props.qty == null ? undefined : nfInt.format(props.qty)
+  // Qty in de bill van Level cost (Dave, 8 oktober 2026): het aantal van een useable, of het deel van de prijs dat dit level van een stuk equip betaalt.
+  const shareText = props.share == null ? '' : props.share < 0.01 ? '<1%' : `${Math.round(props.share * 100)}%`
+  const qtyText = props.qty == null ? shareText : `× ${compactMeso(props.qty)}`
   const qtyColumn = props.qty !== undefined && !wide
   // Zonder `price` (de slotkeuze achter Equip, Dave, 8 oktober 2026) heeft de rij geen bedragkolom.
   const price = props.price !== undefined && (
     <>
-      {wide && props.qty !== undefined ? <td class="advised-qty" title={qtyTitle}>{qtyText}</td> : <td class="advised-price">{amount(props.price)}</td>}
+      <td class="advised-price">{amount(props.price)}</td>
+      {wide && (
+        <td class="advised-qty" title={qtyTitle ?? (props.share == null ? undefined : `${nf1.format(props.share * 100)}% van de prijs`)}>
+          {qtyText}
+        </td>
+      )}
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
       {/* In Wearing (Dave, 8 oktober 2026) staat in de lege kolom Level het woord "Upgrade" voor een slot dat je nu moet upgraden, in de accentkleur van een koop in Advised (.buy). */}
       {wide && (props.levelWord ? <td class="advised-level verdict">{props.levelWord}</td> : <td class="advised-level">{amount(props.level ?? null)}</td>)}
@@ -2106,6 +2120,7 @@ function CheapestRow(props: { job: Job; slot: EquipSlot; worn: EquipEntry; advic
       fullName={name ?? undefined}
       facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice)}
       price={shopPrice}
+      share={props.line?.why?.kind === 'shop' ? props.line.why.share : null}
       level={props.line ? props.line.meso : null}
       // Het vraagteken heet naar het bedrag in Level dat het uitlegt (Dave, 7 oktober 2026): "Waarom 1.9k?"; is Level leeg, "Waarom geen upgrade?".
       helpTitle={props.line ? `Waarom ${compactMeso(props.line.meso)}?` : 'Waarom geen upgrade?'}

@@ -3679,16 +3679,16 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(mesoOf(d)).toBe(shop)
   })
 
-  it('zet in Level cost naast Shop (de winkelprijs) de kolom Level: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
+  it('zet in Level cost naast Price (de winkelprijs) en Qty (het deel van de prijs) de kolom Level: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
     toLevel20()
     const invoice = Array.from(cheapestCard().querySelectorAll('tbody tr'))
       .filter((tr) => /^× 1\s*\??$/.test(tr.querySelector('td.invoice-qty')!.textContent!.trim()) && tr.querySelector('.invoice-why')?.getAttribute('aria-label')?.includes(' meso voor '))
       .map((tr) => ({ name: tr.querySelector('th')!.textContent, meso: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
     fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Cheapest' }))
     const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
-    // De kop: Mesos heet Shop (Dave, 7 oktober 2026), met Level ernaast.
+    // De kop: de kolommen van een factuur, Price, Qty en Level (Dave, 8 oktober 2026).
     const head = d.querySelector('.advised-head')!
-    expect(head.querySelector('.advised-head-price')!.textContent).toBe('Shop')
+    expect(head.querySelector('.advised-head-price')!.textContent).toBe('Price')
     expect(head.querySelector('.advised-head-level')!.textContent).toBe('Level')
     expect(head.textContent).not.toContain('Mesos')
     const rows = Array.from(d.querySelectorAll<HTMLElement>('tbody.bill-group-equip .advised-row'))
@@ -3697,6 +3697,9 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     // Het bedrag staat kort (14.1k, Dave, 7 oktober 2026); het volle bedrag staat in de tooltip.
     const full = (el: Element) => mesoOf(el.querySelector('.meso-amount')?.getAttribute('title') ?? '0')
     for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.textContent).toBe(compactMeso(full(cell)))
+    // Onder Qty het deel van de prijs dat dit level betaalt (Dave, 8 oktober 2026), als percentage; een stuk dat je niet koopt heeft er niets.
+    for (const r of bought) expect(r.querySelector('.advised-qty')!.textContent).toMatch(/^(<1|\d+)%$/)
+    for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-qty')!.textContent).toBe('')
     // Elk gekocht stuk: Level is zijn regel op de factuur, nooit meer dan Shop.
     expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: full(r.querySelector('.advised-level')!) }))).toEqual(invoice)
     for (const r of bought) expect(full(r.querySelector('.advised-level')!)).toBeLessThanOrEqual(full(r.querySelector('.advised-price')!))
@@ -4011,15 +4014,21 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost een kopregel, zijn regels en een subtotaal.
         expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
-        // Geen kolom Slot (Dave, 8 oktober 2026): de kop is Item, Shop en Level, en het slot staat alleen voor de schermlezer in de naam van de rij.
-        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Shop', 'Level'])
+        // Geen kolom Slot (Dave, 8 oktober 2026): de kop is die van een factuur, Item, Price, Qty en Level, en het slot staat alleen voor de schermlezer in de naam van de rij.
+        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Price', 'Qty', 'Level'])
         for (const r of d.querySelectorAll('section.bill .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
         const groups = [...d.querySelectorAll<HTMLElement>('section.bill tbody.bill-group')]
         expect(groups.map((g) => g.querySelector('.bill-category')!.textContent), label).toEqual(['Equip', 'Useable'])
         expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Equip subtotal', 'Useable subtotal'])
         const [equip, useable] = groups
         expect(rowsOf(useable), label).toEqual(['HP', 'MP', 'Ammo'])
-        // Een useable heeft zijn aantal onder Shop en zijn bedrag onder Level.
+        // Een useable: de prijs per stuk onder Price, het aantal onder Qty en het bedrag onder Level, en Level = Price × Qty (naar boven afgerond, zoals de factuur).
+        const exact = (el: Element | null) => Number((el?.querySelector('.meso-amount')?.getAttribute('title') ?? '0').replace(/[^\d,]/g, '').replace(',', '.'))
+        for (const r of useable.querySelectorAll<HTMLElement>('.advised-row')) {
+          const qty = n(r.querySelector<HTMLElement>('.advised-qty')!.title)
+          if (qty === 0) continue
+          expect(exact(r.querySelector('.advised-level')), label + ' ' + r.querySelector('.slot-name')!.textContent).toBe(Math.ceil(exact(r.querySelector('.advised-price')) * qty - 1e-9))
+        }
         // Kort, zoals de bedragen (Dave, 8 oktober 2026): 12.201 wordt 12.2k; het volle aantal in de tooltip.
         for (const r of useable.querySelectorAll<HTMLElement>('.advised-row')) {
           const cell = r.querySelector<HTMLElement>('.advised-qty')!
