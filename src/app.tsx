@@ -3406,16 +3406,17 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 /**
  * Een vermenigvuldiging onder elkaar (Dave, 8 oktober 2026): per factor een regel met links wat het is en rechts het teken en het getal, zoals
  * de andere tabellen in de uitleg, en onderaan de uitkomst. Compacter dan de formule op één regel, en je ziet welk getal waarvoor staat. Is een factor zelf een som, dan krijgt hij een kort
- * label en staat de som in zijn eigen popup, achter een vraagteken bij het getal (`calc`, Dave, 8 oktober 2026), zoals elk berekend getal in de uitleg.
+ * label en staat zijn uitwerking in een eigen popup, achter een vraagteken bij het getal (`detail`, Dave, 8 oktober 2026), zoals elk berekend getal in
+ * de uitleg. Een regel kan ook een ander teken hebben dan × (`op`): de regels worden dan van boven naar beneden uitgerekend, zoals je het intikt.
  */
-function MulCalc(props: { factors: readonly { value: string; what: string; calc?: ComponentChildren }[]; result: { value: string; what: string } }) {
+function MulCalc(props: { factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]; result: { value: string; what: string } }) {
   // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan.
-  const num = (value: string, what: string, calc?: ComponentChildren) => (
+  const num = (value: string, what: string, detail?: ComponentChildren) => (
     <span class="why-value">
       <span class="why-value-num">{value}</span>
-      {calc ? (
+      {detail ? (
         <PopupButton icon={QUESTION_ICON} class="help-toggle why-help" label={`Uitleg bij ${what}`} title={what}>
-          <p class="why-calc">{calc}</p>
+          {detail}
         </PopupButton>
       ) : (
         <span class="why-help-space" aria-hidden="true" />
@@ -3428,8 +3429,8 @@ function MulCalc(props: { factors: readonly { value: string; what: string; calc?
         {props.factors.map((f, i) => (
           <tr key={i}>
             <td class="why-mul-what">{f.what}</td>
-            <td class="why-mul-op">{i === 0 ? '' : '×'}</td>
-            <td class="why-mul-num">{num(f.value, f.what, f.calc)}</td>
+            <td class="why-mul-op">{i === 0 ? '' : (f.op ?? '×')}</td>
+            <td class="why-mul-num">{num(f.value, f.what, f.detail)}</td>
           </tr>
         ))}
         <tr class="why-mul-result">
@@ -3539,7 +3540,24 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
   // Een gecombineerde stat (STR + DEX) tussen haakjes: het getal ervoor is hun som, niet alleen de STR (Dave, 8 oktober 2026).
-  const secondary = f && (f.secondaryName.includes('+') ? `(${f.secondaryName})` : f.secondaryName)
+  // De statfactor van max (basis 1) en min (basis 0,8, met mastery): (primaire stat × mastery × multiplier + secundaire stats) / 100 + basis.
+  const statFactor = (base: number, mastery: number) => (f ? base + (f.primary * mastery * f.weaponMult + f.secondary) / 100 : 0)
+  // Zijn som onder elkaar, van boven naar beneden uitgerekend, met de uitkomst onderaan (Dave, 8 oktober 2026): op één regel paste hij
+  // niet in de vierde popup op een scherm van 360px.
+  const statSteps = (base: number, mastery: number) =>
+    f && (
+      <MulCalc
+        factors={[
+          { value: nfInt.format(f.primary), what: f.primaryName },
+          ...(mastery !== 1 ? [{ value: nf.format(mastery), what: 'Mastery' }] : []),
+          { value: nf.format(f.weaponMult), what: 'Multiplier' },
+          { value: nfInt.format(f.secondary), what: f.secondaryName, op: '+' },
+          { value: '100', what: 'Naar procent', op: '/' },
+          { value: nf.format(base), what: 'Basis', op: '+' },
+        ]}
+        result={{ value: nf.format(statFactor(base, mastery)), what: 'Statfactor' }}
+      />
+    )
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
@@ -3551,7 +3569,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
               factors={[
                 { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(1 + (f.primary * f.weaponMult + f.secondary) / 100), what: 'Statfactor', calc: <>1 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(statFactor(1, 1)), what: 'Statfactor', detail: statSteps(1, 1) },
               ]}
               result={{ value: oneDecimal(w.rawMax), what: `Max per ${piece}` }}
             />
@@ -3565,7 +3583,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
               factors={[
                 { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(0.8 + (f.primary * f.mastery * f.weaponMult + f.secondary) / 100), what: 'Statfactor', calc: <>0,8 + ({nfInt.format(f.primary)} {f.primaryName} × {nf.format(f.mastery)} mastery × {nf.format(f.weaponMult)} + {nfInt.format(f.secondary)} {secondary}) / 100</> },
+                { value: nf.format(statFactor(0.8, f.mastery)), what: 'Statfactor', detail: statSteps(0.8, f.mastery) },
               ]}
               result={{ value: oneDecimal(w.rawMin), what: `Min per ${piece}` }}
             />
