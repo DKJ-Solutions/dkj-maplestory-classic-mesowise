@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**4 / 9 minor entries** <!-- pending-tally -->
+**5 / 10 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/actual-icon · 20261008-081936Z
+
+Code review by Victor: no defects; one stale comment fixed.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A popup with your own numbers now shows a person icon instead of the i, which stays for fixed game info. In Wearing, Based on is a small table with the pencil beside each row and a placeholder until you pick a mob, every pencil looks the same, and the equipment table has the same columns as Advised.
+
+**Score:** 2
+
+#### Pull Request
+
+Own icon for your own data, one pencil style, and Based on as a table
+
+[PR #255](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/255)
+
+---
 
 ### DEPLOY: app/worn-equip-table · 20261008-074325Z
 
