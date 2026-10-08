@@ -3453,12 +3453,12 @@ describe('elke formule in de uitleg (MulCalc, Dave, 8 oktober 2026)', () => {
     ])
   })
 
-  it('houdt opeenvolgende stappen met hetzelfde teken in één kader', () => {
-    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }, { value: '3', what: 'c' }])).toEqual([['a', 'b', 'c']])
-    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }, { value: '3', what: 'c' }, { value: '4', what: 'd', op: '+' }])).toEqual([
-      ['a', 'b', 'c', 'd'],
+  it('geeft ook opeenvolgende × elk een eigen kader: de laatste stap staat buiten het kader van de stappen ervoor (Dave, 8 oktober 2026)', () => {
+    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }, { value: '3', what: 'c' }])).toEqual([
       ['a', 'b', 'c'],
+      ['a', 'b'],
     ])
+    expect(boxesOf([{ value: '1', what: 'a' }, { value: '2', what: 'b' }])).toEqual([['a', 'b']])
   })
 
   it('toont onderaan alleen = en de uitkomst, zonder label, en een afrondingsregel alleen als die er is', () => {
@@ -3540,11 +3540,11 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Ribbon Pig heeft WDEF 0, dus geen rij Verdediging: die verandert dan niets.
     const damage = whyDetail(dialog, 'Schade per aanval')
     expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
-    // De formule onder elkaar: skillschade, W.ATT en wat je stats doen, dan de uitkomst zonder label, die de rij zelf is (Dave, 8 oktober 2026).
-    // De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal (Dave, 8 oktober 2026).
-    expect(damage[0].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; = ([\d.,]+)$/)
+    // De formule onder elkaar: W.ATT maal wat je stats doen, dan als laatste stap de skillschade, en de uitkomst zonder label, die de rij zelf
+    // is (Dave, 8 oktober 2026). De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal.
+    expect(damage[0].calc).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = ([\d.,]+)$/)
     expect(damage[0].calc.endsWith(` ; = ${damage[0].result}`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^Skillschade \d+% ; W\.ATT × [\d.]+ ; Statfactor × [\d,]+ ; = [\d.,]+$/)
+    expect(damage[1].calc).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
     expect(damage[1].calc.endsWith(` ; = ${damage[1].result}`)).toBe(true)
     // Alleen de statfactor is berekend en heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden
     // uitgerekend, met de uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).

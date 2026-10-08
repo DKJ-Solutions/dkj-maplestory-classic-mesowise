@@ -3410,8 +3410,9 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
  * de uitleg. Een regel kan ook een ander teken hebben dan × (`op`): de regels worden dan van boven naar beneden uitgerekend, zoals je het intikt.
  *
  * Elke formule in de uitleg is zo opgebouwd (Dave, 8 oktober 2026): elke rekenstap in een eigen kader, een groter kader om een kleiner, en
- * onderaan alleen = en de uitkomst, zonder label en zonder vulling, want de titel van de popup zegt al wat het is. Een kader sluit waar het
- * teken wisselt, dus opeenvolgende × staan samen in één kader; om de hele formule staat altijd een kader.
+ * onderaan alleen = en de uitkomst, zonder label en zonder vulling, want de titel van de popup zegt al wat het is. Ook opeenvolgende ×
+ * krijgen elk een eigen kader (Dave, 8 oktober 2026): de volgorde van de factoren is de volgorde van de berekening, dus wat het laatst
+ * gebeurt (zoals de skillschade over je basisschade) staat onderaan, buiten de kaders erboven.
  */
 export function MulCalc(props: {
   factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
@@ -3443,13 +3444,10 @@ export function MulCalc(props: {
         <span class="why-mul-num">{num(f.value, f.what, f.detail)}</span>
       </div>
     ))
-  // Een kader om de eerste k regels waar het teken van regel k anders is dan dat van de regel erboven, en een om alle regels; het grootste
-  // kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
+  // Een kader om de eerste k regels voor elke k vanaf 2, dus om elke rekenstap; het grootste kader buiten, elk kleiner kader erin, met de
+  // regels die alleen in het grotere vallen eronder. Een formule van één regel krijgt één kader.
   const n = props.factors.length
-  const boxes = Array.from({ length: n }, (_, k) => k)
-    .filter((k) => k >= 2 && op(k) !== op(k - 1))
-    .concat(n)
-    .sort((x, y) => y - x)
+  const boxes = Array.from({ length: Math.max(1, n - 1) }, (_, i) => n - i)
   const box = (k: number): ComponentChildren => (
     <div class="why-mul-box">
       {k + 1 < boxes.length && box(k + 1)}
@@ -3700,15 +3698,16 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
   const damageRows: WhyRow[] = f
     ? [
-        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): de skillschade, je W.ATT en wat je stats erbij doen.
+        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): je W.ATT maal wat je stats erbij doen is je basisschade,
+        // en daarvan doet de skill zijn percentage, dus de skillschade staat als laatste stap onderaan (Dave, 8 oktober 2026).
         {
           label: `Max per ${piece}`,
           detail: (
             <MulCalc
               factors={[
-                { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
                 { value: nf.format(statFactor(1, 1)), what: 'Statfactor', detail: statSteps(1, 1) },
+                { value: nfPct.format(f.k), what: 'Skillschade' },
               ]}
               result={oneDecimal(w.rawMax)}
             />
@@ -3720,9 +3719,9 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           detail: (
             <MulCalc
               factors={[
-                { value: nfPct.format(f.k), what: 'Skillschade' },
                 { value: nfInt.format(f.watk), what: 'W.ATT' },
                 { value: nf.format(statFactor(0.8, f.mastery)), what: 'Statfactor', detail: statSteps(0.8, f.mastery) },
+                { value: nfPct.format(f.k), what: 'Skillschade' },
               ]}
               result={oneDecimal(w.rawMin)}
             />

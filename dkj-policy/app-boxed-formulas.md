@@ -44,7 +44,7 @@ larger box around a smaller one, and only `=` and the result below it.
 
 ### CREATE
 
-- [x] `MulCalc` draws the boxes itself: one closes wherever the operator changes, one goes around the whole formula; the result has no label
+- [x] `MulCalc` draws the boxes itself: one around every step, consecutive × included (Dave: the skill percentage goes outside W.ATT × stat factor); the result has no label
 - [x] Every sum behind a "?" in the potion, ammo and shop explanations is a `MulCalc`; a rounded-up result gets one line under it
 - [x] The rule is in Gwen's lens, so the next formula follows it
 - [x] Edith's wording points and Victor's review applied: rounding note uses the model's 1e-9 margin, the shop amount is computed from the EXP itself; the minimum-damage gap is #271
