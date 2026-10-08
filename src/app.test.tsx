@@ -292,6 +292,28 @@ describe('begin zonder opslag', () => {
       expect(document.querySelectorAll('.card-report')).toHaveLength(0)
     })
 
+    it('geeft elke knop en popup een eigen klasse, zodat je in de HTML kunt aanwijzen welke het is (Dave, 7 oktober 2026, #242)', () => {
+      const keys = { Equip: 'equip', Skillpoints: 'skills', Monster: 'mob', Potions: 'potions', 'Ability points': 'ap', 'Total stats': 'total' } as const
+      for (const [title, key] of Object.entries(keys) as [keyof typeof keys, string][]) {
+        const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
+        const buttons = [...card.querySelectorAll('.view-actions button')]
+        expect(buttons.map((b) => b.className), title).toEqual(['card-action view-advised', 'card-action view-worn'])
+        for (const [view, dialogClass] of [['Advised', 'advised-dialog'], ['Your character', 'worn-dialog']] as const) {
+          fireEvent.click(within(card).getByRole('button', { name: view }))
+          const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
+          expect(dialog.classList.contains(`card-dialog-${key}`), `${title} ${view}`).toBe(true)
+          expect(dialog.classList.contains(dialogClass), `${title} ${view}`).toBe(true)
+          fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
+        }
+      }
+      // De zes knoppen onder Total cost: elk zegt welke kaart hij opent.
+      const groups = [...document.querySelectorAll('.cost-cards')]
+      expect(groups.length).toBeGreaterThan(0)
+      for (const group of groups) {
+        expect([...group.querySelectorAll('button')].map((b) => b.className)).toEqual(['equip', 'skills', 'mob', 'potions', 'ap', 'total'].map((k) => `card-action cost-card cost-card-${k}`))
+      }
+    })
+
     it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = homeScreen().querySelector('section.equipment')!
@@ -4208,8 +4230,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
       // Het vraagteken staat naast het vak van de mob, niet erin (Dave, 7 oktober 2026).
-      expect(d.querySelector('.based-on .advised-for-row .help-toggle')).toBeNull()
-      const button = d.querySelector<HTMLElement>('.based-on .advised-for-line > .help-toggle')!
+      expect(d.querySelector('.based-on .based-on-label .help-toggle')).toBeNull()
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-line > .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
@@ -4229,7 +4251,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Monster')
       expect(advisedLines.length).toBeGreaterThan(2)
       const d = openView('Equip', 'Advised')
-      const button = d.querySelector<HTMLElement>('.based-on .advised-for-row .info-toggle[aria-label^="Info over"]')!
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!
       expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
       expect(button.previousElementSibling!.textContent).toBe(mob)
       fireEvent.click(button)
@@ -4240,6 +4262,85 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       await frame()
       expect(document.activeElement).toBe(button)
       closeView('Equip')
+    })
+
+    it('zet op elke popup en zijn .stat-dialog-body het pad van titels als data-popup, zodat je in de HTML ziet welke popup het is en waar hij in staat (Dave, 7 oktober 2026, #245)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      expect(d.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
+      expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Total cost: Equip (advised)')
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
+      const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      const path = popup.getAttribute('data-popup')!
+      expect(path).toBe(`Total cost: Equip (advised) › Info over ${mob}`)
+      expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe(path)
+      // Geen twee open popups met hetzelfde pad: elke .stat-dialog-body is aan te wijzen.
+      const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
+      expect(new Set(paths).size).toBe(paths.length)
+      fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
+      // Het vraagteken naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
+      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .help-toggle')!)
+      const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Uitleg')
+      fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+    })
+
+    it('zet op de vakken onder "Based on:" data-based-on-character en data-based-on-mob, met data-sheet="advised", zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      const [char, mobRow] = d.querySelectorAll('.based-on .based-on-label')
+      expect(char.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+      expect(char.hasAttribute('data-based-on-mob')).toBe(false)
+      expect(mobRow.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(mobRow.hasAttribute('data-based-on-character')).toBe(false)
+      for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('advised')
+      // De popup achter het i-knopje van de char zegt hetzelfde, zoals die van de mob.
+      fireEvent.click(char.querySelector<HTMLElement>('.info-toggle')!)
+      const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
+      const body = stats.querySelector(':scope > .stat-dialog-body')!
+      expect(body.getAttribute('data-based-on-character')).toBe(char.getAttribute('data-based-on-character'))
+      expect(body.getAttribute('data-sheet')).toBe('advised')
+      fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+    })
+
+    it('zet data-based-on-mob op elke popup die info over een mob toont: het i-knopje onder "Based on:" en de Monster-popup, met data-sheet advised of actual (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      const mob = advisedMobName()
+      const d = openView('Equip', 'Advised')
+      fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .stat-dialog-body')!
+      expect(info.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(info.getAttribute('data-sheet')).toBe('advised')
+      fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
+      closeView('Equip')
+      const advised = openView('Monster', 'Advised').querySelector(':scope > .stat-dialog-body')!
+      expect(advised.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(advised.getAttribute('data-sheet')).toBe('advised')
+      closeView('Monster')
+      // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
+      const worn = openView('Monster', 'Your character')
+      const saved = worn.querySelector<HTMLSelectElement>('select')!.value
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      closeView('Monster')
+    })
+
+    it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
+      setJob('thief')
+      for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
+        const worn = openView(card, 'Your character').querySelector(':scope > .stat-dialog-body')!
+        expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
+        expect(worn.getAttribute('data-sheet')).toBe('actual')
+        closeView(card)
+        const advised = openView(card, 'Advised').querySelector(':scope > .stat-dialog-body')!
+        expect(advised.hasAttribute('data-based-on-character')).toBe(false)
+        expect(advised.getAttribute('data-sheet')).toBe('advised')
+        closeView(card)
+      }
     })
 
     it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {

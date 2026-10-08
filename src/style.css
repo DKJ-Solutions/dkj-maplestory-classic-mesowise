@@ -394,13 +394,13 @@ html:has(dialog:modal) { overflow: hidden; }
    vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
 .based-on { margin-bottom: 1rem; }
 .based-on-head { margin: 0 0 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
-.advised-for { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
-.advised-for-row { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
-.advised-for-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
-.advised-for-line { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
-.advised-for-line .advised-for-row { min-width: 0; }
-.based-on .advised-for-line > .help-toggle { flex: none; margin: -0.625rem -0.375rem -0.625rem 0; }
-.based-on .advised-for-row .info-toggle { margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
+.based-on-container { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
+.based-on-label { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
+.based-on-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.based-on-line { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
+.based-on-line .based-on-label { min-width: 0; }
+.based-on .based-on-line > .help-toggle { flex: none; margin: -0.625rem -0.375rem -0.625rem 0; }
+.based-on .based-on-label .info-toggle { margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }

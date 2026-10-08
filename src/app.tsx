@@ -114,6 +114,13 @@ const QUESTION_ICON = (
 const DialogClose = createContext<((then?: () => void) => void) | null>(null)
 
 /**
+ * De titels van de popups waar deze component in staat, de buitenste eerst. Elke popup zet het hele pad op zijn
+ * <dialog> en zijn .stat-dialog-body als data-popup, "Total cost: Equip (advised) › Snail (lv 7)", zodat je in de
+ * HTML ziet welke popup je aanwijst en waar hij in staat (Dave, 7 oktober 2026, #245).
+ */
+const PopupPath = createContext<string[]>([])
+
+/**
  * De job: bepaalt welke winkelitems de equipment toont en of de app het advies kan doorrekenen. Eén vraag,
  * altijd zichtbaar, met de jobs als knoppen; zodra je kiest, ligt hij vast en toont de kaart alleen nog de kop
  * Character en het potlood (Dave, 4 en 5 oktober 2026). Het potlood herstelt een vergissing: het toont weer alle jobs
@@ -437,7 +444,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { title: string; tag?: string; advised?: boolean; basedOn?: string | null; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -446,8 +453,16 @@ function CardPopup(props: { title: string; tag?: string; advised?: boolean; base
     requestAnimationFrame(() => props.opener.current?.focus())
   }
   // De melding staat ook in de popup: de kaart zelf zit erachter, en wat je hier wijzigt kan hem oproepen.
+  // De klassen zeggen van welke kaart en welke weergave de popup is (Dave, 7 oktober 2026, #242), zodat je hem in de HTML kunt aanwijzen.
+  const className = `card-dialog card-dialog-${props.card} ${props.advised ? 'advised-dialog' : 'worn-dialog'}`
+  // De HTML zegt welke sheet dit is en waar hij over gaat (Dave, 7 oktober 2026): data-sheet "advised" (wat de app adviseert) of "actual" (je
+  // karakter uit het spel), met data-based-on-character "Lv. 21 Thief" in Your character (in Advised staat die onder "Based on:") en
+  // data-based-on-mob in de Monster-popup. Ze staan op .stat-dialog-body naast data-popup, zoals in elke andere popup.
+  const data: Record<`data-${string}`, string> = { 'data-sheet': props.advised ? 'advised' : 'actual' }
+  if (!props.advised) data['data-based-on-character'] = who
+  if (props.mob) data['data-based-on-mob'] = props.mob
   return (
-    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={props.advised ? 'card-dialog advised-dialog' : 'card-dialog'} onCancel={close} onSave={props.onSave}>
+    <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} data={data} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
@@ -509,7 +524,7 @@ function useCardView(card: CardKey) {
  */
 function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
   const button = (view: CardView, label: string) => (
-    <button type="button" class="card-action" aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+    <button type="button" class={`card-action view-${view}`} aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
       <EyeIcon />
       {label}
     </button>
@@ -686,7 +701,7 @@ function StatEditor(props: {
       {props.expected && <p class="stat-dialog-db">Verwacht volgens {props.expected.from}: <strong>{props.expected.value}</strong></p>}
       <span class="stat-dialog-label" id={props.labelId}>{props.heading ?? `${stat} in game`}</span>
       <div class={integer ? 'equip-step' : 'equip-step plain'}>
-        {integer && <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
+        {integer && <button type="button" class="step-down" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>}
         <input type="number" inputMode={integer ? 'numeric' : 'decimal'} pattern={integer ? '[0-9]*' : undefined} min={min} max={max} enterKeyHint="done" aria-labelledby={props.labelId}
           value={value}
           onFocus={(e) => e.currentTarget.select()}
@@ -698,7 +713,7 @@ function StatEditor(props: {
             }
           }}
         />
-        {integer && <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>}
+        {integer && <button type="button" class="step-up" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>}
       </div>
       <div class="stat-dialog-actions">
         {reset !== undefined && (
@@ -727,7 +742,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
     <div class="ap-edit-col">
       <span class="stat-dialog-label" id={props.id}>{props.label}</span>
       <div class="equip-step ap-edit-steps">
-        <button type="button" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
+        <button type="button" class="step-down" aria-label={`${stat} min 1`} onClick={() => step(-1)}>−</button>
         <input type="number" inputMode="numeric" pattern="[0-9]*" min={min} max={max} enterKeyHint="done" aria-labelledby={props.id}
           value={value}
           onFocus={(e) => e.currentTarget.select()}
@@ -739,7 +754,7 @@ function ApInput(props: { stat: string; label: string; id: string; value: string
             }
           }}
         />
-        <button type="button" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
+        <button type="button" class="step-up" aria-label={`${stat} plus 1`} onClick={() => step(1)}>+</button>
       </div>
     </div>
   )
@@ -809,7 +824,7 @@ function StatsCard(props: StatsCardBody) {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
@@ -1094,12 +1109,12 @@ function PotionsCard(props: {
         // en geen Report-knop, want elke regel heeft zijn eigen vraagteken. Het label zegt "expected", niet "advised": wat je verbruikt is een
         // verwachting uit de berekening, geen advies om iets te kopen (Dave, 7 oktober 2026). Useable, zoals het Use-tabblad in het spel: een regel
         // per potion en, voor een Thief of Bowman, zijn munitie; als bedrag wat het dit level kost, zoals op de factuur van Advised.
-        <CardPopup title="Total cost: Useable" tag="expected" advised basedOn={props.advisedMob} opener={opener} onClose={close} help={USEABLE_HELP}>
+        <CardPopup card="potions" title="Total cost: Useable" tag="expected" advised basedOn={props.advisedMob} opener={opener} onClose={close} help={USEABLE_HELP}>
           <UseableRows job={job} potions={advisedPotions} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} />
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
+        <CardPopup card="potions" title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -1531,9 +1546,15 @@ function StatDialog(props: {
    * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
    */
   drawer?: boolean
+  /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
+  pathName?: string
+  /** Data-attributen op .stat-dialog-body, naast data-popup: wat de popup toont, data-based-on-mob="Snail" (Dave, 7 oktober 2026). */
+  data?: Record<`data-${string}`, string>
   children: ComponentChildren
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const label = props.tag ? `${props.title} (${props.tag})` : props.title
+  const path = [...useContext(PopupPath), props.pathName ?? label]
   // De veeg van het paneel: waar de vinger begon, hoe ver hij naar rechts is, en of het een veeg opzij is (geen scroll).
   const drag = useRef<{ x: number; y: number; dx: number; sideways: boolean | null } | null>(null)
   // Wat er gebeurt als het paneel weg is; null zolang het niet wegschuift.
@@ -1652,7 +1673,8 @@ function StatDialog(props: {
     <dialog
       ref={ref}
       class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
-      aria-label={props.tag ? `${props.title} (${props.tag})` : props.title}
+      aria-label={label}
+      data-popup={path.join(' › ')}
       onCancel={(e) => {
         e.preventDefault()
         cancel()
@@ -1660,7 +1682,8 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && cancel()}
       {...swipe}
     >
-      <div class="stat-dialog-body">
+      <div class="stat-dialog-body" data-popup={path.join(' › ')} {...props.data}>
+      <PopupPath.Provider value={path}>
       <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
         {title}
       </div>
@@ -1687,6 +1710,7 @@ function StatDialog(props: {
         </svg>
       </button>
       <DialogClose.Provider value={cancel}>{props.children}</DialogClose.Provider>
+      </PopupPath.Provider>
       </div>
     </dialog>
   )
@@ -1722,27 +1746,29 @@ function BasedOn(props: { who: string; mob: string }) {
   return (
     <section class="based-on" aria-label="Based on">
       <h3 class="based-on-head">Based on:</h3>
-      <div class="advised-for">
+      <div class="based-on-container">
         {props.who && (
-          <div class="advised-for-row">
+          // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
+          // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
+          <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
-            <span class="advised-for-value">{props.who}</span>
+            <span class="based-on-value">{props.who}</span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. */}
             {stats && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected">
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
                 {stats}
               </PopupButton>
             )}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
-        <div class="advised-for-line">
-          <div class="advised-for-row">
+        <div class="based-on-line">
+          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
             <span class="sr-only">Mob: </span>
-            <span class="advised-for-value">{props.mob}</span>
+            <span class="based-on-value">{props.mob}</span>
             {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`}>
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}
@@ -2033,7 +2059,7 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 }
 
 /** Een rond knopje dat een kleine popup opent, bovenop de popup waarin het staat (Dave, 7 oktober 2026): de info en het vraagteken in Advised. */
-function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; children: ComponentChildren }) {
+function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const close = () => {
@@ -2046,7 +2072,8 @@ function PopupButton(props: { icon: ComponentChildren; class: string; label: str
         {props.icon}
       </button>
       {open && (
-        <StatDialog title={props.title} tag={props.tag} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
+        // In data-popup heet hij naar zijn knop, "Info over Snail" of "Uitleg": zijn titel is vaak die van de popup eronder (#245).
+        <StatDialog title={props.title} tag={props.tag} pathName={props.label} data={props.data} closeLabel="Sluiten" focusInput={false} className="item-dialog" onCancel={close}>
           {props.children}
         </StatDialog>
       )}
@@ -2138,7 +2165,7 @@ function CostCardButtons(props: { part: 'worn' | 'advised' }) {
               <button
                 key={c.key}
                 type="button"
-                class="card-action"
+                class={`card-action cost-card cost-card-${c.key}`}
                 aria-haspopup="dialog"
                 aria-expanded={ctx.open[c.key] === props.part}
                 aria-label={name}
@@ -2211,7 +2238,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2410,7 +2437,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
@@ -2469,7 +2496,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
   const none = () => {}
   return (
     <>
-      <section class="char-table" aria-label="Ability points">
+      <section class="char-table char-table-ap" aria-label="Ability points">
         <h3 class="char-table-head">Ability points</h3>
         <AbilityHead />
         {shownStats(job)
@@ -2478,11 +2505,11 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
             <AbilityLine key={f.key} field={f} draft={draft} cap={null} readOnly onSave={none} />
           ))}
       </section>
-      <section class="char-table" aria-label="Skillpoints">
+      <section class="char-table char-table-skills" aria-label="Skillpoints">
         <h3 class="char-table-head">Skillpoints ({hasFirstJob(job, draft) ? '1e job' : 'Beginner'})</h3>
         <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
       </section>
-      <section class="char-table" aria-label="Total stats">
+      <section class="char-table char-table-total" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>
         <BaseStats job={job} draft={draft} />
       </section>
@@ -2682,7 +2709,7 @@ function HuntedMobCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={openView} />
       {view === 'advised' && props.advised !== null && (
-        <CardPopup title="Advised: Monster" advised opener={opener} onClose={close} report={props.report} reportTitle={title}>
+        <CardPopup card="mob" title="Advised: Monster" advised mob={advisedMob?.name} opener={opener} onClose={close} report={props.report} reportTitle={title}>
           {/* De mob van het advies, om te lezen (Dave, 6 oktober 2026, #192): zoals de gekozen mob, zonder keuzemenu en zonder Opslaan. */}
           <div class="field">
             <span>De mob die je het meest killt</span>
@@ -2692,7 +2719,7 @@ function HuntedMobCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup title={title} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
+        <CardPopup card="mob" title={title} mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
@@ -3091,7 +3118,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job, props.dagger))}.</p>
       {winner && (
-        <button type="button" class="btn" onClick={() => props.onApply(winner)}>
+        <button type="button" class="btn skill-apply" onClick={() => props.onApply(winner)}>
           Punt zetten
         </button>
       )}
@@ -3643,11 +3670,11 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
       {/* Gestopt na de laatste toegestane ronde, van de instellingen of van de equip (#192): geen vast getal. */}
       {r.capped && <p class="hint">Na het maximum aantal rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
       {props.applied ? (
-        <button type="button" class="btn" onClick={props.onUndo}>
+        <button type="button" class="btn cheapest-undo" onClick={props.onUndo}>
           Ongedaan maken
         </button>
       ) : (
-        <button type="button" class="btn primary" onClick={props.onApply}>
+        <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
           Overnemen
         </button>
       )}
