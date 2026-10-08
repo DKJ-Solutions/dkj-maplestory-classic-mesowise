@@ -64,6 +64,9 @@
 
 * { box-sizing: border-box; }
 
+/* Dubbeltikken zoomt nergens meer in, ook niet op tekst of achtergrond; knijpzoom blijft werken (Dave, 8 oktober 2026, #250). */
+html { touch-action: manipulation; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -208,7 +211,6 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* Je volgende level (issue #24) */
 /* Kopschaal: h2 (paneel en kaart) 1.5rem > h3 (deel van het advies) 1.125rem > h4-niveau (label in een popup) 0.9375rem; elk niveau verschilt in grootte, niet alleen in gewicht of kleur */
 :root { --fs-h2: 1.5rem; --fs-h3: 1.125rem; --fs-h4: 0.9375rem; }
-.level-cost h2 { margin: 0 0 0.5rem; font-size: var(--fs-h2); line-height: 1.2; }
 .job h2 { margin: 0; font-size: var(--fs-h2); line-height: 1.2; }
 .job h2.with-icon { display: flex; align-items: center; gap: 0.5rem; }
 .job-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 44px; margin: -0.5rem 0 0.375rem; }
@@ -240,14 +242,12 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .job-choice { min-width: 0; padding: 0.5rem 0.125rem; font-size: clamp(0.6875rem, 3.2vw, 0.875rem); white-space: nowrap; }
 .job-choice[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
 .job .hint:last-child { margin-bottom: 0; }
-.level-cost-value { margin: 0 0 0.25rem; }
-.level-cost-value strong { font-size: 2rem; color: var(--accent); }
-/* De bron onder het advies: in de Report-kaart en in het rapport van een kaart gelijk. */
-.level-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
-.level-cost .source a, .report-body .source a { color: var(--accent); }
+/* De bron onder het advies en onder Total cost: in het rapport van een kaart en in Total cost gelijk. */
+.total-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.total-cost .source a, .report-body .source a { color: var(--accent); }
 
-/* Wat dit level kost en de drie adviezen in één kaart (#126): elk advies onder een lijn. */
-.level-cost .advice-part + .advice-part, .report-body .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+/* In het rapport van een kaart staat elk advies onder een lijn. */
+.report-body .advice-part + .advice-part { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
@@ -415,10 +415,18 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on-label { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
 .based-on-value:empty { min-width: 4rem; }
 .based-on-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
-.based-on-line { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
-.based-on-line .based-on-label { min-width: 0; }
-.based-on .based-on-line > .help-toggle { flex: none; margin: -0.625rem -0.375rem -0.625rem 0; }
+.based-on-label[data-based-on-mob] { min-width: 0; }
 .based-on .based-on-label .info-toggle { margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
+/* Het vraagteken van de mob staat in zijn vak, achter het i-knopje (Dave, 8 oktober 2026): de twee knoppen schuiven iets in elkaar, zodat de iconen
+   niet verder uit elkaar staan dan nodig, en het vraagteken eindigt waar het i-knopje bij Char eindigt. */
+.based-on .based-on-label .info-toggle:has(+ .help-toggle) { margin-right: -0.25rem; }
+.based-on .based-on-label .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.25rem; }
+/* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
+   Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
+.based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.4375rem;
+  padding: 0 0.4375rem; gap: 0.25rem; justify-content: flex-start; font: inherit; text-align: left; border-radius: 0.5rem; }
+.based-on .based-on-label .info-toggle.named > svg { flex: none; }
+.based-on .based-on-label .info-toggle.named:has(+ .help-toggle) { margin-right: 0; padding-right: 0; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }
@@ -653,7 +661,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-value strong.cost { color: var(--cost); }
 .equip-value strong.gain { color: var(--gain); }
 
-/* Total cost (Dave, 6 oktober 2026): de kop zoals Report, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
+/* Total cost (Dave, 6 oktober 2026): een grote kop, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
 /* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Advised en Difference uitsteekt (Dave, #183). */
 .total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
@@ -777,6 +785,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .info-toggle { flex: none; width: 44px; height: 44px; margin: -0.5rem -0.5rem -0.5rem -0.625rem; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .info-toggle[aria-expanded="true"] { color: var(--accent); }
+/* Het rondje in de kleur van de naam ernaast, de i erin in de achtergrondkleur eronder (Dave, 8 oktober 2026): die van de popup, of in een
+   "Based on:"-vak die van het vak. */
+.info-toggle { --info-glyph: var(--card); }
+.info-toggle .info-dot { fill: var(--info-glyph); }
+.info-toggle .info-stem { stroke: var(--info-glyph); }
+.advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
+.based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
 /* De twee popups van één stuk in Advised (Dave, 7 oktober 2026): achter het vraagteken het oordeel (Kopen, Niet kopen, Houden, Leeg laten)
@@ -844,4 +859,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .help-toggle[aria-expanded="true"] { color: var(--accent); }
 /* Naast de titel van een popup (StatDialog help): direct achter de titel, zonder de kop hoger te maken; de uitleg opent in een eigen popup. */
 .stat-dialog-head .help-toggle { flex: none; margin: -0.5rem 0 -0.5rem 0.125rem; }
+/* Het i-knopje achter de titel (Dave, 8 oktober 2026): op de plek van het vraagteken dat er stond, het rondje in de kleur van de titel. Het
+   tikvlak van 44px schuift onder het eind van de titel, zodat het rondje dicht achter de titel staat (zo'n 6px). */
+.stat-dialog-head .info-toggle { margin: -0.5rem 0 -0.5rem -0.375rem; color: var(--text); }
+/* Het midden van de regel ligt boven het midden van de hoofdletters, dus het rondje zakt 2px om met de tekst gelijk te staan (Dave, 8 oktober 2026). */
+.stat-dialog-head .info-toggle > svg { transform: translateY(0.125rem); }
 .help-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }

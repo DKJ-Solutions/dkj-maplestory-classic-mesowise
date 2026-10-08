@@ -2,7 +2,67 @@
 
 ## [Unreleased]
 
-**0 / 5 patch entries** <!-- pending-tally -->
+**3 / 8 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/remove-report-card · 20261008-073655Z
+
+The home screen no longer shows the separate Report card below Total cost. Its five pieces of advice (ATT, DEF, Skill, Mob, Potions) remain in the report behind each card, and the EXP-table source line now sits at the bottom of Total cost. The tests that read the advice through the Report card now read it from the per-card reports.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A player sees one card fewer on the home screen: what a level costs is read from Total cost, and the advice from the report on each card.
+
+**Score:** 3
+
+#### Pull Request
+
+Remove the Report card from the home screen
+
+[PR #253](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/253)
+
+---
+
+### DEPLOY: app/info-popup-tag · 20261008-072815Z
+
+Every popup now says what kind of content it holds: `info` for fixed facts (a mob, an item, what a Total cost popup is), `expected` for the app's predictions, with a ≈ icon instead of the i, and `why` for every popup behind a question mark. Under "Based on:" the whole name opens its popup, the mob's question mark sits inside its label, and the mob popup shows its level as a row instead of in the title. The info icon is now a solid circle in the text colour with the i in the background colour, and behind the title of Total cost: Equip and Useable it replaces the question mark.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+Dave and his friends see at a glance whether a number is fixed or predicted, and can tap the name rather than aiming for a small icon on a phone.
+
+**Score:** 3
+
+#### Pull Request
+
+Popup labels info, expected and why, clickable names under Based on, and a level row in the mob popup
+
+[PR #252](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/252)
+
+---
+
+### DEPLOY: app/250-no-double-tap-zoom · 20261008-071029Z
+
+The whole page now carries `touch-action: manipulation`, so a double-tap on text or background no longer zooms in; before, only the buttons had it. Pinch zoom stays available.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On a phone, a double-tap no longer zooms the app in by accident, with no obvious way back out.
+
+**Score:** 3
+
+#### Pull Request
+
+Double-tap no longer zooms the page in on a phone; pinch zoom still works
+
+[PR #251](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/251)
+
+---
 
 ### DEPLOY: app/card-popup-data-on-body · 20261007-213638Z
 
@@ -103,3 +163,4 @@ every element names what it is, so two buttons that do different things no longe
 [PR #244](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/244)
 
 ---
+

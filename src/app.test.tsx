@@ -14,7 +14,8 @@ import { expectedStat } from './expectedStats'
 import { NO_POTION_CHOICE, POTION_CHOICE_KEY } from './potions'
 import { DEFAULT_PROFILE, parseProfile, PROFILE_KEY, type ProfileDraft } from './profile'
 import { statWindowRange } from './suggest'
-import { mobDraft } from './data/spots'
+import { EXP_TABLE_SOURCE } from './data/expTable'
+import { MOBS, mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
 
 const claw = (name: string) => {
@@ -38,11 +39,11 @@ const [HAT_A, HAT_B] = twoItems('hat')
 const [SHOE_A] = twoItems('shoes')
 const [TOP_A] = twoItems('top')
 
-/** Wat het level kost, zoals de Report-kaart het toont: het bedrag en de regel eronder (met de mob). */
-const levelCostText = () => {
-  const value = document.querySelector('.level-cost-value')
-  return value ? `${value.textContent} ${value.nextElementSibling?.textContent}` : undefined
-}
+/**
+ * Wat het level kost, zoals Total cost het toont: het totaal onder "Your character". De Report-kaart met het losse
+ * bedrag bestaat niet meer (Dave, 8 oktober 2026); de rekensom zelf staat onder src/levelCost.test.ts.
+ */
+const levelCostText = () => document.querySelector('.total-cost .cost-ingame tfoot td:last-child')?.textContent ?? undefined
 /** De kaartklassen op het scherm, per titel (#192): de kaarten hebben geen oog meer, maar twee knoppen onder de kop. */
 const CARD_CLASS = { Equip: '.equipment', Skillpoints: '.skills', Monster: '.hunted', Potions: '.potions', 'Ability points': '.profile', 'Total stats': '.total-stats' } as const
 /** De knop "Your character" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
@@ -70,8 +71,34 @@ const slots = () => stored(EQUIPMENT_KEY)?.slots
 
 /** Het beginscherm: alles staat op één scherm (#154). */
 const homeScreen = () => document.querySelector<HTMLElement>('main')!
-/** De Report-kaart onderaan het beginscherm: de kosten van het level en de vier adviezen. */
-const reportCard = () => document.querySelector<HTMLElement>('section.level-cost')!
+/**
+ * De vijf adviezen staan in het rapport van hun eigen kaart (Dave, 8 oktober 2026): ATT en DEF bij Equip, Skill bij Skillpoints,
+ * Mob bij Monster, Potions bij Potions. Een popup tegelijk: elke helper sluit eerst wat open staat.
+ */
+const REPORT_CARD = { ATT: 'Equip', DEF: 'Equip', Skill: 'Skillpoints', Mob: 'Monster', Potions: 'Potions' } as const
+const closeDialogs = () => {
+  for (let i = 0; i < 6; i++) {
+    const d = document.querySelector<HTMLElement>('dialog.report-dialog') ?? document.querySelector<HTMLElement>('dialog.card-dialog')
+    if (!d) return
+    fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' })[0])
+  }
+}
+/** Het rapport van een kaart, open, zoals de speler het opent: de popup van de kaart en daarin het rapport-icoon. */
+const openReportOf = (card: 'Equip' | 'Skillpoints' | 'Monster' | 'Potions') => {
+  closeDialogs()
+  fireEvent.click(viewButton(card))
+  fireEvent.click(screen.getByRole('button', { name: `Report: ${card}` }))
+  return document.querySelector<HTMLElement>('dialog.report-dialog')!
+}
+/** Eén van de vijf adviezen (ATT, DEF, Skill, Mob, Potions), levend, uit het rapport van zijn kaart. */
+const reportPart = (title: keyof typeof REPORT_CARD) => within(openReportOf(REPORT_CARD[title])).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!
+/** Alle vijf de adviezen achter elkaar, in de volgorde ATT, DEF, Skill, Mob, Potions: een kopie, alleen om te lezen. */
+const reportCard = () => {
+  const box = document.createElement('div')
+  for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) box.append(openReportOf(card).querySelector('.report-body')!.cloneNode(true))
+  closeDialogs()
+  return box
+}
 
 /** De equipment-kaarten (er is er één, op het beginscherm). */
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('section.equipment'))
@@ -318,7 +345,7 @@ describe('begin zonder opslag', () => {
       }
     })
 
-    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost en de Report-kaart', () => {
+    it('zet de kaarten met een rapport bij elkaar, met de Stats-groep onder Potions, dan Total cost als laatste kaart', () => {
       const stats = homeScreen().querySelector('section.stats-group')!
       const equip = homeScreen().querySelector('section.equipment')!
       const skills = homeScreen().querySelector('section.skills')!
@@ -328,10 +355,21 @@ describe('begin zonder opslag', () => {
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
-      expect(stats.nextElementSibling).toBe(homeScreen().querySelector('section.total-cost'))
-      // Eén Total cost-kaart, ook met Advised en Difference erin (#183), dan het Report.
+      // Eén Total cost-kaart, ook met Advised en Difference erin (#183): de laatste kaart, daarna alleen de noot.
+      const total = homeScreen().querySelector('section.total-cost')!
       expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
-      expect(stats.nextElementSibling!.nextElementSibling).toBe(homeScreen().querySelector('section.level-cost'))
+      expect(stats.nextElementSibling).toBe(total)
+      const sections = Array.from(homeScreen().children).filter((c) => c.tagName === 'SECTION')
+      expect(sections[sections.length - 1]).toBe(total)
+    })
+
+    it('heeft geen Report-kaart meer op het beginscherm, en Total cost zegt waar de EXP-tabel vandaan komt (Dave, 8 oktober 2026)', () => {
+      expect(homeScreen().querySelector('.level-cost')).toBeNull()
+      expect(within(homeScreen()).queryByRole('heading', { level: 2, name: 'Report' })).toBeNull()
+      expect(homeScreen().querySelector('.level-cost-value')).toBeNull()
+      const source = homeScreen().querySelector<HTMLElement>('section.total-cost .source')!
+      expect(source.textContent).toMatch(/^EXP-tabel: NiaMeowDB, opgehaald op .+\.$/)
+      expect(source.querySelector('a')!.getAttribute('href')).toBe(EXP_TABLE_SOURCE.url)
     })
 
     it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
@@ -350,25 +388,6 @@ describe('begin zonder opslag', () => {
       // Het rapport van Skillpoints sluit de popup van Skillpoints niet: die van Monster gaat pas open als die dicht is.
       fireEvent.click(within(document.querySelector('dialog.card-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
       expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
-    })
-
-    it('zet in de Report-kaart elke vraag onder dezelfde kop als in het rapport achter het oog: ATT en DEF bij Equip, Skill bij Skillpoints, Mob bij Monster', () => {
-      const inReportCard = (title: string) => within(reportCard()).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
-      const cardOf: Record<string, string[]> = { Equip: ['ATT', 'DEF'], Skillpoints: ['Skill'], Monster: ['Mob'] }
-      for (const [card, titles] of Object.entries(cardOf)) {
-        const dialog = openReport(card)
-        for (const title of titles) {
-          const own = within(dialog).getByRole('heading', { level: 3, name: title }).closest<HTMLElement>('.question')!.textContent
-          expect(own, card + ': ' + title).toBe(inReportCard(title))
-        }
-        // De andere vragen staan niet in dit rapport.
-        for (const t of ['ATT', 'DEF', 'Skill', 'Mob'].filter((x) => !titles.includes(x))) {
-          expect(within(dialog).queryByRole('heading', { level: 3, name: t }), card + ' toont ' + t + ' niet').toBeNull()
-        }
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
-        const popup = document.querySelector<HTMLElement>('dialog.card-dialog')
-        if (popup) fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' })[0])
-      }
     })
 
     it('opent het rapport van Equip vanuit de bekijken-popup, en die blijft open als je het rapport sluit (#188)', () => {
@@ -563,6 +582,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(toggle.closest('.advised-item')!.querySelector('.advised-name')).not.toBeNull()
     const item = openItem(row, '.info-toggle')
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
+    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     const facts = factsOf(item)
     expect(facts.Soort).toBe('CLAW')
     expect(facts.Level).toMatch(/^[\d]+$/)
@@ -1262,7 +1282,7 @@ describe('bewaren na elke wijziging', () => {
       return levelCostText()
     }
     const own = summary({ ...mobDraft('Pig'), kills: '1' })
-    expect(own).toMatch(/Op Pig\./)
+    expect(own).toMatch(/^−[\d.]+ meso$/)
     expect(own).toBe(summary(mobDraft('Pig')!))
   })
 
@@ -1317,10 +1337,10 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('rekent met de gekozen mob: de kosten van het level verschijnen', () => {
-    expect(document.querySelector('.level-cost-value')).toBeNull()
     fireEvent.click(viewButton('Monster'))
+    expect(levelCostText() ?? '').not.toMatch(/^−[\d.]+ meso$/)
     chooseMob('Pig')
-    expect(levelCostText()).toMatch(/^± [\d.]+ meso.*Op Pig\.$/)
+    expect(levelCostText()).toMatch(/^−[\d.]+ meso$/)
   })
 
   it('bewaart de gekozen job', () => {
@@ -1471,7 +1491,7 @@ describe('level-up en Back (#154)', () => {
     expect(screen.queryByRole('heading', { name: 'Klopt dit met je spel?' })).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Wat nu?' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Alles klopt, toon advies' })).toBeNull()
-    expect(screen.getByRole('heading', { level: 2, name: 'Report' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Total cost' })).toBeTruthy()
   })
 
   it('past alleen aan wat uit een bronregel volgt: level, Max HP en accuracy; de AP blijven staan', () => {
@@ -1830,13 +1850,13 @@ describe('advies na de level-up', () => {
 
   it('zet een punt in de aanbevolen skill en bewaart het', () => {
     afterLevelUp()
-    const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+    const button = within(reportPart('Skill')).getByRole('button', { name: 'Punt zetten' })
     expect(button.closest<HTMLElement>('.question')!.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Lucky Seven (→ 3).')
     expect(profileFields().luckySeven).toBe('2')
     fireEvent.click(button)
     expect(profileFields().luckySeven).toBe('3')
     expect(profileFields().level).toBe('11')
-    expect(within(reportCard()).getByText(/^Lucky Seven → 3 gezet./)).toBeTruthy()
+    expect(within(reportPart('Skill')).getByText(/^Lucky Seven → 3 gezet./)).toBeTruthy()
   })
 })
 
@@ -1885,8 +1905,7 @@ describe('een Warrior in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = homeScreen()
-      expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
-      expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(levelCostText()).toMatch(/^−[\d.]+ meso$/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
     })
@@ -1894,15 +1913,15 @@ describe('een Warrior in de app', () => {
     it('noemt op het beginscherm geen claws, en toont de skillkaart en (zodra er een wapen beter is) de wapenkaart', () => {
       const home = homeScreen()
       expect(home.textContent).not.toMatch(/claw/i)
-      expect(within(home).getByRole('heading', { level: 2, name: 'Report' })).toBeTruthy()
+      expect(within(home).getByRole('heading', { level: 2, name: 'Total cost' })).toBeTruthy()
       // Het wapenadvies heet bij een Warrior "nieuw wapen", nooit "nieuwe claw".
       expect(home.textContent).not.toContain('Loont een nieuwe claw?')
     })
 
     it('rekent het level met het Warrior-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
-      const warriorCost = within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
+      const warriorCost = levelCostText()
       open('thief')
-      const thiefCost = within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
+      const thiefCost = levelCostText()
       expect(warriorCost).toBeTruthy()
       expect(thiefCost).toBeTruthy()
       expect(warriorCost).not.toBe(thiefCost)
@@ -2027,7 +2046,7 @@ describe('een Warrior in de app', () => {
     })
   })
 
-  describe('de Report-kaart na een level-up', () => {
+  describe('de rapporten na een level-up', () => {
     beforeEach(() => {
       open('warrior')
       afterLevelUp()
@@ -2054,7 +2073,7 @@ describe('een Warrior in de app', () => {
 
     it('geeft als skillpunt Power Strike (→ 2), met zijn MP, en zet het punt in het bewaarde profiel', () => {
       // Gemeten met skillPointAdvice voor dit profiel (STR 90, WATK 40, Power Strike 1): Power Strike wint, Precise Strikes spaart niets.
-      const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+      const button = within(reportPart('Skill')).getByRole('button', { name: 'Punt zetten' })
       const section = button.closest<HTMLElement>('.question')!
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Power Strike (→ 2).')
       // Power Strike 1 en 2 kosten allebei 4 MP per aanval (de skillpagina).
@@ -2064,11 +2083,11 @@ describe('een Warrior in de app', () => {
       expect(profileFields().powerStrike).toBe('2')
       expect(profileFields().preciseStrikes).toBe('0')
       expect(profileFields().level).toBe('21')
-      expect(within(reportCard()).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
+      expect(within(reportPart('Skill')).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
     })
 
     it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
-      const claw = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
+      const claw = reportPart('ATT')
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wapen/)
     })
@@ -2217,7 +2236,7 @@ describe('het geslacht (issue #55)', () => {
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 
-  describe('op de Report-kaart', () => {
+  describe('in het rapport van Equip', () => {
     const afterLevelUp = () => {
       cleanup()
       localStorage.setItem(
@@ -2231,7 +2250,7 @@ describe('het geslacht (issue #55)', () => {
       render(<App />)
       levelUp()
       }
-    const armorSection = () => screen.getByRole('heading', { level: 3, name: 'DEF' }).closest<HTMLElement>('.question')!
+    const armorSection = () => reportPart('DEF')
 
     it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
       afterLevelUp()
@@ -2267,7 +2286,6 @@ describe('een Bowman in de app', () => {
   }
   const NOT_YET = /Nog niet doorgerekend/
   const found = (slot: string, text: string) => options(typeIn(cards()[0], slot, text)).map((o) => o.querySelector('.equip-name')?.textContent)
-  const costText = () => within(homeScreen()).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.querySelector('.level-cost-value')!.textContent
 
   describe('het shield-slot (#172)', () => {
     beforeEach(open)
@@ -2293,20 +2311,19 @@ describe('een Bowman in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = homeScreen()
-      expect(levelCostText()).toMatch(/Van lv 20 naar 21: .* Op .+\./)
-      expect(costText()).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(levelCostText()).toMatch(/^−[\d.]+ meso$/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
     })
 
     it('rekent met het Bowman-model: de kosten verschillen van die van een Thief met dezelfde velden', () => {
-      const bowmanCost = costText()
+      const bowmanCost = levelCostText()
       localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
       cleanup()
       render(<App />)
       expect(bowmanCost).toBeTruthy()
-      expect(costText()).toBeTruthy()
-      expect(costText()).not.toBe(bowmanCost)
+      expect(levelCostText()).toBeTruthy()
+      expect(levelCostText()).not.toBe(bowmanCost)
     })
 
     it('biedt de bronze pijlen pas aan met "Ik heb Helpful Stranger" aan, rekent ermee, en valt bij uitzetten terug (#64)', () => {
@@ -2383,7 +2400,7 @@ describe('een Bowman in de app', () => {
     })
   })
 
-  describe('de Report-kaart na een level-up', () => {
+  describe('de rapporten na een level-up', () => {
     beforeEach(() => {
       open()
       afterLevelUp()
@@ -2412,7 +2429,7 @@ describe('een Bowman in de app', () => {
     it('rekent Arrow Blow als enige skill door en zet het punt toch, met de eerlijke hint dat het niets scheelt', () => {
       // Dit profiel (DEX 80, 30 ATT) heeft elke Rain Forest-kill in 2 schoten; 4% meer schade van Arrow Blow 1 → 2 verandert dat niet.
       // Een vrij punt moet ergens heen (Dave, 4 oktober 2026): Arrow Blow wint dus met besparing 0.
-      const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
+      const section = reportPart('Skill')
       expect(section.querySelector('.chip')!.textContent).toBe('Arrow Blow → 2')
       expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Arrow Blow (→ 2).')
       expect(section.textContent).toContain('Van lv 21 tot en met lv 25 bespaart geen enkele skill meso, maar je punt moet toch ergens heen.')
@@ -2422,7 +2439,7 @@ describe('een Bowman in de app', () => {
     })
 
     it('noemt wapens, geen claws', () => {
-      const weapon = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
+      const weapon = reportPart('ATT')
       expect(weapon.textContent).not.toMatch(/claw/i)
       expect(weapon.textContent).toMatch(/wapen|boog/)
     })
@@ -2477,7 +2494,7 @@ describe('een Magician in de app', () => {
 
     it('toont een getal voor wat het level kost en niet "Nog niet doorgerekend"', () => {
       const home = homeScreen()
-      expect(within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!.textContent).toMatch(/±\s*[\d.]+ meso|Gratis|Niet haalbaar/)
+      expect(levelCostText()).toMatch(/^−[\d.]+ meso$/)
       expect(home.textContent).not.toMatch(NOT_YET)
       expect(home.querySelector('.debug')).toBeNull()
     })
@@ -2555,15 +2572,13 @@ describe('een Magician in de app', () => {
     })
 
     it('noemt bij het equipmentadvies wands en staffs, geen claws', () => {
-      const equip = within(homeScreen()).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
+      const equip = reportPart('ATT')
       expect(equip.textContent).toMatch(/wand|staff/i)
       expect(equip.textContent).not.toMatch(/claw/i)
     })
 
-    it('zet de kosten en de vijf adviezen in één kaart Report: ATT, DEF, Skill, Mob en Potions (#126)', () => {
-      const home = homeScreen()
-      expect(home.querySelectorAll('.level-cost')).toHaveLength(1)
-      const card = within(home).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
+    it('zet de vijf adviezen in de rapporten van hun kaarten: ATT, DEF, Skill, Mob en Potions (#126)', () => {
+      const card = reportCard()
       const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
       expect(questions).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
       // Elk advies heeft een antwoord, en het skilladvies noemt de mana die de skill kost.
@@ -2573,7 +2588,7 @@ describe('een Magician in de app', () => {
     })
   })
 
-  describe('de Report-kaart na een level-up', () => {
+  describe('de rapporten na een level-up', () => {
     beforeEach(() => {
       open()
       afterLevelUp()
@@ -2601,12 +2616,12 @@ describe('een Magician in de app', () => {
     it('noemt Magic Claw niet als punt zolang Energy Bolt op 0 staat', () => {
       open({ energyBolt: '0' })
       afterLevelUp()
-      const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
+      const section = reportPart('Skill')
       expect(section.textContent).not.toContain('Magic Claw → 1')
     })
 
     it('noemt wands en staffs, geen claws', () => {
-      const claw = within(reportCard()).getByRole('heading', { level: 3, name: 'ATT' }).closest<HTMLElement>('.question')!
+      const claw = reportPart('ATT')
       expect(claw.textContent).not.toMatch(/claw/i)
       expect(claw.textContent).toMatch(/wand of staff|wapen/)
     })
@@ -2616,7 +2631,7 @@ describe('een Magician in de app', () => {
     // Gemeten met skillPointAdvice voor dit profiel (INT 20, M.ATT 10, Energy Bolt 3): Energy Bolt wint; Magic Claw 1 geeft evenveel schade per cast en spaart niets.
     open({ int: '20', clawWatk: '10', energyBolt: '3' })
     afterLevelUp()
-    const button = within(reportCard()).getByRole('button', { name: 'Punt zetten' })
+    const button = within(reportPart('Skill')).getByRole('button', { name: 'Punt zetten' })
     const section = button.closest<HTMLElement>('.question')!
     expect(section.querySelector('.verdict')!.textContent).toBe('Zet je skillpunt in Energy Bolt (→ 4).')
     // Energy Bolt 3 en 4 kosten allebei 8 MP per cast (de skillpagina).
@@ -2626,7 +2641,7 @@ describe('een Magician in de app', () => {
     expect(profileFields().energyBolt).toBe('4')
     expect(profileFields().magicClaw).toBe('0')
     expect(profileFields().level).toBe('21')
-    expect(within(reportCard()).getByText(/^Energy Bolt → 4 gezet./)).toBeTruthy()
+    expect(within(reportPart('Skill')).getByText(/^Energy Bolt → 4 gezet./)).toBeTruthy()
   })
 })
 
@@ -2934,12 +2949,13 @@ describe('skillpunten per level (issue #136)', () => {
     cleanup()
     render(<App />)
     levelUp()
-    const section = within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
     // Level 11 geeft 3 punten erbij: er is dus nog iets te kiezen.
-    expect(section.textContent).not.toContain('geen skillpunten meer over')
+    expect(reportPart('Skill').textContent).not.toContain('geen skillpunten meer over')
     // Zet de pot vol via de Skillpoints-kaart van het beginscherm.
+    closeDialogs()
     fireEvent.click(viewButton('Skillpoints'))
     setSkill(homeScreen(), 'Lucky Seven', '4')
+    const section = reportPart('Skill')
     // Geen punt meer: de app controleert nu of je punten goed staan. Lucky Seven 4 kost hier niet meer dan een andere verdeling.
     expect(section.querySelector('.chip')!.textContent).toBe('Goed gezet')
     expect(section.querySelector('.verdict')!.textContent).toBe('Je skillpunten staan goed.')
@@ -2957,7 +2973,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(spot)] }))
     render(<App />)
     levelUp()
-    return within(reportCard()).getByRole('heading', { level: 3, name: 'Skill' }).closest<HTMLElement>('.question')!
+    return reportPart('Skill')
   }
   const lines = (section: HTMLElement) => Array.from(section.querySelectorAll('.skill-options li')).map((li) => li.textContent)
 
@@ -3018,7 +3034,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
 
   const placedHint = (section: HTMLElement) => {
     fireEvent.click(within(section).getByRole('button', { name: 'Punt zetten' }))
-    return within(reportCard()).getByText(/ gezet\./).textContent!
+    return within(section.closest<HTMLElement>('dialog')!).getByText(/ gezet\./).textContent!
   }
 
   it('zegt na het zetten bij een besparing > 0 waarom het de beste keuze was en wat de tweede keuze doet', () => {
@@ -3052,7 +3068,7 @@ describe('een vrij skillpunt moet ergens heen, ook als geen skill meso bespaart'
   })
 })
 
-describe('de kaart Report en het blok Stats op het beginscherm', () => {
+describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () => {
   const home = () => {
     cleanup()
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', luckySeven: '2', luk: '60' } }))
@@ -3060,9 +3076,9 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     render(<App />)
     return homeScreen()
   }
-  const card = (h: HTMLElement) => within(h).getByRole('heading', { level: 2, name: 'Report' }).closest('section')!
+  const card = (_h: HTMLElement) => reportCard()
 
-  it('zet onder Report de koppen ATT, DEF, Skill, Mob en Potions in die volgorde, en niets van de oude vraag over equipment', () => {
+  it('zet in de rapporten de koppen ATT, DEF, Skill, Mob en Potions in die volgorde, en niets van de oude vraag over equipment', () => {
     const c = card(home())
     expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
     // ATT en DEF zijn afkortingen met hun volle naam als tooltip.
@@ -3140,7 +3156,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '10' } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
-    const att = () => within(homeScreen()).getByRole('heading', { level: 3, name: 'ATT' }).closest('.advice-part')!
+    const att = () => reportPart('ATT')
     // Zonder wapen in het slot staat er geen "Je draagt", wel de eerstvolgende claw.
     expect(att().textContent).not.toContain('Je draagt')
     expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
@@ -3161,7 +3177,7 @@ describe('de kaart Report en het blok Stats op het beginscherm', () => {
       render(<App />)
       return homeScreen()
     }
-    const part = (h: HTMLElement, title: string) => within(h).getByRole('heading', { level: 3, name: title }).closest('.advice-part') as HTMLElement
+    const part = (_h: HTMLElement, title: 'ATT' | 'DEF') => reportPart(title)
     const chipOf = (el: HTMLElement) => el.querySelector('.chip')!
 
     it('noemt een Thief op lv 9 de Garnier vanaf lv 10, en wat hij draagt zodra het slot is ingevuld', () => {
@@ -3247,7 +3263,7 @@ describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft(mob)] }))
     render(<App />)
-    return within(homeScreen()).getByRole('heading', { level: 3, name: 'Skill' }).closest('.advice-part') as HTMLElement
+    return reportPart('Skill')
   }
 
   it('zegt "Goed gezet" (yes) als geen punt in een andere skill goedkoper was', () => {
@@ -3405,9 +3421,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
     fireEvent.input(d.getByLabelText(`${label} in game`), { target: { value } })
     fireEvent.click(d.getByRole('button', { name: 'Opslaan' }))
   }
-  const potionPart = () =>
-    within(homeScreen().querySelector<HTMLElement>('section.level-cost')!).getByRole('heading', { level: 3, name: 'Potions' }).closest<HTMLElement>('.advice-part')!
-  /** De regels onderaan het Potions-rapport op de Report-kaart: per potion de prijs per punt en wat hij van je balk vult. */
+  const potionPart = () => reportPart('Potions')
+  /** De regels onderaan het Potions-rapport: per potion de prijs per punt en wat hij van je balk vult. */
   const potionInfoLines = () => Array.from(potionPart().querySelectorAll('.potion-info')).map((p) => p.textContent)
   const withMob = () => {
     cleanup()
@@ -3559,7 +3574,7 @@ describe('de kaart Total cost (Dave, 6 oktober 2026)', () => {
     expect(card().textContent).toContain('Monster: — → ')
   })
 
-  it('zet per potion en voor de stars het aantal en de prijs op een factuur, met het totaal van de Report-kaart', () => {
+  it('zet per potion en voor de stars het aantal en de prijs op een factuur, met het totaal van Total cost', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
@@ -3841,6 +3856,8 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const item = openItem(bought[0])
     // De popup heet naar het bedrag uit de kolom Level (Dave, 7 oktober 2026).
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${bought[0].querySelector('.advised-level')!.textContent}?`)
+    // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026).
+    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
     expect(item.textContent).toContain('Op deze factuur')
     expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
     closeItem(item)
@@ -4030,7 +4047,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView(title, 'Advised')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
-      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info over /.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
+      expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Report: /.test(n)), title).toEqual([])
       expect(within(d).queryByRole('button', { name: 'Opslaan' }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /wijzigen|corrigeren|Auto assign|Punt zetten|Overnemen/ }), title).toBeNull()
       expect(within(d).queryByRole('button', { name: /^[+−-]$/ }), title).toBeNull()
@@ -4076,7 +4093,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Useable')
     // Zoals Total cost: Equip (Dave, 7 oktober 2026): het label "expected" op een eigen regel erboven, en een vraagteken naast de titel.
     expect(d.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
-    expect(d.querySelector('.stat-dialog-title-row .help-toggle')).not.toBeNull()
+    expect(d.querySelector('.stat-dialog-title-row .info-toggle')).not.toBeNull()
     expect(nameOf(advisedRow(d, 'HP'))).toContain(r.potions.hp)
     expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
@@ -4319,15 +4336,17 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Advised')
-      // Het vraagteken staat naast het vak van de mob, niet erin (Dave, 7 oktober 2026).
-      expect(d.querySelector('.based-on .based-on-label .help-toggle')).toBeNull()
-      const button = d.querySelector<HTMLElement>('.based-on .based-on-line > .help-toggle')!
+      // Het vraagteken staat in het vak van de mob, achter het i-knopje, zonder .based-on-line eromheen (Dave, 8 oktober 2026).
+      expect(d.querySelector('.based-on .based-on-line')).toBeNull()
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-label[data-based-on-mob] > .info-toggle + .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      // Het label boven de titel zegt "why": de uitleg waarom deze mob (Dave, 8 oktober 2026).
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
       expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
@@ -4343,11 +4362,17 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const d = openView('Equip', 'Advised')
       const button = d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!
       expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
-      expect(button.previousElementSibling!.textContent).toBe(mob)
+      // De hele naam is klikbaar: hij staat in de knop, voor het i-icoon (Dave, 8 oktober 2026).
+      expect(button.querySelector('.based-on-value')!.textContent).toBe(mob)
+      expect(button.parentElement!.querySelectorAll(':scope > .based-on-value')).toHaveLength(0)
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(popup.querySelector('.stat-dialog-name')!.textContent).toMatch(new RegExp(`^${mob} \\(lv \\d+\\)$`))
-      expect(lines(popup)).toEqual(advisedLines)
+      // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
+      expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
+      // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Advised: Monster.
+      const level = MOBS.find((m) => m.name === mob)!.level
+      expect(lines(popup)).toEqual([`Level${level}`, ...advisedLines])
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       await frame()
       expect(document.activeElement).toBe(button)
@@ -4369,10 +4394,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
       expect(new Set(paths).size).toBe(paths.length)
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
-      // Het vraagteken naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
-      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .help-toggle')!)
+      // Het i-knopje naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
+      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .info-toggle')!)
       const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Uitleg')
+      expect(help.getAttribute('data-popup')).toBe('Total cost: Equip (advised) › Info')
       fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
     })
@@ -4455,6 +4480,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         const d = openView(card, 'Advised')
         const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
         expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
+        // De hele naam is klikbaar: hij staat in de knop (Dave, 8 oktober 2026).
+        expect(button.querySelector('.based-on-value')!.textContent).toBe(who)
+        // Verwachte getallen krijgen een eigen icoon, een ≈ in plaats van de i van vaste info (Dave, 8 oktober 2026).
+        expect(button.classList.contains('expected-toggle')).toBe(true)
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4732,7 +4761,9 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
     fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
-    const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .help-toggle')!
+    // Een i-knopje, geen vraagteken: het zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
+    expect(dialog.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
+    const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .info-toggle')!
     // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
     const row = button.closest('.stat-dialog-title-row')!
     expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
@@ -4742,13 +4773,14 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(button)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Total cost: Equip')
+    expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft zijn eigen uitleg (Dave, 8 oktober 2026), over wat de kolommen daar betekenen.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
     const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(worn.querySelector('.stat-dialog-head .help-toggle')).not.toBeNull()
+    expect(worn.querySelector('.stat-dialog-head .info-toggle')).not.toBeNull()
   })
 })
 
