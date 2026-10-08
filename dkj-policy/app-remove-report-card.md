@@ -50,7 +50,7 @@ Dave (October 8, 2026): remove the second card on the home screen, the level-cos
 
 - [x] Victor: review; stale comments fixed, the "no number before a mob is chosen" check restored
 - [x] `npm run lint` and `npx vitest run` green
-- [ ] Dave looks at the preview before the merge
+- [x] Dave looks at the preview before the merge (Dave: "ship it")
 
 ### DEPLOY: app/remove-report-card
 
