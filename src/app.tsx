@@ -422,6 +422,30 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
   )
 }
 
+/**
+ * De meso: een gouden munt met een esdoornblad, het icoon in de kop van Level cost (Dave, 8 oktober 2026). Gevuld in plaats van lijnen zoals
+ * de andere kaarticonen, zodat hij als munt leest: een goudverloop met een donkere rand, een binnenring, het blad in het midden en een
+ * lichtrandje linksboven. Een eigen tekening van een gewoon esdoornblad; Nexons meso-sprite en logo blijven buiten de repo (#14).
+ */
+const MesoIcon = () => (
+  <svg class="card-icon meso-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <defs>
+      <linearGradient id="meso-gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fde68a" />
+        <stop offset="0.55" stop-color="#f59e0b" />
+        <stop offset="1" stop-color="#b45309" />
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="11" fill="url(#meso-gold)" stroke="#92400e" stroke-width="1" />
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="#92400e" stroke-opacity="0.45" stroke-width="0.8" />
+    <path
+      fill="#9a3412"
+      d="M12 5.6l1.1 2.2 1.6-.6-.4 2.6 1.9-1.2.5 1.3 1.6-.3-.7 2 .9.5-2.6 2.1.3 1.1-3.8-.5V18h-.8v-3.2l-3.8.5.3-1.1-2.6-2.1.9-.5-.7-2 1.6.3.5-1.3 1.9 1.2-.4-2.6 1.6.6Z"
+    />
+    <path d="M5.4 8.2a7.6 7.6 0 0 1 4.4-3.9" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.2" stroke-linecap="round" />
+  </svg>
+)
+
 /** Het oog: het icoon in de knoppen waarmee je een kaart of een deel ervan bekijkt (ViewButtons). */
 const EyeIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -3703,6 +3727,50 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
+ * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen naast elkaar (Dave, 8 oktober 2026): links wat het level kost met de setup van Advised, rechts met wat je
+ * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Advised en Wearing op de Equip-kaart.
+ * Zonder advies is Advised uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken.
+ */
+function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice }) {
+  const ctx = useContext(CardViewContext)
+  const parts = [
+    { view: 'advised', label: 'Advised', invoice: props.advised },
+    { view: 'worn', label: 'Wearing', invoice: props.wearing },
+  ] as const
+  return (
+    <section class="card level-cost">
+      <CardHead>
+        <span class="spot-name with-icon">
+          <MesoIcon />
+          Level cost
+        </span>
+      </CardHead>
+      <div class="level-cost-buttons">
+        {parts.map((p) => {
+          const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
+          const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
+          return (
+            <button
+              key={p.view}
+              type="button"
+              class={`btn level-cost-btn level-cost-${p.view}`}
+              disabled={p.invoice === null}
+              aria-haspopup="dialog"
+              aria-expanded={ctx.open.equip === p.view}
+              aria-label={`${p.label}: ${text}`}
+              onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
+            >
+              <span class="level-cost-label">{p.label}</span>
+              <strong class={`level-cost-total${total ? ' cost' : ''}`}>{text}</strong>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/**
  * De kaart Level cost (Dave, 6 oktober 2026, #183): één kaart met drie delen onder een h3. "Your character" is de factuur van je setup zoals
  * je speelt, "Advised" die van de goedkoopste setup (live berekend, met de equip die de Equip-kaart in Advised koopt en een regel per gekocht stuk, in Difference samen als Shop, #192), en "Difference" wat dat per regel scheelt, met daaronder
  * wat er verandert en Overnemen. Zonder goedkoopste setup (een job die de app niet doorrekent) alleen de eerste factuur.
@@ -4191,6 +4259,8 @@ export function App() {
       <p class="app-question">
         How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
+      {/* Onder de vraag het antwoord: links wat het level kost met Advised, rechts met wat je draagt (Dave, 8 oktober 2026). */}
+      <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} />
 
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
       {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}

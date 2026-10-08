@@ -256,6 +256,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .app-question { margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
   background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 0.75rem; }
 .app-question strong { color: var(--accent); white-space: nowrap; }
+/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): een kaartkop "Level cost" zoals de andere kaarten, en daaronder,
+   met de ruimte van de knoppen van een kaart (.view-actions), twee even brede knoppen: links Advised in de accenttint van zijn deel in
+   Level cost, rechts Wearing in grijs, zoals dat deel. */
+.level-cost { padding: 0; overflow: hidden; }
+.level-cost-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; padding: 0 1rem 1rem; }
+.level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
+  border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
+.level-cost-btn.level-cost-advised { --part: var(--accent); }
+.level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.level-cost-total { font-size: 1.0625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.level-cost-total.cost { color: var(--cost); }
 .level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { position: relative; width: 100%; height: 36px; border-radius: 0.25rem; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }

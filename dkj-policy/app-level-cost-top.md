@@ -39,19 +39,37 @@
 
 ### PLAN
 
+Dave, October 8, 2026: a new `card level-cost` section under the app question, with a spot-head "Level cost" and a meso coin
+with a maple leaf, and two buttons side by side -- left the level cost of the advised (computed) setup, right that of the
+profile as worn in game. Both open the same popup as Advised and Wearing on the Equip card.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `LevelCostButtons` in `src/app.tsx`, placed right under `.app-question`; totals come from the same invoices as the Level cost card
+- [x] The buttons open the Equip card's Advised / Wearing popup through `CardViewContext`; Advised is disabled exactly when the Equip card has no Advised
+- [x] `MesoIcon`: an own drawing of a gold coin with a plain maple leaf (no Nexon sprite or logo, #14)
+- [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
 
 ### TEST
 
+- [x] `src/app.test.tsx`: placement under the question, head and icon, totals equal to the Level cost invoices, and both buttons open the same popup as the Equip card's
+- [x] Full suite (1969 tests), typecheck and `scripts/lint/lint.ps1` green
+- [x] Code review (Victor): Advised now disables on the same condition as the Equip card; indentation and CSS comment tidied
+- [ ] Dave looks at the result in the preview before the merge (visible result)
+
 ### DEPLOY: app/level-cost-top
 
-**Score:**
+The home screen answers its own question right under it: a Level cost card with what the level costs with the advised setup
+and with what you wear, each opening the matching Equip popup.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Players see at a glance, at the top of the screen, how many mesos the level costs as they play and as advised, without
+scrolling to the bottom card.
+
+**Score:** 3
 
 #### Pull Request
 

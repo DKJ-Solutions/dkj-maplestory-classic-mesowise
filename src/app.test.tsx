@@ -368,7 +368,8 @@ describe('begin zonder opslag', () => {
     })
 
     it('heeft geen Report-kaart meer op het beginscherm, en Level cost zegt waar de EXP-tabel vandaan komt (Dave, 8 oktober 2026)', () => {
-      expect(homeScreen().querySelector('.level-cost')).toBeNull()
+      // .level-cost is sinds 8 oktober 2026 de sectie met de twee knoppen onder de vraag (Dave), zonder kop en zonder het losse bedrag van de Report-kaart.
+      expect(homeScreen().querySelector('.level-cost')!.querySelector('h2')).toBeNull()
       expect(within(homeScreen()).queryByRole('heading', { level: 2, name: 'Report' })).toBeNull()
       expect(homeScreen().querySelector('.level-cost-value')).toBeNull()
       const source = homeScreen().querySelector<HTMLElement>('section.total-cost .source')!
@@ -3742,6 +3743,43 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     chooseMob('Slime')
   }
   const mesoOf = (text: string | null | undefined) => Number(text!.replace(/\D/g, ''))
+
+  it('zet onder de vraag van de app Advised links en Wearing rechts, met het totaal van hun factuur in Level cost (Dave, 8 oktober 2026)', () => {
+    toLevel20()
+    const top = homeScreen().querySelector('.app-question')!.nextElementSibling!
+    expect(top.tagName).toBe('SECTION')
+    expect(top.className).toBe('card level-cost')
+    expect(top.querySelector('.spot-head .spot-name')!.textContent).toBe('Level cost')
+    expect(top.querySelector('.spot-head .spot-name svg.card-icon')).not.toBeNull()
+    const buttons = top.querySelectorAll<HTMLButtonElement>('.level-cost-buttons > button')
+    expect(buttons).toHaveLength(2)
+    const [left, right] = Array.from(buttons)
+    expect(left.querySelector('.level-cost-label')!.textContent).toBe('Advised')
+    expect(right.querySelector('.level-cost-label')!.textContent).toBe('Wearing')
+    expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard()))
+    expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours()))
+    expect(left.disabled).toBe(false)
+    expect(right.disabled).toBe(false)
+  })
+
+  it('opent met de knoppen onder de vraag dezelfde popup als Advised en Wearing op de Equip-kaart', () => {
+    toLevel20()
+    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button'))
+    const equipDialog = () => document.querySelector<HTMLElement>('section.equipment dialog.card-dialog')
+    const popupOf = (button: HTMLElement) => {
+      closeDialogs()
+      fireEvent.click(button)
+      const d = equipDialog()!
+      expect(button.getAttribute('aria-expanded')).toBe('true')
+      const html = d.innerHTML
+      closeDialogs()
+      return html
+    }
+    const equip = document.querySelector<HTMLElement>('main .equipment')!
+    expect(popupOf(left)).toBe(popupOf(within(equip).getByRole('button', { name: 'Advised' })))
+    expect(popupOf(right)).toBe(popupOf(within(equip).getByRole('button', { name: 'Wearing' })))
+    expect(popupOf(left)).not.toBe(popupOf(right))
+  })
 
   it('toont In game, Advised en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
     toLevel20()
