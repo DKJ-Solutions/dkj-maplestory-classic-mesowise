@@ -80,9 +80,9 @@ Dave, October 8, 2026, given in steps during the session:
 - [x] `src/app.test.tsx`: the new card (placement, head, icon, totals, same popups as Equip), the renamed labels and attributes, and the naming test inverted to "no Advised anywhere"
 - [x] Tests that covered only the ATT/DEF report removed; the report tests now expect Skill, Mob and Potions
 - [x] `src/itemIds.test.ts`, and the equip-row test now expects the ids
-- [x] Full suite (1953 tests), typecheck and `scripts/lint/lint.ps1` green
+- [x] Full suite (1954 tests), typecheck and `scripts/lint/lint.ps1` green
 - [x] Code review (Victor): Cheapest disables on the same condition as the Equip card; indentation and CSS comment tidied
-- [ ] Dave looks at the result in the preview before the merge (visible result)
+- [x] Dave looks at the result in the preview before the merge (visible result): "ship it", October 8, 2026
 
 ### DEPLOY: app/level-cost-top
 
