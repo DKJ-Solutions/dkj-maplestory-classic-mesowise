@@ -69,14 +69,14 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 - [x] Victor's review: fixed the 1st-job skill point below level 10 in the fresh start, Double Stab missing from the change list, a guard so Overnemen never writes a profile the app cannot compute, and the help text; dead code noted on #260
 - [x] Marlowe's second read: the framing points (saving and "al de goedkoopste" compare a from-scratch build with owned gear; Overnemen overwrites SP, AP and equipment) are handed to Dave as one decision
 - [x] App tests for Overnemen: profile and equipment unchanged, the saving is the player's own difference, undo restores, and "al de goedkoopste" exactly when the player's level is not dearer
-- [ ] Dave has looked at the preview
+- [x] Dave has looked at the preview and said ship it
 
 ### DEPLOY: app/cheapest-fresh-start
 
 Cheapest's input is built by `freshStart` from job, level, gender, Max HP and the worn equipment, and `cheapestFor` measures its changes and
 saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest, and
-Overnemen writes only the mob and the potions. Equipment above the character's level cannot be worn: `dropAboveLevel` leaves it
-out of every calculation, while the stored equipment stays as it is.
+Overnemen writes only the mob and the potions. `wearableSetup` is the setup as every calculation sees it: equipment above the
+character's level left out (it stays stored), and the free starting items in an empty slot.
 
 **Score:** 2
 
@@ -95,4 +95,4 @@ the potions, which you can change freely in the game; your skill points, AP and 
 
 #### Pull Request
 
-Cheapest builds its setup from job and level alone
+Cheapest builds its own setup from your level and gear; starting items count as free
