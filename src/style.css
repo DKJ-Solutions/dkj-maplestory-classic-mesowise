@@ -260,6 +260,11 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    met de ruimte van de knoppen van een kaart (.view-actions), twee even brede knoppen: links Cheapest in de accenttint van zijn deel in
    Level cost, rechts Profile in grijs, zoals dat deel. */
 .level-cost { padding: 0; overflow: hidden; }
+/* Het beginscherm past zonder verticale scrollbalk (Dave, 8 oktober 2026); de eerste stap: alle kaarten behalve Level cost verborgen.
+   Niet weg uit de HTML en niet display: none, want hun popups (Level cost opent die van Equip) staan erin: zo nemen ze geen plek in en
+   doen ze niet mee voor tab en schermlezer, terwijl een geopende popup (een modale <dialog> in de top layer) gewoon zichtbaar blijft. */
+main > .card:not(.level-cost), main > .stats-group { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; overflow: hidden; visibility: hidden; }
+main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: visible; }
 .level-cost-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; padding: 0 1rem 1rem; }
 .level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
   border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
