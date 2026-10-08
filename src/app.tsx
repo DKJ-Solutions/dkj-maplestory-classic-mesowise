@@ -1639,7 +1639,7 @@ const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog n
  */
 function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'cheapest' | 'profile'; equip?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
   const { stats, sheet, equip } = props
-  // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
+  // Your character (sheet profile): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan profile in plaats van expected.
   const advised = sheet === 'cheapest'
   // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
   const pencil = (what: 'Char' | 'Mob' | 'Equip', expanded: boolean, open: (button: HTMLButtonElement) => void) => (
@@ -1662,9 +1662,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                   popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Level cost: Useable. De naam staat in de knop, en
                   het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                  getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
+                  getallen: dan het persoon-icoon (ACTUAL_ICON) en het label profile; de i blijft voor vaste info. */}
               {stats ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'profile'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                   {stats}
                 </PopupButton>
               ) : (
@@ -1704,7 +1704,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
             <div class="based-on-label" data-based-on-equip={equip.ids} data-sheet={sheet}>
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
-                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'actual'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
                   <dl class="item-facts">
                     {equip.items.map(([slot, name]) => (
                       <div key={slot}>

@@ -4122,7 +4122,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('zet in Your character van Level cost dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet profile en het label actual (Dave, 8 oktober 2026)', () => {
+    it('zet in Your character van Level cost dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet profile en het label profile (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       const who = totalCostWho('20', 'thief')
       // Je eigen mob: de mob die je in Your character van Monster koos, niet die van het advies.
@@ -4138,14 +4138,14 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(mob.getAttribute('data-sheet')).toBe('profile')
       // Wat je zelf zette: geen uitleg waarom juist deze mob.
       expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
-      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual. Het heeft een eigen icoon, een persoon: getallen
+      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label profile. Het heeft een eigen icoon, een persoon: getallen
       // die je zelf zet; de i blijft voor vaste info, zoals die van de mob (Dave, 8 oktober 2026).
       const ownStats = within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` })
-      expect(ownStats.classList.contains('actual-toggle')).toBe(true)
-      expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('actual-toggle')).toBe(false)
+      expect(ownStats.classList.contains('profile-toggle')).toBe(true)
+      expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('profile-toggle')).toBe(false)
       fireEvent.click(ownStats)
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(stats.querySelector('.title-tag')?.textContent).toBe('actual')
+      expect(stats.querySelector('.title-tag')?.textContent).toBe('profile')
       expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])
       expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
       fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
@@ -4721,7 +4721,7 @@ describe('equipment: Your character als tabel', () => {
   const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
   const equipRow = (dialog: HTMLElement) => dialog.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
 
-  it('zet onder "Based on:" een derde rij Equip: in Profile met het aantal stukken, het toggle-knopje (actual) en het potlood; in Cheapest alleen lezen met het toggle-knopje expected (Dave, 8 oktober 2026)', () => {
+  it('zet onder "Based on:" een derde rij Equip: in Profile met het aantal stukken, het toggle-knopje (profile) en het potlood; in Cheapest alleen lezen met het toggle-knopje expected (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -4742,10 +4742,10 @@ describe('equipment: Your character als tabel', () => {
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
     const toggle = within(row).getByRole('button', { name: 'Equip: 2 items' })
-    expect(toggle.classList.contains('actual-toggle')).toBe(true)
+    expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(popup.querySelector('.title-tag')!.textContent).toBe('actual')
+    expect(popup.querySelector('.title-tag')!.textContent).toBe('profile')
     expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect([...popup.querySelectorAll('dt')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
