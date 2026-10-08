@@ -54,7 +54,7 @@ Step 1 of a no-scroll home screen: hide every card except Level cost; their popu
 
 - [x] `npx vitest run`: 1967 tests pass; `npm run lint` (tsc) is clean
 - [x] The stat factor popup checked at 208px (its width on a 360px screen) in headless Chromium against a static copy of the markup and CSS
-- [x] Dave looked at every visible step in the preview while the branch was built
+- [x] Dave reviewed the visible steps in the preview and said to ship it (October 8, 2026)
 
 ### DEPLOY: app/home-only-level-cost
 
