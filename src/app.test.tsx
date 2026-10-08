@@ -4264,6 +4264,24 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
     })
 
+    it('toont in Your character van Total cost: Equip het vak Mob ook zonder gekozen mob, leeg en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
+      setJob('thief')
+      let d = openView('Equip', 'Your character')
+      const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
+      expect(char).toBeTruthy()
+      expect(mob.querySelector('.sr-only')?.textContent).toBe('Mob: ')
+      expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
+      expect(mob.querySelector('button')).toBeNull()
+      expect(mob.hasAttribute('data-based-on-mob')).toBe(false)
+      closeView('Equip')
+      fireEvent.click(viewButton('Monster'))
+      chooseMob('Slime')
+      const shown = within(mobDialog()).getByLabelText<HTMLSelectElement>('De mob die je het meest killt').value
+      closeView('Monster')
+      d = openView('Equip', 'Your character')
+      expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
+    })
+
     it('zet achter de mob onder "Based on:" in Total cost: Equip een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()

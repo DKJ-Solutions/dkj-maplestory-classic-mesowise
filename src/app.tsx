@@ -1782,9 +1782,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) staat in het vak achter de naam, net als bij Char; het vraagteken (waarom juist deze) ernaast, buiten het vak (Dave, 7 oktober 2026). */}
-        {props.mob !== null && (
+        {/* Het vak van de mob staat er altijd (Dave, 8 oktober 2026): zonder gekozen mob in Your character blijft het leeg, zonder i-knopje. */}
         <div class="based-on-line">
-          <div class="based-on-label" data-based-on-mob={props.mob} data-sheet={sheet}>
+          <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
             <span class="sr-only">Mob: </span>
             <span class="based-on-value">{props.mob}</span>
             {mobDef && (
@@ -1793,13 +1793,12 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               </PopupButton>
             )}
           </div>
-          {advised && (
+          {advised && props.mob !== null && (
             <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
               <p class="item-why">{mobWhy(props.mob)}</p>
             </PopupButton>
           )}
         </div>
-        )}
       </div>
     </section>
   )
@@ -4069,9 +4068,9 @@ export function App() {
   }
 
   const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
-  // Your character onder "Based on:" in Total cost: Equip (Dave, 8 oktober 2026): je eigen profiel (profileDraft, het level en de job van de kaart Ability points) en de mob die je in Monster koos (de eerste van je eigen drafts met een mob, zoals initialDrafts).
+  // Your character onder "Based on:" in Total cost: Equip (Dave, 8 oktober 2026): je eigen profiel (profileDraft, het level en de job van de kaart Ability points) en de mob die je in Monster koos (drafts[0], dezelfde als HuntedMobCard in Your character toont).
   const wornStats = <AdvisedCharacter job={job} draft={profileDraft} />
-  const wornMob = huntedMob(drafts.find((d) => huntedMob(d) !== undefined))?.name ?? null
+  const wornMob = huntedMob(drafts[0])?.name ?? null
 
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
