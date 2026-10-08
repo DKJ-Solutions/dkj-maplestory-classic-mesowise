@@ -88,14 +88,14 @@ function HelpToggle(props: { open: boolean; controls: string; onToggle: () => vo
 }
 
 /**
- * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in een zachte tint van de
- * tekstkleur, met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje), naast het vraagteken hieronder.
+ * Het i-teken van de info-knop achter de naam van een stuk in Advised (Dave, 7 oktober 2026): een gevuld rondje in de kleur van de naam ernaast,
+ * met een klassieke i erin (een ronde stip, een staafje met een schreefje bovenaan en een voetje) in de achtergrondkleur (Dave, 8 oktober 2026).
  */
 const INFO_ICON = (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.16" />
-    <circle cx="12" cy="7.6" r="1.4" fill="currentColor" />
-    <path d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <circle class="info-dot" cx="12" cy="7.6" r="1.4" />
+    <path class="info-stem" d="M10.4 10.8H12.4V16.6M10.2 16.6H14" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 )
 

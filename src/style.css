@@ -767,6 +767,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .info-toggle { flex: none; width: 44px; height: 44px; margin: -0.5rem -0.5rem -0.5rem -0.625rem; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .info-toggle[aria-expanded="true"] { color: var(--accent); }
+/* Het rondje in de kleur van de naam ernaast, de i erin in de achtergrondkleur eronder (Dave, 8 oktober 2026): die van de popup, of in een
+   "Based on:"-vak die van het vak. */
+.info-toggle { --info-glyph: var(--card); }
+.info-toggle .info-dot { fill: var(--info-glyph); }
+.info-toggle .info-stem { stroke: var(--info-glyph); }
+.advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
+.based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
 /* De twee popups van één stuk in Advised (Dave, 7 oktober 2026): achter het vraagteken het oordeel (Kopen, Niet kopen, Houden, Leeg laten)
