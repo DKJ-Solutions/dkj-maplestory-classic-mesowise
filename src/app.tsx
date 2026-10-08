@@ -1617,7 +1617,7 @@ const CHEAPEST_HELP = (
 const WORN_HELP = (
   <>
     Wat dit level kost met wat je nu draagt, op dezelfde factuur als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
-    kost dit level niets, dus er staat geen equip in en Equip subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
+    kost dit level niets, dus er staat geen equip in en Upgrades subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
     Equip, kies daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
@@ -1643,13 +1643,13 @@ type BasedOnEquip = {
 }
 
 /**
- * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items (free)"), of naar
- * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of niets te kopen.
+ * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("3 items equipped"), of naar
+ * equip die Cheapest erbij koopt ("1 item (upgrade)"). Zonder stukken: nog niets gekozen, of "No upgrades" (Dave, 8 oktober 2026).
  */
 const equipSummary = (items: readonly unknown[], kind: 'worn' | 'bought') => {
   const n = `${items.length} ${items.length === 1 ? 'item' : 'items'}`
-  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `${n} (upgrade)`
-  return items.length === 0 ? 'Nog niets gekozen' : `${n} (free)`
+  if (kind === 'bought') return items.length === 0 ? 'No upgrades' : `${n} (upgrade)`
+  return items.length === 0 ? 'Nog niets gekozen' : `${n} equipped`
 }
 
 /**
@@ -1908,7 +1908,7 @@ function LevelBill(props: { equip: { rows: ComponentChildren; level: number }; u
       )}
       <BillGroup name="Equip">
         {equip.rows}
-        <BillSum kind="subtotal" label="Equip subtotal" level={equip.level} />
+        <BillSum kind="subtotal" label="Upgrades subtotal" level={equip.level} />
       </BillGroup>
     </BillTable>
   )

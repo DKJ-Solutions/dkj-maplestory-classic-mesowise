@@ -3966,7 +3966,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     atLevel('10')
     expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
     // Plus wat je in het begin gratis krijgt in een leeg slot: de schoenen (zonder geslacht geen top of bottom) en de questhoed (Dave, 8 oktober 2026).
-    expect(freeOn()).toBe('Equip: 3 items (free)')
+    expect(freeOn()).toBe('Equip: 3 items equipped')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
@@ -3982,7 +3982,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     closeDialogs()
     // Terug op level 20 telt alles weer mee.
     atLevel('20')
-    expect(freeOn()).toBe('Equip: 4 items (free)')
+    expect(freeOn()).toBe('Equip: 4 items equipped')
     fireEvent.click(viewButton('Total stats'))
     expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
   })
@@ -3998,7 +3998,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
     // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
     // Red Pao, je startschoenen en de questhoed (zonder geslacht geen startbroek).
-    expect(worn.textContent).toBe('Equip: 3 items (free)')
+    expect(worn.textContent).toBe('Equip: 3 items equipped')
     // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
     const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
     const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
@@ -4118,7 +4118,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         // Een regel die dit level 0 mesos kost staat er niet (Dave, 8 oktober 2026); een subtotaal van 0 wel, want dat telt op tot Total cost.
         for (const cell of d.querySelectorAll('section.bill .advised-row .advised-level')) expect(cell.textContent, label).not.toBe(compactMeso(0))
         // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
-        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Equip subtotal'])
+        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Upgrades subtotal'])
         const [useable, equip] = groups
         expect(rowsOf(useable).every((slot) => ['HP', 'MP', 'Ammo'].includes(slot!)), label).toBe(true)
         // Een useable: het aantal achter de naam en het bedrag onder Mesos.
@@ -4285,7 +4285,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Profile')
-      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? \(free\))$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? equipped)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('profile')
@@ -4918,7 +4918,7 @@ describe('equipment: Profile als tabel', () => {
     // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026).
     expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
     expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
-    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items (free)' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items equipped' })).toBeTruthy()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     closeDialogs()
@@ -4931,7 +4931,7 @@ describe('equipment: Profile als tabel', () => {
     expect(row.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     expect(row.parentElement!.classList.contains('based-on-row')).toBe(true)
     expect(row.parentElement!.querySelector(':scope > .equip-edit[aria-label="Equip wijzigen"]')).not.toBeNull()
-    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items (free)' })
+    const toggle = within(row).getByRole('button', { name: 'Equip: 4 items equipped' })
     expect(toggle.classList.contains('profile-toggle')).toBe(true)
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
@@ -4998,7 +4998,7 @@ describe('equipment: Profile als tabel', () => {
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(document.activeElement).toBe(pencil)
     // Het wapen, de questhoed en je startschoenen.
-    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items (free)' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items equipped' })).toBeTruthy()
   })
 
   it('legt een stat-correctie vanuit de slotpopup vast met Opslaan en gooit hem weg met Escape', () => {
