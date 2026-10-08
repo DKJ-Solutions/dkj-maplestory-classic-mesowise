@@ -45,11 +45,13 @@
 - [x] Cody: `shopItem`/`shopPrice` in `src/equipment.ts`
 - [x] Cody: no horizontal scroll, measured at 360 and 320 px (Chrome); no `overflow-x` guard needed
 - [x] Victor and Edith review findings applied
+- [x] Cody: the wearing popup is titled "Total cost: Equip" too, with "Based on:" Char and Mob from your own setup, each with a pencil to Ability points and Monster; editable popups carry the tag "edit"
+- [x] "Your character" renamed to "Wearing" on the buttons and in Total cost
 
 ### TEST
 
 - [x] Tycho: tests for `shopPrice` and the worn table (rows, total, slot popup, stat commit/discard); `npm run lint` clean, `npx vitest run` 1957/1957
-- [ ] Dave looks at the preview before the merge (visible result)
+- [x] Dave looked at the preview and approved it (October 8, 2026), with "Your character" renamed to "Wearing"
 
 ### DEPLOY: app/worn-equip-table
 
@@ -59,7 +61,7 @@ Internal: the Equip table parts (`BillHead`, `BillRow`, `BillTotal`) now serve b
 
 #### What makes this deploy extra special
 
-In the Equip card, "Your character" now shows what you wear in the same compact table as Advised, under a blue "wearing" label: per slot the item, its shop price and its ATT or DEF, with the total below. A pencil per row opens that slot to change the item or correct its stat. Neither popup scrolls sideways on a phone.
+"Your character" is now called "Wearing". In the Equip card it shows what you wear as "Total cost: Equip" in the same compact table as Advised, in blue: per slot the item, its shop price and its ATT or DEF, with the total below, and "Based on:" your own character and mob, each with a pencil to change them right there. A pencil per row opens that slot to change the item or correct its stat, and every popup where you change something says "edit" above its title. Neither popup scrolls sideways on a phone.
 
 **Score:** 3
 
