@@ -4266,7 +4266,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(mob.getAttribute('data-sheet')).toBe('actual')
       // Wat je zelf zette: geen uitleg waarom juist deze mob.
       expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
-      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual. Het heeft een eigen icoon, schuifjes: getallen
+      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual. Het heeft een eigen icoon, een persoon: getallen
       // die je zelf zet; de i blijft voor vaste info, zoals die van de mob (Dave, 8 oktober 2026).
       const ownStats = within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` })
       expect(ownStats.classList.contains('actual-toggle')).toBe(true)

@@ -112,15 +112,14 @@ const EXPECTED_ICON = (
 
 /**
  * Het icoon van een popup met je eigen getallen in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
- * twee schuifjes erin, elk met het knopje op een andere plek: waarden die jij instelt. Het teken van "instellingen" leest het snelst als "van jou
- * en aan te passen", en het lijkt in niets op de i, de ≈ of het potlood ernaast. De knopjes zijn dik genoeg (r 2,3) om op 20px nog als knopje te lezen.
+ * een persoon erin, hoofd en schouders: jouw eigen getallen, die je zelf zet. Het lijkt in niets op de i, de ≈ of het potlood ernaast; gekozen uit
+ * zeven ontwerpen, nadat schuifjes afvielen (Dave, 8 oktober 2026).
  */
 const ACTUAL_ICON = (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
     <circle cx="12" cy="12" r="10" fill="currentColor" />
-    <path class="info-stem" d="M6.5 8.5H17.5M6.5 15.5H17.5" fill="none" stroke-width="1.8" stroke-linecap="round" />
-    <circle class="info-dot" cx="9" cy="8.5" r="2.3" />
-    <circle class="info-dot" cx="15" cy="15.5" r="2.3" />
+    <circle class="info-dot" cx="12" cy="8.9" r="2.6" />
+    <path class="info-dot" d="M6.9 17.4Q6.9 13.2 12 13.2Q17.1 13.2 17.1 17.4Z" />
   </svg>
 )
 
@@ -1720,7 +1719,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
             {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
                 het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                getallen: dan het schuifjes-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
+                getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
             {stats ? (
               <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                 {stats}
