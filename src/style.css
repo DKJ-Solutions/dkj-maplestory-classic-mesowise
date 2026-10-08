@@ -397,10 +397,18 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on-container { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
 .based-on-label { display: flex; align-items: center; padding: 0.375rem 0.4375rem; background: var(--advised-box); border-radius: 0.5rem; }
 .based-on-value { min-width: 0; font-size: 0.9375rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
-.based-on-line { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
-.based-on-line .based-on-label { min-width: 0; }
-.based-on .based-on-line > .help-toggle { flex: none; margin: -0.625rem -0.375rem -0.625rem 0; }
+.based-on-label[data-based-on-mob] { min-width: 0; }
 .based-on .based-on-label .info-toggle { margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
+/* Het vraagteken van de mob staat in zijn vak, achter het i-knopje (Dave, 8 oktober 2026): de twee knoppen schuiven iets in elkaar, zodat de iconen
+   niet verder uit elkaar staan dan nodig, en het vraagteken eindigt waar het i-knopje bij Char eindigt. */
+.based-on .based-on-label .info-toggle:has(+ .help-toggle) { margin-right: -0.25rem; }
+.based-on .based-on-label .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.25rem; }
+/* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
+   Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
+.based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.4375rem;
+  padding: 0 0.4375rem; gap: 0.25rem; justify-content: flex-start; font: inherit; text-align: left; border-radius: 0.5rem; }
+.based-on .based-on-label .info-toggle.named > svg { flex: none; }
+.based-on .based-on-label .info-toggle.named:has(+ .help-toggle) { margin-right: 0; padding-right: 0; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
 .stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }
@@ -759,6 +767,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .info-toggle { flex: none; width: 44px; height: 44px; margin: -0.5rem -0.5rem -0.5rem -0.625rem; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .info-toggle[aria-expanded="true"] { color: var(--accent); }
+/* Het rondje in de kleur van de naam ernaast, de i erin in de achtergrondkleur eronder (Dave, 8 oktober 2026): die van de popup, of in een
+   "Based on:"-vak die van het vak. */
+.info-toggle { --info-glyph: var(--card); }
+.info-toggle .info-dot { fill: var(--info-glyph); }
+.info-toggle .info-stem { stroke: var(--info-glyph); }
+.advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
+.based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
 /* De twee popups van één stuk in Advised (Dave, 7 oktober 2026): achter het vraagteken het oordeel (Kopen, Niet kopen, Houden, Leeg laten)
@@ -826,4 +841,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .help-toggle[aria-expanded="true"] { color: var(--accent); }
 /* Naast de titel van een popup (StatDialog help): direct achter de titel, zonder de kop hoger te maken; de uitleg opent in een eigen popup. */
 .stat-dialog-head .help-toggle { flex: none; margin: -0.5rem 0 -0.5rem 0.125rem; }
+/* Het i-knopje achter de titel (Dave, 8 oktober 2026): op de plek van het vraagteken dat er stond, het rondje in de kleur van de titel. Het
+   tikvlak van 44px schuift onder het eind van de titel, zodat het rondje dicht achter de titel staat (zo'n 6px). */
+.stat-dialog-head .info-toggle { margin: -0.5rem 0 -0.5rem -0.375rem; color: var(--text); }
+/* Het midden van de regel ligt boven het midden van de hoofdletters, dus het rondje zakt 2px om met de tekst gelijk te staan (Dave, 8 oktober 2026). */
+.stat-dialog-head .info-toggle > svg { transform: translateY(0.125rem); }
 .help-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
