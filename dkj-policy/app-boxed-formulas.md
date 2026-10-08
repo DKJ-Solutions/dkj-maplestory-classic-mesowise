@@ -39,19 +39,34 @@
 
 ### PLAN
 
+Dave, October 8, 2026: from now on every formula is built like the stat factor popup -- each step in its own box, a
+larger box around a smaller one, and only `=` and the result below it.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `MulCalc` draws the boxes itself: one closes wherever the operator changes, one goes around the whole formula; the result has no label
+- [x] Every sum behind a "?" in the potion, ammo and shop explanations is a `MulCalc`; a rounded-up result gets one line under it
+- [x] The rule is in Gwen's lens, so the next formula follows it
 
 ### TEST
 
+- [x] `npx vitest run`: 1970 tests pass, three new ones pin the box rule; `scripts/lint/lint.ps1` is clean
+- [ ] Dave looks at the popups in the preview before the merge
+
 ### DEPLOY: app/boxed-formulas
 
-**Score:**
+Every calculation behind a question mark in the Level cost explanations is now a stacked formula: one line per number with
+what it is, each calculation step in its own box, and only the result below it. A result that was rounded up says so on one
+line under the formula. `MulCalc` places the boxes itself, so a new formula only passes its numbers.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Every "?" in the explanation of a potion, star or shop amount now shows its sum the same way: each number named, each step
+boxed, so you can see what was divided by what.
+
+**Score:** 2
 
 #### Pull Request
 

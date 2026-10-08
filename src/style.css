@@ -773,10 +773,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul-boxed .why-mul-num { padding-inline: 0.5rem; }
 /* Lucht links van de getallen (Dave, 8 oktober 2026): de tekens staan dan los van het getal, ook het = naast de grote uitkomst. */
 .why-mul-box + .why-mul-row { border-top: 0; }
-.why-mul-result { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); border-radius: 0.625rem; }
-.why-mul-result .why-mul-what { font-weight: 600; }
-.why-mul-result-plain { background: none; }
+/* De uitkomst zonder label en zonder vulling (Dave, 8 oktober 2026): de titel van de popup zegt al wat het is. */
+.why-mul-result { border-bottom: 0; }
 .why-mul-result .why-mul-num { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+.why-mul-note { margin: 0.5rem 0 0; }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
 /* Het antwoord van een blok (Dave, 8 oktober 2026): een eigen afgerond vak onder de rijen, met de tint van de eindformule, het label links en
