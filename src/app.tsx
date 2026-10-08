@@ -1692,15 +1692,16 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /**
- * Bovenaan Total cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), naast
- * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
- * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
+ * Bovenaan Total cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
+ * tabel: een rij per vak, onder elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een
+ * vraagteken achter de mob dat zegt waarom juist die. In Wearing een tweede kolom met het potlood van die rij (Dave, 8 oktober 2026). Het staat in de
+ * popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
 function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
   const { stats, sheet } = props
   // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
   const advised = sheet === 'advised'
-  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood achter elk vak (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
+  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
   const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
     <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
@@ -1714,40 +1715,44 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
-            <span class="sr-only">Char: </span>
-            {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
-                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
-            {stats ? (
-              <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
-                {stats}
-              </PopupButton>
-            ) : (
-              <span class="based-on-value">{props.who}</span>
-            )}
+          <div class="based-on-row">
+            <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
+              <span class="sr-only">Char: </span>
+              {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
+                  popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
+                  het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
+                  getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
+              {stats ? (
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
+                  {stats}
+                </PopupButton>
+              ) : (
+                <span class="based-on-value">{props.who}</span>
+              )}
+            </div>
             {props.edit && pencil('Char', 'ap', props.edit.char)}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
         {/* In Wearing staat het vak er altijd (Dave, 8 oktober 2026): zonder gekozen mob leeg, met alleen het potlood; een vraagteken alleen in Advised. */}
-        <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
-          <span class="sr-only">Mob: </span>
-          {mobDef ? (
-            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
-              {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
-              <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
-              {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
-            </PopupButton>
-          ) : (
-            <span class="based-on-value">{props.mob}</span>
-          )}
-          {advised && props.mob !== null && (
-            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-              <p class="item-why">{mobWhy(props.mob)}</p>
-            </PopupButton>
-          )}
+        <div class="based-on-row">
+          <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
+            <span class="sr-only">Mob: </span>
+            {mobDef ? (
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
+                {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+                <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
+                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+              </PopupButton>
+            ) : (
+              <span class="based-on-value">{props.mob}</span>
+            )}
+            {advised && props.mob !== null && (
+              <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+                <p class="item-why">{mobWhy(props.mob)}</p>
+              </PopupButton>
+            )}
+          </div>
           {props.edit && pencil('Mob', 'mob', props.edit.mob)}
         </div>
       </div>

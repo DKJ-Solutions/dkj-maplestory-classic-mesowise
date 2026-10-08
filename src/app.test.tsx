@@ -4305,15 +4305,18 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
     })
 
-    it('zet in Your character van Total cost: Equip een potlood in de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Advised heeft ze niet (Dave, 8 oktober 2026)', () => {
+    it('zet in Your character van Total cost: Equip een potlood naast de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Advised heeft ze niet (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       expect(openView('Equip', 'Advised').querySelector('.based-on .equip-edit[aria-label$=" wijzigen"]')).toBeNull()
       closeView('Equip')
       const d = openView('Equip', 'Wearing')
       const [char, mob] = d.querySelectorAll<HTMLElement>('.based-on .based-on-label')
+      // Het potlood staat in een eigen kolom naast het vak, in dezelfde rij (Dave, 8 oktober 2026).
+      const [charRow, mobRow] = d.querySelectorAll<HTMLElement>('.based-on .based-on-row')
+      expect(mob.querySelector('.equip-edit')).toBeNull()
       // Mob, leeg: het potlood staat er al.
       expect(mob.querySelector('.based-on-value')?.textContent).toBe('')
-      const mobPencil = within(mob).getByRole('button', { name: 'Mob wijzigen' })
+      const mobPencil = within(mobRow).getByRole('button', { name: 'Mob wijzigen' })
       expect(mobPencil.getAttribute('aria-haspopup')).toBe('dialog')
       fireEvent.click(mobPencil)
       expect(mobPencil.getAttribute('aria-expanded')).toBe('true')
@@ -4328,10 +4331,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(mob.querySelector('.based-on-value')?.textContent).toBe('Slime')
       // Gevuld: i-knopje en potlood naast elkaar.
       expect(within(mob).getByRole('button', { name: 'Info over Slime' })).toBeTruthy()
-      expect(within(mob).getByRole('button', { name: 'Mob wijzigen' })).toBeTruthy()
+      expect(within(mobRow).getByRole('button', { name: 'Mob wijzigen' })).toBeTruthy()
       // Char: het potlood opent Ability points van Your character; het i-knopje blijft.
       expect(within(char).getByRole('button', { name: /^Stats van / })).toBeTruthy()
-      fireEvent.click(within(char).getByRole('button', { name: 'Char wijzigen' }))
+      fireEvent.click(within(charRow).getByRole('button', { name: 'Char wijzigen' }))
       const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
       expect(ap.open).toBe(true)
       expect(ap.querySelector('.title-tag')?.textContent).toBe('edit')

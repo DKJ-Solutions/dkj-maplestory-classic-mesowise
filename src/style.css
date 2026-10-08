@@ -406,26 +406,25 @@ html:has(dialog:modal) { overflow: hidden; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
-/* "Based on:" bovenaan Total cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder Char en Mob naast elkaar op één regel, elk in een
-   eigen vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In de popup en niet onder de titel, zodat de
-   volle breedte er is: ook "Lv. 70 Magician" en "Orange Mushroom" passen op 360px naast elkaar; op een nog smaller scherm gaat het tweede vak
-   eronder. Het vraagteken houdt zijn grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het
-   vraagteken sluit dicht op de naam aan zonder zijn regel hoger te maken. */
+/* "Based on:" bovenaan Total cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder een tabel (Dave, 8 oktober 2026): een rij voor Char en
+   een voor Mob, onder elkaar. De linkerkolom is het vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In
+   Wearing heeft de tabel een tweede kolom met het potlood van die rij, buiten het vak; in Advised vult het vak de rij. Het vraagteken houdt zijn
+   grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan
+   zonder zijn regel hoger te maken. */
 .based-on { margin-bottom: 1rem; }
 .based-on-head { margin: 0 0 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
-.based-on-container { display: flex; flex-wrap: wrap; gap: 0.1875rem; }
-.based-on-label { display: flex; align-items: center; padding: 0.5rem; background: var(--advised-box); border-radius: 0.5rem; }
+.based-on-container { display: flex; flex-direction: column; gap: 0.375rem; }
+.based-on-row { display: flex; align-items: center; gap: 0.375rem; }
+.based-on-label { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 0.5rem; background: var(--advised-box); border-radius: 0.5rem; }
 .based-on-value:empty { min-width: 4rem; }
 .based-on-value { min-width: 0; font-size: 1rem; line-height: 1.5rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
-.based-on-label[data-based-on-mob] { min-width: 0; }
 .based-on .based-on-label .info-toggle { margin: -0.625rem -0.625rem -0.625rem -0.375rem; }
 /* Het vraagteken van de mob staat in zijn vak, achter het i-knopje (Dave, 8 oktober 2026): de twee knoppen schuiven iets in elkaar, zodat de iconen
    niet verder uit elkaar staan dan nodig, en het vraagteken eindigt waar het i-knopje bij Char eindigt. */
 .based-on .based-on-label .info-toggle:has(+ .help-toggle) { margin-right: -0.25rem; }
 .based-on .based-on-label .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.25rem; }
-/* Het potlood in een vak is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026), met wat lucht na de naam. Zijn rand blijft
-   binnen de padding van het vak: geen negatieve marge (Dave, 8 oktober 2026). */
-.based-on .based-on-label .equip-edit { grid-row: auto; grid-column: auto; flex: none; margin: 0 0 0 0.375rem; }
+/* Het potlood in de tweede kolom is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026). */
+.based-on-row > .equip-edit { grid-row: auto; grid-column: auto; flex: none; }
 /* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
    Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
 .based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.5rem;
