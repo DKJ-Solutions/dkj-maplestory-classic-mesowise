@@ -3335,26 +3335,41 @@ type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?:
  */
 function WhyTable(props: { rows: readonly WhyRow[] }) {
   // Elke rij is één regel (Dave, 8 oktober 2026): wat en de uitkomst. De som erachter staat in een info-popup achter het i-knopje naast het label.
+  const label = (r: WhyRow) => (
+    <span class="why-label">
+      <span class="why-label-text">{r.label}</span>
+      {r.calc && (
+        <PopupButton icon={INFO_ICON} class="info-toggle why-info" label={`Info over ${r.label}`} title={r.label} tag="info">
+          <p class="why-calc">{r.calc}</p>
+        </PopupButton>
+      )}
+    </span>
+  )
+  // Het antwoord (`total`) staat niet als tabelrij maar als eigen vak eronder (Dave, 8 oktober 2026): een getinte tabelrij was een rechte band
+  // die niet af te ronden is, en een streep erboven las als een optelstreep.
   const table = (rows: readonly WhyRow[]) => (
-    <table class="why-table">
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.label} class={r.total ? 'why-total' : undefined}>
-            <th scope="row">
-              <span class="why-label">
-                <span class="why-label-text">{r.label}</span>
-                {r.calc && (
-                  <PopupButton icon={INFO_ICON} class="info-toggle why-info" label={`Info over ${r.label}`} title={r.label} tag="info">
-                    <p class="why-calc">{r.calc}</p>
-                  </PopupButton>
-                )}
-              </span>
-            </th>
-            <td>{r.result}</td>
-          </tr>
+    <>
+      <table class="why-table">
+        <tbody>
+          {rows
+            .filter((r) => !r.total)
+            .map((r) => (
+              <tr key={r.label}>
+                <th scope="row">{label(r)}</th>
+                <td>{r.result}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      {rows
+        .filter((r) => r.total)
+        .map((r) => (
+          <div key={r.label} class="why-answer">
+            {label(r)}
+            <strong class="why-answer-value">{r.result}</strong>
+          </div>
         ))}
-      </tbody>
-    </table>
+    </>
   )
   if (!props.rows.some((r) => r.group)) return table(props.rows)
   // In blokken met een kopje (Dave, 8 oktober 2026): opeenvolgende rijen met dezelfde `group` staan samen, met ruimte ertussen, zodat de

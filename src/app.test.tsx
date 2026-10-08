@@ -3403,7 +3403,8 @@ describe('de Potions-kaart (Dave, 6 oktober 2026)', () => {
 
 /** De rijen van een rekentabel (WhyTable, #192): wat, de som eronder en de uitkomst, met witruimte samengevoegd. */
 const whyRows = (root: ParentNode) =>
-  Array.from(root.querySelectorAll('.why-table tr'), (tr) => {
+  // Een antwoord staat als eigen vak onder zijn tabel (.why-answer, Dave, 8 oktober 2026); in volgorde van het scherm telt het als de laatste rij.
+  Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer'), (tr) => {
     const clean = (t: string) => t.replace(/\s+/g, ' ').trim()
     const label = clean(tr.querySelector('.why-label-text')!.textContent!)
     // De som staat in de info-popup achter het i-knopje van de rij (Dave, 8 oktober 2026): even open, lezen en weer dicht.
@@ -3415,7 +3416,7 @@ const whyRows = (root: ParentNode) =>
       calc = clean(popup.querySelector('.why-calc')!.textContent!)
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     }
-    return { label, calc, result: clean(tr.querySelector('td')!.textContent!), total: tr.classList.contains('why-total') }
+    return { label, calc, result: clean(tr.querySelector('td, .why-answer-value')!.textContent!), total: tr.classList.contains('why-answer') }
   })
 
 describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
