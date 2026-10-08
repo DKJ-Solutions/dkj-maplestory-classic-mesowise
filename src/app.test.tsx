@@ -3521,7 +3521,9 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
       // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
       const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
-      const [division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      const [formula, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      // Een kader om de hele formule, met de uitkomst eronder (Dave, 8 oktober 2026).
+      expect(boxed(formula)).toEqual([...boxed(division), 'Basis'])
       expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
       expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
       expect(boxed(inner).at(-1)).toBe('Multiplier')
