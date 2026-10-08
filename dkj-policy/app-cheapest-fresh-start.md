@@ -54,7 +54,8 @@ goedkoopste" when the player's level is not dearer than Cheapest.
 - [x] Unit tests: the fresh start keeps only job, level, gender and Max HP; the same setup comes out for a filled-in and a clean profile, also one with too many skill points, for all four jobs; the changes are measured against the player's setup
 - [x] App tests updated: Cheapest buys its own weapon even when you wear one; after Overnemen your level is not dearer than Cheapest
 - [x] Full suite and lint gate green
-- [ ] Victor's review and Marlowe's second read
+- [x] Victor's review: fixed the 1st-job skill point below level 10 in the fresh start, Double Stab missing from the change list, a guard so Overnemen never writes a profile the app cannot compute, and the help text; dead code noted on #260
+- [x] Marlowe's second read: the framing points (saving and "al de goedkoopste" compare a from-scratch build with owned gear; Overnemen overwrites SP, AP and equipment) are handed to Dave as one decision
 - [ ] Dave has looked at the preview
 
 ### DEPLOY: app/cheapest-fresh-start

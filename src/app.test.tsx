@@ -646,7 +646,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(infoPrice(advisedRow(worn, 'Weapon'))).toBe(price)
   })
 
-  it('geeft elke regel een dicht vraagteken, laat weg wat dit level niets kost (een stuk dat je houdt, een slot dat leeg blijft, ook omdat een losse top de overall beslaat), en koopt top en bottom elk voor zich, ook naast een eigen overall (Dave, 7 en 8 oktober 2026)', () => {
+  it('geeft elke regel een dicht vraagteken, koopt zijn eigen wapen ook als je er een draagt, laat een slot weg dat leeg blijft (ook de overall naast een losse top), en koopt top en bottom elk voor zich naast een eigen overall (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)

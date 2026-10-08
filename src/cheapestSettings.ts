@@ -198,7 +198,9 @@ export function changesBetween(before: CheapestInput, after: CheapestInput): Cha
     return Number.isFinite(n) ? n : 0
   }
   const points = new Map<string, number>()
-  for (const skill of skillsOf(after.job, after.profileDraft.dagger === '1')) {
+  // Alle skills van beide standen: een Thief met een dagger heeft Double Stab, Cheapest misschien niet; die verdwijnt dan ook uit de regel niet.
+  for (const skill of [...skillsOf(before.job, before.profileDraft.dagger === '1'), ...skillsOf(after.job, after.profileDraft.dagger === '1')]) {
+    if (points.has(skill.name)) continue
     const n = level(after, skill.id) - level(before, skill.id)
     if (n !== 0) points.set(skill.name, n)
   }

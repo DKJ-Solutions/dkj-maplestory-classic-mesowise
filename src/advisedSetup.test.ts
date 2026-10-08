@@ -280,7 +280,10 @@ describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (
     expect(start.equipment).toEqual(defaultEquipment())
     expect(start.drafts).toEqual([])
     expect(start.potionChoice).toBe(NO_POTION_CHOICE)
+    // Het standaardprofiel, met alleen het punt in de aanvalsskill; onder level 10 ook dat niet (geen punten van de 1e job).
     expect(start.profileDraft).toEqual({ ...DEFAULT_PROFILE, level: '19', hp: DEFAULT_PROFILE.hp })
+    const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
+    expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
     // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.
     expect(freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '19', hp: '796' } }).profileDraft.hp).toBe('796')
     expect(freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '19', hp: 'abc' } }).profileDraft.hp).toBe(DEFAULT_PROFILE.hp)
@@ -301,15 +304,34 @@ describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (
     }
   })
 
+  it('geeft op elk level van 1 tot 30 een profiel dat de app kan doorrekenen, en een prijs vanaf het level waarop de job kan aanvallen (Victor, 8 oktober 2026)', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      for (let level = 1; level <= 30; level++) {
+        const r = cheapestFor({ ...clean(job), profileDraft: { ...DEFAULT_PROFILE, level: String(level) } }).result
+        expect(profileOf({ ...clean(job), ...r }), `${job} ${level}`).not.toBeNull()
+        // Een Magician valt aan met Energy Bolt, een skill van zijn 1e job: daaronder kent het model geen mob voor hem.
+        if (job !== 'magician' || level >= 10) expect(typeof r.costAfter, `${job} ${level}`).toBe('number')
+      }
+    }
+  })
+
   it('meet de wijzigingen tegen jouw stand: per skill het verschil, met een min waar Cheapest er minder heeft', () => {
     const user = filled('thief')
     const r = cheapestFor(user).result
     const skills = r.changes.find((c) => c.kind === 'skills')?.text ?? ''
-    const after = (id: 'nimbleBody' | 'luckySeven') => Number(r.profileDraft[id])
+    // Cheapest kent dit level 28 punten toe, de speler zette er 32 in deze twee: minstens een van beide gaat omlaag.
+    const diff = (id: 'nimbleBody' | 'luckySeven') => Number(r.profileDraft[id]) - Number(user.profileDraft[id])
+    expect(diff('nimbleBody') + diff('luckySeven')).toBeLessThan(0)
     for (const [id, name] of [['nimbleBody', 'Nimble Body'], ['luckySeven', 'Lucky Seven']] as const) {
-      const n = after(id) - Number(user.profileDraft[id])
+      const n = diff(id)
+      expect(skills.includes(`${name} `), name).toBe(n !== 0)
       if (n !== 0) expect(skills, name).toContain(`${name} ${n > 0 ? '+' : '−'}${Math.abs(n)}`)
     }
+    // Een Thief met een dagger heeft Double Stab; zet Cheapest die op 0, dan staat dat in de regel (Victor, 8 oktober 2026).
+    const dagger = { ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1', doubleStab: '12' } }
+    const withDagger = cheapestFor(dagger).result
+    const lost = Number(withDagger.profileDraft.doubleStab) - 12
+    if (lost !== 0) expect(withDagger.changes.find((c) => c.kind === 'skills')?.text ?? '').toContain(`Double Stab ${lost > 0 ? '+' : '−'}${Math.abs(lost)}`)
     // Zonder verschil geen regel.
     const same = { ...user, profileDraft: r.profileDraft, drafts: r.drafts, potionChoice: r.potionChoice }
     expect(changesBetween(same, same)).toEqual([])

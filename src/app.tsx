@@ -1585,8 +1585,8 @@ function StatDialog(props: {
 /** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest bouwt die setup zelf op uit alleen je job en level, alsof je opnieuw begint: wat
-    je zelf invulde telt niet mee. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die Cheapest koopt omdat die
+    Wat dit level kost met de setup van Cheapest, op één factuur. Cheapest bouwt die setup zelf op uit je job en level (en je geslacht en Max HP), alsof je
+    opnieuw begint: wat je zelf invulde telt niet mee, ook equip die je al hebt niet. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die Cheapest koopt omdat die
     zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
@@ -3956,6 +3956,8 @@ export function App() {
     if (!cheapestLive) return
     const result = cheapestLive
     const before = userInput
+    // Een setup die de app zelf niet kan doorrekenen, schrijft Overnemen niet over je profiel heen (#263).
+    if (!cheapestProfile({ ...before, profileDraft: result.profileDraft, potionChoice: result.potionChoice })) return
     // De equip van Advised gaat in je setup (je koopt haar in het spel), met het profiel dat erbij hoort; de uitkomst van de berekening volgt daarna.
     if (advisedGear.equipment !== before.equipment) {
       clearPending()

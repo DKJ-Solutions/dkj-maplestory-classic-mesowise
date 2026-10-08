@@ -9,6 +9,8 @@ import { defaultEquipment, EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, worn
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
+import { FIRST_JOB_LEVEL, skillPoolOf } from './data/skillPoints'
+import { isSkillKey, skillInfo } from './data/skills'
 import { NO_POTION_CHOICE } from './potions'
 import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
 
@@ -31,9 +33,18 @@ export interface AdvisedSetup {
   ammo: string | null
 }
 
+/** Elke skill van de 1e job op 0: onder level 10 heb je daar nog geen punten voor (skillPointCap), ook niet het ene punt van het standaardprofiel. */
+const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
+  Object.keys(DEFAULT_PROFILE)
+    .filter((k) => isSkillKey(k) && skillPoolOf(skillInfo(k).job) === 'job')
+    .map((k) => [k, '0']),
+)
+
 /**
  * Waar Cheapest begint (Dave, 8 oktober 2026, #263): alleen je job, je level en je geslacht (sommige equip is er alleen voor het ene). Al de rest
- * bouwt Cheapest zelf op, alsof je op dit level opnieuw begint: geen equip, geen mob, geen gekozen potions, de standaard-stats en geen skillpunten.
+ * bouwt Cheapest zelf op, alsof je op dit level opnieuw begint: geen equip, geen mob, geen gekozen potions en het standaardprofiel, met alleen het ene
+ * punt in de aanvalsskill (Lucky Seven, Energy Bolt) dat het nodig heeft om aan te vallen; de rest van de skillpunten zet Cheapest zelf. Onder level 10
+ * heb je nog geen punten van je 1e job, dus daar staat ook dat punt op 0.
  * Wat je zelf invulde telt niet mee, ook een fout niet (meer skillpunten dan je level toelaat). Alleen je Max HP blijft staan als het een getal is:
  * dat kies je niet, en de app kent geen HP per level met een bron voor elke job.
  */
@@ -45,7 +56,7 @@ export function freshStart(user: CheapestInput): CheapestInput {
     equipment: defaultEquipment(),
     drafts: [],
     potionChoice: NO_POTION_CHOICE,
-    profileDraft: { ...DEFAULT_PROFILE, level: user.profileDraft.level, hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp },
+    profileDraft: { ...DEFAULT_PROFILE, ...(Number(user.profileDraft.level) < FIRST_JOB_LEVEL ? NO_JOB_SKILL_POINTS : {}), level: user.profileDraft.level, hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp },
   }
 }
 
