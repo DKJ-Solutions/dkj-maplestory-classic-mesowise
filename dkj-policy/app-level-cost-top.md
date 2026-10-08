@@ -39,39 +39,51 @@
 
 ### PLAN
 
-Dave, October 8, 2026: a new `card level-cost` section under the app question, with a spot-head "Level cost" and a meso coin
-with a maple leaf, and two buttons side by side -- left the level cost of the advised (computed) setup, right that of the
-profile as worn in game. Both open the same popup as Advised and Wearing on the Equip card.
+Dave, October 8, 2026, given in steps during the session:
+
+- a new `card level-cost` section under the app question, with a spot-head "Level cost" and a gold meso coin with a maple
+  leaf, and two buttons side by side -- left the level cost of the cheapest (computed) setup, right that of the profile in
+  game -- that open the same popup as the two buttons on the Equip card;
+- the label "Advised" becomes "Cheapest" and "Wearing" becomes "Profile" everywhere in the app (reversing #192's
+  "never call it Cheapest");
+- both Equip popups are titled "Level cost", and the Profile one loses its Report button;
+- `data-sheet` reads `cheapest` or `profile`; each "Based on:" box has its own attribute (`data-based-on-character`,
+  `data-based-on-monster`, `data-based-on-equip`), and the popups say `data-based-on-profile` / `data-based-on-cheapest`.
 
 ### CREATE
 
-- [x] `LevelCostButtons` in `src/app.tsx`, placed right under `.app-question`; totals come from the same invoices as the Level cost card
-- [x] The buttons open the Equip card's Advised / Wearing popup through `CardViewContext`; Advised is disabled exactly when the Equip card has no Advised
+- [x] `LevelCostButtons` in `src/app.tsx`, right under `.app-question`; totals come from the same invoices as the Level cost card
+- [x] The buttons open the Equip card's Cheapest / Profile popup through `CardViewContext`; Cheapest is disabled exactly when the Equip card has no Cheapest
 - [x] `MesoIcon`: an own drawing of a gold coin with a plain maple leaf (no Nexon sprite or logo, #14)
+- [x] Visible labels renamed (Advised -> Cheapest, Wearing -> Profile, popup tags too); internal identifiers unchanged
+- [x] Equip popup title "Level cost" in both views; the Equip report is gone, and with it the ATT/DEF advice components it alone rendered (`ClawQuestion`, `ArmorQuestion` and their helpers)
+- [x] Data attributes as above; `data-based-on-mob` is now `data-based-on-monster` everywhere, so the box and its info popup use one name
 - [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
 
 ### TEST
 
-- [x] `src/app.test.tsx`: placement under the question, head and icon, totals equal to the Level cost invoices, and both buttons open the same popup as the Equip card's
-- [x] Full suite (1969 tests), typecheck and `scripts/lint/lint.ps1` green
-- [x] Code review (Victor): Advised now disables on the same condition as the Equip card; indentation and CSS comment tidied
+- [x] `src/app.test.tsx`: the new card (placement, head, icon, totals, same popups as Equip), the renamed labels and attributes, and the naming test inverted to "no Advised anywhere"
+- [x] Tests that covered only the ATT/DEF report removed; the report tests now expect Skill, Mob and Potions
+- [x] Full suite (1951 tests), typecheck and `scripts/lint/lint.ps1` green
+- [x] Code review (Victor): Cheapest disables on the same condition as the Equip card; indentation and CSS comment tidied
 - [ ] Dave looks at the result in the preview before the merge (visible result)
 
 ### DEPLOY: app/level-cost-top
 
-The home screen answers its own question right under it: a Level cost card with what the level costs with the advised setup
-and with what you wear, each opening the matching Equip popup.
+The home screen answers its own question right under it: a Level cost card with what the level costs with the cheapest
+setup and with your profile, each opening the matching Equip popup. "Advised" is now called "Cheapest" and "Wearing"
+"Profile" throughout; the Equip popup no longer carries the ATT/DEF report.
 
 **Score:** 3
 
 #### What makes this deploy extra special
 
-Players see at a glance, at the top of the screen, how many mesos the level costs as they play and as advised, without
-scrolling to the bottom card.
+Players see at a glance, at the top of the screen, how many mesos the level costs with their profile and with the cheapest
+setup, under names that say what they are.
 
 **Score:** 3
 
 #### Pull Request
 
-Level cost at the top: Advised and Wearing side by side
+Level cost card at the top; Advised becomes Cheapest, Wearing becomes Profile
 

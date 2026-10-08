@@ -48,7 +48,7 @@ const levelCostText = () => document.querySelector('.total-cost .cost-ingame tfo
 /** De kaartklassen op het scherm, per titel (#192): de kaarten hebben geen oog meer, maar twee knoppen onder de kop. */
 const CARD_CLASS = { Equip: '.equipment', Skillpoints: '.skills', Monster: '.hunted', Potions: '.potions', 'Ability points': '.profile', 'Total stats': '.total-stats' } as const
 /** De knop "Your character" van een kaart: opent de popup om te wijzigen (was het oog, #192). */
-const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Wearing' })
+const viewButton = (card: keyof typeof CARD_CLASS) => within(document.querySelector<HTMLElement>(`main ${CARD_CLASS[card]}`)!).getByRole('button', { name: 'Profile' })
 /** De titel in de kop van een kaart (Dave, 5 oktober 2026). */
 const headTitle = (card: keyof typeof CARD_CLASS) => viewButton(card).closest('.card')!.querySelector('.spot-head .spot-name')!.textContent
 /** Zet een skill via zijn potlood en de popup (Dave, 5 oktober 2026): typ het level en sla op met Enter. */
@@ -73,10 +73,10 @@ const slots = () => stored(EQUIPMENT_KEY)?.slots
 /** Het beginscherm: alles staat op één scherm (#154). */
 const homeScreen = () => document.querySelector<HTMLElement>('main')!
 /**
- * De vijf adviezen staan in het rapport van hun eigen kaart (Dave, 8 oktober 2026): ATT en DEF bij Equip, Skill bij Skillpoints,
- * Mob bij Monster, Potions bij Potions. Een popup tegelijk: elke helper sluit eerst wat open staat.
+ * De adviezen staan in het rapport van hun eigen kaart (Dave, 8 oktober 2026): Skill bij Skillpoints, Mob bij Monster, Potions bij
+ * Potions. Equip heeft geen rapport meer (Dave, 8 oktober 2026). Een popup tegelijk: elke helper sluit eerst wat open staat.
  */
-const REPORT_CARD = { ATT: 'Equip', DEF: 'Equip', Skill: 'Skillpoints', Mob: 'Monster', Potions: 'Potions' } as const
+const REPORT_CARD = { Skill: 'Skillpoints', Mob: 'Monster', Potions: 'Potions' } as const
 const closeDialogs = () => {
   for (let i = 0; i < 6; i++) {
     const d = document.querySelector<HTMLElement>('dialog.report-dialog') ?? document.querySelector<HTMLElement>('dialog.card-dialog')
@@ -85,7 +85,7 @@ const closeDialogs = () => {
   }
 }
 /** Het rapport van een kaart, open, zoals de speler het opent: de popup van de kaart en daarin het rapport-icoon. */
-const openReportOf = (card: 'Equip' | 'Skillpoints' | 'Monster' | 'Potions') => {
+const openReportOf = (card: 'Skillpoints' | 'Monster' | 'Potions') => {
   closeDialogs()
   fireEvent.click(viewButton(card))
   fireEvent.click(screen.getByRole('button', { name: `Report: ${card}` }))
@@ -96,7 +96,7 @@ const reportPart = (title: keyof typeof REPORT_CARD) => within(openReportOf(REPO
 /** Alle vijf de adviezen achter elkaar, in de volgorde ATT, DEF, Skill, Mob, Potions: een kopie, alleen om te lezen. */
 const reportCard = () => {
   const box = document.createElement('div')
-  for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) box.append(openReportOf(card).querySelector('.report-body')!.cloneNode(true))
+  for (const card of ['Skillpoints', 'Monster', 'Potions'] as const) box.append(openReportOf(card).querySelector('.report-body')!.cloneNode(true))
   closeDialogs()
   return box
 }
@@ -210,7 +210,7 @@ const openHomeSkills = () => {
   fireEvent.click(head)
   return head.closest('section')!
 }
-const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Wearing' }))
+const openHomeEquipment = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Profile' }))
 const levelUp = () => fireEvent.click(screen.getByRole('button', { name: /Level up/ }))
 /** De open Monster-popup. */
 const mobDialog = () => document.querySelector<HTMLElement>('section.hunted dialog.card-dialog')!
@@ -295,18 +295,19 @@ describe('begin zonder opslag', () => {
       return document.querySelector('dialog.report-dialog') as HTMLDialogElement
     }
 
-    it('staat bij Equip, Skillpoints, Monster en Potions in de popup van de kaart, in beide weergaven, en niet bij Ability points en Total stats', () => {
-      // Geen kaart heeft een oog in de kop (#188, #192): onder de kop Advised en Your character, het rapport zit in hun popup.
+    it('staat bij Skillpoints, Monster en Potions in de popup van de kaart, in beide weergaven, en niet bij Equip (Dave, 8 oktober 2026), Ability points en Total stats', () => {
+      // Geen kaart heeft een oog in de kop (#188, #192): onder de kop Cheapest en Your character, het rapport zit in hun popup.
       for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         expect(card.querySelector('.spot-head button'), title).toBeNull()
-        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Wearing'])
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Cheapest', 'Profile'])
         expect(report(title), title).toBeNull()
-        for (const view of ['Advised', 'Wearing']) {
+        for (const view of ['Cheapest', 'Profile']) {
           fireEvent.click(within(card).getByRole('button', { name: view }))
           const button = report(title)
-          // De Advised-popups van Equip en Potions (Level cost: Equip en Useable) hebben geen Report: elke regel heeft zijn eigen vraagteken (Dave, 7 oktober 2026).
-          if ((title === 'Equip' || title === 'Potions') && view === 'Advised') {
+          // De Cheapest-popups van Potions (Useable) heeft geen Report: elke regel heeft zijn eigen vraagteken (Dave, 7 oktober 2026). Equip (Level cost)
+          // heeft in geen van beide weergaven een Report meer (Dave, 8 oktober 2026).
+          if (title === 'Equip' || (title === 'Potions' && view === 'Cheapest')) {
             expect(button, title + ' ' + view).toBeNull()
             fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
             continue
@@ -319,8 +320,8 @@ describe('begin zonder opslag', () => {
       }
       for (const title of ['Ability points', 'Total stats'] as const) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
-        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Advised', 'Wearing'])
-        fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
+        expect([...card.querySelectorAll('.view-actions button')].map((b) => b.textContent), title).toEqual(['Cheapest', 'Profile'])
+        fireEvent.click(within(card).getByRole('button', { name: 'Profile' }))
         expect(report(title)).toBeNull()
         fireEvent.click(within(card.querySelector<HTMLElement>('dialog.card-dialog')!).getByRole('button', { name: 'Sluiten' }))
       }
@@ -333,7 +334,7 @@ describe('begin zonder opslag', () => {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         const buttons = [...card.querySelectorAll('.view-actions button')]
         expect(buttons.map((b) => b.className), title).toEqual(['card-action view-advised', 'card-action view-worn'])
-        for (const [view, dialogClass] of [['Advised', 'advised-dialog'], ['Wearing', 'worn-dialog']] as const) {
+        for (const [view, dialogClass] of [['Cheapest', 'advised-dialog'], ['Profile', 'worn-dialog']] as const) {
           fireEvent.click(within(card).getByRole('button', { name: view }))
           const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
           expect(dialog.classList.contains(`card-dialog-${key}`), `${title} ${view}`).toBe(true)
@@ -359,7 +360,7 @@ describe('begin zonder opslag', () => {
       expect(skills.nextElementSibling).toBe(mob)
       expect(mob.nextElementSibling).toBe(potions)
       expect(potions.nextElementSibling).toBe(stats)
-      // Eén Level cost-kaart, ook met Advised en Difference erin (#183): de laatste kaart, daarna alleen de noot.
+      // Eén Level cost-kaart, ook met Cheapest en Difference erin (#183): de laatste kaart, daarna alleen de noot.
       const total = homeScreen().querySelector('section.total-cost')!
       expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
       expect(stats.nextElementSibling).toBe(total)
@@ -377,15 +378,6 @@ describe('begin zonder opslag', () => {
       expect(source.querySelector('a')!.getAttribute('href')).toBe(EXP_TABLE_SOURCE.url)
     })
 
-    it('toont bij Equip het advies over je wapen en je armor (ATT en DEF)', () => {
-      const dialog = openReport('Equip')
-      expect(dialog.open).toBe(true)
-      expect(dialog.getAttribute('aria-label')).toBe('Report: Equip')
-      expect(Array.from(dialog.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF'])
-      // De inhoud van de kaart zelf staat er niet in: die zit in de popup eronder.
-      expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
-    })
-
     it('toont bij Skillpoints het skill-advies en bij Monster het mob-advies', () => {
       expect(Array.from(openReport('Skillpoints').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill'])
       fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
@@ -395,15 +387,6 @@ describe('begin zonder opslag', () => {
       expect(Array.from(openReport('Monster').querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Mob'])
     })
 
-    it('opent het rapport van Equip vanuit de bekijken-popup, en die blijft open als je het rapport sluit (#188)', () => {
-      openReport('Equip')
-      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
-      expect(report('Equip')!.getAttribute('aria-expanded')).toBe('true')
-      fireEvent.click(within(document.querySelector('dialog.report-dialog') as HTMLElement).getByRole('button', { name: 'Sluiten' }))
-      expect(document.querySelector('dialog.report-dialog')).toBeNull()
-      expect(document.querySelector('dialog.card-dialog')).not.toBeNull()
-      expect(report('Equip')!.getAttribute('aria-expanded')).toBe('false')
-    })
   })
 
   it('toont het nieuwe level bovenaan na een level-up', () => {
@@ -423,7 +406,7 @@ describe('begin zonder opslag', () => {
   })
 })
 
-/** De rijen van de Advised-popup (Dave, 7 oktober 2026): één regel per slot, met het vraagteken ernaast. */
+/** De rijen van de Cheapest-popup (Dave, 7 oktober 2026): één regel per slot, met het vraagteken ernaast. */
 const advisedRow = (dialog: HTMLElement, slot: string) =>
   [...dialog.querySelectorAll<HTMLElement>('.advised-row')].find((r) => r.querySelector('.slot-name')?.textContent === slot)!
 const nameOf = (row: HTMLElement) => row.querySelector('.advised-name')!.textContent!
@@ -486,19 +469,19 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(rowOf(cards()[0], 'Hat').querySelector('.equip-picked')?.textContent).toBe('Mijn hoed')
   })
 
-  it('opent in Level cost bij Advised met de knop Equip van Advised de Advised-popup van de Equip-kaart: de stukken om te kopen (#188, #192)', () => {
+  it('opent in Level cost bij Cheapest met de knop Equip van Cheapest de Cheapest-popup van de Equip-kaart: de stukken om te kopen (#188, #192)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
-    fireEvent.click(within(part).getByRole('button', { name: 'Equip van Advised' }))
+    fireEvent.click(within(part).getByRole('button', { name: 'Equip van Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost: Equip')
-    expect(dialog.getAttribute('aria-label')).toBe('Level cost: Equip (advised)')
-    // "advised" op een eigen regel boven de titel, niet in de kop (Dave, 7 oktober 2026).
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost')
+    expect(dialog.getAttribute('aria-label')).toBe('Level cost (cheapest)')
+    // "cheapest" op een eigen regel boven de titel, niet in de kop (Dave, 7 oktober 2026).
     const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
-    expect(tag.textContent).toBe('advised')
+    expect(tag.textContent).toBe('cheapest')
     expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
     const weapon = advisedRow(dialog, 'Weapon')
     // Het wapen dat je al draagt blijft staan: geen aankoop, maar het vraagteken zegt waarom je het houdt.
@@ -513,16 +496,16 @@ describe('equipment: de claw past het profiel aan', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     expect(cards()[0].querySelector('table')).toBeNull()
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Wearing' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Profile' }))
     // Wat je draagt kies je achter het potlood bij Equip (Dave, 8 oktober 2026); de slotkeuze staat niet meer open na het sluiten.
     expect(within(cards()[0]).queryByLabelText('Zoek je Weapon')).toBeNull()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Weapon wijzigen' }))
     expect(within(cards()[0]).getByLabelText('Zoek je Weapon')).toBeTruthy()
     closeDialogs()
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost: Equip')
+    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -531,12 +514,12 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
   })
 
-  it('zet een gekocht wapen in Advised als slot, naam en prijs (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
-    // Niets aan: het wapenslot is leeg, dus Advised koopt het goedkoopste wapen dat je kunt dragen (#202).
+  it('zet een gekocht wapen in Cheapest als slot, naam en prijs (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
+    // Niets aan: het wapenslot is leeg, dus Cheapest koopt het goedkoopste wapen dat je kunt dragen (#202).
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = advisedRow(dialog, 'Weapon')
     expect(row.classList.contains('buy')).toBe(true)
@@ -566,7 +549,7 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const item = openItem(advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!, 'Weapon'))
     const scale = (d: Element) => Number((d as HTMLElement).style.getPropertyValue('--popup-scale'))
     // Elke popup tot op de app: de bovenste eerst.
@@ -582,7 +565,7 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const row = advisedRow(dialog, 'Weapon')
     const toggle = within(row).getByRole('button', { name: 'Info over ' + row.querySelector('.advised-name')!.textContent })
@@ -611,7 +594,7 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const weapon = advisedRow(dialog, 'Weapon')
     expect(verdictOf(weapon)).toBe('Kopen')
@@ -619,7 +602,7 @@ describe('equipment: de claw past het profiel aan', () => {
     const empty = dialog.querySelector<HTMLElement>('.advised-row.empty')!
     expect(empty.querySelector('.info-toggle')).toBeNull()
     expect(verdictOf(empty)).toBe('Leeg laten')
-    // Draag je het wapen al, dan houdt Advised het.
+    // Draag je het wapen al, dan houdt Cheapest het.
     cleanup()
     localStorage.clear()
     render(<App />)
@@ -627,12 +610,12 @@ describe('equipment: de claw past het profiel aan', () => {
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     expect(verdictOf(advisedRow(dialog, 'Weapon'))).toBe('Houden')
   })
 
-  it('toont in Advised de winkelprijs van een gekocht stuk in .advised-price, en niets bij een stuk dat je houdt of een leeg slot (Dave, 7 oktober 2026)', () => {
+  it('toont in Cheapest de winkelprijs van een gekocht stuk in .advised-price, en niets bij een stuk dat je houdt of een leeg slot (Dave, 7 oktober 2026)', () => {
     const open = (wear: boolean) => {
       cleanup()
       localStorage.clear()
@@ -641,7 +624,7 @@ describe('equipment: de claw past het profiel aan', () => {
       openHomeEquipment()
       if (wear) pick(cards()[0], 'Weapon', IGOR.name)
       fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-      fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+      fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
       return cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     }
     const priceOf = (row: HTMLElement) => row.querySelector('.advised-price')!.textContent
@@ -660,7 +643,7 @@ describe('equipment: de claw past het profiel aan', () => {
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const rows = [...dialog.querySelectorAll<HTMLElement>('.advised-row')]
     expect(rows.length).toBeGreaterThan(0)
@@ -673,7 +656,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(why('Overall')).toBe('Leeg: een losse top of bottom neemt de plek van een overall in.')
     expect(rows.filter((r) => r.classList.contains('empty')).length).toBeGreaterThan(0)
     expect(why('Cape')).toMatch(/^Leeg: /)
-    // Koopt Advised een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
+    // Koopt Cheapest een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
     cleanup()
     localStorage.clear()
     render(<App />)
@@ -681,18 +664,18 @@ describe('equipment: de claw past het profiel aan', () => {
     openHomeEquipment()
     pickOwn(cards()[0], 'Overall', 'Mijn overall')
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const withOverall = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     expect(whyOf(advisedRow(withOverall, 'Top'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
     expect(whyOf(advisedRow(withOverall, 'Bottom'))).toMatch(/^Koop samen met .+ voor [0-9.]+ meso/)
   })
 
-  it('toont in een leeg Ammo-slot van Advised de stars die de factuur telt, zonder "Koop voor" (#189)', () => {
+  it('toont in een leeg Ammo-slot van Cheapest de stars die de factuur telt, zonder "Koop voor" (#189)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const ammo = advisedRow(dialog, 'Ammo')
     expect(nameOf(ammo)).toContain('Subi Throwing Stars')
@@ -703,7 +686,7 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('toont de inhoud in een popup achter het oog, en klapt niet meer open (#106)', () => {
-    const head = within(cards()[0]).getByRole('button', { name: 'Wearing' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Profile' })
     expect(head.getAttribute('aria-haspopup')).toBe('dialog')
     expect(head.querySelector('svg')).not.toBeNull()
     // Dicht staat de inhoud nergens in de pagina, ook niet verborgen.
@@ -712,7 +695,7 @@ describe('equipment: de claw past het profiel aan', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
-    expect(dialog.getAttribute('aria-label')).toBe('Level cost: Equip (wearing)')
+    expect(dialog.getAttribute('aria-label')).toBe('Level cost (profile)')
     // Elk potlood is dezelfde knop, .equip-edit (Dave, 8 oktober 2026): ook die van Equip, Char en Mob, en achter dat van Equip die van een slot.
     for (const name of ['Equip wijzigen', 'Char wijzigen', 'Mob wijzigen']) expect(within(dialog).getByRole('button', { name }).classList.contains('equip-edit'), name).toBe(true)
     expect(within(dialog).queryByRole('button', { name: 'Weapon wijzigen' })).toBeNull()
@@ -732,7 +715,7 @@ describe('equipment: de claw past het profiel aan', () => {
 
   it('sluit de popup met het kruisje, en zet de focus daarna op de kop (#106)', async () => {
     openHomeEquipment()
-    const head = within(cards()[0]).getByRole('button', { name: 'Wearing' })
+    const head = within(cards()[0]).getByRole('button', { name: 'Profile' })
     expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(cards()[0].querySelector('dialog')!).getByRole('button', { name: 'Sluiten' }))
     expect(head.getAttribute('aria-expanded')).toBe('false')
@@ -2072,10 +2055,10 @@ describe('een Warrior in de app', () => {
       expect(profileFields().luk).toBe('4')
     })
 
-    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle drie de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Warrior-skills die niet zijn doorgerekend, en geen Thief-skills', () => {
@@ -2099,11 +2082,6 @@ describe('een Warrior in de app', () => {
       expect(within(reportPart('Skill')).getByText(/^Power Strike → 2 gezet./)).toBeTruthy()
     })
 
-    it('noemt Warrior-wapens, geen claws, en een eis in STR', () => {
-      const claw = reportPart('ATT')
-      expect(claw.textContent).not.toMatch(/claw/i)
-      expect(claw.textContent).toMatch(/wapen/)
-    })
   })
 
   it('toont voor een Thief nog steeds de Thief-teksten (claw, Subi, Lucky Seven)', () => {
@@ -2120,7 +2098,6 @@ describe('een Warrior in de app', () => {
 describe('het geslacht (issue #55)', () => {
   const GENDER_KEY = 'mesowise.gender.v1'
   const JOB_HINT = /Kies je geslacht, dan houdt het advies daar rekening mee\./
-  const ARMOR_HINT = 'Armor die alleen voor mannen of alleen voor vrouwen is, telt nog niet mee: kies bovenaan je geslacht.'
   // De zichtbare jobkaart: in het menu als dat open staat, anders op het beginscherm (#86).
   const card = () => document.querySelector<HTMLElement>('section.job')!
   const group = () => within(card()).getByRole('group', { name: 'Gender:' })
@@ -2249,33 +2226,6 @@ describe('het geslacht (issue #55)', () => {
     expect(screen.getByText(JOB_HINT)).toBeTruthy()
   })
 
-  describe('in het rapport van Equip', () => {
-    const afterLevelUp = () => {
-      cleanup()
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          version: 1,
-          spots: [mobDraft('Ribbon Pig')],
-        }),
-      )
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, lukExtra: '0', luckySeven: '2', luk: '60' } }))
-      render(<App />)
-      levelUp()
-      }
-    const armorSection = () => reportPart('DEF')
-
-    it('toont bij de armorvraag de hint zolang het geslacht niet gekozen is', () => {
-      afterLevelUp()
-      expect(within(armorSection()).getByText(ARMOR_HINT)).toBeTruthy()
-    })
-
-    it('toont de hint niet meer als het geslacht al gekozen was (bewaard)', () => {
-      localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender: 'male' }))
-      afterLevelUp()
-      expect(within(armorSection()).queryByText(ARMOR_HINT)).toBeNull()
-    })
-  })
 })
 
 describe('een Bowman in de app', () => {
@@ -2427,10 +2377,10 @@ describe('een Bowman in de app', () => {
       expect(profileFields().luk).toBe('4')
     })
 
-    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle drie de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Bowman-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -2451,11 +2401,6 @@ describe('een Bowman in de app', () => {
       expect(within(section).getByRole('button', { name: 'Punt zetten' })).toBeTruthy()
     })
 
-    it('noemt wapens, geen claws', () => {
-      const weapon = reportPart('ATT')
-      expect(weapon.textContent).not.toMatch(/claw/i)
-      expect(weapon.textContent).toMatch(/wapen|boog/)
-    })
   })
 })
 
@@ -2584,18 +2529,12 @@ describe('een Magician in de app', () => {
       for (const name of ['Lucky Seven', 'Nimble Body', 'Dark Sight', 'Power Strike', 'Slash Blast']) expect(skills.textContent, name).not.toContain(name)
     })
 
-    it('noemt bij het equipmentadvies wands en staffs, geen claws', () => {
-      const equip = reportPart('ATT')
-      expect(equip.textContent).toMatch(/wand|staff/i)
-      expect(equip.textContent).not.toMatch(/claw/i)
-    })
-
-    it('zet de vijf adviezen in de rapporten van hun kaarten: ATT, DEF, Skill, Mob en Potions (#126)', () => {
+    it('zet de adviezen in de rapporten van hun kaarten: Skill, Mob en Potions (#126; Equip heeft er geen meer, Dave, 8 oktober 2026)', () => {
       const card = reportCard()
       const questions = within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-      expect(questions).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
+      expect(questions).toEqual(['Skill', 'Mob', 'Potions'])
       // Elk advies heeft een antwoord, en het skilladvies noemt de mana die de skill kost.
-      expect(card.querySelectorAll('.chip')).toHaveLength(5)
+      expect(card.querySelectorAll('.chip')).toHaveLength(3)
       expect(card.textContent).not.toMatch(NOT_YET)
       expect(card.textContent).toMatch(/MP/)
     })
@@ -2614,10 +2553,10 @@ describe('een Magician in de app', () => {
       expect(profileFields().luk).toBe('10')
     })
 
-    it('toont alle vijf de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
+    it('toont alle drie de vragen met een antwoord en nergens "Nog niet doorgerekend"', () => {
       const advice = reportCard()
       expect(advice.textContent).not.toMatch(NOT_YET)
-      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
+      expect(Array.from(advice.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill', 'Mob', 'Potions'])
     })
 
     it('noemt bij de skillvraag de Magician-skills die niet zijn doorgerekend, en geen Thief- of Warrior-skills', () => {
@@ -2633,11 +2572,6 @@ describe('een Magician in de app', () => {
       expect(section.textContent).not.toContain('Magic Claw → 1')
     })
 
-    it('noemt wands en staffs, geen claws', () => {
-      const claw = reportPart('ATT')
-      expect(claw.textContent).not.toMatch(/claw/i)
-      expect(claw.textContent).toMatch(/wand of staff|wapen/)
-    })
   })
 
   it('geeft als skillpunt Energy Bolt (→ 4), met zijn MP, en zet het punt in het bewaarde profiel', () => {
@@ -3091,11 +3025,9 @@ describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () 
   }
   const card = (_h: HTMLElement) => reportCard()
 
-  it('zet in de rapporten de koppen ATT, DEF, Skill, Mob en Potions in die volgorde, en niets van de oude vraag over equipment', () => {
+  it('zet in de rapporten de koppen Skill, Mob en Potions in die volgorde, en niets van de oude vraag over equipment', () => {
     const c = card(home())
-    expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['ATT', 'DEF', 'Skill', 'Mob', 'Potions'])
-    // ATT en DEF zijn afkortingen met hun volle naam als tooltip.
-    expect(Array.from(c.querySelectorAll('h3 abbr')).map((a) => [a.textContent, a.getAttribute('title')])).toEqual([['ATT', 'Attack'], ['DEF', 'Defense']])
+    expect(Array.from(c.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Skill', 'Mob', 'Potions'])
     expect(c.textContent).not.toContain('Moet ik mijn equipment nu upgraden?')
     expect(c.textContent).not.toContain('Wat kost dit level?')
   })
@@ -3108,8 +3040,6 @@ describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () 
       expect(l.classList.contains('hint')).toBe(true)
     }
     expect(leads.map((l) => l.textContent)).toEqual([
-      'Een sterker wapen: de prijs tegenover wat je bespaart doordat je sneller killt.',
-      'Betere armor: de prijs tegenover de HP potions die je daardoor minder nodig hebt.',
       'Welke skill het meeste bespaart: sneller killen tegenover de extra mana potions.',
       'Welke mob dit level het goedkoopst is: hoe snel je killt tegenover wat je aan potions kwijt bent.',
       'Welke potion dit level het goedkoopst is: de prijs tegenover wat hij herstelt.',
@@ -3119,32 +3049,25 @@ describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () 
   it('zet de chip in dezelfde .question-head als zijn kop', () => {
     const c = card(home())
     const heads = Array.from(c.querySelectorAll('h3')).map((h) => h.closest('.question-head')!)
-    expect(heads).toHaveLength(5)
+    expect(heads).toHaveLength(3)
     for (const head of heads) {
       expect(head.querySelectorAll('h3')).toHaveLength(1)
       expect(head.querySelectorAll('.chip')).toHaveLength(1)
     }
   })
 
-  it('geeft ATT, DEF, Mob en Potions een label in plaats van Ja of Nee', () => {
+  it('geeft Mob en Potions een label in plaats van Ja of Nee', () => {
     const c = card(home())
     const chips = Array.from(c.querySelectorAll('.chip')).map((x) => x.textContent!)
-    expect(chips).toHaveLength(5)
-    expect(chips[0]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
-    expect(chips[1]).toMatch(/^(Upgraden|Niet upgraden|Upgrade complete|Niet uit te rekenen)$/)
-    expect(chips[3]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
-    expect(chips[4]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
+    expect(chips).toHaveLength(3)
+    expect(chips[1]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
+    expect(chips[2]).toMatch(/^(Wisselen|Blijven|Niet uit te rekenen)$/)
     for (const t of chips) expect(t).not.toMatch(/^(Ja|Nee)$/)
   })
 
-  it('zet Upgraden bij ATT of DEF alleen bij een winnaar, anders Niet upgraden, en Blijven bij Mob als je mob de goedkoopste is', () => {
+  it('zet Blijven bij Mob als je mob de goedkoopste is, en anders Wisselen', () => {
     const c = card(home())
     const chipOf = (title: string) => within(c).getByRole('heading', { level: 3, name: title }).closest('.advice-part')!.querySelector('.chip')!.textContent
-    // De verdict-regel zegt hetzelfde als het label: "Koop …" hoort bij Upgraden.
-    for (const t of ['ATT', 'DEF']) {
-      const part = within(c).getByRole('heading', { level: 3, name: t }).closest('.advice-part')!
-      expect(part.textContent!.includes('Koop ')).toBe(chipOf(t) === 'Upgraden')
-    }
     const mob = within(c).getByRole('heading', { level: 3, name: 'Mob' }).closest('.advice-part')!
     expect(mob.textContent!.includes('Blijf op ')).toBe(chipOf('Mob') === 'Blijven')
     expect(mob.textContent!.includes('Wissel naar ')).toBe(chipOf('Mob') === 'Wisselen')
@@ -3156,7 +3079,7 @@ describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () 
     expect(group.getAttribute('aria-label')).toBe('Stats')
     expect(group.querySelector('h2')).toBeNull()
     expect(within(h).queryByRole('heading', { name: 'Stats' })).toBeNull()
-    expect(within(group as HTMLElement).getAllByRole('button', { name: 'Wearing' })).toHaveLength(2)
+    expect(within(group as HTMLElement).getAllByRole('button', { name: 'Profile' })).toHaveLength(2)
     expect(viewButton('Ability points')).toBeTruthy()
     expect(viewButton('Total stats')).toBeTruthy()
     // Geen andere kaart in het blok: de twee kaarten zijn de enige kinderen. Potions heeft een rapport en staat erboven.
@@ -3164,109 +3087,6 @@ describe('de rapporten van de kaarten en het blok Stats op het beginscherm', () 
     expect(within(group as HTMLElement).queryByRole('button', { name: /Skillpoints|Equip|Potions/ })).toBeNull()
   })
 
-  it('noemt bij een Thief op lv 10 wat hij draagt en vanaf welk level de eerstvolgende betere claw te dragen is', () => {
-    cleanup()
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '10' } }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
-    render(<App />)
-    const att = () => reportPart('ATT')
-    // Zonder wapen in het slot staat er geen "Je draagt", wel de eerstvolgende claw.
-    expect(att().textContent).not.toContain('Je draagt')
-    expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
-    openHomeEquipment()
-    pick(cards()[0], 'Weapon', 'Garnier')
-    expect(att().textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
-    expect(att().textContent).toContain('De eerstvolgende betere claw, Steel Titans, kun je vanaf lv 15 dragen.')
-  })
-
-  describe('ATT en DEF: Upgrade complete, Niet upgraden en het wapen op lv 9', () => {
-    const homeWith = (fields: object, equipment?: object, gender?: 'male' | 'female') => {
-      cleanup()
-      localStorage.clear()
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, ...fields } }))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
-      if (gender) localStorage.setItem('mesowise.gender.v1', JSON.stringify({ version: 1, gender }))
-      if (equipment) localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: equipment }))
-      render(<App />)
-      return homeScreen()
-    }
-    const part = (_h: HTMLElement, title: 'ATT' | 'DEF') => reportPart(title)
-    const chipOf = (el: HTMLElement) => el.querySelector('.chip')!
-
-    it('noemt een Thief op lv 9 de Garnier vanaf lv 10, en wat hij draagt zodra het slot is ingevuld', () => {
-      const h = homeWith({ level: '9', clawWatk: '5', luckySeven: '0', nimbleBody: '0' })
-      expect(part(h, 'ATT').textContent).toContain('De eerstvolgende betere claw, Garnier, kun je vanaf lv 10 dragen.')
-      expect(part(h, 'ATT').textContent).not.toContain('Je draagt')
-      // Op lv 9 biedt de zoekbalk de Garnier nog niet aan (hij vraagt lv 10, #188); op lv 10 wel.
-      openHomeEquipment()
-      expect(options(typeIn(cards()[0], 'Weapon', 'Garnier')).map((o) => o.querySelector('.equip-name')?.textContent)).not.toContain('Garnier')
-      atLevel('10')
-      openHomeEquipment()
-      pick(cards()[0], 'Weapon', 'Garnier')
-      expect(part(homeScreen(), 'ATT').textContent).toMatch(/Je draagt Garnier \(ATT \d+\)\./)
-      expect(part(homeScreen(), 'ATT').textContent).toContain('Steel Titans, kun je vanaf lv 15 dragen.')
-    })
-
-    it('noemt bij een ongeldig profiel op lv 9 geen "geen betere claw meer": onbekend is niet hetzelfde als het einde van de winkel', () => {
-      // Lv 9 met de skillpunten van het voorbeeldprofiel: meer dan een Thief op lv 9 heeft, dus het profiel parst niet.
-      const h = homeWith({ level: '9', clawWatk: '5' })
-      const att = part(h, 'ATT')
-      expect(att.textContent).toContain('Je karakter is niet volledig ingevuld')
-      expect(att.textContent).not.toContain('De app kent geen betere claw meer')
-      expect(att.textContent).not.toContain('De eerstvolgende betere claw')
-      expect(chipOf(att).textContent).toBe('Niet uit te rekenen')
-    })
-
-    it('zet bij ATT de chip op "Upgrade complete" (klasse yes) als je de beste claw draagt die je level toelaat', () => {
-      // Lv 15 met 13 ATT: Steel Titans (13) is de beste die je kunt dragen; Steel Igor komt pas op lv 20.
-      const h = homeWith({ level: '15', luk: '60', dex: '40', clawWatk: '13' })
-      const chip = chipOf(part(h, 'ATT'))
-      expect(chip.textContent).toBe('Upgrade complete')
-      expect(chip.classList.contains('yes')).toBe(true)
-      expect(part(h, 'ATT').textContent).toContain('De eerstvolgende betere claw, Steel Igor, kun je vanaf lv 20 dragen.')
-    })
-
-    it('zegt na de laatste claw dat de app er geen betere kent', () => {
-      const h = homeWith({ level: '30', luk: '80', dex: '40', clawWatk: '23' })
-      expect(chipOf(part(h, 'ATT')).textContent).toBe('Upgrade complete')
-      expect(part(h, 'ATT').textContent).toContain('De app kent geen betere claw meer voor je job.')
-    })
-
-    it('zet bij ATT "Niet upgraden" als een betere claw er is maar zich niet terugverdient', () => {
-      const h = homeWith({ level: '15' })
-      expect(chipOf(part(h, 'ATT')).textContent).toBe('Niet upgraden')
-      expect(part(h, 'ATT').textContent).toContain('Geen claw verdient zich terug')
-    })
-
-    it('zet bij ATT "Niet upgraden" als een betere claw je stats nog niet haalt', () => {
-      const h = homeWith({ level: '25', luk: '4', dex: '4' })
-      const att = part(h, 'ATT')
-      expect(chipOf(att).textContent).toBe('Niet upgraden')
-      expect(chipOf(att).classList.contains('yes')).toBe(false)
-      expect(att.textContent).toMatch(/Steel Titans: je hebt nog \d+ LUK en \d+ DEX nodig/)
-    })
-
-    it('zet bij DEF "Upgrade complete" als je in elk slot meer WDEF draagt dan de winkel biedt', () => {
-      const slot = { pick: 'other', name: 'Testpak', stat: '999' }
-      const h = homeWith({ level: '30', luk: '80', dex: '40' }, { hat: slot, top: slot, bottom: slot, shoes: slot, shield: slot, gloves: slot, cape: slot, earrings: slot }, 'male')
-      const chip = chipOf(part(h, 'DEF'))
-      expect(chip.textContent).toBe('Upgrade complete')
-      expect(chip.classList.contains('yes')).toBe(true)
-    })
-
-    it('zet bij DEF zonder gekozen geslacht "Niet upgraden", ook als je overal meer WDEF draagt dan de winkel biedt', () => {
-      const slot = { pick: 'other', name: 'Testpak', stat: '999' }
-      const h = homeWith({ level: '30', luk: '80', dex: '40' }, { hat: slot, top: slot, bottom: slot, shoes: slot, shield: slot, gloves: slot, cape: slot, earrings: slot })
-      const chip = chipOf(part(h, 'DEF'))
-      expect(chip.textContent).toBe('Niet upgraden')
-      expect(chip.classList.contains('yes')).toBe(false)
-    })
-
-    it('zet bij DEF "Niet upgraden" als er stukken zijn maar geen zich terugverdient', () => {
-      const h = homeWith({ level: '10' })
-      expect(chipOf(part(h, 'DEF')).textContent).toBe('Niet upgraden')
-    })
-  })
 })
 
 describe('de plaatsingscheck als er geen skillpunt meer over is', () => {
@@ -3575,7 +3395,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     for (const level of ['', ' ', 'abc', '10.5', '0', '1e1', '0x10', '-3']) expect(totalCostWho(level, 'bowman'), level).toBe('Bowman')
   })
 
-  it('heeft de kop en de ondertitel, en zonder gekozen mob de factuur van de mob die Advised voorstelt (#193)', () => {
+  it('heeft de kop en de ondertitel, en zonder gekozen mob de factuur van de mob die Cheapest voorstelt (#193)', () => {
     expect(within(card()).getByRole('heading', { level: 2 }).textContent).toBe('Level cost')
     // Met het huidige level en de job (Dave, 6 oktober 2026); het voorbeeldprofiel is een Thief op level 10.
     expect(card().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 10 Thief')
@@ -3729,7 +3549,7 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Level cost: In game, Advised en Difference in één kaart (#183)', () => {
+describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', () => {
   const cheapestCard = () => document.querySelector<HTMLElement>('.total-cost .cheapest-cost')!
   const diffCard = () => document.querySelector<HTMLElement>('.total-cost .cost-difference')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
@@ -3744,7 +3564,7 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
   }
   const mesoOf = (text: string | null | undefined) => Number(text!.replace(/\D/g, ''))
 
-  it('zet onder de vraag van de app Advised links en Wearing rechts, met het totaal van hun factuur in Level cost (Dave, 8 oktober 2026)', () => {
+  it('zet onder de vraag van de app Cheapest links en Profile rechts, met het totaal van hun factuur in Level cost (Dave, 8 oktober 2026)', () => {
     toLevel20()
     const top = homeScreen().querySelector('.app-question')!.nextElementSibling!
     expect(top.tagName).toBe('SECTION')
@@ -3754,15 +3574,15 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     const buttons = top.querySelectorAll<HTMLButtonElement>('.level-cost-buttons > button')
     expect(buttons).toHaveLength(2)
     const [left, right] = Array.from(buttons)
-    expect(left.querySelector('.level-cost-label')!.textContent).toBe('Advised')
-    expect(right.querySelector('.level-cost-label')!.textContent).toBe('Wearing')
+    expect(left.querySelector('.level-cost-label')!.textContent).toBe('Cheapest')
+    expect(right.querySelector('.level-cost-label')!.textContent).toBe('Profile')
     expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard()))
     expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours()))
     expect(left.disabled).toBe(false)
     expect(right.disabled).toBe(false)
   })
 
-  it('opent met de knoppen onder de vraag dezelfde popup als Advised en Wearing op de Equip-kaart', () => {
+  it('opent met de knoppen onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {
     toLevel20()
     const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button'))
     const equipDialog = () => document.querySelector<HTMLElement>('section.equipment dialog.card-dialog')
@@ -3776,21 +3596,21 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
       return html
     }
     const equip = document.querySelector<HTMLElement>('main .equipment')!
-    expect(popupOf(left)).toBe(popupOf(within(equip).getByRole('button', { name: 'Advised' })))
-    expect(popupOf(right)).toBe(popupOf(within(equip).getByRole('button', { name: 'Wearing' })))
+    expect(popupOf(left)).toBe(popupOf(within(equip).getByRole('button', { name: 'Cheapest' })))
+    expect(popupOf(right)).toBe(popupOf(within(equip).getByRole('button', { name: 'Profile' })))
     expect(popupOf(left)).not.toBe(popupOf(right))
   })
 
-  it('toont In game, Advised en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
+  it('toont In game, Cheapest en Difference als drie delen van één kaart, de goedkoopste setup live en vóór je iets toepast', () => {
     toLevel20()
     const profileBefore = profileFields()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
     expect(homeScreen().querySelectorAll('section.total-cost')).toHaveLength(1)
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Level cost')
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
     expect(yours().nextElementSibling).toBe(cheapestCard())
     expect(cheapestCard().nextElementSibling).toBe(diffCard())
-    // Onder de h3 van In game en Advised de zin over hun factuur (Dave, #183).
+    // Onder de h3 van In game en Cheapest de zin over hun factuur (Dave, #183).
     expect(yours().querySelector('.total-cost-sub')!.textContent).toBe('This is how much it cost to level up your Lv. 20 Thief')
     expect(cheapestCard().querySelector('.total-cost-sub')!.textContent).toBe('This is the cheapest way to level up a Lv. 20 Thief')
     expect(mesoOf(total(cheapestCard()))).toBeLessThan(mesoOf(total(yours())))
@@ -3804,8 +3624,8 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
 
   it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
-    // Kolommen: de soort, Your character, Advised en Difference (Dave, #183).
-    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
+    // Kolommen: de soort, Your character, Cheapest en Difference (Dave, #183).
+    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
     expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['Shop', 'HP Potions', 'MP Potions', 'Ammo'])
@@ -3829,13 +3649,13 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     expect(rows.reduce((s, tr) => s + signed(tr.querySelector('td.invoice-diff')!.textContent!), 0)).toBe(-mesoOf(diffTotal.textContent))
   })
 
-  it('zet elk stuk dat Advised in de winkel koopt als eigen regel op de factuur van Advised, samen als Shop in Difference, en nooit op die van Your character (#192)', () => {
+  it('zet elk stuk dat Cheapest in de winkel koopt als eigen regel op de factuur van Cheapest, samen als Shop in Difference, en nooit op die van Your character (#192)', () => {
     toLevel20()
     const labels = (card: HTMLElement) => Array.from(card.querySelectorAll('tbody tr th')).map((th) => th.textContent)
     expect(labels(yours())).not.toContain('Shop')
     expect(labels(diffCard())[0]).toBe('Shop')
-    // De stukken die de Equip-kaart in Advised koopt, met "Koop voor": elk een regel met × 1 en die prijs.
-    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
+    // De stukken die de Equip-kaart in Cheapest koopt, met "Koop voor": elk een regel met × 1 en die prijs.
+    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Cheapest' }))
     // De prijs staat achter het vraagteken: "Koop voor X meso" of, bij een paar, "voor <prijs van het paar> meso".
     const bought = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.equipment dialog .advised-row.buy')).map((row) => {
       const why = whyOf(row)
@@ -3851,19 +3671,19 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     const full = mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)
     const shop = onInvoice.reduce((s, r) => s + r.price, 0)
     expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(full)
-    // In Difference: jouw character betaalt niets in de winkel, Advised het afgeschreven deel, en het verschil is dat deel.
+    // In Difference: jouw character betaalt niets in de winkel, Cheapest het afgeschreven deel, en het verschil is dat deel.
     const [mine, cheap, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
     expect(mine).toBe('0')
     expect(mesoOf(cheap)).toBe(shop)
     expect(mesoOf(d)).toBe(shop)
   })
 
-  it('zet in Level cost: Equip naast Shop (de winkelprijs) de kolom Level: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
+  it('zet in Level cost naast Shop (de winkelprijs) de kolom Level: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
     toLevel20()
     const invoice = Array.from(cheapestCard().querySelectorAll('tbody tr'))
       .filter((tr) => /^× 1\s*\??$/.test(tr.querySelector('td.invoice-qty')!.textContent!.trim()) && tr.querySelector('.invoice-why')?.getAttribute('aria-label')?.includes(' meso voor '))
       .map((tr) => ({ name: tr.querySelector('th')!.textContent, meso: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
-    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Advised' }))
+    fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Cheapest' }))
     const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
     // De kop: Mesos heet Shop (Dave, 7 oktober 2026), met Level ernaast.
     const head = d.querySelector('.advised-head')!
@@ -3937,7 +3757,7 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     toLevel20()
     const first = mesoOf(total(yours()))
     const before = mesoOf(diffCard().querySelector('tfoot td.invoice-diff')!.textContent)
-    // Wat de equip van Advised in de winkel kost: Difference toont het op de rij Shop (#192).
+    // Wat de equip van Cheapest in de winkel kost: Difference toont het op de rij Shop (#192).
     const shop = mesoOf(diffCard().querySelector('tbody tr td.invoice-meso:nth-child(3)')!.textContent)
     expect(shop).toBeGreaterThan(0)
     take()
@@ -3955,7 +3775,7 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
     const cheaperTotal = total(cheapestCard())
     const equipBefore = stored(EQUIPMENT_KEY)
     take()
-    // De equip van Advised staat nu in je setup (je koopt haar in het spel): zijn winkelprijs is geen kost van dit level meer op je eigen factuur.
+    // De equip van Cheapest staat nu in je setup (je koopt haar in het spel): zijn winkelprijs is geen kost van dit level meer op je eigen factuur.
     expect(stored(EQUIPMENT_KEY)).not.toEqual(equipBefore)
     expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(cheaperTotal))
     // Ook na Overnemen staat de volledige factuur op de kaart.
@@ -4016,12 +3836,12 @@ describe('Level cost: In game, Advised en Difference in één kaart (#183)', () 
   })
 })
 
-describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
+describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
   const CARDS = Object.keys(CARD_CLASS) as (keyof typeof CARD_CLASS)[]
   const cardOf = (title: keyof typeof CARD_CLASS) => homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
   const labels = (title: keyof typeof CARD_CLASS) => [...cardOf(title).querySelectorAll('.view-actions button')].map((b) => b.textContent)
   /** Opent de popup van een kaart achter een van de twee knoppen en geeft hem terug. */
-  const openView = (title: keyof typeof CARD_CLASS, view: 'Advised' | 'Wearing') => {
+  const openView = (title: keyof typeof CARD_CLASS, view: 'Cheapest' | 'Profile') => {
     fireEvent.click(within(cardOf(title)).getByRole('button', { name: view }))
     return cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
   }
@@ -4041,60 +3861,60 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const potions = document.querySelector<HTMLElement>('section.potions dialog')!
     fireEvent.change(within(potions).getByLabelText('HP potions'), { target: { value: 'White Potion' } })
     fireEvent.click(within(potions).getByRole('button', { name: 'Opslaan' }))
-    // Wat de knop Advised toont, rekent cheapestSettings uit op wat er nu is opgeslagen.
+    // Wat de knop Cheapest toont, rekent cheapestSettings uit op wat er nu is opgeslagen.
     const profileDraft: ProfileDraft = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const choice = stored(POTION_CHOICE_KEY)
     const input = { job: 'thief' as const, gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } }
-    // De setup van Advised koopt ook equip (#192) en rekent er om en om mee, zoals de app het doet.
+    // De setup van Cheapest koopt ook equip (#192) en rekent er om en om mee, zoals de app het doet.
     return advisedSetup(input).result
   }
 
-  it('zet bij elke kaart eerst Advised en dan Your character, en geen oog of knop in de kop (#192)', () => {
+  it('zet bij elke kaart eerst Cheapest en dan Your character, en geen oog of knop in de kop (#192)', () => {
     for (const title of CARDS) {
-      expect(labels(title), title).toEqual(['Advised', 'Wearing'])
+      expect(labels(title), title).toEqual(['Cheapest', 'Profile'])
       expect(cardOf(title).querySelectorAll('.spot-head button'), title).toHaveLength(0)
       expect(cardOf(title).querySelector('.spot-head .card-report'), title).toBeNull()
       expect(cardOf(title).querySelector('dialog'), title + ' dicht').toBeNull()
     }
   })
 
-  it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Advised en Your character om beurten (#192)', () => {
+  it('zet bij elke kaart de weergave die openstaat op aria-expanded, en opent Cheapest en Your character om beurten (#192)', () => {
     for (const title of CARDS) {
-      const advised = within(cardOf(title)).getByRole('button', { name: 'Advised' })
-      const own = within(cardOf(title)).getByRole('button', { name: 'Wearing' })
+      const advised = within(cardOf(title)).getByRole('button', { name: 'Cheapest' })
+      const own = within(cardOf(title)).getByRole('button', { name: 'Profile' })
       fireEvent.click(advised)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['true', 'false'])
-      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^(Advised|Expected|Level cost)/)
+      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^(Cheapest|Expected|Level cost)/)
       closeView(title)
       fireEvent.click(own)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['false', 'true'])
-      // Equip heet in beide weergaven Level cost: Equip, met het label wearing (Dave, 8 oktober 2026).
-      if (title !== 'Equip') expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Advised|Expected|Level cost)/)
+      // Equip heet in beide weergaven Level cost, met het label wearing (Dave, 8 oktober 2026).
+      if (title !== 'Equip') expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Cheapest|Expected|Level cost)/)
       closeView(title)
     }
   })
 
   // Elke job die de app kent wordt doorgerekend (isComputed), dus elke job krijgt het advies. De tak zonder advies staat in app.notComputed.test.tsx.
-  it('geeft bij elke job (Thief, Warrior, Bowman, Magician) op elke kaart Advised en Your character, in die volgorde', () => {
+  it('geeft bij elke job (Thief, Warrior, Bowman, Magician) op elke kaart Cheapest en Your character, in die volgorde', () => {
     for (const job of ['warrior', 'bowman', 'magician'] as const) {
       cleanup()
       localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job }))
       render(<App />)
       for (const title of CARDS) {
-        expect(labels(title), job + ' ' + title).toEqual(['Advised', 'Wearing'])
+        expect(labels(title), job + ' ' + title).toEqual(['Cheapest', 'Profile'])
         expect(cardOf(title).querySelectorAll('.spot-head button'), job + ' ' + title).toHaveLength(0)
-        // Advised opent zonder te crashen en is alleen-lezen.
-        const d = openView(title, 'Advised')
+        // Cheapest opent zonder te crashen en is alleen-lezen.
+        const d = openView(title, 'Cheapest')
         expect(d.querySelectorAll('input, select, textarea'), job + ' ' + title).toHaveLength(0)
         closeView(title)
       }
     }
   })
 
-  it('maakt elke Advised-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
+  it('maakt elke Cheapest-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
     setUpAdvisedDiffers()
     for (const title of CARDS) {
-      const d = openView(title, 'Advised')
+      const d = openView(title, 'Cheapest')
       expect(d.querySelectorAll('input, select, textarea'), title).toHaveLength(0)
       // Alleen sluiten en, waar de kaart een rapport heeft, dat rapport.
       expect(buttonNames(d).filter((n) => n !== 'Sluiten' && !/^Uitleg/.test(n) && !/^Info( over |$)/.test(n) && !/^Stats van /.test(n) && !/^Equip: /.test(n) && !/^Report: /.test(n)), title).toEqual([])
@@ -4106,49 +3926,49 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     }
   })
 
-  it('toont achter Advised bij Monster de mob uit cheapestSettings en laat Your character op je eigen mob staan (#192)', () => {
+  it('toont achter Cheapest bij Monster de mob uit cheapestSettings en laat Your character op je eigen mob staan (#192)', () => {
     const r = setUpAdvisedDiffers()
     const advisedMob = r.drafts[0].name
     expect(advisedMob).not.toBe('Slime')
-    const d = openView('Monster', 'Advised')
+    const d = openView('Monster', 'Cheapest')
     expect(d.querySelector('.field-fixed')!.textContent).toContain(advisedMob)
     expect(d.textContent).not.toContain('Kies een mob')
     closeView('Monster')
-    const own = openView('Monster', 'Wearing')
+    const own = openView('Monster', 'Profile')
     expect((within(own).getByLabelText('De mob die je het meest killt') as HTMLSelectElement).value).toBe('Slime')
   })
 
-  it('toont achter Advised bij Skillpoints de skillpunten uit cheapestSettings en laat Your character op wat je zette (#192)', () => {
+  it('toont achter Cheapest bij Skillpoints de skillpunten uit cheapestSettings en laat Your character op wat je zette (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.changes.some((c) => c.kind === 'skills'), 'het advies zet skillpunten').toBe(true)
     const level = (d: HTMLElement, name: string) => d.querySelector(`[aria-label^="${name} level "]`)!.getAttribute('aria-label')!.replace(`${name} level `, '')
     const before = profileFields() as ProfileDraft
-    const d = openView('Skillpoints', 'Advised')
+    const d = openView('Skillpoints', 'Cheapest')
     expect(level(d, 'Lucky Seven')).toBe(r.profileDraft.luckySeven)
     expect(level(d, 'Nimble Body')).toBe(r.profileDraft.nimbleBody)
     expect(r.profileDraft.luckySeven).not.toBe(before.luckySeven)
     closeView('Skillpoints')
-    const own = openView('Skillpoints', 'Wearing')
+    const own = openView('Skillpoints', 'Profile')
     expect(level(own, 'Lucky Seven')).toBe(before.luckySeven)
     expect(level(own, 'Nimble Body')).toBe(before.nimbleBody)
     // Wat je character heeft is niet door het advies overschreven.
     expect(profileFields()).toEqual(before)
   })
 
-  it('toont achter Advised bij Potions de potions uit cheapestSettings en laat Your character op je eigen keuze (#192)', () => {
+  it('toont achter Cheapest bij Potions de potions uit cheapestSettings en laat Your character op je eigen keuze (#192)', () => {
     const r = setUpAdvisedDiffers()
     expect(r.potions.hp).not.toBe('White Potion')
-    const d = openView('Potions', 'Advised')
+    const d = openView('Potions', 'Cheapest')
     // De popup heet Useable, zoals het Use-tabblad in het spel; de kaart zelf blijft Potions (Dave, 7 oktober 2026).
     expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost: Useable')
-    // Zoals Level cost: Equip (Dave, 7 oktober 2026): het label "expected" op een eigen regel erboven, en een vraagteken naast de titel.
+    // Zoals Level cost (Dave, 7 oktober 2026): het label "expected" op een eigen regel erboven, en een vraagteken naast de titel.
     expect(d.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
     expect(d.querySelector('.stat-dialog-title-row .info-toggle')).not.toBeNull()
     expect(nameOf(advisedRow(d, 'HP'))).toContain(r.potions.hp)
     expect(nameOf(advisedRow(d, 'MP'))).toContain(r.potions.mp)
     expect(d.textContent).not.toContain('White Potion')
     closeView('Potions')
-    const own = openView('Potions', 'Wearing')
+    const own = openView('Potions', 'Profile')
     expect((within(own).getByLabelText('HP potions') as HTMLSelectElement).value).toBe('White Potion')
     expect(stored(POTION_CHOICE_KEY).hp).toBe('White Potion')
   })
@@ -4160,7 +3980,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       atLevel('20')
     }
     const n = (t: string | null | undefined) => Number((t ?? '').replace(/[^0-9]/g, ''))
-    /** De regels van de factuur van Advised in Level cost: label, aantal en meso. */
+    /** De regels van de factuur van Cheapest in Level cost: label, aantal en meso. */
     const invoiceLines = () =>
       [...document.querySelectorAll<HTMLElement>('section.total-cost .cheapest-cost tbody tr')].map((tr) => ({
         label: tr.querySelector('th')!.textContent!,
@@ -4174,10 +3994,10 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     }
     const rowsOf = (d: HTMLElement) => [...d.querySelectorAll<HTMLElement>('.advised-row')].map((r) => r.querySelector('.slot-name')!.textContent)
 
-    it('toont rijen HP, MP en Ammo met aantal en meso van de factuur van Advised, en een totaal dat de som is', () => {
+    it('toont rijen HP, MP en Ammo met aantal en meso van de factuur van Cheapest, en een totaal dat de som is', () => {
       setJob('thief')
       wearWeapon(IGOR.name)
-      const d = openView('Potions', 'Advised')
+      const d = openView('Potions', 'Cheapest')
       expect(d.querySelector('.advised-head')!.textContent).toContain('Useable')
       expect(rowsOf(d)).toEqual(['HP', 'MP', 'Ammo'])
       const lines = invoiceLines()
@@ -4198,7 +4018,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('opent met het vraagteken van een potion de stappen van de rekensom', () => {
       setJob('thief')
-      const d = openView('Potions', 'Advised')
+      const d = openView('Potions', 'Cheapest')
       const item = openItem(advisedRow(d, 'HP'))
       expect(item.querySelector('.item-verdict')!.textContent).toMatch(/^× [0-9.]+ dit level$/)
       expect(item.querySelector('.report-body')!.textContent!.length).toBeGreaterThan(0)
@@ -4210,7 +4030,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('titelt het vraagteken van een rij met aantal "Waarom <aantal>?" en laat de info-popup de naam van de potion houden', () => {
       setJob('thief')
-      const d = openView('Potions', 'Advised')
+      const d = openView('Potions', 'Cheapest')
       const row = advisedRow(d, 'HP')
       const qty = n(row.querySelector('.advised-qty')!.textContent)
       expect(qty).toBeGreaterThan(0)
@@ -4225,7 +4045,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('toont bij een Bowman de pijl met zijn eigen ATT en prijs per pijl in de info van de Ammo-rij', () => {
       setJob('bowman')
       wearWeapon('Balanche')
-      const d = openView('Potions', 'Advised')
+      const d = openView('Potions', 'Cheapest')
       const row = advisedRow(d, 'Ammo')
       const arrow = nameOf(row)
       expect(arrow).toContain('Arrows')
@@ -4240,7 +4060,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('toont bij een Warrior en een Magician geen Ammo-rij, alleen HP en MP', () => {
       for (const job of ['warrior', 'magician'] as const) {
         setJob(job)
-        const d = openView('Potions', 'Advised')
+        const d = openView('Potions', 'Cheapest')
         expect(rowsOf(d), job).toEqual(['HP', 'MP'])
         closeView('Potions')
       }
@@ -4249,9 +4069,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     const totalOf = (d: HTMLElement) => n(d.querySelector('.advised-total')!.textContent!.replace('Total cost', ''))
     const priceSum = (d: HTMLElement) => [...d.querySelectorAll('.advised-row .advised-price')].reduce((sum, p) => sum + n(p.textContent), 0)
 
-    it('laat het totaal de som van de getoonde rijen zijn en de potion- en munitieregels van de factuur van Advised', () => {
+    it('laat het totaal de som van de getoonde rijen zijn en de potion- en munitieregels van de factuur van Cheapest', () => {
       const check = (label: string) => {
-        const d = openView('Potions', 'Advised')
+        const d = openView('Potions', 'Cheapest')
         const sum = priceSum(d)
         expect(totalOf(d), label + ' som van de rijen').toBe(sum)
         const names = [...d.querySelectorAll<HTMLElement>('.advised-row')].filter((r) => r.querySelector('.slot-name')!.textContent !== 'Ammo').map((r) => nameOf(r))
@@ -4268,15 +4088,15 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       check('bowman')
     })
 
-    // De mob van het advies, zoals Advised: Monster hem toont: "Green Mushroom (lv 15)" zonder het level.
+    // De mob van het advies, zoals Cheapest: Monster hem toont: "Green Mushroom (lv 15)" zonder het level.
     const advisedMobName = () => {
-      const d = openView('Monster', 'Advised')
+      const d = openView('Monster', 'Cheapest')
       const name = d.querySelector('.field-fixed')!.textContent!.replace(/ \(lv \d+\)$/, '')
       closeView('Monster')
       return name
     }
 
-    it('zet onder elke Advised-popup de ondertitel "Lv. <n> <Job>", behalve in Level cost: Equip en Useable, die bovenaan onder "Based on:" Char (Lv. <n> <Job>) en Mob (<mob>) zetten; onder Your character geen', () => {
+    it('zet onder elke Cheapest-popup de ondertitel "Lv. <n> <Job>", behalve in Level cost en Useable, die bovenaan onder "Based on:" Char (Lv. <n> <Job>) en Mob (<mob>) zetten; onder Your character geen', () => {
       for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
         setJob(job)
         const who = totalCostWho('20', job)
@@ -4284,37 +4104,37 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         const mob = advisedMobName()
         expect(mob, job).not.toBe('—')
         for (const title of CARDS) {
-          const adv = openView(title, 'Advised')
+          const adv = openView(title, 'Cheapest')
           const basedOn = title === 'Equip' || title === 'Potions'
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
           expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
-          // Dezelfde mob als in Advised: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
+          // Dezelfde mob als in Cheapest: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
           // In Equip staat onder Char en Mob een derde rij, Equip, met het aantal stukken (Dave, 8 oktober 2026); die hoort niet bij deze controle.
           expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: \d+ items?$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
-          const own = openView(title, 'Wearing')
+          const own = openView(title, 'Profile')
           expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
-          // Alleen een Advised-popup is licht oranje (Dave, 7 oktober 2026).
+          // Alleen een Cheapest-popup is licht oranje (Dave, 7 oktober 2026).
           expect(own.classList.contains('advised-dialog'), job + ' ' + title + ' own kleur').toBe(false)
           closeView(title)
         }
       }
     })
 
-    it('zet in Your character van Level cost: Equip dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet actual en het label actual (Dave, 8 oktober 2026)', () => {
+    it('zet in Your character van Level cost dezelfde twee vakken onder "Based on:", met je eigen karakter en je eigen mob, data-sheet profile en het label actual (Dave, 8 oktober 2026)', () => {
       setJob('thief')
       const who = totalCostWho('20', 'thief')
       // Je eigen mob: de mob die je in Your character van Monster koos, niet die van het advies.
       fireEvent.click(viewButton('Monster'))
       chooseMob('Slime')
       closeView('Monster')
-      const d = openView('Equip', 'Wearing')
+      const d = openView('Equip', 'Profile')
       expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items?)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
-      expect(char.getAttribute('data-sheet')).toBe('actual')
-      expect(mob.getAttribute('data-based-on-mob')).toBe('Slime')
-      expect(mob.getAttribute('data-sheet')).toBe('actual')
+      expect(char.getAttribute('data-sheet')).toBe('profile')
+      expect(mob.getAttribute('data-based-on-monster')).toBe('Slime')
+      expect(mob.getAttribute('data-sheet')).toBe('profile')
       // Wat je zelf zette: geen uitleg waarom juist deze mob.
       expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
       // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label actual. Het heeft een eigen icoon, een persoon: getallen
@@ -4326,39 +4146,39 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(stats.querySelector('.title-tag')?.textContent).toBe('actual')
       expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])
-      expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
       fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
       // Het i-knopje bij de mob toont de stats van Slime.
       fireEvent.click(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }))
       const info = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob')).toBe('Slime')
-      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-monster')).toBe('Slime')
+      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
       expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
     })
 
-    it('toont in Your character van Level cost: Equip het vak Mob ook zonder gekozen mob, met een placeholder en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
+    it('toont in Your character van Level cost het vak Mob ook zonder gekozen mob, met een placeholder en zonder i-knopje, en daarna dezelfde mob als Monster in Your character (Dave, 8 oktober 2026)', () => {
       setJob('thief')
-      let d = openView('Equip', 'Wearing')
+      let d = openView('Equip', 'Profile')
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char).toBeTruthy()
       expect(mob.querySelector('.sr-only')?.textContent).toBe('Mob: ')
       expect(mob.querySelector('.based-on-value.placeholder')?.textContent).toBe('Nog geen mob gekozen')
       expect(mob.querySelector('button[aria-label^="Info over"]')).toBeNull()
-      expect(mob.hasAttribute('data-based-on-mob')).toBe(false)
+      expect(mob.hasAttribute('data-based-on-monster')).toBe(false)
       closeView('Equip')
       fireEvent.click(viewButton('Monster'))
       chooseMob('Slime')
       const shown = within(mobDialog()).getByLabelText<HTMLSelectElement>('De mob die je het meest killt').value
       closeView('Monster')
-      d = openView('Equip', 'Wearing')
+      d = openView('Equip', 'Profile')
       expect(d.querySelectorAll('.based-on .based-on-label')[1].querySelector('.based-on-value')?.textContent).toBe(shown)
     })
 
-    it('zet in Your character van Level cost: Equip een potlood naast de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Advised heeft ze niet (Dave, 8 oktober 2026)', () => {
+    it('zet in Your character van Level cost een potlood naast de vakken Char en Mob onder "Based on:" dat de popup van Ability points of Monster boven deze popup opent; Cheapest heeft ze niet (Dave, 8 oktober 2026)', () => {
       setJob('thief')
-      expect(openView('Equip', 'Advised').querySelector('.based-on .equip-edit[aria-label$=" wijzigen"]')).toBeNull()
+      expect(openView('Equip', 'Cheapest').querySelector('.based-on .equip-edit[aria-label$=" wijzigen"]')).toBeNull()
       closeView('Equip')
-      const d = openView('Equip', 'Wearing')
+      const d = openView('Equip', 'Profile')
       const [char, mob] = d.querySelectorAll<HTMLElement>('.based-on .based-on-label')
       // Het potlood staat in een eigen kolom naast het vak, in dezelfde rij (Dave, 8 oktober 2026).
       const [charRow, mobRow] = d.querySelectorAll<HTMLElement>('.based-on .based-on-row')
@@ -4387,16 +4207,16 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
       expect(ap.open).toBe(true)
       expect(ap.querySelector('.title-tag')?.textContent).toBe('edit')
-      expect(ap.querySelector('.stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(ap.querySelector('.stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
     })
 
-    it('zet achter de mob onder "Based on:" in Level cost: Equip een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
+    it('zet achter de mob onder "Based on:" in Level cost een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
-      const d = openView('Equip', 'Advised')
+      const d = openView('Equip', 'Cheapest')
       // Het vraagteken staat in het vak van de mob, achter het i-knopje, zonder .based-on-line eromheen (Dave, 8 oktober 2026).
       expect(d.querySelector('.based-on .based-on-line')).toBeNull()
-      const button = d.querySelector<HTMLElement>('.based-on .based-on-label[data-based-on-mob] > .info-toggle + .help-toggle')!
+      const button = d.querySelector<HTMLElement>('.based-on .based-on-label[data-based-on-monster] > .info-toggle + .help-toggle')!
       expect(button.getAttribute('aria-label')).toBe(`Uitleg bij ${mob}`)
       expect(button.getAttribute('aria-haspopup')).toBe('dialog')
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
@@ -4410,14 +4230,14 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet in het vak van de mob onder "Based on:" een i-knopje dat de stats van die mob toont, dezelfde regels als Advised: Monster (Dave, 7 oktober 2026)', async () => {
+    it('zet in het vak van de mob onder "Based on:" een i-knopje dat de stats van die mob toont, dezelfde regels als Cheapest: Monster (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const mob = advisedMobName()
       const lines = (d: HTMLElement) => [...d.querySelectorAll('.stat-line')].map((l) => l.textContent)
-      const advisedLines = lines(openView('Monster', 'Advised'))
+      const advisedLines = lines(openView('Monster', 'Cheapest'))
       closeView('Monster')
       expect(advisedLines.length).toBeGreaterThan(2)
-      const d = openView('Equip', 'Advised')
+      const d = openView('Equip', 'Cheapest')
       const button = d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!
       expect(button.getAttribute('aria-label')).toBe(`Info over ${mob}`)
       // De hele naam is klikbaar: hij staat in de knop, voor het i-icoon (Dave, 8 oktober 2026).
@@ -4428,7 +4248,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
       expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
-      // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Advised: Monster.
+      // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Cheapest: Monster.
       const level = MOBS.find((m) => m.name === mob)!.level
       expect(lines(popup)).toEqual([`Level${level}`, ...advisedLines])
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
@@ -4440,13 +4260,13 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('zet op elke popup en zijn .stat-dialog-body het pad van titels als data-popup, zodat je in de HTML ziet welke popup het is en waar hij in staat (Dave, 7 oktober 2026, #245)', () => {
       setJob('thief')
       const mob = advisedMobName()
-      const d = openView('Equip', 'Advised')
-      expect(d.getAttribute('data-popup')).toBe('Level cost: Equip (advised)')
-      expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Level cost: Equip (advised)')
+      const d = openView('Equip', 'Cheapest')
+      expect(d.getAttribute('data-popup')).toBe('Level cost (cheapest)')
+      expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Level cost (cheapest)')
       fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       const path = popup.getAttribute('data-popup')!
-      expect(path).toBe(`Level cost: Equip (advised) › Info over ${mob}`)
+      expect(path).toBe(`Level cost (cheapest) › Info over ${mob}`)
       expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe(path)
       // Geen twee open popups met hetzelfde pad: elke .stat-dialog-body is aan te wijzen.
       const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
@@ -4455,71 +4275,71 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       // Het i-knopje naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
       fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .info-toggle')!)
       const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(help.getAttribute('data-popup')).toBe('Level cost: Equip (advised) › Info')
+      expect(help.getAttribute('data-popup')).toBe('Level cost (cheapest) › Info')
       fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
     })
 
-    it('zet op de vakken onder "Based on:" data-based-on-character en data-based-on-mob, met data-sheet="advised", zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
+    it('zet op de vakken onder "Based on:" data-based-on-character en data-based-on-monster, met data-sheet="cheapest", zodat je in de HTML ziet welk vak je aanwijst (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
-      const d = openView('Equip', 'Advised')
+      const d = openView('Equip', 'Cheapest')
       const [char, mobRow] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
-      expect(char.hasAttribute('data-based-on-mob')).toBe(false)
-      expect(mobRow.getAttribute('data-based-on-mob')).toBe(mob)
+      expect(char.hasAttribute('data-based-on-monster')).toBe(false)
+      expect(mobRow.getAttribute('data-based-on-monster')).toBe(mob)
       expect(mobRow.hasAttribute('data-based-on-character')).toBe(false)
-      for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('advised')
+      for (const row of [char, mobRow]) expect(row.getAttribute('data-sheet')).toBe('cheapest')
       // De popup achter het i-knopje van de char zegt hetzelfde, zoals die van de mob.
       fireEvent.click(char.querySelector<HTMLElement>('.info-toggle')!)
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
       const body = stats.querySelector(':scope > .stat-dialog-body')!
-      expect(body.getAttribute('data-based-on-character')).toBe(char.getAttribute('data-based-on-character'))
-      expect(body.getAttribute('data-sheet')).toBe('advised')
+      expect(body.getAttribute('data-based-on-cheapest')).toBe(char.getAttribute('data-based-on-character'))
+      expect(body.getAttribute('data-sheet')).toBe('cheapest')
       fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
     })
 
-    it('zet data-based-on-mob op elke popup die info over een mob toont: het i-knopje onder "Based on:" en de Monster-popup, met data-sheet advised of actual (Dave, 7 oktober 2026)', () => {
+    it('zet data-based-on-monster op elke popup die info over een mob toont: het i-knopje onder "Based on:" en de Monster-popup, met data-sheet cheapest of profile (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       const mob = advisedMobName()
-      const d = openView('Equip', 'Advised')
+      const d = openView('Equip', 'Cheapest')
       fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
       const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .stat-dialog-body')!
-      expect(info.getAttribute('data-based-on-mob')).toBe(mob)
-      expect(info.getAttribute('data-sheet')).toBe('advised')
+      expect(info.getAttribute('data-based-on-monster')).toBe(mob)
+      expect(info.getAttribute('data-sheet')).toBe('cheapest')
       fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
-      const advised = openView('Monster', 'Advised').querySelector(':scope > .stat-dialog-body')!
-      expect(advised.getAttribute('data-based-on-mob')).toBe(mob)
-      expect(advised.getAttribute('data-sheet')).toBe('advised')
+      const advised = openView('Monster', 'Cheapest').querySelector(':scope > .stat-dialog-body')!
+      expect(advised.getAttribute('data-based-on-monster')).toBe(mob)
+      expect(advised.getAttribute('data-sheet')).toBe('cheapest')
       closeView('Monster')
       // In Your character de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
-      const worn = openView('Monster', 'Wearing')
+      const worn = openView('Monster', 'Profile')
       const saved = worn.querySelector<HTMLSelectElement>('select')!.value
-      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-mob') ?? '').toBe(saved)
-      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('actual')
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-monster') ?? '').toBe(saved)
+      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
       closeView('Monster')
     })
 
-    it('zet in elke Your character-popup data-based-on-character met het level en de job die je invulde en data-sheet="actual"; in Advised staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
+    it('zet in elke Your character-popup data-based-on-profile met het level en de job die je invulde en data-sheet="profile"; in Cheapest staat de char onder "Based on:" (Dave, 7 oktober 2026)', () => {
       setJob('thief')
       for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
-        const worn = openView(card, 'Wearing').querySelector(':scope > .stat-dialog-body')!
-        expect(worn.getAttribute('data-based-on-character')).toMatch(/^Lv\. \d+ Thief$/)
-        expect(worn.getAttribute('data-sheet')).toBe('actual')
+        const worn = openView(card, 'Profile').querySelector(':scope > .stat-dialog-body')!
+        expect(worn.getAttribute('data-based-on-profile')).toMatch(/^Lv\. \d+ Thief$/)
+        expect(worn.getAttribute('data-sheet')).toBe('profile')
         closeView(card)
-        const advised = openView(card, 'Advised').querySelector(':scope > .stat-dialog-body')!
-        expect(advised.hasAttribute('data-based-on-character')).toBe(false)
-        expect(advised.getAttribute('data-sheet')).toBe('advised')
+        const advised = openView(card, 'Cheapest').querySelector(':scope > .stat-dialog-body')!
+        expect(advised.hasAttribute('data-based-on-profile')).toBe(false)
+        expect(advised.getAttribute('data-sheet')).toBe('cheapest')
         closeView(card)
       }
     })
 
-    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Advised-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
+    it('zet achter de char onder "Based on:" een i-knopje dat het karakter van het advies opent in drie tabellen: Ability points en Skillpoints zoals hun Cheapest-popups, en Total stats zonder equipment (Dave, 7 oktober 2026)', async () => {
       setJob('thief')
       const lines = (d: Element, sel: string) => [...d.querySelectorAll(sel)].map((l) => l.textContent)
-      // Per tabel de regels van de Advised-popup van die kaart: de AP-regels zonder kop en de skills zonder de Beginner-groep, die de popup
+      // Per tabel de regels van de Cheapest-popup van die kaart: de AP-regels zonder kop en de skills zonder de Beginner-groep, die de popup
       // verbergt (Dave, 7 oktober 2026). Total stats volgt hieronder.
       const firstJobRows = (d: Element) =>
         [...d.querySelectorAll('.skill-group')].filter((g) => !g.querySelector('h3')!.textContent!.startsWith('Beginner')).flatMap((g) => lines(g, '.skill-row'))
@@ -4528,14 +4348,14 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         ['Skillpoints', firstJobRows],
       ] as const
       const want = tables.map(([title, pick]) => {
-        const got = pick(openView(title, 'Advised'))
+        const got = pick(openView(title, 'Cheapest'))
         closeView(title)
         expect(got.length, title).toBeGreaterThan(1)
         return got
       })
       const who = totalCostWho('20', 'thief')
       for (const card of ['Equip', 'Potions'] as const) {
-        const d = openView(card, 'Advised')
+        const d = openView(card, 'Cheapest')
         const button = d.querySelector<HTMLElement>('.based-on .info-toggle')!
         expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
         // De hele naam is klikbaar: hij staat in de knop (Dave, 8 oktober 2026).
@@ -4598,20 +4418,20 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     })
   })
 
-  it('toont achter Advised bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {
+  it('toont achter Cheapest bij Ability points de base AP uit cheapestSettings en bij Your character wat je zette (#192)', () => {
     const r = setUpAdvisedDiffers()
     const before = profileFields() as ProfileDraft
     expect(r.profileDraft.luk).not.toBe(before.luk)
     const base = (d: HTMLElement, label: string) => within(d).getByText(label, { selector: '.stat-line-name' }).closest('.stat-line')!.querySelector('.ap-base strong')!.textContent
-    const d = openView('Ability points', 'Advised')
+    const d = openView('Ability points', 'Cheapest')
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(d, k.toUpperCase()), k).toBe(r.profileDraft[k])
     closeView('Ability points')
-    const own = openView('Ability points', 'Wearing')
+    const own = openView('Ability points', 'Profile')
     for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(base(own, k.toUpperCase()), k).toBe(before[k])
     expect(profileFields()).toEqual(before)
   })
 
-  it('leidt Total stats achter Advised af van de base AP van het advies, en laat Your character op je eigen AP (#192)', () => {
+  it('leidt Total stats achter Cheapest af van de base AP van het advies, en laat Your character op je eigen AP (#192)', () => {
     const r = setUpAdvisedDiffers()
     const before = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const range = (draft: ProfileDraft) => {
@@ -4622,19 +4442,19 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     }
     const attack = (d: HTMLElement) => within(d).getByText('Attack', { selector: '.stat-line-name' }).closest('.stat-line')!.querySelector('strong')!.textContent
     expect(range(r.profileDraft)).not.toBe(range(before))
-    const d = openView('Total stats', 'Advised')
+    const d = openView('Total stats', 'Cheapest')
     expect(attack(d)).toBe(range(r.profileDraft))
     closeView('Total stats')
-    const own = openView('Total stats', 'Wearing')
+    const own = openView('Total stats', 'Profile')
     expect(attack(own)).toBe(range(before))
   })
 
-  it('zet het rapport van Equip, Skillpoints, Monster en Potions in de popup, in beide weergaven, en nooit in de kop (#192)', () => {
+  it('zet het rapport van Skillpoints, Monster en Potions in de popup, in beide weergaven, en nooit in de kop; Equip heeft er geen (#192; Dave, 8 oktober 2026)', () => {
     for (const title of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
       expect(cardOf(title).querySelector('.card-report'), title + ' dicht').toBeNull()
-      for (const view of ['Advised', 'Wearing'] as const) {
+      for (const view of ['Cheapest', 'Profile'] as const) {
         const d = openView(title, view)
-        if ((title === 'Equip' || title === 'Potions') && view === 'Advised') {
+        if (title === 'Equip' || (title === 'Potions' && view === 'Cheapest')) {
           expect(within(d).queryByRole('button', { name: /^Report/ })).toBeNull()
           closeView(title)
           continue
@@ -4646,32 +4466,32 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     }
     for (const title of ['Ability points', 'Total stats'] as const) {
-      for (const view of ['Advised', 'Wearing'] as const) {
+      for (const view of ['Cheapest', 'Profile'] as const) {
         expect(openView(title, view).querySelector('.card-report'), title + ' ' + view).toBeNull()
         closeView(title)
       }
     }
   })
 
-  it('toont bij Monster Advised zonder gekozen mob de goedkoopste mob, zonder te crashen (#192, #193)', () => {
+  it('toont bij Monster Cheapest zonder gekozen mob de goedkoopste mob, zonder te crashen (#192, #193)', () => {
     // Zonder mob gekozen stelt het advies er een voor (#193); Your character blijft leeg.
     const advised = cheapestSettings({ job: 'thief', gender: null, equipment: defaultEquipment(), drafts: [], profileDraft: DEFAULT_PROFILE, potionChoice: NO_POTION_CHOICE }).drafts[0]
     expect(advised).toBeDefined()
-    const d = openView('Monster', 'Advised')
+    const d = openView('Monster', 'Cheapest')
     expect(d.querySelector('.field-fixed')!.textContent).toContain(advised.name)
     expect(d.querySelector('select')).toBeNull()
     expect(within(d).getByRole('button', { name: 'Report: Monster' })).not.toBeNull()
   })
 
-  it('zet de focus na het sluiten van een Advised-popup terug op de knop Advised (#192)', async () => {
+  it('zet de focus na het sluiten van een Cheapest-popup terug op de knop Cheapest (#192)', async () => {
     for (const title of CARDS) {
-      const advised = within(cardOf(title)).getByRole('button', { name: 'Advised' })
+      const advised = within(cardOf(title)).getByRole('button', { name: 'Cheapest' })
       fireEvent.click(advised)
       closeView(title)
       await frame()
       expect(document.activeElement, title).toBe(advised)
-      // En bij Your character op zijn eigen knop, niet op Advised.
-      const own = within(cardOf(title)).getByRole('button', { name: 'Wearing' })
+      // En bij Your character op zijn eigen knop, niet op Cheapest.
+      const own = within(cardOf(title)).getByRole('button', { name: 'Profile' })
       fireEvent.click(own)
       closeView(title)
       await frame()
@@ -4679,20 +4499,21 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     }
   })
 
-  it('noemt de goedkoopste setup nergens meer Cheapest: Level cost zegt Advised in de kop en in de kolom van Difference (#192)', () => {
+  it('noemt de goedkoopste setup overal Cheapest en nergens meer Advised (Dave, 8 oktober 2026; in #192 was het andersom)', () => {
     setUpAdvisedDiffers()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
-    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
-    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Wearing', 'Advised', 'Difference'])
-    // Koppen, knoppen, kolomkoppen en namen van popups, met alle Advised-popups open.
-    for (const title of CARDS) openView(title, 'Advised')
-    fireEvent.click(within(card).getByRole('button', { name: 'Equip van Advised' }))
+    expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
+    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
+    // Koppen, knoppen, kolomkoppen en namen van popups, met alle Cheapest-popups open.
+    for (const title of CARDS) openView(title, 'Cheapest')
+    fireEvent.click(within(card).getByRole('button', { name: 'Equip van Cheapest' }))
     const named = [...document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, button, th, dialog, [aria-label], .stat-dialog-name')].flatMap((e) => [e.getAttribute('aria-label'), e.matches('dialog, [aria-label]') ? null : e.textContent]).filter((t): t is string => !!t)
     expect(named.length).toBeGreaterThan(20)
-    expect(named.filter((t) => /cheapest/i.test(t))).toEqual([])
+    expect(named.filter((t) => /advised/i.test(t))).toEqual([])
+    expect(named.filter((t) => /cheapest/i.test(t)).length).toBeGreaterThan(0)
   })
 
-  // Dave, 6 oktober 2026, #192: onder de factuur van Your character en van Advised zes icoonknoppen, een per kaart.
+  // Dave, 6 oktober 2026, #192: onder de factuur van Your character en van Cheapest zes icoonknoppen, een per kaart.
   describe('de zes kaartknoppen in Level cost', () => {
     const OWN = ['Equip', 'Skillpoints', 'Monster', 'Potions', 'Ability points', 'Total stats'] as const
     const part = (which: 'cost-ingame' | 'cheapest-cost') => document.querySelector<HTMLElement>(`section.total-cost .${which}`)!
@@ -4700,7 +4521,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
 
     it('zet onder elke factuur zes knoppen met een icoon, in de volgorde van de pagina, met een naam en een title', () => {
       setUpAdvisedDiffers()
-      for (const [which, label] of [['cost-ingame', 'Wearing'], ['cheapest-cost', 'Advised']] as const) {
+      for (const [which, label] of [['cost-ingame', 'Profile'], ['cheapest-cost', 'Cheapest']] as const) {
         const buttons = row(which)
         expect(buttons.map((b) => b.getAttribute('aria-label')), which).toEqual(OWN.map((t) => `${t} van ${label}`))
         for (const b of buttons) {
@@ -4713,33 +4534,33 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       }
     })
 
-    it('opent in Your character de popup van die kaart om te wijzigen, en in Advised zijn Advised-popup om te lezen', () => {
+    it('opent in Your character de popup van die kaart om te wijzigen, en in Cheapest zijn Cheapest-popup om te lezen', () => {
       setUpAdvisedDiffers()
       for (const title of OWN.filter((t) => t !== 'Equip')) {
-        fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Wearing` }))
+        fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Profile` }))
         const own = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
         expect(own.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + title))
         expect(own.querySelector('.equip-edit') ?? own.querySelector('select'), title + ' wijzigbaar').not.toBeNull()
         closeView(title)
-        fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Advised` }))
+        fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Cheapest` }))
         const adv = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
-        // De titel noemt de kaart, niet alleen Advised (Dave, 7 oktober 2026).
-        // Potions heet in Advised Useable, zoals het Use-tabblad in het spel; in Advised heet het Level cost, met het label expected (Dave, 7 oktober 2026).
-        const advisedTitle = title === 'Potions' ? 'Level cost: Useable' : `Advised: ${title}`
+        // De titel noemt de kaart, niet alleen Cheapest (Dave, 7 oktober 2026).
+        // Potions heet in Cheapest Useable, zoals het Use-tabblad in het spel; in Cheapest heet het Level cost, met het label expected (Dave, 7 oktober 2026).
+        const advisedTitle = title === 'Potions' ? 'Level cost: Useable' : `Cheapest: ${title}`
         expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + advisedTitle))
         expect(adv.getAttribute('aria-label')).toBe(title === 'Potions' ? `${advisedTitle} (expected)` : advisedTitle)
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
       }
-      fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: 'Equip van Wearing' }))
+      fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: 'Equip van Profile' }))
       expect(cardOf('Equip').querySelector('dialog.card-dialog .equip-edit, dialog.card-dialog [aria-label$=" wijzigen"]')).not.toBeNull()
     })
 
-    it('opent bij Equip van Advised de Advised-popup van de Equip-kaart, met de stukken om te kopen en Level cost, en geen eigen dialoog meer', () => {
+    it('opent bij Equip van Cheapest de Cheapest-popup van de Equip-kaart, met de stukken om te kopen en Level cost, en geen eigen dialoog meer', () => {
       setUpAdvisedDiffers()
-      fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Advised' }))
+      fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Cheapest' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost: Equip')
+      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
       expect(buy).not.toBeNull()
@@ -4753,7 +4574,7 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
     it('zet aria-expanded op de aangetikte knop en brengt de focus na sluiten terug naar die knop', async () => {
       setUpAdvisedDiffers()
       for (const which of ['cost-ingame', 'cheapest-cost'] as const) {
-        const label = which === 'cost-ingame' ? 'Wearing' : 'Advised'
+        const label = which === 'cost-ingame' ? 'Profile' : 'Cheapest'
         for (const title of OWN) {
           const b = within(part(which)).getByRole('button', { name: `${title} van ${label}` })
           fireEvent.click(b)
@@ -4779,9 +4600,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
   })
 })
 
-describe('noSavingText: Advised kost dit level meer door equipment (#192)', () => {
-  it('zegt hoeveel Advised dit level meer kost, en waarom, als het equipment koopt en negatief uitkomt', () => {
-    expect(noSavingText(-280, true)).toBe('Dit level kost Advised ± 280 meso meer: de equip die het koopt verdient zich pas terug tot je volgende upgrade.')
+describe('noSavingText: Cheapest kost dit level meer door equipment (#192)', () => {
+  it('zegt hoeveel Cheapest dit level meer kost, en waarom, als het equipment koopt en negatief uitkomt', () => {
+    expect(noSavingText(-280, true)).toBe('Dit level kost Cheapest ± 280 meso meer: de equip die het koopt verdient zich pas terug tot je volgende upgrade.')
   })
 
   it('houdt de gewone tekst zonder aankoop of zonder negatieve besparing', () => {
@@ -4812,37 +4633,37 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     expect(text.hidden).toBe(true)
   })
 
-  it('zet de lange alinea van de Equip-popup achter een vraagteken direct achter de titel Level cost: Equip, in een eigen popup', () => {
+  it('zet de lange alinea van de Equip-popup achter een vraagteken direct achter de titel Level cost, in een eigen popup', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Ribbon Pig')] }))
     render(<App />)
     const card = homeScreen().querySelector<HTMLElement>('section.equipment')!
-    fireEvent.click(within(card).getByRole('button', { name: 'Advised' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Cheapest' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
     // Een i-knopje, geen vraagteken: het zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
     expect(dialog.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
     const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .info-toggle')!
     // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
     const row = button.closest('.stat-dialog-title-row')!
-    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost: Equip')
-    // Dicht tot je tikt; dan een eigen popup, zoals elk vraagteken in Advised.
+    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
+    // Dicht tot je tikt; dan een eigen popup, zoals elk vraagteken in Cheapest.
     expect(button.getAttribute('aria-haspopup')).toBe('dialog')
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     fireEvent.click(button)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost: Equip')
+    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
     expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^De equip die zich terugverdient tot je volgende upgrade/)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft zijn eigen uitleg (Dave, 8 oktober 2026), over wat de kolommen daar betekenen.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
-    fireEvent.click(within(card).getByRole('button', { name: 'Wearing' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Profile' }))
     const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
     expect(worn.querySelector('.stat-dialog-head .info-toggle')).not.toBeNull()
   })
 })
 
-// Your character als tabel (Dave, 8 oktober 2026): dezelfde regels als Advised, met wat je draagt.
+// Your character als tabel (Dave, 8 oktober 2026): dezelfde regels als Cheapest, met wat je draagt.
 describe('equipment: Your character als tabel', () => {
   const billRow = (slot: string) => Array.from(cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')).find((r) => r.querySelector('.slot-name')?.textContent === slot)!
   const totalText = () => cards()[0].querySelector('.equip-total .meso-amount')!.textContent
@@ -4850,7 +4671,7 @@ describe('equipment: Your character als tabel', () => {
   it('toont de popup met de tag wearing en een regel per getoond slot', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
-    expect(dialog.getAttribute('aria-label')).toBe('Level cost: Equip (wearing)')
+    expect(dialog.getAttribute('aria-label')).toBe('Level cost (profile)')
     const names = Array.from(dialog.querySelectorAll('.advised-row .slot-name')).map((e) => e.textContent)
     expect(names.length).toBeGreaterThan(0)
     // De tabel heeft geen potloden meer (Dave, 8 oktober 2026): die staan in de popup achter het potlood bij Equip.
@@ -4859,7 +4680,7 @@ describe('equipment: Your character als tabel', () => {
     for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
   })
 
-  it('zet de winkelprijs in de regel met een lege Level, zoals Advised bij een stuk dat je houdt, en telt de bekende prijzen op in het totaal (Dave, 8 oktober 2026)', () => {
+  it('zet de winkelprijs in de regel met een lege Level, zoals Cheapest bij een stuk dat je houdt, en telt de bekende prijzen op in het totaal (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     expect(totalText()).toBe(compactMeso(0))
@@ -4889,16 +4710,16 @@ describe('equipment: Your character als tabel', () => {
     expect(billRow('Weapon').querySelector('.advised-price')!.textContent).toBe(compactMeso(14_100))
   })
 
-  const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Advised' }))
+  const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
   const equipRow = (dialog: HTMLElement) => dialog.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
 
-  it('zet onder "Based on:" een derde rij Equip: in Wearing met het aantal stukken, het toggle-knopje (actual) en het potlood; in Advised alleen lezen met het toggle-knopje expected (Dave, 8 oktober 2026)', () => {
+  it('zet onder "Based on:" een derde rij Equip: in Profile met het aantal stukken, het toggle-knopje (actual) en het potlood; in Cheapest alleen lezen met het toggle-knopje expected (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     // Nog niets gedragen: een placeholder zonder toggle, met het potlood.
     expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe('Nog niets gekozen')
-    expect(equipRow(dialog).getAttribute('data-sheet')).toBe('actual')
+    expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
     expect(within(dialog).queryByRole('button', { name: /^Equip: / })).toBeNull()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
@@ -4918,11 +4739,11 @@ describe('equipment: Your character als tabel', () => {
     expect([...popup.querySelectorAll('dt')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     closeDialogs()
-    // Advised: dezelfde rij, alleen lezen, met het label expected en zonder potlood.
+    // Cheapest: dezelfde rij, alleen lezen, met het label expected en zonder potlood.
     openAdvised()
     dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const advised = equipRow(dialog)
-    expect(advised.getAttribute('data-sheet')).toBe('advised')
+    expect(advised.getAttribute('data-sheet')).toBe('cheapest')
     expect(advised.getAttribute('data-based-on-equip')).toMatch(/^\d+ items?$/)
     expect(advised.parentElement!.querySelector('.equip-edit')).toBeNull()
     const adviceToggle = within(advised).getByRole('button', { name: /^Equip: / })
@@ -4960,7 +4781,7 @@ describe('equipment: Your character als tabel', () => {
     expect(within(dialog).getByRole('button', { name: 'Equip: 1 item' })).toBeTruthy()
   })
 
-  it('geeft in Wearing per slot hetzelfde oordeel als Advised: Upgraden waar Advised koopt, met "Upgrade" in Level en zonder potlood (Dave, 8 oktober 2026)', () => {
+  it('geeft in Profile per slot hetzelfde oordeel als Cheapest: Upgraden waar Cheapest koopt, met "Upgrade" in Level en zonder potlood (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     const bought = (dialog: HTMLElement) =>
       Object.fromEntries([...dialog.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body .advised-row')].map((r) => [r.querySelector('.slot-name')!.textContent, r.classList.contains('buy')]))
@@ -4991,23 +4812,23 @@ describe('equipment: Your character als tabel', () => {
       openAdvised()
       const advised = bought(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!)
       closeDialogs()
-      // Met een lege equip koopt Advised minstens het wapen, en Wearing noemt precies dezelfde slots.
+      // Met een lege equip koopt Cheapest minstens het wapen, en Profile noemt precies dezelfde slots.
       if (!worn) expect(Object.values(advised).some(Boolean)).toBe(true)
       expect(own).toEqual(advised)
     }
   })
 
-  it('geeft een slot dat je draagt en Advised niet vervangt het oordeel Houden met de uitleg van Advised, en een leeg slot zonder aankoop geen oordeel (Dave, 8 oktober 2026)', () => {
+  it('geeft een slot dat je draagt en Cheapest niet vervangt het oordeel Houden met de uitleg van Cheapest, en een leeg slot zonder aankoop geen oordeel (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     const dialog = () => cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const rows = () => [...dialog().querySelectorAll<HTMLElement>(':scope > .stat-dialog-body .advised-row')]
     const rowOf2 = (slot: string) => rows().find((r) => r.querySelector('.slot-name')!.textContent === slot)!
-    // Een leeg slot dat Advised niet koopt heeft niets om te houden: geen vraagteken.
+    // Een leeg slot dat Cheapest niet koopt heeft niets om te houden: geen vraagteken.
     const empty = rows().filter((r) => !r.classList.contains('buy'))
     expect(empty.length).toBeGreaterThan(0)
     for (const r of empty) expect(r.querySelector('.help-toggle'), r.querySelector('.slot-name')!.textContent!).toBeNull()
-    // Je draagt wat Advised ook kiest: dan houdt de app het, met de uitleg van Advised.
+    // Je draagt wat Cheapest ook kiest: dan houdt de app het, met de uitleg van Cheapest.
     closeDialogs()
     openAdvised()
     const advisedWeapon = [...cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')].find((r) => r.querySelector('.slot-name')!.textContent === 'Weapon')!.querySelector('.advised-name')!.getAttribute('title')!
@@ -5026,10 +4847,10 @@ describe('equipment: Your character als tabel', () => {
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Je draagt dit al\./)
   })
 
-  // Het oordeel van Wearing mag Advised nooit tegenspreken (Dave, 8 oktober 2026): ook niet bij een overall tegenover top en bottom, en niet bij munitie.
+  // Het oordeel van Profile mag Cheapest nooit tegenspreken (Dave, 8 oktober 2026): ook niet bij een overall tegenover top en bottom, en niet bij munitie.
   describe('slotVerdict', () => {
     const none: CheapestSlot = { worn: null, cheapest: null, changed: false, price: null, option: null }
-    it('zegt van een top of bottom die je draagt terwijl Advised een overall koopt Vervangen, en van een overall terwijl Advised top of bottom koopt', () => {
+    it('zegt van een top of bottom die je draagt terwijl Cheapest een overall koopt Vervangen, en van een overall terwijl Cheapest top of bottom koopt', () => {
       for (const slot of ['top', 'bottom'] as const) {
         const v = slotVerdict('thief', slot, { ...none, worn: 'Cloth Vest', changed: true }, false, true, true)!
         expect(v.word).toBe('Vervangen')
@@ -5041,13 +4862,13 @@ describe('equipment: Your character als tabel', () => {
       // Niets aan in dat slot: niets om te vervangen, dus geen oordeel.
       expect(slotVerdict('thief', 'top', none, false, true, false)).toBeNull()
     })
-    it('geeft een draagbaar stuk dat Advised leeg laat zonder dat een ander stuk het slot beslaat het eigen woord van Advised, niet Houden', () => {
+    it('geeft een draagbaar stuk dat Cheapest leeg laat zonder dat een ander stuk het slot beslaat het eigen woord van Cheapest, niet Houden', () => {
       const v = slotVerdict('thief', 'hat', { ...none, worn: 'Ghetto Beanie', changed: true }, false, false, true)!
       expect(v.kind).toBe('other')
       expect(v.word).toBe('Leeg laten')
       expect(v.text).toMatch(/^Leeg: de winkel heeft hier niets/)
     })
-    it('geeft een leeg Ammo-slot dat de factuur telt hetzelfde oordeel als Advised: Per stuk herladen (Thief) of kopen (Bowman), ook zonder stuk', () => {
+    it('geeft een leeg Ammo-slot dat de factuur telt hetzelfde oordeel als Cheapest: Per stuk herladen (Thief) of kopen (Bowman), ook zonder stuk', () => {
       expect(isCounted('ammo', none, 'Subi Throwing Stars')).toBe(true)
       expect(isCounted('ammo', none, null)).toBe(false)
       expect(isCounted('hat', none, 'Subi Throwing Stars')).toBe(false)
