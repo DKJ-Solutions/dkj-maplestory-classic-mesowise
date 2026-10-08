@@ -9,6 +9,7 @@ import {
   commitStat,
   databaseStat,
   defaultEquipment,
+  dropAboveLevel,
   EQUIPMENT_KEY,
   EQUIP_SLOTS,
   loadEquipment,
@@ -1880,5 +1881,30 @@ describe('shopPrice: de winkelprijs van wat je draagt (Your character, Shop)', (
     expect(shopPrice('shoes', shop('Leather Sandals'))).toBeUndefined()
     // Een naam die in geen lijst staat.
     expect(shopPrice('hat', shop('Bestaat Niet'))).toBeUndefined()
+  })
+})
+
+describe('dropAboveLevel: equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264)', () => {
+  // Red Pao (top, level 20, 32 DEF) en Steel Titans (claw, level 15, 13 ATT), met een eigen hoed die de app niet kent.
+  const eq = { ...defaultEquipment(), top: choosePick('top', defaultEquipment().top, 'Red Pao'), claw: choosePick('claw', defaultEquipment().claw, 'Steel Titans'), hat: { pick: OTHER, name: 'Mijn muts', stat: '5' } }
+  const at = (level: string) => ({ ...DEFAULT_PROFILE, level, wdef: '100', clawWatk: '13' })
+
+  it('haalt elk stuk boven je level uit zijn slot, met zijn DEF eraf en een lege hand voor een wapen', () => {
+    const out = dropAboveLevel(at('14'), eq, 'thief')
+    expect(out.dropped.sort()).toEqual(['claw', 'top'])
+    expect(out.equipment.top.pick).toBe(NONE)
+    expect(out.equipment.claw.pick).not.toBe('Steel Titans')
+    expect(out.profile.wdef).toBe(String(100 - 32))
+    expect(out.profile.clawWatk).toBe('0')
+    // Een eigen item kent de app niet: dat blijft.
+    expect(out.equipment.hat).toBe(eq.hat)
+  })
+
+  it('laat staan wat je op je level kunt dragen, en doet niets zonder heel level', () => {
+    const fits = dropAboveLevel(at('20'), eq, 'thief')
+    expect(fits.dropped).toEqual([])
+    expect(fits.equipment).toBe(eq)
+    expect(dropAboveLevel(at('17'), eq, 'thief').dropped).toEqual(['top'])
+    expect(dropAboveLevel(at(''), eq, 'thief').dropped).toEqual([])
   })
 })

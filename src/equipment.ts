@@ -627,6 +627,30 @@ export function changeEquipment(profile: ProfileDraft, eq: Equipment, slot: Equi
 }
 
 /**
+ * Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): een stuk dat een hoger level vraagt dan je character heeft (een Steel Titans
+ * van level 15 op level 10), gaat uit zijn slot, met zijn ATT of DEF eraf zoals bij een slot dat je zelf leegmaakt. Een wapen laat een lege hand
+ * achter: 0 weapon attack, zoals Cheapest met een leeg wapenslot rekent (#202). Een eigen item kent de app niet, dat blijft. `dropped` zegt welke
+ * slots leeg werden; zonder heel level verandert er niets.
+ */
+export function dropAboveLevel(profile: ProfileDraft, eq: Equipment, job: Job): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
+  // Een leeg of ongeldig levelveld is geen level 0: dan verandert er niets.
+  const text = profile.level.trim()
+  const level = text === '' ? NaN : Number(text)
+  if (!Number.isInteger(level) || level < 1) return { equipment: eq, profile, dropped: [] }
+  let out = { equipment: eq, profile }
+  const dropped: EquipSlot[] = []
+  for (const { slot } of EQUIP_SLOTS) {
+    const name = wornName(out.equipment[slot])
+    const needs = name === null ? undefined : itemLevel(slot, name)
+    if (needs === undefined || needs <= level) continue
+    out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], NONE), job)
+    if (slot === 'claw') out = { ...out, profile: { ...out.profile, clawWatk: '0' } }
+    dropped.push(slot)
+  }
+  return { ...out, dropped }
+}
+
+/**
  * De nieuwe invulling na een keuze in de zoekbalk. Een catalogusitem begint met de waarde uit de database.
  * Kies je een eigen item (met de getypte naam) terwijl de app wist wat je droeg, dan begint de stat op die
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.

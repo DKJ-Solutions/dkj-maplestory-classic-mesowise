@@ -1609,16 +1609,26 @@ describe('level-up en Back (#154)', () => {
     expect(profileFields().clawWatk).toBe(String(MEBA.watk))
   })
 
-  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: stats en equipment blijven', () => {
+  it('zet na de herstelde snapshot een tweede Back alleen het level een terug: de stats blijven, en een wapen boven het nieuwe level gaat uit je hand (Dave, 8 oktober 2026, #264)', () => {
     atLevel('20')
     openHomeEquipment()
-    pick(cards()[0], 'Weapon', IGOR.name)
+    pick(cards()[0], 'Weapon', 'Garnier')
     levelUp()
     fireEvent.click(backButton())
     const before = profileFields()
     fireEvent.click(backButton())
     expect(profileFields()).toEqual({ ...before, level: '19' })
-    expect(worn(cards()[0], 'Weapon')).toBe(IGOR.name)
+    expect(worn(cards()[0], 'Weapon')).toBe('Garnier')
+    // Steel Igor vraagt level 20: op level 19 kun je hem niet dragen, dus hij gaat uit je hand, met een lege hand (0 ATT).
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Weapon', IGOR.name)
+    levelUp()
+    fireEvent.click(backButton())
+    fireEvent.click(backButton())
+    expect(profileFields().level).toBe('19')
+    expect(worn(cards()[0], 'Weapon')).toBeNull()
+    expect(profileFields().clawWatk).toBe('0')
   })
 
   it('leest de snapshot synchroon: Level up en meteen Back in één stap zet het profiel terug', () => {
@@ -1798,24 +1808,25 @@ describe('Auto assign (#157)', () => {
     expect(headingText()).toBe('Ability points(0)0 AP te verdelen')
   })
 
-  it('te weinig AP voor het equipment: er wordt niets geschreven en de melding zegt waarom, het (n) blijft staan', () => {
-    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
+  it('haalt een wapen boven je level uit je hand (Dave, 8 oktober 2026, #264), zodat Auto assign daarna gewoon invult in plaats van "te weinig AP"', () => {
+    // Steel Igor vraagt lv 20: je draagt hem op lv 20 en zakt dan terug naar lv 9. Vroeger vroeg hij daar meer AP dan je had (de melding staat in
+    // autoFillAp.test.ts); nu kun je hem op lv 9 niet dragen.
     atLevel('20')
     wear(IGOR.name)
     atLevel('9')
-    const before = { ...profileFields() }
+    openHomeEquipment()
+    expect(worn(cards()[0], 'Weapon')).toBeNull()
+    closeDialogs()
     fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
-    expect(screen.getByText('Je level geeft te weinig AP voor je equipment: je hebt er 65 en je equipment vraagt er 73. Er is niets ingevuld.')).toBeTruthy()
-    const after = profileFields()
-    for (const k of ['str', 'dex', 'int', 'luk'] as const) expect(after[k]).toBe(before[k])
+    expect(screen.queryByText(/Er is niets ingevuld/)).toBeNull()
   })
 
   it('past de speler daarna een stat aan, dan verdwijnt de melding van een mislukte poging', () => {
-    // Steel Igor vraagt lv 20, dus je draagt hem eerst op lv 20 en zakt dan terug naar lv 9 (65 AP) waar hij te veel vraagt.
-    atLevel('20')
-    wear(IGOR.name)
-    atLevel('9')
+    // Een mislukte poging: zonder geldig level vult Auto assign niets in.
+    cleanup()
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...DEFAULT_PROFILE, level: '' } }))
+    render(<App />)
     fireEvent.click(viewButton('Ability points'))
     fireEvent.click(fillButton())
     expect(screen.queryByText(/Er is niets ingevuld/)).not.toBeNull()

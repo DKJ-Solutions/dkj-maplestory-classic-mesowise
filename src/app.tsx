@@ -13,7 +13,7 @@ import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, dropAboveLevel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawUpgradeAdvice } from './clawUpgrade'
@@ -4043,6 +4043,14 @@ export function App() {
     equipmentRef.current = next
     setEquipment(next)
   }
+  // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zakt je level onder dat van een stuk, of staat zo'n stuk al in de opslag,
+  // dan gaat het uit zijn slot. Pas na de render, zodat het ook geldt voor wat bij het openen is geladen.
+  useEffect(() => {
+    const out = dropAboveLevel(profileRef.current, equipmentRef.current, job)
+    if (out.dropped.length === 0) return
+    writeEquipment(out.equipment)
+    writeProfile(() => out.profile)
+  }, [profileDraft.level, equipment, job])
   const setPendingFor = (slot: EquipSlot, text: string | undefined) => {
     const next = { ...pendingRef.current }
     if (text === undefined) delete next[slot]
