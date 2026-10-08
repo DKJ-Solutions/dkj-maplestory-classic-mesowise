@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { baseAccuracy, baseAvoid } from './data/thief'
 import { warriorAccuracy } from './data/warrior'
-import { expectedStat, statBreakdown } from './expectedStats'
+import { expectedStat, statBreakdown, statFormulaSource } from './expectedStats'
 import { DEFAULT_PROFILE } from './profile'
 
 describe('expectedStat', () => {
@@ -109,5 +109,15 @@ describe('statBreakdown', () => {
     expect(statBreakdown('luk', DEFAULT_PROFILE, 'thief')).toBeUndefined()
     expect(statBreakdown('avoid', { ...DEFAULT_PROFILE, dex: '' }, 'thief')).toBeUndefined()
     expect(statBreakdown('avoid', { ...DEFAULT_PROFILE, int: 'x' }, 'magician')).toBeUndefined()
+  })
+})
+
+describe('statFormulaSource: waar de formule van Accuracy en Evasion vandaan komt (Dave, 8 oktober 2026)', () => {
+  it('geeft per job een MeowDB-bron voor Accuracy, één voor Avoid, en niets voor een stat zonder formule', () => {
+    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
+      expect(statFormulaSource('accuracy', job)?.url).toMatch(/^https:\/\/meowdb\.com\//)
+      expect(statFormulaSource('avoid', job)?.url).toMatch(/^https:\/\/meowdb\.com\//)
+    }
+    expect(statFormulaSource('hp', 'thief')).toBeUndefined()
   })
 })

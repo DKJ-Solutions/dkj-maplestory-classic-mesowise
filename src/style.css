@@ -256,6 +256,17 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .app-question { margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
   background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 0.75rem; }
 .app-question strong { color: var(--accent); white-space: nowrap; }
+/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): een kaartkop "Level cost" zoals de andere kaarten, en daaronder,
+   met de ruimte van de knoppen van een kaart (.view-actions), twee even brede knoppen: links Advised in de accenttint van zijn deel in
+   Level cost, rechts Wearing in grijs, zoals dat deel. */
+.level-cost { padding: 0; overflow: hidden; }
+.level-cost-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; padding: 0 1rem 1rem; }
+.level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
+  border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
+.level-cost-btn.level-cost-advised { --part: var(--accent); }
+.level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.level-cost-total { font-size: 1.0625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.level-cost-total.cost { color: var(--cost); }
 .level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { position: relative; width: 100%; height: 36px; border-radius: 0.25rem; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
@@ -801,6 +812,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .info-toggle .info-dot { fill: var(--info-glyph); }
 .info-toggle .info-stem { stroke: var(--info-glyph); }
 .advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
+/* Het i-knopje direct achter de naam van Accuracy en Evasion in je profiel (Dave, 8 oktober 2026), in de tekstkleur, zoals achter een stuk. */
+.stat-line-name:has(> .info-toggle) { display: flex; align-items: center; gap: 0; }
+.stat-line-name > .info-toggle, .skill-name.with-info > .info-toggle { color: var(--text); }
+.skill-name.with-info { display: flex; flex-wrap: wrap; align-items: center; }
 .based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }
@@ -822,7 +837,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-dialog .equip-value-num, .item-dialog .ability-line .ap-total .equip-value-num { font-size: 0.875rem; }
 .item-dialog .skill-row > span:first-child { font-size: 0.9375rem; }
 /* Wat een skill kost en geeft staat in Skillpoints zelf; hier alleen de naam en het level, zoals een factuurregel. */
-.item-dialog .skill-row > span:first-child .skill-mp { display: none; }
+.item-dialog .skill-row > span:first-child > .skill-mp { display: none; }
 /* Diezelfde regels in de uitleg achter het vraagteken, onder de tekst. */
 .skill-mp.skill-why { margin-top: 0.5rem; font-size: 0.875rem; }
 /* Het karakter achter "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points, Skillpoints en Total stats, elk met een kop
@@ -833,12 +848,23 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Ability points: Base + Extra = Totaal, en daarachter de kolom van het vraagteken. Alle drie de getallen staan in het midden van hun kolom, onder
    hun kopje (Dave, 7 oktober 2026). */
 .item-dialog .stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 2.25rem 0.5rem 2.25rem 0.5rem 3rem 2.25rem; }
+/* Met potloden (je profiel onder "Based on:", Dave, 8 oktober 2026) is de laatste kolom zo breed als het potlood, ook in de kop van de tabel. */
+.item-dialog .char-table:has(.equip-edit) .stat-line.ability-line { grid-template-columns: minmax(0, 1fr) 2.25rem 0.5rem 2.25rem 0.5rem 3rem var(--control-h); }
+.item-dialog .char-table:has(.equip-edit) .skill-row, .item-dialog .char-table:has(.equip-edit) .stat-line:not(.ability-line) { grid-template-columns: minmax(0, 1fr) 3rem var(--control-h); }
 .item-dialog .ability-head { min-height: 0; }
 .item-dialog .ability-line .equip-value { justify-content: center; }
 /* Skillpoints en Total stats net zo (Dave, 7 oktober 2026): het getal in het midden van een kolom van 3rem, even breed als die van het Totaal
    erboven, zodat de getallen van alle drie de tabellen onder elkaar staan. */
 .char-table .stat-line:not(.ability-line), .char-table .skill-row { grid-template-columns: minmax(0, 1fr) 3rem 2.25rem; }
 .char-table .stat-line:not(.ability-line) .equip-value, .char-table .skill-row .equip-value { justify-content: center; }
+/* De Equip-popup onder "Based on:" (Dave, 8 oktober 2026): dezelfde tabel als Char, in twee duidelijke kolommen, Slot en Item, met hun namen als kop.
+   Een stuk heeft een naam en geen getal, dus Item krijgt de rest van de breedte en de naam staat links in zijn kolom. */
+.item-dialog .char-table-equip .stat-line:not(.ability-line), .char-table-equip .equip-head { display: grid; grid-template-columns: minmax(0, 1fr) 3rem; column-gap: 0.75rem; }
+/* In Profile een derde kolom met het potlood, zo breed als het potlood, zoals in de popup van Char (Dave, 8 oktober 2026). */
+.item-dialog .char-table-equip:has(.equip-edit) .stat-line:not(.ability-line), .char-table-equip:has(.equip-edit) .equip-head { grid-template-columns: minmax(0, 1fr) 3rem var(--control-h); }
+/* De tweede kolom, de ATT of DEF van het stuk, in het midden van zijn kolom zoals de getallen van Char (Dave, 8 oktober 2026). */
+.item-dialog .char-table-equip .stat-line:not(.ability-line) .equip-value.equip-stat, .char-table-equip .equip-head > :last-child { justify-content: center; text-align: center; white-space: nowrap; }
+.char-table-equip .stat-line .equip-value-num { overflow-wrap: anywhere; }
 /* Base en Extra wijken af van het Totaal (Dave, 7 oktober 2026): gewoon gewicht in grijs, het Totaal vet in de tekstkleur. */
 .item-dialog .ability-line .ap-base strong, .item-dialog .ability-line .ap-extra strong { font-weight: 400; color: var(--muted); }
 /* Het totaal als laatste regel van de factuur (Dave, 7 oktober 2026): hetzelfde raster als de rijen, zodat het bedrag rechts gelijk staat
