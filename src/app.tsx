@@ -110,6 +110,19 @@ const EXPECTED_ICON = (
   </svg>
 )
 
+/**
+ * Het icoon van een popup met je eigen getallen in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
+ * een persoon erin, hoofd en schouders: jouw eigen getallen, die je zelf zet. Het lijkt in niets op de i, de ≈ of het potlood ernaast; gekozen uit
+ * zeven ontwerpen, nadat schuifjes afvielen (Dave, 8 oktober 2026).
+ */
+const ACTUAL_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <circle class="info-dot" cx="12" cy="8.9" r="2.6" />
+    <path class="info-dot" d="M6.9 17.4Q6.9 13.2 12 13.2Q17.1 13.2 17.1 17.4Z" />
+  </svg>
+)
+
 /** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised uitlegt of je een stuk koopt (Dave, 7 oktober 2026). */
 const QUESTION_ICON = (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1679,17 +1692,18 @@ const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
 /**
- * Bovenaan Total cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), naast
- * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
- * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
+ * Bovenaan Total cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
+ * tabel: een rij per vak, onder elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een
+ * vraagteken achter de mob dat zegt waarom juist die. In Wearing een tweede kolom met het potlood van die rij (Dave, 8 oktober 2026). Het staat in de
+ * popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
 function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
   const { stats, sheet } = props
   // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
   const advised = sheet === 'advised'
-  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood achter elk vak (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
+  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
   const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
-    <button type="button" class="info-toggle" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
+    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
     </button>
   )
@@ -1701,40 +1715,45 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
-            <span class="sr-only">Char: </span>
-            {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
-                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
-                getallen: dan het i-icoon en het label actual. */}
-            {stats ? (
-              <PopupButton icon={advised ? EXPECTED_ICON : INFO_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
-                {stats}
-              </PopupButton>
-            ) : (
-              <span class="based-on-value">{props.who}</span>
-            )}
+          <div class="based-on-row">
+            <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
+              <span class="sr-only">Char: </span>
+              {/* Het knopje bij het karakter: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
+                  popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
+                  het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
+                  getallen: dan het persoon-icoon (ACTUAL_ICON) en het label actual; de i blijft voor vaste info. */}
+              {stats ? (
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
+                  {stats}
+                </PopupButton>
+              ) : (
+                <span class="based-on-value">{props.who}</span>
+              )}
+            </div>
             {props.edit && pencil('Char', 'ap', props.edit.char)}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
         {/* In Wearing staat het vak er altijd (Dave, 8 oktober 2026): zonder gekozen mob leeg, met alleen het potlood; een vraagteken alleen in Advised. */}
-        <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
-          <span class="sr-only">Mob: </span>
-          {mobDef ? (
-            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
-              {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
-              <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
-              {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
-            </PopupButton>
-          ) : (
-            <span class="based-on-value">{props.mob}</span>
-          )}
-          {advised && props.mob !== null && (
-            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-              <p class="item-why">{mobWhy(props.mob)}</p>
-            </PopupButton>
-          )}
+        <div class="based-on-row">
+          <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
+            <span class="sr-only">Mob: </span>
+            {mobDef ? (
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
+                {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+                <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
+                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+              </PopupButton>
+            ) : (
+              // Zonder gekozen mob (Wearing) zegt het vak dat je er nog een kiest, met het potlood ernaast (Dave, 8 oktober 2026).
+              props.mob === null ? <span class="based-on-value placeholder">Nog geen mob gekozen</span> : <span class="based-on-value">{props.mob}</span>
+            )}
+            {advised && props.mob !== null && (
+              <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+                <p class="item-why">{mobWhy(props.mob)}</p>
+              </PopupButton>
+            )}
+          </div>
           {props.edit && pencil('Mob', 'mob', props.edit.mob)}
         </div>
       </div>
@@ -1860,16 +1879,16 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
  * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
  * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level; met `stat` (Your character) staat de tweede kolom voor de stat van het stuk.
  */
-function BillHead(props: { item: string; qty?: boolean; level?: boolean; stat?: string }) {
-  // Met `stat` (Your character, Dave, 8 oktober 2026) staat een kolom met de stat van het stuk waar Advised "Level" heeft.
-  const wide = props.level || props.stat !== undefined
+function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
+  // Your character heeft dezelfde kolommen als Advised, ook Level (Dave, 8 oktober 2026).
+  const wide = props.level
   return (
     <div class={['advised-head', props.qty && 'with-qty', wide && 'with-level'].filter(Boolean).join(' ')} aria-hidden="true">
       <span>Slot</span>
       <span>{props.item}</span>
       {props.qty && <span class="advised-head-qty">Qty</span>}
       <span class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</span>
-      {wide && <span class="advised-head-level">{props.stat ?? 'Level'}</span>}
+      {wide && <span class="advised-head-level">Level</span>}
     </div>
   )
 }
@@ -1925,18 +1944,18 @@ function MesoAmount(props: { n: number }) {
  * vraagteken (in Your character vijf: Shop en Stat, met het potlood van het slot (`action`) in plaats van het vraagteken). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; stat?: string; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
   const title = props.name ?? props.slot
-  // Met `stat` (Your character, Dave, 8 oktober 2026) staat in de tweede bedragkolom de stat van het stuk, een getal zonder muntje, en achteraan in plaats
-  // van het vraagteken `action`: het potlood dat het slot opent.
-  const wide = props.level !== undefined || props.stat !== undefined
+  // Met `action` (Your character, Dave, 8 oktober 2026) staat achteraan in plaats
+  // van het vraagteken het potlood dat het slot opent.
+  const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
   const price = (
     <>
       <span class="advised-price">{amount(props.price)}</span>
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
-      {wide && <span class="advised-level">{props.stat ?? amount(props.level ?? null)}</span>}
+      {wide && <span class="advised-level">{amount(props.level ?? null)}</span>}
     </>
   )
   const last = props.action ?? (
@@ -2302,28 +2321,26 @@ function EquipmentCard(props: {
       </StatDialog>
     )
   }
-  // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels als die van Advised (BillRow), met wat je draagt: de winkelprijs onder Shop en de stat
-  // die telt (ATT of DEF) onder de kolom ernaast; het potlood staat waar Advised zijn vraagteken heeft en opent het slot.
+  // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels en kolommen als die van Advised (BillRow), met wat je draagt: de winkelprijs onder
+  // Shop en een lege Level, want wat je al draagt kost dit level niets, net als een stuk dat Advised je laat houden; het potlood staat waar Advised zijn
+  // vraagteken heeft en opent het slot.
   const wornRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const price = shopPrice(slot, entry)
-    const value = wornStat(slot, entry)
     const label = slotLabel(slot)
-    // Een gecorrigeerde stat krijgt het accent van de popup (tone buy), zoals bij Advised het bedrag van wat je koopt.
-    const corrected = statOverride(slot, entry) !== undefined && databaseStat(slot, entry) !== undefined
     return (
       <BillRow
         key={slot}
-        tone={name === null ? 'empty' : corrected ? 'buy' : ''}
+        tone={name === null ? 'empty' : ''}
         slot={label}
         name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
         fullName={name ?? undefined}
         facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
         price={price ?? null}
-        stat={name === null ? '' : String(value ?? '?')}
+        level={null}
         action={
-          <button ref={(el) => { pencils.current[slot] = el }} type="button" class="help-toggle" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
+          <button ref={(el) => { pencils.current[slot] = el }} type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
             {PENCIL_ICON}
           </button>
         }
@@ -2332,7 +2349,7 @@ function EquipmentCard(props: {
   }
   const wornTable = (
     <>
-      <BillHead item="Equip" stat="Stat" />
+      <BillHead item="Equip" level />
       {slots.map(wornRow)}
       <BillTotal total={slots.reduce((sum, slot) => sum + (shopPrice(slot, props.equipment[slot]) ?? 0), 0)} wide />
       {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
