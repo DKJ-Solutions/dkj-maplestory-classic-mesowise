@@ -3489,10 +3489,10 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // De formule met je eigen getallen staat in de info-popup van Max en Min (Dave, 8 oktober 2026).
     expect(rows[0].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(1 \+ \([\d.]+ LUK × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
     expect(rows[1].calc).toMatch(/^[\d,]+ × [\d.]+ W\.ATT × \(0,8 \+ \([\d.]+ LUK × [\d,]+ × [\d,]+ \+ [\d.]+ \(STR \+ DEX\)\) \/ 100\)$/)
-    // Onder de twee deelvragen de eindformule, altijd zichtbaar: stars per kill × kills = het aantal op de factuur; daaronder de kosten (Dave, 8 oktober 2026).
+    // Bovenaan de eindformule, altijd zichtbaar: stars per kill × kills = het aantal op de factuur; daaronder de twee deelvragen (Dave, 8 oktober 2026).
     const summary = dialog.querySelector<HTMLElement>('.why-summary')!
-    expect(summary.previousElementSibling?.getAttribute('aria-label')).toMatch(/^Waarom [\d.,]+ kills\?$/)
-    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe('Kosten')
+    expect(summary.previousElementSibling).toBeNull()
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toMatch(/^Waarom [\d.,]+ stars per kill\?$/)
     const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
     expect(terms).toEqual([rows[5].result, rows[8].result, qty])
     expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual(['stars per kill', 'kills', 'stars'])

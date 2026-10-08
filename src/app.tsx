@@ -3385,8 +3385,8 @@ const killsRows = (w: { mob: string; expToNext: number; expPerKill: number; kill
 ]
 
 /**
- * De eindformule onderaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
- * getal wat het is. De blokken erboven werken elk getal uit. Is de uitkomst naar boven afgerond, dan staat dat eronder.
+ * De eindformule bovenaan een uitleg (Dave, 8 oktober 2026): hoe het aantal op de factuur ontstaat, in één regel en altijd zichtbaar, met onder elk
+ * getal wat het is. De blokken eronder werken elk getal uit, bij de stars als deelvraag per getal. Is de uitkomst naar boven afgerond, dan staat dat eronder.
  */
 function WhySummary(props: { terms: readonly [{ value: string; unit: string }, '×' | '÷', { value: string; unit: string }]; result: { value: string; unit: string }; exact: number; qty: number }) {
   const [a, op, b] = props.terms
@@ -3438,13 +3438,13 @@ function PotionSteps(props: { label: string; qty: number; w: PotionWhy }) {
   ]
   return (
     <>
-      <WhyTable rows={rows} />
       <WhySummary
         terms={[{ value: nfInt.format(w.need), unit: `${unit} nodig` }, '÷', { value: nf.format(w.restores), unit: `${unit} per potion` }]}
         result={{ value: nfInt.format(props.qty), unit: 'potions' }}
         exact={w.exact}
         qty={props.qty}
       />
+      <WhyTable rows={rows} />
       {w.kind === 'hp' && (
         <Help>
           Hoe vaak een mob je aanraakt, is een aanname zonder bron ({nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill, maal zijn raakkans op jou). Zegt het
@@ -3491,7 +3491,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
       ]
     : []
   // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel stars per kill, en waarom zoveel kills. Elk blok eindigt
-  // met zijn antwoord, uitgelicht; daaronder de eindformule die de twee antwoorden vermenigvuldigt, en als laatste wat herladen kost.
+  // met zijn antwoord, uitgelicht; bovenaan de eindformule die de twee antwoorden vermenigvuldigt, en als laatste wat herladen kost.
   const pieces = arrows ? 'pijlen' : 'stars'
   const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
@@ -3521,13 +3521,13 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   ]
   return (
     <>
-      <WhyTable rows={rows} />
       <WhySummary
         terms={[{ value: nfInt.format(w.perKill), unit: `${pieces} per kill` }, '×', { value: nf3.format(w.kills), unit: 'kills' }]}
         result={{ value: nfInt.format(props.qty), unit: pieces }}
         exact={w.exact}
         qty={props.qty}
       />
+      <WhyTable rows={rows} />
       <WhyTable rows={costs} />
     </>
   )
