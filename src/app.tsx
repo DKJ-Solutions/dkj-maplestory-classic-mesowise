@@ -2389,7 +2389,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title="Total cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )

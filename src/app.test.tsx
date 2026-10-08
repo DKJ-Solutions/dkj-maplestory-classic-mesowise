@@ -683,7 +683,7 @@ describe('equipment: de claw past het profiel aan', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
     expect(dialog.open).toBe(true)
-    expect(dialog.getAttribute('aria-label')).toBe('Equip (wearing)')
+    expect(dialog.getAttribute('aria-label')).toBe('Total cost: Equip (wearing)')
     expect(within(dialog).getByRole('button', { name: 'Weapon wijzigen' })).toBeTruthy()
     expect(within(cards()[0]).queryByRole('button', { name: 'Inklappen' })).toBeNull()
   })
@@ -4001,7 +4001,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       closeView(title)
       fireEvent.click(own)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['false', 'true'])
-      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Advised|Expected|Total cost)/)
+      // Equip heet in beide weergaven Total cost: Equip, met het label wearing (Dave, 8 oktober 2026).
+      if (title !== 'Equip') expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Advised|Expected|Total cost)/)
       closeView(title)
     }
   })
@@ -4677,7 +4678,7 @@ describe('equipment: Your character als tabel', () => {
   it('toont de popup met de tag wearing en een regel per getoond slot', () => {
     openHomeEquipment()
     const dialog = cards()[0].querySelector('dialog.card-dialog') as HTMLDialogElement
-    expect(dialog.getAttribute('aria-label')).toBe('Equip (wearing)')
+    expect(dialog.getAttribute('aria-label')).toBe('Total cost: Equip (wearing)')
     const names = Array.from(dialog.querySelectorAll('.advised-row .slot-name')).map((e) => e.textContent)
     expect(names.length).toBeGreaterThan(0)
     for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
