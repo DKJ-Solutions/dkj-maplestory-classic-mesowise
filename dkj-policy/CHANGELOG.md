@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**3 / 8 minor entries** <!-- pending-tally -->
+**4 / 9 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/worn-equip-table · 20261008-074325Z
+
+Internal: the Equip table parts (`BillHead`, `BillRow`, `BillTotal`) now serve both popups, and a shared `shopItem` lookup feeds the shop price and the stat requirements.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+"Your character" is now called "Wearing". In the Equip card it shows what you wear as "Total cost: Equip" in the same compact table as Advised, in blue: per slot the item, its shop price and its ATT or DEF, with the total below, and "Based on:" your own character and mob, each with a pencil to change them right there. A pencil per row opens that slot to change the item or correct its stat, and every popup where you change something says "edit" above its title. Neither popup scrolls sideways on a phone.
+
+**Score:** 3
+
+#### Pull Request
+
+Equip popup Your character as the same compact table as Advised, labelled wearing, without horizontal scroll
+
+[PR #254](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/254)
+
+---
 
 ### DEPLOY: app/remove-report-card · 20261008-073655Z
 
