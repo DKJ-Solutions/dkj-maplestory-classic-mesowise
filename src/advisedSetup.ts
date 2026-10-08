@@ -5,7 +5,7 @@ import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { dropAboveLevel, EQUIP_SLOTS, isEmptyEntry, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { EQUIP_SLOTS, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -73,8 +73,8 @@ export function freshStart(user: CheapestInput): CheapestInput {
     level: user.profileDraft.level,
     hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
   }
-  // Een stuk dat je op dit level nog niet kunt dragen, telt niet mee (#264): Cheapest kiest er zelf iets voor.
-  const { equipment, profile: profileDraft } = dropAboveLevel(start, user.equipment, user.job)
+  // Wat je echt draagt (wearableSetup): een stuk boven je level telt niet mee (#264), en een leeg top-, bottom- of schoenenslot is je startkleding.
+  const { equipment, profile: profileDraft } = wearableSetup(start, user.equipment, user.job, user.gender)
   return { job: user.job, gender: user.gender, equipment, drafts: [], potionChoice: NO_POTION_CHOICE, profileDraft }
 }
 
@@ -85,8 +85,8 @@ export function freshStart(user: CheapestInput): CheapestInput {
 export function cheapestFor(user: CheapestInput): AdvisedSetup {
   const setup = advisedSetup(freshStart(user))
   const r = setup.result
-  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt.
-  const wearable = dropAboveLevel(user.profileDraft, user.equipment, user.job)
+  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt, en met je startkleding.
+  const wearable = wearableSetup(user.profileDraft, user.equipment, user.job, user.gender)
   const own: CheapestInput = { ...user, equipment: wearable.equipment, profileDraft: wearable.profile }
   const after: CheapestInput = { ...own, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
   const costBefore = costOf(own)

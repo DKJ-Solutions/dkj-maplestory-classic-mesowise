@@ -278,8 +278,9 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
   it('neemt job, level, geslacht, Max HP en je equip over: mob, potions, skills en AP beginnen leeg of standaard', () => {
     const user = filled('thief')
     const start = freshStart(user)
-    // Je equip, met de velden die erbij horen (Dave, 8 oktober 2026): wat je draagt is gratis.
-    expect(start.equipment).toBe(user.equipment)
+    // Je equip, met de velden die erbij horen (Dave, 8 oktober 2026): wat je draagt is gratis, en een leeg schoenenslot is je startkleding.
+    expect(start.equipment.claw).toBe(user.equipment.claw)
+    expect(wornName(start.equipment.shoes)).toBe('Leather Sandals')
     expect(start.drafts).toEqual([])
     expect(start.potionChoice).toBe(NO_POTION_CHOICE)
     // Het standaardprofiel, met alleen het punt in de aanvalsskill; onder level 10 ook dat niet (geen punten van de 1e job).

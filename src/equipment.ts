@@ -652,6 +652,37 @@ export function dropAboveLevel(profile: ProfileDraft, eq: Equipment, job: Job): 
 }
 
 /**
+ * De startkleding (Dave, 8 oktober 2026): elk karakter begint met een top, een bottom en schoenen. De stukken staan met hun bron in
+ * data/wornItems.ts; welke het precies zijn kies je bij het maken van je karakter, de app neemt de gewone keuze per geslacht.
+ */
+export const STARTER_CLOTHES: { readonly top: Readonly<Record<Gender, string>>; readonly bottom: Readonly<Record<Gender, string>>; readonly shoes: string } = {
+  top: { male: 'White Undershirt', female: 'White Tube Top' },
+  bottom: { male: 'Blue Jean Shorts', female: 'Red Miniskirt' },
+  shoes: 'Leather Sandals',
+}
+
+/**
+ * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en een leeg top-, bottom-
+ * of schoenenslot telt als je startkleding (STARTER_CLOTHES), gratis. Een top of bottom alleen als er geen overall is; zonder geslacht alleen de
+ * schoenen. Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij.
+ */
+export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
+  const below = dropAboveLevel(profile, eq, job)
+  let out = { equipment: below.equipment, profile: below.profile }
+  const starter: [EquipSlot, string | null][] = [
+    ['top', gender ? STARTER_CLOTHES.top[gender] : null],
+    ['bottom', gender ? STARTER_CLOTHES.bottom[gender] : null],
+    ['shoes', STARTER_CLOTHES.shoes],
+  ]
+  for (const [slot, name] of starter) {
+    if (name === null || wornName(out.equipment[slot]) !== null) continue
+    if ((slot === 'top' || slot === 'bottom') && wornName(out.equipment.overall) !== null) continue
+    out = changeEquipment(out.profile, out.equipment, slot, choosePick(slot, out.equipment[slot], name), job)
+  }
+  return { ...out, dropped: below.dropped }
+}
+
+/**
  * De nieuwe invulling na een keuze in de zoekbalk. Een catalogusitem begint met de waarde uit de database.
  * Kies je een eigen item (met de getypte naam) terwijl de app wist wat je droeg, dan begint de stat op die
  * waarde: dat is een wissel van 0 tot je een ander getal typt. Anders begint hij leeg.

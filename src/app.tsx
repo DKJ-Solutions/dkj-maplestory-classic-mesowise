@@ -13,7 +13,7 @@ import { cheapestFor } from './advisedSetup'
 import { itemId } from './itemIds'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, dropAboveLevel, itemLevel, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, itemLevel, wearableSetup, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice } from './armorUpgrade'
 import { clawUpgradeAdvice, type ClawUpgradeAdvice } from './clawUpgrade'
@@ -2253,6 +2253,8 @@ function EquipmentCard(props: {
   job: Job
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
+  /** Wat je echt draagt zoals de berekening het ziet (wearableSetup): zonder equip boven je level, met je startkleding; voor de free items onder "Based on:". */
+  wearable: Equipment
   /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
   /** Alleen een Bowman: of hij Helpful Stranger heeft (#64); met de schakelaar aan biedt de ammo-lijst de bronze pijlen aan. */
@@ -2481,11 +2483,11 @@ function EquipmentCard(props: {
     const value = wornStat(slot, entry)
     return [value === undefined ? '?' : nfInt.format(value), statName(slot, props.job)] as const
   }
-  // Wat je draagt en op je level kunt dragen (#264): een stuk boven je level telt niet mee, dus het staat niet bij de items die je gratis houdt.
+  // Wat je echt draagt (wearableSetup): zonder stukken boven je level (#264), met je startkleding in een leeg top-, bottom- of schoenenslot.
   const wornList = slots.flatMap((slot) => {
-    const entry = props.equipment[slot]
+    const entry = props.wearable[slot]
     const name = wornName(entry)
-    if (name === null || aboveLevel(slot, name) !== null) return []
+    if (name === null) return []
     const own = entry.pick === OTHER
     return [{ item: [slotLabel(slot), own ? name : familyName(slot, name), ...statOf(slot, entry), slot] as const, id: (own ? null : itemId(name)) ?? 'own' }]
   })
@@ -3872,7 +3874,8 @@ export function App() {
   const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
   // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zo'n stuk blijft bewaard, maar de berekening rekent zonder, met zijn ATT of
   // DEF eraf. Ga je weer een level omhoog, dan telt het vanzelf weer mee. Wat je ziet en bewerkt, blijft `profileDraft` en `equipment`.
-  const wearable = useMemo(() => dropAboveLevel(profileDraft, equipment, job), [profileDraft, equipment, job])
+  // En een leeg top-, bottom- of schoenenslot telt als je startkleding (Dave, 8 oktober 2026, wearableSetup).
+  const wearable = useMemo(() => wearableSetup(profileDraft, equipment, job, gender), [profileDraft, equipment, job, gender])
   const parsed = useMemo(() => parseProfile(wearable.profile, job, gender), [wearable, job, gender])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null
   // De berekening kent de Thief, de Warrior en de Bowman. Voor de Magician geven we haar geen profiel, zodat ze niet rekent
@@ -4180,6 +4183,7 @@ export function App() {
       <EquipmentCard
         job={job}
         equipment={equipment}
+        wearable={wearable.equipment}
         pending={pending}
         helpfulStranger={profileDraft.helpfulStranger === '1'}
         onHelpfulStranger={changeHelpfulStranger}
