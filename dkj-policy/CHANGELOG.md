@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
-**8 / 13 minor entries** <!-- pending-tally -->
+**9 / 14 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/bill-table · 20261008-122735Z
+
+The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
+under a single head, Items and Mesos, with two cost groups that each end in a subtotal. Only what costs mesos this level is
+listed, so Profile shows no equipment and its per-slot Upgrade verdict is removed. The shop price moved to the item's info
+popup.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Level cost now shows the whole level on one bill: the potions and ammo you use from 0 to 100% on top, then the equipment
+you buy, each with a subtotal, adding up to the Total cost on the Level cost button. Before, the popup showed only the
+equipment, so its total did not match the button. Behind each item sits how much of it this level pays (× 1.6k, or 13% of
+an equipment price), and its question mark says why you buy it.
+
+**Score:** 4
+
+#### Pull Request
+
+Level cost as one bill, grouped into Useable and Equip
+
+[PR #261](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/261)
+
+---
 
 ### DEPLOY: app/level-cost-top · 20261008-101927Z
 
