@@ -23,9 +23,9 @@
   /* Elke Advised-popup is licht oranje (Dave, 7 oktober 2026): het advies van de app, niet wat je zelf invulde. */
   --advised-bg: #fff7ed;
   --advised-border: #fed7aa;
-  /* De vakken van Char en Mob in Total cost: Equip: een tint dieper dan de popup. */
+  /* De vakken van Char en Mob in Level cost: Equip: een tint dieper dan de popup. */
   --advised-box: #ffedd5;
-  /* Your character in Total cost: Equip is lichtblauw, een eigen kleur naast het oranje van Advised (Dave, 8 oktober 2026); --worn-accent leest op de blauwe popup, --on-worn-accent staat erop. */
+  /* Your character in Level cost: Equip is lichtblauw, een eigen kleur naast het oranje van Advised (Dave, 8 oktober 2026); --worn-accent leest op de blauwe popup, --on-worn-accent staat erop. */
   --worn-bg: #eff6ff;
   --worn-border: #bfdbfe;
   --worn-box: #dbeafe;
@@ -242,7 +242,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .job-choice { min-width: 0; padding: 0.5rem 0.125rem; font-size: clamp(0.6875rem, 3.2vw, 0.875rem); white-space: nowrap; }
 .job-choice[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
 .job .hint:last-child { margin-bottom: 0; }
-/* De bron onder het advies en onder Total cost: in het rapport van een kaart en in Total cost gelijk. */
+/* De bron onder het advies en onder Level cost: in het rapport van een kaart en in Level cost gelijk. */
 .total-cost .source, .report-body .source { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .total-cost .source a, .report-body .source a { color: var(--accent); }
 
@@ -386,7 +386,7 @@ html:has(dialog:modal) { overflow: hidden; }
 .stat-dialog-body { position: relative; padding: 1rem; }
 /* Een Advised-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */
 .stat-dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
-/* Your character in Total cost: Equip (Dave, 8 oktober 2026): dezelfde tabel als Advised, in blauw. Het accent van de popup en alles erin (het label, de gecorrigeerde stat,
+/* Your character in Level cost: Equip (Dave, 8 oktober 2026): dezelfde tabel als Advised, in blauw. Het accent van de popup en alles erin (het label, de gecorrigeerde stat,
    de focusranden, Opslaan) is blauw in plaats van oranje; de vakken van Based on: en de melding bij een job zonder items staan in --worn-box, een tint dieper. */
 .stat-dialog.worn-dialog.card-dialog-equip { --card: var(--worn-bg); --accent: var(--worn-accent); --on-accent: var(--on-worn-accent); border-color: var(--worn-border); }
 /* Het label edit en wearing op een popup van Your character staat in het blauw van die popup, ook in de kaarten zonder blauwe popup. */
@@ -406,7 +406,7 @@ html:has(dialog:modal) { overflow: hidden; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
 .stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
-/* "Based on:" bovenaan Total cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder een tabel (Dave, 8 oktober 2026): een rij voor Char en
+/* "Based on:" bovenaan Level cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder een tabel (Dave, 8 oktober 2026): een rij voor Char en
    een voor Mob, onder elkaar. De linkerkolom is het vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In
    Wearing heeft de tabel een tweede kolom met het potlood van die rij, buiten het vak; in Advised vult het vak de rij. Het vraagteken houdt zijn
    grootte (24px, Dave): de waarde is zo hoog als het icoon, zodat die twee op één lijn liggen, en het vraagteken sluit dicht op de naam aan
@@ -468,7 +468,7 @@ html:has(dialog:modal) { overflow: hidden; }
 /* De titel van een kaart- of rapport-popup is de grootste kop erin, op de maat van een h2 (Dave, 5 oktober 2026): daaronder
    de delen van het advies (--fs-h3), het oordeel (--fs-h4), de toelichting (0.875rem) en de bron (0.75rem). */
 .card-dialog .stat-dialog-name, .report-dialog .stat-dialog-name { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
-/* Een label op een eigen regel boven de titel, "advised" boven "Total cost: Equip" (Dave, 7 oktober 2026). De titel houdt de maat van de andere kaart-popups
+/* Een label op een eigen regel boven de titel, "advised" boven "Level cost: Equip" (Dave, 7 oktober 2026). De titel houdt de maat van de andere kaart-popups
    en past met zijn vraagteken op één regel vanaf 360px breed; op een nog smaller scherm breekt hij af in plaats van over het vraagteken te lopen.
    Het label is een afgerond plaatje in de accentkleur, niet breder dan zijn tekst (Dave, 7 oktober 2026). */
 .title-tag { display: inline-block; margin-bottom: 0.25rem; padding: 0.125rem 0.5rem; font-size: 0.6875rem; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em;
@@ -667,13 +667,13 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .equip-value strong.cost { color: var(--cost); }
 .equip-value strong.gain { color: var(--gain); }
 
-/* Total cost (Dave, 6 oktober 2026): een grote kop, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
+/* Level cost (Dave, 6 oktober 2026): een grote kop, een ondertitel, en een factuur: per regel wat, hoeveel stuks en het bedrag,
    met het totaal onder een lijn. Bedragen rechts uitgelijnd en in rood met een min, zoals de prijs op de Potions-kaart. */
 /* Groter dan de andere kaarten, zodat de h2 boven de drie h3's van In game, Advised en Difference uitsteekt (Dave, #183). */
 .total-cost h2 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
 .total-cost-sub { margin: 0.25rem 0 0.75rem; color: var(--muted); }
 .total-cost-sub strong { color: var(--text); }
-/* De drie delen van Total cost (#183): In game, Advised en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
+/* De drie delen van Level cost (#183): In game, Advised en Difference, elk een eigen paneel met een rand en een eigen tint, zodat
    ze los van elkaar staan (Dave): grijs voor in game, de accentkleur voor de goedkoopste setup, groen voor wat je bespaart. De
    tinten mengen met de achtergrond van de kaart, dus ze volgen dark mode vanzelf. */
 .total-cost-part { --part: var(--muted); margin-top: 0.75rem; padding: 0.75rem; border: 1px solid color-mix(in srgb, var(--part) 35%, var(--border));
@@ -811,7 +811,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .item-facts dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .item-why { margin: 0; line-height: 1.45; }
 /* De regels in een info-popup, zoals het karakter achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): even compact als de factuur
-   van Total cost: Equip (.advised-row). Een lage rij, de naam links, het getal klein en vet rechts, en geen potlood: hier is alles alleen om te lezen.
+   van Level cost: Equip (.advised-row). Een lage rij, de naam links, het getal klein en vet rechts, en geen potlood: hier is alles alleen om te lezen.
    Elke rij houdt achteraan een kolom voor het vraagteken, ook zonder (Dave, 7 oktober 2026): zo staan de laatste getallen van alle tabellen
    recht onder elkaar. Het knopje houdt zijn 44px om te tikken maar steekt boven en onder buiten de rij, zoals in de factuur. */
 .item-dialog .stat-line, .item-dialog .skill-row { grid-template-columns: minmax(0, 1fr) auto 2.25rem; column-gap: 0.25rem; min-height: 2.25rem; padding: 0.125rem 0; }
@@ -850,7 +850,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .advised-total strong { grid-column: 3; font-size: 0.875rem; text-align: right;
   font-variant-numeric: tabular-nums; white-space: nowrap; }
 .equip-total { margin: 0 0 0.75rem; text-align: right; }
-/* De zes icoonknoppen onder de factuur van elk deel van Total cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
+/* De zes icoonknoppen onder de factuur van elk deel van Level cost (#192): één rij over de volle breedte, ook op 360px; smalle tussenruimte en geen eigen padding. */
 /* De zin en de knoppen onder de factuur (#192), los van het totaal met een dunne lijn en ruimte (Dave, 6 oktober 2026). */
 .cost-setup { margin-top: 1rem; padding-top: 0.875rem; border-top: 1px solid var(--border); }
 .cost-setup .total-cost-sub { margin: 0 0 0.5rem; }

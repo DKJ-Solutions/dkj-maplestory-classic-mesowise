@@ -39,21 +39,30 @@
 
 ### PLAN
 
+Dave (October 8, 2026): "Total cost: Equip" reads as the total cost of the equipment, while the card shows what one level from 0% to 100% costs. Call it Level cost.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] The card and its popups are called Level cost, Level cost: Equip and Level cost: Useable; the bill's own total row keeps "Total cost", since that is the sum of that bill
+- [x] The help text of the Wearing table no longer describes the Stat column that #255 replaced with Level
 
 ### TEST
 
+- [x] Tests follow the new names; 1960 pass, `tsc` green
+- [x] Dave judged it in the preview
+
 ### DEPLOY: app/level-cost-title
 
-**Score:**
+Comments and test names follow the new card name; Dave's own quoted words keep "Total cost".
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+The card that shows what your current level costs is now called Level cost instead of Total cost, so it no longer reads as the price of your equipment.
+
+**Score:** 2
 
 #### Pull Request
 
 Total cost is called Level cost
-
