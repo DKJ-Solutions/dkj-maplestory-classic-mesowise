@@ -4765,7 +4765,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
     expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
-    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Wat dit level kost met de setup van Cheapest, op één bill./)
+    expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Wat dit level kost met de setup van Cheapest, op één factuur\./)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     // Wat je draagt heeft zijn eigen uitleg (Dave, 8 oktober 2026), over wat de kolommen daar betekenen.
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))

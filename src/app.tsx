@@ -1585,7 +1585,7 @@ function StatDialog(props: {
 /** De uitleg bij Level cost in Cheapest: achter het vraagteken naast de titel (Dave, 7 oktober 2026; zie StatDialog `help`), bij de bill van 8 oktober 2026. */
 const CHEAPEST_HELP = (
   <>
-    Wat dit level kost met de setup van Cheapest, op één bill. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die
+    Wat dit level kost met de setup van Cheapest, op één factuur. Bovenaan de potions en ammo die je van 0 tot 100% van het level gebruikt, eronder de equip die
     Cheapest koopt omdat die zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
@@ -1596,8 +1596,8 @@ const CHEAPEST_HELP = (
 /** De uitleg bij Level cost in Profile (Dave, 8 oktober 2026): dezelfde bill als Cheapest, met wat je draagt; het potlood bij Equip onder "Based on:" kiest wat je draagt. */
 const WORN_HELP = (
   <>
-    Wat dit level kost met wat je nu draagt, op dezelfde bill als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
-    kost dit level niets, dus er staat geen equip in en het subtotaal van Equip is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
+    Wat dit level kost met wat je nu draagt, op dezelfde factuur als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
+    kost dit level niets, dus er staat geen equip in en Equip subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
     Equip, kies daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
