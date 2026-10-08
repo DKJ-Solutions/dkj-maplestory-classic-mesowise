@@ -50,6 +50,7 @@ equipment the player wears (free) and buys only what pays off on top; "Based on:
 
 - [x] `freshStart`: Cheapest's input from job, level, gender, a valid Max HP and the worn equipment with its gear fields (no mob, no potion choice, default stats, skill points from scratch)
 - [x] "Based on:" in the Cheapest popup: Equip (what you wear) and New equip (what Cheapest buys)
+- [x] The two rows say what they are in visible text: "Je draagt 3 items" (worn, free; also in Profile) and "Te kopen: 1 item" or "Niets te kopen"
 - [x] Victor's review of that step: a gear field is only taken over when `parseProfile` accepts it (range and whole number), the item stat bonuses (STR/DEX/INT/LUK extra) are taken over too, and the stale comments say what the code now does
 - [x] Rule (Dave, #264): equipment above your level cannot be worn. `dropAboveLevel` takes such an item out of its slot (ATT or DEF off, an empty hand for a weapon) in the app when the level drops or on load, and in Cheapest's fresh start
 - [x] Tests: unit tests for `dropAboveLevel` (armor DEF, empty hand, own item kept, empty level is not level 0); Back and Auto assign app tests now show the item leaving instead of the old "te weinig AP" path (that message stays covered in autoFillAp.test.ts)

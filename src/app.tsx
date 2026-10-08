@@ -1625,7 +1625,15 @@ type BasedOnEquip = {
 }
 
 /** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
-const equipSummary = (items: readonly unknown[], none = 'Nog niets gekozen') => (items.length === 0 ? none : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
+/**
+ * Het korte antwoord in een equip-rij (Dave, 8 oktober 2026): of je naar equip kijkt die je al draagt en gratis houdt ("Je draagt 3 items"), of naar
+ * equip die je nog moet kopen ("Te kopen: 1 item"). Zonder stukken: nog niets gekozen, of niets te kopen.
+ */
+const equipSummary = (items: readonly unknown[], kind: 'worn' | 'bought') => {
+  const n = `${items.length} ${items.length === 1 ? 'item' : 'items'}`
+  if (kind === 'bought') return items.length === 0 ? 'Niets te kopen' : `Te kopen: ${n}`
+  return items.length === 0 ? 'Nog niets gekozen' : `Je draagt ${n}`
+}
 
 /**
  * Bovenaan Level cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
@@ -2455,9 +2463,9 @@ function EquipmentCard(props: {
     </>
   )
   // De rijen onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Equip; in Profile met het potlood, in Cheapest alleen lezen) en in Cheapest wat het erbij koopt (New equip).
-  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit'], none?: string): BasedOnEquip => {
+  const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], kind: 'worn' | 'bought', edit?: BasedOnEquip['edit']): BasedOnEquip => {
     const items = list.map((l) => l.item)
-    return { summary: equipSummary(items, none), items, ids: list.map((l) => l.id).join(' '), edit }
+    return { summary: equipSummary(items, kind), items, ids: list.map((l) => l.id).join(' '), edit }
   }
   // Per stuk ook zijn item-id, voor data-based-on-equip (Dave, 8 oktober 2026); een eigen item heeft er geen en heet daar "own".
   // En de ATT of DEF die het stuk geeft, met de naam van die stat, voor de Equip-popup onder "Based on:" (Dave, 8 oktober 2026); onbekend: een vraagteken.
@@ -2485,7 +2493,7 @@ function EquipmentCard(props: {
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList) : undefined) : equipRow(wornList, { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={view === 'advised' && props.cheapest ? equipRow(boughtList, undefined, 'Niets te kopen') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList, 'worn') : undefined) : equipRow(wornList, 'worn', { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={view === 'advised' && props.cheapest ? equipRow(boughtList, 'bought') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )
