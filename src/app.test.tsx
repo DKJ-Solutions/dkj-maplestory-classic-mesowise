@@ -4025,8 +4025,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost een kopregel, zijn regels en een subtotaal.
         expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
-        // Met de kop Bill erboven, zoals "Based on:" (Dave, 8 oktober 2026).
-        expect(d.querySelector('section.bill > h3.based-on-head')!.textContent, label).toBe('Bill')
+        // Geen kop boven de bill (Dave, 8 oktober 2026).
+        expect(d.querySelector('section.bill > h3'), label).toBeNull()
         // Geen kolom Slot, Qty of Price (Dave, 8 oktober 2026): de kop is Item en Mesos, het slot staat alleen voor de schermlezer in de naam van de
         // rij, het aantal achter de naam en de winkelprijs in de info-popup.
         // De kop noemt de eerste post, Useable (Dave, 8 oktober 2026); die heeft dan geen eigen kopregel, Equip wel.
@@ -4034,7 +4034,11 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         for (const r of d.querySelectorAll('section.bill .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
         const groups = [...d.querySelectorAll<HTMLElement>('section.bill tbody.bill-group')]
         // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
-        expect(groups.map((g) => g.querySelector('.bill-category')?.textContent ?? null), label).toEqual([null, 'Equip'])
+        expect(groups.map((g) => g.querySelector('.bill-category > th')?.textContent ?? null), label).toEqual([null, 'Equip'])
+        // Equip heeft dezelfde kopregel als Useable, de kop van de tabel: de naam van de post en Mesos, in de opmaak van .advised-head.
+        const equipHead = groups[1].querySelector('.bill-category')!
+        expect(equipHead.classList.contains('advised-head'), label).toBe(true)
+        expect(equipHead.querySelector('.advised-head-level')!.textContent, label).toBe('Mesos')
         expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Equip subtotal'])
         const [useable, equip] = groups
         expect(rowsOf(useable), label).toEqual(['HP', 'MP', 'Ammo'])

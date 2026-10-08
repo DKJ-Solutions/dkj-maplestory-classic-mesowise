@@ -1872,7 +1872,7 @@ function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; leve
   const { equip, useable } = props
   // De kop van de tabel noemt de eerste kostenpost (Dave, 8 oktober 2026): Useable, of Equip als er geen useables zijn. Die post heeft dan geen eigen kopregel.
   return (
-    <BillTable variant="with-level" grouped heading="Bill" head={<BillHead item={useable ? 'Useable' : 'Equip'} level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
+    <BillTable variant="with-level" grouped head={<BillHead item={useable ? 'Useable' : 'Equip'} level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
       {/* Useable bovenaan (Dave, 8 oktober 2026): potions en ammo kosten elk level geld, equip alleen als er iets geüpgraded moet worden. */}
       {useable && (
         <BillGroup name="Useable" headless>
@@ -1903,16 +1903,18 @@ function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; leve
   )
 }
 
-/** Een kostenpost in de bill van Level cost (Dave, 8 oktober 2026): een kopregel met zijn naam, dan zijn regels en zijn subtotaal. */
+/** Een kostenpost in de bill van Level cost (Dave, 8 oktober 2026): een kopregel met zijn naam en Mesos, zoals de kop van de tabel, dan zijn regels en zijn subtotaal. */
 function BillGroup(props: { name: string; headless?: boolean; children: ComponentChildren }) {
   return (
     <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
       {/* Met `headless` noemt de kop van de tabel deze post al (LevelBill). */}
       {!props.headless && (
-        <tr class="bill-category">
-          <th scope="rowgroup" colSpan={2}>
-            {props.name}
-          </th>
+        // Dezelfde kopregel als die van de tabel (Dave, 8 oktober 2026): de naam van de post en Mesos, in dezelfde opmaak (.advised-head).
+        <tr class="advised-head bill-category">
+          <th scope="rowgroup">{props.name}</th>
+          <td class="advised-head-level" aria-hidden="true">
+            Mesos
+          </td>
         </tr>
       )}
       {props.children}
@@ -1943,11 +1945,9 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; level: numb
  * en het totaal in tfoot; met `grouped` brengen de regels hun eigen tbody's mee (BillGroup). `variant` zegt welke kolommen er zijn: `with-qty`
  * (Useable), `with-level` (Level cost) of `no-price` (de slotkeuze achter Equip).
  */
-function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; grouped?: boolean; heading?: string; head: ComponentChildren; total?: ComponentChildren; children: ComponentChildren }) {
+function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; grouped?: boolean; head: ComponentChildren; total?: ComponentChildren; children: ComponentChildren }) {
   return (
     <section class="bill" aria-label="Bill">
-      {/* Een kop boven de bill, zoals "Based on:" erboven (Dave, 8 oktober 2026). */}
-      {props.heading && <h3 class="based-on-head bill-head">{props.heading}</h3>}
       <table class={`advised-bill ${props.variant}`}>
         <thead>{props.head}</thead>
         {props.grouped ? props.children : <tbody>{props.children}</tbody>}
