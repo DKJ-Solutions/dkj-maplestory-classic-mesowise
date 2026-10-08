@@ -475,7 +475,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; equip?: BasedOnEquip; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Level cost: Equip en Useable.
   const who = useContext(AdvisedWho)
@@ -499,7 +499,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
-        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" equip={props.equip} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -1672,11 +1672,12 @@ const CHEAPEST_HELP = (
   </>
 )
 
-/** De uitleg bij Level cost: Equip in Your character (Dave, 8 oktober 2026): dezelfde tabel als Advised, met wat je draagt in plaats van wat de app adviseert. */
+/** De uitleg bij Level cost: Equip in Your character (Dave, 8 oktober 2026): dezelfde tabel als Advised, met wat je draagt in plaats van wat de app adviseert; het vraagteken is het oordeel per slot, het potlood bij Equip onder "Based on:" kiest wat je draagt. */
 const WORN_HELP = (
   <>
     Wat je nu draagt, in dezelfde tabel als Advised. Shop is wat het stuk in de winkel kost; een eigen item, munitie en een stuk zonder winkelprijs hebben er geen en tellen niet mee in Total cost. Level is leeg: wat je al
-    draagt, kost dit level niets. Tik op het potlood achter een regel om dat stuk te kiezen of zijn stat (ATT of DEF) te corrigeren.
+    draagt, kost dit level niets. Het vraagteken achter een regel zegt of je dat slot nu moet upgraden of houden, en waarom. Wat je draagt kies je onder "Based on:": tik op het potlood achter Equip, kies
+    daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
   </>
 )
 
@@ -1691,19 +1692,25 @@ const USEABLE_HELP = (
 const mobWhy = (mob: string) =>
   `Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso: je killt hem snel en verbruikt weinig potions.`
 
+/** De derde rij onder "Based on:" in Level cost: Equip (Dave, 8 oktober 2026): per slot de naam van het stuk, en met `edit` het potlood dat de keuze opent (alleen Wearing). */
+type BasedOnEquip = { summary: string; items: readonly (readonly [string, string])[]; edit?: { expanded: boolean; open: (button: HTMLButtonElement) => void } }
+
+/** Het korte antwoord in die rij: het aantal stukken ("3 items"), omdat een wapennaam alleen niet zegt wat je verder draagt. */
+const equipSummary = (items: readonly unknown[]) => (items.length === 0 ? 'Nog niets gekozen' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`)
+
 /**
  * Bovenaan Level cost: Equip en Useable (Dave, 7 oktober 2026; zie CardPopup `basedOn`): onder de kop "Based on:" voor wie het advies rekent en op welke mob (Char, Mob), als
  * tabel: een rij per vak, onder elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een
  * vraagteken achter de mob dat zegt waarom juist die. In Wearing een tweede kolom met het potlood van die rij (Dave, 8 oktober 2026). Het staat in de
  * popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
-  const { stats, sheet } = props
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; equip?: BasedOnEquip; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
+  const { stats, sheet, equip } = props
   // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
   const advised = sheet === 'advised'
   // In Your character (`edit`, Dave, 8 oktober 2026) een potlood naast elk vak, in een eigen kolom (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
-  const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
-    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
+  const pencil = (what: 'Char' | 'Mob' | 'Equip', expanded: boolean, open: (button: HTMLButtonElement) => void) => (
+    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={expanded} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
       {PENCIL_ICON}
     </button>
   )
@@ -1730,7 +1737,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
                 <span class="based-on-value">{props.who}</span>
               )}
             </div>
-            {props.edit && pencil('Char', 'ap', props.edit.char)}
+            {props.edit && pencil('Char', props.edit.open.ap === 'worn', props.edit.char)}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
@@ -1754,11 +1761,41 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               </PopupButton>
             )}
           </div>
-          {props.edit && pencil('Mob', 'mob', props.edit.mob)}
+          {props.edit && pencil('Mob', props.edit.open.mob === 'worn', props.edit.mob)}
         </div>
+        {equip && (
+          // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
+          // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
+          <div class="based-on-row">
+            <div class="based-on-label" data-based-on-equip={equip.summary} data-sheet={sheet}>
+              <span class="sr-only">Equip: </span>
+              {equip.items.length > 0 ? (
+                <PopupButton icon={advised ? EXPECTED_ICON : ACTUAL_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle actual-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'actual'} name={equip.summary} data={{ 'data-based-on-equip': equip.summary, 'data-sheet': sheet }}>
+                  <dl class="item-facts">
+                    {equip.items.map(([slot, name]) => (
+                      <div key={slot}>
+                        <dt>{slot}</dt>
+                        <dd>{name}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </PopupButton>
+              ) : (
+                <span class="based-on-value placeholder">{equip.summary}</span>
+              )}
+            </div>
+            {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
+          </div>
+        )}
       </div>
     </section>
   )
+}
+
+/** Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg. */
+function slotCovers(cheapest: Record<EquipSlot, CheapestSlot>, slot: EquipSlot): boolean {
+  const filled = (s: EquipSlot) => cheapest[s]?.cheapest != null
+  return slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom'))
 }
 
 /**
@@ -1776,14 +1813,11 @@ function CheapestRows(props: { job: Job; slots: readonly EquipSlot[]; equipment:
     return c.changed && c.cheapest !== null ? props.lines.find((l) => l.why?.kind === 'shop' && l.why.name === familyName(slot, c.cheapest!)) : undefined
   }
   const levelTotal = props.slots.reduce((sum, slot) => sum + (lineOf(slot)?.meso ?? 0), 0)
-  // Of een leeg slot leeg is door een ander stuk: een overall beslaat top en bottom, een losse top of bottom laat de overall leeg.
-  const filled = (s: EquipSlot) => props.cheapest[s]?.cheapest != null
-  const covers = (slot: EquipSlot) => (slot === 'top' || slot === 'bottom' ? filled('overall') : slot === 'overall' && (filled('top') || filled('bottom')))
   return (
     <>
       <BillHead item="Equip" level />
       {props.slots.map((slot) => (
-        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={covers(slot)} line={lineOf(slot)} />
+        <CheapestRow key={slot} job={props.job} slot={slot} worn={props.equipment[slot]} advice={props.cheapest[slot]} ammo={props.ammo} covered={slotCovers(props.cheapest, slot)} line={lineOf(slot)} />
       ))}
       <BillTotal total={total} level={levelTotal} />
     </>
@@ -1944,7 +1978,7 @@ function MesoAmount(props: { n: number }) {
  * vraagteken (in Your character vijf: Shop en Stat, met het potlood van het slot (`action`) in plaats van het vraagteken). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren; levelWord?: string }) {
   const title = props.name ?? props.slot
   // Met `action` (Your character, Dave, 8 oktober 2026) staat achteraan in plaats
   // van het vraagteken het potlood dat het slot opent.
@@ -1955,7 +1989,8 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
     <>
       <span class="advised-price">{amount(props.price)}</span>
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
-      {wide && <span class="advised-level">{amount(props.level ?? null)}</span>}
+      {/* In Wearing (Dave, 8 oktober 2026) staat in de lege kolom Level het woord "Upgrade" voor een slot dat je nu moet upgraden, in de accentkleur van een koop in Advised (.buy). */}
+      {wide && (props.levelWord ? <span class="advised-level verdict">{props.levelWord}</span> : <span class="advised-level">{amount(props.level ?? null)}</span>)}
     </>
   )
   const last = props.action ?? (
@@ -2092,6 +2127,17 @@ function itemFacts(job: Job, slot: EquipSlot, name: string, entry: EquipEntry, p
     ['Eisen', needs && needs.length > 0 ? needs.join(', ') : undefined],
     ['Prijs', price === null ? undefined : `${nfInt.format(price)} meso`],
   ])
+}
+
+/**
+ * Het oordeel van Advised voor één slot, gelezen in Wearing (Dave, 8 oktober 2026): "Upgraden" waar Advised koopt (cheapestWhy: Kopen), "Houden" voor wat je
+ * draagt en Advised niet vervangt, met dezelfde uitleg. Een leeg slot zonder aankoop heeft niets om te houden: dan geen oordeel (null).
+ */
+function slotVerdict(job: Job, slot: EquipSlot, c: CheapestSlot, covered: boolean, hasItem: boolean): { upgrade: boolean; text: string } | null {
+  const why = cheapestWhy(job, slot, c, false, covered)
+  if (why.verdict === 'Kopen') return { upgrade: true, text: why.text }
+  if (!hasItem) return null
+  return { upgrade: false, text: why.verdict === 'Houden' ? why.text : 'Geen stuk uit de winkel loont tot je volgende upgrade in dit slot, dus je houdt wat je draagt.' }
 }
 
 /** De feiten van een info-knop die de app kent: een regel zonder waarde valt weg. */
@@ -2234,6 +2280,24 @@ function EquipmentCard(props: {
     setEditing(null)
     requestAnimationFrame(() => pencils.current[slot]?.focus())
   }
+  // De slotkeuze achter het potlood bij Equip onder "Based on:" (Dave, 8 oktober 2026): open of dicht, met de focus terug op dat potlood.
+  const [pickOpen, setPickOpen] = useState(false)
+  const equipPencil = useRef<HTMLButtonElement | null>(null)
+  const openPick = (button: HTMLButtonElement) => {
+    equipPencil.current = button
+    setPickOpen(true)
+  }
+  // Sluit je de hele popup, dan gaat ook de slotkeuze dicht, zodat hij niet weer openstaat als je terugkomt.
+  const closeAll = () => {
+    setPickOpen(false)
+    setEditSlot(null)
+    setEditing(null)
+    close()
+  }
+  const closePick = () => {
+    setPickOpen(false)
+    requestAnimationFrame(() => equipPencil.current?.focus())
+  }
   const name = (
     <span class="spot-name with-icon">
       <CardIcon name="sword" />
@@ -2322,12 +2386,43 @@ function EquipmentCard(props: {
     )
   }
   // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels en kolommen als die van Advised (BillRow), met wat je draagt: de winkelprijs onder
-  // Shop en een lege Level, want wat je al draagt kost dit level niets, net als een stuk dat Advised je laat houden; het potlood staat waar Advised zijn
-  // vraagteken heeft en opent het slot.
+  // Shop en een lege Level, want wat je al draagt kost dit level niets, net als een stuk dat Advised je laat houden. Waar Advised zijn vraagteken heeft, geeft
+  // de app zijn oordeel per slot (slotVerdict, het oordeel van CheapestRow): upgraden of houden, met het woord "Upgrade" in Level voor een slot dat je nu
+  // moet upgraden. Zonder advies (geen cheapest) of zonder iets om te houden geen oordeel.
   const wornRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const price = shopPrice(slot, entry)
+    const advice = props.cheapest?.[slot]
+    const verdict = props.cheapest && advice ? slotVerdict(props.job, slot, advice, slotCovers(props.cheapest, slot), name !== null) : null
+    return (
+      <BillRow
+        key={slot}
+        tone={verdict?.upgrade ? 'buy' : name === null ? 'empty' : ''}
+        slot={slotLabel(slot)}
+        name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
+        fullName={name ?? undefined}
+        facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
+        price={price ?? null}
+        level={null}
+        levelWord={verdict?.upgrade ? 'Upgrade' : undefined}
+        helpTitle={verdict?.upgrade ? 'Waarom upgraden?' : 'Waarom houden?'}
+        help={
+          verdict && (
+            <>
+              <p class="item-verdict">{verdict.upgrade ? 'Upgraden' : 'Houden'}</p>
+              <p class="item-why">{verdict.text}</p>
+            </>
+          )
+        }
+        action={verdict ? undefined : <span />}
+      />
+    )
+  }
+  // De slotkeuze achter het potlood bij Equip (Dave, 8 oktober 2026): een popup met de slots, elk met het potlood dat de slotpopup opent (zoeken, kiezen, de stat corrigeren).
+  const pickRow = (slot: EquipSlot) => {
+    const entry = props.equipment[slot]
+    const name = wornName(entry)
     const label = slotLabel(slot)
     return (
       <BillRow
@@ -2336,9 +2431,8 @@ function EquipmentCard(props: {
         slot={label}
         name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
         fullName={name ?? undefined}
-        facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
-        price={price ?? null}
-        level={null}
+        facts={name === null ? [] : itemFacts(props.job, slot, name, entry, shopPrice(slot, entry) ?? null)}
+        price={null}
         action={
           <button ref={(el) => { pencils.current[slot] = el }} type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
             {PENCIL_ICON}
@@ -2347,19 +2441,40 @@ function EquipmentCard(props: {
       />
     )
   }
+  const pickDialog = () => (
+    <StatDialog title="Equip" tag="edit" closeLabel="Sluiten Equip" focusInput={false} className="item-dialog" onCancel={closePick}>
+      <BillHead item="Equip" />
+      {slots.map(pickRow)}
+      {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
+    </StatDialog>
+  )
   const wornTable = (
     <>
       <BillHead item="Equip" level />
       {slots.map(wornRow)}
       <BillTotal total={slots.reduce((sum, slot) => sum + (shopPrice(slot, props.equipment[slot]) ?? 0), 0)} wide />
-      {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
+      {pickOpen && pickDialog()}
     </>
   )
+  // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
+  const equipRow = (items: readonly (readonly [string, string])[], edit?: BasedOnEquip['edit']): BasedOnEquip => ({ summary: equipSummary(items), items, edit })
+  const wornItems = slots.flatMap((slot) => {
+    const entry = props.equipment[slot]
+    const name = wornName(entry)
+    return name === null ? [] : [[slotLabel(slot), entry.pick === OTHER ? name : familyName(slot, name)] as const]
+  })
+  const advisedItems = props.cheapest
+    ? slots.flatMap((slot) => {
+        const c = props.cheapest![slot]
+        const name = c.cheapest ?? (slot === 'ammo' && !c.option ? props.advisedAmmo : null)
+        return name === null ? [] : [[slotLabel(slot), familyName(slot, name)] as const]
+      })
+    : []
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(advisedItems) : undefined) : equipRow(wornItems, { expanded: pickOpen, open: openPick })} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={closeAll} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
