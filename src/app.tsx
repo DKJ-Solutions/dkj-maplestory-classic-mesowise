@@ -3673,9 +3673,8 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const piece = arrows ? 'pijl' : 'star'
   const perAttack = w.starsPerAttack * w.avgHit * w.hitChance
   const f = w.formula
-  // Wat het levelverschil van de schade overlaat (−1% per level dat de mob hoger is), en min – max met één decimaal.
+  // Wat het levelverschil van de schade overlaat (−1% per level dat de mob hoger is).
   const levelFactor = 1 - 0.01 * w.levelsUp
-  const range = (min: number, max: number) => `${oneDecimal(min)} – ${oneDecimal(max)}`
   // Een gecombineerde stat (STR + DEX) tussen haakjes: het getal ervoor is hun som, niet alleen de STR (Dave, 8 oktober 2026).
   // De statfactor van max (basis 1) en min (basis 0,8, met mastery): (primaire stat × mastery × multiplier + secundaire stats) / 100 + basis.
   const statFactor = (base: number, mastery: number) => (f ? base + (f.primary * mastery * f.weaponMult + f.secondary) / 100 : 0)
@@ -3695,78 +3694,27 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         result={nf.format(statFactor(base, mastery))}
       />
     )
-  // Waar min en max vandaan komen (Dave, 6 oktober 2026, #192): de damage-formule met de echte getallen, dan het levelverschil en de verdediging van de mob.
-  const damageRows: WhyRow[] = f
-    ? [
-        // De formule onder elkaar, een regel per factor (Dave, 8 oktober 2026): je W.ATT maal wat je stats erbij doen is je basisschade,
-        // en daarvan doet de skill zijn percentage, dus de skillschade staat als laatste stap onderaan (Dave, 8 oktober 2026).
-        {
-          label: `Max per ${piece}`,
-          detail: (
-            <MulCalc
-              factors={[
-                { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(statFactor(1, 1)), what: 'Statfactor', detail: statSteps(1, 1) },
-                { value: nfPct.format(f.k), what: 'Skillschade' },
-              ]}
-              result={oneDecimal(w.rawMax)}
-            />
-          ),
-          result: oneDecimal(w.rawMax),
-        },
-        {
-          label: `Min per ${piece}`,
-          detail: (
-            <MulCalc
-              factors={[
-                { value: nfInt.format(f.watk), what: 'W.ATT' },
-                { value: nf.format(statFactor(0.8, f.mastery)), what: 'Statfactor', detail: statSteps(0.8, f.mastery) },
-                { value: nfPct.format(f.k), what: 'Skillschade' },
-              ]}
-              result={oneDecimal(w.rawMin)}
-            />
-          ),
-          result: oneDecimal(w.rawMin),
-        },
-        ...(w.levelsUp > 0
-          ? [
-              {
-                label: 'Levelverschil',
-                detail: (
-                  <MulCalc
-                    factors={[
-                      { value: range(w.rawMin, w.rawMax), what: 'Schade' },
-                      { value: nfPct.format(levelFactor), what: `Levelverschil (−${w.levelsUp}%)` },
-                    ]}
-                    result={range(w.rawMin * levelFactor, w.rawMax * levelFactor)}
-                  />
-                ),
-                result: range(w.rawMin * levelFactor, w.rawMax * levelFactor),
-              },
-            ]
-          : []),
-        // Met één decimaal, zoals min en max erboven, zodat elke som in de tabel klopt met wat er staat (Dave, 8 oktober 2026); bij WDEF 0 verandert
-        // de verdediging niets en valt de rij weg.
-        ...(w.mobWdef > 0
-          ? [
-              {
-                label: `Verdediging van ${w.mob}`,
-                detail: (
-                  <MulCalc
-                    factors={[
-                      { value: range(w.rawMin * levelFactor, w.rawMax * levelFactor), what: 'Schade' },
-                      { value: nfInt.format(w.mobWdef + 100), what: `WDEF ${nfInt.format(w.mobWdef)} + 100`, op: '/' },
-                      { value: '100', what: 'Naar procent', op: '×' },
-                    ]}
-                    result={range(w.minHit, w.maxHit)}
-                  />
-                ),
-                result: range(w.minHit, w.maxHit),
-              },
-            ]
-          : []),
-      ]
-    : []
+  // Waar min en max per star vandaan komen (Dave, 6 oktober 2026, #192), als één formule per getal (Dave, 8 oktober 2026): je W.ATT maal wat
+  // je stats erbij doen is je basisschade, daarvan doet de skill zijn percentage, dan gaat het levelverschil eraf en de verdediging van de mob
+  // (bij WDEF 0 verandert die niets en valt de stap weg). Elke stap staat onder de vorige, dus wat het laatst gebeurt staat onderaan.
+  const hitSteps = (base: number, mastery: number, hit: number) =>
+    f && (
+      <MulCalc
+        factors={[
+          { value: nfInt.format(f.watk), what: 'W.ATT' },
+          { value: nf.format(statFactor(base, mastery)), what: 'Statfactor', detail: statSteps(base, mastery) },
+          { value: nfPct.format(f.k), what: 'Skillschade' },
+          ...(w.levelsUp > 0 ? [{ value: nfPct.format(levelFactor), what: `Levelverschil (−${w.levelsUp}%)` }] : []),
+          ...(w.mobWdef > 0
+            ? [
+                { value: nfInt.format(w.mobWdef + 100), what: `WDEF ${nfInt.format(w.mobWdef)} + 100`, op: '/' },
+                { value: '100', what: 'Naar procent', op: '×' },
+              ]
+            : []),
+        ]}
+        result={oneDecimal(hit)}
+      />
+    )
   // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel aanvallen per kill, en waarom zoveel kills. Elk blok
   // eindigt met zijn antwoord, uitgelicht; bovenaan de eindformule: aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
   // ook als die aanval twee stars gooit (Dave, 8 oktober 2026). Als laatste wat herladen kost.
@@ -3776,49 +3724,33 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const rows: WhyRow[] = [
     // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP.
     ...inGroup(`Waarom ${nfInt.format(w.attacksToKill)} ${attacks} per kill op ${w.mob}?`, [
-    // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
-    // die eindigt met deze rij als antwoord.
+    // De schade in één rij, met als popup een formule (Dave, 8 oktober 2026): stars per aanval × schade per star × raakkans. De schade per star
+    // is het gemiddelde van min en max, met ± ervoor (Dave, 6 oktober 2026, #192), en min en max werken elk hun eigen formule uit.
     {
       label: 'Schade per aanval',
       detail: (
-        <WhyTable
-          rows={[
-            ...damageRows,
-            // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+        <MulCalc
+          factors={[
+            { value: nfInt.format(w.starsPerAttack), what: `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase()) },
             {
-              label: `Schade per ${piece}`,
-              ...(f
-                ? {
-                    detail: (
-                      <MulCalc
-                        factors={[
-                          { value: oneDecimal(w.minHit), what: `Min per ${piece}` },
-                          { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+' },
-                          { value: '2', what: 'Twee waarden', op: '/' },
-                        ]}
-                        result={`± ${oneDecimal(w.avgHit)}`}
-                      />
-                    ),
-                  }
-                : { calc: <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</> }),
-              result: `± ${oneDecimal(w.avgHit)}`,
-            },
-            {
-              label: 'Schade per aanval',
-              detail: (
+              value: `± ${oneDecimal(w.avgHit)}`,
+              what: `Schade per ${piece}`,
+              detail: f ? (
                 <MulCalc
                   factors={[
-                    { value: nfInt.format(w.starsPerAttack), what: `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase()) },
-                    { value: `± ${oneDecimal(w.avgHit)}`, what: `Schade per ${piece}` },
-                    { value: nfPct.format(w.hitChance), what: 'Raakkans' },
+                    { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit) },
+                    { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit) },
+                    { value: '2', what: 'Twee waarden', op: '/' },
                   ]}
-                  result={`± ${oneDecimal(perAttack)}`}
+                  result={`± ${oneDecimal(w.avgHit)}`}
                 />
+              ) : (
+                <p class="why-calc">schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</p>
               ),
-              result: `± ${oneDecimal(perAttack)}`,
-              total: true,
             },
+            { value: nfPct.format(w.hitChance), what: 'Raakkans' },
           ]}
+          result={`± ${oneDecimal(perAttack)}`}
         />
       ),
       result: `± ${oneDecimal(perAttack)}`,

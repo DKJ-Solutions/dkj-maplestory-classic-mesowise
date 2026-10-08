@@ -3427,14 +3427,25 @@ const whyRows = (root: ParentNode) =>
     return { label, calc, result: clean(tr.querySelector('.why-value-num')!.textContent!), total: tr.classList.contains('why-answer') }
   })
 
-/** De rijen in de info-popup van een rij met een eigen uitwerking (detail), zoals Schade per aanval (Dave, 8 oktober 2026). */
-const whyDetail = (root: ParentNode, label: string) => {
-  const tr = Array.from(root.querySelectorAll<HTMLElement>('.why-table tr, .why-answer')).find((r) => r.querySelector('.why-label-text')!.textContent === label)!
-  fireEvent.click(tr.querySelector<HTMLButtonElement>('.why-help')!)
-  const popup = tr.querySelector<HTMLElement>('dialog')!
-  const rows = whyRows(popup)
-  fireEvent.click(within(popup).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
-  return rows
+/** De regels van een formule (MulCalc) als tekst: "wat teken getal" per regel, gescheiden door " ; ". */
+const formulaText = (mul: Element) =>
+  Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
+/** Opent de popups achter de vraagtekens "Uitleg bij <naam>" na elkaar, elk binnen de vorige, en geeft de laatste. */
+const openPath = (root: HTMLElement, names: string[]) =>
+  names.reduce((popup, name) => {
+    const button = within(popup).getAllByRole('button', { name: `Uitleg bij ${name}` }).at(-1)!
+    fireEvent.click(button)
+    return button.parentElement!.querySelector<HTMLElement>('dialog')!
+  }, root)
+/** Sluit alle popups binnen een popup, de binnenste eerst. */
+const closeAll = (root: HTMLElement) => {
+  for (const d of Array.from(root.querySelectorAll<HTMLElement>('dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+}
+/** De formule in de popup aan het eind van een pad van vraagtekens, waarna alles weer dicht gaat. */
+const formulaAt = (root: HTMLElement, names: string[]) => {
+  const text = formulaText(openPath(root, names).querySelector('.why-mul')!)
+  closeAll(root)
+  return text
 }
 
 describe('elke formule in de uitleg (MulCalc, Dave, 8 oktober 2026)', () => {
@@ -3536,27 +3547,31 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       'Kills dit level',
       'Herladen',
     ])
-    // De schade is één rij; zijn popup werkt hem uit (Dave, 8 oktober 2026): de formule met je eigen getallen in Max en Min, dan het gemiddelde.
-    // Ribbon Pig heeft WDEF 0, dus geen rij Verdediging: die verandert dan niets.
-    const damage = whyDetail(dialog, 'Schade per aanval')
-    expect(damage.map((r) => r.label)).toEqual(['Max per star', 'Min per star', 'Schade per star', 'Schade per aanval'])
-    // De formule onder elkaar: W.ATT maal wat je stats doen, dan als laatste stap de skillschade, en de uitkomst zonder label, die de rij zelf
-    // is (Dave, 8 oktober 2026). De stats als kort label; hun som staat in een eigen popup achter het vraagteken bij het getal.
-    expect(damage[0].calc).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = ([\d.,]+)$/)
-    expect(damage[0].calc.endsWith(` ; = ${damage[0].result}`)).toBe(true)
-    expect(damage[1].calc).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
-    expect(damage[1].calc.endsWith(` ; = ${damage[1].result}`)).toBe(true)
-    // Alleen de statfactor is berekend en heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden
-    // uitgerekend, met de uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).
+    // De schade is één rij; zijn popup is een formule (Dave, 8 oktober 2026): stars per aanval × schade per star × raakkans. De schade per
+    // star werkt het gemiddelde van min en max uit, en min en max elk hun eigen formule.
+    const perAttackFormula = formulaAt(dialog, ['Schade per aanval'])
+    expect(perAttackFormula).toMatch(/^Stars? per aanval \d ; Schade per star × ± [\d.,]+ ; Raakkans × \d+% ; = ± [\d.,]+$/)
+    // De popup eindigt met hetzelfde getal als de rij.
+    expect(perAttackFormula.endsWith(` ; = ${rows[0].result}`)).toBe(true)
+    const perStar = formulaAt(dialog, ['Schade per aanval', 'Schade per star'])
+    const [, minHit, maxHit, avg] = perStar.match(/^Min per star ([\d.,]+) ; Max per star \+ ([\d.,]+) ; Twee waarden \/ 2 ; = (± [\d.,]+)$/)!
+    expect(perAttackFormula).toContain(`Schade per star × ${avg} ;`)
+    // Min en max: W.ATT maal wat je stats doen, dan als laatste stap de skillschade, en de uitkomst zonder label (Dave, 8 oktober 2026).
+    // Ribbon Pig heeft WDEF 0 en geen hoger level, dus geen stap Levelverschil of Verdediging: die veranderen dan niets.
+    const maxFormula = formulaAt(dialog, ['Schade per aanval', 'Schade per star', 'Max per star'])
+    expect(maxFormula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
+    expect(maxFormula.endsWith(` ; = ${maxHit}`)).toBe(true)
+    const minFormula = formulaAt(dialog, ['Schade per aanval', 'Schade per star', 'Min per star'])
+    expect(minFormula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; = [\d.,]+$/)
+    expect(minFormula.endsWith(` ; = ${minHit}`)).toBe(true)
+    // De statfactor heeft een vraagteken; de popup toont zijn som met je eigen stats onder elkaar, van boven naar beneden uitgerekend, met de
+    // uitkomst onderaan: op één regel paste hij niet op 360px (Dave, 8 oktober 2026).
     const statfactor = (label: string) => {
-      const open = (root: ParentNode, name: string) => {
-        const button = within(root as HTMLElement).getAllByRole('button', { name }).at(-1)!
-        fireEvent.click(button)
-        return button.parentElement!.querySelector<HTMLElement>('dialog')!
-      }
-      const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
-      expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
-      const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
+      const path = ['Schade per aanval', 'Schade per star', label]
+      const popup = openPath(dialog, path)
+      expect(Array.from(popup.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
+      closeAll(dialog)
+      const steps = openPath(dialog, [...path, 'Statfactor']).querySelector('.why-mul')!
       // Kaders van buiten naar binnen (Dave, 8 oktober 2026): de deling door 100, wat door 100 gaat, en de primaire stat met zijn vermenigvuldigers.
       const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
       const [formula, division, outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
@@ -3567,22 +3582,15 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
       expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
       expect(boxed(inner).at(-1)).toBe('Multiplier')
-      const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
-      for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
+      const text = formulaText(steps)
+      closeAll(dialog)
       return text
     }
     const max = statfactor('Max per star')
     expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; = [\d,]+$/)
     // De uitkomst onderaan is het getal in de formule erboven.
-    expect(max.endsWith(` ; = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
+    expect(max.endsWith(` ; = ${maxFormula.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
     expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; = [\d,]+$/)
-    expect(damage[2].calc).toMatch(/^Min per star [\d.,]+ ; Max per star \+ [\d.,]+ ; Twee waarden \/ 2 ; = ± [\d.,]+$/)
-    expect(damage[2].result).toMatch(/^± [\d.,]+$/)
-    expect(damage[2].calc.endsWith(` ; = ${damage[2].result}`)).toBe(true)
-    expect(damage[3].calc).toMatch(/^Stars? per aanval \d ; Schade per star × ± [\d.,]+ ; Raakkans × \d+% ; = ± [\d.,]+$/)
-    // De popup eindigt met hetzelfde getal als de rij.
-    expect(damage[3].total).toBe(true)
-    expect(damage[3].result).toBe(rows[0].result)
     // Bovenaan de eindformule, altijd zichtbaar: aanvallen per kill × stars per aanval × kills = het aantal op de factuur; daaronder de twee
     // deelvragen. Je valt één keer aan, ook als die aanval twee stars gooit (Dave, 8 oktober 2026).
     const summary = dialog.querySelector<HTMLElement>('.why-summary')!
@@ -3590,7 +3598,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const attacks = rows[2].result === '1' ? 'aanval' : 'aanvallen'
     const question = `Waarom ${rows[2].result} ${attacks} per kill op Ribbon Pig?`
     expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(question)
-    const perAttack = damage[3].calc.match(/^Stars? per aanval (\d)/)![1]
+    const perAttack = perAttackFormula.match(/^Stars? per aanval (\d)/)![1]
     const starUnit = perAttack === '1' ? 'star' : 'stars'
     const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
     expect(terms).toEqual([rows[2].result, perAttack, rows[5].result, qty])
@@ -3616,20 +3624,24 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(rows[6].result.replace(/[^\d.]/g, '')).toBe(row.querySelector('td.invoice-meso')!.textContent!.replace(/[^\d.]/g, ''))
   })
 
-  it('toont de verdediging van een mob alleen als hij WDEF heeft, met één decimaal zoals min en max (Dave, 8 oktober 2026)', () => {
+  it('zet de verdediging van een mob als stappen in de formule van min en max, alleen als hij WDEF heeft (Dave, 8 oktober 2026)', () => {
     cleanup()
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, spots: [mobDraft('Stump')] }))
     render(<App />)
     const row = Array.from(inGame().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('th')!.textContent!.startsWith('Throwing stars'))!
     fireEvent.click(row.querySelector<HTMLButtonElement>('.invoice-why')!)
-    const rows = whyDetail(inGame().querySelector<HTMLElement>('dialog')!, 'Schade per aanval')
-    const defense = rows.find((r) => r.label === 'Verdediging van Stump')!
-    expect(defense.calc).toMatch(/^Schade [\d.,]+ – [\d.,]+ ; WDEF 30 \+ 100 \/ 130 ; Naar procent × 100 ; = [\d.,]+ – [\d.,]+$/)
-    expect(defense.result).toMatch(/^[\d.]+(,\d)? – [\d.]+(,\d)?$/)
-    expect(defense.calc.endsWith(` ; = ${defense.result}`)).toBe(true)
-    // Schade per star rekent met precies de getallen van die rij.
-    const [min, max] = defense.result.split(' – ')
-    expect(rows.find((r) => r.label === 'Schade per star')!.calc).toMatch(new RegExp(`^Min per star ${min} ; Max per star \\+ ${max} ; Twee waarden / 2 ; = ± [\\d,]+$`))
+    const dialog = inGame().querySelector<HTMLElement>('dialog')!
+    const perStar = formulaAt(dialog, ['Schade per aanval', 'Schade per star'])
+    const [, min, max] = perStar.match(/^Min per star ([\d.,]+) ; Max per star \+ ([\d.,]+) ; Twee waarden \/ 2 ; = ± [\d,]+$/)!
+    // Na de skillschade gaat de verdediging eraf: delen door WDEF + 100, maal 100; de uitkomst is het getal in de formule erboven.
+    for (const [label, hit] of [
+      ['Max per star', max],
+      ['Min per star', min],
+    ]) {
+      const formula = formulaAt(dialog, ['Schade per aanval', 'Schade per star', label])
+      expect(formula).toMatch(/^W\.ATT [\d.]+ ; Statfactor × [\d,]+ ; Skillschade × \d+% ; (Levelverschil \(−\d+%\) × \d+% ; )?WDEF 30 \+ 100 \/ 130 ; Naar procent × 100 ; = [\d.,]+$/)
+      expect(formula.endsWith(` ; = ${hit}`)).toBe(true)
+    }
   })
 
   it('legt achter het aantal van een potion uit hoe de app eraan komt (Dave, 6 oktober 2026)', () => {
