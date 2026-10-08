@@ -3327,7 +3327,8 @@ const roundedUpText = (exact: number, qty: number): string => {
 const oneDecimal = (n: number) => (n > 0 && n < 0.1 ? nf.format(n) : nf1.format(n))
 
 /** Eén rij van de rekentabel: wat, hoe (de som, klein eronder) en wat eruit komt; `total` is de laatste rij, het aantal op de factuur. */
-type WhyRow = { label: string; calc?: ComponentChildren; result: string; total?: boolean; group?: string }
+/** `detail` vervangt de som in de info-popup door een eigen uitwerking, zoals een tabel met de rijen die samen deze ene rij vormen. */
+type WhyRow = { label: string; calc?: ComponentChildren; detail?: ComponentChildren; result: string; total?: boolean; group?: string }
 
 /**
  * De berekening achter een aantal als tabel (Dave, 6 oktober 2026, #192): per rij wat er berekend wordt met de som eronder, en
@@ -3338,9 +3339,9 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
   const label = (r: WhyRow) => (
     <span class="why-label">
       <span class="why-label-text">{r.label}</span>
-      {r.calc && (
+      {(r.calc || r.detail) && (
         <PopupButton icon={INFO_ICON} class="info-toggle why-info" label={`Info over ${r.label}`} title={r.label} tag="info">
-          <p class="why-calc">{r.calc}</p>
+          {r.detail ?? <p class="why-calc">{r.calc}</p>}
         </PopupButton>
       )}
     </span>
@@ -3512,14 +3513,26 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
   const rows: WhyRow[] = [
     // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoeveel stars een kill kost, hangt af van zijn HP.
     ...inGroup(`Waarom ${nfInt.format(w.perKill)} ${pieces} per kill op ${w.mob}?`, [
-    ...damageRows,
-    // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+    // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
+    // die eindigt met deze rij als antwoord.
     {
-      label: `Schade per ${piece}`,
-      calc: f ? <>({oneDecimal(w.minHit)} + {oneDecimal(w.maxHit)}) / 2</> : <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</>,
-      result: `± ${oneDecimal(w.avgHit)}`,
+      label: 'Schade per aanval',
+      detail: (
+        <WhyTable
+          rows={[
+            ...damageRows,
+            // Elke star of pijl doet iets tussen min en max; de app rekent met het gemiddelde, met ± ervoor (Dave, 6 oktober 2026, #192).
+            {
+              label: `Schade per ${piece}`,
+              calc: f ? <>({oneDecimal(w.minHit)} + {oneDecimal(w.maxHit)}) / 2</> : <>schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</>,
+              result: `± ${oneDecimal(w.avgHit)}`,
+            },
+            { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}`, total: true },
+          ]}
+        />
+      ),
+      result: `± ${oneDecimal(perAttack)}`,
     },
-    { label: 'Schade per aanval', calc: <>{w.starsPerAttack} × {oneDecimal(w.avgHit)} gemiddeld × {nfPct.format(w.hitChance)} raakkans</>, result: `± ${oneDecimal(perAttack)}` },
     { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
     { label: `${props.label} per kill`, calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} per aanval</>, result: nfInt.format(w.perKill), total: true },
