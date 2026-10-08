@@ -39,19 +39,40 @@
 
 ### PLAN
 
+#### #260
+
+The Level cost bill shows only rows that cost mesos this level, and a `CheapestRow` gets an amount only for a piece Cheapest
+buys (`c.changed && c.cheapest !== null` with a matching shop line). Verified on the current trunk: `advisedSetup.ts` also
+sets `option` to null whenever a slot changes, so on the one visible path `option` is always empty. The kept, skipped,
+counted-ammo and empty-slot verdicts are unreachable. Removed rather than kept: git history keeps them as a starting point,
+and since `app/cheapest-fresh-start` a future "why not" view would be rebuilt on the new setup anyway.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `cheapestRows` passes only the bought pieces with a shop line to `CheapestRow`; `CheapestRow` takes the shop name and
+  the line as required props and always uses the `buy` tone.
+- [x] `cheapestWhy` keeps only the "Kopen" verdicts; `isCounted`, `slotCovers`, the `ammo`/`covered`/`worn` props, the
+  `'option'` tone of `BillRow` and the Equip card's `advisedAmmo` prop are gone (the latter fed only that row).
+- [x] Comments that listed the removed verdicts (test helper `verdictOf`, the `.item-verdict` CSS comment) updated.
 
 ### TEST
 
+- [x] `npm run lint` (tsc with `noUnusedLocals`) clean. No new test: the remaining "Kopen" path is covered (`verdictOf(weapon)`
+  in `app.test.tsx`), and the removed branches could not render. The full suite runs in `ship-pr`.
+
 ### DEPLOY: app/260-cheapest-row-reachable
 
-**Score:**
+The Level cost bill's Cheapest equipment rows are built only for the pieces Cheapest buys, and `cheapestWhy` keeps only the
+"Kopen" verdicts. The unreachable verdicts for kept, skipped, empty and counted-ammo slots are removed with the props that fed
+them (`isCounted`, `slotCovers`, `advisedAmmo` on the Equip card, the `'option'` tone) (#260).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: the bill already showed only bought pieces; nothing on the screen changes.
+
+**Score:** N/A
 
 #### Pull Request
 
