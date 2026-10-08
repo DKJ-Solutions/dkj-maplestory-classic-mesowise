@@ -792,7 +792,6 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .with-level .advised-head > :nth-child(2) { width: 3.75rem; }
 /* Het vraagteken achter het aantal (Dave, 8 oktober 2026): 44px om te tikken, maar het steekt boven en onder buiten de rij, zoals de info-knop. */
 .advised-row .advised-item > .help-toggle { flex: none; margin: -0.5rem -0.5rem -0.5rem -0.25rem; }
-.advised-total-label > .help-toggle { display: inline-flex; vertical-align: middle; margin: -0.75rem -0.75rem -0.75rem -0.25rem; }
 /* Het aantal achter de naam (Dave, 8 oktober 2026): grijs en klein zoals de kolom Qty van Useable, en het kort nooit in. */
 .advised-item > .advised-qty { flex: none; margin-left: 0.25rem; white-space: nowrap; }
 /* Het muntje achter een bedrag (Dave, 7 oktober 2026): klein, op de hoogte van de cijfers, met een smalle tussenruimte. */

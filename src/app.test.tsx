@@ -3723,25 +3723,19 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
       expect(it.querySelector('.item-nothing')!.textContent).toMatch(/^Hier verandert niets: /)
       closeItem(it)
     }
-    // Het subtotaal van Equip is wat de factuur voor de stukken rekent; de winkelprijzen samen staan alleen nog in de uitleg erachter.
+    // Het subtotaal van Equip is wat de factuur voor de stukken rekent, zonder vraagteken erachter (Dave, 8 oktober 2026).
     const [levelTotal] = Array.from(d.querySelectorAll('tbody.bill-group-equip .advised-subtotal strong')).map(full)
-    const shopTotal = bought.reduce((s, r) => s + shopOf.get(r)!, 0)
     expect(levelTotal).toBe(invoice.reduce((s, l) => s + l.meso, 0))
-    // Het vraagteken achter het subtotaal van Equip zegt waarom de factuur met Level rekent en niet met Shop (Dave, 7 oktober 2026).
-    const totalHelp = within(d.querySelector<HTMLElement>('tbody.bill-group-equip .advised-subtotal')!).getByRole('button', { name: 'Uitleg bij Equip subtotal' })
-    fireEvent.click(totalHelp)
-    const why = d.querySelector<HTMLElement>('tbody.bill-group-equip .advised-subtotal dialog.item-dialog')!
-    expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${compactMeso(levelTotal)}?`)
-    expect(why.querySelector('.item-why')!.textContent).toContain(`niet met de ${compactMeso(shopTotal)} die je in de winkel betaalt`)
-    closeItem(why)
-    // Het vraagteken rekent het deel voor, met het bedrag uit de kolom.
+    expect(d.querySelector('.advised-subtotal .help-toggle')).toBeNull()
+    // Het vraagteken van een gekocht stuk zegt waarom je het koopt, niet hoe het bedrag ontstaat (Dave, 8 oktober 2026): de popup heet naar het stuk,
+    // met het oordeel Kopen en wat het bespaart eronder.
     const item = openItem(bought[0])
-    // De popup heet naar het bedrag uit de kolom Level (Dave, 7 oktober 2026).
-    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${bought[0].querySelector('.advised-level')!.textContent}?`)
+    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(bought[0].querySelector('.advised-name')!.textContent)
     // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026).
     expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
-    expect(item.textContent).toContain('Op deze factuur')
-    expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
+    expect(item.querySelector('.item-verdict')!.textContent).toBe('Kopen')
+    expect(item.querySelector('.item-why')!.textContent).toMatch(/^(Koop|Je wapenslot is leeg)/)
+    expect(item.textContent).not.toContain('Op deze factuur')
     closeItem(item)
   })
 
