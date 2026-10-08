@@ -3409,7 +3409,12 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
  * label en staat zijn uitwerking in een eigen popup, achter een vraagteken bij het getal (`detail`, Dave, 8 oktober 2026), zoals elk berekend getal in
  * de uitleg. Een regel kan ook een ander teken hebben dan × (`op`): de regels worden dan van boven naar beneden uitgerekend, zoals je het intikt.
  */
-function MulCalc(props: { factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]; result: { value: string; what: string } }) {
+function MulCalc(props: {
+  factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
+  result: { value: string; what: string }
+  /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
+  boxes?: readonly number[]
+}) {
   // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan.
   const num = (value: string, what: string, detail?: ComponentChildren) => (
     <span class="why-value">
@@ -3423,23 +3428,32 @@ function MulCalc(props: { factors: readonly { value: string; what: string; op?: 
       )}
     </span>
   )
+  const rows = (from: number, to: number) =>
+    props.factors.slice(from, to).map((f, j) => (
+      <div key={from + j} class="why-mul-row">
+        <span class="why-mul-what">{f.what}</span>
+        <span class="why-mul-op">{from + j === 0 ? '' : (f.op ?? '×')}</span>
+        <span class="why-mul-num">{num(f.value, f.what, f.detail)}</span>
+      </div>
+    ))
+  // Het grootste kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
+  const boxes = [...(props.boxes ?? [])].sort((x, y) => y - x)
+  const box = (k: number): ComponentChildren => (
+    <div class="why-mul-box">
+      {k + 1 < boxes.length && box(k + 1)}
+      {rows(k + 1 < boxes.length ? boxes[k + 1] : 0, boxes[k])}
+    </div>
+  )
   return (
-    <table class="why-mul">
-      <tbody>
-        {props.factors.map((f, i) => (
-          <tr key={i}>
-            <td class="why-mul-what">{f.what}</td>
-            <td class="why-mul-op">{i === 0 ? '' : (f.op ?? '×')}</td>
-            <td class="why-mul-num">{num(f.value, f.what, f.detail)}</td>
-          </tr>
-        ))}
-        <tr class="why-mul-result">
-          <td class="why-mul-what">{props.result.what}</td>
-          <td class="why-mul-op">=</td>
-          <td class="why-mul-num">{num(props.result.value, props.result.what)}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="why-mul">
+      {boxes.length > 0 && box(0)}
+      {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
+      <div class="why-mul-row why-mul-result">
+        <span class="why-mul-what">{props.result.what}</span>
+        <span class="why-mul-op">=</span>
+        <span class="why-mul-num">{num(props.result.value, props.result.what)}</span>
+      </div>
+    </div>
   )
 }
 
@@ -3555,6 +3569,8 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
           { value: '100', what: 'Naar procent', op: '/' },
           { value: nf.format(base), what: 'Basis', op: '+' },
         ]}
+        // Wat door 100 gaat in een kader, en de primaire stat met zijn vermenigvuldigers in een kader daarbinnen (Dave, 8 oktober 2026).
+        boxes={[mastery !== 1 ? 3 : 2, mastery !== 1 ? 4 : 3]}
         result={{ value: nf.format(statFactor(base, mastery)), what: 'Statfactor' }}
       />
     )

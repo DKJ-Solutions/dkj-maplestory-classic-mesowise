@@ -3418,7 +3418,7 @@ const whyRows = (root: ParentNode) =>
       // Een formule onder elkaar (.why-mul) lees je als regels, gescheiden door " ; ", elk als "wat teken getal".
       const mul = popup.querySelector('.why-mul')
       calc = mul
-        ? Array.from(mul.querySelectorAll('tr'), (r) => Array.from(r.querySelectorAll('td'), (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
+        ? Array.from(mul.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => clean(td.textContent!)).filter(Boolean).join(' ')).join(' ; ')
         : clean(popup.querySelector('.why-calc')?.textContent ?? '')
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     }
@@ -3519,7 +3519,12 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       const mul = open(open(dialog, 'Uitleg bij Schade per aanval'), `Uitleg bij ${label}`)
       expect(Array.from(mul.querySelectorAll('.why-mul .why-help'), (b) => b.getAttribute('aria-label'))).toEqual(['Uitleg bij Statfactor'])
       const steps = open(mul, 'Uitleg bij Statfactor').querySelector('.why-mul')!
-      const text = Array.from(steps.querySelectorAll('tr'), (r) => Array.from(r.querySelectorAll('td'), (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
+      // Een kader om wat door 100 gaat, en daarbinnen een om de primaire stat met zijn vermenigvuldigers (Dave, 8 oktober 2026).
+      const boxed = (box: Element) => Array.from(box.querySelectorAll('.why-mul-what'), (w) => w.textContent)
+      const [outer, inner] = Array.from(steps.querySelectorAll('.why-mul-box'))
+      expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
+      expect(boxed(inner).at(-1)).toBe('Multiplier')
+      const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
       for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
       return text
     }

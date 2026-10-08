@@ -746,17 +746,22 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Een formule onder elkaar (Dave, 8 oktober 2026): links wat het is, rechts het teken en het getal (rechts uitgelijnd, zodat de cijfers
    onder elkaar staan), zoals de andere tabellen in de uitleg, over de volle breedte met een dunne lijn tussen de factoren. Het label in de gewone tekstkleur; is een factor zelf een som, dan staat die
    klein en grijs eronder. De uitkomst staat in het afgeronde accentvak van de andere antwoorden (.why-answer), met lucht erboven. */
-.why-mul { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
-.why-mul td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); vertical-align: baseline; line-height: 1.35; }
-.why-mul tr:nth-last-child(2) td { padding-bottom: 1rem; border-bottom: 0; }
-.why-mul td.why-mul-op { width: 1rem; padding: 0.5rem 0.5rem; font-size: 1.125rem; text-align: center; color: var(--muted); }
-.why-mul td.why-mul-num { padding-right: 0.75rem; text-align: right; font-size: 1.125rem; font-weight: 700; white-space: nowrap; }
-.why-mul td.why-mul-what { width: 100%; padding-left: 0.75rem; overflow-wrap: anywhere; }
-.why-mul-result td { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
-.why-mul-result td:first-child { border-radius: 0.625rem 0 0 0.625rem; }
-.why-mul-result td:last-child { border-radius: 0 0.625rem 0.625rem 0; }
-.why-mul-result td.why-mul-what { font-weight: 600; }
-.why-mul-result td.why-mul-num { font-size: 1.25rem; color: var(--accent); }
+.why-mul { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; font-variant-numeric: tabular-nums; }
+/* Rijen en kaders lopen over de volle breedte en delen de kolommen van .why-mul (subgrid), zodat de getallen ook in een kader onder elkaar staan. */
+.why-mul-row, .why-mul-box { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.why-mul-row { align-items: baseline; border-bottom: 1px solid var(--border); line-height: 1.35; }
+.why-mul-row > * { padding: 0.5rem 0; }
+.why-mul-row:has(+ .why-mul-result) { margin-bottom: 0.5rem; border-bottom: 0; }
+.why-mul .why-mul-op { min-width: 1rem; padding: 0.5rem 0.5rem; font-size: 1.125rem; text-align: center; color: var(--muted); }
+.why-mul .why-mul-num { padding-right: 0.75rem; text-align: right; font-size: 1.125rem; font-weight: 700; white-space: nowrap; }
+.why-mul .why-mul-what { padding-left: 0.75rem; overflow-wrap: anywhere; }
+/* Een kader om regels die bij elkaar horen (Dave, 8 oktober 2026), zoals wat er door 100 gaat; een kader in een kader schuift een stukje in. */
+.why-mul-box { margin: 0.25rem 0; padding: 0 0.25rem; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 0.625rem; }
+.why-mul-box > .why-mul-row:last-child { border-bottom: 0; }
+.why-mul-box + .why-mul-row { border-top: 0; }
+.why-mul-result { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); border-radius: 0.625rem; }
+.why-mul-result .why-mul-what { font-weight: 600; }
+.why-mul-result .why-mul-num { font-size: 1.25rem; color: var(--accent); }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 10rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
 /* Het antwoord van een blok (Dave, 8 oktober 2026): een eigen afgerond vak onder de rijen, met de tint van de eindformule, het label links en
