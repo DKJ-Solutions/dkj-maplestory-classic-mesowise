@@ -4233,7 +4233,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       setJob('thief')
       const d = openView('Potions', 'Cheapest')
       const item = openItem(advisedRow(d, 'HP'))
-      expect(item.querySelector('.item-verdict')!.textContent).toMatch(/^× [0-9.]+ dit level$/)
+      // Geen aparte regel met het aantal: dat staat al in de titel en de laatste rij (Dave, 8 oktober 2026).
+      expect(item.querySelector('.item-verdict')).toBeNull()
       expect(item.querySelector('.report-body')!.textContent!.length).toBeGreaterThan(0)
       closeItem(item)
       // De info-knop noemt de prijs en wat de potion geneest.

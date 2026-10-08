@@ -1813,7 +1813,7 @@ function useableRows(props: UseableInput, wide: boolean) {
   const ammo = ammoName === null ? undefined : ammoInfo(ammoName)
   // Het vraagteken legt het aantal uit, dus zijn popup heet naar dat aantal: "Waarom 52?" (Dave, 7 oktober 2026); zonder aantal de naam.
   const whyTitle = (l: InvoiceLine | undefined) => (l?.qty == null ? undefined : `Waarom ${nfInt.format(l.qty)}?`)
-  const verdict = (l: InvoiceLine) => (l.qty == null ? 'Dit level' : `× ${nfInt.format(l.qty)} dit level`)
+  // Geen regel "× 429 dit level" boven de stappen (Dave, 8 oktober 2026): de titel ("Waarom 429?") en de vette laatste rij noemen het aantal al.
   const potionRows = POTION_KINDS.map((kind) => {
     const potion = props.potions[kind]
     const line = lineOf(kind)
@@ -1833,12 +1833,9 @@ function useableRows(props: UseableInput, wide: boolean) {
         {...amounts(line ? line.meso : null)}
         help={
           line && why ? (
-            <>
-              <p class="item-verdict">{verdict(line)}</p>
-              <div class="report-body">
-                <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
-              </div>
-            </>
+            <div class="report-body">
+              <PotionSteps label={line.label} qty={line.qty ?? 0} w={why} />
+            </div>
           ) : (
             <p class="item-why">De factuur van dit level telt deze potion niet apart.</p>
           )
@@ -1862,12 +1859,9 @@ function useableRows(props: UseableInput, wide: boolean) {
       {...amounts(ammoLine ? ammoLine.meso : null)}
       help={
         ammoLine?.why?.kind === 'ammo' ? (
-          <>
-            <p class="item-verdict">{verdict(ammoLine)}</p>
-            <div class="report-body">
-              <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
-            </div>
-          </>
+          <div class="report-body">
+            <AmmoSteps label={ammoLine.label} qty={ammoLine.qty ?? 0} meso={ammoLine.meso} w={ammoLine.why} />
+          </div>
         ) : (
           <p class="item-why">De factuur van dit level telt deze munitie niet apart.</p>
         )

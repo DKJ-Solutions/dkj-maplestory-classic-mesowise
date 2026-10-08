@@ -742,7 +742,12 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-table .why-info { margin: -0.75rem -0.5rem; }
 .why-calc { margin: 0; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .why-table td { width: 7.5rem; padding-left: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
-.why-table .why-total th, .why-table .why-total td { border-top: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); font-weight: 700; font-size: 1.125rem; }
+/* De uitkomst van de berekening (de rij met het aantal op de factuur) valt op met een lichte accentachtergrond, niet met een dikke streep
+   erboven: die las als een optelstreep, alsof de kolom erboven bij elkaar werd opgeteld (Dave, 8 oktober 2026). */
+.why-table .why-total th, .why-table .why-total td { background: color-mix(in srgb, var(--accent) 10%, var(--card)); font-weight: 700; font-size: 1.125rem; }
+/* border-collapse rondt geen cellen af, dus een rechte band, met binnenruimte zodat de tekst niet tegen de rand van de tint staat. */
+.why-table .why-total th { padding-left: 0.5rem; }
+.why-table .why-total td { padding-right: 0.5rem; }
 .why-table .why-total td { color: var(--accent); }
 /* De berekening in blokken met een kopje (Dave, 8 oktober 2026): ruimte tussen de blokken, en het kopje klein en grijs zoals een sectiekop,
    zodat de getallen het meest opvallen. De laatste rij van een blok zonder streep: de ruimte scheidt de blokken al. */
