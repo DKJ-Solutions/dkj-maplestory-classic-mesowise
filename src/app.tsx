@@ -1879,16 +1879,16 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
  * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
  * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level; met `stat` (Your character) staat de tweede kolom voor de stat van het stuk.
  */
-function BillHead(props: { item: string; qty?: boolean; level?: boolean; stat?: string }) {
-  // Met `stat` (Your character, Dave, 8 oktober 2026) staat een kolom met de stat van het stuk waar Advised "Level" heeft.
-  const wide = props.level || props.stat !== undefined
+function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
+  // Your character heeft dezelfde kolommen als Advised, ook Level (Dave, 8 oktober 2026).
+  const wide = props.level
   return (
     <div class={['advised-head', props.qty && 'with-qty', wide && 'with-level'].filter(Boolean).join(' ')} aria-hidden="true">
       <span>Slot</span>
       <span>{props.item}</span>
       {props.qty && <span class="advised-head-qty">Qty</span>}
       <span class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</span>
-      {wide && <span class="advised-head-level">{props.stat ?? 'Level'}</span>}
+      {wide && <span class="advised-head-level">Level</span>}
     </div>
   )
 }
@@ -1944,18 +1944,18 @@ function MesoAmount(props: { n: number }) {
  * vraagteken (in Your character vijf: Shop en Stat, met het potlood van het slot (`action`) in plaats van het vraagteken). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; stat?: string; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
   const title = props.name ?? props.slot
-  // Met `stat` (Your character, Dave, 8 oktober 2026) staat in de tweede bedragkolom de stat van het stuk, een getal zonder muntje, en achteraan in plaats
-  // van het vraagteken `action`: het potlood dat het slot opent.
-  const wide = props.level !== undefined || props.stat !== undefined
+  // Met `action` (Your character, Dave, 8 oktober 2026) staat achteraan in plaats
+  // van het vraagteken het potlood dat het slot opent.
+  const wide = props.level !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
   const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
   const price = (
     <>
       <span class="advised-price">{amount(props.price)}</span>
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
-      {wide && <span class="advised-level">{props.stat ?? amount(props.level ?? null)}</span>}
+      {wide && <span class="advised-level">{amount(props.level ?? null)}</span>}
     </>
   )
   const last = props.action ?? (
@@ -2321,26 +2321,24 @@ function EquipmentCard(props: {
       </StatDialog>
     )
   }
-  // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels als die van Advised (BillRow), met wat je draagt: de winkelprijs onder Shop en de stat
-  // die telt (ATT of DEF) onder de kolom ernaast; het potlood staat waar Advised zijn vraagteken heeft en opent het slot.
+  // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels en kolommen als die van Advised (BillRow), met wat je draagt: de winkelprijs onder
+  // Shop en een lege Level, want wat je al draagt kost dit level niets, net als een stuk dat Advised je laat houden; het potlood staat waar Advised zijn
+  // vraagteken heeft en opent het slot.
   const wornRow = (slot: EquipSlot) => {
     const entry = props.equipment[slot]
     const name = wornName(entry)
     const price = shopPrice(slot, entry)
-    const value = wornStat(slot, entry)
     const label = slotLabel(slot)
-    // Een gecorrigeerde stat krijgt het accent van de popup (tone buy), zoals bij Advised het bedrag van wat je koopt.
-    const corrected = statOverride(slot, entry) !== undefined && databaseStat(slot, entry) !== undefined
     return (
       <BillRow
         key={slot}
-        tone={name === null ? 'empty' : corrected ? 'buy' : ''}
+        tone={name === null ? 'empty' : ''}
         slot={label}
         name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
         fullName={name ?? undefined}
         facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
         price={price ?? null}
-        stat={name === null ? '' : String(value ?? '?')}
+        level={null}
         action={
           <button ref={(el) => { pencils.current[slot] = el }} type="button" class="equip-edit" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
             {PENCIL_ICON}
@@ -2351,7 +2349,7 @@ function EquipmentCard(props: {
   }
   const wornTable = (
     <>
-      <BillHead item="Equip" stat="Stat" />
+      <BillHead item="Equip" level />
       {slots.map(wornRow)}
       <BillTotal total={slots.reduce((sum, slot) => sum + (shopPrice(slot, props.equipment[slot]) ?? 0), 0)} wide />
       {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}

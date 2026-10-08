@@ -4807,20 +4807,21 @@ describe('equipment: Your character als tabel', () => {
     for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
   })
 
-  it('zet de winkelprijs en de stat in de regel, en telt de bekende prijzen op in het totaal', () => {
+  it('zet de winkelprijs in de regel met een lege Level, zoals Advised bij een stuk dat je houdt, en telt de bekende prijzen op in het totaal (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     expect(totalText()).toBe(compactMeso(0))
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
-    // een eigen item heeft geen winkelprijs: het telt niet mee, de stat staat er wel
+    // een eigen item heeft geen winkelprijs: het telt niet mee
     pickOwn(cards()[0], 'Hat', 'Mijn muts')
     const weapon = billRow('Weapon')
     expect(weapon.querySelector('.advised-price')!.textContent).toBe(compactMeso(14_100))
-    expect(weapon.querySelector('.advised-level')!.textContent).toBe(String(IGOR.watk))
+    expect(weapon.querySelector('.advised-level')!.textContent).toBe('')
+    expect(cards()[0].querySelector('dialog.card-dialog .advised-head-level')!.textContent).toBe('Level')
     expect(billRow('Top').querySelector('.advised-price')!.textContent).toBe(compactMeso(6_000))
     expect(billRow('Hat').querySelector('.advised-price')!.textContent).toBe('')
-    expect(billRow('Hat').querySelector('.advised-level')!.textContent).toBe('?')
+    expect(billRow('Hat').querySelector('.advised-level')!.textContent).toBe('')
     expect(totalText()).toBe(compactMeso(14_100 + 6_000))
   })
 
@@ -4843,11 +4844,9 @@ describe('equipment: Your character als tabel', () => {
     h.type('40')
     h.save()
     expect(slots().claw).toMatchObject({ pick: IGOR.name, stat: '40' })
-    expect(billRow('Weapon').querySelector('.advised-level')!.textContent).toBe('40')
     const g = openDialog(cards()[0], 'Weapon', 'ATT')
     g.type('50')
     fireEvent(g.dialog, new Event('cancel', { cancelable: true }))
     expect(slots().claw.stat).toBe('40')
-    expect(billRow('Weapon').querySelector('.advised-level')!.textContent).toBe('40')
   })
 })
