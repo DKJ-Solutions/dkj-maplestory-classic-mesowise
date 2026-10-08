@@ -53,6 +53,9 @@
 
 * { box-sizing: border-box; }
 
+/* Dubbeltikken zoomt nergens meer in, ook niet op tekst of achtergrond; knijpzoom blijft werken (Dave, 8 oktober 2026, #250). */
+html { touch-action: manipulation; }
+
 body {
   margin: 0;
   background: var(--bg);
