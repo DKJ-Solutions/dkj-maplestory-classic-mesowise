@@ -56,6 +56,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [~] A Bill heading above the Level cost bill, styled like Based on: -- added, then removed again at Dave's request
 - [x] The table head names the first cost group (Useable, or Equip without useables) instead of Item; that group drops its own category row
 - [x] The Equip category row has the same design as the table head: the group name and Mesos, styled as .advised-head
+- [x] A thicker line (2px) under each subtotal
 
 ### TEST
 

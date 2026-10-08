@@ -891,6 +891,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    erboven zodat de posten uit elkaar lopen, en een subtotaal met een lijn erboven die net sterker is dan die tussen de regels. */
 .advised-bill .bill-category > * { padding-top: 1rem; }
 .advised-bill .advised-subtotal { border-top: 1px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
+/* Onder elk subtotaal een dikkere lijn (Dave, 8 oktober 2026), zoals de totaalstreep in de uitleg (.why-table): daar sluit een post af. */
+.advised-bill tbody tr.advised-subtotal { border-bottom: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
 .advised-subtotal > th, .advised-subtotal > td { height: auto; padding-top: 0.375rem; padding-bottom: 0.375rem; vertical-align: baseline; }
 .advised-subtotal td { text-align: right; white-space: nowrap; }
 .advised-subtotal strong { font-size: 0.875rem; font-variant-numeric: tabular-nums; }
