@@ -51,6 +51,7 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] Level cost bill without the Slot column (the slot stays in the row header for screen readers); quantities compact like amounts (12.2k)
 - [x] One set of columns for both groups, an invoice's Item, Price, Qty, Level: a useable's unit price and count, an equip piece's shop price and the share of it this level pays; Level = Price × Qty
 - [x] Qty column dropped again: the count (× 1.6k) or the share (13%) sits right behind the item name, columns Item, Price, Level
+- [x] Price column dropped, the shop price stays in an item's info popup; Level renamed Mesos; Useable on top (it always costs mesos); a row with nothing in it is left out
 
 ### TEST
 
@@ -61,9 +62,9 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 ### DEPLOY: app/bill-table
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
-with two cost groups, Equip and Useable, each with its own subtotal, and no Slot column. Both groups share the columns
-Item, Price and Level, with Level = Price × the amount behind the item name: a useable's unit price and count (written
-short, × 12.2k), or an equipment piece's shop price and the share of it this level pays (13%).
+with two cost groups, Useable on top and Equip below, each with its own subtotal; the columns are only Item and Mesos.
+Behind the item name sits how much of it the level pays: a useable's count (written short, × 12.2k) or the share of an
+equipment piece's price (13%). The shop price lives in the item's info popup, and a slot with nothing in it is left out.
 
 **Score:** 2
 

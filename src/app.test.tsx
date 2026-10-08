@@ -409,7 +409,7 @@ describe('begin zonder opslag', () => {
 
 /** De rijen van de Cheapest-popup (Dave, 7 oktober 2026): één regel per slot, met het vraagteken ernaast. */
 const advisedRow = (dialog: HTMLElement, slot: string) =>
-  [...dialog.querySelectorAll<HTMLElement>('.advised-row')].find((r) => r.querySelector('.slot-name')?.textContent === slot)!
+  [...(dialog.querySelector<HTMLElement>('tbody.bill-group-equip') ?? dialog).querySelectorAll<HTMLElement>('.advised-row')].find((r) => r.querySelector('.slot-name')?.textContent === slot)!
 const nameOf = (row: HTMLElement) => row.querySelector('.advised-name')!.textContent!
 /** Het vraagteken van een regel opent een eigen popup (class item-dialog) met de feiten en de reden (Dave, 7 oktober 2026). */
 const openItem = (row: HTMLElement, button: '.help-toggle' | '.info-toggle' = '.help-toggle') => {
@@ -432,6 +432,14 @@ const verdictOf = (row: HTMLElement) => {
   return text
 }
 /** De feiten van een regel als { Soort: 'CLAW', Level: '20', ... }. */
+/** De winkelprijs van een stuk, uit zijn info-popup: de bill van Level cost heeft geen kolom met prijzen (Dave, 8 oktober 2026). */
+const infoPrice = (row: HTMLElement): string | undefined => {
+  if (!row.querySelector('.info-toggle')) return undefined
+  const item = openItem(row, '.info-toggle')
+  const price = factsOf(item).Prijs
+  closeItem(item)
+  return price
+}
 const factsOf = (item: HTMLElement) => Object.fromEntries([...item.querySelectorAll('.item-facts div')].map((d) => [d.querySelector('dt')!.textContent!, d.querySelector('dd')!.textContent!]))
 
 describe('equipment: de claw past het profiel aan', () => {
@@ -515,7 +523,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(nameOf(advisedRow(dialog, 'Weapon'))).toBe(IGOR.name)
   })
 
-  it('zet een gekocht wapen in Cheapest als slot, naam en prijs (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
+  it('zet een gekocht wapen in Cheapest als slot, naam en bedrag (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
     // Niets aan: het wapenslot is leeg, dus Cheapest koopt het goedkoopste wapen dat je kunt dragen (#202).
     atLevel('20')
     openHomeEquipment()
@@ -526,8 +534,9 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(row.classList.contains('buy')).toBe(true)
     expect(row.querySelector('.slot-name')!.textContent).toBe('Weapon')
     expect(nameOf(row)).not.toBe('—')
-    // Kort, zoals 14.1k (Dave, 7 oktober 2026).
-    expect(row.querySelector('.advised-price')!.textContent).toMatch(/^\d+(\.\d)?[kM]?$/)
+    // Kort, zoals 14.1k (Dave, 7 oktober 2026); geen kolom met de winkelprijs, die staat in de info-popup (Dave, 8 oktober 2026).
+    expect(row.querySelector('.advised-level')!.textContent).toMatch(/^\d+(\.\d)?[kM]?$/)
+    expect(row.querySelector('.advised-price')).toBeNull()
     // De details (type, level, ATT) staan er niet meer.
     expect(row.querySelector('.advised-line, .advised-meta')).toBeNull()
     expect(row.textContent).not.toMatch(/ATT|LV /)
@@ -580,8 +589,8 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(facts.Soort).toBe('CLAW')
     expect(facts.Level).toMatch(/^[\d]+$/)
     expect(facts.ATT).toMatch(/^[\d]+$/)
-    // Het volle bedrag, dat in de prijskolom kort staat (14.1k) en voluit in zijn tooltip.
-    expect(facts.Prijs).toBe(row.querySelector('.advised-price .meso-amount')!.getAttribute('title'))
+    // De winkelprijs staat alleen hier, voluit (Dave, 8 oktober 2026).
+    expect(facts.Prijs).toMatch(/^[\d.]+ meso$/)
     // De info-popup heeft alleen de feiten, het vraagteken het oordeel en de reden.
     expect(item.querySelector('.item-why, .item-verdict')).toBeNull()
     closeItem(item)
@@ -591,7 +600,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(document.activeElement).toBe(toggle)
   })
 
-  it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, bij een stuk dat je houdt Houden, en geeft een leeg slot geen infoknop (Dave, 7 oktober 2026)', () => {
+  it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, bij een stuk dat je houdt Houden, en laat een leeg slot weg (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
@@ -600,9 +609,8 @@ describe('equipment: de claw past het profiel aan', () => {
     const weapon = advisedRow(dialog, 'Weapon')
     expect(verdictOf(weapon)).toBe('Kopen')
     expect(whyOf(weapon)).toContain('je houdt')
-    const empty = dialog.querySelector<HTMLElement>('.advised-row.empty')!
-    expect(empty.querySelector('.info-toggle')).toBeNull()
-    expect(verdictOf(empty)).toBe('Leeg laten')
+    // Een slot dat leeg blijft staat niet in de bill (Dave, 8 oktober 2026): er staat niets in.
+    expect(dialog.querySelector('.advised-row.empty')).toBeNull()
     // Draag je het wapen al, dan houdt Cheapest het.
     cleanup()
     localStorage.clear()
@@ -616,7 +624,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(verdictOf(advisedRow(dialog, 'Weapon'))).toBe('Houden')
   })
 
-  it('toont in Cheapest de winkelprijs van een gekocht stuk in .advised-price, en niets bij een stuk dat je houdt of een leeg slot (Dave, 7 oktober 2026)', () => {
+  it('zet in Cheapest de winkelprijs van een gekocht stuk in zijn info-popup en niet in de bill, en geen prijs bij een stuk dat je houdt (Dave, 8 oktober 2026)', () => {
     const open = (wear: boolean) => {
       cleanup()
       localStorage.clear()
@@ -628,17 +636,17 @@ describe('equipment: de claw past het profiel aan', () => {
       fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
       return cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     }
-    const priceOf = (row: HTMLElement) => row.querySelector('.advised-price')!.textContent
     const bought = open(false)
     const row = advisedRow(bought, 'Weapon')
     expect(row.classList.contains('buy')).toBe(true)
-    expect(priceOf(row)).toMatch(/^\d+(\.\d)?[kM]?$/)
+    expect(bought.querySelector('.advised-price')).toBeNull()
+    expect(infoPrice(row)).toMatch(/^[\d.]+ meso$/)
+    // Een stuk dat je houdt koop je niet: zijn info noemt geen prijs.
     const kept = open(true)
-    expect(priceOf(advisedRow(kept, 'Weapon'))).toBe('')
-    expect(priceOf(kept.querySelector<HTMLElement>('.advised-row.empty')!)).toBe('')
+    expect(infoPrice(advisedRow(kept, 'Weapon'))).toBeUndefined()
   })
 
-  it('geeft elke regel een vraagteken met de reden: houden, leeg, en leeg omdat een overall of losse top het slot beslaat (Dave, 7 oktober 2026)', () => {
+  it('geeft elke regel een vraagteken met de reden, en laat een slot weg dat leeg blijft, ook omdat een overall of losse top het beslaat (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
     pick(cards()[0], 'Weapon', IGOR.name)
@@ -654,9 +662,10 @@ describe('equipment: de claw past het profiel aan', () => {
     })
     const why = (slot: string) => whyOf(advisedRow(dialog, slot))
     expect(why('Weapon')).toMatch(/^Je draagt dit al/)
-    expect(why('Overall')).toBe('Leeg: een losse top of bottom neemt de plek van een overall in.')
-    expect(rows.filter((r) => r.classList.contains('empty')).length).toBeGreaterThan(0)
-    expect(why('Cape')).toMatch(/^Leeg: /)
+    // De overall (een losse top neemt zijn plek in) en een cape die leeg blijft staan er niet: er staat niets in (Dave, 8 oktober 2026).
+    expect(advisedRow(dialog, 'Overall')).toBeUndefined()
+    expect(advisedRow(dialog, 'Cape')).toBeUndefined()
+    expect(rows.filter((r) => r.classList.contains('empty'))).toHaveLength(0)
     // Koopt Cheapest een top en bottom samen, dan noemen beide regels hun partner (en de overall-regel is leeg).
     cleanup()
     localStorage.clear()
@@ -796,7 +805,9 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('30')
     openHomeEquipment()
     const card = cards()[0]
-    expect([...card.querySelectorAll('.advised-row .slot-name')].map((n) => n.textContent)).toContain('Overall')
+    // Een leeg slot staat niet in de bill (Dave, 8 oktober 2026); de slotkeuze achter het potlood bij Equip biedt de overall wel aan.
+    fireEvent.click(within(card).getByRole('button', { name: 'Equip wijzigen' }))
+    expect(within(card).getByRole('button', { name: 'Overall wijzigen' })).toBeTruthy()
     pick(card, 'Top', TOP_A.name)
     expect(slots().top.pick).toBe(TOP_A.name)
     pick(card, 'Overall', 'Blue Sauna Robe')
@@ -3679,34 +3690,34 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(mesoOf(d)).toBe(shop)
   })
 
-  it('zet in Level cost naast Price (de winkelprijs) de kolom Level, met het deel van de prijs achter de naam: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
+  it('zet in Level cost de kolom Mesos, met het deel van de prijs achter de naam: het deel van dit level, gelijk aan de regel van het stuk op de factuur (Dave, 7 oktober 2026)', () => {
     toLevel20()
     const invoice = Array.from(cheapestCard().querySelectorAll('tbody tr'))
       .filter((tr) => /^× 1\s*\??$/.test(tr.querySelector('td.invoice-qty')!.textContent!.trim()) && tr.querySelector('.invoice-why')?.getAttribute('aria-label')?.includes(' meso voor '))
       .map((tr) => ({ name: tr.querySelector('th')!.textContent, meso: mesoOf(tr.querySelector('td.invoice-meso')!.textContent) }))
     fireEvent.click(within(cheapestCard()).getByRole('button', { name: 'Equip van Cheapest' }))
     const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
-    // De kop: de kolommen van een factuur, Price, Qty en Level (Dave, 8 oktober 2026).
+    // De kop: alleen de kolom Mesos, wat dit level betaalt (Dave, 8 oktober 2026); de winkelprijs staat in de info-popup.
     const head = d.querySelector('.advised-head')!
-    expect(head.querySelector('.advised-head-price')!.textContent).toBe('Price')
-    expect(head.querySelector('.advised-head-level')!.textContent).toBe('Level')
-    expect(head.textContent).not.toContain('Mesos')
+    expect(head.querySelector('.advised-head-price')).toBeNull()
+    expect(head.querySelector('.advised-head-level')!.textContent).toBe('Mesos')
     const rows = Array.from(d.querySelectorAll<HTMLElement>('tbody.bill-group-equip .advised-row'))
     const bought = rows.filter((r) => r.classList.contains('buy'))
     expect(bought.length).toBeGreaterThan(0)
     // Het bedrag staat kort (14.1k, Dave, 7 oktober 2026); het volle bedrag staat in de tooltip.
     const full = (el: Element) => mesoOf(el.querySelector('.meso-amount')?.getAttribute('title') ?? '0')
-    for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.textContent).toBe(compactMeso(full(cell)))
+    for (const r of bought) for (const cell of r.querySelectorAll('.advised-level')) expect(cell.textContent).toBe(compactMeso(full(cell)))
     // Achter de naam het deel van de prijs dat dit level betaalt (Dave, 8 oktober 2026), als percentage; een stuk dat je niet koopt heeft er niets.
     for (const r of bought) expect(r.querySelector('.advised-item > .advised-qty')!.textContent).toMatch(/^(<1|\d+)%$/)
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) expect(r.querySelector('.advised-qty')).toBeNull()
-    // Elk gekocht stuk: Level is zijn regel op de factuur, nooit meer dan Shop.
+    // Elk gekocht stuk: Mesos is zijn regel op de factuur, nooit meer dan de winkelprijs uit zijn info-popup.
     expect(bought.map((r) => ({ name: r.querySelector('.advised-name')!.textContent, meso: full(r.querySelector('.advised-level')!) }))).toEqual(invoice)
-    for (const r of bought) expect(full(r.querySelector('.advised-level')!)).toBeLessThanOrEqual(full(r.querySelector('.advised-price')!))
-    expect(bought.some((r) => full(r.querySelector('.advised-level')!) < full(r.querySelector('.advised-price')!))).toBe(true)
+    const shopOf = new Map(bought.map((r) => [r, mesoOf(infoPrice(r))]))
+    for (const r of bought) expect(full(r.querySelector('.advised-level')!)).toBeLessThanOrEqual(shopOf.get(r)!)
+    expect(bought.some((r) => full(r.querySelector('.advised-level')!) < shopOf.get(r)!)).toBe(true)
     // Achter elk bedrag een muntje, dat de schermlezer overslaat (Dave, 7 oktober 2026).
-    for (const r of bought) for (const cell of r.querySelectorAll('.advised-price, .advised-level')) expect(cell.querySelector('svg.meso-icon[aria-hidden="true"]')).not.toBeNull()
-    expect(d.querySelectorAll('tbody.bill-group-equip .advised-subtotal svg.meso-icon')).toHaveLength(2)
+    for (const r of bought) expect(r.querySelector('.advised-level svg.meso-icon[aria-hidden="true"]')).not.toBeNull()
+    expect(d.querySelectorAll('tbody.bill-group-equip .advised-subtotal svg.meso-icon')).toHaveLength(1)
     // Wat je niet koopt staat niet op de factuur: Level blijft leeg, en het vraagteken zegt waarom hier niets verandert (Dave, 7 oktober 2026).
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) {
       expect(r.querySelector('.advised-level')!.textContent).toBe('')
@@ -3715,9 +3726,9 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
       expect(it.querySelector('.item-nothing')!.textContent).toMatch(/^Hier verandert niets: /)
       closeItem(it)
     }
-    // Twee subtotalen van Equip: Shop telt de winkelprijzen van wat je koopt (een grijs stuk niet), Level wat de factuur voor de stukken rekent.
-    const [shopTotal, levelTotal] = Array.from(d.querySelectorAll('tbody.bill-group-equip .advised-subtotal strong')).map(full)
-    expect(shopTotal).toBe(bought.reduce((s, r) => s + full(r.querySelector('.advised-price')!), 0))
+    // Het subtotaal van Equip is wat de factuur voor de stukken rekent; de winkelprijzen samen staan alleen nog in de uitleg erachter.
+    const [levelTotal] = Array.from(d.querySelectorAll('tbody.bill-group-equip .advised-subtotal strong')).map(full)
+    const shopTotal = bought.reduce((s, r) => s + shopOf.get(r)!, 0)
     expect(levelTotal).toBe(invoice.reduce((s, l) => s + l.meso, 0))
     // Het vraagteken achter het subtotaal van Equip zegt waarom de factuur met Level rekent en niet met Shop (Dave, 7 oktober 2026).
     const totalHelp = within(d.querySelector<HTMLElement>('tbody.bill-group-equip .advised-subtotal')!).getByRole('button', { name: 'Uitleg bij Equip subtotal' })
@@ -4014,24 +4025,18 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost een kopregel, zijn regels en een subtotaal.
         expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
-        // Geen kolom Slot en geen kolom Qty (Dave, 8 oktober 2026): de kop is Item, Price en Level, het slot staat alleen voor de schermlezer in de
-        // naam van de rij, en het aantal staat achter de naam.
-        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Price', 'Level'])
+        // Geen kolom Slot, Qty of Price (Dave, 8 oktober 2026): de kop is Item en Mesos, het slot staat alleen voor de schermlezer in de naam van de
+        // rij, het aantal achter de naam en de winkelprijs in de info-popup.
+        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Item', 'Mesos'])
         for (const r of d.querySelectorAll('section.bill .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
         const groups = [...d.querySelectorAll<HTMLElement>('section.bill tbody.bill-group')]
-        expect(groups.map((g) => g.querySelector('.bill-category')!.textContent), label).toEqual(['Equip', 'Useable'])
-        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Equip subtotal', 'Useable subtotal'])
-        const [equip, useable] = groups
+        // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
+        expect(groups.map((g) => g.querySelector('.bill-category')!.textContent), label).toEqual(['Useable', 'Equip'])
+        expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Equip subtotal'])
+        const [useable, equip] = groups
         expect(rowsOf(useable), label).toEqual(['HP', 'MP', 'Ammo'])
-        // Een useable: de prijs per stuk onder Price, het aantal achter de naam en het bedrag onder Level, en Level = Price × aantal (naar boven afgerond, zoals de factuur).
-        const exact = (el: Element | null) => Number((el?.querySelector('.meso-amount')?.getAttribute('title') ?? '0').replace(/[^\d,]/g, '').replace(',', '.'))
-        for (const r of useable.querySelectorAll<HTMLElement>('.advised-row')) {
-          const qtyCell = r.querySelector<HTMLElement>('.advised-qty')
-          if (!qtyCell) continue
-          expect(qtyCell.parentElement!.classList.contains('advised-item'), label).toBe(true)
-          const qty = n(qtyCell.title)
-          expect(exact(r.querySelector('.advised-level')), label + ' ' + r.querySelector('.slot-name')!.textContent).toBe(Math.ceil(exact(r.querySelector('.advised-price')) * qty - 1e-9))
-        }
+        // Een useable: het aantal achter de naam en het bedrag onder Mesos.
+        for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.parentElement!.classList.contains('advised-item'), label).toBe(true)
         // Kort, zoals de bedragen (Dave, 8 oktober 2026): 12.201 wordt 12.2k; het volle aantal in de tooltip.
         for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.textContent, label).toBe(`× ${compactMeso(n(cell.title))}`)
         // Wat dit level betaalt: van de equip de kolom Level (Profile koopt niets), plus potions en ammo van 0 tot 100%.
@@ -4665,7 +4670,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
       expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
-      const buy = d.querySelector<HTMLElement>('.advised-row.buy')!
+      const buy = d.querySelector<HTMLElement>('tbody.bill-group-equip .advised-row.buy')!
       expect(buy).not.toBeNull()
       expect(buy.querySelector('dialog.item-dialog')).toBeNull()
       expect(whyOf(buy)).toContain('Koop')
@@ -4769,7 +4774,6 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
 // Your character als tabel (Dave, 8 oktober 2026): dezelfde regels als Cheapest, met wat je draagt.
 describe('equipment: Your character als tabel', () => {
   const billRow = (slot: string) => Array.from(cards()[0].querySelectorAll<HTMLElement>('dialog.card-dialog .advised-row')).find((r) => r.querySelector('.slot-name')?.textContent === slot)!
-  const totalText = () => cards()[0].querySelector('tbody.bill-group-equip .advised-subtotal .advised-total-price .meso-amount')!.textContent
 
   it('toont de popup met de tag wearing en een regel per getoond slot', () => {
     openHomeEquipment()
@@ -4783,22 +4787,21 @@ describe('equipment: Your character als tabel', () => {
     for (const n of names) expect(within(dialog).getByRole('button', { name: `${n} wijzigen` })).toBeTruthy()
   })
 
-  it('zet de winkelprijs in de regel met een lege Level, zoals Cheapest bij een stuk dat je houdt, en telt de bekende prijzen op in het totaal (Dave, 8 oktober 2026)', () => {
+  it('zet in Profile de winkelprijs van wat je draagt in de info-popup, met een lege Mesos en een subtotaal 0, want het kost dit level niets (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
-    expect(totalText()).toBe(compactMeso(0))
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
-    // een eigen item heeft geen winkelprijs: het telt niet mee
+    // een eigen item heeft geen winkelprijs
     pickOwn(cards()[0], 'Hat', 'Mijn muts')
-    const weapon = billRow('Weapon')
-    expect(weapon.querySelector('.advised-price')!.textContent).toBe(compactMeso(14_100))
-    expect(weapon.querySelector('.advised-level')!.textContent).toBe('')
-    expect(cards()[0].querySelector('dialog.card-dialog .advised-head-level')!.textContent).toBe('Level')
-    expect(billRow('Top').querySelector('.advised-price')!.textContent).toBe(compactMeso(6_000))
-    expect(billRow('Hat').querySelector('.advised-price')!.textContent).toBe('')
+    expect(cards()[0].querySelector('dialog.card-dialog .advised-head-level')!.textContent).toBe('Mesos')
+    expect(cards()[0].querySelector('dialog.card-dialog .advised-price')).toBeNull()
+    expect(billRow('Weapon').querySelector('.advised-level')!.textContent).toBe('')
+    expect(infoPrice(billRow('Weapon'))).toBe('14.100 meso')
+    expect(infoPrice(billRow('Top'))).toBe('6.000 meso')
     expect(billRow('Hat').querySelector('.advised-level')!.textContent).toBe('')
-    expect(totalText()).toBe(compactMeso(14_100 + 6_000))
+    expect(infoPrice(billRow('Hat'))).toBeUndefined()
+    expect(cards()[0].querySelector('tbody.bill-group-equip .advised-subtotal .advised-total-level')!.textContent).toBe(compactMeso(0))
   })
 
   it('opent met het potlood de slotpopup en laat een gekozen stuk de regel bijwerken', () => {
@@ -4810,7 +4813,7 @@ describe('equipment: Your character als tabel', () => {
     expect(cards()[0].querySelector('dialog.slot-dialog')).not.toBeNull()
     pick(cards()[0], 'Weapon', IGOR.name)
     expect(billRow('Weapon').querySelector('.advised-name')!.textContent).toContain('Igor')
-    expect(billRow('Weapon').querySelector('.advised-price')!.textContent).toBe(compactMeso(14_100))
+    expect(infoPrice(billRow('Weapon'))).toBe('14.100 meso')
   })
 
   const openAdvised = () => fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
@@ -4936,22 +4939,22 @@ describe('equipment: Your character als tabel', () => {
       openAdvised()
       const advised = bought(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!)
       closeDialogs()
-      // Met een lege equip koopt Cheapest minstens het wapen, en Profile noemt precies dezelfde slots.
+      // Met een lege equip koopt Cheapest minstens het wapen, en Profile zegt Upgrade bij precies de slots die Cheapest koopt.
       if (!worn) expect(Object.values(advised).some(Boolean)).toBe(true)
-      expect(own).toEqual(advised)
+      const buys = (b: Record<string, boolean>) => Object.keys(b).filter((k) => b[k]).sort()
+      expect(buys(own)).toEqual(buys(advised))
     }
   })
 
-  it('geeft een slot dat je draagt en Cheapest niet vervangt het oordeel Houden met de uitleg van Cheapest, en een leeg slot zonder aankoop geen oordeel (Dave, 8 oktober 2026)', () => {
+  it('geeft een slot dat je draagt en Cheapest niet vervangt het oordeel Houden met de uitleg van Cheapest, en laat een leeg slot zonder aankoop weg (Dave, 8 oktober 2026)', () => {
     atLevel('30')
     openHomeEquipment()
     const dialog = () => cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
     const rows = () => [...dialog().querySelectorAll<HTMLElement>(':scope > .stat-dialog-body tbody.bill-group-equip .advised-row')]
     const rowOf2 = (slot: string) => rows().find((r) => r.querySelector('.slot-name')!.textContent === slot)!
-    // Een leeg slot dat Cheapest niet koopt heeft niets om te houden: geen vraagteken.
-    const empty = rows().filter((r) => !r.classList.contains('buy'))
-    expect(empty.length).toBeGreaterThan(0)
-    for (const r of empty) expect(r.querySelector('.help-toggle'), r.querySelector('.slot-name')!.textContent!).toBeNull()
+    // Een leeg slot dat Cheapest niet koopt heeft niets om te houden, en staat er dus niet (Dave, 8 oktober 2026).
+    expect(rows().length).toBeGreaterThan(0)
+    expect(rows().filter((r) => r.classList.contains('empty'))).toHaveLength(0)
     // Je draagt wat Cheapest ook kiest: dan houdt de app het, met de uitleg van Cheapest.
     closeDialogs()
     openAdvised()
