@@ -812,6 +812,9 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .info-toggle .info-dot { fill: var(--info-glyph); }
 .info-toggle .info-stem { stroke: var(--info-glyph); }
 .advised-item .info-toggle, .based-on .based-on-label .info-toggle { color: var(--text); }
+/* Het i-knopje direct achter de naam van Accuracy en Evasion in je profiel (Dave, 8 oktober 2026), in de tekstkleur, zoals achter een stuk. */
+.stat-line-name:has(> .info-toggle) { display: flex; align-items: center; gap: 0; }
+.stat-line-name > .info-toggle { color: var(--text); }
 .based-on .based-on-label .info-toggle { --info-glyph: var(--advised-box); }
 .info-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .advised-row .help-toggle { grid-column: 4; justify-self: end; margin: -0.5rem -0.5rem -0.5rem 0; }

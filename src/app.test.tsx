@@ -4154,6 +4154,17 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         expect(row.lastElementChild!.classList.contains('equip-edit') || row.lastElementChild!.tagName === 'DIALOG', row.textContent!).toBe(true)
       }
       expect(stats.querySelector('.char-table .help-toggle')).toBeNull()
+      // Wel een i-knopje achter Accuracy en Evasion, met de uitleg, de opbouw en de bron van de formule (Dave, 8 oktober 2026).
+      for (const name of ['Accuracy', 'Evasion']) {
+        const row = [...stats.querySelectorAll<HTMLElement>('.char-table-total .stat-line')].find((r) => r.firstElementChild!.textContent === name)!
+        fireEvent.click(within(row.querySelector<HTMLElement>('.stat-line-name')!).getByRole('button', { name: `Info over ${name}` }))
+        const info = row.querySelector<HTMLElement>('dialog.item-dialog')!
+        expect(info.querySelector('.title-tag')!.textContent).toBe('info')
+        expect(info.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Zo rekent de app je ${name} uit, zonder equipment`))
+        expect(info.querySelector('.breakdown-total dd')!.textContent).toBe(row.querySelector('.equip-value strong')!.textContent)
+        expect(info.querySelector('.source a')!.getAttribute('href')).toMatch(/^https:\/\/meowdb\.com\//)
+        fireEvent.click(within(info).getByRole('button', { name: 'Sluiten' }))
+      }
       fireEvent.click(within(stats).getByRole('button', { name: 'Max HP wijzigen' }))
       expect(document.querySelector('dialog[aria-label="Max HP"]')).not.toBeNull()
       fireEvent.click(within(document.querySelector<HTMLElement>('dialog[aria-label="Max HP"]')!).getAllByRole('button', { name: /Sluiten|Annuleren/ })[0])

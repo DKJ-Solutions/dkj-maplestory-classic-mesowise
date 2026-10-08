@@ -3,10 +3,11 @@
 // toont de kaart de verwachting doorgestreept ernaast. Voor elke job die de app doorrekent (Thief, Warrior, Bowman en Magician).
 // De weapon multiplier van een Warrior heeft geen verwachting: die komt uit het gekozen wapen, en
 // de kaart noemt hem per soort wapen (issue #77).
-import { bowmanAccuracy } from './data/bowman'
-import { magicianAccuracy } from './data/magician'
-import { baseAccuracy, baseAvoid, NIMBLE_BODY } from './data/thief'
-import { PRECISE_STRIKES_LEVELS, warriorAccuracy } from './data/warrior'
+import { BOWMAN_ACCURACY_SOURCE, bowmanAccuracy } from './data/bowman'
+import { MAGICIAN_ACCURACY_SOURCE, magicianAccuracy } from './data/magician'
+import { ACCURACY_SOURCE, baseAccuracy, baseAvoid, DAMAGE_FORMULA_SOURCE, NIMBLE_BODY } from './data/thief'
+import type { Source } from './data/types'
+import { PRECISE_STRIKES_LEVELS, WARRIOR_ACCURACY_SOURCE, warriorAccuracy } from './data/warrior'
 import type { Job } from './job'
 import { draftStatTotal, type ProfileDraft, type ProfileKey } from './profile'
 
@@ -35,6 +36,16 @@ export type BreakdownPart = { label: string; detail?: string; value: number }
 
 /** De opbouw van een verwachte stat: de delen, die samen precies `expectedStat` geven. */
 export type StatBreakdown = { parts: readonly BreakdownPart[]; total: number }
+
+/**
+ * Waar de formule van een stat vandaan komt (Dave, 8 oktober 2026): voor het i-knopje achter Accuracy en Evasion in je profiel. Accuracy per job
+ * (de bronnen bij de functies in data/), Avoid voor elke job uit de uitleg van de damage-formule; undefined voor een stat zonder formule.
+ */
+export function statFormulaSource(key: ProfileKey, job: Job): Source | undefined {
+  if (key === 'avoid') return DAMAGE_FORMULA_SOURCE
+  if (key !== 'accuracy') return undefined
+  return { thief: ACCURACY_SOURCE, warrior: WARRIOR_ACCURACY_SOURCE, bowman: BOWMAN_ACCURACY_SOURCE, magician: MAGICIAN_ACCURACY_SOURCE }[job]
+}
 
 /** Het stat-deel van de accuracy per job: de hoofdstat en hoe de som eindigt (de bronnen staan bij de functies in data/). */
 const ACCURACY_TAIL: Record<Job, { stat: 'DEX' | 'INT'; tail: string; of: (main: number, level: number, luk: number) => number }> = {

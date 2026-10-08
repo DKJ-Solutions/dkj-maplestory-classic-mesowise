@@ -7,7 +7,7 @@ import { browserStorage, loadSpots, saveSpots } from './storage/spots'
 import type { SpotDraft } from './spotDraft'
 import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOB_FIELDS, MOBS, huntedMob, mobDraft, mobStatPatch, spotOf } from './data/spots'
-import type { ArmorSlot, Potion, Stat } from './data/types'
+import type { ArmorSlot, Potion, Source, Stat } from './data/types'
 import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { itemId } from './itemIds'
@@ -30,7 +30,7 @@ import { mobAdvice as adviseMob, type MobAdvice } from './mobAdvice'
 import { profileOf as cheapestProfile, type ChangeKind, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { GENDERS, loadGender, saveGender, type Gender } from './gender'
 import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText, saveJob, type Job } from './job'
-import { statBreakdown, type StatBreakdown } from './expectedStats'
+import { statBreakdown, statFormulaSource, type StatBreakdown } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
@@ -620,6 +620,8 @@ function StatLine(props: {
   unit?: string
   /** Hoe de app het getal opbouwt (Dave, 7 oktober 2026): dan staat er een vraagteken achter het getal dat de opbouw in een kleine popup opent. */
   breakdown?: StatBreakdown
+  /** Een i-knopje direct achter de naam, met uitleg (Dave, 8 oktober 2026): zo houdt de laatste kolom het potlood. */
+  info?: ComponentChildren
   onSave: (text: string) => void
 }) {
   const { field: f, value, expected, breakdown } = props
@@ -635,7 +637,14 @@ function StatLine(props: {
   }
   return (
     <div class={breakdown ? 'stat-line with-help' : 'stat-line'}>
-      <span class="stat-line-name">{f.label}</span>
+      <span class="stat-line-name">
+        {f.label}
+        {props.info && (
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${f.label}`} title={f.label} tag="info">
+            {props.info}
+          </PopupButton>
+        )}
+      </span>
       <div class={corrected ? 'equip-value changed' : 'equip-value'} aria-label={`${f.label} ${value.trim() !== '' ? value : 'onbekend'}${corrected ? `, gecorrigeerd, verwacht ${expected}` : ''}`}>
         <span class="equip-value-num">
           {corrected && <s class="equip-value-db">{sign}{expected}{unit}</s>}
@@ -2606,6 +2615,34 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; onChange?: (pa
 }
 
 /**
+ * Hoe de app Accuracy of Evasion uitrekent, achter het i-knopje in je profiel (Dave, 8 oktober 2026): in een zin wat erin zit, dan de opbouw met
+ * jouw getallen (dezelfde lijst als achter het vraagteken op de kaart) en waar de formule vandaan komt.
+ */
+function StatFormula(props: { label: string; breakdown: StatBreakdown; source: Source | undefined; accuracy: boolean }) {
+  const { label, breakdown, source } = props
+  return (
+    <>
+      <p class="item-why">
+        {props.accuracy
+          ? `Zo rekent de app je ${label} uit, zonder equipment: je base AP en je level in de formule van je job, naar beneden afgerond, plus wat een passieve skill van je job geeft.`
+          : `Zo rekent de app je ${label} uit, zonder equipment: een deel uit je LUK en een deel uit je DEX (je base AP), elk naar beneden afgerond, plus een vaste basis, en bij een Thief Nimble Body.`}{' '}
+        Extra AP van items, een item met {label} of een buff telt hier niet mee.
+      </p>
+      <BreakdownList breakdown={breakdown} value={String(breakdown.total)} />
+      {source && (
+        <p class="source">
+          Formule:{' '}
+          <a href={source.url} target="_blank" rel="noopener noreferrer">
+            NiaMeowDB
+          </a>
+          , opgehaald op {formatDate(source.retrieved)}.
+        </p>
+      )}
+    </>
+  )
+}
+
+/**
  * De stats van een karakter zonder equipment (Dave, 7 oktober 2026): puur wat level, base AP en skillpunten geven. Max HP en Max MP, Accuracy en
  * Evasion uit de formule (expectedStat, met Nimble Body of Precise Strikes erin) en bij een Magician de M.ATT uit zijn INT. Extra AP van items
  * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet. Max HP en Max MP zijn de getallen van het profiel:
@@ -2627,7 +2664,8 @@ function BaseStats(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Pa
       {(['accuracy', 'avoid'] as const).map((key) => {
         const f = field(key)
         const breakdown = statBreakdown(key, bare, job)
-        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={props.onChange ? undefined : breakdown} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
+        const info = props.onChange && breakdown && <StatFormula label={f!.label} breakdown={breakdown} source={statFormulaSource(key, job)} accuracy={key === 'accuracy'} />
+        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={props.onChange ? undefined : breakdown} info={info || undefined} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
       })}
       {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>
