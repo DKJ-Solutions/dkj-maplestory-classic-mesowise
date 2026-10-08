@@ -4376,6 +4376,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
         expect(button.getAttribute('aria-label')).toBe(`Stats van ${who}`)
         // De hele naam is klikbaar: hij staat in de knop (Dave, 8 oktober 2026).
         expect(button.querySelector('.based-on-value')!.textContent).toBe(who)
+        // Verwachte getallen krijgen een eigen icoon, een ≈ in plaats van de i van vaste info (Dave, 8 oktober 2026).
+        expect(button.classList.contains('expected-toggle')).toBe(true)
         expect(button.getAttribute('aria-haspopup')).toBe('dialog')
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!

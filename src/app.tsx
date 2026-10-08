@@ -99,6 +99,17 @@ const INFO_ICON = (
   </svg>
 )
 
+/**
+ * Het icoon van een popup met wat de app verwacht in plaats van vaste info (Dave, 8 oktober 2026): hetzelfde gevulde rondje als INFO_ICON, maar met
+ * een ≈ erin, "ongeveer": het getal is voorspeld en kan in het spel afwijken. Zo zie je het verschil voordat je tikt.
+ */
+const EXPECTED_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="currentColor" />
+    <path class="info-stem" d="M7.5 10Q9.75 8 12 10T16.5 10M7.5 14.5Q9.75 12.5 12 14.5T16.5 14.5" fill="none" stroke-width="1.8" stroke-linecap="round" />
+  </svg>
+)
+
 /** Het ronde vraagteken: van HelpToggle, en van de knop die in Advised uitlegt of je een stuk koopt (Dave, 7 oktober 2026). */
 const QUESTION_ICON = (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1753,9 +1764,10 @@ function BasedOn(props: { who: string; mob: string }) {
           <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
             <span class="sr-only">Char: </span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
-                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop. */}
+                popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
+                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). */}
             {stats ? (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
+              <PopupButton icon={EXPECTED_ICON} class="info-toggle expected-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
                 {stats}
               </PopupButton>
             ) : (
