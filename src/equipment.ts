@@ -332,21 +332,39 @@ const anyItem = (slot: EquipSlot, name: string): CatalogItem | undefined =>
 export const catalogInfo = (slot: EquipSlot, name: string): CatalogItem | undefined => anyItem(slot, name)
 
 /**
+ * Wat de lijsten van alle jobs van het stuk in een slot weten (Dave, 8 oktober 2026): voor itemRequirements en shopPrice. De winkelregels staan voor de items zonder prijs,
+ * dus bij dezelfde naam wint de winkelregel; undefined bij munitie, een leeg slot, een eigen item of een naam die in geen lijst staat.
+ */
+function shopItem(slot: EquipSlot, entry: EquipEntry): Weapon | ArmorPiece | WornArmor | WornClaw | undefined {
+  if (slot === 'ammo' || isEmptyEntry(entry) || entry.pick === OTHER) return undefined
+  const shops = Object.values(SHOP) as NonNullable<(typeof SHOP)[Job]>[]
+  const inSlot = <T extends { slot: ArmorSlot }>(list: readonly T[]) => list.filter((a) => a.slot === slot)
+  const lists: (Weapon | ArmorPiece | WornArmor | WornClaw)[] = isArmorSlot(slot)
+    ? [...shops.flatMap((shop) => inSlot(shop.armor)), ...shops.flatMap((shop) => inSlot(shop.wornArmor))]
+    : [...shops.flatMap((shop) => shop.weapons), ...shops.flatMap((shop) => shop.wornWeapons)]
+  return lists.find((i) => i.name === entry.pick)
+}
+
+/**
  * De stat-eisen van wat je in een slot draagt (een eis die de pagina niet noemt staat er niet). Winkelitems en items zonder prijs
  * kennen hun eisen (#158; bij dezelfde naam wint de winkelregel); undefined bij een leeg slot, een eigen item of een naam die in
  * geen lijst staat: daarvan weet de app niet wat het vraagt. Ammo vraagt alleen een level.
  */
 export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Requires<Stat>> | undefined {
-  if (slot === 'ammo' || isEmptyEntry(entry) || entry.pick === OTHER) return undefined
-  const found = (Object.values(SHOP) as NonNullable<(typeof SHOP)[Job]>[])
-    .flatMap((shop): readonly (Weapon | ArmorPiece | WornArmor | WornClaw)[] =>
-      isArmorSlot(slot) ? [...shop.armor, ...shop.wornArmor].filter((a) => a.slot === slot) : [...shop.weapons, ...shop.wornWeapons],
-    )
-    .find((i) => i.name === entry.pick)
+  const found = shopItem(slot, entry)
   if (!found) return undefined
   const out: Partial<Requires<Stat>> = {}
   for (const s of ['str', 'dex', 'int', 'luk'] as const) if (found[s] !== undefined) out[s] = found[s]
   return out
+}
+
+/**
+ * De winkelprijs van wat je in een slot draagt (Dave, 8 oktober 2026), voor de kolom Shop in Your character. Alleen een winkelwapen of winkelarmor heeft er een;
+ * undefined bij een leeg slot, een eigen item, een item zonder prijs (drop of Free Market) en munitie, die je per stuk koopt.
+ */
+export const shopPrice = (slot: EquipSlot, entry: EquipEntry): number | undefined => {
+  const found = shopItem(slot, entry)
+  return found !== undefined && 'price' in found ? found.price : undefined
 }
 
 /** De catalogusitems waarvan de naam de tekst bevat, zonder hoofdletters en spaties rond de tekst; een lege tekst geeft alles. */

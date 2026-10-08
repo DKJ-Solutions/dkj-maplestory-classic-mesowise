@@ -12,7 +12,7 @@ import { levelCost, type LevelCost } from './levelCost'
 import { advisedSetup } from './advisedSetup'
 import { compactMeso, nf3 } from './numberFormat'
 import { ammoInfo, buyTexts, type CheapestSlot } from './cheapestEquip'
-import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
+import { changeEquipment, choosePick, commitStat, databaseStat, displacedSlots, equipmentForJob, EQUIP_SLOTS, loadEquipment, MAX_NAME_LENGTH as MAX_EQUIP_NAME, MAX_RESULTS, NONE, OTHER, saveEquipment, searchCatalog, setHelpfulStranger, slotLabel, isEmptyEntry, catalogInfo, familyName, itemRequirements, nameWithLevel, shopPrice, shownSlots, STAT_NAME, statName, statOverride, syncWithEquipment, weaponStatName, withWeaponKind, wornMdef, wornName, wornStat, wornWdef, type EquipEntry, type EquipSlot, type Equipment, type WeaponKind } from './equipment'
 import { ENERGY_BOLT_SOURCE, MAGIC_CLAW_SOURCE } from './data/magician'
 import { armorUpgradeAdvice, type ArmorChoice, type ArmorUpgradeAdvice, type UnwearableArmor } from './armorUpgrade'
 import { clawUpgradeAdvice, nextBetterWeapon, type ClawChoice, type ClawUpgradeAdvice, type UnwearableClaw } from './clawUpgrade'
@@ -115,6 +115,13 @@ const QUESTION_ICON = (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="10" />
     <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
+  </svg>
+)
+
+/** Het potlood: corrigeren in Your character (.equip-edit), en in de tabel van Equip de knop die een slot opent (Dave, 8 oktober 2026). */
+const PENCIL_ICON = (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 )
 
@@ -455,10 +462,12 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
  * gaat daarna terug naar de kop, pas na de volgende render: een plek kan in de lijst verschuiven, en een verplaatst
  * element verliest in sommige browsers zijn focus.
  */
-function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
+function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?: boolean; basedOn?: string | null; own?: { mob: string | null; stats: ComponentChildren }; mob?: string; opener: RefObject<HTMLButtonElement | null>; error?: string | null; onClose: () => void; onSave?: () => void; titleNote?: ComponentChildren; help?: ComponentChildren; report?: ComponentChildren; reportTitle?: string; children: ComponentChildren }) {
   // Een Advised-popup zegt onder zijn titel op welk level en voor welke job het advies rekent (Dave, 7 oktober 2026). Met `basedOn` (de mob)
   // staat dat bovenaan in de popup, onder "Based on:" met de mob ernaast, en niet nog eens onder de titel: zo in Total cost: Equip en Useable.
   const who = useContext(AdvisedWho)
+  const advisedStats = useContext(AdvisedStats)
+  const cards = useContext(CardViewContext)
   const close = () => {
     props.onClose()
     requestAnimationFrame(() => props.opener.current?.focus())
@@ -476,7 +485,8 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
     <StatDialog title={props.title} tag={props.tag} subtitle={props.advised && !props.basedOn ? who || undefined : undefined} titleNote={props.titleNote} help={props.help} closeLabel="Sluiten" focusInput={false} className={className} data={data} onCancel={close} onSave={props.onSave}>
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
-        {props.advised && props.basedOn && <BasedOn who={who} mob={props.basedOn} />}
+        {/* Onder "Based on:" in Advised het karakter en de mob van het advies; in Your character (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="advised" /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="actual" edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -510,7 +520,8 @@ const COST_CARDS: readonly { key: CardKey; title: string; icon: keyof typeof ICO
 interface CardViewState {
   /** Per kaart de weergave die openstaat; ontbreekt de kaart, dan is zijn popup dicht. */
   open: Partial<Record<CardKey, CardView>>
-  opener: { current: HTMLButtonElement | null }
+  /** Per kaart de knop die zijn popup opende (Dave, 8 oktober 2026): zo gaat de focus terug naar de goede knop als een kaart een andere opent, zoals het potlood bij Based on: in Your character. */
+  openers: { current: Partial<Record<CardKey, HTMLButtonElement | null>> }
   openCard: (card: CardKey, view: CardView, button: HTMLButtonElement) => void
   close: (card: CardKey) => void
 }
@@ -519,19 +530,19 @@ const AdvisedWho = createContext('')
 /** De regels van Advised: Total stats (Dave, 7 oktober 2026), voor het i-knopje achter de char onder "Based on:"; null zonder advies. */
 const AdvisedStats = createContext<ComponentChildren>(null)
 
-const CardViewContext = createContext<CardViewState>({ open: {}, opener: { current: null }, openCard: () => {}, close: () => {} })
+const CardViewContext = createContext<CardViewState>({ open: {}, openers: { current: {} }, openCard: () => {}, close: () => {} })
 
 /** De weergave van een kaart met twee knoppen: welke openstaat (null is dicht), en de knop die de popup opende. */
 function useCardView(card: CardKey) {
   const ctx = useContext(CardViewContext)
-  return { view: ctx.open[card] ?? null, opener: ctx.opener, open: (v: CardView, button: HTMLButtonElement) => ctx.openCard(card, v, button), close: () => ctx.close(card) }
+  return { view: ctx.open[card] ?? null, opener: { get current() { return ctx.openers.current[card] ?? null } }, open: (v: CardView, button: HTMLButtonElement) => ctx.openCard(card, v, button), close: () => ctx.close(card) }
 }
 
 /**
  * De twee knoppen onder de kop van elke kaart met een popup (Dave, 6 oktober 2026, #188, #192), in plaats van het oog in de kop. Ze openen
- * dezelfde popup: "Advised" toont wat de app verwacht (om te lezen), "Your character" wat je character in game heeft (om te wijzigen).
+ * dezelfde popup: "Advised" toont wat de app verwacht (om te lezen), "Wearing" wat je character in game heeft (om te wijzigen).
  * Eerst het advies, dan jij: je kijkt eerst wat de app verwacht en bepaalt dan of je het overneemt. Zonder advies (een job die de
- * app niet doorrekent) alleen "Your character".
+ * app niet doorrekent) alleen "Wearing".
  */
 function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
   const button = (view: CardView, label: string) => (
@@ -544,7 +555,7 @@ function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (
     <div class="view-actions">
       <div class="card-actions view-buttons">
         {props.advised && button('advised', 'Advised')}
-        {button('worn', 'Your character')}
+        {button('worn', 'Wearing')}
       </div>
     </div>
   )
@@ -835,7 +846,7 @@ function StatsCard(props: StatsCardBody) {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup card={props.card} title={showAdvised ? `Advised: ${props.title}` : props.title} tag={showAdvised ? undefined : 'edit'} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
@@ -1125,7 +1136,7 @@ function PotionsCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="potions" title={title} opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
+        <CardPopup card="potions" title={title} tag="edit" opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -1648,6 +1659,14 @@ const CHEAPEST_HELP = (
   </>
 )
 
+/** De uitleg bij Total cost: Equip in Your character (Dave, 8 oktober 2026): dezelfde tabel als Advised, met wat je draagt in plaats van wat de app adviseert. */
+const WORN_HELP = (
+  <>
+    Wat je nu draagt, in dezelfde tabel als Advised. Shop is wat het stuk in de winkel kost; een eigen item, munitie en een stuk zonder winkelprijs hebben er geen en tellen niet mee in Total cost. Stat is de ATT of DEF die in je
+    profiel telt, in de accentkleur als je hem corrigeerde. Tik op het potlood achter een regel om dat stuk te kiezen of zijn stat te corrigeren.
+  </>
+)
+
 /** De uitleg bij Total cost: Useable: achter het vraagteken naast de titel, zoals CHEAPEST_HELP bij Equip (Dave, 7 oktober 2026). */
 const USEABLE_HELP = (
   <>
@@ -1664,8 +1683,16 @@ const mobWhy = (mob: string) =>
  * elkaar, elk in een eigen vak met een lichte achtergrond, zonder zichtbaar label (alleen voor een schermlezer), en een vraagteken achter de mob
  * dat zegt waarom juist die. Het staat in de popup en niet onder de titel: daar is de volle breedte, ook onder het kruisje.
  */
-function BasedOn(props: { who: string; mob: string }) {
-  const stats = useContext(AdvisedStats)
+function BasedOn(props: { who: string; mob: string | null; stats: ComponentChildren; sheet: 'advised' | 'actual'; edit?: { char: (button: HTMLButtonElement) => void; mob: (button: HTMLButtonElement) => void; open: CardViewState['open'] } }) {
+  const { stats, sheet } = props
+  // Your character (sheet actual): het karakter en de mob die je zelf zette, zonder uitleg waarom juist deze (Dave, 8 oktober 2026); het label van de i-popup is dan actual in plaats van expected.
+  const advised = sheet === 'advised'
+  // In Your character (`edit`, Dave, 8 oktober 2026) een potlood achter elk vak (Dave, 8 oktober 2026): het opent de popup waar je dit zelf zet, boven deze popup. Char: Ability points van Your character, waar je AP en Auto assign staan (level en job zet je met Level up en in het menu); Mob: Monster van Your character.
+  const pencil = (what: 'Char' | 'Mob', card: CardKey, open: (button: HTMLButtonElement) => void) => (
+    <button type="button" class="info-toggle" aria-haspopup="dialog" aria-expanded={props.edit?.open[card] === 'worn'} aria-label={`${what} wijzigen`} onClick={(e) => open(e.currentTarget)}>
+      {PENCIL_ICON}
+    </button>
+  )
   const mobDef = MOBS.find((m) => m.name === props.mob)
   return (
     <section class="based-on" aria-label="Based on">
@@ -1674,25 +1701,28 @@ function BasedOn(props: { who: string; mob: string }) {
         {props.who && (
           // Elk vak zegt in de HTML wat het toont, net als data-popup (#245): data-based-on-character="Lv. 21 Thief" en data-based-on-mob="Snail", met
           // data-sheet="advised" ertegenover de "actual" van Your character (Dave, 7 oktober 2026; zie CardPopup).
-          <div class="based-on-label" data-based-on-character={props.who} data-sheet="advised">
+          <div class="based-on-label" data-based-on-character={props.who} data-sheet={sheet}>
             <span class="sr-only">Char: </span>
             {/* Het i-knopje: het karakter van dit advies, in drie tabellen: Ability points, Skillpoints en Total stats (Dave, 7 oktober 2026). De
                 popup heet naar het karakter ("Lv. 20 Thief") met het label expected erboven, zoals Total cost: Useable. De naam staat in de knop, en
-                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). */}
+                het icoon is een ≈ in plaats van een i: verwachte getallen, geen vaste info (Dave, 8 oktober 2026). In Wearing zijn het je eigen
+                getallen: dan het i-icoon en het label actual. */}
             {stats ? (
-              <PopupButton icon={EXPECTED_ICON} class="info-toggle expected-toggle" label={`Stats van ${props.who}`} title={props.who} tag="expected" name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': 'advised' }}>
+              <PopupButton icon={advised ? EXPECTED_ICON : INFO_ICON} class={advised ? 'info-toggle expected-toggle' : 'info-toggle'} label={`Stats van ${props.who}`} title={props.who} tag={advised ? 'expected' : 'actual'} name={props.who} data={{ 'data-based-on-character': props.who, 'data-sheet': sheet }}>
                 {stats}
               </PopupButton>
             ) : (
               <span class="based-on-value">{props.who}</span>
             )}
+            {props.edit && pencil('Char', 'ap', props.edit.char)}
           </div>
         )}
         {/* De mob: het i-knopje (wat de mob is) en het vraagteken (waarom juist deze) staan allebei in het vak achter de naam (Dave, 8 oktober 2026). */}
-        <div class="based-on-label" data-based-on-mob={props.mob} data-sheet="advised">
+        {/* In Wearing staat het vak er altijd (Dave, 8 oktober 2026): zonder gekozen mob leeg, met alleen het potlood; een vraagteken alleen in Advised. */}
+        <div class="based-on-label" data-based-on-mob={props.mob ?? undefined} data-sheet={sheet}>
           <span class="sr-only">Mob: </span>
           {mobDef ? (
-            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+            <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': sheet }}>
               {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
               <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
               {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
@@ -1700,9 +1730,12 @@ function BasedOn(props: { who: string; mob: string }) {
           ) : (
             <span class="based-on-value">{props.mob}</span>
           )}
-          <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
-            <p class="item-why">{mobWhy(props.mob)}</p>
-          </PopupButton>
+          {advised && props.mob !== null && (
+            <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.mob}`} title={props.mob}>
+              <p class="item-why">{mobWhy(props.mob)}</p>
+            </PopupButton>
+          )}
+          {props.edit && pencil('Mob', 'mob', props.edit.mob)}
         </div>
       </div>
     </section>
@@ -1825,16 +1858,18 @@ function UseableRows(props: { job: Job; potions: Record<PotionKind, Potion>; amm
 
 /**
  * De kop van een factuur in Advised (Dave, 7 oktober 2026): in hetzelfde raster als de rijen, "Mesos" boven de bedragen. Met `level` (Equip) twee
- * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level.
+ * bedragkolommen: "Shop" boven de winkelprijs en "Level" boven het deel van dit level; met `stat` (Your character) staat de tweede kolom voor de stat van het stuk.
  */
-function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
+function BillHead(props: { item: string; qty?: boolean; level?: boolean; stat?: string }) {
+  // Met `stat` (Your character, Dave, 8 oktober 2026) staat een kolom met de stat van het stuk waar Advised "Level" heeft.
+  const wide = props.level || props.stat !== undefined
   return (
-    <div class={['advised-head', props.qty && 'with-qty', props.level && 'with-level'].filter(Boolean).join(' ')} aria-hidden="true">
+    <div class={['advised-head', props.qty && 'with-qty', wide && 'with-level'].filter(Boolean).join(' ')} aria-hidden="true">
       <span>Slot</span>
       <span>{props.item}</span>
       {props.qty && <span class="advised-head-qty">Qty</span>}
-      <span class="advised-head-price">{props.level ? 'Shop' : 'Mesos'}</span>
-      {props.level && <span class="advised-head-level">Level</span>}
+      <span class="advised-head-price">{wide ? 'Shop' : 'Mesos'}</span>
+      {wide && <span class="advised-head-level">{props.stat ?? 'Level'}</span>}
     </div>
   )
 }
@@ -1843,11 +1878,13 @@ function BillHead(props: { item: string; qty?: boolean; level?: boolean }) {
  * Het totaal als laatste regel van een factuur in Advised (Dave, 7 oktober 2026): in de prijskolom onder de bedragen, met een totaalstreep over de
  * hele breedte erboven. Met `level` (Equip) staat het totaal van de kolom Level ernaast.
  */
-function BillTotal(props: { total: number; qty?: boolean; level?: number }) {
+function BillTotal(props: { total: number; qty?: boolean; level?: number; wide?: boolean }) {
+  // `wide` (Your character, Dave, 8 oktober 2026): het raster van Equip met alleen het totaal van Shop; Level en zijn uitleg ontbreken.
+  const wide = props.level !== undefined || props.wide
   return (
-    <p class={['equip-total advised-total', props.qty && 'with-qty', props.level !== undefined && 'with-level'].filter(Boolean).join(' ')}>
+    <p class={['equip-total advised-total', props.qty && 'with-qty', wide && 'with-level'].filter(Boolean).join(' ')}>
       <span class="advised-total-label">Total cost</span>
-      <strong>{props.level !== undefined ? <MesoAmount n={props.total} /> : nfInt.format(props.total)}</strong>
+      <strong>{wide ? <MesoAmount n={props.total} /> : nfInt.format(props.total)}</strong>
       {props.level !== undefined && (
         <strong class="advised-total-level">
           <MesoAmount n={props.level} />
@@ -1885,22 +1922,30 @@ function MesoAmount(props: { n: number }) {
 
 /**
  * Eén regel van een factuur in Advised, in vier kolommen (Dave, 7 oktober 2026): het slot, de naam met de info-knop erachter, het bedrag en het
- * vraagteken. Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
+ * vraagteken (in Your character vijf: Shop en Stat, met het potlood van het slot (`action`) in plaats van het vraagteken). Alleen het bedrag van wat je koopt staat in de accentkleur (`buy`); van een stuk dat niet loont is het gedempt (`option`), en een
  * leeg slot toont een grijs streepje (`empty`). De info-knop toont wat het stuk is (`facts`), het vraagteken waarom (`help`): elk in een eigen popup.
  */
-function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help: ComponentChildren; helpTitle?: string }) {
+function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; qty?: number | null; level?: number | null; stat?: string; name: string | null; fullName?: string; facts: readonly [string, string][]; price: number | null; help?: ComponentChildren; helpTitle?: string; action?: ComponentChildren }) {
   const title = props.name ?? props.slot
+  // Met `stat` (Your character, Dave, 8 oktober 2026) staat in de tweede bedragkolom de stat van het stuk, een getal zonder muntje, en achteraan in plaats
+  // van het vraagteken `action`: het potlood dat het slot opent.
+  const wide = props.level !== undefined || props.stat !== undefined
   // In een factuur met een Level-kolom staat een muntje achter elk bedrag (Dave, 7 oktober 2026).
-  const amount = (n: number | null) => (n === null ? '' : props.level !== undefined ? <MesoAmount n={n} /> : nfInt.format(n))
+  const amount = (n: number | null) => (n === null ? '' : wide ? <MesoAmount n={n} /> : nfInt.format(n))
   const price = (
     <>
       <span class="advised-price">{amount(props.price)}</span>
       {/* Het deel van dit level, alleen in een factuur met een Level-kolom (Equip, Dave, 7 oktober 2026). */}
-      {props.level !== undefined && <span class="advised-level">{amount(props.level)}</span>}
+      {wide && <span class="advised-level">{props.stat ?? amount(props.level ?? null)}</span>}
     </>
   )
+  const last = props.action ?? (
+    <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={props.helpTitle ?? title}>
+      {props.help}
+    </PopupButton>
+  )
   return (
-    <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty', props.level !== undefined && 'with-level'].filter(Boolean).join(' ')}>
+    <div class={['advised-row', props.tone, props.qty !== undefined && 'with-qty', wide && 'with-level'].filter(Boolean).join(' ')}>
       <span class="slot-name">{props.slot}</span>
       <span class="advised-item">
         <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
@@ -1922,9 +1967,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
       {props.qty !== undefined && <span class="advised-qty">{props.qty === null ? '' : nfInt.format(props.qty)}</span>}
       {/* Met een Qty-kolom staat het vraagteken direct achter het aantal en het bedrag achteraan (Dave, 7 oktober 2026); zonder achter het bedrag. */}
       {props.qty === undefined && price}
-      <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${props.slot}`} title={props.helpTitle ?? title}>
-        {props.help}
-      </PopupButton>
+      {last}
       {props.qty !== undefined && price}
     </div>
   )
@@ -2083,7 +2126,7 @@ function cheapestWhy(job: Job, slot: EquipSlot, c: CheapestSlot, counted: boolea
 function CostCardButtons(props: { part: 'worn' | 'advised' }) {
   const ctx = useContext(CardViewContext)
   const advised = props.part === 'advised'
-  const label = advised ? 'Advised' : 'Your character'
+  const label = advised ? 'Advised' : 'Wearing'
   return (
     <>
       {/* Boven de knoppen de zin wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. Zonder kopje (Dave). */}
@@ -2150,6 +2193,10 @@ function EquipmentCard(props: {
   advisedLines: readonly InvoiceLine[] | null
   /** De mob waarop het advies rekent (Dave, 7 oktober 2026), onder "Based on:" in Total cost: Equip; null zonder mob. */
   advisedMob: string | null
+  /** De mob die je zelf koos in Monster (Dave, 8 oktober 2026), onder "Based on:" in Your character; null zonder mob. */
+  wornMob: string | null
+  /** Je eigen karakter achter het i-knopje onder "Based on:" in Your character: dezelfde drie tabellen als Advised, met je eigen profiel. */
+  wornStats: ComponentChildren
 }) {
   // Welke equip de popup toont (#188): wat je draagt of het advies; null is dicht.
   const { view, opener, open: openView, close } = useCardView('equip')
@@ -2157,19 +2204,145 @@ function EquipmentCard(props: {
   const computed = isComputed(props.job)
   const slots = shownSlots(props.job, props.equipment.claw)
   const uid = useId()
-  // Het slot waarvan je de stat corrigeert (het potlood); de rest blijft een regel.
+  // Het slot waarvan je de stat corrigeert (het potlood in de slotpopup).
   const [editing, setEditing] = useState<EquipSlot | null>(null)
+  // Het slot waarvan de popup openstaat in Your character (Dave, 8 oktober 2026): daarin kies je het stuk en corrigeer je zijn stat.
+  const [editSlot, setEditSlot] = useState<EquipSlot | null>(null)
+  // De potloden in de tabel: sluit de slotpopup, dan gaat de focus terug naar het potlood dat hem opende (pas na de render, zoals PopupButton; Safari focust een aangetikte knop niet zelf).
+  const pencils = useRef<Partial<Record<EquipSlot, HTMLButtonElement | null>>>({})
+  const closeSlot = (slot: EquipSlot) => {
+    setEditSlot(null)
+    setEditing(null)
+    requestAnimationFrame(() => pencils.current[slot]?.focus())
+  }
   const name = (
     <span class="spot-name with-icon">
       <CardIcon name="sword" />
       Equip
     </span>
   )
+  // De slotpopup van Your character (Dave, 8 oktober 2026): per slot een eigen popup, geopend met het potlood in de tabel.
+  const slotDialog = (slot: EquipSlot) => {
+    const label = slotLabel(slot)
+    const entry = props.equipment[slot]
+    const stat = statName(slot, props.job)
+    const db = databaseStat(slot, entry)
+    const own = statOverride(slot, entry)
+    const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
+    // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
+    const value = wornStat(slot, entry)
+    const isEditing = editing === slot
+    // Het corrigeervak werkt met een concept (pending): - en +, typen en Reset veranderen pas iets na Opslaan.
+    const draft = props.pending[slot]
+    const saved = draft === undefined ? null : commitStat(slot, entry, draft)
+    const dirty = saved !== null && saved.stat !== entry.stat
+    const saveDraft = () => {
+      props.onCommit(slot)
+      setEditing(null)
+    }
+    return (
+      <StatDialog title={label} tag="edit" closeLabel={`Sluiten ${label}`} focusInput={false} className="item-dialog slot-dialog" onCancel={() => closeSlot(slot)}>
+        <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'}>
+          <div class="field equip-head">
+            <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} gender={props.gender} onPick={(pick, name) => props.onPick(slot, pick, name)} />
+            {slot === 'ammo' && props.job === 'bowman' && (
+              <label class="switch">
+                <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
+                <span>
+                  Ik heb Helpful Stranger
+                  <small>Bronze pijlen (+1 W.ATT, 2 meso per stuk) koop je bij Raymond vanaf de citizenship-rang Helpful Stranger. Met deze schakelaar aan staan ze in de lijst.</small>
+                </span>
+              </label>
+            )}
+          </div>
+          {slot === 'claw' && props.job === 'thief' && entry.pick === OTHER && (
+            // Een eigen wapen kan een dagger of een claw zijn: de app ziet het niet, dus vraagt hij het (#176).
+            <div class="job-choices equip-kind" role="group" aria-label="Soort wapen">
+              {(['dagger', 'claw'] as const).map((kind) => (
+                <button key={kind} type="button" class="btn job-choice" aria-pressed={(entry.weaponKind ?? 'claw') === kind} onClick={() => props.onWeaponKind(kind)}>
+                  {kind === 'dagger' ? 'Dagger' : 'Claw'}
+                </button>
+              ))}
+            </div>
+          )}
+          {!isEmptyEntry(entry) && (
+            <div class="equip-stats">
+              <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
+                <span class="equip-value-num">
+                  {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
+                  <strong>{value ?? '?'}</strong>
+                </span>
+                <span class="equip-value-head" aria-hidden="true">{stat}</span>
+              </div>
+              <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${stat} corrigeren`} onClick={() => setEditing(slot)}>
+                {PENCIL_ICON}
+              </button>
+              {isEditing && (
+                // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
+                <StatDialog title={wornName(entry) ?? label} tag="edit" onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
+                  <StatEditor
+                    stat={stat}
+                    labelId={`${uid}-${slot}-game`}
+                    expected={db === undefined ? undefined : { value: db, from: 'de database' }}
+                    value={shown}
+                    min={0}
+                    max={999}
+                    fallback={db ?? 0}
+                    integer
+                    reset={db !== undefined && (saved ?? entry).stat !== '' ? db : undefined}
+                    dirty={dirty}
+                    onInput={(text) => props.onStatInput(slot, text)}
+                    onSave={saveDraft}
+                  />
+                </StatDialog>
+              )}
+            </div>
+          )}
+        </div>
+      </StatDialog>
+    )
+  }
+  // De tabel van Your character (Dave, 8 oktober 2026): dezelfde regels als die van Advised (BillRow), met wat je draagt: de winkelprijs onder Shop en de stat
+  // die telt (ATT of DEF) onder de kolom ernaast; het potlood staat waar Advised zijn vraagteken heeft en opent het slot.
+  const wornRow = (slot: EquipSlot) => {
+    const entry = props.equipment[slot]
+    const name = wornName(entry)
+    const price = shopPrice(slot, entry)
+    const value = wornStat(slot, entry)
+    const label = slotLabel(slot)
+    // Een gecorrigeerde stat krijgt het accent van de popup (tone buy), zoals bij Advised het bedrag van wat je koopt.
+    const corrected = statOverride(slot, entry) !== undefined && databaseStat(slot, entry) !== undefined
+    return (
+      <BillRow
+        key={slot}
+        tone={name === null ? 'empty' : corrected ? 'buy' : ''}
+        slot={label}
+        name={name === null ? null : entry.pick === OTHER ? name : familyName(slot, name)}
+        fullName={name ?? undefined}
+        facts={name === null ? [] : itemFacts(props.job, slot, name, entry, price ?? null)}
+        price={price ?? null}
+        stat={name === null ? '' : String(value ?? '?')}
+        action={
+          <button ref={(el) => { pencils.current[slot] = el }} type="button" class="help-toggle" aria-haspopup="dialog" aria-expanded={editSlot === slot} aria-label={`${label} wijzigen`} onClick={() => setEditSlot(slot)}>
+            {PENCIL_ICON}
+          </button>
+        }
+      />
+    )
+  }
+  const wornTable = (
+    <>
+      <BillHead item="Equip" stat="Stat" />
+      {slots.map(wornRow)}
+      <BillTotal total={slots.reduce((sum, slot) => sum + (shopPrice(slot, props.equipment[slot]) ?? 0), 0)} wide />
+      {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
+    </>
+  )
   // Een gewone functie en geen component: dan blijft de inhoud (zoals een open zoeklijst) staan bij elke render.
   // Advised heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Your character blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title={view === 'advised' ? 'Total cost: Equip' : 'Equip'} tag={view === 'advised' ? 'advised' : undefined} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' && props.cheapest ? CHEAPEST_HELP : undefined} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
+      <CardPopup card="equip" title="Total cost: Equip" tag={view === 'advised' ? 'advised' : 'wearing'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} report={view === 'advised' ? undefined : props.report} reportTitle="Equip">
         {body}
       </CardPopup>
     )
@@ -2187,85 +2360,7 @@ function EquipmentCard(props: {
         <>
           {/* Voor een job waarvoor de app nog niets doorrekent, kent hij ook geen items: dan typ je zelf wat je draagt. */}
           {!computed && <p class="hint">Voor deze job kent de app nog geen items: typ de naam van wat je draagt, kies "als eigen item" en vul de stat in.</p>}
-          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} /> : slots.map((slot) => {
-            const label = slotLabel(slot)
-            const entry = props.equipment[slot]
-            const stat = statName(slot, props.job)
-            const db = databaseStat(slot, entry)
-            const own = statOverride(slot, entry)
-            const shown = props.pending[slot] ?? (entry.stat !== '' ? entry.stat : String(db ?? ''))
-            // De rij toont het getal dat telt; alleen een correctie op de verwachting krijgt het accent (een eigen item heeft geen verwachting).
-            const value = wornStat(slot, entry)
-            const isEditing = editing === slot
-            // Het corrigeervak werkt met een concept (pending): - en +, typen en Reset veranderen pas iets na Opslaan.
-            const draft = props.pending[slot]
-            const saved = draft === undefined ? null : commitStat(slot, entry, draft)
-            const dirty = saved !== null && saved.stat !== entry.stat
-            const saveDraft = () => {
-              props.onCommit(slot)
-              setEditing(null)
-            }
-            return (
-              <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'} key={slot}>
-                <div class="field equip-head">
-                  <span class="slot-name">{label}</span>
-                  <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} gender={props.gender} onPick={(pick, name) => props.onPick(slot, pick, name)} />
-                  {slot === 'ammo' && props.job === 'bowman' && (
-                    <label class="switch">
-                      <input type="checkbox" checked={props.helpfulStranger} onChange={(e) => props.onHelpfulStranger((e.currentTarget as HTMLInputElement).checked)} />
-                      <span>
-                        Ik heb Helpful Stranger
-                        <small>Bronze pijlen (+1 W.ATT, 2 meso per stuk) koop je bij Raymond vanaf de citizenship-rang Helpful Stranger. Met deze schakelaar aan staan ze in de lijst.</small>
-                      </span>
-                    </label>
-                  )}
-                </div>
-                {slot === 'claw' && props.job === 'thief' && entry.pick === OTHER && (
-                  // Een eigen wapen kan een dagger of een claw zijn: de app ziet het niet, dus vraagt hij het (#176).
-                  <div class="job-choices equip-kind" role="group" aria-label="Soort wapen">
-                    {(['dagger', 'claw'] as const).map((kind) => (
-                      <button key={kind} type="button" class="btn job-choice" aria-pressed={(entry.weaponKind ?? 'claw') === kind} onClick={() => props.onWeaponKind(kind)}>
-                        {kind === 'dagger' ? 'Dagger' : 'Claw'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {!isEmptyEntry(entry) && (
-                  <div class="equip-stats">
-                    <div class={own !== undefined && db !== undefined ? 'equip-value changed' : 'equip-value'} aria-label={`${stat} ${value ?? 'onbekend'}${own !== undefined && db !== undefined ? `, gecorrigeerd, verwacht ${db}` : ''}`}>
-                      <span class="equip-value-num">
-                        {own !== undefined && db !== undefined && <s class="equip-value-db">{db}</s>}
-                        <strong>{value ?? '?'}</strong>
-                      </span>
-                      <span class="equip-value-head" aria-hidden="true">{stat}</span>
-                    </div>
-                    <button type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${stat} corrigeren`} onClick={() => setEditing(slot)}>
-                      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                    </button>
-                    {isEditing && (
-                      // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
-                      <StatDialog title={wornName(entry) ?? label} onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
-                        <StatEditor
-                          stat={stat}
-                          labelId={`${uid}-${slot}-game`}
-                          expected={db === undefined ? undefined : { value: db, from: 'de database' }}
-                          value={shown}
-                          min={0}
-                          max={999}
-                          fallback={db ?? 0}
-                          integer
-                          reset={db !== undefined && (saved ?? entry).stat !== '' ? db : undefined}
-                          dirty={dirty}
-                          onInput={(text) => props.onStatInput(slot, text)}
-                          onSave={saveDraft}
-                        />
-                      </StatDialog>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {view === 'advised' && props.cheapest ? <CheapestRows job={props.job} slots={slots} equipment={props.equipment} cheapest={props.cheapest} ammo={props.advisedAmmo} lines={props.advisedLines ?? []} /> : wornTable}
         </>,
       )}
     </section>
@@ -2368,7 +2463,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup card="skills" title={advised ? 'Advised: Skillpoints' : 'Skillpoints'} tag={advised ? undefined : 'edit'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
@@ -2650,7 +2745,7 @@ function HuntedMobCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="mob" title={title} mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
+        <CardPopup card="mob" title={title} tag="edit" mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>
@@ -3387,7 +3482,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         <thead>
           <tr>
             <td />
-            <th scope="col">Your character</th>
+            <th scope="col">Wearing</th>
             <th scope="col">Advised</th>
             <th scope="col">Difference</th>
           </tr>
@@ -3416,7 +3511,7 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         </tfoot>
       </table>
       {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
-      {props.inGame.kind === 'none' && <p class="hint">Your character: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
+      {props.inGame.kind === 'none' && <p class="hint">Wearing: {noCostReason(props.inGame.cost) ?? 'er is niets uit te rekenen.'}</p>}
     </>
   ) : // Zonder factuur aan beide kanten staat de reden al onder Your character en Advised; hier niet nog eens.
   null
@@ -3483,7 +3578,7 @@ function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | 
       ) : (
         <>
           <div class="total-cost-part cost-ingame">
-            <h3>Your character</h3>
+            <h3>Wearing</h3>
             <p class="total-cost-sub">
               This is how much it cost to level up your <strong>{who}</strong>
             </p>
@@ -3630,11 +3725,11 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
 export function App() {
   // De popup van een kaart die openstaat (#192): hier, zodat Total cost er een kan openen.
   const [openCard, setOpenCard] = useState<CardViewState['open']>({})
-  const cardOpener = useRef<HTMLButtonElement | null>(null)
+  const cardOpeners = useRef<CardViewState['openers']['current']>({})
   const cardViews: CardViewState = {
     open: openCard,
-    opener: cardOpener,
-    openCard: (card, view, button) => { cardOpener.current = button; setOpenCard((o) => ({ ...o, [card]: view })) },
+    openers: cardOpeners,
+    openCard: (card, view, button) => { cardOpeners.current[card] = button; setOpenCard((o) => ({ ...o, [card]: view })) },
     close: (card) => setOpenCard(({ [card]: _, ...rest }) => rest),
   }
   const [drafts, setDrafts] = useState<SpotDraft[]>(initialDrafts)
@@ -3922,6 +4017,9 @@ export function App() {
   }
 
   const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
+  // Your character onder "Based on:" in Total cost: Equip (Dave, 8 oktober 2026): je eigen profiel (profileDraft, het level en de job van de kaart Ability points) en de mob die je in Monster koos (drafts[0], dezelfde als HuntedMobCard in Your character toont).
+  const wornStats = <AdvisedCharacter job={job} draft={profileDraft} />
+  const wornMob = huntedMob(drafts[0])?.name ?? null
 
   return (
     <AdvisedWho.Provider value={totalCostWho(profileDraft.level, job)}>
@@ -3968,6 +4066,8 @@ export function App() {
         advisedAmmo={advisedSet?.ammo ?? null}
         advisedLines={cheapestInvoice.kind === 'invoice' ? cheapestInvoice.lines : null}
         advisedMob={advisedMob}
+        wornMob={wornMob}
+        wornStats={wornStats}
         level={characterLevel}
         gender={gender}
         report={

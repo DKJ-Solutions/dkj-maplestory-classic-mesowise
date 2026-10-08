@@ -24,6 +24,7 @@ import {
   OTHER,
   UNKNOWN,
   shownSlots,
+  shopPrice,
   statName,
   statOverride,
   wornName,
@@ -1860,5 +1861,24 @@ describe('choosePick met "Empty" (#188)', () => {
     expect(choosePick('hat', worn, NONE)).toEqual({ pick: NONE, name: '', stat: '' })
     expect(choosePick('claw', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
     expect(choosePick('ammo', worn, NONE)).toEqual({ pick: UNKNOWN, name: '', stat: '' })
+  })
+})
+
+describe('shopPrice: de winkelprijs van wat je draagt (Your character, Shop)', () => {
+  it('geeft de prijs van een winkelwapen en van winkelarmor', () => {
+    expect(shopPrice('claw', shop('Steel Igor'))).toBe(14_100)
+    expect(shopPrice('top', shop('Red Pao'))).toBe(6_000)
+  })
+
+  it('geeft undefined voor een leeg slot, een eigen item, munitie en een item zonder prijs', () => {
+    expect(shopPrice('claw', unknown)).toBeUndefined()
+    expect(shopPrice('claw', { pick: NONE, name: '', stat: '' })).toBeUndefined()
+    expect(shopPrice('claw', other('20', 'Steel Igor'))).toBeUndefined()
+    // Munitie koop je per stuk: ook een bekende naam in het ammo-slot geeft geen prijs.
+    expect(shopPrice('ammo', shop(THROWING_STARS[0].name))).toBeUndefined()
+    // Leather Sandals komen uit de drop-lijst van wornItems, niet uit een winkel.
+    expect(shopPrice('shoes', shop('Leather Sandals'))).toBeUndefined()
+    // Een naam die in geen lijst staat.
+    expect(shopPrice('hat', shop('Bestaat Niet'))).toBeUndefined()
   })
 })
