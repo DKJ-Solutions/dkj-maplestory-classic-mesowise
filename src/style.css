@@ -756,7 +756,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .why-mul .why-mul-num { padding-right: 0.75rem; text-align: right; font-size: 1.125rem; font-weight: 700; white-space: nowrap; }
 .why-mul .why-mul-what { padding-left: 0.75rem; overflow-wrap: anywhere; }
 /* Een kader om regels die bij elkaar horen (Dave, 8 oktober 2026), zoals wat er door 100 gaat; een kader in een kader schuift een stukje in. */
-.why-mul-box { margin: 0.25rem 0; padding: 0 0.25rem; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 0.625rem; }
+.why-mul-box { margin: 0.25rem 0; padding: 0.5rem; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 0.625rem; }
 .why-mul-box > .why-mul-row:last-child { border-bottom: 0; }
 .why-mul-box + .why-mul-row { border-top: 0; }
 .why-mul-result { border-bottom: 0; background: color-mix(in srgb, var(--accent) 10%, var(--card)); border-radius: 0.625rem; }
