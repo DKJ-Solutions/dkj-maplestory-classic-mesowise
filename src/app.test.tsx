@@ -3525,17 +3525,15 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
       expect(boxed(division)).toEqual([...boxed(outer), 'Naar procent'])
       expect(boxed(outer)).toEqual([...boxed(inner), 'STR + DEX'])
       expect(boxed(inner).at(-1)).toBe('Multiplier')
-      // De basis staat bovenaan, buiten de kaders (Dave, 8 oktober 2026).
-      expect(boxed(inner)[0]).toBe('LUK')
       const text = Array.from(steps.querySelectorAll('.why-mul-row'), (r) => Array.from(r.children, (td) => td.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')).join(' ; ')
       for (const d of Array.from(dialog.querySelectorAll<HTMLElement>('dialog dialog')).reverse()) fireEvent.click(within(d).getAllByRole('button', { name: 'Sluiten' }).at(-1)!)
       return text
     }
     const max = statfactor('Max per star')
-    expect(max).toMatch(/^Basis 1 ; LUK \+ [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Statfactor = [\d,]+$/)
+    expect(max).toMatch(/^LUK [\d.]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 1 ; Statfactor = [\d,]+$/)
     // De uitkomst onderaan is het getal in de formule erboven.
     expect(max.endsWith(`Statfactor = ${damage[0].calc.match(/Statfactor × ([\d,]+)/)![1]}`)).toBe(true)
-    expect(statfactor('Min per star')).toMatch(/^Basis 0,8 ; LUK \+ [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Statfactor = [\d,]+$/)
+    expect(statfactor('Min per star')).toMatch(/^LUK [\d.]+ ; Mastery × [\d,]+ ; Multiplier × [\d,]+ ; STR \+ DEX \+ [\d.]+ ; Naar procent \/ 100 ; Basis \+ 0,8 ; Statfactor = [\d,]+$/)
     expect(damage[2].calc).toMatch(/^\([\d.,]+ \+ [\d.,]+\) \/ 2$/)
     expect(damage[2].result).toMatch(/^± [\d.,]+$/)
     expect(damage[3].calc).toMatch(/^\d × [\d.,]+ gemiddeld × \d+% raakkans$/)

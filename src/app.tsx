@@ -3412,10 +3412,8 @@ function WhyTable(props: { rows: readonly WhyRow[] }) {
 function MulCalc(props: {
   factors: readonly { value: string; what: string; op?: string; detail?: ComponentChildren }[]
   result: { value: string; what: string }
-  /** Kaders die bij regel `boxFrom` beginnen en tot regel n lopen (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat;
-   * een groter kader valt om een kleiner. */
+  /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
   boxes?: readonly number[]
-  boxFrom?: number
 }) {
   // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan.
   const num = (value: string, what: string, detail?: ComponentChildren) => (
@@ -3440,16 +3438,14 @@ function MulCalc(props: {
     ))
   // Het grootste kader buiten, elk kleiner kader erin, met de regels die alleen in het grotere vallen eronder.
   const boxes = [...(props.boxes ?? [])].sort((x, y) => y - x)
-  const from = boxes.length > 0 ? (props.boxFrom ?? 0) : 0
   const box = (k: number): ComponentChildren => (
     <div class="why-mul-box">
       {k + 1 < boxes.length && box(k + 1)}
-      {rows(k + 1 < boxes.length ? boxes[k + 1] : from, boxes[k])}
+      {rows(k + 1 < boxes.length ? boxes[k + 1] : 0, boxes[k])}
     </div>
   )
   return (
     <div class="why-mul">
-      {rows(0, from)}
       {boxes.length > 0 && box(0)}
       {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
       <div class="why-mul-row why-mul-result">
@@ -3566,18 +3562,16 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     f && (
       <MulCalc
         factors={[
-          // De basis bovenaan (Dave, 8 oktober 2026), met de kaders eronder: daar komt hij bij op.
-          { value: nf.format(base), what: 'Basis' },
-          { value: nfInt.format(f.primary), what: f.primaryName, op: '+' },
+          { value: nfInt.format(f.primary), what: f.primaryName },
           ...(mastery !== 1 ? [{ value: nf.format(mastery), what: 'Mastery' }] : []),
           { value: nf.format(f.weaponMult), what: 'Multiplier' },
           { value: nfInt.format(f.secondary), what: f.secondaryName, op: '+' },
           { value: '100', what: 'Naar procent', op: '/' },
+          { value: nf.format(base), what: 'Basis', op: '+' },
         ]}
         // Kaders van binnen naar buiten (Dave, 8 oktober 2026): de primaire stat met zijn vermenigvuldigers, dan wat door 100 gaat, dan de
-        // deling zelf, die bij de basis bovenaan opgeteld wordt.
-        boxes={[3, 4, 5].map((n) => (mastery !== 1 ? n + 1 : n))}
-        boxFrom={1}
+        // deling zelf, waar de basis nog bij komt.
+        boxes={[2, 3, 4].map((n) => (mastery !== 1 ? n + 1 : n))}
         result={{ value: nf.format(statFactor(base, mastery)), what: 'Statfactor' }}
       />
     )
