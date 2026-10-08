@@ -3449,7 +3449,7 @@ function MulCalc(props: {
   )
   // Elk kader heeft links en rechts een eigen smalle kolom in hetzelfde grid (Dave, 8 oktober 2026), in plaats van padding: zo staan labels,
   // tekens en getallen in alle regels in dezelfde kolom, hoe diep een regel ook in de kaders zit.
-  const gutters = `repeat(${boxes.length}, 0.375rem)`
+  const gutters = `repeat(${boxes.length}, var(--why-mul-gutter))`
   return (
     <div class={boxes.length > 0 ? 'why-mul why-mul-boxed' : 'why-mul'} style={boxes.length > 0 ? { gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` } : undefined}>
       {boxes.length > 0 && box(0)}

@@ -763,7 +763,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* Een kader om regels die bij elkaar horen (Dave, 8 oktober 2026), zoals wat er door 100 gaat. Opzij geen padding: elk kader heeft links en
    rechts een eigen smalle kolom in het grid (MulCalc), die alles erin slaat, zodat getallen en tekens in elk kader onder elkaar blijven. */
 .why-mul-box > .why-mul-row, .why-mul-box > .why-mul-box { grid-column: 2 / -2; }
-.why-mul-box { margin: 0.25rem 0; padding: 0.5rem 0; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 0.625rem; }
+/* Boven en onder even veel ruimte als de kantkolom opzij (Dave, 8 oktober 2026), zodat de afstand tussen twee kaders, en van de tekst tot een kader, rondom gelijk is. */
+.why-mul-boxed { --why-mul-gutter: 0.375rem; }
+.why-mul-box:has(+ .why-mul-result) { margin-bottom: 0.5rem; }
+.why-mul-box { margin: 0; padding: var(--why-mul-gutter) 0; border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 0.625rem; }
 .why-mul-box > .why-mul-row:last-child { border-bottom: 0; }
 /* Met kaders is er minder breedte over: iets minder lucht rond label, teken en getal, zodat een label als Multiplier op één regel blijft. */
 .why-mul-boxed .why-mul-what { padding-left: 0.5rem; }
