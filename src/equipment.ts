@@ -359,7 +359,7 @@ export function itemRequirements(slot: EquipSlot, entry: EquipEntry): Partial<Re
 }
 
 /**
- * De winkelprijs van wat je in een slot draagt (Dave, 8 oktober 2026), voor de kolom Shop in Your character. Alleen een winkelwapen of winkelarmor heeft er een;
+ * De winkelprijs van wat je in een slot draagt (Dave, 8 oktober 2026), voor de kolom Shop in Profile. Alleen een winkelwapen of winkelarmor heeft er een;
  * undefined bij een leeg slot, een eigen item, een item zonder prijs (drop of Free Market) en munitie, die je per stuk koopt.
  */
 export const shopPrice = (slot: EquipSlot, entry: EquipEntry): number | undefined => {

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './app'
 import { JOB_KEY } from './job'
 
-// Alle vier jobs worden nu doorgerekend, dus de tak "geen advies, alleen Your character" (#192) is in de echte app niet te bereiken.
+// Alle vier jobs worden nu doorgerekend, dus de tak "geen advies, alleen Profile" (#192) is in de echte app niet te bereiken.
 // Hier doet isComputed alsof een job nog niet is doorgerekend, zodat die tak toch een test heeft zodra er weer zo'n job komt.
 vi.mock('./job', async (original) => ({ ...(await original<typeof import('./job')>()), isComputed: () => false }))
 
@@ -16,7 +16,7 @@ afterEach(() => {
 })
 
 describe('een job die de app niet doorrekent (#192)', () => {
-  it('geeft op elke kaart alleen Your character, en die opent nog gewoon de popup', () => {
+  it('geeft op elke kaart alleen Profile, en die opent nog gewoon de popup', () => {
     localStorage.clear()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
     render(<App />)

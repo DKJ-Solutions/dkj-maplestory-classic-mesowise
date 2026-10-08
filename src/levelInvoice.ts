@@ -12,7 +12,7 @@ import type { SpotDraft } from './spotDraft'
 import { potionRestore, resolvePlan } from './suggest'
 import { writeOff } from './writeOff'
 
-/** De soort kost van equipment uit de winkel (Advised koopt, #192): de rij in Difference waarin alle gekochte stukken samen staan. */
+/** De soort kost van equipment uit de winkel (Cheapest koopt, #192): de rij in Difference waarin alle gekochte stukken samen staan. */
 export const SHOP_LABEL = 'Shop'
 
 /**
@@ -151,7 +151,7 @@ export const ammoLabel = (job: Job): string => (job === 'bowman' ? 'Arrows' : jo
 
 /**
  * De factuur van je huidige level op de plek waarmee de kosten van het level rekenen. Potions en munitie per stuk, naar boven
- * afgerond; reizen als bedrag. Koopt de setup equipment (de factuur van Advised, Dave, 6 oktober 2026, #192), dan
+ * afgerond; reizen als bedrag. Koopt de setup equipment (de factuur van Cheapest, Dave, 6 oktober 2026, #192), dan
  * staat elk gekocht stuk bovenaan als eigen regel, met zijn naam, × 1 en zijn winkelprijs (Dave, 6 oktober 2026); zonder aankopen, zoals bij je
  * character, staan die regels er niet.
  */

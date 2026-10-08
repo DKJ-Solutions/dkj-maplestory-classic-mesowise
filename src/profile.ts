@@ -338,7 +338,7 @@ export const thiefWithDagger = (job: Job, dagger: number): boolean => job === 't
 
 /**
  * Of dit karakter geen stars of pijlen verbruikt: een Warrior of Magician, een Beginner (attacksAsBeginner) of een Thief met een dagger. De
- * factuur telt dan geen munitie, en het Ammo-slot van Advised toont er geen (#189).
+ * factuur telt dan geen munitie, en het Ammo-slot van Cheapest toont er geen (#189).
  */
 export const throwsNothing = (p: Pick<Profile, 'job' | 'level' | 'dagger'>): boolean =>
   p.job === 'warrior' || p.job === 'magician' || attacksAsBeginner(p.job, p.level) || thiefWithDagger(p.job, p.dagger)

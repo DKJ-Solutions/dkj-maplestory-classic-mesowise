@@ -215,7 +215,7 @@ describe('cheapestSettings zonder gekozen mob (#193)', () => {
     expect(res.changes.filter((c) => c.kind === 'mob')).toEqual([])
   })
 
-  it('een eigen plek is een keuze van de speler: Advised laat hem staan en wisselt geen mob', () => {
+  it('een eigen plek is een keuze van de speler: Cheapest laat hem staan en wisselt geen mob', () => {
     const own = { ...newDraft('x'), name: 'Eigen plek' }
     const res = cheapestSettings(base({ drafts: [own] }))
     expect(res.drafts).toEqual([own])
@@ -235,7 +235,7 @@ describe('cheapestSettings en de factuur (#195)', () => {
     return base({ job, profileDraft: d, drafts: [mobDraft(mob)!] })
   }
 
-  it('Warrior 26 op Blue Snail: Advised is op de factuur niet duurder dan Your character', () => {
+  it('Warrior 26 op Blue Snail: Cheapest is op de factuur niet duurder dan Profile', () => {
     const input = at('warrior', 26, 'Blue Snail')
     const r = cheapestSettings(input)
     const yours = invoiceTotal(input)

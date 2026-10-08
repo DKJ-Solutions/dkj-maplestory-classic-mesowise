@@ -1,4 +1,4 @@
-// Het afschrijven van equipment op de factuur van Advised (Dave, 6 oktober 2026, #192): een stuk draag je meerdere levels, dus een level
+// Het afschrijven van equipment op de factuur van Cheapest (Dave, 6 oktober 2026, #192): een stuk draag je meerdere levels, dus een level
 // betaalt alleen zijn deel van de prijs: prijs × (EXP van dit level / EXP van alle levels tot je volgende upgrade). Puur, zonder UI-import.
 import { expToNextLevel } from './data/expTable'
 

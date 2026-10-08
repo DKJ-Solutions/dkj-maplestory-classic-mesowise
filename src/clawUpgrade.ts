@@ -11,7 +11,7 @@
 // level, HP en MP, AP en de skillpunten van elk level), de claw erbij op dat gegroeide profiel; de verkoopwaarde van je oude claw telt niet mee
 // (zo belooft "Kopen" nooit te veel); het huidige level telt vol mee. Je weapon attack komt uit het profiel;
 // het scherm "Equip" vult die in als je een claw kiest.
-// Onder level 10 koopt alleen Advised uit de wapens met een prijs van een Beginner (data/beginnerWeapons.ts, #203), met de horizon
+// Onder level 10 koopt alleen Cheapest uit de wapens met een prijs van een Beginner (data/beginnerWeapons.ts, #203), met de horizon
 // hoogstens tot level 9; wat de kaart Attack daar vergelijkt, staat open in #209.
 import { ASSUMPTION_VARIANTS } from './best'
 import { BOWMAN_WEAPONS } from './bowmanGear'
@@ -116,7 +116,7 @@ const jobShopOf = (p: Profile): Shop =>
     : { weapons: WEAPONS_BY_JOB[p.job] ?? NPC_CLAWS, ranked: false, better: (c, than) => c.watk > than.watk }
 
 /**
- * Waar dit profiel uit koopt. Met `beginner` (alleen Advised, #203) onder level 10 de wapens van een Beginner; anders de winkel van de
+ * Waar dit profiel uit koopt. Met `beginner` (alleen Cheapest, #203) onder level 10 de wapens van een Beginner; anders de winkel van de
  * job, ook onder level 10: de kaart Attack noemt dan de eerstvolgende claw vanaf level 10.
  */
 const shopOf = (p: Profile, beginner = false): Shop =>
@@ -188,11 +188,11 @@ function betterClaws(drafts: readonly SpotDraft[], profile: Profile, shop: Shop)
   return inLevel.filter((c) => (bestExpPerMeso(drafts, withClaw(profile, c), ASSUMPTIONS) ?? -Infinity) > base)
 }
 
-/** Een wapen met de levels waarover het meetelt: wat Advised in een leeg wapenslot zet (requiredWeapon). */
+/** Een wapen met de levels waarover het meetelt: wat Cheapest in een leeg wapenslot zet (requiredWeapon). */
 export type WeaponPick = Pick<ClawChoice, 'claw' | 'from' | 'to' | 'truncated'>
 
 /**
- * Het wapen dat Advised in je hand zet als je wapenslot leeg is (Dave, 7 oktober 2026, #202): er staat altijd een wapen in het advies. De
+ * Het wapen dat Cheapest in je hand zet als je wapenslot leeg is (Dave, 7 oktober 2026, #202): er staat altijd een wapen in het advies. De
  * winnaar van het advies; verdient geen wapen zich terug, dan het wapen met de beste netto besparing (het kleinste verlies); vergelijkt het
  * advies geen wapen of valt geen besparing uit te rekenen (het model ziet geen verschil met een lege hand, of rekent niet), dan het goedkoopste wapen uit je winkel dat je kunt
  * dragen, bij gelijke prijs het sterkste. `beginner` moet gelijk zijn aan dat van clawUpgradeAdvice: dezelfde winkel. Null als je winkel op je level niets heeft wat je kunt dragen (een Magician onder level 10, of te lage stats).

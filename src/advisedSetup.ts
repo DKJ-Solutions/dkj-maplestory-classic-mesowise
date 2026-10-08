@@ -1,4 +1,4 @@
-// De setup van Advised als vast punt (Dave, 6 oktober 2026, #192): de equip die Advised koopt hangt af van de mob en de potions, en de goedkoopste
+// De setup van Cheapest als vast punt (Dave, 6 oktober 2026, #192): de equip die Cheapest koopt hangt af van de mob en de potions, en de goedkoopste
 // mob en potions hangen af van de equip. Dit rekent dat om en om uit tot het equip-advies niets meer koopt, zodat wie Overnemen tikt daarna
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
@@ -20,16 +20,16 @@ export const MAX_EQUIP_ROUNDS = 4
 export interface AdvisedSetup {
   /** De goedkoopste instellingen met de equip erbij; `capped` ook als de equip-rondes op raakten. */
   result: CheapestResult
-  /** Wat je draagt plus wat Advised koopt, en het profiel dat daarbij hoort (weapon attack, WDEF), zonder de wijzigingen van `result`. */
+  /** Wat je draagt plus wat Cheapest koopt, en het profiel dat daarbij hoort (weapon attack, WDEF), zonder de wijzigingen van `result`. */
   equipment: Equipment
   profile: ProfileDraft
-  /** De stukken die Advised koopt, elk met zijn winkelprijs en horizon: per slot alleen het stuk dat er uiteindelijk staat. */
+  /** De stukken die Cheapest koopt, elk met zijn winkelprijs en horizon: per slot alleen het stuk dat er uiteindelijk staat. */
   purchases: Purchase[]
   /** Wat de stukken samen in de winkel kosten. */
   shop: number
-  /** Per slot wat je draagt en wat Advised heeft, voor de Equip-popup en de wijzigingsregels. */
+  /** Per slot wat je draagt en wat Cheapest heeft, voor de Equip-popup en de wijzigingsregels. */
   cheapest: Record<EquipSlot, CheapestSlot>
-  /** De munitie die de factuur van Advised telt (countedAmmo, #189), voor een leeg Ammo-slot in de Equip-popup; null als hij niets gooit. */
+  /** De munitie die de factuur van Cheapest telt (countedAmmo, #189), voor een leeg Ammo-slot in de Equip-popup; null als hij niets gooit. */
   ammo: string | null
 }
 
@@ -95,12 +95,12 @@ export function cheapestFor(user: CheapestInput): AdvisedSetup {
 }
 
 /**
- * De setup van Advised voor deze invoer. Per ronde: de goedkoopste instellingen met de equip die er nu is, dan het equip-advies (tot je volgende
+ * De setup van Cheapest voor deze invoer. Per ronde: de goedkoopste instellingen met de equip die er nu is, dan het equip-advies (tot je volgende
  * upgrade, zoals het Report) op wat daaruit komt. Koopt het niets, dan is dit de uitkomst; anders komen die stukken erbij en begint de ronde opnieuw
  * met je eigen mob, potions en skillpunten. Een slot dat twee keer verandert, koopt alleen het laatste stuk (met de prijs en horizon van de ronde
  * die het koos). Na de uitkomst nemen en opnieuw rekenen verandert dus niets.
  *
- * Er staat altijd een wapen in het advies (Dave, 7 oktober 2026, #202). Is je eigen wapenslot leeg, dan rekent Advised vanaf een lege hand
+ * Er staat altijd een wapen in het advies (Dave, 7 oktober 2026, #202). Is je eigen wapenslot leeg, dan rekent Cheapest vanaf een lege hand
  * (0 ATT, niet de ATT uit je profiel) en zet het het wapen van requiredWeapon in je hand, ook als dat zich niet terugverdient. Heeft je
  * winkel op je level niets wat je kunt dragen, dan blijft het zoals het was: met de ATT uit je profiel.
  */
@@ -126,7 +126,7 @@ function settle(user: CheapestInput, startProfile: ProfileDraft, needsWeapon: bo
     result = cheapestSettings(input)
     const state: CheapestInput = { ...input, drafts: result.drafts, profileDraft: result.profileDraft, potionChoice: result.potionChoice }
     profile = profileOf(state)
-    // Onder level 10 koopt Advised, en alleen Advised, uit de wapens met een prijs van een Beginner (#203): advies en wapen delen die keuze.
+    // Onder level 10 koopt Cheapest, en alleen Cheapest, uit de wapens met een prijs van een Beginner (#203): advies en wapen delen die keuze.
     const claw = clawUpgradeAdvice(state.drafts, profile, 'next-upgrade', true)
     const weapon = needsWeapon && isEmptyEntry(equipment.claw) ? requiredWeapon(profile, claw, true) : null
     advice = cheapestEquipment(shownSlots(job, equipment.claw), equipment, claw, armorUpgradeAdvice(state.drafts, profile, wornWdef(equipment, job)), weapon, starUpgradeAdvice(state.drafts, profile))

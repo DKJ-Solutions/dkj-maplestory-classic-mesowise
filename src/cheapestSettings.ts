@@ -1,5 +1,5 @@
 // De knop "Goedkoopste instellingen" (Dave, 6 oktober 2026, #183): zet de gratis instellingen op wat dit level het goedkoopst
-// maakt: mob, potions, skillpunten en base AP. Zelf kiest de berekening geen equipment: de invoer is al de equip van Advised (cheapestEquip.ts, advisedEquipment), met wat die in de winkel kost buiten deze module (#192).
+// maakt: mob, potions, skillpunten en base AP. Zelf kiest de berekening geen equipment: de invoer is al de equip van Cheapest (cheapestEquip.ts, advisedEquipment), met wat die in de winkel kost buiten deze module (#192).
 // Puur, zonder UI-import; hergebruikt de adviezen van de app, het scherm toont alleen wat hier uitkomt.
 import { autoFillAp, autoFillPatch } from './autoFillAp'
 import { mobDraft } from './data/spots'

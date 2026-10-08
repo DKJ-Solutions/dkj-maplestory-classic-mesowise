@@ -39,19 +39,37 @@
 
 ### PLAN
 
+#### #258
+
+`app/level-cost-top` renamed the visible labels (Advised became Cheapest, Wearing became Profile) but left the comments and
+test titles on the old names. One pass over `src/` brings them in line. The internal identifiers stay.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Rewrite `Advised`, `Wearing` and `Your character` to Cheapest and Profile in the comments and test titles across `src/`
+  (22 files), including the Level cost part once called "In game", the `(expected)` tag in the data-popup example and the
+  `edit profile` label in `style.css`. The test that asserts "nergens meer Advised" keeps the old name on purpose.
+- [x] Decide the internal identifiers: `advised`/`worn`, `advised-dialog`/`worn-dialog` and `advisedSetup` stay, because
+  no user sees them and the CSS classes and test selectors rest on them; the `CardView` doc comment now maps them to Cheapest
+  and Profile.
 
 ### TEST
 
+- [x] Comment and test-title changes only, plus no visible string: every changed line was checked to be a comment or an
+  `it`/`describe` title. The full gate runs in `ship-pr`.
+
 ### DEPLOY: app/258-cheapest-profile-comments
 
-**Score:**
+The comments and test titles in `src/` call the two views Cheapest and Profile, as the screen does. The internal identifiers
+(`advised`, `worn`, `advisedSetup`) keep their names, and the `CardView` doc comment maps them to the visible ones (#258).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: nothing changes on the screen.
+
+**Score:** N/A
 
 #### Pull Request
 

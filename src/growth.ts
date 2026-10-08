@@ -92,7 +92,7 @@ const MAX_KEPT = 8
 
 /**
  * De groei van dit profiel: het profiel op elk level van het jouwe tot het eind van de EXP-tabel, per level onthouden. Dezelfde plekken
- * en hetzelfde profiel geven dezelfde groei terug (een ronde van Advised vraagt hem voor claw, armor en star).
+ * en hetzelfde profiel geven dezelfde groei terug (een ronde van Cheapest vraagt hem voor claw, armor en star).
  */
 export function growthOf(drafts: readonly SpotDraft[], profile: Profile): Growth {
   const key = JSON.stringify(profile)

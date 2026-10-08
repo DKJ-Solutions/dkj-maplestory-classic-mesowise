@@ -1,4 +1,4 @@
-// Loont een andere NPC-star nu? (Dave, 7 oktober 2026, issue #198) Alleen voor Advised: een Thief vergelijkt de Subi- en de Wolbi-stars die hij
+// Loont een andere NPC-star nu? (Dave, 7 oktober 2026, issue #198) Alleen voor Cheapest: een Thief vergelijkt de Subi- en de Wolbi-stars die hij
 // niet draagt met de star die hij heeft, op wat ze hem tot zijn volgende wapenupgrade besparen min de prijs van de set. De star die je draagt
 // (die van je herlaadprijs) is van jou en kost niets; een star buiten het NPC-paar (drop of Free Market) wordt nooit geadviseerd. Draag je er
 // zo een, dan blijft hij, tenzij Subi of Wolbi zich ertegen terugverdient. De prijs wordt afgeschreven zoals bij equipment (writeOff.ts).
@@ -29,12 +29,12 @@ export interface StarPick {
 }
 
 /**
- * De star die Advised koopt, of null: een Thief die stars gooit, een geldige "Beste", en een NPC-star met een koopprijs die zich tot je volgende
+ * De star die Cheapest koopt, of null: een Thief die stars gooit, een geldige "Beste", en een NPC-star met een koopprijs die zich tot je volgende
  * wapenupgrade terugverdient. Bij meer dan één die zich terugverdient: de grootste netto besparing.
  */
 export function starUpgradeAdvice(drafts: readonly SpotDraft[], profile: Profile | null): StarPick | null {
   if (!profile || profile.job !== 'thief' || throwsNothing(profile) || expToNextLevel(profile.level) === undefined) return null
-  // Een herlaadprijs die bij geen star uit de lijst hoort, is een star die de app niet kent (#199): die is van jou, daar adviseert Advised niets over.
+  // Een herlaadprijs die bij geen star uit de lijst hoort, is een star die de app niet kent (#199): die is van jou, daar adviseert Cheapest niets over.
   const held = THROWING_STARS.find((t) => t.rechargePerStar === profile.starRecharge)
   if (!held) return null
   if (bestExpPerMeso(drafts, profile, ASSUMPTIONS) === undefined) return null

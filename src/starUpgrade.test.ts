@@ -13,12 +13,12 @@ import { bestExpPerMeso } from './bestExpPerMeso'
 import { ASSUMPTIONS } from './calc/mobModel'
 import { growthOf } from './growth'
 
-// Advised rekent met de stats die het zelf zet (cheapestSettings), dus de uitkomst per profiel loopt via advisedSetup en niet via het ruwe profiel.
+// Cheapest rekent met de stats die het zelf zet (cheapestSettings), dus de uitkomst per profiel loopt via advisedSetup en niet via het ruwe profiel.
 
 const WOLBI = THROWING_STARS.find((t) => t.name.startsWith('Wolbi'))!
 const MOKBI = THROWING_STARS.find((t) => t.name.startsWith('Mokbi'))!
 
-/** Een Thief met een eigen claw van `claw` ATT in de hand: Advised koopt dan geen wapen en het advies gaat alleen over de stars. */
+/** Een Thief met een eigen claw van `claw` ATT in de hand: Cheapest koopt dan geen wapen en het advies gaat alleen over de stars. */
 const thief = (mob: string, level: number, claw: number, profile: Partial<ProfileDraft> = {}, job: Job = 'thief'): CheapestInput => ({
   job,
   gender: null,
@@ -28,7 +28,7 @@ const thief = (mob: string, level: number, claw: number, profile: Partial<Profil
   potionChoice: NO_POTION_CHOICE,
 })
 
-describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als equipment (#198)', () => {
+describe('starUpgradeAdvice: Cheapest koopt alleen NPC-stars, afgeschreven als equipment (#198)', () => {
   it('heeft een koopprijs voor Subi en Wolbi, met bron en datum, en voor geen enkele andere star', () => {
     expect(SUBI.buy).toMatchObject({ price: 500, source: { url: 'https://meowdb.com/msclassic/item-db/294', retrieved: '2026-10-07' } })
     expect(WOLBI.buy).toMatchObject({ price: 1000, source: { url: 'https://meowdb.com/msclassic/item-db/295', retrieved: '2026-10-07' } })
@@ -111,7 +111,7 @@ describe('starUpgradeAdvice: Advised koopt alleen NPC-stars, afgeschreven als eq
     expect(advisedSetup(beginner).purchases.some((p) => p.slot === 'ammo')).toBe(false)
   })
 
-  it('is een vast punt: na Overnemen koopt Advised niets meer en verandert niets meer, ook met een gedragen Mokbi of Wolbi', () => {
+  it('is een vast punt: na Overnemen koopt Cheapest niets meer en verandert niets meer, ook met een gedragen Mokbi of Wolbi', () => {
     let bought = 0
     const held: Partial<ProfileDraft>[] = [{}, { starWatk: '19', starRecharge: '0.5' }, { starWatk: '17', starRecharge: '0.4' }]
     for (const m of MOBS.slice(0, 5)) {

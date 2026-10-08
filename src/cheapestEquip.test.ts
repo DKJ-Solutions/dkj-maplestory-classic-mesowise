@@ -178,7 +178,7 @@ describe('buyTexts (#192)', () => {
   })
 })
 
-describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot van Advised (#189)', () => {
+describe('countedAmmo: de munitie die de factuur telt, voor een leeg Ammo-slot van Cheapest (#189)', () => {
   const parsed = (job: Job, over: Partial<ProfileDraft> = {}): Profile => {
     const r = parseProfile({ ...DEFAULT_PROFILE, level: '20', ...over }, job)
     if (!('profile' in r)) throw new Error(r.error)
