@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**13 / 20 minor entries** <!-- pending-tally -->
+**14 / 21 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-cost-difference-row · 20261008-202602Z
+
+The Level cost card on the home screen stacks its Cheapest and Profile buttons and adds a third row that shows what Cheapest saves against your own setup, in meso and as a percentage; tapping it opens the per-cost Difference table in a popup. The card fills the free height of the screen.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+Players see at a glance how much they leave on the table at this level, without scrolling.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost stacks its buttons and shows the difference underneath
+
+[PR #274](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/274)
+
+---
 
 ### DEPLOY: app/boxed-formulas · 20261008-201040Z
 
