@@ -3745,6 +3745,25 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(homeScreen().querySelectorAll('.level-cost-reason')).toHaveLength(0)
   })
 
+  it('zet onder de knoppen een derde rij met het verschil tussen Cheapest en Profile, en opent de tabel per soort kost in een popup (Dave, 8 oktober 2026)', () => {
+    toLevel20()
+    const top = homeScreen().querySelector<HTMLElement>('section.level-cost')!
+    const row = top.querySelector<HTMLElement>('.level-cost-diff')!
+    expect(row.previousElementSibling!.className).toBe('level-cost-buttons')
+    const button = row.querySelector<HTMLButtonElement>('button')!
+    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Difference')
+    const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
+    const d = profile - cheapest
+    const pct = `${Math.round((Math.abs(d) / profile) * 100)}%`
+    const summary = button.querySelector('.level-cost-diff-summary')!.textContent
+    expect(summary).toBe(d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso (${pct})` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso (${pct})` : 'No difference')
+    // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
+    expect(row.querySelector('table')).toBeNull()
+    fireEvent.click(button)
+    const table = row.querySelector('dialog table.invoice-difference')!
+    expect(mesoOf(table.querySelector('tfoot .invoice-diff')!.textContent)).toBe(Math.abs(d))
+  })
+
   it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
     cleanup()
     localStorage.clear()

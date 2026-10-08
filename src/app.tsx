@@ -3915,11 +3915,12 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
- * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen naast elkaar (Dave, 8 oktober 2026): links wat het level kost met de setup van Cheapest, rechts met wat je
+ * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen onder elkaar (Dave, 8 oktober 2026): boven wat het level kost met de setup van Cheapest, onder met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
  * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, en onder de knoppen waarom (#262).
+ * Daaronder een derde rij (Dave, 8 oktober 2026): het verschil tussen de twee, als één getal met zijn aandeel in wat Profile kost; per soort kost in een popup.
  */
-function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice }) {
+function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice; job: Job }) {
   const ctx = useContext(CardViewContext)
   const problem = useContext(ProfileProblem)
   const parts = [
@@ -3962,7 +3963,50 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           {r.text}
         </p>
       ))}
+      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er al onder de knoppen waarom er geen bedrag is. */}
+      {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
     </section>
+  )
+}
+
+/**
+ * De derde rij van Level cost onder de vraag (Dave, 8 oktober 2026): wat Profile meer kost dan Cheapest, in meso en als deel van wat Profile
+ * kost; is jouw setup goedkoper, dan staat dat er zo. Een tik opent per soort kost waar dat verschil zit, in een eigen popup, zodat het
+ * beginscherm zonder scrollen past (dezelfde tabel als Difference in Level cost).
+ */
+function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'invoice' }>; wearing: Extract<LevelInvoice, { kind: 'invoice' }>; job: Job }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const d = props.wearing.total - props.cheapest.total
+  const share = props.wearing.total > 0 ? ` (${nfInt.format(Math.round((Math.abs(d) / props.wearing.total) * 100))}%)` : ''
+  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${share}`
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  return (
+    <div class="level-cost-diff">
+      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Difference: ${summary}`} onClick={() => setOpen(true)}>
+        <span class="level-cost-label">Difference</span>
+        <span class="level-cost-diff-summary">
+          {d === 0 ? (
+            summary
+          ) : (
+            <>
+              {d > 0 ? 'Cheapest' : 'Profile'} saves <strong class="gain">{nfInt.format(Math.abs(d))} meso</strong>
+              {share}
+            </>
+          )}
+        </span>
+      </button>
+      {open && (
+        <StatDialog title="Difference" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+          <div class="report-body">
+            <DifferenceTable inGame={props.wearing} cheapest={props.cheapest} job={props.job} />
+          </div>
+        </StatDialog>
+      )}
+    </div>
   )
 }
 
@@ -4462,8 +4506,8 @@ export function App() {
       <p class="app-question">
         How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
-      {/* Onder de vraag het antwoord: links wat het level kost met Cheapest, rechts met wat je draagt (Dave, 8 oktober 2026). */}
-      <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} />
+      {/* Onder de vraag het antwoord: boven wat het level kost met Cheapest, onder met wat je draagt, en daaronder het verschil (Dave, 8 oktober 2026). */}
+      <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} job={job} />
 
       {/* Gekozen staat je job in het menu bovenin (TopBar); de kaart blijft hier tot ook je geslacht gekozen is (#55). */}
       {(!jobChosen || gender === null) && <JobCard job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />}
