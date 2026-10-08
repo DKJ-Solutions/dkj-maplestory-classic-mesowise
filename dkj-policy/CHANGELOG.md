@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**10 / 17 minor entries** <!-- pending-tally -->
+**11 / 18 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/262-profile-cost-reason · 20261008-152130Z
+
+When Profile has no level cost, a line under the Level cost buttons says why, and every Level cost text names the field that
+is wrong ("Je hebt 32 skillpunten …") instead of "Je karakter is niet volledig ingevuld." (#262).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+A question mark on Profile at the top now comes with the reason right under it, such as too many skill points for your level,
+so you no longer have to search the cards for what is wrong.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost says why Profile shows a question mark
+
+[PR #268](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/268)
+
+---
 
 ### DEPLOY: app/260-cheapest-row-reachable · 20261008-151109Z
 
