@@ -3519,12 +3519,12 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Een hit is één star, dus geen stars per aanval in de formule (Dave, 8 oktober 2026).
     const summary = dialog.querySelector<HTMLElement>('.why-summary')!
     expect(summary.previousElementSibling).toBeNull()
-    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe(`Waarom ${rows[3].result} hits per kill op Ribbon Pig?`)
+    expect(summary.nextElementSibling?.getAttribute('aria-label')).toBe('Hoe vaak moet je Ribbon Pig gemiddeld aanvallen tot hij dood is?')
     const terms = Array.from(summary.querySelectorAll('.why-term strong'), (t) => t.textContent)
     expect(terms).toEqual([rows[3].result, rows[6].result, qty])
     expect(Array.from(summary.querySelectorAll('.why-term small'), (t) => t.textContent)).toEqual(['hits per kill', 'kills', 'stars'])
     // De hoofdvraag in twee deelvragen, met de antwoorden van de eindformule in hun kopjes, en dan de kosten.
-    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual([`Waarom ${rows[3].result} hits per kill op Ribbon Pig?`, `Waarom ${rows[6].result} kills?`, 'Kosten'])
+    expect(Array.from(dialog.querySelectorAll('.why-group'), (h) => h.textContent)).toEqual(['Hoe vaak moet je Ribbon Pig gemiddeld aanvallen tot hij dood is?', `Waarom ${rows[6].result} kills?`, 'Kosten'])
     // De mob staat zichtbaar in de tabel, met zijn HP, en de aanvallen per kill delen die door de schade per aanval (Dave, 8 oktober 2026).
     expect(rows[1].result).toMatch(/^[\d.]+$/)
     // Een vaste waarde heeft geen vraagteken, een berekend getal wel (Dave, 8 oktober 2026).
@@ -3532,6 +3532,8 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     expect(tableRows[1].querySelector('.why-help')).toBeNull()
     expect(tableRows[2].querySelector('.why-value .why-help')).not.toBeNull()
     expect(rows[2].calc).toBe(`${rows[1].result} HP / ${rows[0].result.replace('± ', '')} schade per aanval, naar boven afgerond`)
+    // Het antwoord noemt de aanvallen met hun stars (Dave, 8 oktober 2026).
+    expect(rows[3].calc).toMatch(new RegExp(`^${rows[2].result} aanval(len)? met \d stars?$`))
     // Elke deelvraag eindigt met zijn antwoord, uitgelicht: de hits per kill en de kills (Dave, 8 oktober 2026).
     expect(rows.filter((r) => r.total).map((r) => r.label)).toEqual(['Hits per kill', 'Kills dit level'])
     // Het aantal kills hangt niet van de uren af: EXP tot het volgende level gedeeld door EXP per kill.

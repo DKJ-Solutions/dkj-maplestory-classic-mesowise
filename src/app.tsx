@@ -3564,15 +3564,16 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         ...(w.mobWdef > 0 ? [{ label: `Verdediging van ${w.mob}`, calc: <>× 100 / (WDEF {nfInt.format(w.mobWdef)} + 100)</>, result: `${oneDecimal(w.minHit)} – ${oneDecimal(w.maxHit)}` }] : []),
       ]
     : []
-  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel hits per kill, en waarom zoveel kills. Elk blok eindigt
+  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): hoe vaak je deze mob aanvalt tot hij dood is, en waarom zoveel kills. Elk blok eindigt
   // met zijn antwoord, uitgelicht; bovenaan de eindformule die de twee antwoorden vermenigvuldigt, en als laatste wat herladen kost. Een hit is
   // één star of pijl, dus de formule zegt hits per kill en niet stars per aanval (Dave, 8 oktober 2026).
   const pieces = arrows ? 'pijlen' : 'stars'
   const hits = `${w.perKill === 1 ? 'hit' : 'hits'} per kill`
   const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
   const rows: WhyRow[] = [
-    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoeveel hits een kill kost, hangt af van zijn HP.
-    ...inGroup(`Waarom ${nfInt.format(w.perKill)} ${hits} op ${w.mob}?`, [
+    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP. Het antwoord noemt de aanvallen
+    // met hun stars, en telt die als hits voor de formule bovenaan.
+    ...inGroup(`Hoe vaak moet je ${w.mob} gemiddeld aanvallen tot hij dood is?`, [
     // De schade in één rij (Dave, 8 oktober 2026): max, min, levelverschil, verdediging en het gemiddelde staan in zijn eigen popup, als tabel
     // die eindigt met deze rij als antwoord.
     {
@@ -3595,7 +3596,7 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
     },
     { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
     { label: 'Aanvallen per kill', calc: <>{nfInt.format(w.mobHp)} HP / {oneDecimal(perAttack)} schade per aanval, naar boven afgerond</>, result: nfInt.format(w.attacksToKill) },
-    { label: 'Hits per kill', calc: <>{nfInt.format(w.attacksToKill)} × {w.starsPerAttack} hits per aanval</>, result: nfInt.format(w.perKill), total: true },
+    { label: 'Hits per kill', calc: <>{nfInt.format(w.attacksToKill)} {w.attacksToKill === 1 ? 'aanval' : 'aanvallen'} met {w.starsPerAttack} {w.starsPerAttack === 1 ? piece : pieces}</>, result: nfInt.format(w.perKill), total: true },
     ]),
     ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
   ]
