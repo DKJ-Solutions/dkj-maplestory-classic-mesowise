@@ -3415,7 +3415,9 @@ function MulCalc(props: {
   /** Kaders om de eerste n regels (Dave, 8 oktober 2026): ze tonen wat bij elkaar hoort, zoals wat er door 100 gaat; een groter kader valt om een kleiner. */
   boxes?: readonly number[]
 }) {
-  // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan.
+  // Een vaste factor houdt de plek van het vraagteken leeg, zodat de getallen onder elkaar blijven staan; heeft geen enkele factor een
+  // vraagteken, dan is die plek er niet, want in een smalle popup is elke pixel voor de labels nodig (Dave, 8 oktober 2026).
+  const anyHelp = props.factors.some((f) => f.detail)
   const num = (value: string, what: string, detail?: ComponentChildren) => (
     <span class="why-value">
       <span class="why-value-num">{value}</span>
@@ -3424,7 +3426,7 @@ function MulCalc(props: {
           {detail}
         </PopupButton>
       ) : (
-        <span class="why-help-space" aria-hidden="true" />
+        anyHelp && <span class="why-help-space" aria-hidden="true" />
       )}
     </span>
   )
@@ -3444,8 +3446,11 @@ function MulCalc(props: {
       {rows(k + 1 < boxes.length ? boxes[k + 1] : 0, boxes[k])}
     </div>
   )
+  // Elk kader heeft links en rechts een eigen smalle kolom in hetzelfde grid (Dave, 8 oktober 2026), in plaats van padding: zo staan labels,
+  // tekens en getallen in alle regels in dezelfde kolom, hoe diep een regel ook in de kaders zit.
+  const gutters = `repeat(${boxes.length}, 0.375rem)`
   return (
-    <div class="why-mul">
+    <div class={boxes.length > 0 ? 'why-mul why-mul-boxed' : 'why-mul'} style={boxes.length > 0 ? { gridTemplateColumns: `${gutters} [what] minmax(0, 1fr) [op] auto [num] auto ${gutters}` } : undefined}>
       {boxes.length > 0 && box(0)}
       {rows(boxes.length > 0 ? boxes[0] : 0, props.factors.length)}
       <div class="why-mul-row why-mul-result">
