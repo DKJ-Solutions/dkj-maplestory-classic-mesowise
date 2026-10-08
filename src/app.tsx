@@ -2076,8 +2076,8 @@ function nothingWhy(job: Job, c: CheapestSlot, counted: boolean): string {
 function PopupButton(props: { icon: ComponentChildren; class: string; label: string; title: string; tag?: string; data?: Record<`data-${string}`, string>; name?: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
-  // Elke popup achter een vraagteken heeft het label help boven zijn titel (Dave, 8 oktober 2026), zoals info en expected bij het i-knopje.
-  const tag = props.tag ?? (props.class.split(' ').includes('help-toggle') ? 'help' : undefined)
+  // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026), zoals info en expected bij het i-knopje.
+  const tag = props.tag ?? (props.class.split(' ').includes('help-toggle') ? 'why' : undefined)
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())

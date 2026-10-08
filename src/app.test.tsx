@@ -3835,8 +3835,8 @@ describe('Total cost: In game, Advised en Difference in één kaart (#183)', () 
     const item = openItem(bought[0])
     // De popup heet naar het bedrag uit de kolom Level (Dave, 7 oktober 2026).
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${bought[0].querySelector('.advised-level')!.textContent}?`)
-    // Elke popup achter een vraagteken heeft het label help boven zijn titel (Dave, 8 oktober 2026).
-    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('help')
+    // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026).
+    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
     expect(item.textContent).toContain('Op deze factuur')
     expect(item.textContent).toContain(bought[0].querySelector('.advised-level .meso-amount')!.getAttribute('title')!)
     closeItem(item)
@@ -4241,8 +4241,8 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
-      // Het label boven de titel zegt "help": de uitleg waarom deze mob (Dave, 8 oktober 2026).
-      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('help')
+      // Het label boven de titel zegt "why": de uitleg waarom deze mob (Dave, 8 oktober 2026).
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
       expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
