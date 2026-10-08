@@ -188,7 +188,7 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
 const mobName = (s: CheapestInput): string => s.drafts[0]?.monster || s.drafts[0]?.name || NO_MOB
 
 /**
- * Wat er per kaart verschilt tussen twee standen (Dave, 8 oktober 2026, #263): Cheapest rekent vanaf nul, dus de regels van Overnemen vergelijken
+ * Wat er per kaart verschilt tussen twee standen (Dave, 8 oktober 2026, #263): Cheapest bouwt zijn setup zelf op (freshStart), dus de regels van Overnemen vergelijken
  * jouw stand met die van Cheapest, niet met waar de berekening begon. Per skill het verschil in punten, met een min waar Cheapest er minder heeft.
  */
 export function changesBetween(before: CheapestInput, after: CheapestInput): Change[] {

@@ -263,7 +263,7 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
   })
 })
 
-describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (Dave, 8 oktober 2026, #263)', () => {
+describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de equip die je draagt (Dave, 8 oktober 2026, #263)', () => {
   // Wat een speler invulde: een eigen wapen, een mob, en meer skillpunten dan level 19 toelaat (32 in de skills van de 1e job, de pot is 28).
   const filled = (job: Job): CheapestInput => {
     const user = input(job, 19, 'Pig')
@@ -284,8 +284,13 @@ describe('cheapestFor: Cheapest bouwt zijn setup vanaf nul op uit job en level (
     expect(start.potionChoice).toBe(NO_POTION_CHOICE)
     // Het standaardprofiel, met alleen het punt in de aanvalsskill; onder level 10 ook dat niet (geen punten van de 1e job).
     expect(start.profileDraft).toEqual({ ...DEFAULT_PROFILE, level: '19', hp: DEFAULT_PROFILE.hp })
-    const gear = freshStart({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '13', wdef: '' } }).profileDraft
-    expect([gear.clawWatk, gear.wdef]).toEqual(['13', DEFAULT_PROFILE.wdef])
+    const gear = freshStart({ ...user, profileDraft: { ...user.profileDraft, clawWatk: '13', wdef: '', lukExtra: '5', attackMs: '660' } }).profileDraft
+    expect([gear.clawWatk, gear.wdef, gear.lukExtra, gear.attackMs]).toEqual(['13', DEFAULT_PROFILE.wdef, '5', '660'])
+    // Een veld buiten zijn grenzen, geen heel getal of geen getal valt terug op de standaard, zodat Cheapest altijd kan rekenen (Victor, 8 oktober 2026).
+    const bad = { clawWatk: '1000', wdef: '-3', attackMs: '50', starWatk: '1.5', helpfulStranger: '2', dexExtra: 'x' }
+    const fixed = freshStart({ ...user, profileDraft: { ...user.profileDraft, ...bad } })
+    for (const k of Object.keys(bad) as (keyof typeof bad)[]) expect(fixed.profileDraft[k], k).toBe(DEFAULT_PROFILE[k])
+    expect(profileOf(fixed), 'fout in een equip-veld').not.toBeNull()
     const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
     expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
     // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.

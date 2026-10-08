@@ -3802,7 +3802,7 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     render(<App />)
     expect(within(diffCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
     expect(total(cheapestCard())).toBeTruthy()
-    // Cheapest rekent vanaf nul, met de aankoop van zijn equip: "al de goedkoopste" hangt alleen aan of jouw level duurder is.
+    // "Al de goedkoopste" hangt alleen aan of jouw level duurder is dan Cheapest (#263).
     const notDearer = mesoOf(total(yours())) <= mesoOf(total(cheapestCard()))
     expect(diffCard().textContent!.includes('al de goedkoopste')).toBe(notDearer)
   })

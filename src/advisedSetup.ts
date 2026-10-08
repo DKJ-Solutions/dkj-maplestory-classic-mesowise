@@ -12,7 +12,7 @@ import type { Job } from './job'
 import { FIRST_JOB_LEVEL, skillPoolOf } from './data/skillPoints'
 import { isSkillKey, skillInfo } from './data/skills'
 import { NO_POTION_CHOICE } from './potions'
-import { DEFAULT_PROFILE, type ProfileDraft } from './profile'
+import { DEFAULT_PROFILE, DRAFT_FIELDS, type ProfileDraft } from './profile'
 
 /** Hoeveel keer hoogstens equipment erbij komt en alles opnieuw wordt doorgerekend; daarna blijft de laatste stand staan (`capped`). */
 export const MAX_EQUIP_ROUNDS = 4
@@ -33,8 +33,18 @@ export interface AdvisedSetup {
   ammo: string | null
 }
 
-/** De velden van het profiel die bij je equip horen en die de Equip-kaart bijhoudt: wapen, WDEF, stars, snelheid, en de keuzes van dagger en pijlen. */
-const GEAR_FIELDS = ['clawWatk', 'wdef', 'attackMs', 'weaponMult', 'starWatk', 'starRecharge', 'dagger', 'bronzeArrows', 'helpfulStranger'] as const satisfies readonly (keyof ProfileDraft)[]
+/**
+ * De velden van het profiel die bij je equip horen: wapen, WDEF, stars, snelheid, de keuzes van dagger en pijlen (die houdt de Equip-kaart bij), en wat
+ * je items per stat extra geven (STR, DEX, INT, LUK). Je base AP en je accuracy bouwt Cheapest zelf op.
+ */
+const GEAR_FIELDS = ['clawWatk', 'wdef', 'attackMs', 'weaponMult', 'starWatk', 'starRecharge', 'dagger', 'bronzeArrows', 'helpfulStranger', 'strExtra', 'dexExtra', 'intExtra', 'lukExtra'] as const satisfies readonly (keyof ProfileDraft)[]
+
+/** Of een veld een waarde heeft die parseProfile goedkeurt: een getal binnen zijn grenzen, en heel waar dat moet. */
+const validField = (key: keyof ProfileDraft, text: string): boolean => {
+  const f = DRAFT_FIELDS.find((d) => d.key === key)
+  const n = text.trim() === '' ? NaN : Number(text)
+  return f !== undefined && Number.isFinite(n) && n >= f.min && n <= f.max && (!f.integer || Number.isInteger(n))
+}
 
 /** Elke skill van de 1e job op 0: onder level 10 heb je daar nog geen punten voor (skillPointCap), ook niet het ene punt van het standaardprofiel. */
 const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
@@ -54,8 +64,8 @@ const NO_JOB_SKILL_POINTS: Partial<ProfileDraft> = Object.fromEntries(
  */
 export function freshStart(user: CheapestInput): CheapestInput {
   const hp = user.profileDraft.hp.trim()
-  // De velden van je equip neemt Cheapest over waar ze een getal zijn; een leeg of fout veld valt terug op de standaard.
-  const gear = Object.fromEntries(GEAR_FIELDS.filter((k) => user.profileDraft[k].trim() !== '' && Number.isFinite(Number(user.profileDraft[k]))).map((k) => [k, user.profileDraft[k].trim()]))
+  // De velden van je equip neemt Cheapest over waar parseProfile ze goedkeurt; een leeg of fout veld valt terug op de standaard (Victor, 8 oktober 2026).
+  const gear = Object.fromEntries(GEAR_FIELDS.filter((k) => validField(k, user.profileDraft[k])).map((k) => [k, user.profileDraft[k].trim()]))
   return {
     job: user.job,
     gender: user.gender,
@@ -73,7 +83,7 @@ export function freshStart(user: CheapestInput): CheapestInput {
 }
 
 /**
- * Cheapest voor jouw stand (Dave, 8 oktober 2026, #263): de setup die het vanaf nul opbouwt (freshStart), met de wijzigingen en de besparing
+ * Cheapest voor jouw stand (Dave, 8 oktober 2026, #263): de setup die het zelf opbouwt vanaf je job, level en equip (freshStart), met de wijzigingen en de besparing
  * gemeten tegen jouw eigen stand, zodat Overnemen zegt wat er voor jou verandert.
  */
 export function cheapestFor(user: CheapestInput): AdvisedSetup {

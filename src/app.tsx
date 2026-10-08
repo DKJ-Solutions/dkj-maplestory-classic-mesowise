@@ -1644,9 +1644,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
     </button>
   )
   // Een rij met equipment: wat je draagt (Equip), en in Cheapest wat het erbij koopt (New equip, Dave, 8 oktober 2026).
-  const equipRow = (equip: BasedOnEquip, title: string, dataKey: 'data-based-on-equip' | 'data-based-on-bought') => (
-    // De derde rij (Dave, 8 oktober 2026): de equipment waarmee dit blad rekent, kort ("3 items") met het toggle-knopje dat ze toont, zoals Char; in Wearing met
-    // het potlood dat de popup opent waar je kiest wat je draagt, in Advised alleen om te lezen. data-based-on-equip zegt in de HTML wat het vak toont.
+  const basedOnEquipRow = (equip: BasedOnEquip, title: string, dataKey: 'data-based-on-equip' | 'data-based-on-bought') => (
+    // Kort ("3 items") met het toggle-knopje dat de stukken toont, zoals Char (Dave, 8 oktober 2026); in Profile met het potlood dat de popup opent waar je
+    // kiest wat je draagt, in Cheapest alleen om te lezen. data-based-on-equip of data-based-on-bought zegt in de HTML wat het vak toont.
     <div class="based-on-row">
       <div class="based-on-label" {...{ [dataKey]: equip.ids }} data-sheet={sheet}>
         <span class="sr-only">{title}: </span>
@@ -1742,9 +1742,9 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           </div>
           {props.edit && pencil('Mob', props.edit.open.mob === 'worn', props.edit.mob)}
         </div>
-        {equip && equipRow(equip, 'Equip', 'data-based-on-equip')}
+        {equip && basedOnEquipRow(equip, 'Equip', 'data-based-on-equip')}
         {/* In Cheapest een vierde rij (Dave, 8 oktober 2026): de equip die Cheapest erbij koopt, naast de equip die je al draagt hierboven. */}
-        {bought && equipRow(bought, 'New equip', 'data-based-on-bought')}
+        {bought && basedOnEquipRow(bought, 'New equip', 'data-based-on-bought')}
       </div>
     </section>
   )
@@ -2454,7 +2454,7 @@ function EquipmentCard(props: {
       {!pickOpen && editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
     </>
   )
-  // De derde rij onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Wearing, met het potlood) of waarmee het advies rekent (Advised, alleen lezen).
+  // De rijen onder "Based on:" (Dave, 8 oktober 2026): wat je draagt (Equip; in Profile met het potlood, in Cheapest alleen lezen) en in Cheapest wat het erbij koopt (New equip).
   const equipRow = (list: readonly { item: BasedOnEquip['items'][number]; id: string }[], edit?: BasedOnEquip['edit'], none?: string): BasedOnEquip => {
     const items = list.map((l) => l.item)
     return { summary: equipSummary(items, none), items, ids: list.map((l) => l.id).join(' '), edit }
@@ -3825,8 +3825,7 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
   return (
     <>
       {props.applied && <p class="hint">Overgenomen: je mob en potions zijn nu die van Cheapest. Je skillpunten, AP en equip blijven zoals ze waren.</p>}
-      {/* "Al de goedkoopste" als jouw setup dit level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263): Cheapest rekent vanaf nul en koopt
-          dus altijd zijn equip, ook wat jij al hebt. */}
+      {/* "Al de goedkoopste" als jouw setup dit level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263). */}
       {!props.applied && saving !== null && saving < 1 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
     </>
   )
