@@ -39,21 +39,39 @@
 
 ### PLAN
 
+Dave, October 8, 2026 (#263): Cheapest should work out by itself which setup gives the lowest cost, taking only job and
+level from the profile. Then, for the Overnemen part: compare the player's setup with Cheapest's, and say "al de
+goedkoopste" when the player's level is not dearer than Cheapest.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `freshStart`: Cheapest's input from job, level, gender and a valid Max HP only (empty equipment, no mob, no potion choice, default stats, no skill points)
+- [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
+- [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
 
 ### TEST
 
+- [x] Unit tests: the fresh start keeps only job, level, gender and Max HP; the same setup comes out for a filled-in and a clean profile, also one with too many skill points, for all four jobs; the changes are measured against the player's setup
+- [x] App tests updated: Cheapest buys its own weapon even when you wear one; after Overnemen your level is not dearer than Cheapest
+- [x] Full suite and lint gate green
+- [ ] Victor's review and Marlowe's second read
+- [ ] Dave has looked at the preview
+
 ### DEPLOY: app/cheapest-fresh-start
 
-**Score:**
+Cheapest's input is built by `freshStart` from job, level, gender and Max HP only, and `cheapestFor` measures its changes and
+saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Cheapest now works out the whole setup by itself from your job and level: skill points, AP, equipment, mob and potions. What
+you filled in no longer gets in the way, so a profile with a mistake (more skill points than your level allows) no longer
+leaves Cheapest with only a question mark. Overnemen lists what changes from your own setup to Cheapest's.
+
+**Score:** 4
 
 #### Pull Request
 
 Cheapest builds its setup from job and level alone
-
