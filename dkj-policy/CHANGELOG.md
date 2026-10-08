@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**5 / 10 minor entries** <!-- pending-tally -->
+**6 / 11 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-cost-title · 20261008-082509Z
+
+Comments and test names follow the new card name; Dave's own quoted words keep "Total cost".
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+The card that shows what your current level costs is now called Level cost instead of Total cost, so it no longer reads as the price of your equipment.
+
+**Score:** 2
+
+#### Pull Request
+
+Total cost is called Level cost
+
+[PR #256](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/256)
+
+---
 
 ### DEPLOY: app/actual-icon · 20261008-081936Z
 
