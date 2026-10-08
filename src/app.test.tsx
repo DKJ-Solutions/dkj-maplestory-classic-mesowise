@@ -4138,8 +4138,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(mob.getAttribute('data-sheet')).toBe('profile')
       // Wat je zelf zette: geen uitleg waarom juist deze mob.
       expect(d.querySelector('.based-on .based-on-line > .help-toggle')).toBeNull()
-      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label profile. Het heeft een eigen icoon, een persoon: getallen
-      // die je zelf zet; de i blijft voor vaste info, zoals die van de mob (Dave, 8 oktober 2026).
+      // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label profile (Dave, 8 oktober 2026).
       const ownStats = within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` })
       expect(ownStats.classList.contains('profile-toggle')).toBe(true)
       expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('profile-toggle')).toBe(false)
@@ -4148,6 +4147,18 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(stats.querySelector('.title-tag')?.textContent).toBe('profile')
       expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])
       expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
+      // In de laatste kolom van elke regel het potlood, zoals op de kaarten; Accuracy en Evasion houden hun vraagteken ernaast (Dave, 8 oktober 2026).
+      const pencils = [...stats.querySelectorAll<HTMLElement>('.char-table .equip-edit')].map((b) => b.getAttribute('aria-label'))
+      expect(pencils).toEqual(expect.arrayContaining(['STR wijzigen', 'DEX wijzigen', 'INT wijzigen', 'LUK wijzigen', 'Lucky Seven wijzigen', 'Max HP wijzigen', 'Max MP wijzigen', 'Accuracy wijzigen', 'Evasion wijzigen']))
+      for (const row of stats.querySelectorAll<HTMLElement>('.char-table .stat-line:not(.ability-head), .char-table .skill-row')) {
+        expect(row.lastElementChild!.classList.contains('equip-edit') || row.lastElementChild!.tagName === 'DIALOG', row.textContent!).toBe(true)
+      }
+      for (const name of ['Accuracy', 'Evasion']) {
+        expect(within(stats).getByRole('button', { name: `Uitleg bij ${name}` })).toBeTruthy()
+      }
+      fireEvent.click(within(stats).getByRole('button', { name: 'Max HP wijzigen' }))
+      expect(document.querySelector('dialog[aria-label="Max HP"]')).not.toBeNull()
+      fireEvent.click(within(document.querySelector<HTMLElement>('dialog[aria-label="Max HP"]')!).getAllByRole('button', { name: /Sluiten|Annuleren/ })[0])
       fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
       // Het i-knopje bij de mob toont de stats van Slime.
       fireEvent.click(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }))
@@ -4380,6 +4391,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
         const sections = [...popup.querySelectorAll('section.char-table')]
         // De kop van de skills zegt dat het die van de 1e job zijn; de groep zelf heeft geen kop en geen "31 / 31 SP" (Dave, 7 oktober 2026).
         expect(sections.map((s) => s.querySelector('.char-table-head')!.textContent)).toEqual(['Ability points', 'Skillpoints (1e job)', 'Total stats'])
+        // Het karakter van het advies is om te lezen: geen potlood (Dave, 8 oktober 2026; in Profile wel).
+        expect(popup.querySelector('.char-table .equip-edit')).toBeNull()
         expect(lines(sections[0], '.ability-line:not(.ability-head)'), 'Ability points').toEqual(want[0])
         expect(lines(sections[1], '.skill-row'), 'Skillpoints').toEqual(want[1])
         expect(sections[1].querySelector('.skill-group h3, .skill-sp')).toBeNull()

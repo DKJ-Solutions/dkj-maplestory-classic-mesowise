@@ -53,6 +53,7 @@ Dave, October 8, 2026, given in steps during the session:
 - the popup label "actual" becomes "profile" (and the `actual-toggle` class `profile-toggle`).
 - the popup label "edit" becomes "edit profile".
 - the buttons in the "Based on:" boxes (Char, Mob, Equip) show the plain eye of the card buttons, no circle.
+- the Profile character popup behind that eye gets a pencil in the last column of every row, as on the cards; Accuracy and Evasion keep their question mark beside it.
 
 ### CREATE
 
@@ -65,6 +66,7 @@ Dave, October 8, 2026, given in steps during the session:
 - [x] `src/itemIds.ts`: item name to its MeowDB item-db id, read from the source URL every item row already carries (the app holds no other id); an own item reads `own`
 - [x] Head coin class renamed to `level-cost-icon`: `meso-icon` already sized the small coins next to amounts
 - [x] Styles in `src/style.css`, mobile-first: two equal columns at any width
+- [x] `AdvisedCharacter` takes an optional `onChange`: in Profile the rows are editable (pencils, writing the profile), in Cheapest read-only; CSS gives the pencil column its own width in that compact popup
 - [x] Based-on boxes use `EyeIcon`; the `≈` and person badges (`EXPECTED_ICON`, `ACTUAL_ICON`) had no other user and are removed
 
 ### TEST

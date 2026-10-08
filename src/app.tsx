@@ -2572,12 +2572,16 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
 }
 
 /**
- * Het karakter van het advies, achter het i-knopje bij "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points,
- * Skillpoints en Total stats, met dezelfde regels als hun Advised-popups, alleen om te lezen. De popup maakt ze compact (.item-dialog).
+ * Het karakter achter het oog bij "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points, Skillpoints en Total stats, met
+ * dezelfde regels als hun kaart-popups. De popup maakt ze compact (.item-dialog). In Cheapest alleen om te lezen; in Profile (met `onChange`,
+ * Dave, 8 oktober 2026) staat in de laatste kolom het potlood, zoals op de kaarten; Accuracy en Evasion houden hun vraagteken ernaast.
  */
-function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
+function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Partial<ProfileDraft>) => void }) {
   const { job, draft } = props
   const none = () => {}
+  const onChange = props.onChange
+  const level = Number(draft.level.trim())
+  const cap = onChange && draft.level.trim() !== '' && Number.isInteger(level) && level >= 1 && level <= 200 ? apAtLevel(level) : null
   return (
     <>
       <section class="char-table char-table-ap" aria-label="Ability points">
@@ -2586,16 +2590,16 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
         {shownStats(job)
           .filter((f) => ABILITY_KEYS.includes(f.key))
           .map((f) => (
-            <AbilityLine key={f.key} field={f} draft={draft} cap={null} readOnly onSave={none} />
+            <AbilityLine key={f.key} field={f} draft={draft} cap={cap} readOnly={!onChange} onSave={onChange ?? none} />
           ))}
       </section>
       <section class="char-table char-table-skills" aria-label="Skillpoints">
         <h3 class="char-table-head">Skillpoints ({hasFirstJob(job, draft) ? '1e job' : 'Beginner'})</h3>
-        <SkillGroups job={job} draft={draft} readOnly inCharacter onChange={none} />
+        <SkillGroups job={job} draft={draft} readOnly={!onChange} inCharacter onChange={onChange ?? none} />
       </section>
       <section class="char-table char-table-total" aria-label="Total stats">
         <h3 class="char-table-head">Total stats</h3>
-        <BaseStats job={job} draft={draft} />
+        <BaseStats job={job} draft={draft} onChange={onChange} />
       </section>
     </>
   )
@@ -2607,7 +2611,7 @@ function AdvisedCharacter(props: { job: Job; draft: ProfileDraft }) {
  * telt niet mee; wat alleen equipment geeft (Attack, W.ATT, DEF, snelheid) staat er niet. Max HP en Max MP zijn de getallen van het profiel:
  * de app kan HP van een item daar niet uit halen.
  */
-function BaseStats(props: { job: Job; draft: ProfileDraft }) {
+function BaseStats(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Partial<ProfileDraft>) => void }) {
   const { job } = props
   const bare: ProfileDraft = { ...props.draft, strExtra: '0', dexExtra: '0', intExtra: '0', lukExtra: '0', clawWatk: '0' }
   const fields = statFieldsFor(job)
@@ -2618,12 +2622,12 @@ function BaseStats(props: { job: Job; draft: ProfileDraft }) {
     <>
       {(['hp', 'mp'] as const).map((key) => {
         const f = field(key)
-        return f && <StatLine key={key} field={f} value={bare[key]} readOnly onSave={none} />
+        return f && <StatLine key={key} field={f} value={bare[key]} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
       })}
       {(['accuracy', 'avoid'] as const).map((key) => {
         const f = field(key)
         const breakdown = statBreakdown(key, bare, job)
-        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={breakdown} readOnly onSave={none} />
+        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={breakdown} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
       })}
       {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>
@@ -3965,7 +3969,7 @@ export function App() {
 
   const advisedStats = advisedProfile && <AdvisedCharacter job={job} draft={advisedProfile} />
   // Your character onder "Based on:" in Level cost: Equip (Dave, 8 oktober 2026): je eigen profiel (profileDraft, het level en de job van de kaart Ability points) en de mob die je in Monster koos (drafts[0], dezelfde als HuntedMobCard in Your character toont).
-  const wornStats = <AdvisedCharacter job={job} draft={profileDraft} />
+  const wornStats = <AdvisedCharacter job={job} draft={profileDraft} onChange={updateProfile} />
   const wornMob = huntedMob(drafts[0])?.name ?? null
 
   return (
