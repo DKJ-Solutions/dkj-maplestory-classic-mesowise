@@ -41,19 +41,30 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Popup labels: `info` on the static info popups, `why` on every help-toggle popup, `expected` keeps its own ≈ icon
+- [x] Mob info popup: name-only title, level on its own row
+- [x] "Based on:" labels: whole name opens the popup, mob help toggle inside the label
+- [x] Title button of Total cost: Equip and Useable: info toggle instead of help toggle
+- [x] Info icon: circle in the text colour, glyph in the background colour
 
 ### TEST
 
+- [x] Tests for every label, the level row, the clickable names and the title info toggle; vitest (1951) and typecheck green
+- [x] Dave looked at the preview and said ship it
+
 ### DEPLOY: app/info-popup-tag
 
-**Score:**
+Every popup now says what kind of content it holds: `info` for fixed facts (a mob, an item, what a Total cost popup is), `expected` for the app's predictions, with a ≈ icon instead of the i, and `why` for every popup behind a question mark. Under "Based on:" the whole name opens its popup, the mob's question mark sits inside its label, and the mob popup shows its level as a row instead of in the title. The info icon is now a solid circle in the text colour with the i in the background colour, and behind the title of Total cost: Equip and Useable it replaces the question mark.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Dave and his friends see at a glance whether a number is fixed or predicted, and can tap the name rather than aiming for a small icon on a phone.
+
+**Score:** 3
 
 #### Pull Request
 
-Info label on the static info popups
+Popup labels info, expected and why, clickable names under Based on, and a level row in the mob popup
 
