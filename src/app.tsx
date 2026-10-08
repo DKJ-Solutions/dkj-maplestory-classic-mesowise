@@ -2574,7 +2574,7 @@ function SkillGroups(props: { job: Job; draft: ProfileDraft; readOnly: boolean; 
 /**
  * Het karakter achter het oog bij "Based on:" (Dave, 7 oktober 2026): drie tabellen onder elkaar, Ability points, Skillpoints en Total stats, met
  * dezelfde regels als hun kaart-popups. De popup maakt ze compact (.item-dialog). In Cheapest alleen om te lezen; in Profile (met `onChange`,
- * Dave, 8 oktober 2026) staat in de laatste kolom het potlood, zoals op de kaarten; Accuracy en Evasion houden hun vraagteken ernaast.
+ * Dave, 8 oktober 2026) staat in de laatste kolom het potlood, zoals op de kaarten, en geen vraagteken bij Accuracy en Evasion.
  */
 function AdvisedCharacter(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Partial<ProfileDraft>) => void }) {
   const { job, draft } = props
@@ -2627,7 +2627,7 @@ function BaseStats(props: { job: Job; draft: ProfileDraft; onChange?: (patch: Pa
       {(['accuracy', 'avoid'] as const).map((key) => {
         const f = field(key)
         const breakdown = statBreakdown(key, bare, job)
-        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={breakdown} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
+        return f && <StatLine key={key} field={f} value={shown(breakdown?.total)} breakdown={props.onChange ? undefined : breakdown} readOnly={!props.onChange} onSave={(text) => props.onChange?.({ [key]: text })} />
       })}
       {job === 'magician' && <StatLine field={MAGIC_ATTACK_FIELD} value={shown(totalMagicAttack(bare, job))} readOnly onSave={none} />}
     </>

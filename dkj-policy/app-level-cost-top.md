@@ -53,7 +53,7 @@ Dave, October 8, 2026, given in steps during the session:
 - the popup label "actual" becomes "profile" (and the `actual-toggle` class `profile-toggle`).
 - the popup label "edit" becomes "edit profile".
 - the buttons in the "Based on:" boxes (Char, Mob, Equip) show the plain eye of the card buttons, no circle.
-- the Profile character popup behind that eye gets a pencil in the last column of every row, as on the cards; Accuracy and Evasion keep their question mark beside it.
+- the Profile character popup behind that eye gets a pencil in the last column of every row, as on the cards, and no question marks there.
 
 ### CREATE
 
