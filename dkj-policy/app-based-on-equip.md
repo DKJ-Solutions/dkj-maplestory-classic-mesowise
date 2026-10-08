@@ -39,21 +39,32 @@
 
 ### PLAN
 
+Dave (October 8, 2026): Based on gets a third row, Equip, whose pencil opens a popup to select what you wear; the Wearing table then says per slot whether to upgrade now. The app gives the verdict (no player toggle); Advised shows the row read-only.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Third Based on row Equip in both sheets (`data-based-on-equip`): Wearing with an ACTUAL_ICON list of what you wear and a pencil that opens a pick popup hosting the existing slot popups; Advised read-only with EXPECTED_ICON
+- [x] The Wearing table loses its per-row pencil; per slot a question mark gives Upgraden or Houden from the existing `cheapestWhy`, and an upgrade shows "Upgrade" in the Level column with the accent
+- [x] `slotCovers` shared between Advised and Wearing; closing the Equip popup closes its nested popups; WORN_HELP describes the new flow
 
 ### TEST
 
+- [x] Tests for the Equip row in both sheets, the pick popup (nested slot popup, Escape, focus return) and verdicts matching Advised's buy per slot; 1964 pass, `tsc` green
+- [x] Code review by Victor
+- [x] Dave judged it in the preview
+
 ### DEPLOY: app/based-on-equip
 
-**Score:**
+Slot selection in Wearing moved from the table rows to the popup behind the Equip pencil; the verdict reuses Advised's own reasoning, so the two tables cannot disagree.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+Level cost: Equip now shows under Based on which equipment it counts, and in Wearing you pick what you wear from that row. The table of what you wear tells you per slot whether to upgrade it now or keep it, with the reason behind a question mark.
+
+**Score:** 4
 
 #### Pull Request
 
 Based on gets an Equip row, and Wearing says per slot whether to upgrade
-
