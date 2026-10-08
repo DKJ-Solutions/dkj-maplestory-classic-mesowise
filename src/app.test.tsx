@@ -3761,55 +3761,51 @@ describe('Level cost: In game, Cheapest en Difference in één kaart (#183)', ()
     expect(rows[4].calc).toBe(`${rows[2].result} / ${rows[3].result}`)
   })
 
-  it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal, het totaal van Difference ervoor', () => {
+  it('zegt na Overnemen wat je bespaarde: het verschil van je oude en je nieuwe totaal (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     const first = mesoOf(total(yours()))
-    const before = mesoOf(diffCard().querySelector('tfoot td.invoice-diff')!.textContent)
-    // Wat de equip van Cheapest in de winkel kost: Difference toont het op de rij Shop (#192).
-    const shop = mesoOf(diffCard().querySelector('tbody tr td.invoice-meso:nth-child(3)')!.textContent)
-    expect(shop).toBeGreaterThan(0)
     take()
     const shown = mesoOf(diffCard().querySelector('.cheapest-saving')!.textContent!.replace(/meso.*$/, ''))
-    // Na Overnemen draag je de equip, dus staat hij niet meer als Shop op je factuur; de besparing telt wat hij kostte wel mee.
-    expect(shown).toBe(first - mesoOf(total(yours())) - shop)
-    expect(shown).toBe(before)
+    // Overnemen zet alleen mob en potions over: wat je bespaart is wat jouw eigen factuur daarmee minder kost.
+    expect(shown).toBe(first - mesoOf(total(yours())))
+    expect(shown).toBeGreaterThan(0)
   })
 
-  it('zet met Overnemen de setup toe: jouw Total cost krijgt het totaal van de kaart, en Ongedaan maken zet alles terug', () => {
+  it('neemt met Overnemen alleen mob en potions over, laat je profiel en equip staan, en Ongedaan maken zet alles terug (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     const profileBefore = profileFields()
     const costBefore = levelCostText()
     const yoursBefore = total(yours())
-    const cheaperTotal = total(cheapestCard())
     const equipBefore = stored(EQUIPMENT_KEY)
     take()
-    // De equip van Cheapest staat nu in je setup (je koopt haar in het spel): zijn winkelprijs is geen kost van dit level meer op je eigen factuur.
-    expect(stored(EQUIPMENT_KEY)).not.toEqual(equipBefore)
-    expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(cheaperTotal))
-    // Ook na Overnemen staat de volledige factuur op de kaart. Cheapest bouwt zijn setup vanaf nul op uit je job en level (Dave, 8 oktober 2026, #263), dus het rekent zijn equip opnieuw als aankoop: jouw factuur is nu niet duurder.
-    expect(mesoOf(total(yours()))).toBeLessThanOrEqual(mesoOf(total(cheapestCard())))
+    // Je skillpunten, AP en equip blijven zoals ze waren: die wissel je in het spel niet vrij.
+    expect(profileFields()).toEqual(profileBefore)
+    expect(stored(EQUIPMENT_KEY)).toEqual(equipBefore)
+    expect(diffCard().textContent).toContain('Je skillpunten, AP en equip blijven zoals ze waren')
+    // Met de mob en potions van Cheapest kost jouw level minder.
+    expect(mesoOf(total(yours()))).toBeLessThan(mesoOf(yoursBefore))
     expect(levelCostText()).not.toBe(costBefore)
     expect(diffCard().querySelector('.cheapest-saving')?.textContent).toMatch(/bespaard op dit level/)
     fireEvent.click(within(summary()!).getByRole('button', { name: 'Ongedaan maken' }))
     expect(profileFields()).toEqual(profileBefore)
     expect(levelCostText()).toBe(costBefore)
     expect(total(yours())).toBe(yoursBefore)
-    // Ongedaan maken zet ook je equip terug.
     expect(stored(EQUIPMENT_KEY)?.slots ?? defaultEquipment()).toEqual(equipBefore?.slots ?? defaultEquipment())
     const potions = stored(POTION_CHOICE_KEY)
     expect(potions === null || (potions.hp === null && potions.mp === null)).toBe(true)
   })
 
-  it('zegt dat je setup al de goedkoopste is als er niets te winnen valt, en toont ook dan de volledige factuur', () => {
+  it('toont na Overnemen en herladen geen Overnemen meer, en zegt "al de goedkoopste" precies als jouw level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263)', () => {
     toLevel20()
     take()
-    // Na herladen (de gekozen setup staat in de opslag) is er niets meer te winnen.
+    // Na herladen (mob en potions staan in de opslag) zijn mob en potions al die van Cheapest: niets meer over te nemen.
     cleanup()
     render(<App />)
-    expect(diffCard().textContent).toContain('al de goedkoopste')
-    expect(mesoOf(total(yours()))).toBeLessThanOrEqual(mesoOf(total(cheapestCard())))
-    expect(total(cheapestCard())).toBeTruthy()
     expect(within(diffCard()).queryByRole('button', { name: 'Overnemen' })).toBeNull()
+    expect(total(cheapestCard())).toBeTruthy()
+    // Cheapest rekent vanaf nul, met de aankoop van zijn equip: "al de goedkoopste" hangt alleen aan of jouw level duurder is.
+    const notDearer = mesoOf(total(yours())) <= mesoOf(total(cheapestCard()))
+    expect(diffCard().textContent!.includes('al de goedkoopste')).toBe(notDearer)
   })
 
   it('zet onder Difference je HP Potion, MP Potion, Skill, ATT en DEF, en het monster alleen als dat verandert; geen AP-regel', () => {

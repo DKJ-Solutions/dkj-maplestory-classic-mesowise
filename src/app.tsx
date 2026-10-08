@@ -1590,7 +1590,7 @@ const CHEAPEST_HELP = (
     zich terugverdient tot je volgende upgrade in dat slot. Achter een stuk staat hoeveel je ervan betaalt: het aantal potions, of
     het deel van de prijs van een stuk equip, want dat draag je ook in de levels erna. Mesos is wat dit level ervoor betaalt; samen is dat Total cost. Alleen
     wat mesos kost staat erin. De winkelprijs staat in de info-popup van een stuk, en het vraagteken zegt waarom je het koopt. De app koopt niets voor je:
-    Overnemen zet de stukken alleen in je equip hier.
+    Overnemen zet alleen de mob en potions van Cheapest in je setup; je skillpunten, AP en equip blijven zoals ze zijn.
   </>
 )
 
@@ -3806,15 +3806,18 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
           Ongedaan maken
         </button>
       ) : (
-        <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
-          Overnemen
-        </button>
+        // Overnemen neemt alleen mob en potions over (#263): verschillen die niet, dan valt er niets over te nemen.
+        r.changes.some((c) => c.kind === 'mob' || c.kind === 'hp' || c.kind === 'mp') && (
+          <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
+            Overnemen
+          </button>
+        )
       )}
     </div>
   )
   return (
     <>
-      {props.applied && <p class="hint">Overgenomen: je setup in game is nu de goedkoopste, ook je equip.</p>}
+      {props.applied && <p class="hint">Overgenomen: je mob en potions zijn nu die van Cheapest. Je skillpunten, AP en equip blijven zoals ze waren.</p>}
       {/* "Al de goedkoopste" als jouw setup dit level niet duurder is dan Cheapest (Dave, 8 oktober 2026, #263): Cheapest rekent vanaf nul en koopt
           dus altijd zijn equip, ook wat jij al hebt. */}
       {!props.applied && saving !== null && saving < 1 ? <p class="hint">Je setup is al de goedkoopste voor dit level.</p> : details}
@@ -3918,9 +3921,10 @@ export function App() {
   // Goedkoopste instellingen (#183): een snapshot van vlak ervoor, zodat één tik alles ongedaan maakt, zoals Back bij een level-up.
   // De uitkomst staat er alleen zolang de stand die hij schreef onaangeroerd is: elke latere wijziging (concept, profiel, potions, job)
   // maakt nieuwe objecten, en dan is Ongedaan maken weg in plaats van dat het jouw wijziging wist.
-  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipment: Equipment; equipTexts: EquipTexts; bought: boolean; saving: number | null } | null>(null)
+  // Overnemen raakt alleen mob en potions (#263): je profiel en equip blijven, dus die vergelijkt de snapshot met wat er vóór stond.
+  const [cheapest, setCheapest] = useState<{ result: CheapestResult; before: CheapestInput; equipTexts: EquipTexts; bought: boolean; saving: number | null } | null>(null)
   const cheapestShown =
-    cheapest !== null && cheapest.result.drafts === drafts && cheapest.result.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.equipment === equipment && cheapest.before.job === job
+    cheapest !== null && cheapest.result.drafts === drafts && cheapest.before.profileDraft === profileDraft && cheapest.result.potionChoice === potionChoice && cheapest.before.equipment === equipment && cheapest.before.job === job
       ? cheapest.result
       : null
   const appliedSaving = cheapestShown ? cheapest!.saving : null
@@ -3956,33 +3960,26 @@ export function App() {
     if (!cheapestLive) return
     const result = cheapestLive
     const before = userInput
-    // Een setup die de app zelf niet kan doorrekenen, schrijft Overnemen niet over je profiel heen (#263).
-    if (!cheapestProfile({ ...before, profileDraft: result.profileDraft, potionChoice: result.potionChoice })) return
-    // De equip van Advised gaat in je setup (je koopt haar in het spel), met het profiel dat erbij hoort; de uitkomst van de berekening volgt daarna.
-    if (advisedGear.equipment !== before.equipment) {
-      clearPending()
-      writeEquipment(advisedGear.equipment)
-    }
+    // Overnemen zet alleen de mob en de potions van Cheapest in je setup (Dave, 8 oktober 2026, #263): die wissel je in het spel vrij. Je skillpunten,
+    // AP en equip blijven zoals ze zijn; de lijst noemt hun verschil alleen. Wat je bespaart, is wat dit level met die mob en potions minder kost.
+    const taken: CheapestInput = { ...before, drafts: result.drafts, potionChoice: result.potionChoice }
+    const now = levelInvoice(taken.drafts, cheapestProfile(taken))
+    if (now.kind !== 'invoice') return
     if (result.drafts !== before.drafts) {
       dirty.current = true
       setDrafts(result.drafts)
     }
-    if (result.profileDraft !== before.profileDraft) writeProfile(() => result.profileDraft)
     if (result.potionChoice !== before.potionChoice) writePotionChoice(result.potionChoice)
     setPlaced(null)
-    setCheapest({ result, before, equipment: advisedGear.equipment, equipTexts: liveEquipTexts, bought, saving: cheapestSaving })
+    setCheapest({ result, before, equipTexts: liveEquipTexts, bought, saving: invoiceSaving(invoice, now, null) })
   }
+
   const undoCheapest = () => {
     if (!cheapestShown || !cheapest) return
     const { before } = cheapest
     dirty.current = true
     setDrafts(before.drafts)
-    writeProfile(() => before.profileDraft)
     writePotionChoice(before.potionChoice)
-    if (before.equipment !== equipmentRef.current) {
-      clearPending()
-      writeEquipment(before.equipment)
-    }
     setPlaced(null)
     setCheapest(null)
   }

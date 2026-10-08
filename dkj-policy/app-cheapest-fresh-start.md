@@ -41,13 +41,16 @@
 
 Dave, October 8, 2026 (#263): Cheapest should work out by itself which setup gives the lowest cost, taking only job and
 level from the profile. Then, for the Overnemen part: compare the player's setup with Cheapest's, and say "al de
-goedkoopste" when the player's level is not dearer than Cheapest.
+goedkoopste" when the player's level is not dearer than Cheapest. After the reviews: Overnemen takes over only the mob
+and the potions, which a player can change freely; skill points, AP and equipment stay, and the list shows their
+difference for information only.
 
 ### CREATE
 
 - [x] `freshStart`: Cheapest's input from job, level, gender and a valid Max HP only (empty equipment, no mob, no potion choice, default stats, no skill points)
 - [x] `cheapestFor`: runs the setup from that start, with the changes (`changesBetween`) and the saving measured against the player's own setup
 - [x] "Je setup is al de goedkoopste" when the player's level is not dearer than Cheapest; the Cheapest help text says it builds from job and level alone
+- [x] Overnemen writes only mob and potions (Dave's choice after the reviews); its button shows only when those differ, the saving is what the player's own level then costs less, and Ongedaan maken puts them back
 
 ### TEST
 
@@ -56,12 +59,14 @@ goedkoopste" when the player's level is not dearer than Cheapest.
 - [x] Full suite and lint gate green
 - [x] Victor's review: fixed the 1st-job skill point below level 10 in the fresh start, Double Stab missing from the change list, a guard so Overnemen never writes a profile the app cannot compute, and the help text; dead code noted on #260
 - [x] Marlowe's second read: the framing points (saving and "al de goedkoopste" compare a from-scratch build with owned gear; Overnemen overwrites SP, AP and equipment) are handed to Dave as one decision
+- [x] App tests for Overnemen: profile and equipment unchanged, the saving is the player's own difference, undo restores, and "al de goedkoopste" exactly when the player's level is not dearer
 - [ ] Dave has looked at the preview
 
 ### DEPLOY: app/cheapest-fresh-start
 
 Cheapest's input is built by `freshStart` from job, level, gender and Max HP only, and `cheapestFor` measures its changes and
-saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest.
+saving against the player's own setup. "Al de goedkoopste" now means the player's level is not dearer than Cheapest, and
+Overnemen writes only the mob and the potions.
 
 **Score:** 2
 
@@ -69,7 +74,8 @@ saving against the player's own setup. "Al de goedkoopste" now means the player'
 
 Cheapest now works out the whole setup by itself from your job and level: skill points, AP, equipment, mob and potions. What
 you filled in no longer gets in the way, so a profile with a mistake (more skill points than your level allows) no longer
-leaves Cheapest with only a question mark. Overnemen lists what changes from your own setup to Cheapest's.
+leaves Cheapest with only a question mark. Overnemen lists what differs from your own setup and takes over only the mob and
+the potions, which you can change freely in the game; your skill points, AP and equipment stay as they are.
 
 **Score:** 4
 
