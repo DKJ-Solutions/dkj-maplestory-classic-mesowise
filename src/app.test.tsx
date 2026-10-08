@@ -559,6 +559,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(toggle.closest('.advised-item')!.querySelector('.advised-name')).not.toBeNull()
     const item = openItem(row, '.info-toggle')
     expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
+    expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     const facts = factsOf(item)
     expect(facts.Soort).toBe('CLAW')
     expect(facts.Level).toMatch(/^[\d]+$/)
@@ -4256,7 +4257,9 @@ describe('de knoppen Advised en Your character op elke kaart (#192)', () => {
       expect(button.previousElementSibling!.textContent).toBe(mob)
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(popup.querySelector('.stat-dialog-name')!.textContent).toMatch(new RegExp(`^${mob} \\(lv \\d+\\)$`))
+      // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
+      expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
       expect(lines(popup)).toEqual(advisedLines)
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       await frame()

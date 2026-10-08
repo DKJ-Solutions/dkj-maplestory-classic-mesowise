@@ -1768,7 +1768,7 @@ function BasedOn(props: { who: string; mob: string }) {
             <span class="sr-only">Mob: </span>
             <span class="based-on-value">{props.mob}</span>
             {mobDef && (
-              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={`${mobDef.name} (lv ${mobDef.level})`} data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
+              <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" data={{ 'data-based-on-mob': mobDef.name, 'data-sheet': 'advised' }}>
                 {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
               </PopupButton>
             )}
@@ -1979,7 +1979,7 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
         <span class="advised-name" title={props.fullName ?? props.name ?? undefined}>{props.name ?? '—'}</span>
         {/* De info-knop direct achter de naam; alleen als de app iets over het stuk weet. */}
         {props.facts.length > 0 && (
-          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title}>
+          <PopupButton icon={INFO_ICON} class="info-toggle" label={`Info over ${props.name}`} title={title} tag="info">
             <dl class="item-facts">
               {props.facts.map(([term, value]) => (
                 <div key={term}>
