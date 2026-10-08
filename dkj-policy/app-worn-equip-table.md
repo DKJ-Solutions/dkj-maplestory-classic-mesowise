@@ -41,17 +41,27 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: the Equip popup "Your character" as the same compact table as Advised (BillHead/BillRow/BillTotal), tag "wearing", blue worn tokens, a pencil per row opening a slot popup with search, stat correction, dagger/claw and Helpful Stranger
+- [x] Cody: `shopItem`/`shopPrice` in `src/equipment.ts`
+- [x] Cody: no horizontal scroll, measured at 360 and 320 px (Chrome); no `overflow-x` guard needed
+- [x] Victor and Edith review findings applied
 
 ### TEST
 
+- [x] Tycho: tests for `shopPrice` and the worn table (rows, total, slot popup, stat commit/discard); `npm run lint` clean, `npx vitest run` 1957/1957
+- [ ] Dave looks at the preview before the merge (visible result)
+
 ### DEPLOY: app/worn-equip-table
 
-**Score:**
+Internal: the Equip table parts (`BillHead`, `BillRow`, `BillTotal`) now serve both popups, and a shared `shopItem` lookup feeds the shop price and the stat requirements.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+In the Equip card, "Your character" now shows what you wear in the same compact table as Advised, under a blue "wearing" label: per slot the item, its shop price and its ATT or DEF, with the total below. A pencil per row opens that slot to change the item or correct its stat. Neither popup scrolls sideways on a phone.
+
+**Score:** 3
 
 #### Pull Request
 
