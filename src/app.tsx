@@ -1693,25 +1693,19 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
                 <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
-                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels, in duidelijke kolommen met hun naam als kop: Slot, Item en
-                      de stat die het stuk geeft. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die voor DEF (armor) (Dave, 8 oktober 2026). */}
+                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): tabellen met regels. Twee tabellen, eerst die voor ATT (wapen en ammo), dan die
+                      voor DEF (armor), elk met twee kolommen: de naam van het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026). */}
                   {[...new Set(equip.items.map((i) => i[3]))].map((stat) => (
                     <section key={stat} class="char-table char-table-equip" aria-label={stat} data-stat={stat}>
                       <div class="char-table-head equip-head" aria-hidden="true">
-                        <span>Slot</span>
-                        <span>Item</span>
                         <span>{stat}</span>
+                        <span />
                       </div>
                       {equip.items
                         .filter((i) => i[3] === stat)
                         .map(([slot, name, value]) => (
-                          <div key={slot} class="stat-line">
-                            <span class="stat-line-name">{slot}</span>
-                            <div class="equip-value" aria-label={`${slot} ${name}`}>
-                              <span class="equip-value-num">
-                                <strong>{name}</strong>
-                              </span>
-                            </div>
+                          <div key={slot} class="stat-line" data-slot={slot}>
+                            <span class="stat-line-name">{name}</span>
                             <div class="equip-value equip-stat" aria-label={`${slot} ${value} ${stat}`}>
                               <span class="equip-value-num">
                                 <strong>{value}</strong>

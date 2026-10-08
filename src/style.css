@@ -859,9 +859,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .char-table .stat-line:not(.ability-line) .equip-value, .char-table .skill-row .equip-value { justify-content: center; }
 /* De Equip-popup onder "Based on:" (Dave, 8 oktober 2026): dezelfde tabel als Char, in twee duidelijke kolommen, Slot en Item, met hun namen als kop.
    Een stuk heeft een naam en geen getal, dus Item krijgt de rest van de breedte en de naam staat links in zijn kolom. */
-.item-dialog .char-table-equip .stat-line:not(.ability-line), .char-table-equip .equip-head { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 3rem; column-gap: 0.75rem; }
-.item-dialog .char-table-equip .stat-line:not(.ability-line) .equip-value { justify-content: flex-start; text-align: left; }
-/* De derde kolom, de ATT of DEF van het stuk, in het midden van zijn kolom zoals de getallen van Char (Dave, 8 oktober 2026). */
+.item-dialog .char-table-equip .stat-line:not(.ability-line), .char-table-equip .equip-head { display: grid; grid-template-columns: minmax(0, 1fr) 3rem; column-gap: 0.75rem; }
+/* De tweede kolom, de ATT of DEF van het stuk, in het midden van zijn kolom zoals de getallen van Char (Dave, 8 oktober 2026). */
 .item-dialog .char-table-equip .stat-line:not(.ability-line) .equip-value.equip-stat, .char-table-equip .equip-head > :last-child { justify-content: center; text-align: center; white-space: nowrap; }
 .char-table-equip .stat-line .equip-value-num { overflow-wrap: anywhere; }
 /* Base en Extra wijken af van het Totaal (Dave, 7 oktober 2026): gewoon gewicht in grijs, het Totaal vet in de tekstkleur. */
