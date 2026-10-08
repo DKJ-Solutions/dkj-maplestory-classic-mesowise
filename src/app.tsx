@@ -887,7 +887,7 @@ function StatsCard(props: StatsCardBody) {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card={props.card} title={showAdvised ? `Cheapest: ${props.title}` : props.title} tag={showAdvised ? undefined : 'edit'} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
+        <CardPopup card={props.card} title={showAdvised ? `Cheapest: ${props.title}` : props.title} tag={showAdvised ? undefined : 'edit profile'} advised={showAdvised} titleNote={props.titleNote?.(draft)} opener={opener} error={showAdvised ? null : props.error} onClose={close}>
           <StatRows {...props} draft={draft} advised={showAdvised} />
         </CardPopup>
       )}
@@ -1177,7 +1177,7 @@ function PotionsCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="potions" title={title} tag="edit" opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
+        <CardPopup card="potions" title={title} tag="edit profile" opener={opener} onClose={close} onSave={dirty ? save : undefined} report={props.report}>
           {POTION_KINDS.map((kind) => {
             const pick = picked(kind)
             const shownPotion = pick ?? used[kind]
@@ -2269,7 +2269,7 @@ function EquipmentCard(props: {
       setEditing(null)
     }
     return (
-      <StatDialog title={label} tag="edit" closeLabel={`Sluiten ${label}`} focusInput={false} className="item-dialog slot-dialog" onCancel={() => closeSlot(slot)}>
+      <StatDialog title={label} tag="edit profile" closeLabel={`Sluiten ${label}`} focusInput={false} className="item-dialog slot-dialog" onCancel={() => closeSlot(slot)}>
         <div class={isEmptyEntry(entry) ? 'equip-row empty' : 'equip-row'}>
           <div class="field equip-head">
             <EquipSearch slot={slot} job={props.job} entry={entry} weapon={props.equipment.claw.pick} helpfulStranger={props.helpfulStranger} level={props.level} gender={props.gender} onPick={(pick, name) => props.onPick(slot, pick, name)} />
@@ -2307,7 +2307,7 @@ function EquipmentCard(props: {
               </button>
               {isEditing && (
                 // Corrigeren: het concept staat in pending tot Opslaan (zie StatEditor).
-                <StatDialog title={wornName(entry) ?? label} tag="edit" onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
+                <StatDialog title={wornName(entry) ?? label} tag="edit profile" onCancel={() => { props.onDiscard(slot); setEditing(null) }} onSave={dirty ? saveDraft : undefined}>
                   <StatEditor
                     stat={stat}
                     labelId={`${uid}-${slot}-game`}
@@ -2387,7 +2387,7 @@ function EquipmentCard(props: {
     )
   }
   const pickDialog = () => (
-    <StatDialog title="Equip" tag="edit" closeLabel="Sluiten Equip" focusInput={false} className="item-dialog" onCancel={closePick}>
+    <StatDialog title="Equip" tag="edit profile" closeLabel="Sluiten Equip" focusInput={false} className="item-dialog" onCancel={closePick}>
       <BillHead item="Equip" noPrice />
       {slots.map(pickRow)}
       {editSlot !== null && slots.includes(editSlot) && slotDialog(editSlot)}
@@ -2546,7 +2546,7 @@ function SkillsCard(props: {
       </p>
       <ViewButtons view={view} advised={props.advised !== null} onOpen={open} />
       {view !== null && (
-        <CardPopup card="skills" title={advised ? 'Cheapest: Skillpoints' : 'Skillpoints'} tag={advised ? undefined : 'edit'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
+        <CardPopup card="skills" title={advised ? 'Cheapest: Skillpoints' : 'Skillpoints'} tag={advised ? undefined : 'edit profile'} advised={advised} titleNote={spLeftShown !== null && <ToDistribute count={spLeftShown} unit="SP" />} opener={opener} error={advised ? null : props.error} onClose={close} report={props.report} reportTitle="Skillpoints">
           <SkillGroups job={props.job} draft={draft} readOnly={advised} onChange={props.onChange} />
         </CardPopup>
       )}
@@ -2828,7 +2828,7 @@ function HuntedMobCard(props: {
         </CardPopup>
       )}
       {view === 'worn' && (
-        <CardPopup card="mob" title={title} tag="edit" mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
+        <CardPopup card="mob" title={title} tag="edit profile" mob={mob?.name} opener={opener} error={invalid ? result.error : null} onClose={close} onSave={chosen ? save : undefined} report={props.report}>
           <label class="field">
             <span>De mob die je het meest killt</span>
             <select value={chosen?.name ?? mob?.name ?? ''} onChange={onMob}>

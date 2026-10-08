@@ -4194,7 +4194,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(cardOf('Equip').querySelector<HTMLDialogElement>('dialog.card-dialog')!.open).toBe(true)
       expect((mobDialog() as HTMLDialogElement).open).toBe(true)
       // Een popup waarin je iets wijzigt heeft het label edit (Dave, 8 oktober 2026).
-      expect(mobDialog().querySelector('.title-tag')?.textContent).toBe('edit')
+      expect(mobDialog().querySelector('.title-tag')?.textContent).toBe('edit profile')
       fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: 'Slime' } })
       fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
       expect(document.querySelector('section.hunted dialog.card-dialog')).toBeNull()
@@ -4207,7 +4207,7 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       fireEvent.click(within(charRow).getByRole('button', { name: 'Char wijzigen' }))
       const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
       expect(ap.open).toBe(true)
-      expect(ap.querySelector('.title-tag')?.textContent).toBe('edit')
+      expect(ap.querySelector('.title-tag')?.textContent).toBe('edit profile')
       expect(ap.querySelector('.stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
     })
 
@@ -4773,7 +4773,7 @@ describe('equipment: Your character als tabel', () => {
     fireEvent.click(pencil)
     expect(pencil.getAttribute('aria-expanded')).toBe('true')
     const pickPopup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(pickPopup.querySelector('.title-tag')!.textContent).toBe('edit')
+    expect(pickPopup.querySelector('.title-tag')!.textContent).toBe('edit profile')
     // Elke slotregel heeft zijn potlood dat de slotpopup opent, binnen deze popup.
     fireEvent.click(within(pickPopup).getByRole('button', { name: 'Weapon wijzigen' }))
     expect(pickPopup.querySelector('dialog.slot-dialog')).not.toBeNull()

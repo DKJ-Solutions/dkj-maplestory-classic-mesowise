@@ -51,13 +51,14 @@ Dave, October 8, 2026, given in steps during the session:
   `data-based-on-monster`, `data-based-on-equip`), and the popup itself carries the same attributes;
 - `data-based-on-equip` lists the item id of every piece worn.
 - the popup label "actual" becomes "profile" (and the `actual-toggle` class `profile-toggle`).
+- the popup label "edit" becomes "edit profile".
 
 ### CREATE
 
 - [x] `LevelCostButtons` in `src/app.tsx`, right under `.app-question`; totals come from the same invoices as the Level cost card
 - [x] The buttons open the Equip card's Cheapest / Profile popup through `CardViewContext`; Cheapest is disabled exactly when the Equip card has no Cheapest
 - [x] `MesoIcon`: an own drawing of a gold coin with a plain maple leaf (no Nexon sprite or logo, #14)
-- [x] Visible labels renamed (Advised -> Cheapest, Wearing -> Profile, actual -> profile, popup tags and the toggle class too); internal identifiers unchanged
+- [x] Visible labels renamed (Advised -> Cheapest, Wearing -> Profile, actual -> profile, edit -> edit profile, popup tags and the toggle class too); internal identifiers unchanged
 - [x] Equip popup title "Level cost" in both views; the Equip report is gone, and with it the ATT/DEF advice components it alone rendered (`ClawQuestion`, `ArmorQuestion` and their helpers)
 - [x] Data attributes as above, on the boxes and on the popup body; `data-based-on-mob` is now `data-based-on-monster` everywhere
 - [x] `src/itemIds.ts`: item name to its MeowDB item-db id, read from the source URL every item row already carries (the app holds no other id); an own item reads `own`
