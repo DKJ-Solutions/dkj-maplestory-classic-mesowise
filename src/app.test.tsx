@@ -4141,7 +4141,8 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       // Het knopje bij het karakter opent je eigen stats, de drie tabellen, met het label profile (Dave, 8 oktober 2026).
       const ownStats = within(char as HTMLElement).getByRole('button', { name: `Stats van ${who}` })
       expect(ownStats.classList.contains('profile-toggle')).toBe(true)
-      expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('profile-toggle')).toBe(false)
+      // Het oog bij de mob draagt in Profile hetzelfde label en dezelfde klasse als dat bij het karakter (Dave, 8 oktober 2026).
+      expect(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }).classList.contains('profile-toggle')).toBe(true)
       fireEvent.click(ownStats)
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(stats.querySelector('.title-tag')?.textContent).toBe('profile')
@@ -4281,9 +4282,11 @@ describe('de knoppen Cheapest en Your character op elke kaart (#192)', () => {
       expect(button.parentElement!.querySelectorAll(':scope > .based-on-value')).toHaveLength(0)
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      // De titel is alleen de naam, zonder level; het label erboven zegt "info": vaste info, geen advies of je eigen character (Dave, 8 oktober 2026).
+      // De titel is alleen de naam, zonder level; het label erboven is dat van de popup van het karakter, expected in Cheapest (Dave, 8 oktober 2026),
+      // en de regels staan in dezelfde tabel met een kop.
       expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
-      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
+      expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
+      expect(popup.querySelector('section.char-table-monster > .char-table-head')!.textContent).toBe('Monster')
       // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Cheapest: Monster.
       const level = MOBS.find((m) => m.name === mob)!.level
       expect(lines(popup)).toEqual([`Level${level}`, ...advisedLines])
@@ -4784,7 +4787,9 @@ describe('equipment: Your character als tabel', () => {
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.title-tag')!.textContent).toBe('profile')
     expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
-    expect([...popup.querySelectorAll('dt')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
+    // Dezelfde tabel als de popup van het karakter (Dave, 8 oktober 2026): een kop en per slot een regel.
+    expect(popup.querySelector('section.char-table-equip > .char-table-head')!.textContent).toBe('Equip')
+    expect([...popup.querySelectorAll('.char-table-equip .stat-line-name')].map((e) => e.textContent)).toEqual(['Weapon', 'Top'])
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
     closeDialogs()
     // Cheapest: dezelfde rij, alleen lezen, met het label expected en zonder potlood.

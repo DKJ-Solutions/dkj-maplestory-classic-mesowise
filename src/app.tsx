@@ -1664,10 +1664,14 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           <div class="based-on-label" data-based-on-monster={props.mob ?? undefined} data-sheet={sheet}>
             <span class="sr-only">Mob: </span>
             {mobDef ? (
-              <PopupButton icon={<EyeIcon />} class="info-toggle" label={`Info over ${props.mob}`} title={mobDef.name} tag="info" name={props.mob ?? undefined} data={{ 'data-based-on-monster': mobDef.name, 'data-sheet': sheet }}>
-                {/* Het level op een eigen regel, niet in de titel (Dave, 8 oktober 2026); geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
-                <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
-                {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+              <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Info over ${props.mob}`} title={mobDef.name} tag={advised ? 'expected' : 'profile'} name={props.mob ?? undefined} data={{ 'data-based-on-monster': mobDef.name, 'data-sheet': sheet }}>
+                {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): een tabel met een kop en de regels eronder. Het level op een eigen regel, niet in de
+                    titel; geen MOB_FIELDS-veld, want dat is een getal dat je zelf kunt corrigeren. */}
+                <section class="char-table char-table-monster" aria-label="Monster">
+                  <h3 class="char-table-head">Monster</h3>
+                  <StatLine field={{ label: 'Level', min: 1, max: 200, integer: true }} value={String(mobDef.level)} readOnly onSave={() => {}} />
+                  {MOB_FIELDS.map((f) => <StatLine key={f.key} field={{ ...f, integer: true }} value={String(f.get(mobDef))} readOnly onSave={() => {}} />)}
+                </section>
               </PopupButton>
             ) : (
               // Zonder gekozen mob (Wearing) zegt het vak dat je er nog een kiest, met het potlood ernaast (Dave, 8 oktober 2026).
@@ -1689,14 +1693,21 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
               <span class="sr-only">Equip: </span>
               {equip.items.length > 0 ? (
                 <PopupButton icon={<EyeIcon />} class={advised ? 'info-toggle expected-toggle' : 'info-toggle profile-toggle'} label={`Equip: ${equip.summary}`} title="Equip" tag={advised ? 'expected' : 'profile'} name={equip.summary} data={{ 'data-based-on-equip': equip.ids, 'data-sheet': sheet }}>
-                  <dl class="item-facts">
+                  {/* Dezelfde opbouw als de popup van Char (Dave, 8 oktober 2026): een tabel met een kop en per slot een regel, het stuk in de waardekolom. */}
+                  <section class="char-table char-table-equip" aria-label="Equip">
+                    <h3 class="char-table-head">Equip</h3>
                     {equip.items.map(([slot, name]) => (
-                      <div key={slot}>
-                        <dt>{slot}</dt>
-                        <dd>{name}</dd>
+                      <div key={slot} class="stat-line">
+                        <span class="stat-line-name">{slot}</span>
+                        <div class="equip-value" aria-label={`${slot} ${name}`}>
+                          <span class="equip-value-num">
+                            <strong>{name}</strong>
+                          </span>
+                        </div>
+                        <span />
                       </div>
                     ))}
-                  </dl>
+                  </section>
                 </PopupButton>
               ) : (
                 <span class="based-on-value placeholder">{equip.summary}</span>
