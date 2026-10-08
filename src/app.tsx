@@ -3715,100 +3715,88 @@ function AmmoSteps(props: { label: string; qty: number; meso: number; w: AmmoWhy
         result={oneDecimal(hit)}
       />
     )
-  // De hoofdvraag (Waarom 429?) in twee deelvragen (Dave, 8 oktober 2026): waarom zoveel aanvallen per kill, en waarom zoveel kills. Elk blok
-  // eindigt met zijn antwoord, uitgelicht; bovenaan de eindformule: aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
-  // ook als die aanval twee stars gooit (Dave, 8 oktober 2026). Als laatste wat herladen kost.
+  // De hoofdvraag (Waarom 429?) als één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills, want je valt één keer aan,
+  // ook als die aanval twee stars gooit. Achter de aanvallen per kill en de kills staat elk hun eigen formule, en daarin weer de schade per aanval;
+  // zo klik je van het aantal tot je eigen stats. Daaronder wat herladen (of bij een Bowman kopen) kost.
   const pieces = arrows ? 'pijlen' : 'stars'
-  const attacks = w.attacksToKill === 1 ? 'aanval' : 'aanvallen'
-  const inGroup = (group: string, rows: WhyRow[]) => rows.map((r) => ({ ...r, group }))
-  const rows: WhyRow[] = [
-    // De mob in de vraag en als eigen rij (Dave, 8 oktober 2026): hoe vaak je hem aanvalt, hangt af van zijn HP.
-    ...inGroup(`Waarom ${nfInt.format(w.attacksToKill)} ${attacks} per kill op ${w.mob}?`, [
-    // De schade in één rij, met als popup een formule (Dave, 8 oktober 2026): stars per aanval × schade per star × raakkans. De schade per star
-    // is het gemiddelde van min en max, met ± ervoor (Dave, 6 oktober 2026, #192), en min en max werken elk hun eigen formule uit.
-    {
-      label: 'Schade per aanval',
-      detail: (
-        <MulCalc
-          factors={[
-            { value: nfInt.format(w.starsPerAttack), what: `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase()) },
-            {
-              value: `± ${oneDecimal(w.avgHit)}`,
-              what: `Schade per ${piece}`,
-              detail: f ? (
-                <MulCalc
-                  factors={[
-                    { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit) },
-                    { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit) },
-                    { value: '2', what: 'Twee waarden', op: '/' },
-                  ]}
-                  result={`± ${oneDecimal(w.avgHit)}`}
-                />
-              ) : (
-                <p class="why-calc">schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</p>
-              ),
-            },
-            { value: nfPct.format(w.hitChance), what: 'Raakkans' },
-          ]}
-          result={`± ${oneDecimal(perAttack)}`}
-        />
-      ),
-      result: `± ${oneDecimal(perAttack)}`,
-    },
-    { label: `HP van ${w.mob}`, result: nfInt.format(w.mobHp) },
-    {
-      label: 'Aanvallen per kill',
-      detail: (
-        <MulCalc
-          factors={[
-            { value: nfInt.format(w.mobHp), what: `HP van ${w.mob}` },
-            { value: `± ${oneDecimal(perAttack)}`, what: 'Schade per aanval', op: '/' },
-          ]}
-          result={nfInt.format(w.attacksToKill)}
-          note={roundedNote(w.mobHp / perAttack, w.attacksToKill)}
-        />
-      ),
-      result: nfInt.format(w.attacksToKill),
-      total: true,
-    },
-    ]),
-    ...inGroup(`Waarom ${nf3.format(w.kills)} kills?`, killsRows(w).map((r) => (r.label === 'Kills dit level' ? { ...r, total: true } : r))),
-  ]
-  const costs: WhyRow[] = [
-    ...inGroup('Kosten', [
-    {
-      label: arrows ? 'Kopen' : 'Herladen',
-      // Komt het bedrag niet op een hele meso uit, dan zegt de regel onder de som dat hij naar boven is afgerond (Dave, 8 oktober 2026).
-      detail: (
+  const starsPerAttack = `${w.starsPerAttack === 1 ? piece : pieces} per aanval`.replace(/^./, (c) => c.toUpperCase())
+  // De schade per aanval: stars per aanval × schade per star × raakkans. De schade per star is het gemiddelde van min en max, met ± ervoor
+  // (Dave, 6 oktober 2026, #192), en min en max werken elk hun eigen formule uit.
+  const perAttackSteps = (
+    <MulCalc
+      factors={[
+        { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
+        {
+          value: `± ${oneDecimal(w.avgHit)}`,
+          what: `Schade per ${piece}`,
+          detail: f ? (
+            <MulCalc
+              factors={[
+                { value: oneDecimal(w.minHit), what: `Min per ${piece}`, detail: hitSteps(0.8, f.mastery, w.minHit) },
+                { value: oneDecimal(w.maxHit), what: `Max per ${piece}`, op: '+', detail: hitSteps(1, 1, w.maxHit) },
+                { value: '2', what: 'Twee waarden', op: '/' },
+              ]}
+              result={`± ${oneDecimal(w.avgHit)}`}
+            />
+          ) : (
+            <p class="why-calc">schommelt per worp tussen {oneDecimal(w.minHit)} en {oneDecimal(w.maxHit)}; de app rekent met het gemiddelde</p>
+          ),
+        },
+        { value: nfPct.format(w.hitChance), what: 'Raakkans' },
+      ]}
+      result={`± ${oneDecimal(perAttack)}`}
+    />
+  )
+  return (
+    <>
+      <MulCalc
+        factors={[
+          {
+            value: nfInt.format(w.attacksToKill),
+            what: `Aanvallen per kill op ${w.mob}`,
+            // Hoe vaak je de mob aanvalt, hangt af van zijn HP (Dave, 8 oktober 2026).
+            detail: (
+              <MulCalc
+                factors={[
+                  { value: nfInt.format(w.mobHp), what: `HP van ${w.mob}` },
+                  { value: `± ${oneDecimal(perAttack)}`, what: 'Schade per aanval', op: '/', detail: perAttackSteps },
+                ]}
+                result={nfInt.format(w.attacksToKill)}
+                note={roundedNote(w.mobHp / perAttack, w.attacksToKill)}
+              />
+            ),
+          },
+          { value: nfInt.format(w.starsPerAttack), what: starsPerAttack },
+          {
+            value: nf3.format(w.kills),
+            what: 'Kills dit level',
+            // Het aantal kills hangt niet van de uren af (Dave, 6 oktober 2026, #192): de EXP die je nog nodig hebt, gedeeld door wat één kill geeft.
+            detail: (
+              <MulCalc
+                factors={[
+                  { value: nfInt.format(w.expToNext), what: 'EXP tot volgend level' },
+                  { value: nf.format(w.expPerKill), what: `EXP per kill op ${w.mob}`, op: '/' },
+                ]}
+                result={nf3.format(w.kills)}
+              />
+            ),
+          },
+        ]}
+        result={nfInt.format(props.qty)}
+        note={roundedNote(w.exact, props.qty)}
+      />
+      <section class="why-section" aria-label="Kosten">
+        <h3 class="why-group">Kosten</h3>
+        {/* Komt het bedrag niet op een hele meso uit, dan zegt de regel onder de som dat hij naar boven is afgerond (Dave, 8 oktober 2026). */}
         <MulCalc
           factors={[
             { value: nfInt.format(props.qty), what: props.label },
-            { value: nf.format(w.pricePerStar), what: `Meso per ${piece}` },
+            { value: nf.format(w.pricePerStar), what: `${arrows ? 'Prijs' : 'Herladen'} per ${piece}` },
           ]}
-          result={nfInt.format(props.meso)}
+          result={`${nfInt.format(props.meso)} meso`}
           note={roundedNote(props.qty * w.pricePerStar, props.meso)}
         />
-      ),
-      result: `${nfInt.format(props.meso)} meso`,
-    },
-    ]),
-  ]
-  return (
-    <>
-      <WhySummary
-        terms={[
-          { value: nfInt.format(w.attacksToKill), unit: `${attacks} per kill` },
-          '×',
-          { value: nfInt.format(w.starsPerAttack), unit: `${w.starsPerAttack === 1 ? piece : pieces} per aanval` },
-          '×',
-          { value: nf3.format(w.kills), unit: 'kills' },
-        ]}
-        result={{ value: nfInt.format(props.qty), unit: pieces }}
-        exact={w.exact}
-        qty={props.qty}
-      />
-      <WhyTable rows={rows} />
-      <WhyTable rows={costs} />
+      </section>
     </>
   )
 }
