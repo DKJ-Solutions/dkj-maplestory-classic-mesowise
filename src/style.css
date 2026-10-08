@@ -887,9 +887,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De 0.5rem lucht boven de totaalstreep zit onder de laatste regel; die wordt even veel hoger, zodat zijn inhoud niet verschuift. In de bill van
    Level cost is die regel een subtotaal, dat zijn eigen lucht heeft. */
 .advised-bill:has(tfoot) tbody:not(.bill-group) tr:last-child > * { height: 2.75rem; padding-bottom: 0.625rem; }
-/* De kostenposten van de bill van Level cost (Dave, 8 oktober 2026): een kopregel in de opmaak van de kop van de tabel (.advised-head), met lucht
-   erboven zodat de posten uit elkaar lopen, en een subtotaal met een lijn erboven die net sterker is dan die tussen de regels. */
-.advised-bill .bill-category > * { padding-top: 1rem; }
+/* De kostenposten van de bill van Level cost (Dave, 8 oktober 2026): elk sluit af met een subtotaal, met een lijn erboven die net sterker is dan die
+   tussen de regels. */
 .advised-bill .advised-subtotal { border-top: 1px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }
 /* Onder elk subtotaal een dikkere lijn (Dave, 8 oktober 2026), zoals de totaalstreep in de uitleg (.why-table): daar sluit een post af. */
 .advised-bill tbody tr.advised-subtotal { border-bottom: 2px solid color-mix(in srgb, var(--muted) 50%, var(--border)); }

@@ -54,9 +54,9 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 - [x] Price column dropped, the shop price stays in an item's info popup; Level renamed Mesos; Useable on top (it always costs mesos); a row with nothing in it is left out
 - [x] The question mark sits right behind the amount behind the item name (and behind the Equip subtotal label); no column for question marks left
 - [~] A Bill heading above the Level cost bill, styled like Based on: -- added, then removed again at Dave's request
-- [x] The table head names the first cost group (Useable, or Equip without useables) instead of Item; that group drops its own category row
-- [x] The Equip category row has the same design as the table head: the group name and Mesos, styled as .advised-head
+- [x] One table head, Items and Mesos; the cost groups have no head row of their own (a Useable/Equip head row was tried and dropped)
 - [x] A thicker line (2px) under each subtotal
+- [x] A row that costs 0 mesos this level is left out; a subtotal of 0 stays
 
 ### TEST
 
@@ -67,9 +67,9 @@ whose two subtotals add up to Total cost. Dave chose five columns with a useable
 ### DEPLOY: app/bill-table
 
 The advised bills are real tables now (thead, tbody, tfoot), each in its own section. The Level cost popup holds one bill
-with two cost groups, Useable on top and Equip below, each with its own subtotal; each group starts with the same head row, Useable and Mesos, then Equip and Mesos.
+with two cost groups, Useable on top and Equip below, under one head, Items and Mesos; each group ends in its subtotal with a thicker line below.
 Behind the item name sits how much of it the level pays, a useable's count (written short, × 12.2k) or the share of an
-equipment piece's price (13%), with the question mark that explains it right after. The shop price lives in the item's info popup, and a slot with nothing in it is left out.
+equipment piece's price (13%), with the question mark that explains it right after. The shop price lives in the item's info popup; a slot with nothing in it, or a row that costs 0 mesos, is left out.
 
 **Score:** 2
 

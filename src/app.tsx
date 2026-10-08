@@ -1870,17 +1870,17 @@ function UseableRows(props: UseableInput) {
  */
 function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; level: number; help: boolean }; useable: { rows: ComponentChildren; total: number } | null }) {
   const { equip, useable } = props
-  // De kop van de tabel noemt de eerste kostenpost (Dave, 8 oktober 2026): Useable, of Equip als er geen useables zijn. Die post heeft dan geen eigen kopregel.
+  // Eén kop voor de hele tabel, Items en Mesos (Dave, 8 oktober 2026); de posten hebben geen eigen kopregel, hun subtotaal scheidt ze.
   return (
-    <BillTable variant="with-level" grouped head={<BillHead item={useable ? 'Useable' : 'Equip'} level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
+    <BillTable variant="with-level" grouped head={<BillHead item="Items" level />} total={<BillSum kind="total" label="Total cost" level={equip.level + (useable?.total ?? 0)} />}>
       {/* Useable bovenaan (Dave, 8 oktober 2026): potions en ammo kosten elk level geld, equip alleen als er iets geüpgraded moet worden. */}
       {useable && (
-        <BillGroup name="Useable" headless>
+        <BillGroup name="Useable">
           {useable.rows}
           <BillSum kind="subtotal" label="Useable subtotal" level={useable.total} />
         </BillGroup>
       )}
-      <BillGroup name="Equip" headless={!useable}>
+      <BillGroup name="Equip">
         {equip.rows}
         <BillSum
           kind="subtotal"
@@ -1903,23 +1903,9 @@ function LevelBill(props: { equip: { rows: ComponentChildren; shop: number; leve
   )
 }
 
-/** Een kostenpost in de bill van Level cost (Dave, 8 oktober 2026): een kopregel met zijn naam en Mesos, zoals de kop van de tabel, dan zijn regels en zijn subtotaal. */
-function BillGroup(props: { name: string; headless?: boolean; children: ComponentChildren }) {
-  return (
-    <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>
-      {/* Met `headless` noemt de kop van de tabel deze post al (LevelBill). */}
-      {!props.headless && (
-        // Dezelfde kopregel als die van de tabel (Dave, 8 oktober 2026): de naam van de post en Mesos, in dezelfde opmaak (.advised-head).
-        <tr class="advised-head bill-category">
-          <th scope="rowgroup">{props.name}</th>
-          <td class="advised-head-level" aria-hidden="true">
-            Mesos
-          </td>
-        </tr>
-      )}
-      {props.children}
-    </tbody>
-  )
+/** Een kostenpost in de bill van Level cost (Dave, 8 oktober 2026): zijn regels en zijn subtotaal, zonder eigen kopregel. `name` geeft de tbody zijn class. */
+function BillGroup(props: { name: string; children: ComponentChildren }) {
+  return <tbody class={`bill-group bill-group-${props.name.toLowerCase()}`}>{props.children}</tbody>
 }
 
 /** Een subtotaal of het totaal in de bill van Level cost (Dave, 8 oktober 2026): het bedrag onder Level. */
@@ -2050,6 +2036,8 @@ function BillRow(props: { tone: '' | 'buy' | 'option' | 'empty'; slot: string; q
   const last = !wide && <td class="advised-help">{helpButton}</td>
   // In de bill van Level cost blijft een rij zonder stuk, bedrag of oordeel weg (Dave, 8 oktober 2026), zoals een leeg slot dat leeg blijft.
   if (wide && props.name === null && props.level == null && !props.levelWord) return null
+  // En een rij die dit level 0 mesos kost, zoals een potion die je niet gebruikt (Dave, 8 oktober 2026).
+  if (wide && props.level === 0) return null
   // Zonder kolom Slot (de bill van Level cost, Dave, 8 oktober 2026) is de naam de kop van de rij, met het slot erin voor de schermlezer.
   const Item = wide ? 'th' : 'td'
   return (
