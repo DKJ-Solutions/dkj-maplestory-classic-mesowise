@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**15 / 22 minor entries** <!-- pending-tally -->
+**16 / 23 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/273-cheapest-above-profile · 20261009-071926Z
+
+Cheapest is never more expensive than your own setup. It still spends every skill point in the setup it
+builds, but when your own setup is cheaper on the invoice and fits your level, Cheapest is your own
+setup, with nothing to change or buy. Cheapest now also picks its mob on the invoice total rather than
+on EXP per meso, so a mob that is cheaper on the bill (Snail for a level-15 Warrior) is no longer passed
+over.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The Level cost card no longer tells a player to switch to a setup that costs more than the one they
+have: in 97 of 312 measured setups it did.
+
+**Score:** 2
+
+#### Pull Request
+
+Cheapest is never more expensive than your own setup
+
+[PR #277](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/277)
+
+---
 
 ### DEPLOY: app/271-defense-minimum-hit-note · 20261008-214028Z
 
