@@ -3810,7 +3810,11 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
   }
   const mesoOf = (text: string | null | undefined) => Number(text!.replace(/\D/g, ''))
 
-  it('zet onder de vraag van de app Cheapest links en Profile rechts, met het totaal van hun factuur in Level cost (Dave, 8 oktober 2026)', () => {
+  const levelCostCards = () => Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-card'))
+  const readMore = (card: HTMLElement) => within(card).getByRole('button', { name: /Read more$/ })
+  const differenceButton = (card: HTMLElement) => within(card).queryByRole('button', { name: /Difference between Cheapest and Profile$/ })
+
+  it('zet onder de vraag van de app Cheapest boven en Profile onder, met "VS" ertussen en het totaal van hun factuur in Level cost (Dave, 8 en 9 oktober 2026)', () => {
     toLevel20()
     const top = homeScreen().querySelector('.app-question')!.nextElementSibling!
     expect(top.tagName).toBe('SECTION')
@@ -3819,73 +3823,61 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(top.className).toBe('level-cost')
     expect(top.getAttribute('aria-label')).toBe('Level cost')
     expect(top.querySelector('.spot-head')).toBeNull()
-    const buttons = top.querySelectorAll<HTMLButtonElement>('.level-cost-buttons > button')
-    expect(buttons).toHaveLength(2)
-    const [left, right] = Array.from(buttons)
+    // Twee kaarten, geen derde vak Difference meer, en tussen de twee een rij "VS" (Dave, 9 oktober 2026).
+    const rows = Array.from(top.querySelector('.level-cost-buttons')!.children)
+    expect(rows.map((r) => r.className)).toEqual(['level-cost-card level-cost-advised', 'level-cost-vs', 'level-cost-card level-cost-worn'])
+    expect(rows[1].textContent).toBe('VS')
+    expect(top.querySelector('.level-cost-diff')).toBeNull()
+    const [left, right] = levelCostCards()
     expect(left.querySelector('.level-cost-label')!.textContent).toBe('Cheapest')
     expect(right.querySelector('.level-cost-label')!.textContent).toBe('Profile')
     expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard())!.replace('−', ''))
     expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours())!.replace('−', ''))
-    expect(left.disabled).toBe(false)
-    expect(right.disabled).toBe(false)
-    // Met een bedrag op beide knoppen hoeft er niets onder.
+    expect((readMore(left) as HTMLButtonElement).disabled).toBe(false)
+    expect((readMore(right) as HTMLButtonElement).disabled).toBe(false)
+    // Met een bedrag op beide kaarten hoeft er niets onder.
     expect(homeScreen().querySelectorAll('.level-cost-reason')).toHaveLength(0)
   })
 
-  it('zet onder de knoppen een derde rij met het verschil tussen Cheapest en Profile, en opent de tabel per soort kost in een popup (Dave, 8 oktober 2026)', () => {
+  it('zegt op beide kaarten hoeveel goedkoper of duurder ze zijn dan de andere, groen of rood; het bedrag zelf blijft neutraal (Dave, 9 oktober 2026)', () => {
     toLevel20()
-    const top = homeScreen().querySelector<HTMLElement>('section.level-cost')!
-    const row = top.querySelector<HTMLElement>('.level-cost-diff')!
-    // Het derde vak in hetzelfde grid als Cheapest en Profile, zodat de drie vakken exact gelijk zijn (Dave, 9 oktober 2026).
-    expect(row.parentElement!.className).toBe('level-cost-buttons')
-    expect(row.previousElementSibling!.matches('.level-cost-worn')).toBe(true)
-    const button = row.querySelector<HTMLButtonElement>('button')!
-    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Cheapest vs Profile')
-    const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
-    const d = profile - cheapest
-    const shareText = formatShare(profileShare(cheapest, profile)!)
-    // Op de kaart alleen het bedrag, met eronder hoeveel Profile duurder of goedkoper is dan Cheapest, als deel van Cheapest (Dave, 9 oktober
-    // 2026: in Difference, niet op Profile); de aria-label zegt wie bespaart.
-    if (d === 0) expect(button.querySelector('.level-cost-total')!.textContent).toBe('0 meso')
-    else {
-      expect(button.querySelector('.level-cost-total')!.textContent).toBe(`${Math.abs(d).toLocaleString('nl-NL')} meso`)
-      expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(shareText)
-      expect(button.querySelector('.level-cost-share')!.className).toBe(`level-cost-share ${d > 0 ? 'cost' : 'gain'}`)
+    const [left, right] = levelCostCards()
+    const [cheapest, profile] = [left, right].map((c) => mesoOf(c.querySelector('.level-cost-total')!.textContent))
+    expect(cheapest).toBeLessThan(profile)
+    expect(left.querySelector('.level-cost-total')!.className).toBe('level-cost-total')
+    expect(right.querySelector('.level-cost-total')!.className).toBe('level-cost-total')
+    // Elk als deel van de andere kaart: Cheapest "36% cheaper" dan Profile, Profile "+57% more expensive" dan Cheapest.
+    const share = (c: HTMLElement) => c.querySelector('.level-cost-share')!
+    expect(share(left).textContent).toBe(formatShare(profileShare(profile, cheapest)!))
+    expect(share(left).textContent).toMatch(/^\d+% cheaper$/)
+    expect(share(left).className).toBe('level-cost-share gain')
+    expect(share(right).textContent).toBe(formatShare(profileShare(cheapest, profile)!))
+    expect(share(right).textContent).toMatch(/^\+\d+% more expensive$/)
+    expect(share(right).className).toBe('level-cost-share cost')
+  })
+
+  it('geeft elke kaart twee knoppen: Read more opent de factuur, Difference de tabel per soort kost tussen Cheapest en Profile (Dave, 9 oktober 2026)', () => {
+    toLevel20()
+    for (const card of levelCostCards()) {
+      const buttons = Array.from(card.querySelectorAll<HTMLButtonElement>('.level-cost-actions > button'))
+      expect(buttons.map((b) => b.textContent)).toEqual(['Read more', 'Difference'])
+      for (const b of buttons) expect(b.className).toBe('level-cost-more')
     }
-    expect(button.getAttribute('aria-label')).toBe(`Cheapest vs Profile: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
-    // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
-    if (d !== 0) expect(button.querySelector('.level-cost-total')!.className).toBe(`level-cost-total ${d > 0 ? 'cost' : 'gain'}`)
-    // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
-    expect(row.querySelector('table')).toBeNull()
-    fireEvent.click(button)
-    const table = row.querySelector('dialog table.invoice-difference')!
-    expect(mesoOf(table.querySelector('tfoot .invoice-diff')!.textContent)).toBe(Math.abs(d))
-  })
-
-  it('kleurt Cheapest en Profile niet: pas Difference zegt of het verschil goed of slecht is (Dave, 9 oktober 2026)', () => {
-    toLevel20()
-    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button')).map((b) => b.querySelector('.level-cost-total')!)
-    expect(left.className).toBe('level-cost-total')
-    expect(right.className).toBe('level-cost-total')
-    // Cheapest en Profile zelf hebben geen percentage: dat staat in Difference (Dave, 9 oktober 2026).
-    expect(right.parentElement!.querySelector('.level-cost-share')).toBeNull()
-    expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
-  })
-
-  it('zet "Read more" onderaan Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
-    toLevel20()
-    const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
-    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Cheapest vs Profile'])
-    for (const b of buttons) {
-      // De laatste regel van de knop zelf, geen knop in een knop; de schermlezer hoort het aria-label van de knop.
-      const more = b.lastElementChild!
-      expect(more.className, b.getAttribute('aria-label')!).toBe('level-cost-more')
-      expect(more.textContent).toBe('Read more')
-      expect(more.getAttribute('aria-hidden')).toBe('true')
+    const [cheapest, profile] = levelCostCards().map((c) => mesoOf(c.querySelector('.level-cost-total')!.textContent))
+    for (const card of levelCostCards()) {
+      const button = differenceButton(card)!
+      // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
+      expect(homeScreen().querySelector('section.level-cost dialog')).toBeNull()
+      fireEvent.click(button)
+      expect(button.getAttribute('aria-expanded')).toBe('true')
+      const dialog = homeScreen().querySelector<HTMLElement>('section.level-cost dialog')!
+      expect(Array.from(dialog.querySelectorAll('table.invoice-difference thead th')).map((th) => th.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
+      expect(mesoOf(dialog.querySelector('tfoot .invoice-diff')!.textContent)).toBe(profile - cheapest)
+      closeDialogs()
     }
   })
 
-  it('zegt in de knop van Profile waarom hij een vraagteken toont, niet onder de knoppen: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
+  it('zegt in de kaart van Profile waarom hij een vraagteken toont, niet onder de kaarten: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
     cleanup()
     localStorage.clear()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
@@ -3897,16 +3889,19 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     // Cheapest rekent vanuit je job en level, en heeft dus wel een bedrag en geen reden.
     expect(top.querySelector('.level-cost-advised .level-cost-total')!.textContent).not.toBe('?')
     const reason = 'Je hebt 32 skillpunten in de skills van je 1e job gezet, maar op level 19 heb je er slechts 28.'
-    // De reden staat in de knop van Profile zelf, zonder "Profile:" ervoor, en niet onder de knoppen (Dave, 9 oktober 2026).
+    // De reden staat in de kaart van Profile zelf, zonder "Profile:" ervoor, en niet onder de kaarten (Dave, 9 oktober 2026).
     expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([reason])
     expect(top.querySelector('.level-cost-worn .level-cost-reason')!.textContent).toBe(reason)
     expect(top.querySelector('.level-cost-buttons + .hint')).toBeNull()
     expect(document.body.textContent).not.toContain('niet volledig ingevuld')
+    // Zonder factuur aan beide kanten niets te vergelijken: geen percentage en geen Difference.
+    expect(top.querySelector('.level-cost-share')).toBeNull()
+    for (const card of levelCostCards()) expect(differenceButton(card)).toBeNull()
   })
 
-  it('opent met de knoppen onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {
+  it('opent met Read more onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {
     toLevel20()
-    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button'))
+    const [left, right] = levelCostCards().map(readMore)
     const equipDialog = () => document.querySelector<HTMLElement>('section.equipment dialog.card-dialog')
     const popupOf = (button: HTMLElement) => {
       closeDialogs()
@@ -4417,8 +4412,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const levelCost = document.querySelector<HTMLElement>('section.level-cost')!
       const level = (el: Element | null) => n(el?.querySelector('.advised-total-level .meso-amount')?.getAttribute('title'))
       for (const label of ['Cheapest', 'Profile']) {
-        const button = within(levelCost).getByRole('button', { name: new RegExp(`^${label}: `) })
-        const buttonTotal = n(button.querySelector('.level-cost-total')!.textContent)
+        const button = within(levelCost).getByRole('button', { name: new RegExp(`^${label}: .*Read more$`) })
+        const buttonTotal = n(button.closest('.level-cost-card')!.querySelector('.level-cost-total')!.textContent)
         fireEvent.click(button)
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost zijn regels en een subtotaal, zonder eigen kopregel.

@@ -260,43 +260,38 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .app-question { box-sizing: border-box; width: 100%; margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
   background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 0; border-radius: 0; }
 .app-question strong { color: var(--accent); white-space: nowrap; }
-/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): Cheapest in de accenttint, Profile in grijs, en Difference. Sinds
-   9 oktober 2026 (Dave) een eigen section direct in main, zonder kaart en zonder kop: de drie vakken staan los onder de vraag. */
-/* De section rekt mee in de hoogte die over is; die ruimte gaat naar de twee knoppen, het verschil eronder houdt zijn eigen hoogte. */
+/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): Cheapest in de accenttint, Profile in grijs, met "VS" ertussen. Sinds
+   9 oktober 2026 (Dave) een eigen section direct in main, zonder kaart en zonder kop: de twee kaarten staan los onder de vraag. */
+/* De section rekt mee in de hoogte die over is; die ruimte gaat naar de twee kaarten. */
 .level-cost { flex: 1 0 auto; display: flex; flex-direction: column; gap: 0.625rem; }
 /* Het beginscherm past zonder verticale scrollbalk (Dave, 8 oktober 2026); de eerste stap: alle kaarten behalve Level cost verborgen.
    Niet weg uit de HTML en niet display: none, want hun popups (Level cost opent die van Equip) staan erin: zo nemen ze geen plek in en
    doen ze niet mee voor tab en schermlezer, terwijl een geopende popup (een modale <dialog> in de top layer) gewoon zichtbaar blijft. */
 main > .card:not(.level-cost), main > .stats-group { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; overflow: hidden; visibility: hidden; }
 main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: visible; }
-/* De drie vakken onder elkaar, elk over de volle breedte en even hoog (Dave, 8 en 9 oktober 2026): Cheapest, Profile en Difference. */
-.level-cost-buttons { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 0.625rem; }
-.level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 1.25rem 1rem;
-  border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
-.level-cost-btn.level-cost-advised { --part: var(--accent); }
-/* "Read more" onderaan het vak (Dave, 9 oktober 2026): je kunt op het vak tikken voor de factuur. Het ziet eruit als een echte knop, gevuld in
-   de accentkleur zoals .btn.primary, plat, zonder schaduw (Dave); het hele vak blijft de knop, dus dit is zijn zichtbare deel en geen knop in een knop. */
-.level-cost-more { margin-top: 0.5rem; padding: 0.5rem 1.5rem; border-radius: 0.25rem; font-size: 0.8125rem; font-weight: 700;
-  background: var(--accent); color: var(--on-accent); }
+/* De twee kaarten onder elkaar, elk over de volle breedte en even hoog, met de rij "VS" ertussen op zijn eigen hoogte (Dave, 9 oktober 2026). */
+.level-cost-buttons { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto 1fr; gap: 0.375rem; }
+.level-cost-card { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; padding: 1.25rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--part) 35%, var(--border)); border-radius: 0.5rem; background: color-mix(in srgb, var(--part) 7%, var(--card)); color: var(--text); }
+.level-cost-card.level-cost-advised { --part: var(--accent); }
+.level-cost-vs { font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.08em; text-align: center; color: var(--muted); }
+/* Twee knoppen onderaan de kaart (Dave, 9 oktober 2026): "Read more" voor hoe het bedrag tot stand komt, "Difference" voor het verschil met de
+   andere kaart. Gevuld in de accentkleur zoals .btn.primary, plat, zonder schaduw (Dave), naast elkaar en even breed. */
+.level-cost-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.625rem; }
+.level-cost-more { min-height: 44px; padding: 0.5rem 1.25rem; border: 0; border-radius: 0.25rem; font: inherit; font-size: 0.8125rem; font-weight: 700;
+  background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.level-cost-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.level-cost-more:disabled { opacity: 0.5; cursor: not-allowed; }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
-/* Het bedrag groot en midden in het vak (Dave, 9 oktober 2026): het label blijft bovenaan, Read more onderaan, en de vrije ruimte gaat
-   gelijk verdeeld boven het bedrag en boven Read more, zodat bedrag en percentage samen in het midden staan. */
+/* Het bedrag groot en midden in de kaart (Dave, 9 oktober 2026): het label blijft bovenaan, de knoppen onderaan, en de vrije ruimte gaat
+   gelijk verdeeld boven het bedrag en boven de knoppen, zodat bedrag en percentage samen in het midden staan. */
 .level-cost-total { margin: auto 0 0; padding-top: 0.375rem; font-size: 1.5rem; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.level-cost-btn > .level-cost-more { margin-top: auto; }
-/* Ook zonder vrije ruimte een marge tussen het laatste stuk tekst en Read more. */
-.level-cost-btn > :has(+ .level-cost-more) { margin-bottom: 0.625rem; }
-/* Zonder factuur geen Read more: dan staat het bedrag (een vraagteken) gewoon in het midden onder het label. */
-.level-cost-btn:not(:has(> .level-cost-more)) > :last-child { margin-bottom: auto; }
-/* Onder het totaal van Difference hoeveel Profile van Cheapest afwijkt, kleiner, in dezelfde kleur (Dave, 9 oktober 2026). */
+/* Onder het bedrag hoeveel goedkoper of duurder dan de andere kaart, kleiner: groen goedkoper, rood duurder (Dave, 9 oktober 2026). */
 .level-cost-share { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); }
-/* Waarom een knop een vraagteken toont (#262): in de knop zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */
+.level-cost-share.cost { color: var(--cost); }
+.level-cost-share.gain { color: var(--gain); }
+/* Waarom een kaart een vraagteken toont (#262): in de kaart zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */
 .level-cost-reason { font-size: 0.8125rem; font-weight: 400; line-height: 1.35; color: var(--muted); text-align: center; }
-/* Het derde vak (Dave, 8 oktober 2026): het verschil tussen Cheapest en Profile; een tik opent de tabel per soort kost in een popup. Sinds
-   9 oktober 2026 (Dave) in hetzelfde grid als de twee erboven, dus even hoog en verder exact hetzelfde vak; de wrapper houdt knop en popup samen. */
-.level-cost-diff { display: flex; }
-/* Het verschil zoals Profile: groot bedrag, percentage klein eronder, rood als Profile duurder is, groen als het goedkoper is. */
-.level-cost-total.cost, .level-cost-share.cost { color: var(--cost); }
-.level-cost-total.gain, .level-cost-share.gain { color: var(--gain); }
 .level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { position: relative; width: 100%; height: 36px; border-radius: 0.25rem; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }

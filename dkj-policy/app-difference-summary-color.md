@@ -41,35 +41,29 @@
 
 ### CREATE
 
-- [x] Cody: the Difference summary colours its amount with `.cost` (red) when Cheapest saves, `.gain` (green) when Profile does
-- [x] Cody: the card shows only the amount and share, without "Cheapest saves"; the aria-label keeps the full sentence
-- [x] Cody: the percentage sits small under the amount, as on Profile
-- [x] Gwen: Difference moves into the same grid as Cheapest and Profile (equal height) and uses the same total/share classes; "No difference" becomes "0 meso"
-- [x] Cody: no minus sign before the meso on Cheapest and Profile
-- [x] Cody: "+57% more expensive" moves from Profile to Difference, replacing the old share of Profile's total
-- [x] Cody: Profile's total is no longer coloured; only Difference judges the result. `profileTone` and its tests go with it
-- [x] Gwen: the third card's label reads "Cheapest vs Profile" instead of "Difference" (the popup keeps "Difference")
+- [x] Iterated with Dave on the Difference card (colour, amount only, share under it, same layout, no minus, plain Profile colour, label, table column order)
+- [x] Cody + Gwen: the Difference card is removed; Cheapest and Profile each become a card with two buttons, "Read more" (the invoice) and "Difference" (the table per kind of cost), and a "VS" row between them
+- [x] Cody: both cards say how much cheaper or more expensive they are than the other (share of the other card's total), green or red; the totals stay neutral and carry no minus
 - [x] Gwen: the Difference table's columns follow the cards: Cheapest, Profile, Difference
-- [x] Tycho: the existing Difference-row test asserts the colour, the amount and share, the grid placement and the aria-label
+- [x] Tycho: the Level cost tests cover the two cards, the VS row, both shares and their colours, both buttons and the Difference popup
 
 ### TEST
 
-- [x] Vitest (affected suite) and `npm run lint` green
+- [x] Full Vitest suite and `npm run lint` green
 - [ ] Dave looks at the preview before the merge (visible result)
 
 ### DEPLOY: app/difference-summary-color
 
-The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount, with "+57% more expensive" (or "5% cheaper") small underneath — moved there from the Profile card — and the colour says which setup is cheaper. Cheapest and Profile show their cost without a minus sign and in plain text colour; only Difference says whether the result is good or bad. That card is now labelled "Cheapest vs Profile", so it is clear what is being compared, and the table it opens lists Cheapest before Profile in the same order. All three Level cost cards (Cheapest, Profile, Difference) now have the same height and the same layout.
+The Level cost section on the home screen no longer has a separate Difference card. Cheapest and Profile are now two cards with "VS" between them. Each shows what the level costs (without a minus sign) and, underneath, how much cheaper or more expensive it is than the other card, in green or red. Each card has two buttons: "Read more" opens the invoice behind the amount, and "Difference" opens the table per kind of cost, whose columns now read Cheapest, Profile, Difference.
 
-**Score:** 2
+**Score:** 3
 
 #### What makes this deploy extra special
 
-A player no longer reads "36% more expensive" as good news: the colour now says you are leaving meso on the table.
+A player sees at a glance which setup is cheaper and by how much, without a third card that showed the saving in green while you were paying more.
 
-**Score:** 2
+**Score:** 3
 
 #### Pull Request
 
-Difference card colours the saving red when your profile is the more expensive one
-
+Level cost as two cards, Cheapest vs Profile, each with Read more and Difference
