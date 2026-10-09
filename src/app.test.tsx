@@ -3795,7 +3795,7 @@ describe('de uitleg achter een potion-aantal en het plafond op het herstel (#181
   })
 })
 
-describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', () => {
+describe('Level cost: de kaarten Cheapest en Profile met de knop Difference, en Profile, Cheapest en Difference in de Level cost-kaart (#183)', () => {
   const cheapestCard = () => document.querySelector<HTMLElement>('.total-cost .cheapest-cost')!
   const diffCard = () => document.querySelector<HTMLElement>('.total-cost .cost-difference')!
   const summary = () => document.querySelector<HTMLElement>('.cheapest-result')
@@ -3846,7 +3846,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(cheapest).toBeLessThan(profile)
     expect(left.querySelector('.level-cost-total')!.className).toBe('level-cost-total')
     expect(right.querySelector('.level-cost-total')!.className).toBe('level-cost-total')
-    // Elk als deel van de andere kaart: Cheapest "36% cheaper" dan Profile, Profile "+57% more expensive" dan Cheapest.
+    // Elk als deel van de andere kaart: Cheapest "36% cheaper" (dan Profile), Profile "+57% more expensive" (dan Cheapest).
     const share = (c: HTMLElement) => c.querySelector('.level-cost-share')!
     expect(share(left).textContent).toBe(formatShare(profileShare(profile, cheapest)!))
     expect(share(left).textContent).toMatch(/^\d+% cheaper$/)

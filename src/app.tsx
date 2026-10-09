@@ -3975,6 +3975,11 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
   ] as const
   const cheapest = props.advised?.kind === 'invoice' ? props.advised : null
   const wearing = props.wearing.kind === 'invoice' ? props.wearing : null
+  // Valt een van de twee facturen weg, dan gaat de popup van Difference dicht en niet vanzelf weer open als hij terugkomt.
+  const comparable = cheapest !== null && wearing !== null
+  useEffect(() => {
+    if (!comparable) setDiffOpen(false)
+  }, [comparable])
   const closeDiff = () => {
     setDiffOpen(false)
     requestAnimationFrame(() => diffButton.current?.focus())
@@ -3990,7 +3995,8 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     // Het bedrag zelf blijft neutraal.
     const share = total !== null && other !== null ? profileShare(other, total) : null
     const shareText = share === null ? null : formatShare(share)
-    const tone = total === null || other === null || total === other ? '' : total < other ? ' gain' : ' cost'
+    // De kleur volgt de afgeronde tekst: wat als "Same cost" leest, krijgt geen groen of rood.
+    const tone = share === null || shareText === 'Same cost' ? '' : share < 0 ? ' gain' : ' cost'
     return (
       <div key={p.view} class={`level-cost-card level-cost-${p.view}`} role="group" aria-label={p.label}>
         <span class="level-cost-label">{p.label}</span>

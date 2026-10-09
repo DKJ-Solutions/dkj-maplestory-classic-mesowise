@@ -50,7 +50,9 @@
 ### TEST
 
 - [x] Full Vitest suite and `npm run lint` green
-- [ ] Dave looks at the preview before the merge (visible result)
+- [x] Owner looked at the live preview and said "ship it" (visible result)
+- [x] Victor (code review): no correctness bugs; three cleanups applied (share colour follows the rounded text, Difference popup closes when an invoice drops away, profileShare doc)
+- [x] Edith (text): stale comments fixed in profileTone.ts, style.css and the tests; changelog sentence reworded
 
 ### DEPLOY: app/difference-summary-color
 
@@ -60,7 +62,7 @@ The Level cost section on the home screen no longer has a separate Difference ca
 
 #### What makes this deploy extra special
 
-A player sees at a glance which setup is cheaper and by how much, without a third card that showed the saving in green while you were paying more.
+A player sees at a glance, on the cards themselves, which setup is cheaper and by how much, in green or red.
 
 **Score:** 3
 

@@ -281,8 +281,8 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-compare-row { display: flex; justify-content: center; }
 /* Zonder vergelijking geen lege rij en dus geen dubbele ruimte tussen de kaarten. */
 .level-cost-compare-row:empty { display: none; }
-/* De knoppen "Read more" (onderaan elke kaart: hoe het bedrag tot stand komt) en "Difference" (in de rij tussen de kaarten), gevuld in de accentkleur zoals
-   .btn.primary, plat, zonder schaduw (Dave, 9 oktober 2026). */
+/* De knoppen "Read more" (onderaan elke kaart: hoe het bedrag tot stand komt) en "Difference" (in de rij tussen de kaarten). Read more is gevuld in de accentkleur zoals
+   .btn.primary, plat, zonder schaduw (Dave, 9 oktober 2026); Difference is omlijnd, zie .level-cost-compare hieronder. */
 .level-cost-card > .level-cost-more { margin-top: auto; }
 /* Ook zonder vrije ruimte een marge tussen het laatste stuk tekst en Read more. */
 .level-cost-card > :has(+ .level-cost-more) { margin-bottom: 0.625rem; }
