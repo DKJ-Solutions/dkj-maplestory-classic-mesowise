@@ -41,17 +41,28 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Pass the New equip row (what Cheapest buys) to "Based on:" in the Profile view of Level cost: Equip, read-only
+- [x] In Profile, a hidden spacer in the pencil column keeps the New equip box as wide as the rows above it
 
 ### TEST
 
+- [x] New test: Profile shows four rows, the same upgrades as Cheapest, `data-sheet="profile"`, no pencil; the existing Profile "Based on" test allows the new row; suite (1991) and typecheck green
+- [x] Victor's code review: no findings
+- [ ] Dave looks at the Profile popup at phone width before the merge
+
 ### DEPLOY: app/profile-new-equip-row
 
-**Score:**
+Under "Based on:" in the Profile popup of Level cost: Equip, the fourth row "New equip" now appears as well: the
+upgrades Cheapest would buy, the same row as in the Cheapest popup. It is read-only, so it has no pencil (Dave,
+October 9, 2026).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+In Profile you can now see which upgrades Cheapest advises without switching to the Cheapest popup.
+
+**Score:** 2
 
 #### Pull Request
 
