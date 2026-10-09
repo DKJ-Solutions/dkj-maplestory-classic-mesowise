@@ -7,7 +7,7 @@ import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, ty
 import { changesBetween, cheapestSettings, costOf, potionNames, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
 import { changeEquipment, choosePick, EQUIP_SLOTS, familyName, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
-import { FREE_WEAPON_LEVEL, freeJobWeaponName } from './freeJobWeapon'
+import { FREE_WEAPON_LEVEL, freeJobWeaponName, meetsFreeWeaponRequirements } from './freeJobWeapon'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -77,8 +77,9 @@ export function freshStart(user: CheapestInput): CheapestInput {
     level: user.profileDraft.level,
     hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
   }
+  // Zonder de stat-eis van het gratis jobwapen (laatste argument): de AP in `start` is het standaardprofiel en Cheapest bouwt je AP zelf op.
   // Wat je echt draagt (wearableSetup): een stuk boven je level telt niet mee (#264), en een leeg top-, bottom- of schoenenslot is je startkleding en een leeg wapenslot vanaf level 10 het gratis wapen van je 1e job (Thief, Magician).
-  const { equipment, profile: profileDraft } = wearableSetup(start, user.equipment, user.job, user.gender)
+  const { equipment, profile: profileDraft } = wearableSetup(start, user.equipment, user.job, user.gender, false)
   return { job: user.job, gender: user.gender, equipment, drafts: [], potionChoice: NO_POTION_CHOICE, profileDraft }
 }
 
@@ -165,7 +166,7 @@ function preferFreeWeapon(user: CheapestInput, own: AdvisedSetup): AdvisedSetup 
   const name = freeJobWeaponName(user.job)
   const claw = user.equipment.claw
   const level = Number(user.profileDraft.level)
-  if (name === null || !(level >= FREE_WEAPON_LEVEL) || !BEGINNER_WORN_WEAPONS.some((w) => w.name === claw.pick)) return own
+  if (name === null || !(level >= FREE_WEAPON_LEVEL) || !BEGINNER_WORN_WEAPONS.some((w) => w.name === claw.pick) || !meetsFreeWeaponRequirements(user.job, user.profileDraft)) return own
   const swapped = changeEquipment(user.profileDraft, user.equipment, 'claw', choosePick('claw', claw, name), user.job)
   const alt = settle({ ...user, equipment: swapped.equipment }, swapped.profile, false)
   const total = (s: AdvisedSetup): number => invoiceTotal({ ...user, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice }, s) ?? Infinity

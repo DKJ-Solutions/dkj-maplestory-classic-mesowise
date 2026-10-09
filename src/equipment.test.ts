@@ -1982,7 +1982,7 @@ describe('wearableSetup: een overall boven je level (Victor, 8 oktober 2026)', (
 })
 
 describe('wearableSetup: het gratis wapen van je 1e job vanaf level 10 (Dave, 9 oktober 2026)', () => {
-  const at = (level: string): ProfileDraft => ({ ...DEFAULT_PROFILE, level, clawWatk: '0', dagger: '0' })
+  const at = (level: string, over: Partial<ProfileDraft> = {}): ProfileDraft => ({ ...DEFAULT_PROFILE, level, clawWatk: '0', dagger: '0', ...over })
 
   it("geeft een Thief op level 10 een leeg wapenslot de Beginner's Garnier, met zijn weapon attack, en een claw (geen dagger)", () => {
     const thief = wearableSetup(at('10'), defaultEquipment(), 'thief', null)
@@ -1992,7 +1992,7 @@ describe('wearableSetup: het gratis wapen van je 1e job vanaf level 10 (Dave, 9 
   })
 
   it("geeft een Magician op level 10 een leeg wapenslot de Beginner's Wooden Wand, met zijn M.ATT; onder level 10 niets", () => {
-    const magician = wearableSetup(at('10'), defaultEquipment(), 'magician', null)
+    const magician = wearableSetup(at('10', { int: '20' }), defaultEquipment(), 'magician', null)
     expect(magician.equipment.claw.pick).toBe("Beginner's Wooden Wand")
     expect(magician.profile.clawWatk).toBe('26')
     expect(wearableSetup(at('9'), defaultEquipment(), 'magician', null).equipment.claw.pick).toBe('unknown')

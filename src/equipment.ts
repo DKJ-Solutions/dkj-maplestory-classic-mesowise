@@ -26,7 +26,7 @@ import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
 import { FREE_MAGICIAN_WORN_WEAPON, MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
-import { FREE_WEAPON_LEVEL, freeJobWeaponName } from './freeJobWeapon'
+import { FREE_WEAPON_LEVEL, freeJobWeaponName, meetsFreeWeaponRequirements, typedAttackBeatsFreeWeapon } from './freeJobWeapon'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -677,11 +677,12 @@ const BEGINNER_LAST_LEVEL = 9
  * gratis krijgt in een leeg slot: je startkleding (STARTER_CLOTHES; een top of bottom alleen zonder overall, zonder geslacht alleen de schoenen), vanaf
  * level 5 de questhoed (QUEST_HAT), op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen, en vanaf level 10 het gratis wapen van je
  * 1e job (freeJobWeapon.ts, Dave, 9 oktober 2026: de Beginner's Garnier van een Thief, de Beginner's Wooden Wand van een Magician; een Warrior en een Bowman krijgen er
- * geen). Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het wapen zet wel
+ * geen), maar alleen als je het kunt dragen (zijn LUK- of INT-eis) en je geen hogere weapon attack typte dan het wapen geeft (anders draag je iets beters, en wint wat je typte). Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het wapen zet wel
  * zijn eigen weapon attack: een leeg wapenslot is op dat level dat wapen, ook als je zelf een getal had getypt. Draag je al een wapen (ook een Fruit Knife), dan blijft het
  * staan: of het gratis jobwapen beter is, beslist het wapenadvies van Cheapest (clawUpgrade.ts), niet deze stap.
+ * Met `checkRequirements` uit (freshStart: Cheapest bouwt je AP zelf op, het standaardprofiel zegt daar niets over) telt alleen de typregel, niet de stat-eis.
  */
-export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
+export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null, checkRequirements = true): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
   const below = dropAboveLevel(profile, eq, job)
   let out = { equipment: below.equipment, profile: below.profile }
   const text = profile.level.trim()
@@ -695,6 +696,8 @@ export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, ge
   ]
   for (const [slot, name] of free) {
     if (name === null || wornName(out.equipment[slot]) !== null) continue
+    // Het gratis jobwapen alleen als je het kunt dragen (zijn stat-eis) en je niet een hogere weapon attack typte dan het geeft: dan draag je waarschijnlijk iets beters (Dave, 9 oktober 2026).
+    if (slot === 'claw' && name === freeJobWeaponName(job) && ((checkRequirements && !meetsFreeWeaponRequirements(job, out.profile)) || typedAttackBeatsFreeWeapon(job, out.profile))) continue
     if ((slot === 'top' || slot === 'bottom') && wornName(out.equipment.overall) !== null) continue
     // Wat een level vraagt (de hoed 5, het mes 8), alleen met een geldig level dat hoog genoeg is.
     const needs = itemLevel(slot, name) ?? 0

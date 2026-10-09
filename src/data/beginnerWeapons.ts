@@ -19,7 +19,7 @@
 // in zijn hand (beginnerAttack in calc/mobModel.ts): de multiplier van zijn soort, zonder skill, stars of pijlen. Een Warrior
 // rekende al zo (meleeAttack zonder Power Strike).
 //
-// Niet opgenomen: Beginner's War Bow (664) en Beginner's Wooden Wand (649) zijn level 10, niet lager.
+// Niet opgenomen: Beginner's War Bow (664) en Beginner's Wooden Wand (649 en 2523; de gratis Magician-wand staat in data/magician.ts) zijn level 10, niet lager.
 import { SPEED } from './attackSpeed'
 import type { Source, WarriorWeaponKind, WornClaw } from './types'
 import { effectiveMultiplier, MULT } from './warrior'

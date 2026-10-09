@@ -20,7 +20,7 @@
 // Niet opgenomen als wapen, en waarom:
 // - Geen staff op level 30.
 //
-// Wel opgenomen zonder prijs, als wat je gratis krijgt (Dave, 9 oktober 2026): Beginner's Wooden Wand (item 2523), niet verhandelbaar en niet
+// Wel opgenomen zonder prijs, als wat je gratis krijgt (Dave, 9 oktober 2026): Beginner's Wooden Wand (item 2523; beginnerWeapons.ts noemt hem 649), niet verhandelbaar en niet
 // te koop. Hij staat niet in NPC_MAGICIAN_WEAPONS maar in FREE_MAGICIAN_WEAPON, zonder prijs, zodat hij nooit een winkelitem wordt.
 //
 // Niet opgenomen als armor, en waarom:

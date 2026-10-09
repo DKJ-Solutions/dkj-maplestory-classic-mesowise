@@ -92,7 +92,7 @@ describe('wearableSetup: de grens op level 9 en 10 voor elke job', () => {
 
   it('geeft op level 10 een Thief de Garnier en een Magician de Wooden Wand, en een Warrior en Bowman niets', () => {
     expect(wornName(wearableSetup(at('10'), defaultEquipment(), 'thief', null).equipment.claw)).toBe(GARNIER)
-    expect(wornName(wearableSetup(at('10'), defaultEquipment(), 'magician', null).equipment.claw)).toBe(WAND)
+    expect(wornName(wearableSetup(at('10', { int: '20' }), defaultEquipment(), 'magician', null).equipment.claw)).toBe(WAND)
     for (const job of ['warrior', 'bowman'] as const) expect(wornName(wearableSetup(at('10'), defaultEquipment(), job, null).equipment.claw), job).toBeNull()
   })
 
@@ -112,12 +112,27 @@ describe('wearableSetup: de grens op level 9 en 10 voor elke job', () => {
   })
 })
 
-describe('wearableSetup: een leeg wapenslot overschrijft een getypte aanval (vastgelegd gedrag, 9 oktober 2026)', () => {
-  it('zet op level 10 de weapon attack van het gratis wapen over een getypte clawWatk heen, ook bij een dagger-vlag', () => {
-    const thief = wearableSetup(at('10', { clawWatk: '99', dagger: '1' }), defaultEquipment(), 'thief', null)
+describe('wearableSetup: een leeg wapenslot en een getypte aanval (regel van 9 oktober 2026)', () => {
+  it('zet het gratis wapen over een getypte clawWatk heen als die niet hoger is dan zijn eigen stat, ook bij een dagger-vlag', () => {
+    const thief = wearableSetup(at('10', { clawWatk: '10', dagger: '1' }), defaultEquipment(), 'thief', null)
     expect([thief.profile.clawWatk, thief.profile.dagger]).toEqual(['10', '0'])
-    const mage = wearableSetup(at('10', { clawWatk: '99' }), defaultEquipment(), 'magician', null)
+    const mage = wearableSetup(at('10', { clawWatk: '26', int: '20' }), defaultEquipment(), 'magician', null)
     expect(mage.profile.clawWatk).toBe('26')
+    expect(wearableSetup(at('10', { clawWatk: '3', int: '20' }), defaultEquipment(), 'magician', null).profile.clawWatk).toBe('26')
+  })
+
+  it('laat een getypte aanval die hoger is dan het gratis wapen staan, en vult het wapenslot niet in', () => {
+    const thief = wearableSetup(at('40', { clawWatk: '30' }), defaultEquipment(), 'thief', null)
+    expect([wornName(thief.equipment.claw), thief.profile.clawWatk]).toEqual([null, '30'])
+    const mage = wearableSetup(at('40', { clawWatk: '27', int: '60' }), defaultEquipment(), 'magician', null)
+    expect([wornName(mage.equipment.claw), mage.profile.clawWatk]).toEqual([null, '27'])
+  })
+
+  it('geeft het gratis wapen niet aan een character dat het niet kan dragen (Garnier LUK 25, Wand INT 20)', () => {
+    expect(wornName(wearableSetup(at('10', { luk: '10', lukExtra: '0' }), defaultEquipment(), 'thief', null).equipment.claw)).toBeNull()
+    expect(wornName(wearableSetup(at('10', { luk: '20', lukExtra: '5' }), defaultEquipment(), 'thief', null).equipment.claw)).toBe(GARNIER)
+    expect(wornName(wearableSetup(at('10', { int: '5', intExtra: '0' }), defaultEquipment(), 'magician', null).equipment.claw)).toBeNull()
+    expect(wornName(wearableSetup(at('10', { int: '20', intExtra: '0' }), defaultEquipment(), 'magician', null).equipment.claw)).toBe(WAND)
   })
 
   it('laat op level 9 een getypte aanval van een Magician staan, want daar is geen wapen', () => {
@@ -132,6 +147,7 @@ describe('wearableSetup: een leeg wapenslot overschrijft een getypte aanval (vas
     const titans = { ...defaultEquipment(), claw: choosePick('claw', defaultEquipment().claw, 'Steel Titans') }
     expect(dropAboveLevel(at('10'), titans, 'thief').dropped).toContain('claw')
     const out = wearableSetup(at('10', { clawWatk: '40' }), titans, 'thief', null)
+    // Na het vallen van het wapen boven je level is de getypte aanval 0, dus het gratis wapen vult het slot.
     expect(wornName(out.equipment.claw)).toBe(GARNIER)
     expect(out.profile.clawWatk).toBe('10')
   })
