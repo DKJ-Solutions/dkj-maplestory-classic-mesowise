@@ -54,7 +54,7 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 - [x] Gwen: Read more flat, without its shadow, with more padding and a smaller border radius (Dave: "maak de read more knop meer flat", "en geef de knop meer padding", "en minder border radius")
 - [x] Gwen: more padding inside the parts, 1.25rem by 1rem (Dave: "en geef de kaart ook meer padding")
 - [x] Cody: Cheapest, Profile and Difference in their own section directly in main under the app question, without the card and its "Level cost" heading (Dave: "zet de level-cost buttons direct in de main onder app-question in hun eigen section", then "Kaart helemaal weg"); the section keeps "Level cost" as its aria-label, and the meso icon of the heading went with it
-- [x] Gwen: the app question full width and without its border (Dave: "geef de app-question een width van 100%. haal de border weg")
+- [x] Gwen: the app question full width, without its border and without rounded corners (Dave: "geef de app-question een width van 100%. haal de border weg", "haal de border-radius weg")
 - [x] Gwen: the amount larger (1.5rem) and centred in the part, with the label at the top and Read more at the bottom (Dave: "maak de fontsize van de x mesos groter en geef het meer ruimte")
 
 ### TEST

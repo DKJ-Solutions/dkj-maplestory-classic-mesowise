@@ -256,9 +256,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 /* De levelrij helemaal bovenaan (#130): klein terug, groot het level, en een groene Level up. */
 /* Twee even brede zijkolommen: zo staat het level exact in het midden van het scherm, hoe breed de knoppen ook zijn (Dave, 4 oktober 2026). */
 /* De vraag van de app onder de level-rij (Dave, 6 oktober 2026): een zachte banner in de accenttint van een gewijzigd vak
-   (.equip-value.changed), zodat hij als eigen element leest en niet als losse tekst. Over de volle breedte en zonder rand (Dave, 9 oktober 2026). */
+   (.equip-value.changed), zodat hij als eigen element leest en niet als losse tekst. Over de volle breedte, zonder rand en zonder ronde hoeken (Dave, 9 oktober 2026). */
 .app-question { box-sizing: border-box; width: 100%; margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
-  background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 0; border-radius: 0.75rem; }
+  background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 0; border-radius: 0; }
 .app-question strong { color: var(--accent); white-space: nowrap; }
 /* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): Cheapest in de accenttint, Profile in grijs, en Difference. Sinds
    9 oktober 2026 (Dave) een eigen section direct in main, zonder kaart en zonder kop: de drie vakken staan los onder de vraag. */
