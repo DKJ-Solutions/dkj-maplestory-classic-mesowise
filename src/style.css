@@ -292,8 +292,8 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-total.tone-far, .level-cost-share.tone-far { color: var(--cost); }
 /* Onder het totaal van Profile hoeveel het van Cheapest afwijkt, kleiner, in dezelfde kleur (Dave, 9 oktober 2026). */
 .level-cost-share { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); }
-/* Waarom een knop een vraagteken toont (#262): onder de knoppen, op de afstand die de vakken onderling hebben. */
-.level-cost-reason { margin: 0; }
+/* Waarom een knop een vraagteken toont (#262): in de knop zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */
+.level-cost-reason { font-size: 0.8125rem; font-weight: 400; line-height: 1.35; color: var(--muted); text-align: center; }
 /* De derde rij (Dave, 8 oktober 2026): het verschil tussen Cheapest en Profile, een vak zoals de twee erboven; een tik opent de tabel per
    soort kost in een popup. */
 .level-cost-diff { display: flex; }
@@ -662,14 +662,23 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 /* De downloadknop met zijn hint staat onderaan het paneel, met vrije ruimte erboven; is de inhoud hoger dan het scherm, dan blijft er 1.5rem en scrolt het paneel (Dave, 5 oktober 2026). */
 .menu-drawer .menu-download { margin-top: auto; padding-top: 1.5rem; }
 /* Help in het menu (Dave, 8 oktober 2026): de uitleg over de schatting, ingeklapt onder de instellingen. */
-.menu-help { margin-top: 1.25rem; }
-.menu-help summary { cursor: pointer; font-weight: 700; color: var(--text); }
-.menu-help summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 0.25rem; }
-.menu-help .hint { margin: 0.5rem 0 0; }
+/* De drie rijen van het menu (Dave, 9 oktober 2026): icoon links, naam, pijl rechts, met een lijn ertussen. Help klapt open in plaats van een paneel. */
+.menu-item + .menu-item { border-top: 1px solid var(--border); }
+.menu-item-btn, .menu-help summary { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 44px; box-sizing: border-box; padding: 0.5rem; margin: 0; border: 0; border-radius: 0.5rem; background: none; box-shadow: none; font: inherit; text-align: left; color: var(--text); cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.menu-help summary::-webkit-details-marker { display: none; }
+.menu-item-btn:focus-visible, .menu-help summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.menu-item .menu-label { flex: 1; min-width: 0; }
+.menu-icon, .menu-chevron { flex: none; }
+.menu-chevron { color: var(--muted); }
+.menu-help details[open] .menu-chevron { transform: rotate(180deg); }
+.menu-help .hint { margin: 0.25rem 0.5rem 0.75rem; }
+/* Een tweede paneel heeft de pijl terug links in de kop, en de titel ernaast. */
+.stat-dialog-close.back { right: auto; left: 1rem; }
+.menu-drawer .stat-dialog-head.back { padding: 0 1rem 0 calc(1rem + 44px + 0.5rem); }
 /* De kop van het paneel: even hoog als de menubalk, met een lijn eronder over de volle breedte en het kruisje in het
    midden (Dave, 5 oktober 2026). */
 .menu-drawer .stat-dialog-head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 0; padding: 0 calc(1rem + 44px + 0.5rem) 0 1rem; border-bottom: 1px solid var(--border); }
-/* In de kop de titel Instellingen, in de letter van de naam in de menubalk (Dave, 5 oktober 2026). */
+/* In de kop van een tweede paneel de titel, in de letter van de naam in de menubalk (Dave, 5 oktober 2026). */
 .menu-drawer .stat-dialog-name { font-size: 1.125rem; font-weight: 700; }
 .menu-drawer .stat-dialog-close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); }
 .menu-drawer .stat-dialog-head.two { padding-right: calc(1rem + 2 * 44px + 1rem); }

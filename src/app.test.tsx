@@ -2161,7 +2161,10 @@ describe('het geslacht (issue #55)', () => {
     if (gender) localStorage.setItem(GENDER_KEY, JSON.stringify({ version: 1, gender }))
     render(<App />)
     // Met job en geslacht gekozen staat de kaart alleen nog in het menu.
-    if (gender) fireEvent.click(screen.getByRole('button', { name: 'Instellingen' }))
+    if (gender) {
+      fireEvent.click(screen.getByRole('button', { name: 'Menu' }))
+      fireEvent.click(within(document.querySelector('header.topbar dialog') as HTMLElement).getByRole('button', { name: 'Profile' }))
+    }
   }
 
   it('bewaart bij een klik op Female meteen de keuze (de eerste keuze); de rij Gender: en de hint verdwijnen (Dave: scheelt hoogte)', () => {
@@ -2623,7 +2626,7 @@ describe('een Magician in de app', () => {
 describe('de menubalk bovenin (issue #86)', () => {
   const bar = () => document.querySelector<HTMLElement>('header.topbar')!
   const openMenu = () => {
-    fireEvent.click(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    fireEvent.click(within(bar()).getByRole('button', { name: 'Menu' }))
     return within(bar().querySelector('dialog') as HTMLDialogElement)
   }
   const homeJobCard = () => homeScreen().querySelector('section.job')
@@ -2634,7 +2637,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     // De ondertitel staat rechts van de naam, en niet meer op het beginscherm (#130).
     expect(bar().querySelector('.topbar-name')?.nextElementSibling?.textContent).toMatch(/^Zo min mogelijk mesos/)
     expect(within(homeScreen()).queryByText(/Zo min mogelijk mesos/)).toBeNull()
-    expect(within(bar()).getByRole('button', { name: 'Instellingen' }).getAttribute('aria-expanded')).toBe('false')
+    expect(within(bar()).getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('false')
   })
 
   it('laat de downloadlink weg in het offline-bestand zelf', () => {
@@ -2656,10 +2659,17 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(download.querySelector('.hint:not([hidden])')!.textContent).toMatch(/^Eén bestand dat je in je browser opent, zonder internet\./)
   })
 
-  const rows = (menu: ReturnType<typeof openMenu>) =>
-    menu.getAllByRole('listitem').map((r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+  // De rijen van het Profile-paneel (het tweede paneel); het menu zelf heeft er drie.
+  const rows = (_menu: unknown) =>
+    Array.from(bar().querySelectorAll('.menu-row'), (r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+  // Profile opent het tweede paneel, boven het menu; de job- en geslachtkeuzes liggen daar weer een paneel boven (Dave, 9 oktober 2026).
+  const openProfile = () => {
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Profile' }))
+    return menu
+  }
   // Het tweede paneel, boven het menu (Dave, 5 oktober 2026).
-  const choicePanel = () => within(bar().querySelectorAll('dialog')[1] as HTMLDialogElement)
+  const choicePanel = () => within(bar().querySelectorAll('dialog')[2] as HTMLDialogElement)
   const slid = () => act(() => new Promise((r) => setTimeout(r, 350)))
   const chooseWarriorMale = () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Warrior' }))
@@ -2673,21 +2683,42 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(within(homeJobCard() as HTMLElement).getByRole('button', { name: 'Male' }))
     expect(homeJobCard()).toBeNull()
     // In het menu een rij per instelling, met wat je koos en een potlood; geen knoppen, en geen koppen behalve de titel van het menu (Dave, 5 oktober 2026).
-    const menu = openMenu()
+    const menu = openProfile()
     expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
     expect(menu.getByRole('button', { name: 'Job wijzigen' })).toBeTruthy()
     expect(menu.getByRole('button', { name: 'Gender wijzigen' })).toBeTruthy()
     expect(menu.queryByRole('button', { name: 'Thief' })).toBeNull()
-    expect(menu.queryAllByRole('heading').map((h) => h.textContent)).toEqual(['Instellingen'])
+    expect(menu.queryAllByRole('heading').map((h) => h.textContent)).toEqual(['Menu', 'Profile'])
+  })
+
+  it('toont precies drie rijen: Profile, Instellingen en Help, zonder zichtbare titel', () => {
+    const menu = openMenu()
+    const items = Array.from(bar().querySelectorAll('dialog > .stat-dialog-body > .menu-list > li'))
+    expect(items.map((li) => li.querySelector('.menu-label')!.textContent)).toEqual(['Profile', 'Instellingen', 'Help'])
+    expect(menu.queryByText('Job:')).toBeNull()
+    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-icon')).not.toBeNull()
+    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-chevron')).not.toBeNull()
+    expect(menu.getByText('Help').closest('details')).not.toBeNull()
+  })
+
+  it('opent Instellingen en Profile in een tweede paneel met Terug, dat de focus op de rij zet', async () => {
+    const menu = openMenu()
+    fireEvent.click(menu.getByRole('button', { name: 'Instellingen' }))
+    expect(bar().querySelectorAll('dialog')).toHaveLength(2)
+    expect(within(bar().querySelectorAll('dialog')[1] as HTMLDialogElement).getByRole('heading').textContent).toBe('Instellingen')
+    fireEvent.click(within(bar().querySelectorAll('dialog')[1] as HTMLDialogElement).getByRole('button', { name: 'Terug' }))
+    await slid()
+    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(document.activeElement).toBe(menu.getByRole('button', { name: 'Instellingen' }))
   })
 
   it('noemt een instelling die nog niet gekozen is "Niet gekozen"', () => {
-    expect(rows(openMenu())).toEqual(['Job: Niet gekozen', 'Gender: Niet gekozen'])
+    expect(rows(openProfile())).toEqual(['Job: Niet gekozen', 'Gender: Niet gekozen'])
   })
 
   it('wijzigt de job in een tweede paneel: Opslaan schuift het weg en het menu toont de nieuwe job', async () => {
     chooseWarriorMale()
-    const menu = openMenu()
+    const menu = openProfile()
     fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
     const panel = choicePanel()
     expect(panel.getByRole('button', { name: 'Warrior' }).getAttribute('aria-pressed')).toBe('true')
@@ -2699,14 +2730,14 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.click(panel.getByRole('button', { name: 'Opslaan' }))
     await slid()
     expect(stored(JOB_KEY)?.job).toBe('thief')
-    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(bar().querySelectorAll('dialog')).toHaveLength(2)
     expect(rows(menu)).toEqual(['Job: Thief', 'Gender: Male'])
     expect(document.activeElement).toBe(menu.getByRole('button', { name: 'Job wijzigen' }))
   })
 
   it('wijzigt het geslacht met het vinkje rechtsboven', async () => {
     chooseWarriorMale()
-    const menu = openMenu()
+    const menu = openProfile()
     fireEvent.click(menu.getByRole('button', { name: 'Gender wijzigen' }))
     fireEvent.click(choicePanel().getByRole('button', { name: 'Female' }))
     fireEvent.click(choicePanel().getByRole('button', { name: 'Opslaan en sluiten' }))
@@ -2717,19 +2748,19 @@ describe('de menubalk bovenin (issue #86)', () => {
 
   it('gooit de wijziging weg met Annuleren, en houdt het menu open', async () => {
     chooseWarriorMale()
-    const menu = openMenu()
+    const menu = openProfile()
     fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
     fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
     fireEvent.click(choicePanel().getByRole('button', { name: 'Annuleren' }))
     await slid()
     expect(stored(JOB_KEY)?.job).toBe('warrior')
-    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(bar().querySelectorAll('dialog')).toHaveLength(2)
     expect(rows(menu)).toEqual(['Job: Warrior', 'Gender: Male'])
   })
 
   it('laat het vinkje weer verdwijnen als je de oude keuze terugkiest', () => {
     chooseWarriorMale()
-    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(openProfile().getByRole('button', { name: 'Job wijzigen' }))
     fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
     expect(choicePanel().getByRole('button', { name: 'Opslaan en sluiten' })).toBeTruthy()
     fireEvent.click(choicePanel().getByRole('button', { name: 'Warrior' }))
@@ -2738,7 +2769,7 @@ describe('de menubalk bovenin (issue #86)', () => {
   })
 
   it('kiest in het tweede paneel een job die nog niet gekozen was', async () => {
-    const menu = openMenu()
+    const menu = openProfile()
     fireEvent.click(menu.getByRole('button', { name: 'Job wijzigen' }))
     expect(choicePanel().getByRole('button', { name: 'Thief' }).getAttribute('aria-pressed')).toBeNull()
     fireEvent.click(choicePanel().getByRole('button', { name: 'Thief' }))
@@ -2750,7 +2781,7 @@ describe('de menubalk bovenin (issue #86)', () => {
 
   it('slaat toch op als je tijdens het wegschuiven nog op Opslaan tikt (review)', async () => {
     chooseWarriorMale()
-    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent.click(openProfile().getByRole('button', { name: 'Job wijzigen' }))
     const panel = choicePanel()
     fireEvent.click(panel.getByRole('button', { name: 'Thief' }))
     fireEvent.click(panel.getByRole('button', { name: 'Annuleren' }))
@@ -2761,16 +2792,16 @@ describe('de menubalk bovenin (issue #86)', () => {
 
   it('sluit met Escape alleen het bovenste paneel', async () => {
     chooseWarriorMale()
-    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
-    fireEvent(bar().querySelectorAll('dialog')[1], new Event('cancel', { cancelable: true }))
+    fireEvent.click(openProfile().getByRole('button', { name: 'Job wijzigen' }))
+    fireEvent(bar().querySelectorAll('dialog')[2], new Event('cancel', { cancelable: true }))
     await slid()
-    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(bar().querySelectorAll('dialog')).toHaveLength(2)
   })
 
   it('veegt alleen het bovenste paneel weg, niet het menu eronder', async () => {
     chooseWarriorMale()
-    fireEvent.click(openMenu().getByRole('button', { name: 'Job wijzigen' }))
-    const top = bar().querySelectorAll('dialog')[1] as HTMLDialogElement
+    fireEvent.click(openProfile().getByRole('button', { name: 'Job wijzigen' }))
+    const top = bar().querySelectorAll('dialog')[2] as HTMLDialogElement
     Object.defineProperty(top, 'offsetWidth', { configurable: true, value: 300 })
     fireEvent.touchStart(top, { touches: [{ clientX: 100, clientY: 300 }] })
     fireEvent.touchMove(top, { touches: [{ clientX: 160, clientY: 305 }] })
@@ -2778,7 +2809,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     fireEvent.touchEnd(top, { touches: [] })
     expect((bar().querySelector('dialog') as HTMLDialogElement).style.transform).toBe('')
     await slid()
-    expect(bar().querySelectorAll('dialog')).toHaveLength(1)
+    expect(bar().querySelectorAll('dialog')).toHaveLength(2)
   })
 
   it('sluit het menu met "Sluiten" en zet de focus terug op de menuknop', async () => {
@@ -2787,7 +2818,7 @@ describe('de menubalk bovenin (issue #86)', () => {
     // Het paneel schuift eerst naar rechts weg en sluit dan.
     await slid()
     expect(bar().querySelector('dialog')).toBeNull()
-    expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
+    expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Menu' }))
   })
 
   describe('als paneel dat van rechts inschuift', () => {
@@ -2807,10 +2838,10 @@ describe('de menubalk bovenin (issue #86)', () => {
     it('is een paneel en geen popup in het midden', () => {
       openMenu()
       expect(drawer().classList.contains('menu-drawer')).toBe(true)
-      // Met Instellingen in de kop en zonder kaarticoon (Dave, 5 oktober 2026).
-      expect(drawer().querySelector('.stat-dialog-head .stat-dialog-name')?.textContent).toBe('Instellingen')
+      // Zonder zichtbare titel en zonder kaarticoon (Dave, 9 oktober 2026): de kop blijft alleen voor schermlezers.
+      expect(drawer().querySelector('.stat-dialog-head .stat-dialog-name')?.classList.contains('sr-only')).toBe(true)
       expect(drawer().querySelector('.card-icon')).toBeNull()
-      expect(drawer().getAttribute('aria-label')).toBe('Instellingen')
+      expect(drawer().getAttribute('aria-label')).toBe('Menu')
     })
 
     it('sluit met een veeg naar rechts, na het wegschuiven, en zet de focus terug op de menuknop', async () => {
@@ -2819,7 +2850,7 @@ describe('de menubalk bovenin (issue #86)', () => {
       expect(drawer().style.transform).toBe('translateX(100%)')
       await act(() => new Promise((r) => setTimeout(r, 350)))
       expect(bar().querySelector('dialog')).toBeNull()
-      expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Instellingen' }))
+      expect(document.activeElement).toBe(within(bar()).getByRole('button', { name: 'Menu' }))
     })
 
     it('veert terug bij een korte veeg, en blijft open bij scrollen of een veeg naar links', () => {
@@ -3717,7 +3748,7 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
   it('staat direct onder de level-rij, met het level en de job vetgedrukt', () => {
     const q = homeScreen().querySelector('.level-row')!.nextElementSibling!
     expect(q.classList.contains('app-question')).toBe(true)
-    expect(q.textContent).toBe('How much does it cost to level up your Lv. 10 Thief?')
+    expect(q.textContent).toBe('How much does it cost to level up a Lv. 10 Thief?')
     expect(q.querySelector('strong')!.textContent).toBe('Lv. 10 Thief')
   })
 
@@ -3848,7 +3879,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     }
   })
 
-  it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
+  it('zegt in de knop van Profile waarom hij een vraagteken toont, niet onder de knoppen: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
     cleanup()
     localStorage.clear()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
@@ -3860,7 +3891,10 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     // Cheapest rekent vanuit je job en level, en heeft dus wel een bedrag en geen reden.
     expect(top.querySelector('.level-cost-advised .level-cost-total')!.textContent).not.toBe('?')
     const reason = 'Je hebt 32 skillpunten in de skills van je 1e job gezet, maar op level 19 heb je er slechts 28.'
-    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([`Profile: ${reason}`])
+    // De reden staat in de knop van Profile zelf, zonder "Profile:" ervoor, en niet onder de knoppen (Dave, 9 oktober 2026).
+    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([reason])
+    expect(top.querySelector('.level-cost-worn .level-cost-reason')!.textContent).toBe(reason)
+    expect(top.querySelector('.level-cost-buttons + .hint')).toBeNull()
     expect(document.body.textContent).not.toContain('niet volledig ingevuld')
   })
 

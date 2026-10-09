@@ -338,12 +338,53 @@ function ChoiceSave(props: { onSave: () => void }) {
   )
 }
 
+/** De iconen van de rijen in het menu: lijntekeningen zoals de kaarticonen, met een eigen tandwiel en vraagteken. */
+const MENU_ICONS = {
+  person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
+  gear: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z'],
+  help: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7', 'M12 17h.01'],
+} as const
+
+function MenuIcon(props: { name: keyof typeof MENU_ICONS }) {
+  return (
+    <svg class="menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      {MENU_ICONS[props.name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
+
+/** Een rij van het menu die een tweede paneel opent: icoon links, naam, pijl rechts. Terug sluit het paneel en zet de focus op de rij. */
+function MenuDrawerItem(props: { icon: keyof typeof MENU_ICONS; label: string; children: ComponentChildren }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setOpen(false)
+    button.current?.focus()
+  }
+  return (
+    <li class="menu-item">
+      <button ref={button} type="button" class="menu-item-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+        <MenuIcon name={props.icon} />
+        <span class="menu-label">{props.label}</span>
+        <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      {open && (
+        <StatDialog title={props.label} closeLabel="Terug" back drawer onCancel={close}>
+          {props.children}
+        </StatDialog>
+      )}
+    </li>
+  )
+}
+
 /**
  * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
  * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
  * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
-function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void; computed: boolean }) {
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
@@ -359,25 +400,36 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
           {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
           <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
         </div>
-        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
+        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         </button>
       </div>
       {open && (
-        <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
-          <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
-          {/* De uitleg over de schatting stond onder de kaarten; hij staat nu hier onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
-          {props.computed && (
-            <details class="menu-help">
-              <summary>Help</summary>
-              <p class="hint">
-                Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
-                oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-                tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-                Zegt het spel iets anders over je monster, pas zijn info dan aan.
-              </p>
-            </details>
-          )}
+        <StatDialog title="Menu" hideTitle closeLabel="Sluiten" drawer onCancel={close}>
+          {/* Precies drie rijen (Dave, 9 oktober 2026): Profile en Instellingen openen een tweede paneel, Help klapt open. */}
+          <ul class="menu-list">
+            <MenuDrawerItem icon="person" label="Profile">
+              <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+            </MenuDrawerItem>
+            {/* Leeg tot Dave er iets in zet. */}
+            <MenuDrawerItem icon="gear" label="Instellingen">{null}</MenuDrawerItem>
+            {/* De uitleg over de schatting staat onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
+            <li class="menu-item menu-help">
+              <details>
+                <summary>
+                  <MenuIcon name="help" />
+                  <span class="menu-label">Help</span>
+                  <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </summary>
+                <p class="hint">
+                  Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
+                  oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+                  tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+                  Zegt het spel iets anders over je monster, pas zijn info dan aan.
+                </p>
+              </details>
+            </li>
+          </ul>
           {/* Het offline-bestand zelf heeft geen download nodig. */}
           {import.meta.env.MODE !== 'offline' && (
             <div class="menu-download">
@@ -1418,6 +1470,10 @@ function StatDialog(props: {
    * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
    */
   drawer?: boolean
+  /** Het paneel heeft geen zichtbare titel (het menu, Dave, 9 oktober 2026): de kop blijft voor schermlezers. */
+  hideTitle?: boolean
+  /** Een tweede paneel in het menu: een pijl terug links in de kop in plaats van het kruisje rechts (Dave, 9 oktober 2026). */
+  back?: boolean
   /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
   pathName?: string
   /** Data-attributen op .stat-dialog-body, naast data-popup: wat de popup toont, data-based-on-monster="Snail" (Dave, 7 en 8 oktober 2026). */
@@ -1520,7 +1576,7 @@ function StatDialog(props: {
       </PopupButton>
     </div>
   ) : (
-    <h2 class="stat-dialog-name">{name}</h2>
+    <h2 class={props.hideTitle ? 'stat-dialog-name sr-only' : 'stat-dialog-name'}>{name}</h2>
   )
   const title = props.subtitle || props.tag ? (
     <div class="stat-dialog-titles">
@@ -1556,7 +1612,7 @@ function StatDialog(props: {
     >
       <div class="stat-dialog-body" data-popup={path.join(' › ')} {...props.data}>
       <PopupPath.Provider value={path}>
-      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
+      <div class={props.onSave ? 'stat-dialog-head two' : props.back ? 'stat-dialog-head back' : 'stat-dialog-head'}>
         {title}
       </div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
@@ -1569,13 +1625,15 @@ function StatDialog(props: {
       )}
       <button
         type="button"
-        class={props.onSave ? 'stat-dialog-close save' : 'stat-dialog-close'}
+        class={props.onSave ? 'stat-dialog-close save' : props.back ? 'stat-dialog-close back' : 'stat-dialog-close'}
         aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
         onClick={() => (props.onSave ? cancel(props.onSave) : cancel())}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           {props.onSave ? (
             <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
+          ) : props.back ? (
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
           ) : (
             <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" />
           )}
@@ -3911,7 +3969,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 /**
  * Onder de vraag van de app twee knoppen onder elkaar (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section zonder kaart): boven wat het level kost met de setup van Cheapest, onder met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
- * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, en onder de knoppen waarom (#262).
+ * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, met in de knop zelf waarom (#262; Dave, 9 oktober 2026: niet eronder).
  * Daaronder een derde rij (Dave, 8 oktober 2026): het verschil tussen de twee, als één getal met zijn aandeel in wat Profile kost; per soort kost in een popup.
  */
 function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice; job: Job }) {
@@ -3921,8 +3979,6 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     { view: 'advised', label: 'Cheapest', invoice: props.advised },
     { view: 'worn', label: 'Profile', invoice: props.wearing },
   ] as const
-  // Een vraagteken zonder reden laat je raden (#262): bij een karakter dat niet klopt de melding van het foute veld, anders waarom de kosten ontbreken.
-  const reasons = parts.flatMap((p) => (p.invoice?.kind === 'none' ? [{ view: p.view, text: `${p.label}: ${noCostReason(p.invoice.cost, problem) ?? 'er is niets uit te rekenen.'}` }] : []))
   // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
   const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
   // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
@@ -3935,6 +3991,8 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
         {parts.map((p) => {
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
+          // Een vraagteken zonder reden laat je raden (#262); de reden staat in de knop zelf, niet eronder (Dave, 9 oktober 2026).
+          const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
           const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
           return (
             <button
@@ -3944,23 +4002,19 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               disabled={p.invoice === null}
               aria-haspopup="dialog"
               aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
+              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}`}
               onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
             >
               <span class="level-cost-label">{p.label}</span>
               <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
               {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
+              {reason && <span class="level-cost-reason">{reason}</span>}
               {p.invoice !== null && READ_MORE}
             </button>
           )
         })}
       </div>
-      {reasons.map((r) => (
-        <p key={r.view} class="hint level-cost-reason">
-          {r.text}
-        </p>
-      ))}
-      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er al onder de knoppen waarom er geen bedrag is. */}
+      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er een vraagteken op de knop. */}
       {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
     </section>
   )
@@ -4483,7 +4537,7 @@ export function App() {
     <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
     <ProfileProblem.Provider value={profileProblem}>
-      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} computed={computed} />
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
       <div class="level-row">
@@ -4502,7 +4556,7 @@ export function App() {
       {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Level cost. "your" en
           niet "a": elke Lv. 18 Thief is anders, en dit gaat over de jouwe. */}
       <p class="app-question">
-        How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
+        How much does it cost to level up a <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
       {/* Onder de vraag het antwoord: boven wat het level kost met Cheapest, onder met wat je draagt, en daaronder het verschil (Dave, 8 oktober 2026). */}
       <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} job={job} />

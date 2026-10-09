@@ -2,7 +2,59 @@
 
 ## [Unreleased]
 
-**17 / 25 minor entries** <!-- pending-tally -->
+**19 / 27 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/menu-profile-drawer · 20261009-094915Z
+
+The hamburger menu now shows three rows: Profile, Instellingen and Help, each with an icon on the left. The
+"Instellingen" heading at the top of the drawer is gone; the hamburger button and the drawer are now named "Menu".
+Profile opens a second drawer, with a back arrow, where Job and Gender are chosen as before. Instellingen opens an
+empty second drawer, to be filled later. Help expands in place and now always shows, not only once an estimate
+exists. New components `MenuDrawerItem` and `MenuIcon` in `src/app.tsx`; `StatDialog` gained `hideTitle` and `back`.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The player finds Job and Gender under one Profile row instead of at the top of the menu, and Help is always
+reachable. They notice it the next time they open the menu, but nothing about the calculation changes.
+
+**Score:** 2
+
+#### Pull Request
+
+Menu shows Profile, Instellingen and Help; Job and Gender move into a Profile drawer
+
+[PR #281](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/281)
+
+---
+
+### DEPLOY: app/level-up-question-wording · 20261009-093328Z
+
+The level-up question under the level row now reads "How much does it cost to level up a Lv. 20 Thief?"
+instead of "your". Only that question changes. The Total cost card's "This is how much it cost to level up
+your …" keeps its wording.
+
+When the Profile or Cheapest button in the Level cost card shows "?", the reason (for example "Je hebt nog
+geen mob gekozen.") now appears inside that button under the "?". It used to be a separate
+"Profile: …" line below the buttons.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Small changes to on-screen text: one word in the question, and the "?" reason moved into its button. The player sees
+them, but they change nothing about how they use the app.
+
+**Score:** 1
+
+#### Pull Request
+
+Level-up question reads 'a Lv. 20 Thief', and the "?" reason sits inside its Level cost button
+
+[PR #280](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/280)
+
+---
 
 ### DEPLOY: feat/level-cost-tone · 20261009-080229Z
 
