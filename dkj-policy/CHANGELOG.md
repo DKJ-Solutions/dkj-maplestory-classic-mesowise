@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**20 / 28 minor entries** <!-- pending-tally -->
+**21 / 29 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-cost-why · 20261009-101832Z
+
+The home screen is plainer. Cheapest, Profile and Difference no longer sit inside a "Level cost" card: they stand on their
+own directly under the app question, which now runs the full width without a border. Each part ends on a "Read more"
+button, so you can see that tapping it opens the bill; it is missing only on a part that has nothing to open. The amount
+in Cheapest and Profile is larger and sits in the middle of its part.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On the home screen you can now see that the three Level cost parts open something; before, nothing told you that you could tap them for the bill.
+
+**Score:** 2
+
+#### Pull Request
+
+Level cost without its card, with a "Read more" button on each part that opens the bill
+
+[PR #282](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/282)
+
+---
 
 ### DEPLOY: app/remove-topbar-tagline · 20261009-101618Z
 
