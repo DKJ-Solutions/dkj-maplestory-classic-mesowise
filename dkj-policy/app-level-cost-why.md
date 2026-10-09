@@ -61,7 +61,7 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 
 - [x] Tycho: a test checks that all three tappable parts end on "Read more", hidden from screen readers since the button's own label already says it
 - [x] `npm run lint` and the app suite green (333 tests)
-- [ ] Dave looks at it at phone width
+- [x] Dave looked at it in the preview and approved it: "open de PR en merge het"
 
 ### DEPLOY: app/level-cost-why
 
