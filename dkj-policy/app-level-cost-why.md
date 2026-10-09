@@ -42,23 +42,24 @@
 Dave (October 9, 2026): "zet een vraagteken icoon achter de berekende mesos bij cheapest en profile". After two looks
 (behind the amount, then in the top-right corner) Dave dropped the question mark: "haal maar weg dit is lelijk. het
 probleem is vooral dat het voor de gebruiker niet heel duidelijk is dat je op deze kaart kan klikken voor meer info.
-Maak dat duidelijker". A visible result, so the branch stops for Dave's look before the merge.
+Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees meer knop helemaal onder te zetten". A visible result, so the branch stops for Dave's look before the merge.
 
 ### CREATE
 
 - [~] The question mark behind the amount, then in the top-right corner of each part: dropped at Dave's look, reverted to main
-- [x] Gwen + Cody: a chevron (â€º) on the right of Cheapest, Profile and Difference, the usual sign that a row opens something; in the colour of the part's border, with room kept free so the text never runs under it
+- [~] A chevron on the right of each part: replaced at Dave's next look by a "Read more" line
+- [x] Gwen + Cody: "Read more" as the last line of Cheapest, Profile and Difference, small, in the accent colour and underlined; text inside the existing button, not a button of its own
 
 ### TEST
 
-- [x] Tycho: a test checks that all three tappable parts carry the chevron, hidden from screen readers
+- [x] Tycho: a test checks that all three tappable parts end on "Read more", hidden from screen readers since the button's own label already says it
 - [x] `npm run lint` and the app suite green (333 tests)
 - [ ] Dave looks at it at phone width
 
 ### DEPLOY: app/level-cost-why
 
-On the Level cost card, Cheapest, Profile and Difference now each carry a chevron (â€º) on the right, so you can see that
-tapping them opens the bill. The chevron is missing only on a part that has nothing to open.
+On the Level cost card, Cheapest, Profile and Difference now each end on a "Read more" line, so you can see that
+tapping them opens the bill. It is missing only on a part that has nothing to open.
 
 **Score:** 2
 
@@ -70,4 +71,4 @@ On the home screen you can now see that the three Level cost parts open somethin
 
 #### Pull Request
 
-a chevron on the Level cost parts shows they open the bill
+a "Read more" line on the Level cost parts shows they open the bill

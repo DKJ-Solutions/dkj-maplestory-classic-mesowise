@@ -3833,14 +3833,16 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })
 
-  it('zet een chevron in Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
+  it('zet "Read more" onderaan Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
     toLevel20()
     const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
     expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
     for (const b of buttons) {
-      const chevron = b.querySelector('svg.level-cost-chevron')
-      expect(chevron, b.getAttribute('aria-label')!).not.toBeNull()
-      expect(chevron!.getAttribute('aria-hidden')).toBe('true')
+      // De laatste regel van de knop zelf, geen knop in een knop; de schermlezer hoort het aria-label van de knop.
+      const more = b.lastElementChild!
+      expect(more.className, b.getAttribute('aria-label')!).toBe('level-cost-more')
+      expect(more.textContent).toBe('Read more')
+      expect(more.getAttribute('aria-hidden')).toBe('true')
     }
   })
 

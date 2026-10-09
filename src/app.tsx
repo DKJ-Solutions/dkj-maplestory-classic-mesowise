@@ -110,13 +110,13 @@ const QUESTION_ICON = (
 )
 
 /**
- * De chevron rechts in Cheapest, Profile en Difference op het beginscherm (Dave, 9 oktober 2026): zonder zag je niet dat je op die vakken
- * kunt tikken voor de factuur. Hetzelfde teken als een rij in de instellingen van een telefoon die verder gaat.
+ * "Read more" onderaan Cheapest, Profile en Difference op het beginscherm (Dave, 9 oktober 2026): zonder zag je niet dat je op die vakken
+ * kunt tikken voor de factuur. Tekst in de knop zelf, geen eigen knop: de hele knop opent de factuur, en zijn aria-label zegt het al.
  */
-const CHEVRON_ICON = (
-  <svg class="level-cost-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M9 6l6 6-6 6" />
-  </svg>
+const READ_MORE = (
+  <span class="level-cost-more" aria-hidden="true">
+    Read more
+  </span>
 )
 
 /** Het potlood: corrigeren in Profile (.equip-edit), en in de tabel van Equip de knop die een slot opent (Dave, 8 oktober 2026). */
@@ -3977,7 +3977,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               <span class="level-cost-label">{p.label}</span>
               <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
               {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
-              {p.invoice !== null && CHEVRON_ICON}
+              {p.invoice !== null && READ_MORE}
             </button>
           )
         })}
@@ -4022,7 +4022,7 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
             </>
           )}
         </span>
-        {CHEVRON_ICON}
+        {READ_MORE}
       </button>
       {open && (
         <StatDialog title="Difference" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
