@@ -41,17 +41,26 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `src/app.tsx`: the question under the level row reads "level up a" instead of "level up your"
+- [x] `src/app.test.tsx`: the assertion on that question follows
 
 ### TEST
 
+- [x] `vitest run src/app.test.tsx` green (331 tests), `npm run lint` green
+
 ### DEPLOY: app/level-up-question-wording
 
-**Score:**
+The level-up question under the level row now reads "How much does it cost to level up a Lv. 20 Thief?"
+instead of "your". Only that question changes. The Total cost card's "This is how much it cost to level up
+your …" keeps its wording.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+A one-word change to on-screen text. The player sees it, but it changes nothing about how they use the app.
+
+**Score:** 1
 
 #### Pull Request
 

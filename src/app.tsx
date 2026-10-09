@@ -4510,7 +4510,7 @@ export function App() {
       {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Level cost. "your" en
           niet "a": elke Lv. 18 Thief is anders, en dit gaat over de jouwe. */}
       <p class="app-question">
-        How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
+        How much does it cost to level up a <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
       {/* Onder de vraag het antwoord: boven wat het level kost met Cheapest, onder met wat je draagt, en daaronder het verschil (Dave, 8 oktober 2026). */}
       <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} job={job} />
