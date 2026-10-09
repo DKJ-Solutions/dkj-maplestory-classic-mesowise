@@ -3840,7 +3840,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(row.parentElement!.className).toBe('level-cost-buttons')
     expect(row.previousElementSibling!.matches('.level-cost-worn')).toBe(true)
     const button = row.querySelector<HTMLButtonElement>('button')!
-    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Difference')
+    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Profile vs Cheapest')
     const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
     const d = profile - cheapest
     const shareText = formatShare(profileShare(cheapest, profile)!)
@@ -3852,7 +3852,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
       expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(shareText)
       expect(button.querySelector('.level-cost-share')!.className).toBe(`level-cost-share ${d > 0 ? 'cost' : 'gain'}`)
     }
-    expect(button.getAttribute('aria-label')).toBe(`Difference: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
+    expect(button.getAttribute('aria-label')).toBe(`Profile vs Cheapest: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
     // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
     if (d !== 0) expect(button.querySelector('.level-cost-total')!.className).toBe(`level-cost-total ${d > 0 ? 'cost' : 'gain'}`)
     // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
@@ -3875,7 +3875,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
   it('zet "Read more" onderaan Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
     toLevel20()
     const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
-    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
+    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Profile vs Cheapest'])
     for (const b of buttons) {
       // De laatste regel van de knop zelf, geen knop in een knop; de schermlezer hoort het aria-label van de knop.
       const more = b.lastElementChild!

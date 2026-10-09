@@ -4035,8 +4035,10 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
   }
   return (
     <div class="level-cost-diff">
-      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Difference: ${summary}`} onClick={() => setOpen(true)}>
-        <span class="level-cost-label">Difference</span>
+      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Profile vs Cheapest: ${summary}`} onClick={() => setOpen(true)}>
+        {/* Het label zegt wat hier vergeleken wordt (Dave, 9 oktober 2026): Profile tegen Cheapest, zodat "+57% more expensive" eronder leest als
+            "Profile is 57% duurder dan Cheapest". De popup heet nog Difference. */}
+        <span class="level-cost-label">Profile vs Cheapest</span>
         {d === 0 ? (
           <strong class="level-cost-total">0 meso</strong>
         ) : (
