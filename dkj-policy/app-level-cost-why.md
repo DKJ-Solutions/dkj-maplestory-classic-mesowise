@@ -51,6 +51,8 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 - [~] "Read more" as small underlined accent text: Dave asked for "echt een knop"
 - [x] Gwen + Cody: "Read more" at the bottom of Cheapest, Profile and Difference, drawn as a filled accent button; it is the visible part of the existing button around it, since a button cannot hold a button, so the whole part still opens the bill
 
+- [x] Gwen: the amount larger (1.5rem) and centred in the part, with the label at the top and Read more at the bottom (Dave: "maak de fontsize van de x mesos groter en geef het meer ruimte")
+
 ### TEST
 
 - [x] Tycho: a test checks that all three tappable parts end on "Read more", hidden from screen readers since the button's own label already says it
