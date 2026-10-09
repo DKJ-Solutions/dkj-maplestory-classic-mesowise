@@ -3885,12 +3885,13 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const paid = (col: number, key: string) => (cols[col] ? cols[col]!.lines.filter((l) => invoiceRowKey(l) === key).reduce((sum, l) => sum + l.meso, 0) : null)
   return ig || ch ? (
     <>
+      {/* Kolommen in de volgorde van de vakken op het beginscherm: Cheapest, Profile, Difference (Dave, 9 oktober 2026). */}
       <table class="invoice invoice-difference">
         <thead>
           <tr>
             <td />
-            <th scope="col">Profile</th>
             <th scope="col">Cheapest</th>
+            <th scope="col">Profile</th>
             <th scope="col">Difference</th>
           </tr>
         </thead>
@@ -3901,8 +3902,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
             return (
               <tr key={key}>
                 <th scope="row">{name(key)}</th>
-                <td class="invoice-meso">{cost(a)}</td>
                 <td class="invoice-meso">{cost(b)}</td>
+                <td class="invoice-meso">{cost(a)}</td>
                 <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
               </tr>
             )
@@ -3911,8 +3912,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         <tfoot>
           <tr>
             <th scope="row">Total</th>
-            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
             <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
+            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
             <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
           </tr>
         </tfoot>
@@ -4035,10 +4036,10 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
   }
   return (
     <div class="level-cost-diff">
-      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Profile vs Cheapest: ${summary}`} onClick={() => setOpen(true)}>
-        {/* Het label zegt wat hier vergeleken wordt (Dave, 9 oktober 2026): Profile tegen Cheapest, zodat "+57% more expensive" eronder leest als
+      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Cheapest vs Profile: ${summary}`} onClick={() => setOpen(true)}>
+        {/* Het label zegt wat hier vergeleken wordt (Dave, 9 oktober 2026): Cheapest tegen Profile, zodat "+57% more expensive" eronder leest als
             "Profile is 57% duurder dan Cheapest". De popup heet nog Difference. */}
-        <span class="level-cost-label">Profile vs Cheapest</span>
+        <span class="level-cost-label">Cheapest vs Profile</span>
         {d === 0 ? (
           <strong class="level-cost-total">0 meso</strong>
         ) : (

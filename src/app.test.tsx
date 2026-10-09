@@ -3840,7 +3840,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(row.parentElement!.className).toBe('level-cost-buttons')
     expect(row.previousElementSibling!.matches('.level-cost-worn')).toBe(true)
     const button = row.querySelector<HTMLButtonElement>('button')!
-    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Profile vs Cheapest')
+    expect(button.querySelector('.level-cost-label')!.textContent).toBe('Cheapest vs Profile')
     const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
     const d = profile - cheapest
     const shareText = formatShare(profileShare(cheapest, profile)!)
@@ -3852,7 +3852,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
       expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(shareText)
       expect(button.querySelector('.level-cost-share')!.className).toBe(`level-cost-share ${d > 0 ? 'cost' : 'gain'}`)
     }
-    expect(button.getAttribute('aria-label')).toBe(`Profile vs Cheapest: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
+    expect(button.getAttribute('aria-label')).toBe(`Cheapest vs Profile: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
     // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
     if (d !== 0) expect(button.querySelector('.level-cost-total')!.className).toBe(`level-cost-total ${d > 0 ? 'cost' : 'gain'}`)
     // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
@@ -3875,7 +3875,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
   it('zet "Read more" onderaan Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
     toLevel20()
     const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
-    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Profile vs Cheapest'])
+    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Cheapest vs Profile'])
     for (const b of buttons) {
       // De laatste regel van de knop zelf, geen knop in een knop; de schermlezer hoort het aria-label van de knop.
       const more = b.lastElementChild!
@@ -3946,21 +3946,21 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
 
   it('zet in Difference per soort kost wat je character en de goedkoopste setup betalen en het verschil, met als totaal het verschil van de twee facturen', () => {
     toLevel20()
-    // Kolommen: de soort, Profile, Cheapest en Difference (Dave, #183).
-    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
+    // Kolommen: de soort, Cheapest, Profile en Difference (Dave, #183; volgorde van de vakken sinds 9 oktober 2026).
+    expect(Array.from(diffCard().querySelectorAll('thead th')).map((th) => th.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
     const rows = Array.from(diffCard().querySelectorAll('tbody tr'))
     // Een soort kost, niet de naam van de potion of de munitie.
     expect(rows.map((tr) => tr.querySelector('th')!.textContent)).toEqual(['Shop', 'HP Potions', 'MP Potions', 'Ammo'])
     const signed = (t: string) => (t.startsWith('−') ? -mesoOf(t) : mesoOf(t))
     for (const tr of rows) {
-      const [mine, cheap, d] = Array.from(tr.querySelectorAll('td')).map((td) => td.textContent!)
+      const [cheap, mine, d] = Array.from(tr.querySelectorAll('td')).map((td) => td.textContent!)
       expect(mine).toMatch(/^(−[\d.]+|0)$/)
       expect(cheap).toMatch(/^(−[\d.]+|0)$/)
       // Wat je laat liggen in rood met een min, zoals de kosten; is jouw setup goedkoper, dan groen met een plus.
       expect(d).toMatch(/^(\+[\d.]+|−[\d.]+|0)$/)
       expect(signed(d)).toBe(mesoOf(cheap) - mesoOf(mine))
     }
-    const [mineTotal, cheapTotal, diffTotal] = Array.from(diffCard().querySelectorAll('tfoot td'))
+    const [cheapTotal, mineTotal, diffTotal] = Array.from(diffCard().querySelectorAll('tfoot td'))
     // De totalen zijn die van de twee facturen erboven, en het verschil is hun verschil.
     expect(mesoOf(mineTotal.textContent)).toBe(mesoOf(total(yours())))
     expect(mesoOf(cheapTotal.textContent)).toBe(mesoOf(total(cheapestCard())))
@@ -3994,7 +3994,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     const shop = onInvoice.reduce((s, r) => s + r.price, 0)
     expect(mesoOf(homeScreen().querySelector('section.equipment .equip-total strong')!.textContent)).toBe(full)
     // In Difference: jouw character betaalt niets in de winkel, Cheapest het afgeschreven deel, en het verschil is dat deel.
-    const [mine, cheap, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
+    const [cheap, mine, d] = Array.from(diffCard().querySelectorAll('tbody tr:first-child td')).map((td) => td.textContent!)
     expect(mine).toBe('0')
     expect(mesoOf(cheap)).toBe(shop)
     expect(mesoOf(d)).toBe(shop)
@@ -5023,7 +5023,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     setUpAdvisedDiffers()
     const card = homeScreen().querySelector<HTMLElement>('section.total-cost')!
     expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
-    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Profile', 'Cheapest', 'Difference'])
+    expect([...card.querySelectorAll('.cost-difference thead th')].map((th) => th.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
     // Koppen, knoppen, kolomkoppen en namen van popups, met alle Cheapest-popups open.
     for (const title of CARDS) openView(title, 'Cheapest')
     fireEvent.click(within(card).getByRole('button', { name: 'Equip van Cheapest' }))
