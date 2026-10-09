@@ -2,7 +2,29 @@
 
 ## [Unreleased]
 
-**21 / 29 minor entries** <!-- pending-tally -->
+**22 / 30 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/profile-new-equip-row · 20261009-104414Z
+
+Under "Based on:" in the Profile popup of Level cost: Equip, the fourth row "New equip" now appears as well: the
+upgrades Cheapest would buy, the same row as in the Cheapest popup. It is read-only, so it has no pencil (Dave,
+October 9, 2026).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+In Profile you can now see which upgrades Cheapest advises without switching to the Cheapest popup.
+
+**Score:** 2
+
+#### Pull Request
+
+Profile popup: show the New equip row under Based on
+
+[PR #284](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/284)
+
+---
 
 ### DEPLOY: app/level-cost-why · 20261009-101832Z
 
