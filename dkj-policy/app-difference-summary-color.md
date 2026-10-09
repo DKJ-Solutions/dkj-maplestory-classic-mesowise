@@ -47,6 +47,7 @@
 - [x] Gwen: Difference moves into the same grid as Cheapest and Profile (equal height) and uses the same total/share classes; "No difference" becomes "0 meso"
 - [x] Cody: no minus sign before the meso on Cheapest and Profile
 - [x] Cody: "+57% more expensive" moves from Profile to Difference, replacing the old share of Profile's total
+- [x] Cody: Profile's total is no longer coloured; only Difference judges the result. `profileTone` and its tests go with it
 - [x] Tycho: the existing Difference-row test asserts the colour, the amount and share, the grid placement and the aria-label
 
 ### TEST
@@ -56,7 +57,7 @@
 
 ### DEPLOY: app/difference-summary-color
 
-The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount, with "+57% more expensive" (or "5% cheaper") small underneath — moved there from the Profile card — and the colour says which setup is cheaper. Cheapest and Profile show their cost without a minus sign. All three Level cost cards (Cheapest, Profile, Difference) now have the same height and the same layout.
+The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount, with "+57% more expensive" (or "5% cheaper") small underneath — moved there from the Profile card — and the colour says which setup is cheaper. Cheapest and Profile show their cost without a minus sign and in plain text colour; only Difference says whether the result is good or bad. All three Level cost cards (Cheapest, Profile, Difference) now have the same height and the same layout.
 
 **Score:** 2
 

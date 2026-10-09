@@ -19,7 +19,7 @@ import { itemId } from './itemIds'
 import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOBS, mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
-import { formatShare, profileShare, profileTone } from './profileTone'
+import { formatShare, profileShare } from './profileTone'
 
 const claw = (name: string) => {
   const c = NPC_CLAWS.find((x) => x.name === name)
@@ -3862,14 +3862,11 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(mesoOf(table.querySelector('tfoot .invoice-diff')!.textContent)).toBe(Math.abs(d))
   })
 
-  it('kleurt Cheapest neutraal en Profile naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026)', () => {
+  it('kleurt Cheapest en Profile niet: pas Difference zegt of het verschil goed of slecht is (Dave, 9 oktober 2026)', () => {
     toLevel20()
     const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button')).map((b) => b.querySelector('.level-cost-total')!)
-    // Een level kost altijd iets: Cheapest krijgt geen kleur.
     expect(left.className).toBe('level-cost-total')
-    const [cheapest, profile] = [mesoOf(left.textContent), mesoOf(right.textContent)]
-    const tone = profileTone(cheapest, profile)
-    expect(right.className).toBe(`level-cost-total tone-${tone}`)
+    expect(right.className).toBe('level-cost-total')
     // Cheapest en Profile zelf hebben geen percentage: dat staat in Difference (Dave, 9 oktober 2026).
     expect(right.parentElement!.querySelector('.level-cost-share')).toBeNull()
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()

@@ -287,9 +287,6 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-btn > :has(+ .level-cost-more) { margin-bottom: 0.625rem; }
 /* Zonder factuur geen Read more: dan staat het bedrag (een vraagteken) gewoon in het midden onder het label. */
 .level-cost-btn:not(:has(> .level-cost-more)) > :last-child { margin-bottom: auto; }
-/* Cheapest is neutraal: een level kost altijd iets. Profile is groen vlak bij Cheapest, rood ver erboven, neutraal daartussen (Dave, 9 oktober 2026). */
-.level-cost-total.tone-close { color: var(--gain); }
-.level-cost-total.tone-far { color: var(--cost); }
 /* Onder het totaal van Difference hoeveel Profile van Cheapest afwijkt, kleiner, in dezelfde kleur (Dave, 9 oktober 2026). */
 .level-cost-share { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); }
 /* Waarom een knop een vraagteken toont (#262): in de knop zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */

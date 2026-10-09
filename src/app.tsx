@@ -33,7 +33,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { statBreakdown, statFormulaSource, type StatBreakdown } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { formatShare, profileShare, profileTone } from './profileTone'
+import { formatShare, profileShare } from './profileTone'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionBar, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
@@ -3978,8 +3978,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     { view: 'advised', label: 'Cheapest', invoice: props.advised },
     { view: 'worn', label: 'Profile', invoice: props.wearing },
   ] as const
-  // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
-  const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
+  // Cheapest en Profile zijn allebei neutraal: pas Difference zegt of het verschil goed of slecht is (Dave, 9 oktober 2026).
   return (
     // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026): Cheapest, Profile en Difference staan los onder
     // de vraag van de app. De naam die de kop gaf, krijgt de schermlezer van aria-label.
@@ -4003,7 +4002,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
             >
               <span class="level-cost-label">{p.label}</span>
-              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
+              <strong class="level-cost-total">{text}</strong>
               {reason && <span class="level-cost-reason">{reason}</span>}
               {p.invoice !== null && READ_MORE}
             </button>
