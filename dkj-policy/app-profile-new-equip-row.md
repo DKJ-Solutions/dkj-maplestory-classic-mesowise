@@ -48,7 +48,7 @@
 
 - [x] New test: Profile shows four rows, the same upgrades as Cheapest, `data-sheet="profile"`, no pencil; the existing Profile "Based on" test allows the new row; suite (1991) and typecheck green
 - [x] Victor's code review: no findings
-- [ ] Dave looks at the Profile popup at phone width before the merge
+- [x] Dave looks at the Profile popup at phone width before the merge ("ship it", October 9, 2026)
 
 ### DEPLOY: app/profile-new-equip-row
 
