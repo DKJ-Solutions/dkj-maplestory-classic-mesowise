@@ -277,7 +277,7 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-btn.level-cost-advised { --part: var(--accent); }
 /* "Read more" onderaan het vak (Dave, 9 oktober 2026): je kunt op het vak tikken voor de factuur. Het ziet eruit als een echte knop, gevuld in
    de accentkleur zoals .btn.primary, plat, zonder schaduw (Dave); het hele vak blijft de knop, dus dit is zijn zichtbare deel en geen knop in een knop. */
-.level-cost-more { margin-top: 0.5rem; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 700;
+.level-cost-more { margin-top: 0.5rem; padding: 0.5rem 1.5rem; border-radius: 0.25rem; font-size: 0.8125rem; font-weight: 700;
   background: var(--accent); color: var(--on-accent); }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
 /* Het bedrag groot en midden in het vak (Dave, 9 oktober 2026): het label blijft bovenaan, Read more onderaan, en de vrije ruimte gaat

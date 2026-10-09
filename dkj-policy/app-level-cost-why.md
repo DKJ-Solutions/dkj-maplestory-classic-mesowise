@@ -51,7 +51,7 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 - [~] "Read more" as small underlined accent text: Dave asked for "echt een knop"
 - [x] Gwen + Cody: "Read more" at the bottom of Cheapest, Profile and Difference, drawn as a filled accent button; it is the visible part of the existing button around it, since a button cannot hold a button, so the whole part still opens the bill
 
-- [x] Gwen: Read more flat, without its shadow, and with more padding (Dave: "maak de read more knop meer flat", "en geef de knop meer padding")
+- [x] Gwen: Read more flat, without its shadow, with more padding and a smaller border radius (Dave: "maak de read more knop meer flat", "en geef de knop meer padding", "en minder border radius")
 - [x] Gwen: the amount larger (1.5rem) and centred in the part, with the label at the top and Read more at the bottom (Dave: "maak de fontsize van de x mesos groter en geef het meer ruimte")
 
 ### TEST
