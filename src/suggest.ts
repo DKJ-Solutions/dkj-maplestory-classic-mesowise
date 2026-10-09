@@ -69,33 +69,47 @@ function magicianAttacks(profile: Profile, character: Character): Attack[] {
 const beginnerAttackOf = (profile: Profile, c: Character): Attack => beginnerAttack(c, profile.weaponMult, profile.dagger === 1)
 
 /**
- * De aanval van een Thief met een dagger (#170): Double Stab op het gezette level (2 klappen, de steek van 2,0), of zonder punten
- * de gewone aanval met de verwachte multiplier van de dagger uit de equipment.
+ * De aanval van een Thief met een dagger (#170): Double Stab op het gezette level (2 klappen, de steek van 2,0), of null zonder
+ * punten; de gewone aanval met de verwachte multiplier van de dagger uit de equipment staat in attacksOf.
  */
-function daggerAttackOf(profile: Profile, c: Character): Attack {
+function doubleStabAttackOf(profile: Profile, c: Character): Attack | null {
   const stab = doubleStabAt(profile.doubleStab)
-  return stab ? daggerAttack(c, DOUBLE_STAB_WEAPON_MULT, stab, DOUBLE_STAB_HITS) : daggerAttack(c, profile.weaponMult, null, 1)
+  return stab && daggerAttack(c, DOUBLE_STAB_WEAPON_MULT, stab, DOUBLE_STAB_HITS)
 }
 
 /**
- * De aanvallen van dit profiel; de meeste jobs hebben er één. Een Thief of Bowman onder level 10 slaat als Beginner (#171). Een Thief gooit Lucky Seven (of de gewone claw-aanval), of steekt met een dagger Double Stab (#170); een Warrior slaat met
- * Power Strike op het gezette level, of zonder punten met de gewone aanval; een Bowman schiet Arrow Blow op het
- * gezette level, of zonder punten het gewone schot; een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er
- * geen voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
+ * De skill naast de gewone aanval (#276): in het spel kun je een skill leren en toch gewoon slaan of schieten, dus een skillpunt
+ * maakt een level nooit duurder. suggestMonsters kiest per monster de goedkoopste van de twee, zoals een Magician tussen zijn
+ * spreuken kiest. De skill staat vooraan, zodat hij bij gelijkspel wint.
+ */
+const skillOrBasic = (skill: Attack | null, basic: Attack): Attack[] => (skill ? [skill, basic] : [basic])
+
+/**
+ * De aanvallen van dit profiel. Een Thief of Bowman onder level 10 slaat als Beginner (#171). Een Thief gooit Lucky Seven of de
+ * gewone claw-aanval, of steekt met een dagger Double Stab of de gewone steek (#170); een Warrior slaat met Power Strike of de
+ * gewone aanval; een Bowman schiet Arrow Blow of het gewone schot: de skill op het gezette level telt alleen mee als hij punten
+ * heeft, en de gewone aanval kan altijd (#276). Een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er geen
+ * voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
  * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
  */
 function attacksOf(profile: Profile, character: Character): Attack[] {
   if (attacksAsBeginner(profile.job, profile.level)) return [beginnerAttackOf(profile, character)]
   switch (profile.job) {
-    case 'warrior':
-      return [meleeAttack(character, profile.weaponMult, powerStrikeAt(profile.powerStrike))]
-    case 'bowman':
-      return [bowAttack(character, BOW, arrowBlowAt(profile.arrowBlow))]
+    case 'warrior': {
+      const strike = powerStrikeAt(profile.powerStrike)
+      return skillOrBasic(strike && meleeAttack(character, profile.weaponMult, strike), meleeAttack(character, profile.weaponMult, null))
+    }
+    case 'bowman': {
+      const blow = arrowBlowAt(profile.arrowBlow)
+      return skillOrBasic(blow && bowAttack(character, BOW, blow), bowAttack(character, BOW, null))
+    }
     case 'magician':
       return magicianAttacks(profile, character)
-    default:
-      if (thiefWithDagger(profile.job, profile.dagger)) return [daggerAttackOf(profile, character)]
-      return [characterAttack(character, luckySevenAt(profile.luckySeven), LUCKY_SEVEN)]
+    default: {
+      if (thiefWithDagger(profile.job, profile.dagger)) return skillOrBasic(doubleStabAttackOf(profile, character), daggerAttack(character, profile.weaponMult, null, 1))
+      const seven = luckySevenAt(profile.luckySeven)
+      return skillOrBasic(seven && characterAttack(character, seven, LUCKY_SEVEN), characterAttack(character, null, LUCKY_SEVEN))
+    }
   }
 }
 
@@ -190,7 +204,7 @@ const expPerMeso = (s: MonsterSuggestion): number => {
 
 /**
  * Elk monster van de plek doorgerekend, van meeste naar minste EXP per uur. Heeft het karakter meer dan één aanval
- * (een Magician met twee spreuken), dan telt per monster de aanval met de meeste EXP per meso aan potions; bij gelijkspel
+ * (een Magician met twee spreuken, of een skill naast de gewone aanval, #276), dan telt per monster de aanval met de meeste EXP per meso aan potions en munitie; bij gelijkspel
  * de meeste EXP per uur.
  */
 export function suggestMonsters(profile: Profile, spot: KnownSpot, assumptions: Assumptions = ASSUMPTIONS): MonsterSuggestion[] {
