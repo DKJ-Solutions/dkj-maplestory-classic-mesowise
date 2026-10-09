@@ -29,8 +29,11 @@ export function profileTone(cheapest: number, profile: number): ProfileTone {
   return over <= CLOSE_SHARE ? 'close' : over < FAR_SHARE ? 'between' : 'far'
 }
 
-/** Het deel als tekst op de knop van Profile: "+18%", "−5%" of "0%", afgerond op hele procenten. */
+/**
+ * Het deel als tekst op de knop van Profile, afgerond op hele procenten (Dave, 9 oktober 2026): "+57% more expensive", "5% cheaper"
+ * (zonder min: "−5% cheaper" zegt het twee keer) of "Same cost".
+ */
 export function formatShare(share: number): string {
   const pct = Math.round(share * 100)
-  return pct === 0 ? '0%' : `${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`
+  return pct === 0 ? 'Same cost' : pct > 0 ? `+${pct}% more expensive` : `${-pct}% cheaper`
 }

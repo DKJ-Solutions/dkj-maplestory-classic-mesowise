@@ -39,10 +39,10 @@ describe('profileShare', () => {
 })
 
 describe('formatShare', () => {
-  it('zet een plus voor duurder, een min voor goedkoper, en rondt af op hele procenten', () => {
-    expect(formatShare(0.18)).toBe('+18%')
-    expect(formatShare(-0.05)).toBe('−5%')
-    expect(formatShare(0.004)).toBe('0%')
-    expect(formatShare(-0.004)).toBe('0%')
+  it('zegt in woorden of Profile duurder of goedkoper is, afgerond op hele procenten', () => {
+    expect(formatShare(0.57)).toBe('+57% more expensive')
+    expect(formatShare(-0.05)).toBe('5% cheaper')
+    expect(formatShare(0.004)).toBe('Same cost')
+    expect(formatShare(-0.004)).toBe('Same cost')
   })
 })

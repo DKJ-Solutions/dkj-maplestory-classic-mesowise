@@ -3828,7 +3828,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(right.className).toBe(`level-cost-total tone-${tone}`)
     // Onder Profile hoeveel het van Cheapest afwijkt, als deel van Cheapest, in dezelfde kleur; Cheapest zelf heeft geen percentage.
     const share = right.parentElement!.querySelector('.level-cost-share')!
-    expect(share.textContent).toBe(`${formatShare(profileShare(cheapest, profile)!)} vs Cheapest`)
+    expect(share.textContent).toBe(formatShare(profileShare(cheapest, profile)!))
     expect(share.className).toBe(`level-cost-share tone-${tone}`)
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })

@@ -3952,7 +3952,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
         {parts.map((p) => {
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
-          const shareText = p.view === 'worn' && share !== null ? `${formatShare(share)} vs Cheapest` : null
+          const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
           return (
             <button
               key={p.view}

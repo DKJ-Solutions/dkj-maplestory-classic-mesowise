@@ -48,7 +48,7 @@ Chosen bands: up to 10% above Cheapest is green, 25% or more is red, neutral in 
 - [x] `src/profileTone.ts`: pure `profileTone(cheapest, profile)` with the two thresholds
 - [x] `LevelCostButtons`: Cheapest total uncoloured, Profile total gets `tone-close` / `tone-far` (nothing in between)
 - [x] `style.css`: `.tone-close` green (`--gain`), `.tone-far` red (`--cost`)
-- [x] Dave (same day): under the Profile total, how far it sits from Cheapest as a share of Cheapest ("+18% vs Cheapest"),
+- [x] Dave (same day): under the Profile total, how far it sits from Cheapest as a share of Cheapest ("+57% more expensive", "5% cheaper", "Same cost"),
       in the same tone; `profileShare` and `formatShare` beside `profileTone`, which now reads its share from `profileShare`
 
 ### TEST
@@ -63,7 +63,7 @@ Chosen bands: up to 10% above Cheapest is green, 25% or more is red, neutral in 
 
 The two Level cost totals no longer share one alarming red. Cheapest is neutral, since a level always costs something and
 Cheapest is the least it can cost. Profile is coloured against Cheapest: green up to 10% above it, red from 25% above it,
-neutral in between. Under the Profile total the same share is written out, as in "+18% vs Cheapest".
+neutral in between. Under the Profile total the same share is written out, as in "+57% more expensive" or "5% cheaper".
 
 **Score:** 2
 
