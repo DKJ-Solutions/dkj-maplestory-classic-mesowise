@@ -19,7 +19,7 @@ import { itemId } from './itemIds'
 import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOBS, mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
-import { profileTone } from './profileTone'
+import { formatShare, profileShare, profileTone } from './profileTone'
 
 const claw = (name: string) => {
   const c = NPC_CLAWS.find((x) => x.name === name)
@@ -3823,7 +3823,14 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button')).map((b) => b.querySelector('.level-cost-total')!)
     // Een level kost altijd iets: Cheapest krijgt geen kleur.
     expect(left.className).toBe('level-cost-total')
-    expect(right.className).toBe(`level-cost-total tone-${profileTone(mesoOf(left.textContent), mesoOf(right.textContent))}`)
+    const [cheapest, profile] = [mesoOf(left.textContent), mesoOf(right.textContent)]
+    const tone = profileTone(cheapest, profile)
+    expect(right.className).toBe(`level-cost-total tone-${tone}`)
+    // Onder Profile hoeveel het van Cheapest afwijkt, als deel van Cheapest, in dezelfde kleur; Cheapest zelf heeft geen percentage.
+    const share = right.parentElement!.querySelector('.level-cost-share')!
+    expect(share.textContent).toBe(`${formatShare(profileShare(cheapest, profile)!)} vs Cheapest`)
+    expect(share.className).toBe(`level-cost-share tone-${tone}`)
+    expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })
 
   it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {

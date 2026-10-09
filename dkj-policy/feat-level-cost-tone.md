@@ -48,11 +48,14 @@ Chosen bands: up to 10% above Cheapest is green, 25% or more is red, neutral in 
 - [x] `src/profileTone.ts`: pure `profileTone(cheapest, profile)` with the two thresholds
 - [x] `LevelCostButtons`: Cheapest total uncoloured, Profile total gets `tone-close` / `tone-far` (nothing in between)
 - [x] `style.css`: `.tone-close` green (`--gain`), `.tone-far` red (`--cost`)
+- [x] Dave (same day): under the Profile total, how far it sits from Cheapest as a share of Cheapest ("+18% vs Cheapest"),
+      in the same tone; `profileShare` and `formatShare` beside `profileTone`, which now reads its share from `profileShare`
 
 ### TEST
 
 - [x] `profileTone.test.ts`: the bands and their edges, Profile cheaper, Cheapest at 0
-- [x] `app.test.tsx`: Cheapest has no colour class, Profile carries the tone of its two totals
+- [x] `profileTone.test.ts`: the share against Cheapest, none when Cheapest is 0, and its sign and rounding as text
+- [x] `app.test.tsx`: Cheapest has no colour class and no share, Profile carries the tone and the share of its two totals
 - [x] Typecheck and the full suite green
 - [ ] Dave looks at the colours on the phone before the merge (visible result)
 
@@ -60,14 +63,14 @@ Chosen bands: up to 10% above Cheapest is green, 25% or more is red, neutral in 
 
 The two Level cost totals no longer share one alarming red. Cheapest is neutral, since a level always costs something and
 Cheapest is the least it can cost. Profile is coloured against Cheapest: green up to 10% above it, red from 25% above it,
-neutral in between.
+neutral in between. Under the Profile total the same share is written out, as in "+18% vs Cheapest".
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
 On the home screen you now see at a glance whether your own setup is close to the cheapest one, instead of two red numbers
-that both look like a warning.
+that both look like a warning, and the percentage under Profile says exactly how far off it is.
 
 **Score:** 3
 

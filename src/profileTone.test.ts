@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLOSE_SHARE, FAR_SHARE, profileTone } from './profileTone'
+import { CLOSE_SHARE, FAR_SHARE, formatShare, profileShare, profileTone } from './profileTone'
 
 describe('profileTone', () => {
   it('Profile even duur of goedkoper dan Cheapest is close', () => {
@@ -23,5 +23,26 @@ describe('profileTone', () => {
 
   it('kost Cheapest niets, dan is elke meso erboven far', () => {
     expect(profileTone(0, 1)).toBe('far')
+  })
+})
+
+describe('profileShare', () => {
+  it('is het verschil als deel van Cheapest', () => {
+    expect(profileShare(10_000, 11_800)).toBeCloseTo(0.18)
+    expect(profileShare(10_000, 9_500)).toBeCloseTo(-0.05)
+    expect(profileShare(10_000, 10_000)).toBe(0)
+  })
+
+  it('heeft geen deel als Cheapest niets kost', () => {
+    expect(profileShare(0, 500)).toBeNull()
+  })
+})
+
+describe('formatShare', () => {
+  it('zet een plus voor duurder, een min voor goedkoper, en rondt af op hele procenten', () => {
+    expect(formatShare(0.18)).toBe('+18%')
+    expect(formatShare(-0.05)).toBe('−5%')
+    expect(formatShare(0.004)).toBe('0%')
+    expect(formatShare(-0.004)).toBe('0%')
   })
 })
