@@ -46,7 +46,8 @@
 ### TEST
 
 - [x] Top-bar test now asserts the tagline is gone everywhere; suite and typecheck green
-- [ ] Dave looks at the top bar at phone width before the merge
+- [x] Dave looks at the top bar at phone width before the merge ("ship it", October 9, 2026)
+- [~] Separate code/copy review dropped: the diff only deletes one span, its style and adds no UI text
 
 ### DEPLOY: app/remove-topbar-tagline
 
