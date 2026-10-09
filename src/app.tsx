@@ -33,6 +33,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { statBreakdown, statFormulaSource, type StatBreakdown } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
+import { formatShare, profileShare, profileTone } from './profileTone'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionBar, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
@@ -3933,6 +3934,10 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     { view: 'advised', label: 'Cheapest', invoice: props.advised },
     { view: 'worn', label: 'Profile', invoice: props.wearing },
   ] as const
+  // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
+  const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
+  // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
+  const share = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileShare(props.advised.total, props.wearing.total) : null
   return (
     <section class="card level-cost">
       <CardHead>
@@ -3947,6 +3952,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
           // Een vraagteken zonder reden laat je raden (#262); de reden staat in de knop zelf, niet eronder (Dave, 9 oktober 2026).
           const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
+          const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
           return (
             <button
               key={p.view}
@@ -3955,11 +3961,12 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               disabled={p.invoice === null}
               aria-haspopup="dialog"
               aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${reason ? ` ${reason}` : ''}`}
+              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}`}
               onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
             >
               <span class="level-cost-label">{p.label}</span>
-              <strong class={`level-cost-total${total ? ' cost' : ''}`}>{text}</strong>
+              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
+              {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
               {reason && <span class="level-cost-reason">{reason}</span>}
             </button>
           )

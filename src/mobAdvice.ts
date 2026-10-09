@@ -1,8 +1,9 @@
 // Loont het om van mob te wisselen? (Dave, 4 oktober 2026, #122 en #126): de mob waarop je jaagt naast elke
 // andere mob uit de data, voor je huidige level. De mob is het advies, niet de plek: de mob draagt de HP en de EXP.
 // Puur, zonder UI-import.
-import { bestVerdict } from './best'
+import { bestVerdict, pickUnder } from './best'
 import { mesoCostOfLevel } from './calc/mesoCostOfLevel'
+import { isInvalid } from './calc/rankSpots'
 import { expToNextLevel } from './data/expTable'
 import { huntedMob, mobDraft, MOBS } from './data/spots'
 import { expPerMesoOf } from './bestExpPerMeso'
@@ -23,6 +24,16 @@ export type MobAdvice =
 export function cheapestMob(profile: Profile): string | null {
   if (expToNextLevel(profile.level) === undefined) return null
   return bestName(bestVerdict(MOBS.map((m) => mobDraft(m.name)!), profile))
+}
+
+/**
+ * De mobs uit de data die "Beste" mogen zijn voor dit profiel (pickBest: geldig, niet gevaarlijk, genoeg EXP per uur), in de volgorde van EXP per meso.
+ * Cheapest kiest daaruit op de factuur (#273); leeg als het level niet in de EXP-tabel staat.
+ */
+export function eligibleMobs(profile: Profile): string[] {
+  if (expToNextLevel(profile.level) === undefined) return []
+  const { ranked, excluded } = pickUnder(MOBS.map((m) => mobDraft(m.name)!), profile)
+  return ranked.filter((r) => !isInvalid(r) && !excluded.has(r.spot.id)).map((r) => r.spot.name)
 }
 
 const bestName = (verdict: ReturnType<typeof bestVerdict>): string | null => verdict.ranked.find((r) => r.spot.id === verdict.bestId)?.spot.name ?? null

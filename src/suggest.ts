@@ -83,6 +83,11 @@ function daggerAttackOf(profile: Profile, c: Character): Attack {
  * gezette level, of zonder punten het gewone schot; een Magician kiest uit zijn spreuken (geen spreuk: geen aanval, dan is er
  * geen voorstel). Slash Blast en Double Shot zijn bewust niet meegenomen: ze raken
  * tot 4 en tot 2 monsters, en hoeveel er in de buurt staan is niet bekend (zie skillPoint.ts).
+ *
+ * Een aanvalsskill met punten wordt altijd gebruikt, ook als de gewone aanval op de factuur goedkoper is (Dave, 9 oktober 2026,
+ * #276). In dit model is de gewone aanval altijd goedkoper: een skill kost MP en MP kost potions, en tijd telt niet als meso.
+ * Zou de gewone aanval meetellen, dan bespaart een aanvalsskill nooit iets. De aanname is dus dat elke speler zijn skill gebruikt;
+ * een punt in een aanvalsskill kan daardoor een level duurder maken, en skillPointAdvice laat dat als negatieve besparing zien.
  */
 function attacksOf(profile: Profile, character: Character): Attack[] {
   if (attacksAsBeginner(profile.job, profile.level)) return [beginnerAttackOf(profile, character)]

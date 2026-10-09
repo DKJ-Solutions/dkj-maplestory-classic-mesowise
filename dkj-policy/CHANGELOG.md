@@ -2,7 +2,78 @@
 
 ## [Unreleased]
 
-**15 / 22 minor entries** <!-- pending-tally -->
+**17 / 25 minor entries** <!-- pending-tally -->
+
+### DEPLOY: feat/level-cost-tone · 20261009-080229Z
+
+The two Level cost totals no longer share one alarming red. Cheapest is neutral, since a level always costs something and
+Cheapest is the least it can cost. Profile is coloured against Cheapest: green up to 10% above it, red from 25% above it,
+neutral in between. Under the Profile total the same share is written out, as in "+57% more expensive" or "5% cheaper".
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On the home screen you now see at a glance whether your own setup is close to the cheapest one, instead of two red numbers
+that both look like a warning, and the percentage under Profile says exactly how far off it is.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost: Cheapest neutral, Profile coloured by how far it sits above Cheapest
+
+[PR #279](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/279)
+
+---
+
+### DEPLOY: fix/276-basic-attack-fallback · 20261009-073731Z
+
+The calculation now states that a levelled attack skill is always used, even when the basic attack would
+be cheaper on the invoice (Dave, October 9, 2026, #276). With the basic attack counted, the model never lets
+an attack skill save mesos. So a point in an attack skill can make a level more expensive, and the
+skill-point advice shows that as a negative saving. The numbers do not change.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A: only a comment in the code. The app computes exactly what it did before.
+
+**Score:** N/A
+
+#### Pull Request
+
+An attack skill with points is always used, a stated assumption of the model
+
+[PR #278](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/278)
+
+---
+
+### DEPLOY: fix/273-cheapest-above-profile · 20261009-071926Z
+
+Cheapest is never more expensive than your own setup. It still spends every skill point in the setup it
+builds, but when your own setup is cheaper on the invoice and fits your level, Cheapest is your own
+setup, with nothing to change or buy. Cheapest now also picks its mob on the invoice total rather than
+on EXP per meso, so a mob that is cheaper on the bill (Snail for a level-15 Warrior) is no longer passed
+over.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The Level cost card no longer tells a player to switch to a setup that costs more than the one they
+have: in 97 of 312 measured setups it did.
+
+**Score:** 2
+
+#### Pull Request
+
+Cheapest is never more expensive than your own setup
+
+[PR #277](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/277)
+
+---
 
 ### DEPLOY: app/271-defense-minimum-hit-note · 20261008-214028Z
 
