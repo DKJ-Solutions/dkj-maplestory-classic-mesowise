@@ -275,6 +275,15 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
   border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
 .level-cost-btn.level-cost-advised { --part: var(--accent); }
+/* Cheapest en Profile (Dave, 9 oktober 2026): de knop ligt over het hele vak en de tekst erbovenop, zodat het vraagteken achter het bedrag een
+   eigen knop kan zijn; een tik op de tekst gaat door naar de knop eronder. */
+.level-cost-part { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; min-height: 44px; padding: 0.625rem 0.5rem; }
+.level-cost-part > .level-cost-btn { position: absolute; inset: 0; height: 100%; min-height: 0; padding: 0; }
+.level-cost-part > :not(.level-cost-btn) { position: relative; pointer-events: none; }
+.level-cost-part:has(> .level-cost-btn:disabled) > :not(.level-cost-btn) { opacity: 0.5; }
+/* Het bedrag blijft in het midden; het vraagteken hangt erachter, zonder de rij hoger te maken. */
+.level-cost-amount { display: flex; align-items: center; }
+.level-cost-amount > .help-toggle { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin: 0 0 0 -0.375rem; pointer-events: auto; }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
 .level-cost-total { font-size: 1.0625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Cheapest is neutraal: een level kost altijd iets. Profile is groen vlak bij Cheapest, rood ver erboven, neutraal daartussen (Dave, 9 oktober 2026). */

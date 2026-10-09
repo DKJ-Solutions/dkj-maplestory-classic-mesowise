@@ -1623,6 +1623,22 @@ const WORN_HELP = (
   </>
 )
 
+/** Hoe de app op het bedrag van Cheapest onder Level cost komt: achter het vraagteken naast dat bedrag (Dave, 9 oktober 2026). */
+const CHEAPEST_TOTAL_WHY = (
+  <>
+    Wat dit level kost als je speelt zoals Cheapest het uitrekent: de potions en ammo die je van 0 tot 100% van het level verbruikt op de mob van Cheapest,
+    plus het deel van de prijs van de equip die Cheapest erbij koopt. Wat je al draagt is gratis. Tik op Cheapest voor de factuur.
+  </>
+)
+
+/** Hoe de app op het bedrag van Profile onder Level cost komt: achter het vraagteken naast dat bedrag (Dave, 9 oktober 2026). */
+const WORN_TOTAL_WHY = (
+  <>
+    Wat dit level kost met wat je nu draagt en de mob die je zelf koos: de potions en ammo die je van 0 tot 100% van het level verbruikt. Wat je al draagt
+    is gratis. Het percentage eronder is hoeveel duurder of goedkoper dat is dan Cheapest. Tik op Profile voor de factuur.
+  </>
+)
+
 /** De uitleg bij Level cost: Useable: achter het vraagteken naast de titel, zoals CHEAPEST_HELP bij Equip (Dave, 7 oktober 2026). */
 const USEABLE_HELP = (
   <>
@@ -3953,21 +3969,38 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
           const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
+          // Een vraagteken achter het bedrag zegt hoe de app erop komt (Dave, 9 oktober 2026). Een knop mag geen knop bevatten, dus de knop
+          // die de factuur opent ligt over het hele vak (.level-cost-part) en de tekst erbovenop; het vraagteken ligt daar weer boven.
           return (
-            <button
-              key={p.view}
-              type="button"
-              class={`btn level-cost-btn level-cost-${p.view}`}
-              disabled={p.invoice === null}
-              aria-haspopup="dialog"
-              aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
-              onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
-            >
-              <span class="level-cost-label">{p.label}</span>
-              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
-              {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
-            </button>
+            <div key={p.view} class={`level-cost-part level-cost-${p.view}`}>
+              <button
+                type="button"
+                class={`btn level-cost-btn level-cost-${p.view}`}
+                disabled={p.invoice === null}
+                aria-haspopup="dialog"
+                aria-expanded={ctx.open.equip === p.view}
+                aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
+                onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
+              />
+              <span class="level-cost-label" aria-hidden="true">
+                {p.label}
+              </span>
+              <span class="level-cost-amount">
+                <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`} aria-hidden="true">
+                  {text}
+                </strong>
+                {total !== null && (
+                  <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${p.label}`} title={p.label}>
+                    <p class="item-why">{p.view === 'advised' ? CHEAPEST_TOTAL_WHY : WORN_TOTAL_WHY}</p>
+                  </PopupButton>
+                )}
+              </span>
+              {shareText && (
+                <span class={`level-cost-share tone-${tone}`} aria-hidden="true">
+                  {shareText}
+                </span>
+              )}
+            </div>
           )
         })}
       </div>
