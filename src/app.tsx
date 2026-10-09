@@ -111,7 +111,8 @@ const QUESTION_ICON = (
 
 /**
  * "Read more" onderaan Cheapest, Profile en Difference op het beginscherm (Dave, 9 oktober 2026): zonder zag je niet dat je op die vakken
- * kunt tikken voor de factuur. Tekst in de knop zelf, geen eigen knop: de hele knop opent de factuur, en zijn aria-label zegt het al.
+ * kunt tikken voor de factuur. Het ziet eruit als een knop (Dave), maar is het zichtbare deel van de knop eromheen: een knop mag geen knop
+ * bevatten, de hele knop opent de factuur, en zijn aria-label zegt het al.
  */
 const READ_MORE = (
   <span class="level-cost-more" aria-hidden="true">

@@ -48,7 +48,8 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 
 - [~] The question mark behind the amount, then in the top-right corner of each part: dropped at Dave's look, reverted to main
 - [~] A chevron on the right of each part: replaced at Dave's next look by a "Read more" line
-- [x] Gwen + Cody: "Read more" as the last line of Cheapest, Profile and Difference, small, in the accent colour and underlined; text inside the existing button, not a button of its own
+- [~] "Read more" as small underlined accent text: Dave asked for "echt een knop"
+- [x] Gwen + Cody: "Read more" at the bottom of Cheapest, Profile and Difference, drawn as a filled accent button; it is the visible part of the existing button around it, since a button cannot hold a button, so the whole part still opens the bill
 
 ### TEST
 
@@ -58,7 +59,7 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 
 ### DEPLOY: app/level-cost-why
 
-On the Level cost card, Cheapest, Profile and Difference now each end on a "Read more" line, so you can see that
+On the Level cost card, Cheapest, Profile and Difference now each end on a "Read more" button, so you can see that
 tapping them opens the bill. It is missing only on a part that has nothing to open.
 
 **Score:** 2
@@ -71,4 +72,4 @@ On the home screen you can now see that the three Level cost parts open somethin
 
 #### Pull Request
 
-a "Read more" line on the Level cost parts shows they open the bill
+a "Read more" button on the Level cost parts shows they open the bill
