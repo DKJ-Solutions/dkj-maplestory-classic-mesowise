@@ -2,13 +2,13 @@
 // maakt: mob, potions, skillpunten en base AP. Zelf kiest de berekening geen equipment: de invoer is al de equip van Cheapest (cheapestEquip.ts, advisedEquipment), met wat die in de winkel kost buiten deze module (#192).
 // Puur, zonder UI-import; hergebruikt de adviezen van de app, het scherm toont alleen wat hier uitkomt.
 import { autoFillAp, autoFillPatch } from './autoFillAp'
-import { mobDraft } from './data/spots'
+import { huntedMob, mobDraft } from './data/spots'
 import type { Equipment } from './equipment'
 import type { Gender } from './gender'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
 import { applySkillPoint } from './levelUp'
-import { cheapestMob, mobAdvice } from './mobAdvice'
+import { eligibleMobs } from './mobAdvice'
 import { parseProfile, type Profile, type ProfileDraft } from './profile'
 import { pickPotion, potionAdvice, POTION_KINDS, resolvePotions, type PotionChoice, type PotionPair } from './potions'
 import { skillPointAdvice, skillsOf } from './skillPoint'
@@ -81,7 +81,7 @@ export function costOf(s: CheapestInput): number | null | undefined {
 
 /**
  * De goedkoopste gratis instellingen voor dit level, in rondes tot er niets meer verandert (hoogstens MAX_ROUNDS). Elke ronde:
- * de mob uit mobAdvice, de potions uit potionAdvice, de skillpunten die nog te zetten zijn (elk het punt van skillPointAdvice,
+ * de mob die op de factuur het goedkoopst is (eligibleMobs, #273), de potions uit potionAdvice, de skillpunten die nog te zetten zijn (elk het punt van skillPointAdvice,
  * dezelfde stap als "Punt zetten") en de base AP van Auto assign. Zonder profiel dat de app kan doorrekenen verandert er niets.
  */
 export function cheapestSettings(input: CheapestInput): CheapestResult {
@@ -100,24 +100,23 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
     const profile = profileOf(s)
     if (!profile) break
 
-    // De mob: zonder gekozen mob de goedkoopste voor dit level (#193); anders heeft mobAdvice de vergelijking al gedaan: de beste staat erin, of je blijft.
-    const mob = mobAdvice(s.drafts, profile)
-    if (mob.kind === 'none' && s.drafts.length === 0) {
-      const first = cheapestMob(profile)
-      const next = first === null ? undefined : mobDraft(first)
-      if (first !== null && next) {
-        mobs.push(NO_MOB, first)
-        s = { ...s, drafts: [next] }
-        changed = true
-      }
-    } else if (mob.kind === 'advice' && !mob.stay && mob.best !== null) {
-      const next = mobDraft(mob.best)
-      if (next) {
-        if (mobs.length === 0) mobs.push(mob.hunted)
-        mobs.push(mob.best)
-        s = { ...s, drafts: [next] }
-        changed = true
-      }
+    // De mob: de goedkoopste op de factuur onder de mobs die "Beste" mogen zijn (#273). mobAdvice rangschikt op EXP per meso zonder hele potions,
+    // en zo verloor Snail (1.350 op de factuur van een Warrior op level 15) van Blue Snail (1.500). Bij gelijke kosten blijft de mob die er stond.
+    // Een eigen plek zonder mob is een keuze van de speler: die blijft staan.
+    const current = mobName(s)
+    const free = s.drafts.length === 0 || huntedMob(s.drafts[0]) !== undefined
+    let pick: { name: string; draft: SpotDraft; cost: number } | null = null
+    for (const name of free ? eligibleMobs(profile) : []) {
+      const draft = name === current ? s.drafts[0] : mobDraft(name)
+      if (!draft) continue
+      const cost = costOf({ ...s, drafts: [draft] })
+      if (typeof cost === 'number' && (pick === null || cost < pick.cost || (cost === pick.cost && name === current))) pick = { name, draft, cost }
+    }
+    if (pick && pick.name !== current) {
+      if (mobs.length === 0) mobs.push(current)
+      mobs.push(pick.name)
+      s = { ...s, drafts: [pick.draft] }
+      changed = true
     }
 
     // De potions: per soort de goedkopere, als er een is.
@@ -135,12 +134,10 @@ export function cheapestSettings(input: CheapestInput): CheapestResult {
       }
     }
 
-    // De skillpunten: elk punt in de skill die het meeste bespaart, tot de pot leeg is. Een punt dat het level duurder maakt, blijft liggen (#273):
-    // Arrow Blow kost MP per schot, en een Bowman op level 10 betaalde daarvoor drie keer zoveel als met zijn gewone aanval.
+    // De skillpunten: elk punt in de skill die het meeste bespaart, tot de pot leeg is.
     for (let i = 0; i < MAX_POINTS; i++) {
       const advice = skillPointAdvice(s.drafts, profileOf(s))
       if (advice.kind !== 'advice' || advice.left <= 0 || advice.winner === null) break
-      if ((advice.choices.find((c) => c.id === advice.winner)?.saving ?? 0) < 0) break
       // Zonder gender: een punt raakt alleen de skillvelden en gender heeft op geen enkele skill invloed (net als bij "Punt zetten").
       const profileDraft = applySkillPoint(s.profileDraft, advice.winner, job)
       if (profileDraft === s.profileDraft) break
@@ -210,7 +207,7 @@ export function changesBetween(before: CheapestInput, after: CheapestInput): Cha
 }
 
 /** De namen van de HP- en MP-potion die een stand gebruikt. */
-function potionNames(s: CheapestInput): Record<'hp' | 'mp', string> {
+export function potionNames(s: CheapestInput): Record<'hp' | 'mp', string> {
   const p = usedPotions(s)
   return { hp: p.hp.name, mp: p.mp.name }
 }

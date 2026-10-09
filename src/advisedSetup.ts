@@ -3,13 +3,15 @@
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
-import { changesBetween, cheapestSettings, costOf, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
+import { changesBetween, cheapestSettings, costOf, potionNames, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { EQUIP_SLOTS, familyName, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
-import { FIRST_JOB_LEVEL, skillPoolOf } from './data/skillPoints'
+import { apBalance } from './levelUp'
+import { skillPoolUsage } from './skillPoint'
+import { FIRST_JOB_LEVEL, skillPoolOf, type SkillPool } from './data/skillPoints'
 import { isSkillKey, skillInfo } from './data/skills'
 import { NO_POTION_CHOICE } from './potions'
 import { DEFAULT_PROFILE, DRAFT_FIELDS, type ProfileDraft } from './profile'
@@ -90,8 +92,48 @@ export function cheapestFor(user: CheapestInput): AdvisedSetup {
   const own: CheapestInput = { ...user, equipment: wearable.equipment, profileDraft: wearable.profile }
   const after: CheapestInput = { ...own, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
   const costBefore = costOf(own)
+  // Cheapest is nooit duurder dan jouw eigen stand (Dave, 9 oktober 2026, #273): is die op de factuur goedkoper dan wat Cheapest opbouwde (met het deel
+  // van de winkelprijs van wat het koopt), en houdt hij zich aan je level, dan is jouw stand Cheapest. Cheapest zelf zet altijd al zijn skillpunten.
+  if (typeof costBefore === 'number' && legal(own) && costBefore < (invoiceTotal(after, setup) ?? Infinity)) return ownSetup(own, user, r, costBefore)
   const saving = typeof costBefore === 'number' && typeof r.costAfter === 'number' ? costBefore - r.costAfter : null
   return { ...setup, result: { ...r, changes: changesBetween(own, after), costBefore, saving } }
+}
+
+const POOLS: readonly SkillPool[] = ['beginner', 'job']
+
+/** Of een stand zich aan zijn level houdt: niet meer base AP en niet meer skillpunten dan het level geeft. */
+function legal(s: CheapestInput): boolean {
+  const ap = apBalance(s.profileDraft)
+  return ap !== null && ap >= 0 && POOLS.every((pool) => {
+    const { spent, cap } = skillPoolUsage(s.profileDraft, s.job, pool)
+    return cap !== null && spent <= cap
+  })
+}
+
+/** Het totaal van de factuur van Cheapest zoals Level cost hem toont: de stand na Overnemen, met de equip van Cheapest en het deel van de winkelprijs van wat het koopt. */
+function invoiceTotal(after: CheapestInput, setup: AdvisedSetup): number | undefined {
+  const inv = levelInvoice(after.drafts, profileOf({ ...after, equipment: setup.equipment }), setup.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price })))
+  return inv.kind === 'invoice' ? inv.total : undefined
+}
+
+/** Jouw eigen stand als de setup van Cheapest: niets te kopen, niets te veranderen, niets te besparen. */
+function ownSetup(own: CheapestInput, user: CheapestInput, r: CheapestResult, cost: number): AdvisedSetup {
+  const profile = profileOf(own)
+  const cheapest = {} as Record<EquipSlot, CheapestSlot>
+  for (const { slot } of EQUIP_SLOTS) {
+    const worn = wornName(user.equipment[slot])
+    const name = wornName(own.equipment[slot])
+    cheapest[slot] = { worn, cheapest: name, changed: name !== worn, price: null, option: null }
+  }
+  return {
+    result: { ...r, drafts: own.drafts, profileDraft: own.profileDraft, potionChoice: own.potionChoice, changes: [], potions: potionNames(own), costBefore: cost, costAfter: cost, saving: 0 },
+    equipment: own.equipment,
+    profile: own.profileDraft,
+    purchases: [],
+    shop: 0,
+    cheapest,
+    ammo: profile ? ammoOnInvoice(own.drafts, profile, own.job, own.equipment.claw) : null,
+  }
 }
 
 /**

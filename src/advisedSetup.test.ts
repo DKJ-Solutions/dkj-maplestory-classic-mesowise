@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { advisedSetup, cheapestFor, freshStart, MAX_EQUIP_ROUNDS } from './advisedSetup'
 import type { CheapestInput } from './cheapestSettings'
-import { changesBetween, profileOf } from './cheapestSettings'
+import { changesBetween, cheapestSettings, costOf, profileOf } from './cheapestSettings'
+import { eligibleMobs } from './mobAdvice'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
 import { defaultEquipment, familyName, isEmptyEntry, wornName } from './equipment'
@@ -306,11 +307,12 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
     expect(freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '19', hp: 'abc' } }).profileDraft.hp).toBe(DEFAULT_PROFILE.hp)
   })
 
-  it('geeft dezelfde setup, ook als het ingevulde profiel niet klopt', () => {
+  it('bouwt dezelfde setup, ook als het ingevulde profiel niet klopt', () => {
     for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
-      // Met dezelfde equip: alleen de skillpunten (te veel) en de mob verschillen, en die bouwt Cheapest zelf op.
-      const a = cheapestFor(filled(job))
-      const b = cheapestFor({ ...clean(job), equipment: filled(job).equipment })
+      // Met dezelfde equip: alleen de skillpunten (te veel) en de mob verschillen, en die bouwt Cheapest zelf op. Wat Cheapest bouwt, niet cheapestFor:
+      // is jouw eigen stand goedkoper, dan is die Cheapest (#273), en een Bowman met de skills van een Thief schiet het gewone schot.
+      const a = advisedSetup(freshStart(filled(job)))
+      const b = advisedSetup(freshStart({ ...clean(job), equipment: filled(job).equipment }))
       // Het ingevulde profiel zelf rekent niet (te veel skillpunten), Cheapest wel.
       if (job === 'thief') expect(profileOf(filled(job)), job).toBeNull()
       expect(profileOf({ ...filled(job), ...a.result }), job).not.toBeNull()
@@ -370,21 +372,71 @@ describe('cheapestFor: Cheapest is nooit duurder dan je eigen setup (#273)', () 
     return total(afterTake(user, s), s.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price })))
   }
 
-  it('zet geen skillpunt dat het level duurder maakt: een Bowman op level 10 laat Arrow Blow liggen (MP per schot)', () => {
+  const JOBS = ['thief', 'warrior', 'bowman', 'magician'] as const
+  const LEVELS = [10, 12, 15, 18, 20, 25]
+
+  it('is je eigen stand als die goedkoper is: een Bowman op level 10 zonder Arrow Blow (MP per schot) houdt zijn setup, zonder wijzigingen', () => {
     const user = player('bowman', 10)
+    // Wat Cheapest zelf bouwt, zet alle punten, ook in Arrow Blow (optie B, Dave, 9 oktober 2026), en is daarmee duurder dan de speler.
+    const built = advisedSetup(freshStart(user))
+    expect(Number(built.result.profileDraft.arrowBlow)).toBeGreaterThan(0)
+    expect(total(afterTake(user, built), built.purchases.map((p) => ({ ...p.horizon, name: familyName(p.slot, p.name), price: p.price })))).toBeGreaterThan(total(user)!)
     const s = cheapestFor(user)
     expect(s.result.profileDraft.arrowBlow).toBe('0')
-    expect(cheapestTotal(user)).toBeLessThanOrEqual(total(user)!)
+    expect(s.result.changes).toEqual([])
+    expect(s.purchases).toEqual([])
+    expect(s.result.saving).toBe(0)
+    expect(cheapestTotal(user)).toBe(total(user))
   })
 
-  it('geeft per job op de levels 10 tot 25 een totaal dat niet boven dat van de speler uitkomt', () => {
-    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const) {
-      for (const level of [10, 12, 15, 18, 20, 25]) {
+  it('geeft per job op de levels 10 tot 25 een totaal dat niet boven dat van de speler met het wapen van Cheapest uitkomt', () => {
+    for (const job of JOBS) {
+      for (const level of LEVELS) {
         const user = player(job, level)
         const own = total(user)
         if (own === null) continue
         expect(cheapestTotal(user), `${job} ${level}`).toBeLessThanOrEqual(own)
       }
     }
-  }, 20_000)
+  }, 30_000)
+
+  it('geeft ook geen hoger totaal dan een speler die zijn eigen equip houdt en niets koopt (Dave, 9 oktober 2026)', () => {
+    for (const job of JOBS) {
+      for (const level of LEVELS) {
+        for (const mob of ['Snail', 'Red Snail', 'Orange Mushroom']) {
+          const user = input(job, level, mob)
+          const own = total(user)
+          if (own === null) continue
+          expect(cheapestTotal(user), `${job} ${level} ${mob}`).toBeLessThanOrEqual(own)
+        }
+      }
+    }
+  }, 60_000)
+
+  it('neemt geen eigen stand over die zich niet aan je level houdt: meer base AP dan het level geeft telt niet als kandidaat', () => {
+    const user = player('bowman', 10)
+    const over: CheapestInput = { ...user, profileDraft: { ...user.profileDraft, dex: '200' } }
+    // Te veel DEX maakt het schot sterker en het level goedkoper, maar zo'n stand kun je op level 10 niet hebben.
+    expect(total(over)).toBeLessThan(total(user)!)
+    expect(cheapestFor(over).result.profileDraft).toEqual(advisedSetup(freshStart(over)).result.profileDraft)
+  })
+
+  it('kiest de mob die op de factuur het goedkoopst is: geen andere mob die "Beste" mag zijn maakt de uitkomst goedkoper', () => {
+    let checked = 0
+    for (const job of JOBS) {
+      for (const level of LEVELS) {
+        const start = freshStart(input(job, level, 'Snail'))
+        const r = cheapestSettings(start)
+        if (r.capped || typeof r.costAfter !== 'number') continue
+        const end: CheapestInput = { ...start, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
+        for (const mob of eligibleMobs(profileOf(end)!)) {
+          const cost = costOf({ ...end, drafts: [mobDraft(mob)!] })
+          if (typeof cost === 'number') expect(cost, `${job} ${level} ${mob}`).toBeGreaterThanOrEqual(r.costAfter)
+          checked++
+        }
+      }
+    }
+    // De sweep vergelijkt ook echt mobs, anders bewijst hij niets.
+    expect(checked).toBeGreaterThan(JOBS.length * LEVELS.length)
+  }, 30_000)
 })
