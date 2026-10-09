@@ -3814,9 +3814,11 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     toLevel20()
     const top = homeScreen().querySelector('.app-question')!.nextElementSibling!
     expect(top.tagName).toBe('SECTION')
-    expect(top.className).toBe('card level-cost')
-    expect(top.querySelector('.spot-head .spot-name')!.textContent).toBe('Level cost')
-    expect(top.querySelector('.spot-head .spot-name svg.card-icon')).not.toBeNull()
+    // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026); de schermlezer hoort nog "Level cost".
+    expect(top.parentElement!.tagName).toBe('MAIN')
+    expect(top.className).toBe('level-cost')
+    expect(top.getAttribute('aria-label')).toBe('Level cost')
+    expect(top.querySelector('.spot-head')).toBeNull()
     const buttons = top.querySelectorAll<HTMLButtonElement>('.level-cost-buttons > button')
     expect(buttons).toHaveLength(2)
     const [left, right] = Array.from(buttons)
@@ -3862,6 +3864,19 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(share.textContent).toBe(formatShare(profileShare(cheapest, profile)!))
     expect(share.className).toBe(`level-cost-share tone-${tone}`)
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
+  })
+
+  it('zet "Read more" onderaan Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
+    toLevel20()
+    const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
+    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
+    for (const b of buttons) {
+      // De laatste regel van de knop zelf, geen knop in een knop; de schermlezer hoort het aria-label van de knop.
+      const more = b.lastElementChild!
+      expect(more.className, b.getAttribute('aria-label')!).toBe('level-cost-more')
+      expect(more.textContent).toBe('Read more')
+      expect(more.getAttribute('aria-hidden')).toBe('true')
+    }
   })
 
   it('zegt in de knop van Profile waarom hij een vraagteken toont, niet onder de knoppen: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
