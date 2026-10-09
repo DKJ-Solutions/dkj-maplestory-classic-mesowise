@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**22 / 30 minor entries** <!-- pending-tally -->
+**23 / 31 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/difference-summary-color · 20261009-105209Z
+
+The Level cost section on the home screen no longer has a separate Difference card. Cheapest and Profile are now two cards, each showing what the level costs (without a minus sign) and, underneath, how much cheaper or more expensive it is than the other card, in green or red. Each card has a "Read more" button that opens the invoice behind the amount. Between the two cards sits one outlined "Difference" button that opens the table per kind of cost, whose columns now read Cheapest, Profile, Difference.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+A player sees at a glance, on the cards themselves, which setup is cheaper and by how much, in green or red.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost as two cards, Cheapest vs Profile, each with Read more and Difference
+
+[PR #285](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/285)
+
+---
 
 ### DEPLOY: app/profile-new-equip-row · 20261009-104414Z
 
