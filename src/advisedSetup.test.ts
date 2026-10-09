@@ -386,31 +386,37 @@ describe('cheapestFor: Cheapest is nooit duurder dan je eigen setup (#273)', () 
     expect(s.result.changes).toEqual([])
     expect(s.purchases).toEqual([])
     expect(s.result.saving).toBe(0)
+    expect(s.result.capped).toBe(false)
+    // Niets om te kopen in de Equip-popup, ook niet de startkleding in een leeg slot (Victor, 9 oktober 2026).
+    expect(Object.values(s.cheapest).filter((c) => c.changed)).toEqual([])
     expect(cheapestTotal(user)).toBe(total(user))
   })
 
-  it('geeft per job op de levels 10 tot 25 een totaal dat niet boven dat van de speler met het wapen van Cheapest uitkomt', () => {
-    for (const job of JOBS) {
-      for (const level of LEVELS) {
-        const user = player(job, level)
-        const own = total(user)
-        if (own === null) continue
-        expect(cheapestTotal(user), `${job} ${level}`).toBeLessThanOrEqual(own)
-      }
+  // Waar jouw stand wint, is Cheapest jouw stand en is "niet duurder" vanzelf waar; de sweeps tellen daarom ook hoe vaak de opgebouwde setup won.
+  const sweep = (users: [string, CheapestInput][]) => {
+    let compared = 0
+    let built = 0
+    for (const [label, user] of users) {
+      const own = total(user)
+      if (own === null) continue
+      expect(cheapestTotal(user), label).toBeLessThanOrEqual(own)
+      compared++
+      if (cheapestFor(user).result.changes.length > 0) built++
     }
+    return { compared, built }
+  }
+
+  it('geeft per job op de levels 10 tot 25 een totaal dat niet boven dat van de speler met het wapen van Cheapest uitkomt', () => {
+    const { compared, built } = sweep(JOBS.flatMap((job) => LEVELS.map((level): [string, CheapestInput] => [`${job} ${level}`, player(job, level)])))
+    expect(compared).toBeGreaterThan(JOBS.length * LEVELS.length / 2)
+    expect(built).toBeGreaterThan(0)
   }, 30_000)
 
   it('geeft ook geen hoger totaal dan een speler die zijn eigen equip houdt en niets koopt (Dave, 9 oktober 2026)', () => {
-    for (const job of JOBS) {
-      for (const level of LEVELS) {
-        for (const mob of ['Snail', 'Red Snail', 'Orange Mushroom']) {
-          const user = input(job, level, mob)
-          const own = total(user)
-          if (own === null) continue
-          expect(cheapestTotal(user), `${job} ${level} ${mob}`).toBeLessThanOrEqual(own)
-        }
-      }
-    }
+    const users = JOBS.flatMap((job) => LEVELS.flatMap((level) => ['Snail', 'Red Snail', 'Orange Mushroom'].map((mob): [string, CheapestInput] => [`${job} ${level} ${mob}`, input(job, level, mob)])))
+    const { compared, built } = sweep(users)
+    expect(compared).toBeGreaterThan(users.length / 2)
+    expect(built).toBeGreaterThan(0)
   }, 60_000)
 
   it('neemt geen eigen stand over die zich niet aan je level houdt: meer base AP dan het level geeft telt niet als kandidaat', () => {

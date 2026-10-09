@@ -94,7 +94,7 @@ export function cheapestFor(user: CheapestInput): AdvisedSetup {
   const costBefore = costOf(own)
   // Cheapest is nooit duurder dan jouw eigen stand (Dave, 9 oktober 2026, #273): is die op de factuur goedkoper dan wat Cheapest opbouwde (met het deel
   // van de winkelprijs van wat het koopt), en houdt hij zich aan je level, dan is jouw stand Cheapest. Cheapest zelf zet altijd al zijn skillpunten.
-  if (typeof costBefore === 'number' && legal(own) && costBefore < (invoiceTotal(after, setup) ?? Infinity)) return ownSetup(own, user, r, costBefore)
+  if (typeof costBefore === 'number' && legal(own) && costBefore < (invoiceTotal(after, setup) ?? Infinity)) return ownSetup(own, r, costBefore)
   const saving = typeof costBefore === 'number' && typeof r.costAfter === 'number' ? costBefore - r.costAfter : null
   return { ...setup, result: { ...r, changes: changesBetween(own, after), costBefore, saving } }
 }
@@ -117,16 +117,17 @@ function invoiceTotal(after: CheapestInput, setup: AdvisedSetup): number | undef
 }
 
 /** Jouw eigen stand als de setup van Cheapest: niets te kopen, niets te veranderen, niets te besparen. */
-function ownSetup(own: CheapestInput, user: CheapestInput, r: CheapestResult, cost: number): AdvisedSetup {
+function ownSetup(own: CheapestInput, r: CheapestResult, cost: number): AdvisedSetup {
   const profile = profileOf(own)
+  // Wat je draagt zoals de app het doorrekent (wearableSetup): je startkleding in een leeg slot is geen aankoop, net als in advisedSetup.
   const cheapest = {} as Record<EquipSlot, CheapestSlot>
   for (const { slot } of EQUIP_SLOTS) {
-    const worn = wornName(user.equipment[slot])
-    const name = wornName(own.equipment[slot])
-    cheapest[slot] = { worn, cheapest: name, changed: name !== worn, price: null, option: null }
+    const worn = wornName(own.equipment[slot])
+    cheapest[slot] = { worn, cheapest: worn, changed: false, price: null, option: null }
   }
   return {
-    result: { ...r, drafts: own.drafts, profileDraft: own.profileDraft, potionChoice: own.potionChoice, changes: [], potions: potionNames(own), costBefore: cost, costAfter: cost, saving: 0 },
+    // Rondes en `capped` horen bij de opgebouwde setup die het niet werd.
+    result: { ...r, drafts: own.drafts, profileDraft: own.profileDraft, potionChoice: own.potionChoice, changes: [], potions: potionNames(own), costBefore: cost, costAfter: cost, saving: 0, rounds: 0, capped: false },
     equipment: own.equipment,
     profile: own.profileDraft,
     purchases: [],
