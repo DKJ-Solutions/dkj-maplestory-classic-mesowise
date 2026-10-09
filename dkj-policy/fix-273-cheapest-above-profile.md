@@ -39,11 +39,39 @@
 
 ### PLAN
 
+#### Why this branch was reworked
+
+Cut by a sweep with option A (leave a point unspent when it raises the cost). Dave chose **option B** on
+#273 (October 9, 2026): Cheapest always spends every skill point, and the player's own setup is a
+candidate when it is cheaper. His correction on the same thread: "Cheapest total <= Profile total" holds
+in full, also for a player who keeps their own gear and buys nothing. The mob case (Cheapest ranked mobs
+on EXP per meso, not on the invoice) is fixed here too. The branch was resumed by `maikel-bwj` after the
+sweep released the issue for pickup, and `main` was merged in (no rebase) because the branch predated
+#271 and #275.
+
+#### What was found along the way
+
+The reason a point can raise the cost at all is that the attack model always fires a levelled attack skill
+(Arrow Blow at level 20 cost a level-19 Bowman 18,920 meso in Blue Potions). Filed as #276, out of scope
+here: option B makes the rule hold, and #276 is what would make Cheapest's own build cheaper.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Option A's line removed: Cheapest spends every skill point again (`src/cheapestSettings.ts`).
+- [x] `cheapestFor` takes the player's own setup as Cheapest when it is legal for the level (no more base
+  AP or skill points than the level gives) and cheaper than Cheapest's invoice total including the share
+  of the shop price (`src/advisedSetup.ts`).
+- [x] Cheapest picks its mob on the invoice total among the mobs that may be Best (`eligibleMobs`,
+  `src/mobAdvice.ts`); a self-made spot without a mob stays.
 
 ### TEST
+
+- [x] New #273 block in `src/advisedSetup.test.ts`: the Bowman level 10 case, Cheapest <= Profile for a
+  player with Cheapest's weapon and for a player who keeps their own gear (4 jobs x 6 levels x 3 mobs),
+  an illegal own setup is never adopted, and no eligible mob makes Cheapest's result cheaper.
+- [x] The #263 test now holds the build (`advisedSetup(freshStart(...))`), since `cheapestFor` may now
+  return the player's own setup.
+- [x] Full suite 1,980 passed; `scripts/lint/lint.ps1` clean.
 
 ### DEPLOY: fix/273-cheapest-above-profile
 
