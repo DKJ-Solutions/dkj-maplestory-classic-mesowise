@@ -3969,8 +3969,8 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
           const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
-          // Een vraagteken achter het bedrag zegt hoe de app erop komt (Dave, 9 oktober 2026). Een knop mag geen knop bevatten, dus de knop
-          // die de factuur opent ligt over het hele vak (.level-cost-part) en de tekst erbovenop; het vraagteken ligt daar weer boven.
+          // Een vraagteken rechtsboven in het vak zegt hoe de app op het bedrag komt (Dave, 9 oktober 2026). Een knop mag geen knop bevatten,
+          // dus de knop die de factuur opent ligt over het hele vak (.level-cost-part) en de tekst erbovenop; het vraagteken ligt daar weer boven.
           return (
             <div key={p.view} class={`level-cost-part level-cost-${p.view}`}>
               <button
@@ -3985,19 +3985,20 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               <span class="level-cost-label" aria-hidden="true">
                 {p.label}
               </span>
-              <span class="level-cost-amount">
-                <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`} aria-hidden="true">
-                  {text}
-                </strong>
-                {total !== null && (
-                  <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${p.label}`} title={p.label}>
-                    <p class="item-why">{p.view === 'advised' ? CHEAPEST_TOTAL_WHY : WORN_TOTAL_WHY}</p>
-                  </PopupButton>
-                )}
-              </span>
+              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`} aria-hidden="true">
+                {text}
+              </strong>
               {shareText && (
                 <span class={`level-cost-share tone-${tone}`} aria-hidden="true">
                   {shareText}
+                </span>
+              )}
+              {/* Rechtsboven in het vak (Dave, 9 oktober 2026), niet achter het bedrag. */}
+              {total !== null && (
+                <span class="level-cost-help">
+                  <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${p.label}`} title={p.label}>
+                    <p class="item-why">{p.view === 'advised' ? CHEAPEST_TOTAL_WHY : WORN_TOTAL_WHY}</p>
+                  </PopupButton>
                 </span>
               )}
             </div>

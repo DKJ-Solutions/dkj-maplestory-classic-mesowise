@@ -281,12 +281,12 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-part > .level-cost-btn { position: absolute; inset: 0; height: 100%; min-height: 0; padding: 0; }
 /* position: relative legt elk ander kind boven de knop; ook een nieuw kind heeft dat nodig. */
 .level-cost-part > :not(.level-cost-btn) { position: relative; pointer-events: none; }
-/* pointer-events erft, ook naar de popup van het vraagteken in de top layer: die moet weer te tikken zijn. */
-.level-cost-amount > dialog { pointer-events: auto; }
 .level-cost-part:has(> .level-cost-btn:disabled) > :not(.level-cost-btn) { opacity: 0.5; }
-/* Het bedrag blijft in het midden; het vraagteken hangt erachter, zonder de rij hoger te maken. */
-.level-cost-amount { display: flex; align-items: center; }
-.level-cost-amount > .help-toggle { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin: 0 0 0 -0.375rem; pointer-events: auto; }
+/* Het vraagteken rechtsboven in het vak (Dave, 9 oktober 2026): het tikvlak van 44px in de hoek, het icoon zo'n 10px van de rand.
+   pointer-events erft, ook naar de popup in de top layer: knop en popup moeten weer te tikken zijn. */
+.level-cost-part > .level-cost-help { position: absolute; top: 0; right: 0; }
+.level-cost-help > .help-toggle, .level-cost-help > dialog { pointer-events: auto; }
+.level-cost-help > .help-toggle { margin: 0; }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
 .level-cost-total { font-size: 1.0625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Cheapest is neutraal: een level kost altijd iets. Profile is groen vlak bij Cheapest, rood ver erboven, neutraal daartussen (Dave, 9 oktober 2026). */

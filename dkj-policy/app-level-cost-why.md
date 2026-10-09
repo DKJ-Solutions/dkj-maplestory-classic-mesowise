@@ -44,7 +44,7 @@ so the branch stops for Dave's look before the merge.
 
 ### CREATE
 
-- [x] Cody + Gwen: each Level cost part is a `.level-cost-part`, with the open button stretched across it and the text on top, so the question mark after the amount is a button of its own rather than a button inside a button
+- [x] Cody + Gwen: each Level cost part is a `.level-cost-part`, with the open button stretched across it and the text on top, so the question mark in its top-right corner is a button of its own rather than a button inside a button
 - [x] Cody: short explanations behind the question mark, CHEAPEST_TOTAL_WHY and WORN_TOTAL_WHY
 
 ### TEST
@@ -52,11 +52,12 @@ so the branch stops for Dave's look before the merge.
 - [x] Tycho: the existing Level cost tests follow the new structure; a new test checks the question mark sits right after the amount, outside the open button, and opens its explanation without opening the bill
 - [x] `npm run lint` and the app suite green (333 tests)
 - [x] Victor and Edith read the diff: the help popup inherited `pointer-events: none` from the part (fixed in the CSS), and the Profile explanation no longer promises a percentage that is not always there
-- [ ] Dave looks at it at phone width
+- [x] Dave looked: the question mark right after the amount did not look good; it now sits in the top-right corner of the part
+- [ ] Dave looks at the corner version at phone width
 
 ### DEPLOY: app/level-cost-why
 
-On the Level cost card a question mark now sits right after the Cheapest and Profile amounts. Tapping it explains in a
+On the Level cost card the Cheapest and Profile parts now each carry a question mark in their top-right corner. Tapping it explains in a
 short popup how that amount is calculated: the potions and ammo for 0 to 100% of the level, plus, for Cheapest, part of
 the price of the equipment it buys. For Profile it also explains the percentage underneath. Tapping anywhere else on the
 part still opens the bill, as before.

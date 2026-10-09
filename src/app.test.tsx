@@ -3833,14 +3833,13 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(left.closest('.level-cost-part')!.querySelector('.level-cost-share')).toBeNull()
   })
 
-  it('zet een vraagteken achter het bedrag van Cheapest en Profile, dat uitlegt hoe de app erop komt, los van de knop die de factuur opent (Dave, 9 oktober 2026)', () => {
+  it('zet rechtsboven in het vak van Cheapest en Profile een vraagteken dat uitlegt hoe de app op het bedrag komt, los van de knop die de factuur opent (Dave, 9 oktober 2026)', () => {
     toLevel20()
     const parts = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > .level-cost-part'))
     for (const [part, label] of [[parts[0], 'Cheapest'], [parts[1], 'Profile']] as const) {
-      const help = part.querySelector<HTMLButtonElement>('.level-cost-amount > button.help-toggle')!
+      const help = part.querySelector<HTMLButtonElement>(':scope > .level-cost-help > button.help-toggle')!
       expect(help.getAttribute('aria-label'), label).toBe(`Uitleg bij ${label}`)
-      // Direct achter het bedrag, en geen knop in een knop.
-      expect(help.previousElementSibling!.className, label).toMatch(/^level-cost-total/)
+      // In een eigen hoek van het vak, en geen knop in een knop.
       expect(help.closest('button.level-cost-btn'), label).toBeNull()
       fireEvent.click(help)
       const dialog = part.querySelector<HTMLElement>('dialog')!
