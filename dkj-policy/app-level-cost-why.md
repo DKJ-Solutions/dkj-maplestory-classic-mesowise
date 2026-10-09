@@ -53,6 +53,8 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 
 - [x] Gwen: Read more flat, without its shadow, with more padding and a smaller border radius (Dave: "maak de read more knop meer flat", "en geef de knop meer padding", "en minder border radius")
 - [x] Gwen: more padding inside the parts, 1.25rem by 1rem (Dave: "en geef de kaart ook meer padding")
+- [x] Cody: Cheapest, Profile and Difference in their own section directly in main under the app question, without the card and its "Level cost" heading (Dave: "zet de level-cost buttons direct in de main onder app-question in hun eigen section", then "Kaart helemaal weg"); the section keeps "Level cost" as its aria-label, and the meso icon of the heading went with it
+- [x] Gwen: the app question full width and without its border (Dave: "geef de app-question een width van 100%. haal de border weg")
 - [x] Gwen: the amount larger (1.5rem) and centred in the part, with the label at the top and Read more at the bottom (Dave: "maak de fontsize van de x mesos groter en geef het meer ruimte")
 
 ### TEST
@@ -63,8 +65,10 @@ Maak dat duidelijker". A chevron followed; then Dave: "probeer eens een lees mee
 
 ### DEPLOY: app/level-cost-why
 
-On the Level cost card, Cheapest, Profile and Difference now each end on a "Read more" button, so you can see that
-tapping them opens the bill. It is missing only on a part that has nothing to open.
+The home screen is plainer. Cheapest, Profile and Difference no longer sit inside a "Level cost" card: they stand on their
+own directly under the app question, which now runs the full width without a border. Each part ends on a "Read more"
+button, so you can see that tapping it opens the bill; it is missing only on a part that has nothing to open. The amount
+in Cheapest and Profile is larger and sits in the middle of its part.
 
 **Score:** 2
 
@@ -76,4 +80,4 @@ On the home screen you can now see that the three Level cost parts open somethin
 
 #### Pull Request
 
-a "Read more" button on the Level cost parts shows they open the bill
+Level cost without its card, with a "Read more" button on each part that opens the bill

@@ -423,30 +423,6 @@ function CardIcon(props: { name: keyof typeof ICON_PATHS }) {
   )
 }
 
-/**
- * De meso: een gouden munt met een esdoornblad, het icoon in de kop van Level cost (Dave, 8 oktober 2026). Gevuld in plaats van lijnen zoals
- * de andere kaarticonen, zodat hij als munt leest: een goudverloop met een donkere rand, een binnenring, het blad in het midden en een
- * lichtrandje linksboven. Een eigen tekening van een gewoon esdoornblad; Nexons meso-sprite en logo blijven buiten de repo (#14).
- */
-const MesoIcon = () => (
-  <svg class="card-icon level-cost-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <defs>
-      <linearGradient id="meso-gold" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#fde68a" />
-        <stop offset="0.55" stop-color="#f59e0b" />
-        <stop offset="1" stop-color="#b45309" />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="11" fill="url(#meso-gold)" stroke="#92400e" stroke-width="1" />
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="#92400e" stroke-opacity="0.45" stroke-width="0.8" />
-    <path
-      fill="#9a3412"
-      d="M12 5.6l1.1 2.2 1.6-.6-.4 2.6 1.9-1.2.5 1.3 1.6-.3-.7 2 .9.5-2.6 2.1.3 1.1-3.8-.5V18h-.8v-3.2l-3.8.5.3-1.1-2.6-2.1.9-.5-.7-2 1.6.3.5-1.3 1.9 1.2-.4-2.6 1.6.6Z"
-    />
-    <path d="M5.4 8.2a7.6 7.6 0 0 1 4.4-3.9" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.2" stroke-linecap="round" />
-  </svg>
-)
-
 /** Het oog: het icoon in de knoppen waarmee je een kaart of een deel ervan bekijkt (ViewButtons). */
 const EyeIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -3933,7 +3909,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
- * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen onder elkaar (Dave, 8 oktober 2026): boven wat het level kost met de setup van Cheapest, onder met wat je
+ * Onder de vraag van de app twee knoppen onder elkaar (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section zonder kaart): boven wat het level kost met de setup van Cheapest, onder met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
  * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, en onder de knoppen waarom (#262).
  * Daaronder een derde rij (Dave, 8 oktober 2026): het verschil tussen de twee, als één getal met zijn aandeel in wat Profile kost; per soort kost in een popup.
@@ -3952,13 +3928,9 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
   // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
   const share = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileShare(props.advised.total, props.wearing.total) : null
   return (
-    <section class="card level-cost">
-      <CardHead>
-        <span class="spot-name with-icon">
-          <MesoIcon />
-          Level cost
-        </span>
-      </CardHead>
+    // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026): Cheapest, Profile en Difference staan los onder
+    // de vraag van de app. De naam die de kop gaf, krijgt de schermlezer van aria-label.
+    <section class="level-cost" aria-label="Level cost">
       <div class="level-cost-buttons">
         {parts.map((p) => {
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
