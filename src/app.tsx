@@ -33,7 +33,7 @@ import { isComputed, isJobStored, jobChoices, jobLabel, loadJob, notComputedText
 import { statBreakdown, statFormulaSource, type StatBreakdown } from './expectedStats'
 import { ABILITY_KEYS, baseApSpent, draftStatTotal, EXTRA_KEY, loadProfile, totalAttack, totalMagicAttack, parseProfile, profileFieldsFor, saveProfile, statFieldsFor, type Profile, type ProfileDraft, type ProfileField } from './profile'
 import { potionFactorOf, statWindowRange, suggestMonsters, type MonsterSuggestion } from './suggest'
-import { formatShare, profileShare, profileTone } from './profileTone'
+import { formatShare, profileShare } from './profileTone'
 import { ammoLabel, levelInvoice, SHOP_LABEL, type AmmoWhy, type InvoiceLine, type LevelInvoice, type PotionWhy, type ShopWhy } from './levelInvoice'
 import { databasePotion, fixPotion, loadPotionChoice, pickPotion, POTION_KINDS, potionAdvice as advisePotions, potionFields, potionInfo, potionsOf, potionStat, resolvePotions, savePotionChoice, type PotionAdvice, type PotionBar, type PotionChoice, type PotionKind, type PotionPair, type PotionStat } from './potions'
 
@@ -107,17 +107,6 @@ const QUESTION_ICON = (
     <circle cx="12" cy="12" r="10" />
     <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.01" />
   </svg>
-)
-
-/**
- * "Read more" onderaan Cheapest, Profile en Difference op het beginscherm (Dave, 9 oktober 2026): zonder zag je niet dat je op die vakken
- * kunt tikken voor de factuur. Het ziet eruit als een knop (Dave), maar is het zichtbare deel van de knop eromheen: een knop mag geen knop
- * bevatten, de hele knop opent de factuur, en zijn aria-label zegt het al.
- */
-const READ_MORE = (
-  <span class="level-cost-more" aria-hidden="true">
-    Read more
-  </span>
 )
 
 /** Het potlood: corrigeren in Profile (.equip-edit), en in de tabel van Equip de knop die een slot opent (Dave, 8 oktober 2026). */
@@ -3886,12 +3875,13 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   const paid = (col: number, key: string) => (cols[col] ? cols[col]!.lines.filter((l) => invoiceRowKey(l) === key).reduce((sum, l) => sum + l.meso, 0) : null)
   return ig || ch ? (
     <>
+      {/* Kolommen in de volgorde van de vakken op het beginscherm: Cheapest, Profile, Difference (Dave, 9 oktober 2026). */}
       <table class="invoice invoice-difference">
         <thead>
           <tr>
             <td />
-            <th scope="col">Profile</th>
             <th scope="col">Cheapest</th>
+            <th scope="col">Profile</th>
             <th scope="col">Difference</th>
           </tr>
         </thead>
@@ -3902,8 +3892,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
             return (
               <tr key={key}>
                 <th scope="row">{name(key)}</th>
-                <td class="invoice-meso">{cost(a)}</td>
                 <td class="invoice-meso">{cost(b)}</td>
+                <td class="invoice-meso">{cost(a)}</td>
                 <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
               </tr>
             )
@@ -3912,8 +3902,8 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
         <tfoot>
           <tr>
             <th scope="row">Total</th>
-            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
             <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
+            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
             <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
           </tr>
         </tfoot>
@@ -3967,98 +3957,92 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
- * Onder de vraag van de app twee knoppen onder elkaar (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section zonder kaart): boven wat het level kost met de setup van Cheapest, onder met wat je
- * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
- * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, met in de knop zelf waarom (#262; Dave, 9 oktober 2026: niet eronder).
- * Daaronder een derde rij (Dave, 8 oktober 2026): het verschil tussen de twee, als één getal met zijn aandeel in wat Profile kost; per soort kost in een popup.
+ * Onder de vraag van de app twee kaarten onder elkaar met de knop Difference ertussen (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section
+ * zonder kaart, en sinds diezelfde dag zonder derde vak Difference): boven wat het level kost met de setup van Cheapest, onder met wat je
+ * in game draagt, elk met het totaal van zijn factuur in Level cost en eronder hoeveel goedkoper of duurder het is dan de andere kaart.
+ * Elke kaart heeft een knop "Read more" (Dave, 9 oktober 2026): dezelfde popup als Cheapest en Profile op de Equip-kaart (hoe het bedrag tot
+ * stand komt). De knop "Difference" staat één keer, in een rij tussen de twee kaarten (Dave): de tabel per soort kost tussen Cheapest en Profile.
+ * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, met in de kaart zelf waarom (#262; Dave,
+ * 9 oktober 2026: niet eronder), en zonder factuur aan beide kanten geen vergelijking en geen Difference.
  */
 function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice; job: Job }) {
   const ctx = useContext(CardViewContext)
   const problem = useContext(ProfileProblem)
+  const [diffOpen, setDiffOpen] = useState(false)
+  const diffButton = useRef<HTMLButtonElement>(null)
   const parts = [
-    { view: 'advised', label: 'Cheapest', invoice: props.advised },
-    { view: 'worn', label: 'Profile', invoice: props.wearing },
+    { view: 'advised', label: 'Cheapest', invoice: props.advised, other: props.wearing },
+    { view: 'worn', label: 'Profile', invoice: props.wearing, other: props.advised },
   ] as const
-  // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
-  const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
-  // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
-  const share = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileShare(props.advised.total, props.wearing.total) : null
+  const cheapest = props.advised?.kind === 'invoice' ? props.advised : null
+  const wearing = props.wearing.kind === 'invoice' ? props.wearing : null
+  // Valt een van de twee facturen weg, dan gaat de popup van Difference dicht en niet vanzelf weer open als hij terugkomt.
+  const comparable = cheapest !== null && wearing !== null
+  useEffect(() => {
+    if (!comparable) setDiffOpen(false)
+  }, [comparable])
+  const closeDiff = () => {
+    setDiffOpen(false)
+    requestAnimationFrame(() => diffButton.current?.focus())
+  }
+  const cards = parts.map((p) => {
+    const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
+    const other = p.other?.kind === 'invoice' ? p.other.total : null
+    // Zonder minteken (Dave, 9 oktober 2026): de kaart zegt wat het level kost, geen afschrijving; op de factuur blijft het min.
+    const text = total === null ? '?' : total === 0 ? '0 meso' : `${nfInt.format(total)} meso`
+    // Een vraagteken zonder reden laat je raden (#262); de reden staat in de kaart zelf, niet eronder (Dave, 9 oktober 2026).
+    const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
+    // Hoeveel goedkoper of duurder dan de andere kaart, als deel van de andere (Dave, 9 oktober 2026): groen als goedkoper, rood als duurder.
+    // Het bedrag zelf blijft neutraal.
+    const share = total !== null && other !== null ? profileShare(other, total) : null
+    const shareText = share === null ? null : formatShare(share)
+    // De kleur volgt de afgeronde tekst: wat als "Same cost" leest, krijgt geen groen of rood.
+    const tone = share === null || shareText === 'Same cost' ? '' : share < 0 ? ' gain' : ' cost'
+    return (
+      <div key={p.view} class={`level-cost-card level-cost-${p.view}`} role="group" aria-label={p.label}>
+        <span class="level-cost-label">{p.label}</span>
+        <strong class="level-cost-total">{text}</strong>
+        {shareText && <span class={`level-cost-share${tone}`}>{shareText}</span>}
+        {reason && <span class="level-cost-reason">{reason}</span>}
+        <button
+          type="button"
+          class="level-cost-more"
+          disabled={p.invoice === null}
+          aria-haspopup="dialog"
+          aria-expanded={ctx.open.equip === p.view}
+          aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}. Read more`}
+          onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
+        >
+          Read more
+        </button>
+      </div>
+    )
+  })
   return (
-    // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026): Cheapest, Profile en Difference staan los onder
-    // de vraag van de app. De naam die de kop gaf, krijgt de schermlezer van aria-label.
+    // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026): Cheapest en Profile staan los onder de vraag van de
+    // app. De naam die de kop gaf, krijgt de schermlezer van aria-label.
     <section class="level-cost" aria-label="Level cost">
       <div class="level-cost-buttons">
-        {parts.map((p) => {
-          const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
-          const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
-          // Een vraagteken zonder reden laat je raden (#262); de reden staat in de knop zelf, niet eronder (Dave, 9 oktober 2026).
-          const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
-          const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
-          return (
-            <button
-              key={p.view}
-              type="button"
-              class={`btn level-cost-btn level-cost-${p.view}`}
-              disabled={p.invoice === null}
-              aria-haspopup="dialog"
-              aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}`}
-              onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
-            >
-              <span class="level-cost-label">{p.label}</span>
-              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
-              {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
-              {reason && <span class="level-cost-reason">{reason}</span>}
-              {p.invoice !== null && READ_MORE}
+        {cards[0]}
+        {/* Tussen de twee kaarten een rij met alleen de knop die het verschil per soort kost toont (Dave, 9 oktober 2026; eerst met "VS" ervoor,
+            dat is weer weg). Zonder factuur aan beide kanten valt er niets te vergelijken en blijft de rij leeg. */}
+        <div class="level-cost-compare-row">
+          {cheapest && wearing && (
+            <button ref={diffButton} type="button" class="level-cost-more level-cost-compare" aria-haspopup="dialog" aria-expanded={diffOpen} aria-label="Difference between Cheapest and Profile" onClick={() => setDiffOpen(true)}>
+              Difference
             </button>
-          )
-        })}
-      </div>
-      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er een vraagteken op de knop. */}
-      {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
-    </section>
-  )
-}
-
-/**
- * De derde rij van Level cost onder de vraag (Dave, 8 oktober 2026): wat Profile meer kost dan Cheapest, in meso en als deel van wat Profile
- * kost; is jouw setup goedkoper, dan staat dat er zo. Een tik opent per soort kost waar dat verschil zit, in een eigen popup, zodat het
- * beginscherm zonder scrollen past (dezelfde tabel als Difference in Level cost).
- */
-function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'invoice' }>; wearing: Extract<LevelInvoice, { kind: 'invoice' }>; job: Job }) {
-  const [open, setOpen] = useState(false)
-  const button = useRef<HTMLButtonElement>(null)
-  const d = props.wearing.total - props.cheapest.total
-  const share = props.wearing.total > 0 ? ` (${nfInt.format(Math.round((Math.abs(d) / props.wearing.total) * 100))}%)` : ''
-  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${share}`
-  const close = () => {
-    setOpen(false)
-    requestAnimationFrame(() => button.current?.focus())
-  }
-  return (
-    <div class="level-cost-diff">
-      <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Difference: ${summary}`} onClick={() => setOpen(true)}>
-        <span class="level-cost-label">Difference</span>
-        <span class="level-cost-diff-summary">
-          {d === 0 ? (
-            summary
-          ) : (
-            <>
-              {d > 0 ? 'Cheapest' : 'Profile'} saves <strong class="gain">{nfInt.format(Math.abs(d))} meso</strong>
-              {share}
-            </>
           )}
-        </span>
-        {READ_MORE}
-      </button>
-      {open && (
-        <StatDialog title="Difference" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>
+        </div>
+        {cards[1]}
+      </div>
+      {diffOpen && cheapest && wearing && (
+        <StatDialog title="Difference" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={closeDiff}>
           <div class="report-body">
-            <DifferenceTable inGame={props.wearing} cheapest={props.cheapest} job={props.job} />
+            <DifferenceTable inGame={wearing} cheapest={cheapest} job={props.job} />
           </div>
         </StatDialog>
       )}
-    </div>
+    </section>
   )
 }
 

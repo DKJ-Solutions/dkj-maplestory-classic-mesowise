@@ -1,45 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { CLOSE_SHARE, FAR_SHARE, formatShare, profileShare, profileTone } from './profileTone'
-
-describe('profileTone', () => {
-  it('Profile even duur of goedkoper dan Cheapest is close', () => {
-    expect(profileTone(10_000, 10_000)).toBe('close')
-    expect(profileTone(10_000, 9_000)).toBe('close')
-    expect(profileTone(0, 0)).toBe('close')
-  })
-
-  it('tot en met 10% boven Cheapest is close', () => {
-    expect(CLOSE_SHARE).toBe(0.1)
-    expect(profileTone(10_000, 11_000)).toBe('close')
-    expect(profileTone(10_000, 11_001)).toBe('between')
-  })
-
-  it('vanaf 25% boven Cheapest is far', () => {
-    expect(FAR_SHARE).toBe(0.25)
-    expect(profileTone(10_000, 12_499)).toBe('between')
-    expect(profileTone(10_000, 12_500)).toBe('far')
-    expect(profileTone(10_000, 40_000)).toBe('far')
-  })
-
-  it('kost Cheapest niets, dan is elke meso erboven far', () => {
-    expect(profileTone(0, 1)).toBe('far')
-  })
-})
+import { formatShare, profileShare } from './profileTone'
 
 describe('profileShare', () => {
-  it('is het verschil als deel van Cheapest', () => {
+  it('is het verschil als deel van de base: van Profile tegen Cheapest, en omgekeerd van Cheapest tegen Profile', () => {
     expect(profileShare(10_000, 11_800)).toBeCloseTo(0.18)
     expect(profileShare(10_000, 9_500)).toBeCloseTo(-0.05)
     expect(profileShare(10_000, 10_000)).toBe(0)
+    expect(profileShare(11_800, 10_000)).toBeCloseTo(-1_800 / 11_800)
   })
 
-  it('heeft geen deel als Cheapest niets kost', () => {
+  it('heeft geen deel als de base niets kost', () => {
     expect(profileShare(0, 500)).toBeNull()
   })
 })
 
 describe('formatShare', () => {
-  it('zegt in woorden of Profile duurder of goedkoper is, afgerond op hele procenten', () => {
+  it('zegt in woorden of een kaart duurder of goedkoper is dan de andere, afgerond op hele procenten', () => {
     expect(formatShare(0.57)).toBe('+57% more expensive')
     expect(formatShare(-0.05)).toBe('5% cheaper')
     expect(formatShare(0.004)).toBe('Same cost')

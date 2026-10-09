@@ -1,37 +1,20 @@
 /**
- * Hoe het totaal van Profile in Level cost gekleurd wordt (Dave, 9 oktober 2026). Cheapest is neutraal: een level kost altijd iets, en
- * Cheapest is wat het minimaal kost. Profile zegt wél iets, gemeten aan Cheapest: vlak erbij is groen, ver erboven is rood, en daartussen
- * neutraal.
+ * Hoeveel een kaart in Level cost afwijkt van de andere, voor de regel onder het bedrag van Cheapest en Profile (Dave, 9 oktober 2026):
+ * groen als goedkoper, rood als duurder; het bedrag zelf blijft neutraal. Tot 9 oktober 2026 kleurde dit bestand ook het totaal van
+ * Profile (groen vlak bij Cheapest, rood ver erboven); dat is weg (Dave).
  */
-export type ProfileTone = 'close' | 'between' | 'far'
-
-/** Tot zoveel boven Cheapest is Profile "in de buurt" (groen). */
-export const CLOSE_SHARE = 0.1
-/** Vanaf zoveel boven Cheapest is Profile "ver erboven" (rood). */
-export const FAR_SHARE = 0.25
 
 /**
- * Hoeveel Profile meer kost dan Cheapest, als deel van Cheapest (0,18 is 18% duurder; negatief is goedkoper). Kost Cheapest niets,
- * dan is er geen deel van te nemen: null.
+ * Hoeveel `value` meer kost dan `base`, als deel van `base` (0,18 is 18% duurder; negatief is goedkoper). Kost `base` niets, dan is er
+ * geen deel van te nemen: null. Profile gebruikt Cheapest als base, Cheapest gebruikt Profile: elke kaart wordt gemeten aan de andere.
  */
-export function profileShare(cheapest: number, profile: number): number | null {
-  return cheapest > 0 ? (profile - cheapest) / cheapest : null
+export function profileShare(base: number, value: number): number | null {
+  return base > 0 ? (value - base) / base : null
 }
 
 /**
- * De kleur van Profile naast Cheapest, op het deel dat Profile meer kost dan Cheapest. Profile even duur of goedkoper is altijd 'close';
- * kost Cheapest niets, dan is elke meso erboven 'far'.
- */
-export function profileTone(cheapest: number, profile: number): ProfileTone {
-  if (profile <= cheapest) return 'close'
-  const over = profileShare(cheapest, profile)
-  if (over === null) return 'far'
-  return over <= CLOSE_SHARE ? 'close' : over < FAR_SHARE ? 'between' : 'far'
-}
-
-/**
- * Het deel als tekst op de knop van Profile, afgerond op hele procenten (Dave, 9 oktober 2026): "+57% more expensive", "5% cheaper"
- * (zonder min: "−5% cheaper" zegt het twee keer) of "Same cost".
+ * Het deel als tekst onder het bedrag van een kaart in Level cost, afgerond op hele procenten (Dave, 9 oktober 2026):
+ * "+57% more expensive", "5% cheaper" (zonder min: "−5% cheaper" zegt het twee keer) of "Same cost".
  */
 export function formatShare(share: number): string {
   const pct = Math.round(share * 100)
