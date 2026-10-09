@@ -3836,18 +3836,24 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     toLevel20()
     const top = homeScreen().querySelector<HTMLElement>('section.level-cost')!
     const row = top.querySelector<HTMLElement>('.level-cost-diff')!
-    expect(row.previousElementSibling!.className).toBe('level-cost-buttons')
+    // Het derde vak in hetzelfde grid als Cheapest en Profile, zodat de drie vakken exact gelijk zijn (Dave, 9 oktober 2026).
+    expect(row.parentElement!.className).toBe('level-cost-buttons')
+    expect(row.previousElementSibling!.matches('.level-cost-worn')).toBe(true)
     const button = row.querySelector<HTMLButtonElement>('button')!
     expect(button.querySelector('.level-cost-label')!.textContent).toBe('Difference')
     const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
     const d = profile - cheapest
     const pct = `${Math.round((Math.abs(d) / profile) * 100)}%`
-    const summary = button.querySelector('.level-cost-diff-summary')!.textContent
-    // Op de kaart alleen het bedrag (Dave, 9 oktober 2026); de aria-label zegt wie bespaart.
-    expect(summary).toBe(d === 0 ? 'No difference' : `${Math.abs(d).toLocaleString('nl-NL')} meso (${pct})`)
+    // Op de kaart alleen het bedrag, met het percentage klein eronder zoals bij Profile (Dave, 9 oktober 2026); de aria-label zegt wie bespaart.
+    if (d === 0) expect(button.querySelector('.level-cost-total')!.textContent).toBe('0 meso')
+    else {
+      expect(button.querySelector('.level-cost-total')!.textContent).toBe(`${Math.abs(d).toLocaleString('nl-NL')} meso`)
+      expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(pct)
+      expect(button.querySelector('.level-cost-share')!.className).toBe(`level-cost-share ${d > 0 ? 'cost' : 'gain'}`)
+    }
     expect(button.getAttribute('aria-label')).toBe(`Difference: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso (${pct})` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso (${pct})` : 'No difference'}`)
     // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
-    if (d !== 0) expect(button.querySelector('.level-cost-diff-summary strong')!.className).toBe(d > 0 ? 'cost' : 'gain')
+    if (d !== 0) expect(button.querySelector('.level-cost-total')!.className).toBe(`level-cost-total ${d > 0 ? 'cost' : 'gain'}`)
     // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
     expect(row.querySelector('table')).toBeNull()
     fireEvent.click(button)

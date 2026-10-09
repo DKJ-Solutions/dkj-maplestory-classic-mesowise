@@ -43,7 +43,9 @@
 
 - [x] Cody: the Difference summary colours its amount with `.cost` (red) when Cheapest saves, `.gain` (green) when Profile does
 - [x] Cody: the card shows only the amount and share, without "Cheapest saves"; the aria-label keeps the full sentence
-- [x] Tycho: the existing Difference-row test asserts that class, the shorter text and the aria-label
+- [x] Cody: the percentage sits small under the amount, as on Profile
+- [x] Gwen: Difference moves into the same grid as Cheapest and Profile (equal height) and uses the same total/share classes; "No difference" becomes "0 meso"
+- [x] Tycho: the existing Difference-row test asserts the colour, the amount and share, the grid placement and the aria-label
 
 ### TEST
 
@@ -52,7 +54,7 @@
 
 ### DEPLOY: app/difference-summary-color
 
-The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount and its share; the colour says which setup is cheaper.
+The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount, with its share small underneath, and the colour says which setup is cheaper. All three Level cost cards (Cheapest, Profile, Difference) now have the same height and the same layout.
 
 **Score:** 2
 

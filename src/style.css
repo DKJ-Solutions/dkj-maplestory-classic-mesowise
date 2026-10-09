@@ -269,7 +269,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
    doen ze niet mee voor tab en schermlezer, terwijl een geopende popup (een modale <dialog> in de top layer) gewoon zichtbaar blijft. */
 main > .card:not(.level-cost), main > .stats-group { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; overflow: hidden; visibility: hidden; }
 main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: visible; }
-/* De twee knoppen onder elkaar, elk over de volle breedte (Dave, 8 oktober 2026). */
+/* De drie vakken onder elkaar, elk over de volle breedte en even hoog (Dave, 8 en 9 oktober 2026): Cheapest, Profile en Difference. */
 .level-cost-buttons { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 0.625rem; }
 .level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 1.25rem 1rem;
   border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
@@ -294,12 +294,12 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-share { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); }
 /* Waarom een knop een vraagteken toont (#262): in de knop zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */
 .level-cost-reason { font-size: 0.8125rem; font-weight: 400; line-height: 1.35; color: var(--muted); text-align: center; }
-/* De derde rij (Dave, 8 oktober 2026): het verschil tussen Cheapest en Profile, een vak zoals de twee erboven; een tik opent de tabel per
-   soort kost in een popup. */
+/* Het derde vak (Dave, 8 oktober 2026): het verschil tussen Cheapest en Profile; een tik opent de tabel per soort kost in een popup. Sinds
+   9 oktober 2026 (Dave) in hetzelfde grid als de twee erboven, dus even hoog en verder exact hetzelfde vak; de wrapper houdt knop en popup samen. */
 .level-cost-diff { display: flex; }
-.level-cost-diff-summary { font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--text); }
-.level-cost-diff-summary .gain { color: var(--gain); white-space: nowrap; }
-.level-cost-diff-summary .cost { color: var(--cost); white-space: nowrap; }
+/* Het verschil zoals Profile: groot bedrag, percentage klein eronder, rood als Profile duurder is, groen als het goedkoper is. */
+.level-cost-total.cost, .level-cost-share.cost { color: var(--cost); }
+.level-cost-total.gain, .level-cost-share.gain { color: var(--gain); }
 .level-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* BACK en LEVEL UP zijn precies even groot: dezelfde breedte, hoogte, padding en letter (Dave, 4 oktober 2026). */
 .level-row .btn { position: relative; width: 100%; height: 36px; border-radius: 0.25rem; min-height: 0; margin: 0; padding: 0 0.5rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }

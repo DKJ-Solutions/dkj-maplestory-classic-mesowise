@@ -4012,9 +4012,10 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
             </button>
           )
         })}
+        {/* Het verschil alleen met een factuur aan beide kanten: anders staat er een vraagteken op de knop. In hetzelfde grid als Cheapest
+            en Profile, zodat de drie vakken exact even groot zijn en er hetzelfde uitzien (Dave, 9 oktober 2026). */}
+        {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
       </div>
-      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er een vraagteken op de knop. */}
-      {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
     </section>
   )
 }
@@ -4028,8 +4029,9 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const d = props.wearing.total - props.cheapest.total
-  const share = props.wearing.total > 0 ? ` (${nfInt.format(Math.round((Math.abs(d) / props.wearing.total) * 100))}%)` : ''
-  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${share}`
+  const pct = props.wearing.total > 0 ? `${nfInt.format(Math.round((Math.abs(d) / props.wearing.total) * 100))}%` : null
+  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${pct ? ` (${pct})` : ''}`
+  const tone = d > 0 ? 'cost' : 'gain'
   const close = () => {
     setOpen(false)
     requestAnimationFrame(() => button.current?.focus())
@@ -4038,18 +4040,17 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
     <div class="level-cost-diff">
       <button ref={button} type="button" class="btn level-cost-btn level-cost-diff-btn" aria-haspopup="dialog" aria-expanded={open} aria-label={`Difference: ${summary}`} onClick={() => setOpen(true)}>
         <span class="level-cost-label">Difference</span>
-        <span class="level-cost-diff-summary">
-          {d === 0 ? (
-            summary
-          ) : (
-            <>
-              {/* Alleen het bedrag, zonder "Cheapest saves" (Dave, 9 oktober 2026): de kleur zegt wie bespaart. Rood als Cheapest bespaart,
-                  dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de tabel). De aria-label houdt de hele zin. */}
-              <strong class={d > 0 ? 'cost' : 'gain'}>{nfInt.format(Math.abs(d))} meso</strong>
-              {share}
-            </>
-          )}
-        </span>
+        {d === 0 ? (
+          <strong class="level-cost-total">0 meso</strong>
+        ) : (
+          <>
+            {/* Alleen het bedrag, zonder "Cheapest saves", en het percentage klein eronder zoals bij Profile (Dave, 9 oktober 2026): de kleur
+                zegt wie bespaart. Rood als Cheapest bespaart, dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de
+                tabel). De aria-label houdt de hele zin. */}
+            <strong class={`level-cost-total ${tone}`}>{nfInt.format(Math.abs(d))} meso</strong>
+            {pct && <span class={`level-cost-share ${tone}`}>{pct}</span>}
+          </>
+        )}
         {READ_MORE}
       </button>
       {open && (
