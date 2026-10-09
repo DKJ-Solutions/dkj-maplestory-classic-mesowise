@@ -385,9 +385,8 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
     <header class="topbar">
       <div class="topbar-inner">
         <div class="topbar-brand">
+          {/* Alleen de naam; de ondertitel is weg (Dave, 9 oktober 2026). */}
           <span class="topbar-name">Mesowise</span>
-          {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
-          <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
         </div>
         <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>

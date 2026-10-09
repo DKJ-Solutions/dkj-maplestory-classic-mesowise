@@ -41,17 +41,25 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Remove the tagline span from the top bar and its `.topbar-tagline` style
 
 ### TEST
 
+- [x] Top-bar test now asserts the tagline is gone everywhere; suite and typecheck green
+- [ ] Dave looks at the top bar at phone width before the merge
+
 ### DEPLOY: app/remove-topbar-tagline
 
-**Score:**
+The top bar shows only the name "Mesowise" and the menu button; the tagline "Zo min mogelijk mesos per
+level in MapleStory Classic World." is gone (Dave, October 9, 2026).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+The top bar is calmer on a phone: just the app name and the menu.
+
+**Score:** 2
 
 #### Pull Request
 
