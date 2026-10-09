@@ -41,19 +41,32 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Drawer rebuilt into three rows (Profile, Instellingen, Help) with icons; Profile and Instellingen open a second drawer with a back arrow
 
 ### TEST
 
+- [x] `npm test` and `npm run lint` green; drawer tests updated and two added
+- [x] Dave looked at the live preview and approved it
+- [x] Victor (code) and Edith (UI text) reviewed the diff
+
 ### DEPLOY: app/menu-profile-drawer
 
-**Score:**
+The hamburger menu now shows three rows: Profile, Instellingen and Help, each with an icon on the left. The
+"Instellingen" heading at the top of the drawer is gone; the hamburger button and the drawer are now named "Menu".
+Profile opens a second drawer, with a back arrow, where Job and Gender are chosen as before. Instellingen opens an
+empty second drawer, to be filled later. Help expands in place and now always shows, not only once an estimate
+exists. New components `MenuDrawerItem` and `MenuIcon` in `src/app.tsx`; `StatDialog` gained `hideTitle` and `back`.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+The player finds Job and Gender under one Profile row instead of at the top of the menu, and Help is always
+reachable. They notice it the next time they open the menu, but nothing about the calculation changes.
+
+**Score:** 2
 
 #### Pull Request
 
-Menu met Profile, Instellingen en Help; profiel in een tweede drawer
+Menu shows Profile, Instellingen and Help; Job and Gender move into a Profile drawer
 

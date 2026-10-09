@@ -327,12 +327,53 @@ function ChoiceSave(props: { onSave: () => void }) {
   )
 }
 
+/** De iconen van de rijen in het menu: lijntekeningen zoals de kaarticonen, met een eigen tandwiel en vraagteken. */
+const MENU_ICONS = {
+  person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
+  gear: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z'],
+  help: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7', 'M12 17h.01'],
+} as const
+
+function MenuIcon(props: { name: keyof typeof MENU_ICONS }) {
+  return (
+    <svg class="menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      {MENU_ICONS[props.name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
+
+/** Een rij van het menu die een tweede paneel opent: icoon links, naam, pijl rechts. Terug sluit het paneel en zet de focus op de rij. */
+function MenuDrawerItem(props: { icon: keyof typeof MENU_ICONS; label: string; children: ComponentChildren }) {
+  const [open, setOpen] = useState(false)
+  const button = useRef<HTMLButtonElement>(null)
+  const close = () => {
+    setOpen(false)
+    button.current?.focus()
+  }
+  return (
+    <li class="menu-item">
+      <button ref={button} type="button" class="menu-item-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+        <MenuIcon name={props.icon} />
+        <span class="menu-label">{props.label}</span>
+        <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      {open && (
+        <StatDialog title={props.label} closeLabel="Terug" back drawer onCancel={close}>
+          {props.children}
+        </StatDialog>
+      )}
+    </li>
+  )
+}
+
 /**
  * De menubalk bovenin (Dave, 4 oktober 2026, issue #86): over de hele breedte, met de naam van de app en rechts een
  * hamburgermenu met de instellingen, dat als paneel van rechts naar links inschuift (Dave, 5 oktober 2026). Op het
  * beginscherm staat de jobkaart alleen nog zolang je job of geslacht nog niet gekozen is.
  */
-function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void; computed: boolean }) {
+function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void; gender: Gender | null; onGender: (gender: Gender) => void }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   // De dialoog verdwijnt bij sluiten, dus de focus gaat terug naar de menuknop (anders landt hij op body).
@@ -348,25 +389,36 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
           {/* De ondertitel staat rechts van de naam (Dave, 4 oktober 2026, #130). */}
           <span class="topbar-tagline">Zo min mogelijk mesos per level in MapleStory Classic World.</span>
         </div>
-        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Instellingen" onClick={() => setOpen(true)}>
+        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         </button>
       </div>
       {open && (
-        <StatDialog title="Instellingen" closeLabel="Sluiten" drawer onCancel={close}>
-          <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
-          {/* De uitleg over de schatting stond onder de kaarten; hij staat nu hier onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
-          {props.computed && (
-            <details class="menu-help">
-              <summary>Help</summary>
-              <p class="hint">
-                Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
-                oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
-                tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
-                Zegt het spel iets anders over je monster, pas zijn info dan aan.
-              </p>
-            </details>
-          )}
+        <StatDialog title="Menu" hideTitle closeLabel="Sluiten" drawer onCancel={close}>
+          {/* Precies drie rijen (Dave, 9 oktober 2026): Profile en Instellingen openen een tweede paneel, Help klapt open. */}
+          <ul class="menu-list">
+            <MenuDrawerItem icon="person" label="Profile">
+              <SettingsList job={props.job} chosen={props.chosen} onChange={props.onChange} gender={props.gender} onGender={props.onGender} />
+            </MenuDrawerItem>
+            {/* Leeg tot Dave er iets in zet. */}
+            <MenuDrawerItem icon="gear" label="Instellingen">{null}</MenuDrawerItem>
+            {/* De uitleg over de schatting staat onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
+            <li class="menu-item menu-help">
+              <details>
+                <summary>
+                  <MenuIcon name="help" />
+                  <span class="menu-label">Help</span>
+                  <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </summary>
+                <p class="hint">
+                  Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
+                  oude GMS, en met twee aannames zonder bron: je valt {nfPct.format(ASSUMPTIONS.timeEfficiency)} van de
+                  tijd aan, en een monster raakt je gemiddeld {nf.format(ASSUMPTIONS.contactsPerKill)} keer per kill.
+                  Zegt het spel iets anders over je monster, pas zijn info dan aan.
+                </p>
+              </details>
+            </li>
+          </ul>
           {/* Het offline-bestand zelf heeft geen download nodig. */}
           {import.meta.env.MODE !== 'offline' && (
             <div class="menu-download">
@@ -1431,6 +1483,10 @@ function StatDialog(props: {
    * 2026): het menu. Met een veeg naar rechts schuift het weer weg.
    */
   drawer?: boolean
+  /** Het paneel heeft geen zichtbare titel (het menu, Dave, 9 oktober 2026): de kop blijft voor schermlezers. */
+  hideTitle?: boolean
+  /** Een tweede paneel in het menu: een pijl terug links in de kop in plaats van het kruisje rechts (Dave, 9 oktober 2026). */
+  back?: boolean
   /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
   pathName?: string
   /** Data-attributen op .stat-dialog-body, naast data-popup: wat de popup toont, data-based-on-monster="Snail" (Dave, 7 en 8 oktober 2026). */
@@ -1533,7 +1589,7 @@ function StatDialog(props: {
       </PopupButton>
     </div>
   ) : (
-    <h2 class="stat-dialog-name">{name}</h2>
+    <h2 class={props.hideTitle ? 'stat-dialog-name sr-only' : 'stat-dialog-name'}>{name}</h2>
   )
   const title = props.subtitle || props.tag ? (
     <div class="stat-dialog-titles">
@@ -1569,7 +1625,7 @@ function StatDialog(props: {
     >
       <div class="stat-dialog-body" data-popup={path.join(' › ')} {...props.data}>
       <PopupPath.Provider value={path}>
-      <div class={props.onSave ? 'stat-dialog-head two' : 'stat-dialog-head'}>
+      <div class={props.onSave ? 'stat-dialog-head two' : props.back ? 'stat-dialog-head back' : 'stat-dialog-head'}>
         {title}
       </div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
@@ -1582,13 +1638,15 @@ function StatDialog(props: {
       )}
       <button
         type="button"
-        class={props.onSave ? 'stat-dialog-close save' : 'stat-dialog-close'}
+        class={props.onSave ? 'stat-dialog-close save' : props.back ? 'stat-dialog-close back' : 'stat-dialog-close'}
         aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
         onClick={() => (props.onSave ? cancel(props.onSave) : cancel())}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           {props.onSave ? (
             <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
+          ) : props.back ? (
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
           ) : (
             <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" />
           )}
@@ -4494,7 +4552,7 @@ export function App() {
     <AdvisedStats.Provider value={advisedStats}>
     <CardViewContext.Provider value={cardViews}>
     <ProfileProblem.Provider value={profileProblem}>
-      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} computed={computed} />
+      <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
       <main>
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
       <div class="level-row">
