@@ -17,8 +17,7 @@
 // Kerning City en Natasha in Lith Harbor) en de Red Baseball Cap (781, Sam in Henesys), zie armor.ts: ze vragen
 // geen INT of LUK en hun pagina toont geen MDEF, dus die staan op 0.
 //
-// Niet opgenomen als wapen, en waarom:
-// - Geen staff op level 30.
+// Niet opgenomen als wapen: een staff op level 30, want die bestaat niet.
 //
 // Wel opgenomen zonder prijs, als wat je gratis krijgt (Dave, 9 oktober 2026): Beginner's Wooden Wand (item 2523; beginnerWeapons.ts noemt hem 649), niet verhandelbaar en niet
 // te koop. Hij staat niet in NPC_MAGICIAN_WEAPONS maar in FREE_MAGICIAN_WEAPON, zonder prijs, zodat hij nooit een winkelitem wordt.

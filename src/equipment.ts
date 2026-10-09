@@ -678,7 +678,7 @@ const BEGINNER_LAST_LEVEL = 9
  * level 5 de questhoed (QUEST_HAT), op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen, en vanaf level 10 het gratis wapen van je
  * 1e job (freeJobWeapon.ts, Dave, 9 oktober 2026: de Beginner's Garnier van een Thief, de Beginner's Wooden Wand van een Magician; een Warrior en een Bowman krijgen er
  * geen), maar alleen als je het kunt dragen (zijn LUK- of INT-eis) en je geen hogere weapon attack typte dan het wapen geeft (anders draag je iets beters, en wint wat je typte). Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het wapen zet wel
- * zijn eigen weapon attack: een leeg wapenslot is op dat level dat wapen, ook als je zelf een getal had getypt. Draag je al een wapen (ook een Fruit Knife), dan blijft het
+ * zijn eigen weapon attack: een leeg wapenslot is op die levels dat wapen, ook als je zelf een getal had getypt. Draag je al een wapen (ook een Fruit Knife), dan blijft het
  * staan: of het gratis jobwapen beter is, beslist het wapenadvies van Cheapest (clawUpgrade.ts), niet deze stap.
  * Met `checkRequirements` uit (freshStart: Cheapest bouwt je AP zelf op, het standaardprofiel zegt daar niets over) telt alleen de typregel, niet de stat-eis.
  */

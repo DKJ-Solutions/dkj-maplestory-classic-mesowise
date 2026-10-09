@@ -7,7 +7,7 @@ import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, ty
 import { changesBetween, cheapestSettings, costOf, potionNames, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
 import { changeEquipment, choosePick, EQUIP_SLOTS, familyName, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
-import { FREE_WEAPON_LEVEL, freeJobWeaponName, meetsFreeWeaponRequirements } from './freeJobWeapon'
+import { FREE_WEAPON_LEVEL, freeJobWeaponName } from './freeJobWeapon'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -160,13 +160,14 @@ export function advisedSetup(user: CheapestInput): AdvisedSetup {
  * Het gratis wapen van je 1e job (Dave, 9 oktober 2026): draag je vanaf level 10 nog een beginnerwapen (Fruit Knife, Razor, Sword, ...) en heeft je job een gratis
  * jobwapen (freeJobWeapon.ts: Beginner's Garnier, Beginner's Wooden Wand), dan rekent Cheapest ook de stand met dat wapen in je hand uit, op eigen skillpunten en alles erbij,
  * en kiest de stand met de laagste factuur. Het gratis wapen kost niets, dus er komt geen winkelprijs op de factuur; het staat in je Cheapest-regel als wapen dat je neemt
- * (zonder prijs). Een wapen dat je al draagt en dat geen beginnerwapen is, houdt Cheapest: dat kost niets en het gratis wapen is er niet beter dan dat van je eigen.
+ * (zonder prijs). Een wapen dat je al draagt en dat geen beginnerwapen is, houdt Cheapest: dat kost niets. De LUK- of INT-eis van het gratis wapen toetst deze stap niet:
+ * het profiel hier is dat van freshStart, en settle bouwt de AP zelf op naar wat je draagt (autoFillAp, Victor, 9 oktober 2026).
  */
 function preferFreeWeapon(user: CheapestInput, own: AdvisedSetup): AdvisedSetup {
   const name = freeJobWeaponName(user.job)
   const claw = user.equipment.claw
   const level = Number(user.profileDraft.level)
-  if (name === null || !(level >= FREE_WEAPON_LEVEL) || !BEGINNER_WORN_WEAPONS.some((w) => w.name === claw.pick) || !meetsFreeWeaponRequirements(user.job, user.profileDraft)) return own
+  if (name === null || !(level >= FREE_WEAPON_LEVEL) || !BEGINNER_WORN_WEAPONS.some((w) => w.name === claw.pick)) return own
   const swapped = changeEquipment(user.profileDraft, user.equipment, 'claw', choosePick('claw', claw, name), user.job)
   const alt = settle({ ...user, equipment: swapped.equipment }, swapped.profile, false)
   const total = (s: AdvisedSetup): number => invoiceTotal({ ...user, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice }, s) ?? Infinity

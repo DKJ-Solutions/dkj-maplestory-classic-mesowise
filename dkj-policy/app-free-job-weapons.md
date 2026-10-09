@@ -41,19 +41,34 @@
 
 Cheapest kept a Thief on the Fruit Knife at lv 10+: wearableSetup gives free gear only up to lv 9. Add Beginner's Garnier (Thief, Dave's word + MeowDB thief guide) and Beginner's Wooden Wand (Magician, MeowDB magician guide) as free from lv 10. Bowman/Warrior: no source, left out. Rebecca also found the repo's item ids (681, 664, 649, 561) may be stale COT1 ids; current are 2545, 2538, 2523, 2518 -- unverified, separate issue.
 
+#### Findings not fixed here
+
+- The repo's item ids for the beginner weapons (681, 664, 649, 561) may be the old COT1 ids; MeowDB now shows 2545, 2538, 2523, 2518 (Rebecca, 2026-10-09, unverified mapping). Not filed: `gh` is not installed on this machine.
+- At lv 10 to 15 on a fixed mob such as Snail, the Fruit Knife stays cheaper than the free Garnier (no star recharge), so Cheapest keeps it there; that is the model's answer, not a missing option.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: `src/freeJobWeapon.ts`, free weapon in `wearableSetup`, the Cheapest-only weapon shop and `preferFreeWeapon`; Magician wand data with its source
+- [x] Cody: review round -- a higher typed attack is kept, the LUK 25 / INT 20 requirement is checked
 
 ### TEST
 
+- [x] Tycho: `src/freeJobWeapon.test.ts` (level 9/10 boundary per job, invoice never charges the free weapon, fixed point after Overnemen, better claw or real dagger kept, both directions of `preferFreeWeapon`)
+- [x] Victor re-review and Edith text read: Edith's four comment fixes applied; Victor's preferFreeWeapon requirement check removed (it read freshStart's default AP)
+- [x] Lint gate green
+- [ ] Dave has looked at the preview
+
 ### DEPLOY: app/free-job-weapons
 
-**Score:**
+From level 10 the app knows the weapon you get for free at your first job advancement: a Beginner's Garnier for a Thief (Dave, October 9, 2026, and the MeowDB Thief guide) and a Beginner's Wooden Wand for a Magician (the MeowDB Magician guide). An empty weapon slot is that weapon, unless you typed a higher attack or miss its LUK or INT requirement. Cheapest can switch a Thief from a beginner weapon such as the Fruit Knife to the Garnier without putting 5,000 mesos on the invoice, and does so where it makes the level cheaper. Warrior and Bowman are unchanged: no source says they get a weapon.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+A Thief or Magician from level 10 no longer sees Cheapest pay for a weapon they got for free at their job advancement.
+
+**Score:** 3
 
 #### Pull Request
 

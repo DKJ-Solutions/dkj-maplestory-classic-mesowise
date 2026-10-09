@@ -2461,7 +2461,7 @@ describe('een Magician in de app', () => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...magicianFields, ...over } }))
-    // Hij draagt zijn Sapphire Staff (M.ATT 31, zoals hierboven): een leeg wapenslot is vanaf level 10 het gratis Beginner's Wooden Wand (Dave, 9 oktober 2026).
+    // Hij draagt zijn Sapphire Staff (M.ATT 31, zoals hierboven): een leeg wapenslot is vanaf level 10 de gratis Beginner's Wooden Wand (Dave, 9 oktober 2026).
     localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: { claw: { pick: 'Sapphire Staff', name: '', stat: '' } } }))
     localStorage.setItem(
       STORAGE_KEY,
