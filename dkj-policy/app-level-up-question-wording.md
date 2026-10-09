@@ -43,8 +43,10 @@
 
 - [x] `src/app.tsx`: the question under the level row reads "level up a" instead of "level up your"
 - [x] `src/app.test.tsx`: the assertion on that question follows
-- [x] `src/app.tsx`: `DifferenceTable` no longer repeats "Profile: <reason>" under Difference; the reason stays inside the Profile part
-- [x] `src/app.test.tsx`: the reason is asserted inside the Profile part and absent from Difference
+- [~] `DifferenceTable` no longer repeats the reason under Difference -- reverted: that was not the line Dave meant
+- [x] `src/app.tsx` `LevelCostButtons`: the reason a button shows "?" (#262) moves from a line under the buttons into the button itself, without the "Profile:" prefix
+- [x] `src/style.css`: `.level-cost-reason` styled as small muted text inside the button
+- [x] `src/app.test.tsx`: the #262 test asserts the reason inside the Profile button and no hint under the buttons
 
 ### TEST
 
@@ -56,20 +58,20 @@ The level-up question under the level row now reads "How much does it cost to le
 instead of "your". Only that question changes. The Total cost card's "This is how much it cost to level up
 your …" keeps its wording.
 
-When the Profile setup has no invoice (no mob chosen, for example), the reason now appears only inside the
-Profile part of the Level cost card. The "Profile: Je hebt nog geen mob gekozen." line under Difference, and
-in the Difference dialog, is gone.
+When the Profile or Cheapest button in the Level cost card shows "?", the reason (for example "Je hebt nog
+geen mob gekozen.") now appears inside that button under the "?". It used to be a separate
+"Profile: …" line below the buttons.
 
 **Score:** 1
 
 #### What makes this deploy extra special
 
-Small changes to on-screen text: one word in the question, and one repeated line removed. The player sees
+Small changes to on-screen text: one word in the question, and the "?" reason moved into its button. The player sees
 them, but they change nothing about how they use the app.
 
 **Score:** 1
 
 #### Pull Request
 
-Level-up question reads 'a Lv. 20 Thief', and the Profile reason is no longer repeated under Difference
+Level-up question reads 'a Lv. 20 Thief', and the "?" reason sits inside its Level cost button
 

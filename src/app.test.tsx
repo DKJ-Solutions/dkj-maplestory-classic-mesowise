@@ -3503,9 +3503,8 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
     expect(card().querySelector('table')).not.toBeNull()
-    // Profile toont de reden in zijn eigen deel: hij heeft zelf geen mob. Difference herhaalt hem niet (Dave, 9 oktober 2026).
-    expect(inGame().textContent).toContain('Je hebt nog geen mob gekozen.')
-    expect(card().querySelector('.cost-difference')!.textContent).not.toContain('nog geen mob gekozen')
+    // Profile blijft de reden tonen: hij heeft zelf geen mob.
+    expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
     expect(card().textContent).toContain('Monster: — → ')
   })
 
@@ -3818,7 +3817,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(mesoOf(table.querySelector('tfoot .invoice-diff')!.textContent)).toBe(Math.abs(d))
   })
 
-  it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
+  it('zegt in de knop van Profile waarom hij een vraagteken toont, niet onder de knoppen: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
     cleanup()
     localStorage.clear()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
@@ -3830,7 +3829,10 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     // Cheapest rekent vanuit je job en level, en heeft dus wel een bedrag en geen reden.
     expect(top.querySelector('.level-cost-advised .level-cost-total')!.textContent).not.toBe('?')
     const reason = 'Je hebt 32 skillpunten in de skills van je 1e job gezet, maar op level 19 heb je er slechts 28.'
-    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([`Profile: ${reason}`])
+    // De reden staat in de knop van Profile zelf, zonder "Profile:" ervoor, en niet onder de knoppen (Dave, 9 oktober 2026).
+    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([reason])
+    expect(top.querySelector('.level-cost-worn .level-cost-reason')!.textContent).toBe(reason)
+    expect(top.querySelector('.level-cost-buttons + .hint')).toBeNull()
     expect(document.body.textContent).not.toContain('niet volledig ingevuld')
   })
 
