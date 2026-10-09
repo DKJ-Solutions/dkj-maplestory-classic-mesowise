@@ -4318,6 +4318,26 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     expect(within(bought).getByRole('button', { name: `New equip: ${buys} ${buys === 1 ? 'item' : 'items'} (upgrade)` })).toBeTruthy()
   })
 
+  it('zet onder "Based on:" van Profile ook New equip, om te lezen: zonder potlood (Dave, 9 oktober 2026)', () => {
+    atLevel('20')
+    openHomeEquipment()
+    pick(cards()[0], 'Top', 'Red Pao')
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
+    const cheapest = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-bought]')!.textContent
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
+    fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Profile' }))
+    const d = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
+    // Vier rijen, zoals in Cheapest: Char, Mob, Equip en New equip, met dezelfde upgrades.
+    expect(d.querySelectorAll('.based-on-row')).toHaveLength(4)
+    const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
+    expect(bought.dataset.sheet).toBe('profile')
+    expect(bought.textContent).toBe(cheapest)
+    // De rij heeft geen potlood: wat Cheapest koopt zet je niet zelf.
+    expect(within(d).queryByRole('button', { name: 'New equip wijzigen' })).toBeNull()
+    expect(bought.parentElement!.querySelector('.equip-edit')).toBeNull()
+  })
+
   it('maakt elke Cheapest-popup alleen-lezen: geen velden, geen potlood, geen plus of min, geen Opslaan en geen Auto assign (#192)', () => {
     setUpAdvisedDiffers()
     for (const title of CARDS) {
@@ -4596,7 +4616,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       chooseMob('Slime')
       closeView('Monster')
       const d = openView('Equip', 'Profile')
-      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? equipped)$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
+      expect(d.querySelector('.based-on')?.textContent?.replace(/Equip: (Nog niets gekozen|\d+ items? equipped)(New equip: (No upgrades|\d+ items? \(upgrade\)))?$/, '')).toBe(`Based on:Char: ${who}Mob: Slime`)
       const [char, mob] = d.querySelectorAll('.based-on .based-on-label')
       expect(char.getAttribute('data-based-on-character')).toBe(who)
       expect(char.getAttribute('data-sheet')).toBe('profile')

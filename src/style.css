@@ -470,6 +470,8 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on .based-on-label .help-toggle { flex: none; margin: -0.625rem -0.625rem -0.625rem -0.25rem; }
 /* Het potlood in de tweede kolom is dezelfde knop als elk ander potlood (.equip-edit, Dave, 8 oktober 2026). */
 .based-on-row > .equip-edit { grid-row: auto; grid-column: auto; flex: none; }
+/* Een rij zonder potlood in Profile (New equip) houdt die kolom vrij, zodat de vakken even breed blijven (Dave, 9 oktober 2026). */
+.based-on-row > .equip-edit-spacer { flex: none; width: var(--control-h); }
 /* De naam zit in de info-knop (Dave, 8 oktober 2026): de knop vult het hele vak, zodat je ook op de naam tikt, en houdt 44px hoog om te tikken.
    Gevolgd door het vraagteken van de mob stopt hij bij het i-icoon, zodat de twee knoppen niet over elkaar liggen. */
 .based-on .based-on-label .info-toggle.named { flex: 0 1 auto; min-width: 0; width: auto; height: auto; min-height: 44px; margin: -0.625rem -0.5rem;

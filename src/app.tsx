@@ -554,7 +554,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
       {props.error && <p class="error">{props.error}</p>}
       <div class="spot-body">
         {/* Onder "Based on:" in Cheapest het karakter en de mob van het advies; in Profile (`own`, Dave, 8 oktober 2026) wat je zelf zette. */}
-        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} bought={props.bought} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
+        {props.advised ? props.basedOn && <BasedOn who={who} mob={props.basedOn} stats={advisedStats} sheet="cheapest" equip={props.equip} bought={props.bought} /> : props.own && <BasedOn who={who} mob={props.own.mob} stats={props.own.stats} sheet="profile" equip={props.equip} bought={props.bought} edit={{ char: (b) => cards.openCard('ap', 'worn', b), mob: (b) => cards.openCard('mob', 'worn', b), open: cards.open }} />}
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
@@ -1756,7 +1756,7 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           <span class="based-on-value placeholder">{equip.summary}</span>
         )}
       </div>
-      {equip.edit && pencil('Equip', equip.edit.expanded, equip.edit.open)}
+      {equip.edit ? pencil('Equip', equip.edit.expanded, equip.edit.open) : props.edit && <span class="equip-edit-spacer" aria-hidden="true" />}
     </div>
   )
   const mobDef = MOBS.find((m) => m.name === props.mob)
@@ -1813,7 +1813,8 @@ function BasedOn(props: { who: string; mob: string | null; stats: ComponentChild
           {props.edit && pencil('Mob', props.edit.open.mob === 'worn', props.edit.mob)}
         </div>
         {equip && basedOnEquipRow(equip, 'Equip', 'data-based-on-equip')}
-        {/* In Cheapest een vierde rij (Dave, 8 oktober 2026): de equip die Cheapest erbij koopt, naast de equip die je al draagt hierboven. */}
+        {/* Een vierde rij (Dave, 8 oktober 2026): de equip die Cheapest erbij koopt, naast de equip die je al draagt hierboven. Ook in Profile (Dave,
+            9 oktober 2026), om te lezen: zonder potlood, met een lege plek in die kolom zodat het vak even breed blijft als de rijen erboven. */}
         {bought && basedOnEquipRow(bought, 'New equip', 'data-based-on-bought')}
       </div>
     </section>
@@ -2527,7 +2528,7 @@ function EquipmentCard(props: {
   // Cheapest heeft geen Report-knop (Dave, 7 oktober 2026): de reden per stuk staat achter het vraagteken van zijn regel; in Profile blijft hij.
   const shell = (body: ComponentChildren) =>
     open && (
-      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList, 'worn') : undefined) : equipRow(wornList, 'worn', { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={view === 'advised' && props.cheapest ? equipRow(boughtList, 'bought') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
+      <CardPopup card="equip" title="Level cost" tag={view === 'advised' ? 'cheapest' : 'profile'} advised={view === 'advised'} basedOn={props.cheapest ? props.advisedMob : null} own={view === 'worn' ? { mob: props.wornMob, stats: props.wornStats } : undefined} equip={view === 'advised' ? (props.cheapest ? equipRow(wornList, 'worn') : undefined) : equipRow(wornList, 'worn', { expanded: pickOpen, open: openPick, slot: openSlotFromTable, editing: pickOpen ? null : editSlot })} bought={props.cheapest ? equipRow(boughtList, 'bought') : undefined} opener={opener} error={view === 'advised' ? null : props.error} help={view === 'advised' ? (props.cheapest ? CHEAPEST_HELP : undefined) : WORN_HELP} onClose={close} reportTitle="Equip">
         {body}
       </CardPopup>
     )
