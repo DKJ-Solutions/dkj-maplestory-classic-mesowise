@@ -3980,8 +3980,6 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
   ] as const
   // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
   const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
-  // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
-  const share = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileShare(props.advised.total, props.wearing.total) : null
   return (
     // Een eigen section direct in main, zonder kaart en zonder kop (Dave, 9 oktober 2026): Cheapest, Profile en Difference staan los onder
     // de vraag van de app. De naam die de kop gaf, krijgt de schermlezer van aria-label.
@@ -3989,10 +3987,10 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
       <div class="level-cost-buttons">
         {parts.map((p) => {
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
-          const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
+          const text = total === null ? '?' : total === 0 ? '0 meso' : `${nfInt.format(total)} meso`
+          // Zonder minteken (Dave, 9 oktober 2026): het vak zegt wat het level kost, geen afschrijving; op de factuur blijft het min.
           // Een vraagteken zonder reden laat je raden (#262); de reden staat in de knop zelf, niet eronder (Dave, 9 oktober 2026).
           const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
-          const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
           return (
             <button
               key={p.view}
@@ -4001,12 +3999,11 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               disabled={p.invoice === null}
               aria-haspopup="dialog"
               aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}`}
+              aria-label={`${p.label}: ${text}${reason ? ` ${reason}` : ''}`}
               onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
             >
               <span class="level-cost-label">{p.label}</span>
               <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
-              {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
               {reason && <span class="level-cost-reason">{reason}</span>}
               {p.invoice !== null && READ_MORE}
             </button>
@@ -4021,16 +4018,17 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
 }
 
 /**
- * De derde rij van Level cost onder de vraag (Dave, 8 oktober 2026): wat Profile meer kost dan Cheapest, in meso en als deel van wat Profile
- * kost; is jouw setup goedkoper, dan staat dat er zo. Een tik opent per soort kost waar dat verschil zit, in een eigen popup, zodat het
+ * Het derde vak van Level cost onder de vraag (Dave, 8 oktober 2026): wat Profile meer kost dan Cheapest, in meso, met eronder hoeveel
+ * duurder of goedkoper Profile is als deel van Cheapest ("+57% more expensive"; Dave, 9 oktober 2026: hier en niet op Profile). Een tik opent per soort kost waar dat verschil zit, in een eigen popup, zodat het
  * beginscherm zonder scrollen past (dezelfde tabel als Difference in Level cost).
  */
 function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'invoice' }>; wearing: Extract<LevelInvoice, { kind: 'invoice' }>; job: Job }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   const d = props.wearing.total - props.cheapest.total
-  const pct = props.wearing.total > 0 ? `${nfInt.format(Math.round((Math.abs(d) / props.wearing.total) * 100))}%` : null
-  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${pct ? ` (${pct})` : ''}`
+  const share = profileShare(props.cheapest.total, props.wearing.total)
+  const shareText = d !== 0 && share !== null ? formatShare(share) : null
+  const summary = d === 0 ? 'No difference' : `${d > 0 ? 'Cheapest' : 'Profile'} saves ${nfInt.format(Math.abs(d))} meso${shareText ? `, Profile ${shareText}` : ''}`
   const tone = d > 0 ? 'cost' : 'gain'
   const close = () => {
     setOpen(false)
@@ -4044,11 +4042,11 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
           <strong class="level-cost-total">0 meso</strong>
         ) : (
           <>
-            {/* Alleen het bedrag, zonder "Cheapest saves", en het percentage klein eronder zoals bij Profile (Dave, 9 oktober 2026): de kleur
+            {/* Alleen het bedrag, zonder "Cheapest saves", en klein eronder hoeveel Profile duurder of goedkoper is (Dave, 9 oktober 2026): de kleur
                 zegt wie bespaart. Rood als Cheapest bespaart, dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de
                 tabel). De aria-label houdt de hele zin. */}
             <strong class={`level-cost-total ${tone}`}>{nfInt.format(Math.abs(d))} meso</strong>
-            {pct && <span class={`level-cost-share ${tone}`}>{pct}</span>}
+            {shareText && <span class={`level-cost-share ${tone}`}>{shareText}</span>}
           </>
         )}
         {READ_MORE}

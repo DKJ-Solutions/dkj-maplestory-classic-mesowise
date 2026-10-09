@@ -30,7 +30,7 @@ export function profileTone(cheapest: number, profile: number): ProfileTone {
 }
 
 /**
- * Het deel als tekst op de knop van Profile, afgerond op hele procenten (Dave, 9 oktober 2026): "+57% more expensive", "5% cheaper"
+ * Het deel als tekst in het vak Difference (sinds 9 oktober 2026 daar en niet op Profile, Dave), afgerond op hele procenten (Dave, 9 oktober 2026): "+57% more expensive", "5% cheaper"
  * (zonder min: "−5% cheaper" zegt het twee keer) of "Same cost".
  */
 export function formatShare(share: number): string {

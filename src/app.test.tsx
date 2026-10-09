@@ -3824,8 +3824,8 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     const [left, right] = Array.from(buttons)
     expect(left.querySelector('.level-cost-label')!.textContent).toBe('Cheapest')
     expect(right.querySelector('.level-cost-label')!.textContent).toBe('Profile')
-    expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard()))
-    expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours()))
+    expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard())!.replace('−', ''))
+    expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours())!.replace('−', ''))
     expect(left.disabled).toBe(false)
     expect(right.disabled).toBe(false)
     // Met een bedrag op beide knoppen hoeft er niets onder.
@@ -3843,15 +3843,16 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(button.querySelector('.level-cost-label')!.textContent).toBe('Difference')
     const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
     const d = profile - cheapest
-    const pct = `${Math.round((Math.abs(d) / profile) * 100)}%`
-    // Op de kaart alleen het bedrag, met het percentage klein eronder zoals bij Profile (Dave, 9 oktober 2026); de aria-label zegt wie bespaart.
+    const shareText = formatShare(profileShare(cheapest, profile)!)
+    // Op de kaart alleen het bedrag, met eronder hoeveel Profile duurder of goedkoper is dan Cheapest, als deel van Cheapest (Dave, 9 oktober
+    // 2026: in Difference, niet op Profile); de aria-label zegt wie bespaart.
     if (d === 0) expect(button.querySelector('.level-cost-total')!.textContent).toBe('0 meso')
     else {
       expect(button.querySelector('.level-cost-total')!.textContent).toBe(`${Math.abs(d).toLocaleString('nl-NL')} meso`)
-      expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(pct)
+      expect(button.querySelector('.level-cost-total')!.nextElementSibling!.textContent).toBe(shareText)
       expect(button.querySelector('.level-cost-share')!.className).toBe(`level-cost-share ${d > 0 ? 'cost' : 'gain'}`)
     }
-    expect(button.getAttribute('aria-label')).toBe(`Difference: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso (${pct})` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso (${pct})` : 'No difference'}`)
+    expect(button.getAttribute('aria-label')).toBe(`Difference: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso, Profile ${shareText}` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso, Profile ${shareText}` : 'No difference'}`)
     // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
     if (d !== 0) expect(button.querySelector('.level-cost-total')!.className).toBe(`level-cost-total ${d > 0 ? 'cost' : 'gain'}`)
     // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
@@ -3869,10 +3870,8 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     const [cheapest, profile] = [mesoOf(left.textContent), mesoOf(right.textContent)]
     const tone = profileTone(cheapest, profile)
     expect(right.className).toBe(`level-cost-total tone-${tone}`)
-    // Onder Profile hoeveel het van Cheapest afwijkt, als deel van Cheapest, in dezelfde kleur; Cheapest zelf heeft geen percentage.
-    const share = right.parentElement!.querySelector('.level-cost-share')!
-    expect(share.textContent).toBe(formatShare(profileShare(cheapest, profile)!))
-    expect(share.className).toBe(`level-cost-share tone-${tone}`)
+    // Cheapest en Profile zelf hebben geen percentage: dat staat in Difference (Dave, 9 oktober 2026).
+    expect(right.parentElement!.querySelector('.level-cost-share')).toBeNull()
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })
 
