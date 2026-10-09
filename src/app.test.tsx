@@ -3503,8 +3503,9 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     // Het level en de job vetgedrukt (Dave, 6 oktober 2026).
     expect(card().querySelector('.total-cost-sub strong')!.textContent).toBe('Lv. 10 Thief')
     expect(card().querySelector('table')).not.toBeNull()
-    // Profile blijft de reden tonen: hij heeft zelf geen mob.
-    expect(card().textContent).toContain('Je hebt nog geen mob gekozen.')
+    // Profile toont de reden in zijn eigen deel: hij heeft zelf geen mob. Difference herhaalt hem niet (Dave, 9 oktober 2026).
+    expect(inGame().textContent).toContain('Je hebt nog geen mob gekozen.')
+    expect(card().querySelector('.cost-difference')!.textContent).not.toContain('nog geen mob gekozen')
     expect(card().textContent).toContain('Monster: — → ')
   })
 

@@ -43,10 +43,12 @@
 
 - [x] `src/app.tsx`: the question under the level row reads "level up a" instead of "level up your"
 - [x] `src/app.test.tsx`: the assertion on that question follows
+- [x] `src/app.tsx`: `DifferenceTable` no longer repeats "Profile: <reason>" under Difference; the reason stays inside the Profile part
+- [x] `src/app.test.tsx`: the reason is asserted inside the Profile part and absent from Difference
 
 ### TEST
 
-- [x] `vitest run src/app.test.tsx` green (331 tests), `npm run lint` green
+- [x] `vitest run` green (1975 tests), `npm run lint` green
 
 ### DEPLOY: app/level-up-question-wording
 
@@ -54,15 +56,20 @@ The level-up question under the level row now reads "How much does it cost to le
 instead of "your". Only that question changes. The Total cost card's "This is how much it cost to level up
 your …" keeps its wording.
 
+When the Profile setup has no invoice (no mob chosen, for example), the reason now appears only inside the
+Profile part of the Level cost card. The "Profile: Je hebt nog geen mob gekozen." line under Difference, and
+in the Difference dialog, is gone.
+
 **Score:** 1
 
 #### What makes this deploy extra special
 
-A one-word change to on-screen text. The player sees it, but it changes nothing about how they use the app.
+Small changes to on-screen text: one word in the question, and one repeated line removed. The player sees
+them, but they change nothing about how they use the app.
 
 **Score:** 1
 
 #### Pull Request
 
-Level-up question reads 'a Lv. 20 Thief' instead of 'your'
+Level-up question reads 'a Lv. 20 Thief', and the Profile reason is no longer repeated under Difference
 

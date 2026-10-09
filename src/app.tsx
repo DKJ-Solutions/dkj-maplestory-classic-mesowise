@@ -3823,7 +3823,6 @@ const invoiceRowKey = (l: InvoiceLine): string => (l.shop ? SHOP_LABEL : l.why &
  * kost daar niets; zonder factuur in game is er geen verschil, en dan staat er een streepje.
  */
 function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; job: Job }) {
-  const problem = useContext(ProfileProblem)
   const cols = [props.inGame, props.cheapest].map((i) => (i.kind === 'invoice' ? i : null))
   const [ig, ch] = cols
   const keys: string[] = []
@@ -3839,43 +3838,39 @@ function DifferenceTable(props: { inGame: LevelInvoice; cheapest: LevelInvoice; 
   // Wat een setup voor een soort betaalt: zonder regel niets, zonder factuur onbekend.
   const paid = (col: number, key: string) => (cols[col] ? cols[col]!.lines.filter((l) => invoiceRowKey(l) === key).reduce((sum, l) => sum + l.meso, 0) : null)
   return ig || ch ? (
-    <>
-      <table class="invoice invoice-difference">
-        <thead>
-          <tr>
-            <td />
-            <th scope="col">Profile</th>
-            <th scope="col">Cheapest</th>
-            <th scope="col">Difference</th>
-          </tr>
-        </thead>
-        <tbody>
-          {keys.map((key) => {
-            const a = paid(0, key)
-            const b = paid(1, key)
-            return (
-              <tr key={key}>
-                <th scope="row">{name(key)}</th>
-                <td class="invoice-meso">{cost(a)}</td>
-                <td class="invoice-meso">{cost(b)}</td>
-                <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">Total</th>
-            <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
-            <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
-            <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
-          </tr>
-        </tfoot>
-      </table>
-      {/* Zonder factuur in game is er niets om mee te vergelijken; hier waarom. */}
-      {props.inGame.kind === 'none' && <p class="hint">Profile: {noCostReason(props.inGame.cost, problem) ?? 'er is niets uit te rekenen.'}</p>}
-    </>
-  ) : // Zonder factuur aan beide kanten staat de reden al onder Profile en Cheapest; hier niet nog eens.
+    <table class="invoice invoice-difference">
+      <thead>
+        <tr>
+          <td />
+          <th scope="col">Profile</th>
+          <th scope="col">Cheapest</th>
+          <th scope="col">Difference</th>
+        </tr>
+      </thead>
+      <tbody>
+        {keys.map((key) => {
+          const a = paid(0, key)
+          const b = paid(1, key)
+          return (
+            <tr key={key}>
+              <th scope="row">{name(key)}</th>
+              <td class="invoice-meso">{cost(a)}</td>
+              <td class="invoice-meso">{cost(b)}</td>
+              <td class="invoice-meso invoice-diff">{diff(a !== null && b !== null ? a - b : null)}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td class="invoice-meso">{cost(ig ? ig.total : null)}</td>
+          <td class="invoice-meso">{cost(ch ? ch.total : null)}</td>
+          <td class="invoice-meso invoice-diff">{diff(ig && ch ? ig.total - ch.total : null)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  ) : // Waarom een factuur ontbreekt, zegt het vraagteken van de kaart al (Dave, 9 oktober 2026); hier niet nog eens.
   null
 }
 
