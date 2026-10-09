@@ -39,21 +39,37 @@
 
 ### PLAN
 
+#276 suggested letting the cheaper of the skill and the basic attack count. Built and measured on this branch
+(the commit "wip: attacksOf offers the basic attack ..."): the basic attack then wins everywhere, 47 tests
+in 12 files flip, and attack skills never save anything, because a skill costs MP and time is not counted as
+mesos. Dave's decision (October 9, 2026): the basic attack never applies, and every player uses their skill.
+So the model stays as it is, and the assumption is written down where the attack is chosen.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Reverted the measured fallback in `src/suggest.ts` to `main`'s version.
+- [x] Wrote Dave's assumption and its consequence into `attacksOf`'s docstring, citing #276.
 
 ### TEST
 
+- [x] Full Vitest suite green after the revert (only a comment changed).
+
 ### DEPLOY: fix/276-basic-attack-fallback
 
-**Score:**
+The calculation now states that a levelled attack skill is always used, even when the basic attack would
+be cheaper on the invoice (Dave, October 9, 2026, #276). With the basic attack counted, the model never lets
+an attack skill save mesos. So a point in an attack skill can make a level more expensive, and the
+skill-point advice shows that as a negative saving. The numbers do not change.
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: only a comment in the code. The app computes exactly what it did before.
+
+**Score:** N/A
 
 #### Pull Request
 
-A levelled attack skill is used only when it is cheaper than the basic attack
+An attack skill with points is always used, a stated assumption of the model
 
