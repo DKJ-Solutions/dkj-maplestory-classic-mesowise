@@ -4043,7 +4043,8 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
             summary
           ) : (
             <>
-              {d > 0 ? 'Cheapest' : 'Profile'} saves <strong class="gain">{nfInt.format(Math.abs(d))} meso</strong>
+              {/* Rood als Cheapest bespaart: dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de tabel). */}
+              {d > 0 ? 'Cheapest' : 'Profile'} saves <strong class={d > 0 ? 'cost' : 'gain'}>{nfInt.format(Math.abs(d))} meso</strong>
               {share}
             </>
           )}

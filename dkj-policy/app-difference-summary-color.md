@@ -41,17 +41,25 @@
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody: the Difference summary colours its amount with `.cost` (red) when Cheapest saves, `.gain` (green) when Profile does
+- [x] Tycho: the existing Difference-row test asserts that class
 
 ### TEST
 
+- [x] Vitest (affected suite) and `npm run lint` green
+- [ ] Dave looks at the preview before the merge (visible result)
+
 ### DEPLOY: app/difference-summary-color
 
-**Score:**
+The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+A player no longer reads "36% more expensive" as good news: the colour now says you are leaving meso on the table.
+
+**Score:** 2
 
 #### Pull Request
 
