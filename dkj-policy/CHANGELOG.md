@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**16 / 23 minor entries** <!-- pending-tally -->
+**16 / 24 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/276-basic-attack-fallback · 20261009-073731Z
+
+The calculation now states that a levelled attack skill is always used, even when the basic attack would
+be cheaper on the invoice (Dave, October 9, 2026, #276). With the basic attack counted, the model never lets
+an attack skill save mesos. So a point in an attack skill can make a level more expensive, and the
+skill-point advice shows that as a negative saving. The numbers do not change.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A: only a comment in the code. The app computes exactly what it did before.
+
+**Score:** N/A
+
+#### Pull Request
+
+An attack skill with points is always used, a stated assumption of the model
+
+[PR #278](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/278)
+
+---
 
 ### DEPLOY: fix/273-cheapest-above-profile · 20261009-071926Z
 
