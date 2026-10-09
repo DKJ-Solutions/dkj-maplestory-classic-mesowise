@@ -57,7 +57,7 @@ Chosen bands: up to 10% above Cheapest is green, 25% or more is red, neutral in 
 - [x] `profileTone.test.ts`: the share against Cheapest, none when Cheapest is 0, and its sign and rounding as text
 - [x] `app.test.tsx`: Cheapest has no colour class and no share, Profile carries the tone and the share of its two totals
 - [x] Typecheck and the full suite green
-- [ ] Dave looks at the colours on the phone before the merge (visible result)
+- [x] Dave looks at the colours on the phone before the merge (visible result): "ship it", October 9, 2026
 
 ### DEPLOY: feat/level-cost-tone
 
