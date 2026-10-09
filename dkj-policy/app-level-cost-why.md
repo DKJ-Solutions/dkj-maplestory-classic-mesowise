@@ -39,19 +39,35 @@
 
 ### PLAN
 
+Dave (October 9, 2026): "zet een vraagteken icoon achter de berekende mesos bij cheapest en profile". A visible result,
+so the branch stops for Dave's look before the merge.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Cody + Gwen: each Level cost part is a `.level-cost-part`, with the open button stretched across it and the text on top, so the question mark after the amount is a button of its own rather than a button inside a button
+- [x] Cody: short explanations behind the question mark, CHEAPEST_TOTAL_WHY and WORN_TOTAL_WHY
 
 ### TEST
 
+- [x] Tycho: the existing Level cost tests follow the new structure; a new test checks the question mark sits right after the amount, outside the open button, and opens its explanation without opening the bill
+- [x] `npm run lint` and the app suite green (333 tests)
+- [ ] Victor and Edith read the diff
+- [ ] Dave looks at it at phone width
+
 ### DEPLOY: app/level-cost-why
 
-**Score:**
+On the Level cost card a question mark now sits right after the Cheapest and Profile amounts. Tapping it explains in a
+short popup how that amount is calculated: the potions and ammo for 0 to 100% of the level, plus, for Cheapest, part of
+the price of the equipment it buys. For Profile it also explains the percentage underneath. Tapping anywhere else on the
+part still opens the bill, as before.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+You can see what the number on the home screen stands for without having to open and read the whole bill.
+
+**Score:** 2
 
 #### Pull Request
 
