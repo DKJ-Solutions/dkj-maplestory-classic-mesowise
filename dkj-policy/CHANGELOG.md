@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**19 / 27 minor entries** <!-- pending-tally -->
+**20 / 28 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/remove-topbar-tagline · 20261009-101618Z
+
+The top bar shows only the name "Mesowise" and the menu button; the tagline "Zo min mogelijk mesos per
+level in MapleStory Classic World." is gone (Dave, October 9, 2026).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+The top bar is calmer on a phone: just the app name and the menu.
+
+**Score:** 2
+
+#### Pull Request
+
+Remove the tagline from the top bar
+
+[PR #283](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/283)
+
+---
 
 ### DEPLOY: app/menu-profile-drawer · 20261009-094915Z
 
