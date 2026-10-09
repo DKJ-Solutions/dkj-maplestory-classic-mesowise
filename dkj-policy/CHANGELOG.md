@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**16 / 24 minor entries** <!-- pending-tally -->
+**17 / 25 minor entries** <!-- pending-tally -->
+
+### DEPLOY: feat/level-cost-tone · 20261009-080229Z
+
+The two Level cost totals no longer share one alarming red. Cheapest is neutral, since a level always costs something and
+Cheapest is the least it can cost. Profile is coloured against Cheapest: green up to 10% above it, red from 25% above it,
+neutral in between. Under the Profile total the same share is written out, as in "+57% more expensive" or "5% cheaper".
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+On the home screen you now see at a glance whether your own setup is close to the cheapest one, instead of two red numbers
+that both look like a warning, and the percentage under Profile says exactly how far off it is.
+
+**Score:** 3
+
+#### Pull Request
+
+Level cost: Cheapest neutral, Profile coloured by how far it sits above Cheapest
+
+[PR #279](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/279)
+
+---
 
 ### DEPLOY: fix/276-basic-attack-fallback · 20261009-073731Z
 
