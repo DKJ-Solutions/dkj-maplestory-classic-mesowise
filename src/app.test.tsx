@@ -3786,15 +3786,15 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(top.className).toBe('card level-cost')
     expect(top.querySelector('.spot-head .spot-name')!.textContent).toBe('Level cost')
     expect(top.querySelector('.spot-head .spot-name svg.card-icon')).not.toBeNull()
-    const parts = top.querySelectorAll<HTMLElement>('.level-cost-buttons > .level-cost-part')
-    expect(parts).toHaveLength(2)
-    const [left, right] = Array.from(parts)
+    const buttons = top.querySelectorAll<HTMLButtonElement>('.level-cost-buttons > button')
+    expect(buttons).toHaveLength(2)
+    const [left, right] = Array.from(buttons)
     expect(left.querySelector('.level-cost-label')!.textContent).toBe('Cheapest')
     expect(right.querySelector('.level-cost-label')!.textContent).toBe('Profile')
     expect(left.querySelector('.level-cost-total')!.textContent).toBe(total(cheapestCard()))
     expect(right.querySelector('.level-cost-total')!.textContent).toBe(total(yours()))
-    expect(left.querySelector<HTMLButtonElement>('button.level-cost-btn')!.disabled).toBe(false)
-    expect(right.querySelector<HTMLButtonElement>('button.level-cost-btn')!.disabled).toBe(false)
+    expect(left.disabled).toBe(false)
+    expect(right.disabled).toBe(false)
     // Met een bedrag op beide knoppen hoeft er niets onder.
     expect(homeScreen().querySelectorAll('.level-cost-reason')).toHaveLength(0)
   })
@@ -3806,7 +3806,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(row.previousElementSibling!.className).toBe('level-cost-buttons')
     const button = row.querySelector<HTMLButtonElement>('button')!
     expect(button.querySelector('.level-cost-label')!.textContent).toBe('Difference')
-    const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > .level-cost-part')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
+    const [cheapest, profile] = Array.from(top.querySelectorAll('.level-cost-buttons > button')).map((b) => mesoOf(b.querySelector('.level-cost-total')!.textContent))
     const d = profile - cheapest
     const pct = `${Math.round((Math.abs(d) / profile) * 100)}%`
     const summary = button.querySelector('.level-cost-diff-summary')!.textContent
@@ -3820,33 +3820,27 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
 
   it('kleurt Cheapest neutraal en Profile naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026)', () => {
     toLevel20()
-    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > .level-cost-part')).map((b) => b.querySelector('.level-cost-total')!)
+    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button')).map((b) => b.querySelector('.level-cost-total')!)
     // Een level kost altijd iets: Cheapest krijgt geen kleur.
     expect(left.className).toBe('level-cost-total')
     const [cheapest, profile] = [mesoOf(left.textContent), mesoOf(right.textContent)]
     const tone = profileTone(cheapest, profile)
     expect(right.className).toBe(`level-cost-total tone-${tone}`)
     // Onder Profile hoeveel het van Cheapest afwijkt, als deel van Cheapest, in dezelfde kleur; Cheapest zelf heeft geen percentage.
-    const share = right.closest('.level-cost-part')!.querySelector('.level-cost-share')!
+    const share = right.parentElement!.querySelector('.level-cost-share')!
     expect(share.textContent).toBe(formatShare(profileShare(cheapest, profile)!))
     expect(share.className).toBe(`level-cost-share tone-${tone}`)
-    expect(left.closest('.level-cost-part')!.querySelector('.level-cost-share')).toBeNull()
+    expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })
 
-  it('zet rechtsboven in het vak van Cheapest en Profile een vraagteken dat uitlegt hoe de app op het bedrag komt, los van de knop die de factuur opent (Dave, 9 oktober 2026)', () => {
+  it('zet een chevron in Cheapest, Profile en Difference, zodat je ziet dat je erop kunt tikken voor de factuur (Dave, 9 oktober 2026)', () => {
     toLevel20()
-    const parts = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > .level-cost-part'))
-    for (const [part, label] of [[parts[0], 'Cheapest'], [parts[1], 'Profile']] as const) {
-      const help = part.querySelector<HTMLButtonElement>(':scope > .level-cost-help > button.help-toggle')!
-      expect(help.getAttribute('aria-label'), label).toBe(`Uitleg bij ${label}`)
-      // In een eigen hoek van het vak, en geen knop in een knop.
-      expect(help.closest('button.level-cost-btn'), label).toBeNull()
-      fireEvent.click(help)
-      const dialog = part.querySelector<HTMLElement>('dialog')!
-      expect(dialog.querySelector('.item-why')!.textContent, label).toContain('van 0 tot 100% van het level')
-      // De uitleg opent niet ook de factuur.
-      expect(part.querySelector('button.level-cost-btn')!.getAttribute('aria-expanded'), label).toBe('false')
-      closeDialogs()
+    const buttons = Array.from(homeScreen().querySelectorAll<HTMLButtonElement>('section.level-cost button.level-cost-btn'))
+    expect(buttons.map((b) => b.querySelector('.level-cost-label')!.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
+    for (const b of buttons) {
+      const chevron = b.querySelector('svg.level-cost-chevron')
+      expect(chevron, b.getAttribute('aria-label')!).not.toBeNull()
+      expect(chevron!.getAttribute('aria-hidden')).toBe('true')
     }
   })
 
@@ -3868,7 +3862,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
 
   it('opent met de knoppen onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {
     toLevel20()
-    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons button.level-cost-btn'))
+    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button'))
     const equipDialog = () => document.querySelector<HTMLElement>('section.equipment dialog.card-dialog')
     const popupOf = (button: HTMLElement) => {
       closeDialogs()
@@ -4380,7 +4374,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const level = (el: Element | null) => n(el?.querySelector('.advised-total-level .meso-amount')?.getAttribute('title'))
       for (const label of ['Cheapest', 'Profile']) {
         const button = within(levelCost).getByRole('button', { name: new RegExp(`^${label}: `) })
-        const buttonTotal = n(button.parentElement!.querySelector('.level-cost-total')!.textContent)
+        const buttonTotal = n(button.querySelector('.level-cost-total')!.textContent)
         fireEvent.click(button)
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost zijn regels en een subtotaal, zonder eigen kopregel.

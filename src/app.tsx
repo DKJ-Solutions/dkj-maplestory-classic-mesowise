@@ -109,6 +109,16 @@ const QUESTION_ICON = (
   </svg>
 )
 
+/**
+ * De chevron rechts in Cheapest, Profile en Difference op het beginscherm (Dave, 9 oktober 2026): zonder zag je niet dat je op die vakken
+ * kunt tikken voor de factuur. Hetzelfde teken als een rij in de instellingen van een telefoon die verder gaat.
+ */
+const CHEVRON_ICON = (
+  <svg class="level-cost-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+)
+
 /** Het potlood: corrigeren in Profile (.equip-edit), en in de tabel van Equip de knop die een slot opent (Dave, 8 oktober 2026). */
 const PENCIL_ICON = (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -1620,22 +1630,6 @@ const WORN_HELP = (
     Wat dit level kost met wat je nu draagt, op dezelfde factuur als Cheapest: de potions en ammo die je van 0 tot 100% van het level gebruikt. Wat je al draagt,
     kost dit level niets, dus er staat geen equip in en Upgrades subtotal is 0. Wat je draagt kies je onder "Based on:": tik op het potlood achter
     Equip, kies daar een slot en kies het stuk, of corrigeer zijn stat (ATT of DEF).
-  </>
-)
-
-/** Hoe de app op het bedrag van Cheapest onder Level cost komt: achter het vraagteken naast dat bedrag (Dave, 9 oktober 2026). */
-const CHEAPEST_TOTAL_WHY = (
-  <>
-    Wat dit level kost als je speelt zoals Cheapest het uitrekent: de potions en ammo die je van 0 tot 100% van het level verbruikt op de mob van Cheapest,
-    plus het deel van de prijs van de equip die Cheapest erbij koopt. Wat je al draagt is gratis. Tik op Cheapest voor de factuur.
-  </>
-)
-
-/** Hoe de app op het bedrag van Profile onder Level cost komt: achter het vraagteken naast dat bedrag (Dave, 9 oktober 2026). */
-const WORN_TOTAL_WHY = (
-  <>
-    Wat dit level kost met wat je nu draagt en de mob die je zelf koos: de potions en ammo die je van 0 tot 100% van het level verbruikt. Wat je al draagt
-    is gratis. Eronder staat, als dat kan, hoeveel duurder of goedkoper dat is dan Cheapest. Tik op Profile voor de factuur.
   </>
 )
 
@@ -3969,39 +3963,22 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
           const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
-          // Een vraagteken rechtsboven in het vak zegt hoe de app op het bedrag komt (Dave, 9 oktober 2026). Een knop mag geen knop bevatten,
-          // dus de knop die de factuur opent ligt over het hele vak (.level-cost-part) en de tekst erbovenop; het vraagteken ligt daar weer boven.
           return (
-            <div key={p.view} class={`level-cost-part level-cost-${p.view}`}>
-              <button
-                type="button"
-                class={`btn level-cost-btn level-cost-${p.view}`}
-                disabled={p.invoice === null}
-                aria-haspopup="dialog"
-                aria-expanded={ctx.open.equip === p.view}
-                aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
-                onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
-              />
-              <span class="level-cost-label" aria-hidden="true">
-                {p.label}
-              </span>
-              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`} aria-hidden="true">
-                {text}
-              </strong>
-              {shareText && (
-                <span class={`level-cost-share tone-${tone}`} aria-hidden="true">
-                  {shareText}
-                </span>
-              )}
-              {/* Rechtsboven in het vak (Dave, 9 oktober 2026), niet achter het bedrag. */}
-              {total !== null && (
-                <span class="level-cost-help">
-                  <PopupButton icon={QUESTION_ICON} class="help-toggle" label={`Uitleg bij ${p.label}`} title={p.label}>
-                    <p class="item-why">{p.view === 'advised' ? CHEAPEST_TOTAL_WHY : WORN_TOTAL_WHY}</p>
-                  </PopupButton>
-                </span>
-              )}
-            </div>
+            <button
+              key={p.view}
+              type="button"
+              class={`btn level-cost-btn level-cost-${p.view}`}
+              disabled={p.invoice === null}
+              aria-haspopup="dialog"
+              aria-expanded={ctx.open.equip === p.view}
+              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
+              onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
+            >
+              <span class="level-cost-label">{p.label}</span>
+              <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
+              {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
+              {p.invoice !== null && CHEVRON_ICON}
+            </button>
           )
         })}
       </div>
@@ -4045,6 +4022,7 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
             </>
           )}
         </span>
+        {CHEVRON_ICON}
       </button>
       {open && (
         <StatDialog title="Difference" closeLabel="Sluiten" focusInput={false} className="report-dialog" onCancel={close}>

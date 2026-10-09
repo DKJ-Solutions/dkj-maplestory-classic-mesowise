@@ -1,4 +1,4 @@
-## app/level-cost-why
+﻿## app/level-cost-why
 
 > **How this file is read.** A step is `- [ ]` until it is resolved -- `- [x]` done, or
 > `- [~]` dropped with the reason, which exists so nobody ticks a box for work they did not do.
@@ -39,38 +39,35 @@
 
 ### PLAN
 
-Dave (October 9, 2026): "zet een vraagteken icoon achter de berekende mesos bij cheapest en profile". A visible result,
-so the branch stops for Dave's look before the merge.
+Dave (October 9, 2026): "zet een vraagteken icoon achter de berekende mesos bij cheapest en profile". After two looks
+(behind the amount, then in the top-right corner) Dave dropped the question mark: "haal maar weg dit is lelijk. het
+probleem is vooral dat het voor de gebruiker niet heel duidelijk is dat je op deze kaart kan klikken voor meer info.
+Maak dat duidelijker". A visible result, so the branch stops for Dave's look before the merge.
 
 ### CREATE
 
-- [x] Cody + Gwen: each Level cost part is a `.level-cost-part`, with the open button stretched across it and the text on top, so the question mark in its top-right corner is a button of its own rather than a button inside a button
-- [x] Cody: short explanations behind the question mark, CHEAPEST_TOTAL_WHY and WORN_TOTAL_WHY
+- [~] The question mark behind the amount, then in the top-right corner of each part: dropped at Dave's look, reverted to main
+- [x] Gwen + Cody: a chevron (â€º) on the right of Cheapest, Profile and Difference, the usual sign that a row opens something; in the colour of the part's border, with room kept free so the text never runs under it
 
 ### TEST
 
-- [x] Tycho: the existing Level cost tests follow the new structure; a new test checks the question mark sits right after the amount, outside the open button, and opens its explanation without opening the bill
+- [x] Tycho: a test checks that all three tappable parts carry the chevron, hidden from screen readers
 - [x] `npm run lint` and the app suite green (333 tests)
-- [x] Victor and Edith read the diff: the help popup inherited `pointer-events: none` from the part (fixed in the CSS), and the Profile explanation no longer promises a percentage that is not always there
-- [x] Dave looked: the question mark right after the amount did not look good; it now sits in the top-right corner of the part
-- [ ] Dave looks at the corner version at phone width
+- [ ] Dave looks at it at phone width
 
 ### DEPLOY: app/level-cost-why
 
-On the Level cost card the Cheapest and Profile parts now each carry a question mark in their top-right corner. Tapping it explains in a
-short popup how that amount is calculated: the potions and ammo for 0 to 100% of the level, plus, for Cheapest, part of
-the price of the equipment it buys. For Profile it also explains the percentage underneath. Tapping anywhere else on the
-part still opens the bill, as before.
+On the Level cost card, Cheapest, Profile and Difference now each carry a chevron (â€º) on the right, so you can see that
+tapping them opens the bill. The chevron is missing only on a part that has nothing to open.
 
 **Score:** 2
 
 #### What makes this deploy extra special
 
-You can see what the number on the home screen stands for without having to open and read the whole bill.
+On the home screen you can now see that the three Level cost parts open something; before, nothing told you that you could tap them for the bill.
 
 **Score:** 2
 
 #### Pull Request
 
-a question mark behind the Cheapest and Profile amounts in Level cost explains how each is calculated
-
+a chevron on the Level cost parts shows they open the bill

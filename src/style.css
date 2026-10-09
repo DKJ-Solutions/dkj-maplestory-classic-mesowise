@@ -275,18 +275,10 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
   border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
 .level-cost-btn.level-cost-advised { --part: var(--accent); }
-/* Cheapest en Profile (Dave, 9 oktober 2026): de knop ligt over het hele vak en de tekst erbovenop, zodat het vraagteken achter het bedrag een
-   eigen knop kan zijn; een tik op de tekst gaat door naar de knop eronder. */
-.level-cost-part { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; min-height: 44px; padding: 0.625rem 0.5rem; }
-.level-cost-part > .level-cost-btn { position: absolute; inset: 0; height: 100%; min-height: 0; padding: 0; }
-/* position: relative legt elk ander kind boven de knop; ook een nieuw kind heeft dat nodig. */
-.level-cost-part > :not(.level-cost-btn) { position: relative; pointer-events: none; }
-.level-cost-part:has(> .level-cost-btn:disabled) > :not(.level-cost-btn) { opacity: 0.5; }
-/* Het vraagteken rechtsboven in het vak (Dave, 9 oktober 2026): het tikvlak van 44px in de hoek, het icoon zo'n 10px van de rand.
-   pointer-events erft, ook naar de popup in de top layer: knop en popup moeten weer te tikken zijn. */
-.level-cost-part > .level-cost-help { position: absolute; top: 0; right: 0; }
-.level-cost-help > .help-toggle, .level-cost-help > dialog { pointer-events: auto; }
-.level-cost-help > .help-toggle { margin: 0; }
+/* De chevron rechts, verticaal in het midden (Dave, 9 oktober 2026): je kunt op het vak tikken voor de factuur. In de kleur van de rand van
+   het vak, zodat hij opvalt zonder het bedrag te overstemmen; de padding rechts houdt de tekst uit zijn buurt. */
+.level-cost-btn { position: relative; padding-left: 2.25rem; padding-right: 2.25rem; }
+.level-cost-chevron { position: absolute; right: 0.625rem; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, var(--part) 70%, var(--muted)); }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
 .level-cost-total { font-size: 1.0625rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Cheapest is neutraal: een level kost altijd iets. Profile is groen vlak bij Cheapest, rood ver erboven, neutraal daartussen (Dave, 9 oktober 2026). */
