@@ -19,6 +19,7 @@ import { itemId } from './itemIds'
 import { EXP_TABLE_SOURCE } from './data/expTable'
 import { MOBS, mobDraft } from './data/spots'
 import { STORAGE_KEY } from './storage/spots'
+import { profileTone } from './profileTone'
 
 const claw = (name: string) => {
   const c = NPC_CLAWS.find((x) => x.name === name)
@@ -3815,6 +3816,14 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     fireEvent.click(button)
     const table = row.querySelector('dialog table.invoice-difference')!
     expect(mesoOf(table.querySelector('tfoot .invoice-diff')!.textContent)).toBe(Math.abs(d))
+  })
+
+  it('kleurt Cheapest neutraal en Profile naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026)', () => {
+    toLevel20()
+    const [left, right] = Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-buttons > button')).map((b) => b.querySelector('.level-cost-total')!)
+    // Een level kost altijd iets: Cheapest krijgt geen kleur.
+    expect(left.className).toBe('level-cost-total')
+    expect(right.className).toBe(`level-cost-total tone-${profileTone(mesoOf(left.textContent), mesoOf(right.textContent))}`)
   })
 
   it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
