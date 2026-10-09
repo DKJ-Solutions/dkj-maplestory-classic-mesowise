@@ -3812,9 +3812,9 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
 
   const levelCostCards = () => Array.from(homeScreen().querySelectorAll<HTMLElement>('section.level-cost .level-cost-card'))
   const readMore = (card: HTMLElement) => within(card).getByRole('button', { name: /Read more$/ })
-  const differenceButton = (card: HTMLElement) => within(card).queryByRole('button', { name: /Difference between Cheapest and Profile$/ })
+  const differenceButton = () => within(homeScreen().querySelector<HTMLElement>('section.level-cost')!).queryByRole('button', { name: 'Difference between Cheapest and Profile' })
 
-  it('zet onder de vraag van de app Cheapest boven en Profile onder, met "VS" ertussen en het totaal van hun factuur in Level cost (Dave, 8 en 9 oktober 2026)', () => {
+  it('zet onder de vraag van de app Cheapest boven en Profile onder, met de knop Difference ertussen en het totaal van hun factuur in Level cost (Dave, 8 en 9 oktober 2026)', () => {
     toLevel20()
     const top = homeScreen().querySelector('.app-question')!.nextElementSibling!
     expect(top.tagName).toBe('SECTION')
@@ -3823,10 +3823,10 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(top.className).toBe('level-cost')
     expect(top.getAttribute('aria-label')).toBe('Level cost')
     expect(top.querySelector('.spot-head')).toBeNull()
-    // Twee kaarten, geen derde vak Difference meer, en tussen de twee een rij "VS" (Dave, 9 oktober 2026).
+    // Twee kaarten, geen derde vak Difference meer, en tussen de twee een rij met alleen de knop Difference; "VS" is weer weg (Dave, 9 oktober 2026).
     const rows = Array.from(top.querySelector('.level-cost-buttons')!.children)
-    expect(rows.map((r) => r.className)).toEqual(['level-cost-card level-cost-advised', 'level-cost-vs', 'level-cost-card level-cost-worn'])
-    expect(rows[1].textContent).toBe('VS')
+    expect(rows.map((r) => r.className)).toEqual(['level-cost-card level-cost-advised', 'level-cost-compare-row', 'level-cost-card level-cost-worn'])
+    expect(rows[1].textContent).toBe('Difference')
     expect(top.querySelector('.level-cost-diff')).toBeNull()
     const [left, right] = levelCostCards()
     expect(left.querySelector('.level-cost-label')!.textContent).toBe('Cheapest')
@@ -3856,25 +3856,29 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(share(right).className).toBe('level-cost-share cost')
   })
 
-  it('geeft elke kaart twee knoppen: Read more opent de factuur, Difference de tabel per soort kost tussen Cheapest en Profile (Dave, 9 oktober 2026)', () => {
+  it('geeft elke kaart één knop Read more voor de factuur, en zet Difference één keer in een eigen rij tussen de kaarten, zonder "VS": de tabel per soort kost tussen Cheapest en Profile (Dave, 9 oktober 2026)', () => {
     toLevel20()
     for (const card of levelCostCards()) {
-      const buttons = Array.from(card.querySelectorAll<HTMLButtonElement>('.level-cost-actions > button'))
-      expect(buttons.map((b) => b.textContent)).toEqual(['Read more', 'Difference'])
-      for (const b of buttons) expect(b.className).toBe('level-cost-more')
+      const buttons = Array.from(card.querySelectorAll<HTMLButtonElement>('button'))
+      expect(buttons.map((b) => b.textContent)).toEqual(['Read more'])
+      expect(buttons[0].className).toBe('level-cost-more')
+      expect(card.lastElementChild).toBe(buttons[0])
     }
+    const row = homeScreen().querySelector<HTMLElement>('section.level-cost .level-cost-compare-row')!
+    expect(row.textContent).toBe('Difference')
+    const button = differenceButton()!
+    expect(button.parentElement).toBe(row)
+    expect(button.textContent).toBe('Difference')
+    // Omlijnd in plaats van gevuld, zodat hij visueel afwijkt van Read more (Dave, 9 oktober 2026).
+    expect(button.className).toBe('level-cost-more level-cost-compare')
     const [cheapest, profile] = levelCostCards().map((c) => mesoOf(c.querySelector('.level-cost-total')!.textContent))
-    for (const card of levelCostCards()) {
-      const button = differenceButton(card)!
-      // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
-      expect(homeScreen().querySelector('section.level-cost dialog')).toBeNull()
-      fireEvent.click(button)
-      expect(button.getAttribute('aria-expanded')).toBe('true')
-      const dialog = homeScreen().querySelector<HTMLElement>('section.level-cost dialog')!
-      expect(Array.from(dialog.querySelectorAll('table.invoice-difference thead th')).map((th) => th.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
-      expect(mesoOf(dialog.querySelector('tfoot .invoice-diff')!.textContent)).toBe(profile - cheapest)
-      closeDialogs()
-    }
+    // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
+    expect(homeScreen().querySelector('section.level-cost dialog')).toBeNull()
+    fireEvent.click(button)
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    const dialog = homeScreen().querySelector<HTMLElement>('section.level-cost dialog')!
+    expect(Array.from(dialog.querySelectorAll('table.invoice-difference thead th')).map((th) => th.textContent)).toEqual(['Cheapest', 'Profile', 'Difference'])
+    expect(mesoOf(dialog.querySelector('tfoot .invoice-diff')!.textContent)).toBe(profile - cheapest)
   })
 
   it('zegt in de kaart van Profile waarom hij een vraagteken toont, niet onder de kaarten: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
@@ -3896,7 +3900,9 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(document.body.textContent).not.toContain('niet volledig ingevuld')
     // Zonder factuur aan beide kanten niets te vergelijken: geen percentage en geen Difference.
     expect(top.querySelector('.level-cost-share')).toBeNull()
-    for (const card of levelCostCards()) expect(differenceButton(card)).toBeNull()
+    expect(differenceButton()).toBeNull()
+    // De rij blijft leeg, zodat de CSS hem verbergt (:empty) en er geen dubbele ruimte tussen de kaarten staat.
+    expect(top.querySelector('.level-cost-compare-row')!.childNodes).toHaveLength(0)
   })
 
   it('opent met Read more onder de vraag dezelfde popup als Cheapest en Profile op de Equip-kaart', () => {

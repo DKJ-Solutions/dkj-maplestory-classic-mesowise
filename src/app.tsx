@@ -3956,18 +3956,19 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 }
 
 /**
- * Onder de vraag van de app twee kaarten onder elkaar met "VS" ertussen (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section
+ * Onder de vraag van de app twee kaarten onder elkaar met de knop Difference ertussen (Dave, 8 oktober 2026; sinds 9 oktober 2026 in een eigen section
  * zonder kaart, en sinds diezelfde dag zonder derde vak Difference): boven wat het level kost met de setup van Cheapest, onder met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost en eronder hoeveel goedkoper of duurder het is dan de andere kaart.
- * Elke kaart heeft twee knoppen (Dave, 9 oktober 2026): "Read more" opent dezelfde popup als Cheapest en Profile op de Equip-kaart (hoe het
- * bedrag tot stand komt), "Difference" de tabel per soort kost tussen Cheapest en Profile.
+ * Elke kaart heeft een knop "Read more" (Dave, 9 oktober 2026): dezelfde popup als Cheapest en Profile op de Equip-kaart (hoe het bedrag tot
+ * stand komt). De knop "Difference" staat één keer, in een rij tussen de twee kaarten (Dave): de tabel per soort kost tussen Cheapest en Profile.
  * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, met in de kaart zelf waarom (#262; Dave,
  * 9 oktober 2026: niet eronder), en zonder factuur aan beide kanten geen vergelijking en geen Difference.
  */
 function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice; job: Job }) {
   const ctx = useContext(CardViewContext)
   const problem = useContext(ProfileProblem)
-  const [diffOpen, setDiffOpen] = useState<HTMLButtonElement | null>(null)
+  const [diffOpen, setDiffOpen] = useState(false)
+  const diffButton = useRef<HTMLButtonElement>(null)
   const parts = [
     { view: 'advised', label: 'Cheapest', invoice: props.advised, other: props.wearing },
     { view: 'worn', label: 'Profile', invoice: props.wearing, other: props.advised },
@@ -3975,9 +3976,8 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
   const cheapest = props.advised?.kind === 'invoice' ? props.advised : null
   const wearing = props.wearing.kind === 'invoice' ? props.wearing : null
   const closeDiff = () => {
-    const opener = diffOpen
-    setDiffOpen(null)
-    requestAnimationFrame(() => opener?.focus())
+    setDiffOpen(false)
+    requestAnimationFrame(() => diffButton.current?.focus())
   }
   const cards = parts.map((p) => {
     const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
@@ -3997,32 +3997,17 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
         <strong class="level-cost-total">{text}</strong>
         {shareText && <span class={`level-cost-share${tone}`}>{shareText}</span>}
         {reason && <span class="level-cost-reason">{reason}</span>}
-        <div class="level-cost-actions">
-          <button
-            type="button"
-            class="level-cost-more"
-            disabled={p.invoice === null}
-            aria-haspopup="dialog"
-            aria-expanded={ctx.open.equip === p.view}
-            aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}. Read more`}
-            onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
-          >
-            Read more
-          </button>
-          {cheapest && wearing && (
-            <button
-              type="button"
-              class="level-cost-more"
-              aria-haspopup="dialog"
-              aria-expanded={diffOpen?.dataset.view === p.view}
-              aria-label={`${p.label}: Difference between Cheapest and Profile`}
-              data-view={p.view}
-              onClick={(e) => setDiffOpen(e.currentTarget)}
-            >
-              Difference
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          class="level-cost-more"
+          disabled={p.invoice === null}
+          aria-haspopup="dialog"
+          aria-expanded={ctx.open.equip === p.view}
+          aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}. Read more`}
+          onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
+        >
+          Read more
+        </button>
       </div>
     )
   })
@@ -4032,9 +4017,14 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     <section class="level-cost" aria-label="Level cost">
       <div class="level-cost-buttons">
         {cards[0]}
-        {/* Tussen de twee kaarten een rij "VS" (Dave, 9 oktober 2026): de twee worden met elkaar vergeleken. */}
-        <div class="level-cost-vs" aria-hidden="true">
-          VS
+        {/* Tussen de twee kaarten een rij met alleen de knop die het verschil per soort kost toont (Dave, 9 oktober 2026; eerst met "VS" ervoor,
+            dat is weer weg). Zonder factuur aan beide kanten valt er niets te vergelijken en blijft de rij leeg. */}
+        <div class="level-cost-compare-row">
+          {cheapest && wearing && (
+            <button ref={diffButton} type="button" class="level-cost-more level-cost-compare" aria-haspopup="dialog" aria-expanded={diffOpen} aria-label="Difference between Cheapest and Profile" onClick={() => setDiffOpen(true)}>
+              Difference
+            </button>
+          )}
         </div>
         {cards[1]}
       </div>

@@ -42,10 +42,10 @@
 ### CREATE
 
 - [x] Iterated with Dave on the Difference card (colour, amount only, share under it, same layout, no minus, plain Profile colour, label, table column order)
-- [x] Cody + Gwen: the Difference card is removed; Cheapest and Profile each become a card with two buttons, "Read more" (the invoice) and "Difference" (the table per kind of cost), and a "VS" row between them
+- [x] Cody + Gwen: the Difference card is removed; Cheapest and Profile each become a card with a "Read more" button (the invoice), with one outlined "Difference" button (the table per kind of cost) in its own row between them, and a wider gap
 - [x] Cody: both cards say how much cheaper or more expensive they are than the other (share of the other card's total), green or red; the totals stay neutral and carry no minus
 - [x] Gwen: the Difference table's columns follow the cards: Cheapest, Profile, Difference
-- [x] Tycho: the Level cost tests cover the two cards, the VS row, both shares and their colours, both buttons and the Difference popup
+- [x] Tycho: the Level cost tests cover the two cards, the Difference row (and that it stays empty without a comparison), both shares and their colours, both buttons and the Difference popup
 
 ### TEST
 
@@ -54,7 +54,7 @@
 
 ### DEPLOY: app/difference-summary-color
 
-The Level cost section on the home screen no longer has a separate Difference card. Cheapest and Profile are now two cards with "VS" between them. Each shows what the level costs (without a minus sign) and, underneath, how much cheaper or more expensive it is than the other card, in green or red. Each card has two buttons: "Read more" opens the invoice behind the amount, and "Difference" opens the table per kind of cost, whose columns now read Cheapest, Profile, Difference.
+The Level cost section on the home screen no longer has a separate Difference card. Cheapest and Profile are now two cards, each showing what the level costs (without a minus sign) and, underneath, how much cheaper or more expensive it is than the other card, in green or red. Each card has a "Read more" button that opens the invoice behind the amount. Between the two cards sits one outlined "Difference" button that opens the table per kind of cost, whose columns now read Cheapest, Profile, Difference.
 
 **Score:** 3
 
