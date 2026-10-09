@@ -4043,8 +4043,9 @@ function LevelCostDifference(props: { cheapest: Extract<LevelInvoice, { kind: 'i
             summary
           ) : (
             <>
-              {/* Rood als Cheapest bespaart: dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de tabel). */}
-              {d > 0 ? 'Cheapest' : 'Profile'} saves <strong class={d > 0 ? 'cost' : 'gain'}>{nfInt.format(Math.abs(d))} meso</strong>
+              {/* Alleen het bedrag, zonder "Cheapest saves" (Dave, 9 oktober 2026): de kleur zegt wie bespaart. Rood als Cheapest bespaart,
+                  dan betaalt jouw Profile meer; groen als Profile de goedkoopste is (net als de tabel). De aria-label houdt de hele zin. */}
+              <strong class={d > 0 ? 'cost' : 'gain'}>{nfInt.format(Math.abs(d))} meso</strong>
               {share}
             </>
           )}

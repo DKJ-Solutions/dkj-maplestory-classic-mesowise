@@ -42,7 +42,8 @@
 ### CREATE
 
 - [x] Cody: the Difference summary colours its amount with `.cost` (red) when Cheapest saves, `.gain` (green) when Profile does
-- [x] Tycho: the existing Difference-row test asserts that class
+- [x] Cody: the card shows only the amount and share, without "Cheapest saves"; the aria-label keeps the full sentence
+- [x] Tycho: the existing Difference-row test asserts that class, the shorter text and the aria-label
 
 ### TEST
 
@@ -51,7 +52,7 @@
 
 ### DEPLOY: app/difference-summary-color
 
-The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table.
+The Difference card on the home screen showed its meso amount in green even when your profile costs more than Cheapest. It is now red in that case and green only when your profile is the cheaper one, matching the Difference table. The card now shows only the amount and its share; the colour says which setup is cheaper.
 
 **Score:** 2
 

@@ -3843,7 +3843,9 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     const d = profile - cheapest
     const pct = `${Math.round((Math.abs(d) / profile) * 100)}%`
     const summary = button.querySelector('.level-cost-diff-summary')!.textContent
-    expect(summary).toBe(d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso (${pct})` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso (${pct})` : 'No difference')
+    // Op de kaart alleen het bedrag (Dave, 9 oktober 2026); de aria-label zegt wie bespaart.
+    expect(summary).toBe(d === 0 ? 'No difference' : `${Math.abs(d).toLocaleString('nl-NL')} meso (${pct})`)
+    expect(button.getAttribute('aria-label')).toBe(`Difference: ${d > 0 ? `Cheapest saves ${d.toLocaleString('nl-NL')} meso (${pct})` : d < 0 ? `Profile saves ${(-d).toLocaleString('nl-NL')} meso (${pct})` : 'No difference'}`)
     // Het bedrag is rood als jouw Profile duurder is dan Cheapest, groen als het goedkoper is (Dave, 9 oktober 2026), net als de tabel.
     if (d !== 0) expect(button.querySelector('.level-cost-diff-summary strong')!.className).toBe(d > 0 ? 'cost' : 'gain')
     // De tabel staat niet op het beginscherm, maar in een eigen popup, zodat het scherm zonder scrollen past.
