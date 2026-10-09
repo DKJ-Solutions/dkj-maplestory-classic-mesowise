@@ -260,7 +260,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .app-question { box-sizing: border-box; width: 100%; margin: 0 0 1rem; padding: 0.75rem 1rem; font-size: 1.0625rem; line-height: 1.35; text-align: center; color: var(--text);
   background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 0; border-radius: 0; }
 .app-question strong { color: var(--accent); white-space: nowrap; }
-/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): Cheapest in de accenttint, Profile in grijs, met de knop Difference ertussen. Sinds
+/* Onder de vraag van de app wat het level kost (Dave, 8 oktober 2026): Cheapest in de accenttint, Profile in blauw, met de knop Difference ertussen. Sinds
    9 oktober 2026 (Dave) een eigen section direct in main, zonder kaart en zonder kop: de twee kaarten staan los onder de vraag. */
 /* De section rekt mee in de hoogte die over is; die ruimte gaat naar de twee kaarten. */
 .level-cost { flex: 1 0 auto; display: flex; flex-direction: column; gap: 0.625rem; }
@@ -275,6 +275,8 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-card { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; padding: 1.25rem 1rem;
   border: 1px solid color-mix(in srgb, var(--part) 35%, var(--border)); border-radius: 0.5rem; background: color-mix(in srgb, var(--part) 7%, var(--card)); color: var(--text); }
 .level-cost-card.level-cost-advised { --part: var(--accent); }
+/* Profile met een blauw tintje (Dave, 9 oktober 2026): de kleur van jouw setup elders in de app (--worn-accent), zoals Cheapest de accenttint heeft. */
+.level-cost-card.level-cost-worn { --part: var(--worn-accent); }
 /* De rij tussen de kaarten (Dave, 9 oktober 2026): alleen de knop Difference voor het verschil per soort kost, in het midden. */
 .level-cost-compare-row { display: flex; justify-content: center; }
 /* Zonder vergelijking geen lege rij en dus geen dubbele ruimte tussen de kaarten. */
