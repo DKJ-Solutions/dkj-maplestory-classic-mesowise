@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AmmoSteps, App, FIRST_POPUP, MulCalc, noSavingText, POPUP_STEP, totalCostWho } from './app'
-import { advisedSetup } from './advisedSetup'
+import { cheapestFor } from './advisedSetup'
 import type { AmmoWhy } from './levelInvoice'
 import { cheapestSettings } from './cheapestSettings'
 
@@ -221,6 +221,15 @@ const chooseMob = (name: string) => {
   fireEvent.change(within(mobDialog()).getByLabelText('De mob die je het meest killt'), { target: { value: name } })
   fireEvent.click(within(mobDialog()).getByRole('button', { name: 'Opslaan' }))
   fireEvent.click(viewButton('Monster'))
+}
+
+/**
+ * Een eigen wapen met 1 ATT in de hand, voor de tests waarin Cheapest een wapen koopt: een leeg wapenslot is vanaf level 10 het gratis wapen van je 1e job (Dave, 9 oktober 2026),
+ * en dat is voor een Thief zo goed dat Cheapest er op level 20 geen betere claw voor koopt.
+ */
+const wearWeakWeapon = () => {
+  pickOwn(cards()[0], 'Weapon', 'Mijn claw')
+  correct(cards()[0], 'Weapon', 'ATT', '1')
 }
 
 /** Het scherm opnieuw opbouwen op een hoger character-level: de zoekbalk toont alleen wat je op je level kunt dragen (#188). Wat al is opgeslagen blijft staan. */
@@ -524,9 +533,10 @@ describe('equipment: de claw past het profiel aan', () => {
   })
 
   it('zet een gekocht wapen in Cheapest als slot, naam en bedrag (zonder details) met het vraagteken dicht tot je tikt (Dave, 7 oktober 2026)', () => {
-    // Niets aan: het wapenslot is leeg, dus Cheapest koopt het goedkoopste wapen dat je kunt dragen (#202).
+    // Een eigen wapen van 1 ATT: Cheapest koopt een beter wapen (#202; een leeg wapenslot is sinds 9 oktober 2026 het gratis jobwapen).
     atLevel('20')
     openHomeEquipment()
+    wearWeakWeapon()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -558,6 +568,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('maakt de eerste popup 95% zo breed als het scherm en elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
+    wearWeakWeapon()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const item = openItem(advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!, 'Weapon'))
@@ -574,6 +585,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('toont in de info-popup van een gekocht wapen Soort, Level, ATT en Prijs, en brengt de focus na sluiten terug naar de infoknop (Dave, 7 oktober 2026)', async () => {
     atLevel('20')
     openHomeEquipment()
+    wearWeakWeapon()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -603,6 +615,7 @@ describe('equipment: de claw past het profiel aan', () => {
   it('zet in het vraagteken van een gekocht wapen het oordeel Kopen en dat je meso overhoudt, en laat een leeg slot en een stuk dat je houdt weg (Dave, 7 en 8 oktober 2026)', () => {
     atLevel('20')
     openHomeEquipment()
+    wearWeakWeapon()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -633,6 +646,7 @@ describe('equipment: de claw past het profiel aan', () => {
       atLevel('20')
       openHomeEquipment()
       if (wear) pick(cards()[0], 'Weapon', IGOR.name)
+      else wearWeakWeapon()
       fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
       fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
       return cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -674,6 +688,7 @@ describe('equipment: de claw past het profiel aan', () => {
     atLevel('20')
     openHomeEquipment()
     pickOwn(cards()[0], 'Overall', 'Mijn overall')
+    wearWeakWeapon()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const withOverall = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
@@ -1204,6 +1219,10 @@ describe('bewaren na elke wijziging', () => {
   })
 
   it('toont een ongeldige tijd per aanval op de karakterkaart, niet op de equipment-kaart', () => {
+    // Met een eigen wapen in de hand: een leeg wapenslot is vanaf level 10 het gratis jobwapen, dat zijn eigen tijd per aanval zet (Dave, 9 oktober 2026).
+    cleanup()
+    localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: { claw: { pick: 'other', name: 'Mijn claw', stat: '20' } } }))
+    render(<App />)
     fireEvent.click(viewButton('Total stats'))
     const h = openStat('Tijd per aanval (ms)')
     h.type('50')
@@ -2442,6 +2461,8 @@ describe('een Magician in de app', () => {
     cleanup()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'magician' }))
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ version: 1, fields: { ...magicianFields, ...over } }))
+    // Hij draagt zijn Sapphire Staff (M.ATT 31, zoals hierboven): een leeg wapenslot is vanaf level 10 het gratis Beginner's Wooden Wand (Dave, 9 oktober 2026).
+    localStorage.setItem(EQUIPMENT_KEY, JSON.stringify({ version: 1, slots: { claw: { pick: 'Sapphire Staff', name: '', stat: '' } } }))
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -4188,8 +4209,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     const profileDraft: ProfileDraft = { ...DEFAULT_PROFILE, ...(profileFields() as Partial<ProfileDraft>) }
     const choice = stored(POTION_CHOICE_KEY)
     const input = { job: 'thief' as const, gender: null, equipment: defaultEquipment(), drafts: stored(STORAGE_KEY).spots, profileDraft, potionChoice: { hp: choice.hp, mp: choice.mp, fix: choice.fix } }
-    // De setup van Cheapest koopt ook equip (#192) en rekent er om en om mee, zoals de app het doet.
-    return advisedSetup(input).result
+    // De setup van Cheapest koopt ook equip (#192) en rekent er om en om mee, zoals de app het doet (cheapestFor: met wat je echt draagt, ook het gratis jobwapen vanaf level 10).
+    return cheapestFor(input).result
   }
 
   it('zet bij elke kaart eerst Cheapest en dan Profile, en geen oog of knop in de kop (#192)', () => {
@@ -4252,7 +4273,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     atLevel('10')
     expect(stored(EQUIPMENT_KEY)).toEqual(stored20)
     // Plus wat je in het begin gratis krijgt in een leeg slot: de schoenen (zonder geslacht geen top of bottom) en de questhoed (Dave, 8 oktober 2026).
-    expect(freeOn()).toBe('Equip: 3 items equipped')
+    // En vanaf level 10 het gratis wapen van je 1e job in het lege wapenslot: de Beginner's Garnier (Dave, 9 oktober 2026).
+    expect(freeOn()).toBe('Equip: 4 items equipped')
     openHomeEquipment()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Equip wijzigen' }))
     const picker = cards()[0].querySelector<HTMLElement>('dialog.card-dialog dialog.item-dialog')!
@@ -4270,7 +4292,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     atLevel('20')
     expect(freeOn()).toBe('Equip: 4 items equipped')
     fireEvent.click(viewButton('Total stats'))
-    expect(Number(statShown('W.ATT')) - watkAt10).toBe(13)
+    // Op level 10 telt de Beginner's Garnier (10) in plaats van het wapen boven je level, dus het verschil is 13 - 10.
+    expect(Number(statShown('W.ATT')) - watkAt10).toBe(13 - 10)
   })
 
   it('telt de stars waarmee je factuur rekent mee bij wat je equipped hebt, ook met een leeg ammo-slot (Dave, 8 oktober 2026)', () => {
@@ -4314,8 +4337,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     // Equip: wat je draagt, ook als Cheapest het houdt; Cheapest rekent ermee en het kost niets.
     const worn = d.querySelector<HTMLElement>('.based-on-label[data-based-on-equip]')!
     // Je ziet dat je het al draagt en het dus gratis houdt (Dave, 8 oktober 2026).
-    // Red Pao, je startschoenen en de questhoed (zonder geslacht geen startbroek).
-    expect(worn.textContent).toBe('Equip: 3 items equipped')
+    // Red Pao, je startschoenen, de questhoed (zonder geslacht geen startbroek) en het gratis wapen van je 1e job (Beginner's Garnier).
+    expect(worn.textContent).toBe('Equip: 4 items equipped')
     // New equip: precies de stukken die Cheapest koopt, de regels van Equip in de bill.
     const bought = d.querySelector<HTMLElement>('.based-on-label[data-based-on-bought]')!
     const buys = d.querySelectorAll('tbody.bill-group-equip .advised-row.buy').length
@@ -5253,10 +5276,10 @@ describe('equipment: Profile als tabel', () => {
     atLevel('30')
     openHomeEquipment()
     let dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026).
-    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
+    // Niets zelf gekozen: wat je in het begin krijgt, zonder geslacht de questhoed en de schoenen (Dave, 8 oktober 2026), en op level 30 het gratis wapen van je 1e job (9 oktober 2026).
+    expect(equipRow(dialog).getAttribute('data-based-on-equip')).toBe([itemId("Beginner's Garnier"), itemId('Brown Skullcap'), itemId('Leather Sandals')].join(' '))
     expect(equipRow(dialog).getAttribute('data-sheet')).toBe('profile')
-    expect(within(dialog).getByRole('button', { name: 'Equip: 2 items equipped' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Equip: 3 items equipped' })).toBeTruthy()
     pick(cards()[0], 'Weapon', IGOR.name)
     pick(cards()[0], 'Top', 'Red Pao')
     closeDialogs()

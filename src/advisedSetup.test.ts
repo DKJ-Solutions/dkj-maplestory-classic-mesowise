@@ -6,6 +6,7 @@ import { eligibleMobs } from './mobAdvice'
 import { MOBS, mobDraft } from './data/spots'
 import { SUBI } from './data/thief'
 import { defaultEquipment, familyName, isEmptyEntry, wornName } from './equipment'
+import { freeJobWeaponName } from './freeJobWeapon'
 import type { Job } from './job'
 import { levelInvoice } from './levelInvoice'
 import { NO_POTION_CHOICE } from './potions'
@@ -165,7 +166,11 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
         expect(bought, label + ' gekocht').toBeDefined()
         expect(bought!.name, label).toBe(slot.cheapest)
         expect(bought!.price, label).toBe(slot.price)
-        expect(bought!.price, label + ' prijs').toBeGreaterThan(0)
+        // Het gratis wapen van je 1e job (Dave, 9 oktober 2026; Thief en Magician) kost niets; elk ander wapen heeft zijn winkelprijs.
+        if (bought!.name === freeJobWeaponName(job)) expect(bought!.price, label + ' gratis').toBe(0)
+        else expect(bought!.price, label + ' prijs').toBeGreaterThan(0)
+        // Op level 10 is dat gratis wapen het goedkoopste: een Thief of Magician koopt daar niets.
+        if (level === 10 && (job === 'thief' || job === 'magician')) expect(bought!.name, label + ' jobwapen').toBe(freeJobWeaponName(job))
         expect(wornName(s.equipment.claw), label + ' equip').toBe(slot.cheapest)
       }
     }
@@ -173,7 +178,9 @@ describe('advisedSetup: er staat altijd een wapen in het advies (Dave, 7 oktober
 
   it('geeft Dave\'s geval: een Thief en een Warrior op level 10 met het voorbeeldprofiel krijgen allebei een wapen', () => {
     const thief = advisedSetup(bare('thief', 10))
-    expect(thief.cheapest.claw).toMatchObject({ cheapest: 'Garnier', changed: true, price: 5000 })
+    // Sinds 9 oktober 2026 is dat het gratis Beginner's Garnier van je 1e job (was: de Garnier uit de winkel voor 5.000).
+    expect(thief.cheapest.claw).toMatchObject({ cheapest: "Beginner's Garnier", changed: true, price: 0 })
+    expect(thief.shop).toBe(0)
     const warrior = advisedSetup(bare('warrior', 10))
     expect(warrior.cheapest.claw).toMatchObject({ cheapest: 'Steel Pipe', changed: true, price: 3000 })
   })
@@ -293,13 +300,13 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
     const fixed = freshStart({ ...user, profileDraft: { ...user.profileDraft, ...bad } })
     for (const k of Object.keys(bad) as (keyof typeof bad)[]) expect(fixed.profileDraft[k], k).toBe(DEFAULT_PROFILE[k])
     expect(profileOf(fixed), 'fout in een equip-veld').not.toBeNull()
-    // Een stuk boven je level telt als leeg: een Steel Titans (level 15) op level 10, en Cheapest koopt er zelf een wapen voor (Dave, 8 oktober 2026).
+    // Een stuk boven je level telt als leeg: een Steel Titans (level 15) op level 10. Een Thief heeft dan het gratis wapen van zijn 1e job in de hand, dus Cheapest hoeft er geen te kopen (Dave, 9 oktober 2026).
     const atTen = { ...user, profileDraft: { ...user.profileDraft, level: '10' } }
-    expect(isEmptyEntry(freshStart(atTen).equipment.claw)).toBe(true)
+    expect(freshStart(atTen).equipment.claw.pick).toBe("Beginner's Garnier")
     expect(freshStart(user).equipment.claw.pick).toBe('Steel Titans')
     const armed = cheapestFor(atTen)
-    expect(wornName(armed.equipment.claw)).not.toBe('Steel Titans')
-    expect(armed.purchases.some((p) => p.slot === 'claw')).toBe(true)
+    expect(wornName(armed.equipment.claw)).toBe("Beginner's Garnier")
+    expect(armed.purchases.some((p) => p.slot === 'claw')).toBe(false)
     const low = freshStart({ ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '5' } }).profileDraft
     expect([low.luckySeven, low.energyBolt]).toEqual(['0', '0'])
     // Een Max HP die geen getal is, valt terug op de standaard; een getal blijft staan.
@@ -349,7 +356,7 @@ describe('cheapestFor: Cheapest bouwt zijn setup zelf op uit job, level en de eq
       if (n !== 0) expect(skills, name).toContain(`${name} ${n > 0 ? '+' : '−'}${Math.abs(n)}`)
     }
     // Een Thief met een dagger heeft Double Stab; zet Cheapest die op 0, dan staat dat in de regel (Victor, 8 oktober 2026).
-    const dagger = { ...clean('thief'), profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1', doubleStab: '12' } }
+    const dagger = { ...clean('thief'), equipment: { ...defaultEquipment(), claw: { pick: 'Field Dagger', name: '', stat: '' } }, profileDraft: { ...DEFAULT_PROFILE, level: '20', dagger: '1', doubleStab: '12' } }
     const withDagger = cheapestFor(dagger).result
     const lost = Number(withDagger.profileDraft.doubleStab) - 12
     if (lost !== 0) expect(withDagger.changes.find((c) => c.kind === 'skills')?.text ?? '').toContain(`Double Stab ${lost > 0 ? '+' : '−'}${Math.abs(lost)}`)
@@ -445,4 +452,39 @@ describe('cheapestFor: Cheapest is nooit duurder dan je eigen setup (#273)', () 
     // De sweep vergelijkt ook echt mobs, anders bewijst hij niets.
     expect(checked).toBeGreaterThan(JOBS.length * LEVELS.length)
   }, 30_000)
+})
+
+describe('advisedSetup: het gratis jobwapen op level 10 (Dave, 9 oktober 2026)', () => {
+  const withKnife = (level: string, clawWatk: string): CheapestInput => {
+    const user = input('thief', Number(level), 'Snail')
+    // Zoals de Equip-kaart een Fruit Knife zet: een dagger, dus met de dagger-vlag aan en zijn aanvalstijd.
+    return { ...user, equipment: { ...defaultEquipment(), claw: { pick: 'Fruit Knife', name: '', stat: '' } }, profileDraft: { ...user.profileDraft, clawWatk, dagger: '1', attackMs: '660' } }
+  }
+
+  it('houdt een Fruit Knife die het level goedkoper maakt dan de Beginner\'s Garnier, en zet geen 5.000 op de factuur', () => {
+    const s = advisedSetup(withKnife('12', '23'))
+    expect(s.cheapest.claw).toMatchObject({ worn: 'Fruit Knife', cheapest: 'Fruit Knife', changed: false })
+    expect(s.shop).toBe(0)
+  })
+
+  it("schakelt een Thief op level 20 met een Fruit Knife over op de Beginner's Garnier voor niets, en blijft een vast punt", () => {
+    // Cheapest kiest zelf zijn mob (geen mob gekozen): met die mob en zijn eigen skillpunten is de claw goedkoper dan de dagger.
+    const user = { ...withKnife('20', '23'), drafts: [] }
+    const s = cheapestFor(user)
+    expect(s.cheapest.claw).toMatchObject({ worn: 'Fruit Knife', cheapest: "Beginner's Garnier", changed: true, price: null })
+    // Gratis: er staat niets van 5.000 (de Garnier uit de winkel) op de factuur, en het wapen is een claw.
+    expect(s.purchases.some((p) => p.slot === 'claw')).toBe(false)
+    expect(s.profile.dagger).toBe('0')
+    // Na Overnemen draag je het gratis wapen en verandert er niets meer.
+    const again = cheapestFor(afterTake(user, s))
+    expect(again.cheapest.claw).toMatchObject({ worn: "Beginner's Garnier", changed: false })
+    expect(again.purchases.map((p) => p.name)).toEqual([])
+    expect(again.result.changes).toEqual([])
+  })
+
+  it('geeft een Warrior en een Bowman geen gratis wapen, en een Thief onder level 10 ook niet', () => {
+    for (const job of ['warrior', 'bowman'] as const) expect(advisedSetup(input(job, 12, 'Snail')).purchases.find((p) => p.slot === 'claw')?.price, job).toBeGreaterThan(0)
+    expect(freeJobWeaponName('warrior')).toBeNull()
+    expect(freeJobWeaponName('bowman')).toBeNull()
+  })
 })

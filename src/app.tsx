@@ -2263,7 +2263,7 @@ function EquipmentCard(props: {
   job: Job
   /** De toegepaste stand: wat in het profiel en het advies verwerkt zit. */
   equipment: Equipment
-  /** Wat je echt draagt zoals de berekening het ziet (wearableSetup): zonder equip boven je level, met je startkleding; voor de free items onder "Based on:". */
+  /** Wat je echt draagt zoals de berekening het ziet (wearableSetup): zonder equip boven je level, met je startkleding en je gratis jobwapen vanaf level 10; voor de free items onder "Based on:". */
   wearable: Equipment
   /** Het concept uit het corrigeervak (popup) dat nog niet is opgeslagen; telt nergens mee. */
   pending: Partial<Record<EquipSlot, string>>
@@ -2491,7 +2491,7 @@ function EquipmentCard(props: {
     const value = wornStat(slot, entry)
     return [value === undefined ? '?' : nfInt.format(value), statName(slot, props.job)] as const
   }
-  // Wat je echt draagt (wearableSetup): zonder stukken boven je level (#264), met je startkleding in een leeg top-, bottom- of schoenenslot.
+  // Wat je echt draagt (wearableSetup): zonder stukken boven je level (#264), met je startkleding in een leeg top-, bottom- of schoenenslot en je gratis jobwapen in een leeg wapenslot (vanaf level 10).
   const wornList = slots.flatMap((slot) => {
     const entry = props.wearable[slot]
     const name = wornName(entry)
@@ -4238,7 +4238,7 @@ export function App() {
   const [equipment, setEquipment] = useState<Equipment>(() => loadEquipment(storage, job, profileDraft.helpfulStranger === '1'))
   // Equip boven je level kun je niet dragen (Dave, 8 oktober 2026, #264): zo'n stuk blijft bewaard, maar de berekening rekent zonder, met zijn ATT of
   // DEF eraf. Ga je weer een level omhoog, dan telt het vanzelf weer mee. Wat je ziet en bewerkt, blijft `profileDraft` en `equipment`.
-  // En een leeg top-, bottom- of schoenenslot telt als je startkleding (Dave, 8 oktober 2026, wearableSetup).
+  // En een leeg top-, bottom- of schoenenslot telt als je startkleding, en een leeg wapenslot vanaf level 10 als het gratis wapen van je 1e job (Dave, 8 en 9 oktober 2026, wearableSetup).
   const wearable = useMemo(() => wearableSetup(profileDraft, equipment, job, gender), [profileDraft, equipment, job, gender])
   const parsed = useMemo(() => parseProfile(wearable.profile, job, gender), [wearable, job, gender])
   const parsedProfile = 'profile' in parsed ? parsed.profile : null

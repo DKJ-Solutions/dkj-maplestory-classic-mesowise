@@ -516,8 +516,8 @@ describe('clawUpgradeAdvice met de beginner-winkel onder level 10 (#203)', () =>
     for (const job of ['warrior', 'magician'] as const) expect(withClaw(beginnerOf(job, 8), requiredWeaponFor('Razor')).dagger, job).toBe(0)
   })
 
-  it('laat vanaf level 10 de vlag beginner niets veranderen', () => {
-    for (const job of ['thief', 'warrior', 'bowman', 'magician'] as const)
+  it('laat vanaf level 10 de vlag beginner niets veranderen, behalve het gratis jobwapen van een Thief of Magician (Dave, 9 oktober 2026)', () => {
+    for (const job of ['warrior', 'bowman'] as const)
       for (const level of [10, 11, 15, 20, 30]) {
         const p = beginnerOf(job, level)
         for (const scope of ['next-upgrade', 'this-level'] as const)

@@ -2,10 +2,12 @@
 // mob en potions hangen af van de equip. Dit rekent dat om en om uit tot het equip-advies niets meer koopt, zodat wie Overnemen tikt daarna
 // niets meer wint en niets meer te kopen heeft. Puur, zonder UI-import.
 import { armorUpgradeAdvice } from './armorUpgrade'
+import { BEGINNER_WORN_WEAPONS } from './data/beginnerWeapons'
 import { advisedEquipment, cheapestEquipment, countedAmmo, type CheapestSlot, type Purchase } from './cheapestEquip'
 import { changesBetween, cheapestSettings, costOf, potionNames, profileOf, type CheapestInput, type CheapestResult } from './cheapestSettings'
 import { clawUpgradeAdvice, requiredWeapon } from './clawUpgrade'
-import { EQUIP_SLOTS, familyName, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { changeEquipment, choosePick, EQUIP_SLOTS, familyName, isEmptyEntry, wearableSetup, shownSlots, wornName, wornWdef, type EquipEntry, type EquipSlot, type Equipment } from './equipment'
+import { FREE_WEAPON_LEVEL, freeJobWeaponName } from './freeJobWeapon'
 import { starUpgradeAdvice } from './starUpgrade'
 import { ammoLabel, levelInvoice } from './levelInvoice'
 import type { Job } from './job'
@@ -75,7 +77,7 @@ export function freshStart(user: CheapestInput): CheapestInput {
     level: user.profileDraft.level,
     hp: /^[1-9]\d*$/.test(hp) ? hp : DEFAULT_PROFILE.hp,
   }
-  // Wat je echt draagt (wearableSetup): een stuk boven je level telt niet mee (#264), en een leeg top-, bottom- of schoenenslot is je startkleding.
+  // Wat je echt draagt (wearableSetup): een stuk boven je level telt niet mee (#264), en een leeg top-, bottom- of schoenenslot is je startkleding en een leeg wapenslot vanaf level 10 het gratis wapen van je 1e job (Thief, Magician).
   const { equipment, profile: profileDraft } = wearableSetup(start, user.equipment, user.job, user.gender)
   return { job: user.job, gender: user.gender, equipment, drafts: [], potionChoice: NO_POTION_CHOICE, profileDraft }
 }
@@ -87,7 +89,7 @@ export function freshStart(user: CheapestInput): CheapestInput {
 export function cheapestFor(user: CheapestInput): AdvisedSetup {
   const setup = advisedSetup(freshStart(user))
   const r = setup.result
-  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt, en met je startkleding.
+  // Jouw stand zoals de app hem doorrekent: zonder equip boven je level (#264), dat bewaard blijft maar niet meetelt, en met je startkleding en je gratis jobwapen.
   const wearable = wearableSetup(user.profileDraft, user.equipment, user.job, user.gender)
   const own: CheapestInput = { ...user, equipment: wearable.equipment, profileDraft: wearable.profile }
   const after: CheapestInput = { ...own, drafts: r.drafts, profileDraft: r.profileDraft, potionChoice: r.potionChoice }
@@ -119,7 +121,7 @@ function invoiceTotal(after: CheapestInput, setup: AdvisedSetup): number | undef
 /** Jouw eigen stand als de setup van Cheapest: niets te kopen, niets te veranderen, niets te besparen. */
 function ownSetup(own: CheapestInput, r: CheapestResult, cost: number): AdvisedSetup {
   const profile = profileOf(own)
-  // Wat je draagt zoals de app het doorrekent (wearableSetup): je startkleding in een leeg slot is geen aankoop, net als in advisedSetup.
+  // Wat je draagt zoals de app het doorrekent (wearableSetup): je startkleding en je gratis jobwapen in een leeg slot zijn geen aankoop, net als in advisedSetup.
   const cheapest = {} as Record<EquipSlot, CheapestSlot>
   for (const { slot } of EQUIP_SLOTS) {
     const worn = wornName(own.equipment[slot])
@@ -148,9 +150,30 @@ function ownSetup(own: CheapestInput, r: CheapestResult, cost: number): AdvisedS
  * winkel op je level niets wat je kunt dragen, dan blijft het zoals het was: met de ATT uit je profiel.
  */
 export function advisedSetup(user: CheapestInput): AdvisedSetup {
-  if (!isEmptyEntry(user.equipment.claw)) return settle(user, user.profileDraft, false)
+  if (!isEmptyEntry(user.equipment.claw)) return preferFreeWeapon(user, settle(user, user.profileDraft, false))
   const armed = settle(user, { ...user.profileDraft, clawWatk: '0' }, true)
   return isEmptyEntry(armed.equipment.claw) ? settle(user, user.profileDraft, false) : armed
+}
+
+/**
+ * Het gratis wapen van je 1e job (Dave, 9 oktober 2026): draag je vanaf level 10 nog een beginnerwapen (Fruit Knife, Razor, Sword, ...) en heeft je job een gratis
+ * jobwapen (freeJobWeapon.ts: Beginner's Garnier, Beginner's Wooden Wand), dan rekent Cheapest ook de stand met dat wapen in je hand uit, op eigen skillpunten en alles erbij,
+ * en kiest de stand met de laagste factuur. Het gratis wapen kost niets, dus er komt geen winkelprijs op de factuur; het staat in je Cheapest-regel als wapen dat je neemt
+ * (zonder prijs). Een wapen dat je al draagt en dat geen beginnerwapen is, houdt Cheapest: dat kost niets en het gratis wapen is er niet beter dan dat van je eigen.
+ */
+function preferFreeWeapon(user: CheapestInput, own: AdvisedSetup): AdvisedSetup {
+  const name = freeJobWeaponName(user.job)
+  const claw = user.equipment.claw
+  const level = Number(user.profileDraft.level)
+  if (name === null || !(level >= FREE_WEAPON_LEVEL) || !BEGINNER_WORN_WEAPONS.some((w) => w.name === claw.pick)) return own
+  const swapped = changeEquipment(user.profileDraft, user.equipment, 'claw', choosePick('claw', claw, name), user.job)
+  const alt = settle({ ...user, equipment: swapped.equipment }, swapped.profile, false)
+  const total = (s: AdvisedSetup): number => invoiceTotal({ ...user, drafts: s.result.drafts, profileDraft: s.result.profileDraft, potionChoice: s.result.potionChoice }, s) ?? Infinity
+  if (!(total(alt) < total(own))) return own
+  // Het wapenslot is ten opzichte van wat je droeg gewisseld, ook als het gratis wapen er al stond in de uitkomst.
+  const worn = wornName(claw)
+  const slot = alt.cheapest.claw
+  return { ...alt, cheapest: { ...alt.cheapest, claw: { ...slot, worn, changed: slot.cheapest !== worn } } }
 }
 
 /** Het vaste punt van advisedSetup vanaf dit profiel; met `needsWeapon` krijgt een leeg wapenslot het wapen van requiredWeapon. */

@@ -4,8 +4,8 @@
 // Magician telt is zijn Magic Attack: `watk` van dit Weapon is dus de M.ATT van het wapen (bij een Magician zet het wapen in
 // het profiel zijn M.ATT in `clawWatk`). De aanvalstijd is de vaste cast van 810 ms (SPELL_CAST_MS), niet de "Attack cycle"
 // van de itempagina: die kijkt naar de gewone aanval. Puur, zonder UI-import.
-import { NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS, SPELL_CAST_MS } from './data/magician'
-import type { ArmorPiece, Weapon, WornArmor } from './data/types'
+import { FREE_MAGICIAN_WEAPON, NPC_MAGICIAN_ARMOR, NPC_MAGICIAN_WEAPONS, SPELL_CAST_MS } from './data/magician'
+import type { ArmorPiece, Weapon, WornArmor, WornClaw } from './data/types'
 import { COMMON_WORN_ARMOR } from './data/wornItems'
 
 const CAST = { label: 'Spell cast', attackMs: SPELL_CAST_MS.normal }
@@ -21,6 +21,17 @@ export const MAGICIAN_WEAPONS: readonly Weapon[] = NPC_MAGICIAN_WEAPONS.map((w) 
   price: w.price,
   source: w.source,
 }))
+
+/** Het gratis wapen van een Magician op level 10 (data/magician.ts) als wapen zonder prijs: de M.ATT in `watk`, met de vaste cast van 810 ms. */
+export const FREE_MAGICIAN_WORN_WEAPON: WornClaw = {
+  name: FREE_MAGICIAN_WEAPON.name,
+  level: FREE_MAGICIAN_WEAPON.level,
+  watk: FREE_MAGICIAN_WEAPON.matk,
+  speed: CAST,
+  int: FREE_MAGICIAN_WEAPON.int,
+  luk: FREE_MAGICIAN_WEAPON.luk,
+  source: FREE_MAGICIAN_WEAPON.source,
+}
 
 /** De NPC-armor van een Magician (hats, tops, bottoms en shoes, zie data/magician.ts) als ArmorPiece. De MDEF gaat mee voor de Magic Def op de Total stats-kaart (#91); het advies telt hem niet: een aanraking is fysiek. */
 export const MAGICIAN_ARMOR: readonly ArmorPiece[] = NPC_MAGICIAN_ARMOR.map((a) => ({

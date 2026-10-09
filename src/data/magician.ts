@@ -18,7 +18,10 @@
 // geen INT of LUK en hun pagina toont geen MDEF, dus die staan op 0.
 //
 // Niet opgenomen als wapen, en waarom:
-// - Beginner's Wooden Wand (649): niet verhandelbaar en niet te koop. Geen staff op level 30.
+// - Geen staff op level 30.
+//
+// Wel opgenomen zonder prijs, als wat je gratis krijgt (Dave, 9 oktober 2026): Beginner's Wooden Wand (item 2523), niet verhandelbaar en niet
+// te koop. Hij staat niet in NPC_MAGICIAN_WEAPONS maar in FREE_MAGICIAN_WEAPON, zonder prijs, zodat hij nooit een winkelitem wordt.
 //
 // Niet opgenomen als armor, en waarom:
 // - Tops en broeken alleen voor vrouwen, zonder mannenversie in de gelezen pagina's: Arianne (970 tot en met
@@ -91,6 +94,24 @@ export const NPC_MAGICIAN_WEAPONS: readonly MagicianWeapon[] = [
   weapon(661, 'Wizard Staff', 'staff', 25, 50, 20, 35, 45, STAFF_SPEED, 13_500),
   weapon(653, 'Mithril Wand', 'wand', 30, 60, 20, 27, 55, SPEED.normal6, 22_000),
 ]
+
+/**
+ * Het wapen dat een Magician gratis krijgt bij zijn 1e jobkeuze op level 10 (Dave, 9 oktober 2026): Beginner's Wooden Wand (level 10, INT 20,
+ * W.ATK 17, M.ATK 26, Normal (6) 810 ms, niet verhandelbaar). Bron van de stats: de itempagina (gelezen 2026-10-09). Bron voor "gratis":
+ * https://meowdb.com/msclassic/guides/magician-class-guide, "You receive the Beginner's Wooden Wand for free when you become a Magician."
+ * (gelezen 2026-10-09). Geen prijs: het is geen winkelitem.
+ */
+export const FREE_MAGICIAN_WEAPON: Omit<MagicianWeapon, 'price'> = {
+  name: "Beginner's Wooden Wand",
+  kind: 'wand',
+  level: 10,
+  int: 20,
+  luk: 0,
+  watk: 17,
+  matk: 26,
+  speed: SPEED.normal6,
+  source: { url: 'https://meowdb.com/msclassic/item-db/2523', retrieved: '2026-10-09' },
+}
 
 const armor = (
   id: number,

@@ -20,12 +20,13 @@ import { THROWING_STARS } from './data/thief'
 import type { ArmorPiece, ArmorSlot, Gender, Requires, Stat, Weapon, WornArmor, WornClaw } from './data/types'
 import { fitsGender } from './gender'
 import { WORN_ARMOR, WORN_CLAWS } from './data/wornItems'
-import { NPC_MAGICIAN_WEAPONS } from './data/magician'
+import { FREE_MAGICIAN_WEAPON, NPC_MAGICIAN_WEAPONS } from './data/magician'
 import { NPC_WARRIOR_WEAPONS } from './data/warrior'
 import { WORN_WARRIOR_ARMOR, WORN_WARRIOR_WEAPONS } from './data/wornWarrior'
 import type { Job } from './job'
 import type { ProfileDraft } from './profile'
-import { MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
+import { FREE_MAGICIAN_WORN_WEAPON, MAGICIAN_ARMOR, MAGICIAN_WEAPONS, WORN_MAGICIAN_ARMOR } from './magicianGear'
+import { FREE_WEAPON_LEVEL, freeJobWeaponName } from './freeJobWeapon'
 import { WARRIOR_ARMOR, WARRIOR_WEAPONS, WORN_WARRIOR_CLAWS } from './warriorGear'
 
 export const EQUIPMENT_KEY = 'mesowise.equipment.v1'
@@ -223,7 +224,7 @@ const SHOP: Partial<Record<Job, { weapons: readonly Weapon[]; armor: readonly Ar
   thief: { weapons: [...NPC_CLAWS, ...NPC_DAGGERS], armor: NPC_ARMOR, wornWeapons: [...BEGINNER_WORN_WEAPONS, ...WORN_CLAWS], wornArmor: [...WORN_ARMOR, ...accessoriesFor('thief')] },
   warrior: { weapons: WARRIOR_WEAPONS, armor: WARRIOR_ARMOR, wornWeapons: [...BEGINNER_WORN_WARRIOR_WEAPONS, ...WORN_WARRIOR_CLAWS], wornArmor: [...WORN_WARRIOR_ARMOR, ...accessoriesFor('warrior')] },
   bowman: { weapons: BOWMAN_WEAPONS, armor: BOWMAN_ARMOR, wornWeapons: BEGINNER_WORN_WEAPONS, wornArmor: [...WORN_BOWMAN_ARMOR, ...accessoriesFor('bowman')] },
-  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
+  magician: { weapons: MAGICIAN_WEAPONS, armor: MAGICIAN_ARMOR, wornWeapons: [FREE_MAGICIAN_WORN_WEAPON], wornArmor: [...WORN_MAGICIAN_ARMOR, ...accessoriesFor('magician')] },
 }
 
 /**
@@ -235,7 +236,7 @@ const speedWord = (label: string): string => label.split(' ')[0].toUpperCase()
 const WEAPON_INFO: ReadonlyMap<string, { type: string; speed: string }> = new Map([
   ...[...NPC_CLAWS, ...WORN_CLAWS].map((c) => [c.name, { type: 'CLAW', speed: speedWord(c.speed.label) }] as const),
   ...NPC_DAGGERS.map((d) => [d.name, { type: 'DAGGER', speed: speedWord(d.speed.label) }] as const),
-  ...[...BEGINNER_WEAPONS, ...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS, ...NPC_BOWMAN_WEAPONS, ...NPC_MAGICIAN_WEAPONS].map(
+  ...[...BEGINNER_WEAPONS, ...NPC_WARRIOR_WEAPONS, ...WORN_WARRIOR_WEAPONS, ...NPC_BOWMAN_WEAPONS, ...NPC_MAGICIAN_WEAPONS, FREE_MAGICIAN_WEAPON].map(
     (w) => [w.name, { type: w.kind.replace('-', ' ').toUpperCase(), speed: speedWord(w.speed.label) }] as const,
   ),
 ])
@@ -667,16 +668,18 @@ export const STARTER_CLOTHES: { readonly top: Readonly<Record<Gender, string>>; 
  */
 export const QUEST_HAT = 'Brown Skullcap'
 
-/** Het mes dat je als Beginner krijgt (Dave, 8 oktober 2026): de Fruit Knife (559, level 8, dagger). Alleen op level 8 en 9; daarna het wapen van je job. */
+/** Het mes dat je als Beginner krijgt (Dave, 8 oktober 2026): de Fruit Knife (559, level 8, dagger). Alleen op level 8 en 9; vanaf level 10 het wapen van je job (freeJobWeapon.ts). */
 export const BEGINNER_KNIFE = 'Fruit Knife'
 const BEGINNER_LAST_LEVEL = 9
 
 /**
  * Wat je echt draagt, zoals de berekening het ziet (Dave, 8 oktober 2026): zonder equip boven je level (dropAboveLevel, #264), en wat je in het begin
  * gratis krijgt in een leeg slot: je startkleding (STARTER_CLOTHES; een top of bottom alleen zonder overall, zonder geslacht alleen de schoenen), vanaf
- * level 5 de questhoed (QUEST_HAT), en op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen. Een slot dat nog niet was
- * ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het mes zet wel zijn eigen weapon attack:
- * een leeg wapenslot is op dat level het mes, ook als je zelf een getal had getypt.
+ * level 5 de questhoed (QUEST_HAT), op level 8 en 9 de Fruit Knife (BEGINNER_KNIFE) voor een job die hem kan dragen, en vanaf level 10 het gratis wapen van je
+ * 1e job (freeJobWeapon.ts, Dave, 9 oktober 2026: de Beginner's Garnier van een Thief, de Beginner's Wooden Wand van een Magician; een Warrior en een Bowman krijgen er
+ * geen). Een slot dat nog niet was ingevuld laat je WDEF staan (die rekent al met wat je droeg); een slot dat leeg raakte, krijgt de DEF erbij. Het wapen zet wel
+ * zijn eigen weapon attack: een leeg wapenslot is op dat level dat wapen, ook als je zelf een getal had getypt. Draag je al een wapen (ook een Fruit Knife), dan blijft het
+ * staan: of het gratis jobwapen beter is, beslist het wapenadvies van Cheapest (clawUpgrade.ts), niet deze stap.
  */
 export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, gender: Gender | null): { equipment: Equipment; profile: ProfileDraft; dropped: EquipSlot[] } {
   const below = dropAboveLevel(profile, eq, job)
@@ -688,7 +691,7 @@ export function wearableSetup(profile: ProfileDraft, eq: Equipment, job: Job, ge
     ['bottom', gender ? STARTER_CLOTHES.bottom[gender] : null],
     ['shoes', STARTER_CLOTHES.shoes],
     ['hat', QUEST_HAT],
-    ['claw', level <= BEGINNER_LAST_LEVEL && catalogItems('claw', job).some((i) => i.name === BEGINNER_KNIFE) ? BEGINNER_KNIFE : null],
+    ['claw', level >= FREE_WEAPON_LEVEL ? freeJobWeaponName(job) : level <= BEGINNER_LAST_LEVEL && catalogItems('claw', job).some((i) => i.name === BEGINNER_KNIFE) ? BEGINNER_KNIFE : null],
   ]
   for (const [slot, name] of free) {
     if (name === null || wornName(out.equipment[slot]) !== null) continue

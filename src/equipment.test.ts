@@ -1954,7 +1954,9 @@ describe('wearableSetup: de questhoed en het Beginner-mes (Dave, 8 oktober 2026)
   })
 
   it('geeft een leeg wapenslot alleen op level 8 en 9 de Fruit Knife, en alleen een job die hem kan dragen', () => {
-    for (const level of ['7', '10']) expect(wearableSetup(at(level), defaultEquipment(), 'thief', null).equipment.claw.pick, level).toBe('unknown')
+    expect(wearableSetup(at('7'), defaultEquipment(), 'thief', null).equipment.claw.pick).toBe('unknown')
+    // Vanaf level 10 is het het gratis wapen van je 1e job (hieronder), niet de Fruit Knife.
+    expect(wearableSetup(at('10'), defaultEquipment(), 'thief', null).equipment.claw.pick).not.toBe(BEGINNER_KNIFE)
     const thief = wearableSetup(at('8'), defaultEquipment(), 'thief', null)
     expect(thief.equipment.claw.pick).toBe(BEGINNER_KNIFE)
     // Een dagger: de weapon attack van het mes, en de app rekent als met een dagger.
@@ -1976,5 +1978,32 @@ describe('wearableSetup: een overall boven je level (Victor, 8 oktober 2026)', (
     expect([out.equipment.top.pick, out.equipment.bottom.pick]).toEqual([STARTER_CLOTHES.top.male, STARTER_CLOTHES.bottom.male])
     // De DEF van de overall eraf, die van White Undershirt (6) en Blue Jean Shorts (4) erbij.
     expect(out.profile.wdef).toBe(String(Number(robe.profile.wdef) - 75 + 6 + 4))
+  })
+})
+
+describe('wearableSetup: het gratis wapen van je 1e job vanaf level 10 (Dave, 9 oktober 2026)', () => {
+  const at = (level: string): ProfileDraft => ({ ...DEFAULT_PROFILE, level, clawWatk: '0', dagger: '0' })
+
+  it("geeft een Thief op level 10 een leeg wapenslot de Beginner's Garnier, met zijn weapon attack, en een claw (geen dagger)", () => {
+    const thief = wearableSetup(at('10'), defaultEquipment(), 'thief', null)
+    expect(thief.equipment.claw.pick).toBe("Beginner's Garnier")
+    expect([thief.profile.clawWatk, thief.profile.dagger]).toEqual(['10', '0'])
+    expect(wearableSetup(at('9'), defaultEquipment(), 'thief', null).equipment.claw.pick).toBe(BEGINNER_KNIFE)
+  })
+
+  it("geeft een Magician op level 10 een leeg wapenslot de Beginner's Wooden Wand, met zijn M.ATT; onder level 10 niets", () => {
+    const magician = wearableSetup(at('10'), defaultEquipment(), 'magician', null)
+    expect(magician.equipment.claw.pick).toBe("Beginner's Wooden Wand")
+    expect(magician.profile.clawWatk).toBe('26')
+    expect(wearableSetup(at('9'), defaultEquipment(), 'magician', null).equipment.claw.pick).toBe('unknown')
+  })
+
+  it('geeft een Warrior en een Bowman geen gratis wapen (geen bron)', () => {
+    for (const job of ['warrior', 'bowman'] as const) expect(wearableSetup(at('12'), defaultEquipment(), job, null).equipment.claw.pick, job).toBe('unknown')
+  })
+
+  it('laat een wapen dat je draagt staan', () => {
+    const own = { ...defaultEquipment(), claw: choosePick('claw', defaultEquipment().claw, 'Steel Titans') }
+    expect(wearableSetup(at('20'), own, 'thief', null).equipment.claw).toBe(own.claw)
   })
 })

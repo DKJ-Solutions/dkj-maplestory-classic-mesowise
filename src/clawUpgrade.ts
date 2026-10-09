@@ -13,6 +13,9 @@
 // het scherm "Equip" vult die in als je een claw kiest.
 // Onder level 10 koopt alleen Cheapest uit de wapens met een prijs van een Beginner (data/beginnerWeapons.ts, #203), met de horizon
 // hoogstens tot level 9; wat de kaart Attack daar vergelijkt, staat open in #209.
+// Vanaf level 10 komt bij Cheapest het gratis wapen van je 1e job erbij als wapen met prijs 0 (freeJobWeapon.ts, Dave, 9 oktober 2026): een Thief of Magician
+// met een lege hand of een claw of wand die minder geeft, schakelt erover als dat het level goedkoper maakt, zonder dat het iets op de factuur zet. Draagt hij een
+// beginnerwapen (Fruit Knife, Razor), dan beslist advisedSetup die overstap, want daar verschuiven ook de skillpunten.
 import { ASSUMPTION_VARIANTS } from './best'
 import { BOWMAN_WEAPONS } from './bowmanGear'
 import { ASSUMPTIONS, type Assumptions } from './calc/mobModel'
@@ -21,6 +24,7 @@ import { NPC_CLAWS } from './data/claws'
 import { NPC_DAGGERS } from './data/daggers'
 import { EXP_TABLE_LEVELS, expToNextLevel } from './data/expTable'
 import { FIRST_JOB_LEVEL } from './data/skillPoints'
+import { freeJobWeapon } from './freeJobWeapon'
 import type { Weapon } from './data/types'
 import { growthCosts, growthOf } from './growth'
 import { byNet, type HorizonScope } from './horizonCost'
@@ -116,11 +120,18 @@ const jobShopOf = (p: Profile): Shop =>
     : { weapons: WEAPONS_BY_JOB[p.job] ?? NPC_CLAWS, ranked: false, better: (c, than) => c.watk > than.watk }
 
 /**
- * Waar dit profiel uit koopt. Met `beginner` (alleen Cheapest, #203) onder level 10 de wapens van een Beginner; anders de winkel van de
- * job, ook onder level 10: de kaart Attack noemt dan de eerstvolgende claw vanaf level 10.
+ * Waar dit profiel uit koopt. Met `beginner` (alleen Cheapest, #203) onder level 10 de wapens van een Beginner, en vanaf level 10 de winkel van de job met het
+ * gratis wapen van je 1e job erbij tegen prijs 0 (Dave, 9 oktober 2026); anders de winkel van de job, ook onder level 10: de kaart Attack noemt dan de
+ * eerstvolgende claw vanaf level 10.
  */
-const shopOf = (p: Profile, beginner = false): Shop =>
-  beginner && p.level < FIRST_JOB_LEVEL ? { weapons: beginnerShop(p.job), ranked: true, better: morePower } : jobShopOf(p)
+const shopOf = (p: Profile, beginner = false): Shop => {
+  if (!beginner) return jobShopOf(p)
+  if (p.level < FIRST_JOB_LEVEL) return { weapons: beginnerShop(p.job), ranked: true, better: morePower }
+  const shop = jobShopOf(p)
+  // Een Thief met een dagger vergelijkt daggers: het gratis wapen is een claw en vergelijkt hij niet mee (met een vaste verdeling van skillpunten kan het daar nooit winnen); zie advisedSetup voor die overstap.
+  const free = withDagger(p) ? null : freeJobWeapon(p.job)
+  return free ? { ...shop, weapons: [free, ...shop.weapons] } : shop
+}
 
 /** Het eerste wapen van de winkel waar je level nog niet voor volstaat en dat `better` beter vindt; null als er geen meer komt. */
 const firstBetterAbove = (profile: Profile, better: (c: Weapon) => boolean, shop: Shop): Weapon | null =>
