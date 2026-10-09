@@ -289,7 +289,7 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .level-cost-more:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Difference wijkt af van Read more (Dave, 9 oktober 2026): omlijnd in de accentkleur, niet gevuld, zodat je ziet dat hij iets anders doet. */
-.level-cost-more.level-cost-compare { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.level-cost-more.level-cost-compare { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 500; }
 .level-cost-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
 /* Het bedrag groot en midden in de kaart (Dave, 9 oktober 2026): het label blijft bovenaan, Read more onderaan, en de vrije ruimte gaat
    gelijk verdeeld boven het bedrag en boven Read more, zodat bedrag en percentage samen in het midden staan. */
