@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
-**17 / 25 minor entries** <!-- pending-tally -->
+**18 / 26 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/level-up-question-wording · 20261009-093328Z
+
+The level-up question under the level row now reads "How much does it cost to level up a Lv. 20 Thief?"
+instead of "your". Only that question changes. The Total cost card's "This is how much it cost to level up
+your …" keeps its wording.
+
+When the Profile or Cheapest button in the Level cost card shows "?", the reason (for example "Je hebt nog
+geen mob gekozen.") now appears inside that button under the "?". It used to be a separate
+"Profile: …" line below the buttons.
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+Small changes to on-screen text: one word in the question, and the "?" reason moved into its button. The player sees
+them, but they change nothing about how they use the app.
+
+**Score:** 1
+
+#### Pull Request
+
+Level-up question reads 'a Lv. 20 Thief', and the "?" reason sits inside its Level cost button
+
+[PR #280](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/280)
+
+---
 
 ### DEPLOY: feat/level-cost-tone · 20261009-080229Z
 
