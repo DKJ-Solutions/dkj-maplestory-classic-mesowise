@@ -279,7 +279,10 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
    eigen knop kan zijn; een tik op de tekst gaat door naar de knop eronder. */
 .level-cost-part { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; min-height: 44px; padding: 0.625rem 0.5rem; }
 .level-cost-part > .level-cost-btn { position: absolute; inset: 0; height: 100%; min-height: 0; padding: 0; }
+/* position: relative legt elk ander kind boven de knop; ook een nieuw kind heeft dat nodig. */
 .level-cost-part > :not(.level-cost-btn) { position: relative; pointer-events: none; }
+/* pointer-events erft, ook naar de popup van het vraagteken in de top layer: die moet weer te tikken zijn. */
+.level-cost-amount > dialog { pointer-events: auto; }
 .level-cost-part:has(> .level-cost-btn:disabled) > :not(.level-cost-btn) { opacity: 0.5; }
 /* Het bedrag blijft in het midden; het vraagteken hangt erachter, zonder de rij hoger te maken. */
 .level-cost-amount { display: flex; align-items: center; }

@@ -1635,7 +1635,7 @@ const CHEAPEST_TOTAL_WHY = (
 const WORN_TOTAL_WHY = (
   <>
     Wat dit level kost met wat je nu draagt en de mob die je zelf koos: de potions en ammo die je van 0 tot 100% van het level verbruikt. Wat je al draagt
-    is gratis. Het percentage eronder is hoeveel duurder of goedkoper dat is dan Cheapest. Tik op Profile voor de factuur.
+    is gratis. Eronder staat, als dat kan, hoeveel duurder of goedkoper dat is dan Cheapest. Tik op Profile voor de factuur.
   </>
 )
 

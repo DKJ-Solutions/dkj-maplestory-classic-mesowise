@@ -51,7 +51,7 @@ so the branch stops for Dave's look before the merge.
 
 - [x] Tycho: the existing Level cost tests follow the new structure; a new test checks the question mark sits right after the amount, outside the open button, and opens its explanation without opening the bill
 - [x] `npm run lint` and the app suite green (333 tests)
-- [ ] Victor and Edith read the diff
+- [x] Victor and Edith read the diff: the help popup inherited `pointer-events: none` from the part (fixed in the CSS), and the Profile explanation no longer promises a percentage that is not always there
 - [ ] Dave looks at it at phone width
 
 ### DEPLOY: app/level-cost-why
