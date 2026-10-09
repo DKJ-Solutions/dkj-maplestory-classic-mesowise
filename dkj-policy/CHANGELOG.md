@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
-**18 / 26 minor entries** <!-- pending-tally -->
+**19 / 27 minor entries** <!-- pending-tally -->
+
+### DEPLOY: app/menu-profile-drawer · 20261009-094915Z
+
+The hamburger menu now shows three rows: Profile, Instellingen and Help, each with an icon on the left. The
+"Instellingen" heading at the top of the drawer is gone; the hamburger button and the drawer are now named "Menu".
+Profile opens a second drawer, with a back arrow, where Job and Gender are chosen as before. Instellingen opens an
+empty second drawer, to be filled later. Help expands in place and now always shows, not only once an estimate
+exists. New components `MenuDrawerItem` and `MenuIcon` in `src/app.tsx`; `StatDialog` gained `hideTitle` and `back`.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+The player finds Job and Gender under one Profile row instead of at the top of the menu, and Help is always
+reachable. They notice it the next time they open the menu, but nothing about the calculation changes.
+
+**Score:** 2
+
+#### Pull Request
+
+Menu shows Profile, Instellingen and Help; Job and Gender move into a Profile drawer
+
+[PR #281](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/281)
+
+---
 
 ### DEPLOY: app/level-up-question-wording · 20261009-093328Z
 
