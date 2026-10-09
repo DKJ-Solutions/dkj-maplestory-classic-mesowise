@@ -272,7 +272,7 @@ main > .card:not(.level-cost), main > .stats-group { position: absolute; width: 
 main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: visible; }
 /* De twee knoppen onder elkaar, elk over de volle breedte (Dave, 8 oktober 2026). */
 .level-cost-buttons { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 0.625rem; padding: 0 1rem 1rem; }
-.level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 0.625rem 0.5rem;
+.level-cost-btn { --part: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; width: 100%; padding: 1.25rem 1rem;
   border-color: color-mix(in srgb, var(--part) 35%, var(--border)); background: color-mix(in srgb, var(--part) 7%, var(--card)); }
 .level-cost-btn.level-cost-advised { --part: var(--accent); }
 /* "Read more" onderaan het vak (Dave, 9 oktober 2026): je kunt op het vak tikken voor de factuur. Het ziet eruit als een echte knop, gevuld in
@@ -286,7 +286,6 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-btn > .level-cost-more { margin-top: auto; }
 /* Ook zonder vrije ruimte een marge tussen het laatste stuk tekst en Read more. */
 .level-cost-btn > :has(+ .level-cost-more) { margin-bottom: 0.625rem; }
-.level-cost-btn:has(> .level-cost-total) { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 /* Zonder factuur geen Read more: dan staat het bedrag (een vraagteken) gewoon in het midden onder het label. */
 .level-cost-btn:not(:has(> .level-cost-more)) > :last-child { margin-bottom: auto; }
 /* Cheapest is neutraal: een level kost altijd iets. Profile is groen vlak bij Cheapest, rood ver erboven, neutraal daartussen (Dave, 9 oktober 2026). */
