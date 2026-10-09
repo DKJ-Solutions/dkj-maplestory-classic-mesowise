@@ -3717,7 +3717,7 @@ describe('de vraag bovenaan (Dave, 6 oktober 2026)', () => {
   it('staat direct onder de level-rij, met het level en de job vetgedrukt', () => {
     const q = homeScreen().querySelector('.level-row')!.nextElementSibling!
     expect(q.classList.contains('app-question')).toBe(true)
-    expect(q.textContent).toBe('How much does it cost to level up your Lv. 10 Thief?')
+    expect(q.textContent).toBe('How much does it cost to level up a Lv. 10 Thief?')
     expect(q.querySelector('strong')!.textContent).toBe('Lv. 10 Thief')
   })
 
@@ -3833,7 +3833,7 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     expect(left.parentElement!.querySelector('.level-cost-share')).toBeNull()
   })
 
-  it('zegt onder de knoppen waarom Profile een vraagteken toont: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
+  it('zegt in de knop van Profile waarom hij een vraagteken toont, niet onder de knoppen: bij te veel skillpunten de melding van dat veld, nergens "niet volledig ingevuld" (#262)', () => {
     cleanup()
     localStorage.clear()
     localStorage.setItem(JOB_KEY, JSON.stringify({ version: 1, job: 'thief' }))
@@ -3845,7 +3845,10 @@ describe('Level cost: Profile, Cheapest en Difference in één kaart (#183)', ()
     // Cheapest rekent vanuit je job en level, en heeft dus wel een bedrag en geen reden.
     expect(top.querySelector('.level-cost-advised .level-cost-total')!.textContent).not.toBe('?')
     const reason = 'Je hebt 32 skillpunten in de skills van je 1e job gezet, maar op level 19 heb je er slechts 28.'
-    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([`Profile: ${reason}`])
+    // De reden staat in de knop van Profile zelf, zonder "Profile:" ervoor, en niet onder de knoppen (Dave, 9 oktober 2026).
+    expect([...top.querySelectorAll('.level-cost-reason')].map((p) => p.textContent)).toEqual([reason])
+    expect(top.querySelector('.level-cost-worn .level-cost-reason')!.textContent).toBe(reason)
+    expect(top.querySelector('.level-cost-buttons + .hint')).toBeNull()
     expect(document.body.textContent).not.toContain('niet volledig ingevuld')
   })
 

@@ -282,9 +282,8 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .level-cost-total.tone-far, .level-cost-share.tone-far { color: var(--cost); }
 /* Onder het totaal van Profile hoeveel het van Cheapest afwijkt, kleiner, in dezelfde kleur (Dave, 9 oktober 2026). */
 .level-cost-share { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--muted); }
-/* Waarom een knop een vraagteken toont (#262): onder de knoppen, met hun marge aan de zijkant, dichter bij de knoppen dan bij de kaartrand. */
-.level-cost-reason { margin: -0.375rem 0 0; padding: 0 1rem 1rem; }
-.level-cost-reason + .level-cost-reason { margin-top: -0.625rem; }
+/* Waarom een knop een vraagteken toont (#262): in de knop zelf, klein onder het vraagteken (Dave, 9 oktober 2026). */
+.level-cost-reason { font-size: 0.8125rem; font-weight: 400; line-height: 1.35; color: var(--muted); text-align: center; }
 /* De derde rij (Dave, 8 oktober 2026): het verschil tussen Cheapest en Profile, onder een lijn zodat hij als eigen rij leest; een tik opent
    de tabel per soort kost in een popup. */
 .level-cost-diff { padding: 1rem; border-top: 1px solid var(--border); }

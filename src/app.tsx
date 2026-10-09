@@ -3924,7 +3924,7 @@ function InvoiceTable(props: { invoice: LevelInvoice }) {
 /**
  * Onder de vraag van de app een kaart met de kop "Level cost" en twee knoppen onder elkaar (Dave, 8 oktober 2026): boven wat het level kost met de setup van Cheapest, onder met wat je
  * in game draagt, elk met het totaal van zijn factuur in Level cost. Een tik opent dezelfde popup als Cheapest en Profile op de Equip-kaart.
- * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, en onder de knoppen waarom (#262).
+ * Zonder advies is Cheapest uit, net als op de Equip-kaart; zonder factuur staat er een vraagteken, met in de knop zelf waarom (#262; Dave, 9 oktober 2026: niet eronder).
  * Daaronder een derde rij (Dave, 8 oktober 2026): het verschil tussen de twee, als één getal met zijn aandeel in wat Profile kost; per soort kost in een popup.
  */
 function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelInvoice; job: Job }) {
@@ -3934,8 +3934,6 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
     { view: 'advised', label: 'Cheapest', invoice: props.advised },
     { view: 'worn', label: 'Profile', invoice: props.wearing },
   ] as const
-  // Een vraagteken zonder reden laat je raden (#262): bij een karakter dat niet klopt de melding van het foute veld, anders waarom de kosten ontbreken.
-  const reasons = parts.flatMap((p) => (p.invoice?.kind === 'none' ? [{ view: p.view, text: `${p.label}: ${noCostReason(p.invoice.cost, problem) ?? 'er is niets uit te rekenen.'}` }] : []))
   // Cheapest is neutraal, Profile gekleurd naar hoe ver het boven Cheapest ligt (Dave, 9 oktober 2026); zonder Cheapest blijft Profile neutraal.
   const tone = props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' ? profileTone(props.advised.total, props.wearing.total) : null
   // Op Profile ook hoeveel duurder of goedkoper het is dan Cheapest, als deel van Cheapest (Dave, 9 oktober 2026): hetzelfde deel waar de kleur op beslist.
@@ -3952,6 +3950,8 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
         {parts.map((p) => {
           const total = p.invoice?.kind === 'invoice' ? p.invoice.total : null
           const text = total === null ? '?' : total === 0 ? '0 meso' : `−${nfInt.format(total)} meso`
+          // Een vraagteken zonder reden laat je raden (#262); de reden staat in de knop zelf, niet eronder (Dave, 9 oktober 2026).
+          const reason = p.invoice?.kind === 'none' ? (noCostReason(p.invoice.cost, problem) ?? 'Er is niets uit te rekenen.') : null
           const shareText = p.view === 'worn' && share !== null ? formatShare(share) : null
           return (
             <button
@@ -3961,22 +3961,18 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
               disabled={p.invoice === null}
               aria-haspopup="dialog"
               aria-expanded={ctx.open.equip === p.view}
-              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}`}
+              aria-label={`${p.label}: ${text}${shareText ? `, ${shareText}` : ''}${reason ? ` ${reason}` : ''}`}
               onClick={(e) => ctx.openCard('equip', p.view, e.currentTarget)}
             >
               <span class="level-cost-label">{p.label}</span>
               <strong class={`level-cost-total${p.view === 'worn' && tone ? ` tone-${tone}` : ''}`}>{text}</strong>
               {shareText && <span class={`level-cost-share tone-${tone}`}>{shareText}</span>}
+              {reason && <span class="level-cost-reason">{reason}</span>}
             </button>
           )
         })}
       </div>
-      {reasons.map((r) => (
-        <p key={r.view} class="hint level-cost-reason">
-          {r.text}
-        </p>
-      ))}
-      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er al onder de knoppen waarom er geen bedrag is. */}
+      {/* Het verschil alleen met een factuur aan beide kanten: anders staat er een vraagteken op de knop. */}
       {props.advised?.kind === 'invoice' && props.wearing.kind === 'invoice' && <LevelCostDifference cheapest={props.advised} wearing={props.wearing} job={props.job} />}
     </section>
   )
@@ -4517,7 +4513,7 @@ export function App() {
       {/* De vraag van de app, onder de level-rij (Dave, 6 oktober 2026), met je eigen level en job zoals in Level cost. "your" en
           niet "a": elke Lv. 18 Thief is anders, en dit gaat over de jouwe. */}
       <p class="app-question">
-        How much does it cost to level up your <strong>{totalCostWho(profileDraft.level, job)}</strong>?
+        How much does it cost to level up a <strong>{totalCostWho(profileDraft.level, job)}</strong>?
       </p>
       {/* Onder de vraag het antwoord: boven wat het level kost met Cheapest, onder met wat je draagt, en daaronder het verschil (Dave, 8 oktober 2026). */}
       <LevelCostButtons advised={computed && cheapestLive && cheapestEquip ? cheapestInvoice : null} wearing={invoice} job={job} />
