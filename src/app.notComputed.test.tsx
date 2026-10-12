@@ -28,7 +28,7 @@ describe('een job die de app niet doorrekent (#192)', () => {
       fireEvent.click(within(card).getByRole('button', { name: 'Profile' }))
       const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')
       expect(dialog, title).not.toBeNull()
-      expect(dialog!.querySelector('.stat-dialog-name')!.textContent, title).not.toMatch(/^Cheapest/)
+      expect(dialog!.querySelector('.dialog__title')!.textContent, title).not.toMatch(/^Cheapest/)
       fireEvent.click(within(dialog!).getByRole('button', { name: 'Sluiten' }))
     }
   })

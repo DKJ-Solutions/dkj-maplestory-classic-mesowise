@@ -154,15 +154,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
 .spot-name.with-icon { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
 .card-icon { flex-shrink: 0; color: var(--accent); }
 /* In een knop volgt het icoon de voorgrond van de knop, zoals het oog (#192): zwart op de witte knop, wit op de donkere. */
-.card-action .card-icon { color: inherit; }
+.icon-btn .card-icon { color: inherit; }
 /* Onder de naam de knoppen van de kaart (Dave, 5 oktober 2026): de actieknoppen (ViewButtons) en het rapport (#106, in de popup). Alleen deze knoppen zijn te tikken,
    niet de kop; donker gevuld (--edit-bg), 44px hoog en samen de volle breedte. Het potlood naast een waardevak is juist licht, als dat vak. */
-.card-actions { display: flex; gap: 0.625rem; width: 100%; }
-.card-action { flex: 1; min-width: 0; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+.action-row { display: flex; gap: 0.625rem; width: 100%; }
+.icon-btn { flex: 1; min-width: 0; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--edit-fg); background: var(--edit-bg); border: 0; border-radius: 0.5rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.card-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* De popup van een kaart: de inhoud zonder eigen rand en zonder eigen ruimte erboven; de afstand tot de titel komt van
-   .stat-dialog-head (1rem, Dave, 5 oktober 2026), de melding staat net onder de titel.
+   .dialog__head (1rem, Dave, 5 oktober 2026), de melding staat net onder de titel.
    .card ervoor wint van de kaartregels verderop (zoals .equipment .spot-body), de popup zit in de kaart. */
 .card .card-dialog .spot-body { padding: 0; border-top: 0; }
 .card .card-dialog .spot-body > .field:first-child, .card .card-dialog .spot-body > .stat-line:first-child { margin-top: 0; }
@@ -323,7 +323,7 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .to-distribute { margin-left: -0.25rem; color: var(--accent); }
 .to-distribute.over { color: var(--cost); }
 /* Achter de titel van een popup staat er een gewone spatie voor, dus zonder de terugstap van de kaartkop. */
-.stat-dialog-name .to-distribute { margin-left: 0; }
+.dialog__title .to-distribute { margin-left: 0; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Equip en je skills: met een popup zoals je karakter; equipment per slot de naam, de stat die telt en een potlood om te corrigeren op één rij */
@@ -416,12 +416,12 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
 .breakdown-detail { display: block; margin-top: 0.125rem; font-size: 0.75rem; color: var(--muted); }
 .breakdown-list > .breakdown-total { border-bottom: 0; font-weight: 700; }
 .breakdown-note { margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--muted); }
-.stat-dialog .equip-step.plain { grid-template-columns: 8rem; }
+.dialog .equip-step.plain { grid-template-columns: 8rem; }
 /* Elke popup staat in het midden van het scherm, ook op een telefoon; is de inhoud hoger, dan scrollt de popup.
    De eerste is 95% van de app-kolom (de telefoon, op een computer 32rem zoals main), een popup daarbovenop 93% van de
-   popup eronder (Dave, 7 oktober 2026). --popup-scale zet StatDialog per laag (FIRST_POPUP, POPUP_STEP); 0.95 is de eerste. */
-.stat-dialog {
-  width: calc(min(100vw, 32rem) * var(--popup-scale, 0.95)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
+   popup eronder (Dave, 7 oktober 2026). --dialog-scale zet StatDialog per laag (FIRST_POPUP, POPUP_STEP); 0.95 is de eerste. */
+.dialog {
+  width: calc(min(100vw, 32rem) * var(--dialog-scale, 0.95)); max-width: none; max-height: calc(100% - 2rem); margin: auto; padding: 0; overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 1rem;
 }
@@ -429,29 +429,29 @@ main > .card:not(.level-cost) dialog, main > .stats-group dialog { visibility: v
    de popup scrollt de pagina niet meer. overscroll-behavior hierboven houdt het scrollen van de popup in de popup. */
 html:has(dialog:modal) { overflow: hidden; }
 /* De padding zit in het binnenvak, zodat een tik op lege ruimte in de popup nooit als tik naast de popup telt */
-.stat-dialog-body { position: relative; padding: 1rem; }
+.dialog__body { position: relative; padding: 1rem; }
 /* Een Cheapest-popup (Dave, 7 oktober 2026): de kaartkleur wordt licht oranje, zodat ook de vakken erin meekleuren. */
-.stat-dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
+.dialog.advised-dialog { --card: var(--advised-bg); border-color: var(--advised-border); }
 /* Profile in Level cost: Equip (Dave, 8 oktober 2026): dezelfde tabel als Cheapest, in blauw. Het accent van de popup en alles erin (het label, de gecorrigeerde stat,
    de focusranden, Opslaan) is blauw in plaats van oranje; de vakken van Based on: en de melding bij een job zonder items staan in --worn-box, een tint dieper. */
-.stat-dialog.worn-dialog.card-dialog-equip { --card: var(--worn-bg); --accent: var(--worn-accent); --on-accent: var(--on-worn-accent); border-color: var(--worn-border); }
+.dialog.worn-dialog.card-dialog-equip { --card: var(--worn-bg); --accent: var(--worn-accent); --on-accent: var(--on-worn-accent); border-color: var(--worn-border); }
 /* Het label edit profile op een popup van Profile staat in het blauw van die popup, ook in de kaarten zonder blauwe popup. */
 .worn-dialog .title-tag { color: var(--on-worn-accent); background: var(--worn-accent); }
 .worn-dialog.card-dialog-equip .based-on-label { background: var(--worn-box); }
 /* Het teken in de knopjes (de persoon, de i) is uitgesneden in de kleur van het vak eronder, dus ook hier blauw (Dave, 8 oktober 2026). */
 .worn-dialog.card-dialog-equip .based-on-label .info-toggle { --info-glyph: var(--worn-box); }
 .worn-dialog.card-dialog-equip .hint { padding: 0.375rem 0.4375rem; background: var(--worn-box); border-radius: 0.5rem; }
-.stat-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 /* Alles links uitgelijnd; het kruisje rechtsboven */
-.stat-dialog { text-align: left; }
-/* 1rem onder de titel, in elke popup (Dave, 5 oktober 2026). Het kruisje staat in het binnenvak (rechtsboven, zie .stat-dialog-close); de kop houdt rechts zijn breedte vrij en is minstens zo hoog, zodat een titel van één regel ernaast in het midden staat. */
-.stat-dialog-head { display: flex; align-items: center; min-height: 44px; padding-right: calc(44px + 0.5rem); margin-bottom: 1rem; }
-.stat-dialog-name { margin: 0; min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
+.dialog { text-align: left; }
+/* 1rem onder de titel, in elke popup (Dave, 5 oktober 2026). Het kruisje staat in het binnenvak (rechtsboven, zie .dialog__close); de kop houdt rechts zijn breedte vrij en is minstens zo hoog, zodat een titel van één regel ernaast in het midden staat. */
+.dialog__head { display: flex; align-items: center; min-height: 44px; padding-right: calc(44px + 0.5rem); margin-bottom: 1rem; }
+.dialog__title { margin: 0; min-width: 0; font-size: 1rem; overflow-wrap: anywhere; }
 /* Een ondertitel onder de titel (Dave, 7 oktober 2026): bij een Cheapest-popup op welk level en voor welke job het advies rekent. */
 .stat-dialog-titles { min-width: 0; }
 /* De titel met het vraagteken er direct achter, op één regel (Dave, 7 oktober 2026). */
 .stat-dialog-title-row { display: flex; align-items: center; min-width: 0; }
-.stat-dialog-sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
+.dialog__sub { margin: 0.125rem 0 0; font-size: 0.875rem; color: var(--muted); }
 /* "Based on:" bovenaan Level cost: Equip (Dave, 7 oktober 2026): een kleine kop, en daaronder een tabel (Dave, 8 oktober 2026): een rij voor Char en
    een voor Mob, onder elkaar. De linkerkolom is het vak met een lichte achtergrond, zonder zichtbaar label; de waarde staat in de tekstkleur. In
    Profile heeft de tabel een tweede kolom met het potlood van die rij, buiten het vak; in Cheapest vult het vak de rij. Het vraagteken houdt zijn
@@ -482,29 +482,29 @@ html:has(dialog:modal) { overflow: hidden; }
 .based-on .based-on-label .info-toggle.named > svg { flex: none; }
 .based-on .based-on-label .info-toggle.named:has(+ .help-toggle) { margin-right: 0; padding-right: 0; }
 /* Het kruisje heeft in elke popup geen zichtbare rand (Dave, 5 oktober 2026); de rand blijft transparant, zodat het vinkje en de rode terugdraai-pijl hem in hun eigen kleur kunnen tonen. */
-.stat-dialog-close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+.dialog__close { position: absolute; top: 1rem; right: 1rem; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
   color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; }
-.stat-dialog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dialog__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Met een wijziging wordt het kruisje een vinkje dat opslaat (Dave, 5 oktober 2026): dezelfde kleur als Opslaan onderin */
-.stat-dialog-close.save { color: var(--on-accent); }
+.dialog__close.save { color: var(--on-accent); }
 /* Annuleren staat links van het vinkje, als rode terugdraai-pijl (niet het grijze kruisje); de kop houdt dan ruimte vrij voor twee knoppen */
 /* Tussen de twee zichtbare vlakken 6px: de tikvlakken van 44px overlappen daarvoor 2px (Dave, 5 oktober 2026). */
-.stat-dialog-close.cancel { right: calc(1rem + 42px); color: var(--cost); }
+.dialog__close.cancel { right: calc(1rem + 42px); color: var(--cost); }
 /* Het vlak van het vinkje en de terugdraai-pijl is 36px, het tikvlak blijft 44px, zodat ze rustig in de kop van het menu
    passen (Dave, 5 oktober 2026). Het icoon ligt boven het vlak. */
-.stat-dialog-close.save::before, .stat-dialog-close.cancel::before { content: ''; position: absolute; inset: 4px; border: 1px solid; border-radius: 0.375rem; }
-.stat-dialog-close.save::before { background: var(--accent); border-color: var(--accent); }
-.stat-dialog-close.cancel::before { border-color: var(--cost); }
-.stat-dialog-close svg { position: relative; }
-.stat-dialog-head.two { padding-right: calc(2 * 44px + 1rem); }
+.dialog__close.save::before, .dialog__close.cancel::before { content: ''; position: absolute; inset: 4px; border: 1px solid; border-radius: 0.375rem; }
+.dialog__close.save::before { background: var(--accent); border-color: var(--accent); }
+.dialog__close.cancel::before { border-color: var(--cost); }
+.dialog__close svg { position: relative; }
+.dialog__head.two { padding-right: calc(2 * 44px + 1rem); }
 .stat-dialog-db { margin: -0.25rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .stat-dialog-db strong { color: var(--text); }
 /* De invoer krijgt ruimte: duidelijk los van de kop en van de knoppen eronder */
 /* "ATT in game" is een kop, net als de titel */
 .stat-dialog-label { display: block; margin: 1.5rem 0 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text); }
-.stat-dialog .equip-step { justify-content: start; grid-template-columns: 52px 5rem 52px; gap: 0.5rem; }
-.stat-dialog .equip-step button, .stat-dialog .equip-step input { height: 52px; }
-.stat-dialog .equip-step input { font-size: 1.25rem; font-weight: 700; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
+.dialog .equip-step { justify-content: start; grid-template-columns: 52px 5rem 52px; gap: 0.5rem; }
+.dialog .equip-step button, .dialog .equip-step input { height: 52px; }
+.dialog .equip-step input { font-size: 1.25rem; font-weight: 700; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
 .stat-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0.5rem; margin-top: 1.5rem; min-height: 44px; }
 .stat-dialog-actions .equip-save { margin-left: 0; }
 /* Ability points in de popup: Base AP, Extra AP en Totaal onder elkaar, elk met het label links (elk −, het getal, +; Totaal zonder knoppen) */
@@ -512,10 +512,10 @@ html:has(dialog:modal) { overflow: hidden; }
 /* Per rij het label links naast het veld; elke rij heeft dezelfde labelbreedte, zodat de getallen precies onder elkaar staan */
 .ap-edit-col { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); align-items: center; gap: 0.75rem; min-width: 0; }
 /* Hiërarchie (Dave): de stat bovenaan (DEX) is de titel, de kolomkopjes zijn kleine, lichte labels eronder */
-.ability-dialog .stat-dialog-name { font-size: 1.25rem; font-weight: 700; }
+.ability-dialog .dialog__title { font-size: 1.25rem; font-weight: 700; }
 /* De titel van een kaart- of rapport-popup is de grootste kop erin, op de maat van een h2 (Dave, 5 oktober 2026): daaronder
    de delen van het advies (--fs-h3), het oordeel (--fs-h4), de toelichting (0.875rem) en de bron (0.75rem). */
-.card-dialog .stat-dialog-name, .report-dialog .stat-dialog-name { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
+.card-dialog .dialog__title, .report-dialog .dialog__title { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
 /* Een label op een eigen regel boven de titel, "expected" boven "Level cost: Equip" (Dave, 7 oktober 2026). De titel houdt de maat van de andere kaart-popups
    en past met zijn vraagteken op één regel vanaf 360px breed; op een nog smaller scherm breekt hij af in plaats van over het vraagteken te lopen.
    Het label is een afgerond plaatje in de accentkleur, niet breder dan zijn tekst (Dave, 7 oktober 2026). */
@@ -612,9 +612,9 @@ html:has(dialog:modal) { overflow: hidden; }
 /* Een veld dat in beeld schuift, blijft onder de menubalk en de Level-up-balk. */
 html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .topbar { position: sticky; top: 0; z-index: 2; background: var(--card); box-shadow: 0 1px 0 var(--border); }
-.topbar-inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
-.topbar-brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
-.topbar-name { flex: none; font-size: 1.125rem; font-weight: 700; }
+.topbar__inner { max-width: 32rem; height: var(--topbar-h); margin: 0 auto; padding: 0 0.25rem 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+.topbar__brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.topbar__name { flex: none; font-size: 1.125rem; font-weight: 700; }
 .topbar-menu { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 0.5rem; background: transparent; color: var(--text); cursor: pointer; }
 .topbar-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* De instellingen in het menu (Dave, 5 oktober 2026): per rij het label, wat je koos, en rechts een potlood zoals
@@ -626,10 +626,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-row + .menu-row { border-top: 1px solid var(--border); }
 /* In het tweede menupaneel zijn de keuzes (job, geslacht) net zo'n lijst: een rij per keuze, met een lijn ertussen, en
    de gekozen rij in amber en vet, zonder vinkje, de andere gedimd (Dave, 5 oktober 2026). Op het beginscherm blijven het knoppen naast elkaar. */
-.menu-drawer .job-choices { display: flex; flex-direction: column; gap: 0; margin: 0; }
-.menu-drawer .job-choice { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0.5rem; border: 0; border-radius: 0; background: none; box-shadow: none; font-size: 1rem; font-weight: 400; text-align: left; white-space: normal; color: var(--muted); }
-.menu-drawer .job-choice + .job-choice { border-top: 1px solid var(--border); }
-.menu-drawer .job-choice[aria-pressed='true'] { box-shadow: none; color: var(--accent); font-weight: 600; }
+.dialog--drawer .job-choices { display: flex; flex-direction: column; gap: 0; margin: 0; }
+.dialog--drawer .job-choice { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0.5rem; border: 0; border-radius: 0; background: none; box-shadow: none; font-size: 1rem; font-weight: 400; text-align: left; white-space: normal; color: var(--muted); }
+.dialog--drawer .job-choice + .job-choice { border-top: 1px solid var(--border); }
+.dialog--drawer .job-choice[aria-pressed='true'] { box-shadow: none; color: var(--accent); font-weight: 600; }
 .menu-label { font-size: 1rem; font-weight: 600; }
 /* De waarde staat helemaal rechts, tegen het potlood (Dave, 5 oktober 2026). */
 .menu-value { min-width: 0; font-size: 1rem; text-align: right; overflow-wrap: anywhere; }
@@ -657,14 +657,14 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-download .hint { margin: 0.75rem 0 0; }
 /* Het menu is een paneel dat van rechts naar links inschuift, over de volle hoogte (Dave, 5 oktober 2026). Een veeg
    naar rechts schuift het weer weg; touch-action laat het scrollen aan de browser en de veeg opzij aan de app. */
-.stat-dialog.menu-drawer {
+.dialog.dialog--drawer {
   width: min(22rem, calc(100% - 3rem)); max-width: none; height: 100%; max-height: 100%; margin: 0 0 0 auto;
   border-width: 0 0 0 1px; border-radius: 1rem 0 0 1rem; touch-action: pan-y; animation: drawer-in 220ms ease-out;
 }
 /* Het binnenvak vult het paneel, zodat een tik op lege ruimte eronder niet als tik naast het paneel telt. */
-.menu-drawer .stat-dialog-body { display: flex; flex-direction: column; min-height: 100%; box-sizing: border-box; padding-top: calc(1rem + env(safe-area-inset-top)); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+.dialog--drawer .dialog__body { display: flex; flex-direction: column; min-height: 100%; box-sizing: border-box; padding-top: calc(1rem + env(safe-area-inset-top)); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
 /* De downloadknop met zijn hint staat onderaan het paneel, met vrije ruimte erboven; is de inhoud hoger dan het scherm, dan blijft er 1.5rem en scrolt het paneel (Dave, 5 oktober 2026). */
-.menu-drawer .menu-download { margin-top: auto; padding-top: 1.5rem; }
+.dialog--drawer .menu-download { margin-top: auto; padding-top: 1.5rem; }
 /* Help in het menu (Dave, 8 oktober 2026): de uitleg over de schatting, ingeklapt onder de instellingen. */
 /* De drie rijen van het menu (Dave, 9 oktober 2026): icoon links, naam, pijl rechts, met een lijn ertussen. Help klapt open in plaats van een paneel. */
 .menu-item + .menu-item { border-top: 1px solid var(--border); }
@@ -677,20 +677,20 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
 .menu-help details[open] .menu-chevron { transform: rotate(180deg); }
 .menu-help .hint { margin: 0.25rem 0.5rem 0.75rem; }
 /* Een tweede paneel heeft de pijl terug links in de kop, en de titel ernaast. */
-.stat-dialog-close.back { right: auto; left: 1rem; }
-.menu-drawer .stat-dialog-head.back { padding: 0 1rem 0 calc(1rem + 44px + 0.5rem); }
+.dialog__close.back { right: auto; left: 1rem; }
+.dialog--drawer .dialog__head.back { padding: 0 1rem 0 calc(1rem + 44px + 0.5rem); }
 /* De kop van het paneel: even hoog als de menubalk, met een lijn eronder over de volle breedte en het kruisje in het
    midden (Dave, 5 oktober 2026). */
-.menu-drawer .stat-dialog-head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 0; padding: 0 calc(1rem + 44px + 0.5rem) 0 1rem; border-bottom: 1px solid var(--border); }
+.dialog--drawer .dialog__head { box-sizing: border-box; height: var(--topbar-h); min-height: 0; margin: -1rem -1rem 0; padding: 0 calc(1rem + 44px + 0.5rem) 0 1rem; border-bottom: 1px solid var(--border); }
 /* In de kop van een tweede paneel de titel, in de letter van de naam in de menubalk (Dave, 5 oktober 2026). */
-.menu-drawer .stat-dialog-name { font-size: 1.125rem; font-weight: 700; }
-.menu-drawer .stat-dialog-close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); }
-.menu-drawer .stat-dialog-head.two { padding-right: calc(1rem + 2 * 44px + 1rem); }
-.menu-drawer::backdrop { animation: backdrop-in 220ms ease-out; }
+.dialog--drawer .dialog__title { font-size: 1.125rem; font-weight: 700; }
+.dialog--drawer .dialog__close { top: calc((var(--topbar-h) - 44px) / 2 + env(safe-area-inset-top)); }
+.dialog--drawer .dialog__head.two { padding-right: calc(1rem + 2 * 44px + 1rem); }
+.dialog--drawer::backdrop { animation: backdrop-in 220ms ease-out; }
 @keyframes drawer-in { from { transform: translateX(100%); } }
 @keyframes backdrop-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .stat-dialog.menu-drawer, .menu-drawer::backdrop { animation: none; }
+  .dialog.dialog--drawer, .dialog--drawer::backdrop { animation: none; }
 }
 
 /* Alleen voor schermlezers: de kop van het beginscherm (de naam staat al in de menubalk). */
@@ -850,7 +850,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
    breedte, met dezelfde ruimte als de kop: 1rem opzij en onder. Het rapport staat in de popup, onderaan over de volle breedte. */
 .view-actions { padding: 0 1rem 1rem; }
 .view-report { margin-top: 1rem; }
-.view-buttons .card-action { gap: 0.5rem; font: inherit; font-weight: 600; }
+.view-buttons .icon-btn { gap: 0.5rem; font: inherit; font-weight: 600; }
 /* Een vast getal of een vaste naam in de popup van het advies (#192), in het vak van een keuzemenu maar zonder pijltje. */
 .field-fixed { margin: 0; display: flex; align-items: center; min-height: 44px; padding: 0.25rem 0.75rem; font-size: 0.9375rem; font-weight: 600; line-height: 1.2;
   overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; }
@@ -1015,10 +1015,10 @@ html { scroll-padding-top: calc(var(--topbar-h) + 5rem); }
   color: var(--muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .help-toggle[aria-expanded="true"] { color: var(--accent); }
 /* Naast de titel van een popup (StatDialog help): direct achter de titel, zonder de kop hoger te maken; de uitleg opent in een eigen popup. */
-.stat-dialog-head .help-toggle { flex: none; margin: -0.5rem 0 -0.5rem 0.125rem; }
+.dialog__head .help-toggle { flex: none; margin: -0.5rem 0 -0.5rem 0.125rem; }
 /* Het i-knopje achter de titel (Dave, 8 oktober 2026): op de plek van het vraagteken dat er stond, het rondje in de kleur van de titel. Het
    tikvlak van 44px schuift onder het eind van de titel, zodat het rondje dicht achter de titel staat (zo'n 6px). */
-.stat-dialog-head .info-toggle { margin: -0.5rem 0 -0.5rem -0.375rem; color: var(--text); }
+.dialog__head .info-toggle { margin: -0.5rem 0 -0.5rem -0.375rem; color: var(--text); }
 /* Het midden van de regel ligt boven het midden van de hoofdletters, dus het rondje zakt 2px om met de tekst gelijk te staan (Dave, 8 oktober 2026). */
-.stat-dialog-head .info-toggle > svg { transform: translateY(0.125rem); }
+.dialog__head .info-toggle > svg { transform: translateY(0.125rem); }
 .help-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }

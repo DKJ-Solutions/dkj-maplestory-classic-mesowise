@@ -49,13 +49,28 @@ function singleFile(): Plugin {
   }
 }
 
+/**
+ * house-theme.js (een kopie uit de dkj-solutions-plugin, nooit hier aangepast) moet als klassiek script in de <head> staan, zodat het thema vóór de
+ * eerste verf op <html> staat. Een extern script zou in de offline-build (publicDir: false) ontbreken en na de bundel niet meer inline zijn; daarom gaat het
+ * als inline script in de HTML, in elke build en in dev.
+ */
+function houseTheme(): Plugin {
+  const code = readFileSync(fileURLToPath(new URL('./src/house/house-theme.js', import.meta.url)), 'utf8')
+    // Een sluitende tag in de commentaartekst van het script ("<script src=...></script>") zou het inline blok voortijdig sluiten.
+    .replace(/<\/script/gi, '<\\/script')
+  return {
+    name: 'mesowise-house-theme',
+    transformIndexHtml: () => [{ tag: 'script', children: code, injectTo: 'head-prepend' }],
+  }
+}
+
 // GitHub Pages serveert de app onder /<repo-naam>/. De offline-build gebruikt relatieve paden en komt als
 // los bestand naast de gewone build in dist/ (die dus eerst gebouwd wordt: zie "build" in package.json). `build:offline` schrijft naar dist-offline/.
 export default defineConfig(({ mode }) => {
   const offline = mode === 'offline'
   return {
     base: offline ? './' : '/dkj-maplestory-classic-mesowise/',
-    plugins: [preact(), ...(offline ? [singleFile()] : [])],
+    plugins: [preact(), houseTheme(), ...(offline ? [singleFile()] : [])],
     // De offline-build voegt alleen zijn eigen bestand toe: niets uit public/ (sw.js, iconen) erbij.
     publicDir: offline ? false : 'public',
     build: offline

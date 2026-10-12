@@ -33,7 +33,9 @@ describe('de offline-build (singleFile)', () => {
     expect(html).toMatch(/<link rel="icon"[^>]*href="data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+"/)
 
     // Geen sluitende script-/style-tag midden in de inhoud: er is er precies één per blok, aan het eind.
-    expect(html.match(/<\/script/gi)).toHaveLength(1)
+    // Het themascript van het huis staat inline in de <head> (klassiek, vóór de eerste verf), de app-module eronder: twee scripts.
+    expect(html).toMatch(/<head>\s*<script>[\s\S]*DKJTheme[\s\S]*?<\/script>/)
+    expect(html.match(/<\/script/gi)).toHaveLength(2)
     expect(html.match(/<\/style/gi)).toHaveLength(1)
 
     // Geen absolute basis-paden van de webversie (de offline-build gebruikt ./).

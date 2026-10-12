@@ -335,7 +335,7 @@ describe('begin zonder opslag', () => {
       for (const [title, key] of Object.entries(keys) as [keyof typeof keys, string][]) {
         const card = homeScreen().querySelector<HTMLElement>(`section${CARD_CLASS[title]}`)!
         const buttons = [...card.querySelectorAll('.view-actions button')]
-        expect(buttons.map((b) => b.className), title).toEqual(['card-action view-advised', 'card-action view-worn'])
+        expect(buttons.map((b) => b.className), title).toEqual(['icon-btn view-advised', 'icon-btn view-worn'])
         for (const [view, dialogClass] of [['Cheapest', 'advised-dialog'], ['Profile', 'worn-dialog']] as const) {
           fireEvent.click(within(card).getByRole('button', { name: view }))
           const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
@@ -348,7 +348,7 @@ describe('begin zonder opslag', () => {
       const groups = [...document.querySelectorAll('.cost-cards')]
       expect(groups.length).toBeGreaterThan(0)
       for (const group of groups) {
-        expect([...group.querySelectorAll('button')].map((b) => b.className)).toEqual(['equip', 'skills', 'mob', 'potions', 'ap', 'total'].map((k) => `card-action cost-card cost-card-${k}`))
+        expect([...group.querySelectorAll('button')].map((b) => b.className)).toEqual(['equip', 'skills', 'mob', 'potions', 'ap', 'total'].map((k) => `icon-btn cost-card cost-card-${k}`))
       }
     })
 
@@ -487,12 +487,12 @@ describe('equipment: de claw past het profiel aan', () => {
     const part = document.querySelector<HTMLElement>('section.total-cost .cheapest-cost')!
     fireEvent.click(within(part).getByRole('button', { name: 'Equip van Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost')
+    expect(dialog.querySelector('.dialog__title')?.textContent).toBe('Level cost')
     expect(dialog.getAttribute('aria-label')).toBe('Level cost (cheapest)')
     // "cheapest" op een eigen regel boven de titel, niet in de kop (Dave, 7 oktober 2026).
     const tag = dialog.querySelector('.stat-dialog-titles > .title-tag')!
     expect(tag.textContent).toBe('cheapest')
-    expect(tag.nextElementSibling!.querySelector('.stat-dialog-name')).not.toBeNull()
+    expect(tag.nextElementSibling!.querySelector('.dialog__title')).not.toBeNull()
     // Cheapest rekent met de equip die je draagt (Dave, 8 oktober 2026, #263): een wapen dat het houdt kost dit level niets en staat niet in de bill.
     expect(advisedRow(dialog, 'Weapon')).toBeUndefined()
     expect(dialog.querySelector('.advised-total .advised-total-label')?.textContent).toBe('Total cost')
@@ -513,7 +513,7 @@ describe('equipment: de claw past het profiel aan', () => {
     closeDialogs()
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const dialog = cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')?.textContent).toBe('Level cost')
+    expect(dialog.querySelector('.dialog__title')?.textContent).toBe('Level cost')
     // Dezelfde rijen, maar om te lezen: geen zoekbalk en geen potlood.
     expect(dialog.querySelectorAll('.advised-row').length).toBeGreaterThan(0)
     expect(within(dialog).queryByLabelText('Zoek je Weapon')).toBeNull()
@@ -561,10 +561,10 @@ describe('equipment: de claw past het profiel aan', () => {
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(cards()[0]).getByRole('button', { name: 'Cheapest' }))
     const item = openItem(advisedRow(cards()[0].querySelector<HTMLElement>('dialog.card-dialog')!, 'Weapon'))
-    const scale = (d: Element) => Number((d as HTMLElement).style.getPropertyValue('--popup-scale'))
+    const scale = (d: Element) => Number((d as HTMLElement).style.getPropertyValue('--dialog-scale'))
     // Elke popup tot op de app: de bovenste eerst.
     const layers: Element[] = []
-    for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.stat-dialog')) layers.push(d)
+    for (let d: Element | null | undefined = item; d; d = d.parentElement?.closest('.dialog')) layers.push(d)
     expect(layers.length).toBeGreaterThan(1)
     expect([FIRST_POPUP, POPUP_STEP]).toEqual([0.95, 0.93])
     layers.forEach((d, i) => expect(scale(d)).toBeCloseTo(FIRST_POPUP * POPUP_STEP ** (layers.length - 1 - i)))
@@ -583,7 +583,7 @@ describe('equipment: de claw past het profiel aan', () => {
     expect(toggle.getAttribute('aria-haspopup')).toBe('dialog')
     expect(toggle.closest('.advised-item')!.querySelector('.advised-name')).not.toBeNull()
     const item = openItem(row, '.info-toggle')
-    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
+    expect(item.querySelector('.dialog__title')!.textContent).toBe(row.querySelector('.advised-name')!.textContent)
     expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     const facts = factsOf(item)
     expect(facts.Soort).toBe('CLAW')
@@ -1181,7 +1181,7 @@ describe('bewaren na elke wijziging', () => {
     // Evasion: LUK ÷ 3, DEX ÷ 6 en 5 basis; het voorbeeldprofiel staat in game 1 hoger dan de formule.
     fireEvent.click(within(statLine('Evasion')).getByRole('button', { name: 'Uitleg bij Evasion' }))
     const popup = [...document.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
-    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Evasion 22')
+    expect(popup.querySelector('.dialog__title')!.textContent).toBe('Evasion 22')
     expect(popup.querySelector('.breakdown-total dd')?.textContent).toBe('22')
     expect(popup.querySelector('.breakdown-note')?.textContent).toContain('+1')
   })
@@ -1703,8 +1703,8 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
     levelUp()
     fireEvent.click(viewButton('Ability points'))
     // Achter de titel de AP die nog vrij zijn, zoals op de kaart.
-    expect(homeScreen().querySelector('dialog .stat-dialog-head h2 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
-    expect(homeScreen().querySelector('dialog .stat-dialog-head h2')?.textContent).toBe('Ability points (5)5 AP te verdelen')
+    expect(homeScreen().querySelector('dialog .dialog__head h3 .to-distribute [aria-hidden="true"]')?.textContent).toBe('(5)')
+    expect(homeScreen().querySelector('dialog .dialog__head h3')?.textContent).toBe('Ability points (5)5 AP te verdelen')
     const head = homeScreen().querySelector('dialog .ap-group h3')!
     expect(head.textContent).toBe('70 / 75 BASE AP')
     expect(head.querySelector('.skill-sp')?.classList.contains('over')).toBe(false)
@@ -1713,7 +1713,7 @@ describe('de AP en SP die je nog moet verdelen (#154)', () => {
   it('zet ook achter de titel van de popup van Skillpoints de SP die nog vrij zijn: Skillpoints (3)', () => {
     levelUp()
     fireEvent.click(viewButton('Skillpoints'))
-    expect(homeScreen().querySelector('section.skills dialog .stat-dialog-head h2')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
+    expect(homeScreen().querySelector('section.skills dialog .dialog__head h3')?.textContent).toBe('Skillpoints (3)3 SP te verdelen')
   })
 
   it('kleurt het aantal als fout als er meer base AP staan dan je level geeft', () => {
@@ -2244,7 +2244,7 @@ describe('het geslacht (issue #55)', () => {
   it('leest een bewaarde keuze bij het starten: geen hint, en de keuze in het menu', () => {
     withWarrior('female')
     expect(screen.queryByText(JOB_HINT)).toBeNull()
-    const rows = Array.from(document.querySelectorAll('dialog .menu-row'), (r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+    const rows = Array.from(document.querySelectorAll('dialog .menu-row'), (r) => `${r.querySelector('.menu-row__label')!.textContent} ${r.querySelector('.menu-row__value')!.textContent}`)
     expect(rows).toEqual(['Job: Warrior', 'Gender: Female'])
   })
 
@@ -2633,9 +2633,9 @@ describe('de menubalk bovenin (issue #86)', () => {
 
   it('staat boven de schermen, buiten main, met de naam van de app en een menuknop', () => {
     expect(bar().closest('main')).toBeNull()
-    expect(bar().querySelector('.topbar-name')?.textContent).toBe('Mesowise')
+    expect(bar().querySelector('.topbar__name')?.textContent).toBe('Mesowise')
     // De ondertitel is weg, uit de balk en van het beginscherm (Dave, 9 oktober 2026).
-    expect(bar().querySelector('.topbar-name')?.nextElementSibling).toBeNull()
+    expect(bar().querySelector('.topbar__name')?.nextElementSibling).toBeNull()
     expect(screen.queryByText(/Zo min mogelijk mesos/)).toBeNull()
     expect(within(bar()).getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('false')
   })
@@ -2661,7 +2661,7 @@ describe('de menubalk bovenin (issue #86)', () => {
 
   // De rijen van het Profile-paneel (het tweede paneel); het menu zelf heeft er drie.
   const rows = (_menu: unknown) =>
-    Array.from(bar().querySelectorAll('.menu-row'), (r) => `${r.querySelector('.menu-label')!.textContent} ${r.querySelector('.menu-value')!.textContent}`)
+    Array.from(bar().querySelectorAll('.menu-row'), (r) => `${r.querySelector('.menu-row__label')!.textContent} ${r.querySelector('.menu-row__value')!.textContent}`)
   // Profile opent het tweede paneel, boven het menu; de job- en geslachtkeuzes liggen daar weer een paneel boven (Dave, 9 oktober 2026).
   const openProfile = () => {
     const menu = openMenu()
@@ -2691,13 +2691,13 @@ describe('de menubalk bovenin (issue #86)', () => {
     expect(menu.queryAllByRole('heading').map((h) => h.textContent)).toEqual(['Menu', 'Profile'])
   })
 
-  it('toont precies drie rijen: Profile, Instellingen en Help, zonder zichtbare titel', () => {
+  it('toont precies vier rijen: Profile, Instellingen, Thema en Help, zonder zichtbare titel', () => {
     const menu = openMenu()
-    const items = Array.from(bar().querySelectorAll('dialog > .stat-dialog-body > .menu-list > li'))
-    expect(items.map((li) => li.querySelector('.menu-label')!.textContent)).toEqual(['Profile', 'Instellingen', 'Help'])
+    const items = Array.from(bar().querySelectorAll('dialog > .dialog__body > .menu-list > li'))
+    expect(items.map((li) => li.querySelector('.menu-item__label')!.textContent)).toEqual(['Profile', 'Instellingen', 'Thema', 'Help'])
     expect(menu.queryByText('Job:')).toBeNull()
-    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-icon')).not.toBeNull()
-    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-chevron')).not.toBeNull()
+    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-item__icon')).not.toBeNull()
+    expect(menu.getByRole('button', { name: 'Profile' }).querySelector('.menu-item__chevron')).not.toBeNull()
     expect(menu.getByText('Help').closest('details')).not.toBeNull()
   })
 
@@ -2837,9 +2837,9 @@ describe('de menubalk bovenin (issue #86)', () => {
 
     it('is een paneel en geen popup in het midden', () => {
       openMenu()
-      expect(drawer().classList.contains('menu-drawer')).toBe(true)
+      expect(drawer().classList.contains('dialog--drawer')).toBe(true)
       // Zonder zichtbare titel en zonder kaarticoon (Dave, 9 oktober 2026): de kop blijft alleen voor schermlezers.
-      expect(drawer().querySelector('.stat-dialog-head .stat-dialog-name')?.classList.contains('sr-only')).toBe(true)
+      expect(drawer().querySelector('.dialog__head .dialog__title')?.classList.contains('sr-only')).toBe(true)
       expect(drawer().querySelector('.card-icon')).toBeNull()
       expect(drawer().getAttribute('aria-label')).toBe('Menu')
     })
@@ -3569,7 +3569,7 @@ describe('de kaart Level cost (Dave, 6 oktober 2026)', () => {
     const qty = why.getAttribute('aria-label')!.match(/op (\d[\d.]*) Throwing/)![1]
     fireEvent.click(why)
     const dialog = inGame().querySelector<HTMLElement>('dialog')!
-    expect(dialog.querySelector('.stat-dialog-name')!.textContent).toBe(`Hoezo ${qty}?`)
+    expect(dialog.querySelector('.dialog__title')!.textContent).toBe(`Hoezo ${qty}?`)
     // De popup is één formule (Dave, 8 oktober 2026): aanvallen per kill × stars per aanval × kills = het aantal op de factuur. Je valt één keer
     // aan, ook als die aanval twee stars gooit. Geen tabellen meer, en geen eindformule op één regel erboven.
     expect(dialog.querySelector('.why-summary')).toBeNull()
@@ -4033,7 +4033,7 @@ describe('Level cost: de kaarten Cheapest en Profile met de knop Difference, en 
     for (const r of rows.filter((r) => !r.classList.contains('buy'))) {
       expect(r.querySelector('.advised-level')!.textContent).toBe('')
       const it = openItem(r)
-      expect(it.querySelector('.stat-dialog-name')!.textContent).toBe('Waarom geen upgrade?')
+      expect(it.querySelector('.dialog__title')!.textContent).toBe('Waarom geen upgrade?')
       expect(it.querySelector('.item-nothing')!.textContent).toMatch(/^Hier verandert niets: /)
       closeItem(it)
     }
@@ -4044,7 +4044,7 @@ describe('Level cost: de kaarten Cheapest en Profile met de knop Difference, en 
     // Het vraagteken van een gekocht stuk zegt waarom je het koopt, niet hoe het bedrag ontstaat (Dave, 8 oktober 2026): de popup heet naar het stuk,
     // met het oordeel Kopen en wat het bespaart eronder.
     const item = openItem(bought[0])
-    expect(item.querySelector('.stat-dialog-name')!.textContent).toBe(bought[0].querySelector('.advised-name')!.textContent)
+    expect(item.querySelector('.dialog__title')!.textContent).toBe(bought[0].querySelector('.advised-name')!.textContent)
     // Elke popup achter een vraagteken heeft het label why boven zijn titel (Dave, 8 oktober 2026).
     expect(item.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
     expect(item.querySelector('.item-verdict')!.textContent).toBe('Kopen')
@@ -4207,12 +4207,12 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const own = within(cardOf(title)).getByRole('button', { name: 'Profile' })
       fireEvent.click(advised)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['true', 'false'])
-      expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).toMatch(/^(Cheapest|Expected|Level cost)/)
+      expect(cardOf(title).querySelector('dialog .dialog__title')?.textContent, title).toMatch(/^(Cheapest|Expected|Level cost)/)
       closeView(title)
       fireEvent.click(own)
       expect([advised.getAttribute('aria-expanded'), own.getAttribute('aria-expanded')], title).toEqual(['false', 'true'])
       // Equip heet in beide weergaven Level cost, met het label wearing (Dave, 8 oktober 2026).
-      if (title !== 'Equip') expect(cardOf(title).querySelector('dialog .stat-dialog-name')?.textContent, title).not.toMatch(/^(Cheapest|Expected|Level cost)/)
+      if (title !== 'Equip') expect(cardOf(title).querySelector('dialog .dialog__title')?.textContent, title).not.toMatch(/^(Cheapest|Expected|Level cost)/)
       closeView(title)
     }
   })
@@ -4394,7 +4394,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     expect(r.potions.hp).not.toBe('White Potion')
     const d = openView('Potions', 'Cheapest')
     // De popup heet Useable, zoals het Use-tabblad in het spel; de kaart zelf blijft Potions (Dave, 7 oktober 2026).
-    expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost: Useable')
+    expect(d.querySelector('.dialog__title')!.textContent).toBe('Level cost: Useable')
     // Zoals Level cost (Dave, 7 oktober 2026): het label "expected" op een eigen regel erboven, en een vraagteken naast de titel.
     expect(d.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
     expect(d.querySelector('.stat-dialog-title-row .info-toggle')).not.toBeNull()
@@ -4529,10 +4529,10 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const qty = n(row.querySelector<HTMLElement>('.advised-qty')!.title)
       expect(qty).toBeGreaterThan(0)
       const why = openItem(row)
-      expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${new Intl.NumberFormat('nl-NL').format(qty)}?`)
+      expect(why.querySelector('.dialog__title')!.textContent).toBe(`Waarom ${new Intl.NumberFormat('nl-NL').format(qty)}?`)
       closeItem(why)
       const info = openItem(row, '.info-toggle')
-      expect(info.querySelector('.stat-dialog-name')!.textContent).toBe(nameOf(row))
+      expect(info.querySelector('.dialog__title')!.textContent).toBe(nameOf(row))
       closeItem(info)
     })
 
@@ -4601,13 +4601,13 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
           const adv = openView(title, 'Cheapest')
           const basedOn = title === 'Equip' || title === 'Potions'
           expect(adv.classList.contains('advised-dialog'), job + ' ' + title + ' kleur').toBe(true)
-          expect(adv.querySelector('.stat-dialog-sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
+          expect(adv.querySelector('.dialog__sub')?.textContent, job + ' ' + title).toBe(basedOn ? undefined : who)
           // Dezelfde mob als in Cheapest: Monster (Dave, 7 oktober 2026): daarop rekent het advies.
           // In Equip staan onder Char en Mob de rijen Equip en New equip (Dave, 8 oktober 2026); die horen niet bij deze controle.
           expect(adv.querySelector('.based-on')?.textContent?.replace(/Equip: .*$/, ''), job + ' ' + title + ' based on').toBe(basedOn ? `Based on:Char: ${who}Mob: ${mob}` : undefined)
           closeView(title)
           const own = openView(title, 'Profile')
-          expect(own.querySelector('.stat-dialog-sub'), job + ' ' + title + ' own').toBeNull()
+          expect(own.querySelector('.dialog__sub'), job + ' ' + title + ' own').toBeNull()
           // Alleen een Cheapest-popup is licht oranje (Dave, 7 oktober 2026).
           expect(own.classList.contains('advised-dialog'), job + ' ' + title + ' own kleur').toBe(false)
           closeView(title)
@@ -4640,7 +4640,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(stats.querySelector('.title-tag')?.textContent).toBe('profile')
       expect([...stats.querySelectorAll('.char-table-head')].map((h) => h.textContent?.replace(/ \(.*/, ''))).toEqual(['Ability points', 'Skillpoints', 'Total stats'])
-      expect(stats.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
+      expect(stats.querySelector(':scope > .dialog__body')!.getAttribute('data-sheet')).toBe('profile')
       // In de laatste kolom van elke regel het potlood, zoals op de kaarten, en geen vraagteken (Dave, 8 oktober 2026).
       const pencils = [...stats.querySelectorAll<HTMLElement>('.char-table .equip-edit')].map((b) => b.getAttribute('aria-label'))
       expect(pencils).toEqual(expect.arrayContaining(['STR wijzigen', 'DEX wijzigen', 'INT wijzigen', 'LUK wijzigen', 'Lucky Seven wijzigen', 'Max HP wijzigen', 'Max MP wijzigen', 'Accuracy wijzigen', 'Evasion wijzigen']))
@@ -4681,8 +4681,8 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       // Het i-knopje bij de mob toont de stats van Slime.
       fireEvent.click(within(mob as HTMLElement).getByRole('button', { name: 'Info over Slime' }))
       const info = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-monster')).toBe('Slime')
-      expect(info.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
+      expect(info.querySelector(':scope > .dialog__body')!.getAttribute('data-based-on-monster')).toBe('Slime')
+      expect(info.querySelector(':scope > .dialog__body')!.getAttribute('data-sheet')).toBe('profile')
       expect(info.querySelectorAll('.stat-line').length).toBeGreaterThan(2)
     })
 
@@ -4737,7 +4737,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const ap = cardOf('Ability points').querySelector<HTMLDialogElement>('dialog.card-dialog')!
       expect(ap.open).toBe(true)
       expect(ap.querySelector('.title-tag')?.textContent).toBe('edit profile')
-      expect(ap.querySelector('.stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
+      expect(ap.querySelector('.dialog__body')!.getAttribute('data-sheet')).toBe('profile')
     })
 
     it('zet achter de mob onder "Based on:" in Level cost een vraagteken dat in een eigen popup zegt waarom die mob (Dave, 7 oktober 2026)', () => {
@@ -4752,7 +4752,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       expect(d.querySelector('dialog.item-dialog')).toBeNull()
       fireEvent.click(button)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      expect(popup.querySelector('.dialog__title')!.textContent).toBe(mob)
       // Het label boven de titel zegt "why": de uitleg waarom deze mob (Dave, 8 oktober 2026).
       expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('why')
       expect(popup.querySelector('.item-why')!.textContent).toMatch(new RegExp(`^Van de monsters die niet gevaarlijk voor je zijn, geeft ${mob} op dit level de meeste EXP per meso`))
@@ -4777,7 +4777,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       // De titel is alleen de naam, zonder level; het label erboven is dat van de popup van het karakter, expected in Cheapest (Dave, 8 oktober 2026),
       // en de regels staan in dezelfde tabel met een kop.
-      expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(mob)
+      expect(popup.querySelector('.dialog__title')!.textContent).toBe(mob)
       expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('expected')
       expect(popup.querySelector('section.char-table-monster > .char-table-head')!.textContent).toBe('Monster')
       // Eerst het level op een eigen regel (Dave, 8 oktober 2026), dan dezelfde regels als Cheapest: Monster.
@@ -4789,23 +4789,23 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       closeView('Equip')
     })
 
-    it('zet op elke popup en zijn .stat-dialog-body het pad van titels als data-popup, zodat je in de HTML ziet welke popup het is en waar hij in staat (Dave, 7 oktober 2026, #245)', () => {
+    it('zet op elke popup en zijn .dialog__body het pad van titels als data-popup, zodat je in de HTML ziet welke popup het is en waar hij in staat (Dave, 7 oktober 2026, #245)', () => {
       setJob('thief')
       const mob = advisedMobName()
       const d = openView('Equip', 'Cheapest')
       expect(d.getAttribute('data-popup')).toBe('Level cost (cheapest)')
-      expect(d.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe('Level cost (cheapest)')
+      expect(d.querySelector(':scope > .dialog__body')!.getAttribute('data-popup')).toBe('Level cost (cheapest)')
       fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
       const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
       const path = popup.getAttribute('data-popup')!
       expect(path).toBe(`Level cost (cheapest) › Info over ${mob}`)
-      expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-popup')).toBe(path)
-      // Geen twee open popups met hetzelfde pad: elke .stat-dialog-body is aan te wijzen.
-      const paths = [...document.querySelectorAll('.stat-dialog-body')].map((b) => b.getAttribute('data-popup'))
+      expect(popup.querySelector(':scope > .dialog__body')!.getAttribute('data-popup')).toBe(path)
+      // Geen twee open popups met hetzelfde pad: elke .dialog__body is aan te wijzen.
+      const paths = [...document.querySelectorAll('.dialog__body')].map((b) => b.getAttribute('data-popup'))
       expect(new Set(paths).size).toBe(paths.length)
       fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
       // Het i-knopje naast de titel: een popup in een popup heet naar zijn knop, niet naar de titel van de popup eronder.
-      fireEvent.click(d.querySelector<HTMLElement>(':scope > .stat-dialog-body .stat-dialog-head .info-toggle')!)
+      fireEvent.click(d.querySelector<HTMLElement>(':scope > .dialog__body .dialog__head .info-toggle')!)
       const help = d.querySelector<HTMLElement>('dialog.item-dialog')!
       expect(help.getAttribute('data-popup')).toBe('Level cost (cheapest) › Info')
       fireEvent.click(within(help).getByRole('button', { name: 'Sluiten' }))
@@ -4825,7 +4825,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       // De popup achter het i-knopje van de char zegt hetzelfde, zoals die van de mob.
       fireEvent.click(char.querySelector<HTMLElement>('.info-toggle')!)
       const stats = d.querySelector<HTMLElement>('dialog.item-dialog')!
-      const body = stats.querySelector(':scope > .stat-dialog-body')!
+      const body = stats.querySelector(':scope > .dialog__body')!
       expect(body.getAttribute('data-based-on-character')).toBe(char.getAttribute('data-based-on-character'))
       expect(body.getAttribute('data-sheet')).toBe('cheapest')
       fireEvent.click(within(stats).getByRole('button', { name: 'Sluiten' }))
@@ -4837,20 +4837,20 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       const mob = advisedMobName()
       const d = openView('Equip', 'Cheapest')
       fireEvent.click(d.querySelector<HTMLElement>('.based-on .based-on-label .info-toggle[aria-label^="Info over"]')!)
-      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .stat-dialog-body')!
+      const info = d.querySelector<HTMLElement>('dialog.item-dialog')!.querySelector(':scope > .dialog__body')!
       expect(info.getAttribute('data-based-on-monster')).toBe(mob)
       expect(info.getAttribute('data-sheet')).toBe('cheapest')
       fireEvent.click(within(d.querySelector<HTMLElement>('dialog.item-dialog')!).getByRole('button', { name: 'Sluiten' }))
       closeView('Equip')
-      const advised = openView('Monster', 'Cheapest').querySelector(':scope > .stat-dialog-body')!
+      const advised = openView('Monster', 'Cheapest').querySelector(':scope > .dialog__body')!
       expect(advised.getAttribute('data-based-on-monster')).toBe(mob)
       expect(advised.getAttribute('data-sheet')).toBe('cheapest')
       closeView('Monster')
       // In Profile de mob die je zelf opsloeg; zonder opgeslagen mob geen attribuut.
       const worn = openView('Monster', 'Profile')
       const saved = worn.querySelector<HTMLSelectElement>('select')!.value
-      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-monster') ?? '').toBe(saved)
-      expect(worn.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-sheet')).toBe('profile')
+      expect(worn.querySelector(':scope > .dialog__body')!.getAttribute('data-based-on-monster') ?? '').toBe(saved)
+      expect(worn.querySelector(':scope > .dialog__body')!.getAttribute('data-sheet')).toBe('profile')
       closeView('Monster')
     })
 
@@ -4859,12 +4859,12 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       for (const card of ['Equip', 'Skillpoints', 'Monster', 'Potions'] as const) {
         for (const [view, sheet] of [['Profile', 'profile'], ['Cheapest', 'cheapest']] as const) {
           const d = openView(card, view)
-          const body = d.querySelector(':scope > .stat-dialog-body')!
+          const body = d.querySelector(':scope > .dialog__body')!
           expect(body.getAttribute('data-sheet'), card + ' ' + view).toBe(sheet)
           expect(body.getAttribute('data-based-on-character'), card + ' ' + view).toMatch(/^Lv\. \d+ Thief$/)
           expect(body.hasAttribute('data-based-on-profile') || body.hasAttribute('data-based-on-cheapest')).toBe(false)
           // Met vakken onder "Based on:" zegt de popup hetzelfde als die vakken.
-          for (const row of d.querySelectorAll<HTMLElement>(':scope > .stat-dialog-body > .spot-body > .based-on .based-on-label')) {
+          for (const row of d.querySelectorAll<HTMLElement>(':scope > .dialog__body > .spot-body > .based-on .based-on-label')) {
             for (const key of ['data-based-on-character', 'data-based-on-monster', 'data-based-on-equip']) {
               if (row.hasAttribute(key)) expect(body.getAttribute(key), `${card} ${view} ${key}`).toBe(row.getAttribute(key))
             }
@@ -4905,7 +4905,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         fireEvent.click(button)
         const popup = d.querySelector<HTMLElement>('dialog.item-dialog')!
         // De popup heet naar het karakter, met het label expected erboven (Dave, 7 oktober 2026).
-        expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe(who)
+        expect(popup.querySelector('.dialog__title')!.textContent).toBe(who)
         expect(popup.querySelector('.title-tag')!.textContent).toBe('expected')
         expect(popup.getAttribute('aria-label')).toBe(`${who} (expected)`)
         const sections = [...popup.querySelectorAll('section.char-table')]
@@ -4933,7 +4933,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         expect(['Max HP', 'Max MP', 'Accuracy', 'Evasion'].map((n) => statRow(n).querySelector('.help-toggle') !== null)).toEqual([false, false, true, true])
         fireEvent.click(within(statRow('Evasion')).getByRole('button', { name: 'Uitleg bij Evasion' }))
         const opbouw = [...popup.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
-        expect(opbouw.querySelector('.stat-dialog-name')!.textContent).toBe(`Evasion ${value('Evasion')}`)
+        expect(opbouw.querySelector('.dialog__title')!.textContent).toBe(`Evasion ${value('Evasion')}`)
         expect(opbouw.querySelector('.breakdown-total dd')!.textContent).toBe(value('Evasion'))
         fireEvent.click(within(opbouw).getByRole('button', { name: 'Sluiten' }))
         await frame()
@@ -4946,7 +4946,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         const lucky = withPoints.find((r) => r.firstElementChild!.firstChild!.textContent === 'Lucky Seven')!
         fireEvent.click(within(lucky).getByRole('button', { name: 'Uitleg bij Lucky Seven' }))
         const why = [...popup.querySelectorAll<HTMLElement>('dialog.item-dialog')].at(-1)!
-        expect(why.querySelector('.stat-dialog-name')!.textContent).toBe(`Waarom ${level(lucky)}?`)
+        expect(why.querySelector('.dialog__title')!.textContent).toBe(`Waarom ${level(lucky)}?`)
         expect(why.querySelector('.item-why')!.textContent).toContain('de meeste mesos bespaart')
         expect(why.querySelector('.skill-why')!.textContent).toContain('Now:')
         fireEvent.click(within(why).getByRole('button', { name: 'Sluiten' }))
@@ -5048,7 +5048,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
     // Koppen, knoppen, kolomkoppen en namen van popups, met alle Cheapest-popups open.
     for (const title of CARDS) openView(title, 'Cheapest')
     fireEvent.click(within(card).getByRole('button', { name: 'Equip van Cheapest' }))
-    const named = [...document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, button, th, dialog, [aria-label], .stat-dialog-name')].flatMap((e) => [e.getAttribute('aria-label'), e.matches('dialog, [aria-label]') ? null : e.textContent]).filter((t): t is string => !!t)
+    const named = [...document.querySelectorAll<HTMLElement>('h1, h2, h3, h4, button, th, dialog, [aria-label], .dialog__title')].flatMap((e) => [e.getAttribute('aria-label'), e.matches('dialog, [aria-label]') ? null : e.textContent]).filter((t): t is string => !!t)
     expect(named.length).toBeGreaterThan(20)
     expect(named.filter((t) => /advised/i.test(t))).toEqual([])
     expect(named.filter((t) => /cheapest/i.test(t)).length).toBeGreaterThan(0)
@@ -5080,7 +5080,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       for (const title of OWN.filter((t) => t !== 'Equip')) {
         fireEvent.click(within(part('cost-ingame')).getByRole('button', { name: `${title} van Profile` }))
         const own = cardOf(title).querySelector<HTMLElement>('dialog.card-dialog')!
-        expect(own.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + title))
+        expect(own.querySelector('.dialog__title')!.textContent, title).toMatch(new RegExp('^' + title))
         expect(own.querySelector('.equip-edit') ?? own.querySelector('select'), title + ' wijzigbaar').not.toBeNull()
         closeView(title)
         fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: `${title} van Cheapest` }))
@@ -5088,7 +5088,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         // De titel noemt de kaart, niet alleen Cheapest (Dave, 7 oktober 2026).
         // Potions heet in Cheapest Useable, zoals het Use-tabblad in het spel; in Cheapest heet het Level cost, met het label expected (Dave, 7 oktober 2026).
         const advisedTitle = title === 'Potions' ? 'Level cost: Useable' : `Cheapest: ${title}`
-        expect(adv.querySelector('.stat-dialog-name')!.textContent, title).toMatch(new RegExp('^' + advisedTitle))
+        expect(adv.querySelector('.dialog__title')!.textContent, title).toMatch(new RegExp('^' + advisedTitle))
         expect(adv.getAttribute('aria-label')).toBe(title === 'Potions' ? `${advisedTitle} (expected)` : advisedTitle)
         expect(adv.querySelector('.equip-edit, select, input'), title + ' alleen lezen').toBeNull()
         closeView(title)
@@ -5101,7 +5101,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       setUpAdvisedDiffers()
       fireEvent.click(within(part('cheapest-cost')).getByRole('button', { name: 'Equip van Cheapest' }))
       const d = cardOf('Equip').querySelector<HTMLElement>('dialog.card-dialog')!
-      expect(d.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
+      expect(d.querySelector('.dialog__title')!.textContent).toBe('Level cost')
       // De reden staat in de popup achter het vraagteken en is pas na een tik te lezen (Dave, 7 oktober 2026).
       const buy = d.querySelector<HTMLElement>('tbody.bill-group-equip .advised-row.buy')!
       expect(buy).not.toBeNull()
@@ -5182,17 +5182,17 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(within(card).getByRole('button', { name: 'Cheapest' }))
     const dialog = card.querySelector<HTMLElement>('dialog.card-dialog')!
     // Een i-knopje, geen vraagteken: het zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
-    expect(dialog.querySelector('.stat-dialog-head .help-toggle')).toBeNull()
-    const button = dialog.querySelector<HTMLElement>('.stat-dialog-head .info-toggle')!
+    expect(dialog.querySelector('.dialog__head .help-toggle')).toBeNull()
+    const button = dialog.querySelector<HTMLElement>('.dialog__head .info-toggle')!
     // Op de regel van de titel, niet naast titel en ondertitel samen (Dave, 7 oktober 2026).
     const row = button.closest('.stat-dialog-title-row')!
-    expect(row.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
+    expect(row.querySelector('.dialog__title')!.textContent).toBe('Level cost')
     // Dicht tot je tikt; dan een eigen popup, zoals elk vraagteken in Cheapest.
     expect(button.getAttribute('aria-haspopup')).toBe('dialog')
     expect(dialog.querySelector('dialog.item-dialog')).toBeNull()
     fireEvent.click(button)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
-    expect(popup.querySelector('.stat-dialog-name')!.textContent).toBe('Level cost')
+    expect(popup.querySelector('.dialog__title')!.textContent).toBe('Level cost')
     expect(popup.querySelector('.stat-dialog-titles > .title-tag')!.textContent).toBe('info')
     expect(popup.querySelector('.item-why')!.textContent).toMatch(/^Wat dit level kost met de setup van Cheapest, op één factuur\./)
     fireEvent.click(within(popup).getByRole('button', { name: 'Sluiten' }))
@@ -5200,7 +5200,7 @@ describe('uitleg achter een vraagteken (Dave, 7 oktober 2026)', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sluiten' }))
     fireEvent.click(within(card).getByRole('button', { name: 'Profile' }))
     const worn = card.querySelector<HTMLElement>('dialog.card-dialog')!
-    expect(worn.querySelector('.stat-dialog-head .info-toggle')).not.toBeNull()
+    expect(worn.querySelector('.dialog__head .info-toggle')).not.toBeNull()
   })
 })
 
@@ -5274,7 +5274,7 @@ describe('equipment: Profile als tabel', () => {
     fireEvent.click(toggle)
     const popup = dialog.querySelector<HTMLElement>('dialog.item-dialog')!
     expect(popup.querySelector('.title-tag')!.textContent).toBe('profile')
-    expect(popup.querySelector(':scope > .stat-dialog-body')!.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
+    expect(popup.querySelector(':scope > .dialog__body')!.getAttribute('data-based-on-equip')).toBe(ids.join(' '))
     // Dezelfde tabel als de popup van het karakter (Dave, 8 oktober 2026): een kop en per slot een regel.
     // Twee kolommen met hun naam als kop: Slot en Item (Dave, 8 oktober 2026).
     // Twee tabellen, eerst ATT en dan DEF, elk met twee kolommen: het stuk onder de kop ATT of DEF, en wat het geeft (Dave, 8 oktober 2026).
@@ -5289,7 +5289,7 @@ describe('equipment: Profile als tabel', () => {
     // Het potlood opent de slotpopup van dat slot, dezelfde als in de slotkeuze; sluiten laat de Equip-popup staan.
     fireEvent.click(within(tables[1]).getByRole('button', { name: 'Top wijzigen' }))
     const slotPopup = document.querySelector<HTMLElement>('dialog.slot-dialog')!
-    expect(slotPopup.querySelector('.stat-dialog-name')!.textContent).toBe('Top')
+    expect(slotPopup.querySelector('.dialog__title')!.textContent).toBe('Top')
     fireEvent.click(within(slotPopup).getAllByRole('button', { name: /^Sluiten/ })[0])
     expect(document.querySelector('dialog.slot-dialog')).toBeNull()
     expect(popup.isConnected).toBe(true)

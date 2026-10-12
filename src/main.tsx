@@ -1,5 +1,7 @@
 import { render } from 'preact'
 import { App } from './app'
+// house-style.css is a copy of the dkj-solutions plugin's house-style skill, never edited here; the app's own layer follows it.
+import './house/house-style.css'
 import './style.css'
 
 render(<App />, document.getElementById('app')!)

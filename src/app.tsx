@@ -124,7 +124,7 @@ const DialogClose = createContext<((then?: () => void) => void) | null>(null)
 
 /**
  * De titels van de popups waar deze component in staat, de buitenste eerst. Elke popup zet het hele pad op zijn
- * <dialog> en zijn .stat-dialog-body als data-popup, "Level cost: Equip (expected) › Snail (lv 7)", zodat je in de
+ * <dialog> en zijn .dialog__body als data-popup, "Level cost: Equip (expected) › Snail (lv 7)", zodat je in de
  * HTML ziet welke popup je aanwijst en waar hij in staat (Dave, 7 oktober 2026, #245).
  */
 const PopupPath = createContext<string[]>([])
@@ -157,7 +157,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   const shownJob = draft?.job ?? job
   const shownGender = editing ? draft.gender : gender
   return (
-    <section class="card job">
+    <section class="card app-card job">
       <div class="job-head">
         {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
         <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
@@ -212,7 +212,7 @@ function JobChoices(props: { labelledBy?: string; label?: string; pressed: Job |
   return (
     <div class="job-choices" role="group" aria-labelledby={props.labelledBy} aria-label={props.label}>
       {jobChoices(false).map((j) => (
-        <button key={j} type="button" class="btn job-choice" aria-pressed={props.pressed === undefined ? undefined : j === props.pressed} onClick={() => props.onPick(j)}>
+        <button key={j} type="button" class="btn btn--touch job-choice" aria-pressed={props.pressed === undefined ? undefined : j === props.pressed} onClick={() => props.onPick(j)}>
           {jobLabel(j)}
         </button>
       ))}
@@ -224,7 +224,7 @@ function GenderChoices(props: { labelledBy?: string; label?: string; pressed: Ge
   return (
     <div class="job-choices" role="group" aria-labelledby={props.labelledBy} aria-label={props.label}>
       {GENDERS.map((g) => (
-        <button key={g.gender} type="button" class="btn job-choice" aria-pressed={g.gender === props.pressed} onClick={() => props.onPick(g.gender)}>
+        <button key={g.gender} type="button" class="btn btn--touch job-choice" aria-pressed={g.gender === props.pressed} onClick={() => props.onPick(g.gender)}>
           {g.label}
         </button>
       ))}
@@ -266,8 +266,8 @@ function SettingsList(props: { job: Job; chosen: boolean; onChange: (job: Job) =
       <ul class="menu-list">
         {rows.map((r) => (
           <li key={r.key} class="menu-row">
-            <span class="menu-label">{r.label}:</span>
-            <span class="menu-value">{r.value}</span>
+            <span class="menu-row__label">{r.label}:</span>
+            <span class="menu-row__value">{r.value}</span>
             <button ref={r.ref} type="button" class="equip-edit" aria-haspopup="dialog" aria-label={`${r.label} wijzigen`} onClick={() => setEditing(r.key)}>
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><PencilPath /></svg>
             </button>
@@ -331,12 +331,36 @@ function ChoiceSave(props: { onSave: () => void }) {
 const MENU_ICONS = {
   person: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'],
   gear: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z'],
+  palette: ['M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.2-1.6-.4-1 .3-2 1.4-2H17a4 4 0 0 0 4-4c0-5-4-10.4-9-10.4Z', 'M7.5 11h.01', 'M10 7.5h.01', 'M14 7.5h.01', 'M16.5 11h.01'],
   help: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7', 'M12 17h.01'],
 } as const
 
+/**
+ * Het thema van het huis (Maikel, 12 oktober 2026): house-theme.js staat als klassiek script in de <head> (vite.config.ts) en zet data-theme
+ * op <html>; `DKJTheme.picker` tekent hier de twaalf kleuren. Zonder dat script (de tests) blijft het paneel leeg.
+ */
+declare global {
+  interface Window {
+    DKJTheme?: { picker: (el: HTMLElement | null, labels?: { light?: string; dark?: string }) => void }
+  }
+}
+
+function ThemePicker() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    window.DKJTheme?.picker(ref.current)
+  }, [])
+  return (
+    <div class="theme-panel">
+      <div ref={ref} />
+      <p class="hint">Je keuze wordt op dit apparaat onthouden.</p>
+    </div>
+  )
+}
+
 function MenuIcon(props: { name: keyof typeof MENU_ICONS }) {
   return (
-    <svg class="menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg class="menu-item__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       {MENU_ICONS[props.name].map((d) => (
         <path key={d} d={d} />
       ))}
@@ -353,11 +377,11 @@ function MenuDrawerItem(props: { icon: keyof typeof MENU_ICONS; label: string; c
     button.current?.focus()
   }
   return (
-    <li class="menu-item">
-      <button ref={button} type="button" class="menu-item-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+    <li class="menu-entry">
+      <button ref={button} type="button" class="menu-item" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
         <MenuIcon name={props.icon} />
-        <span class="menu-label">{props.label}</span>
-        <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <span class="menu-item__label">{props.label}</span>
+        <svg class="menu-item__chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
       {open && (
         <StatDialog title={props.label} closeLabel="Terug" back drawer onCancel={close}>
@@ -383,12 +407,12 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
   }
   return (
     <header class="topbar">
-      <div class="topbar-inner">
-        <div class="topbar-brand">
+      <div class="topbar__inner">
+        <div class="topbar__brand">
           {/* Alleen de naam; de ondertitel is weg (Dave, 9 oktober 2026). */}
-          <span class="topbar-name">Mesowise</span>
+          <span class="topbar__name">Mesowise</span>
         </div>
-        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
+        <button ref={button} type="button" class="icon-btn icon-btn--ghost" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         </button>
       </div>
@@ -401,13 +425,16 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
             </MenuDrawerItem>
             {/* Leeg tot Dave er iets in zet. */}
             <MenuDrawerItem icon="gear" label="Instellingen">{null}</MenuDrawerItem>
+            <MenuDrawerItem icon="palette" label="Thema">
+              <ThemePicker />
+            </MenuDrawerItem>
             {/* De uitleg over de schatting staat onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
-            <li class="menu-item menu-help">
+            <li class="menu-entry menu-help">
               <details>
-                <summary>
+                <summary class="menu-item">
                   <MenuIcon name="help" />
-                  <span class="menu-label">Help</span>
-                  <svg class="menu-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <span class="menu-item__label">Help</span>
+                  <svg class="menu-item__chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 </summary>
                 <p class="hint">
                   Het voorstel bij je mob is een schatting. Het rekent met formules uit de community voor het
@@ -493,7 +520,7 @@ function CardReport(props: { title: string; children: ComponentChildren }) {
   }
   return (
     <>
-      <button ref={button} type="button" class="card-action card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
+      <button ref={button} type="button" class="icon-btn card-report" aria-haspopup="dialog" aria-expanded={open} aria-label={`Report: ${props.title}`} onClick={() => setOpen(true)}>
         {/* Een klembord met regels: het rapport */}
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3" />
@@ -531,7 +558,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
   const className = `card-dialog card-dialog-${props.card} ${props.advised ? 'advised-dialog' : 'worn-dialog'}`
   // De HTML zegt welke sheet dit is en waar hij over gaat (Dave, 7 en 8 oktober 2026): data-sheet "cheapest" (de goedkoopste setup) of "profile" (je
   // karakter uit het spel), en per ding waarop de popup rekent een eigen attribuut, dezelfde als op de vakken onder "Based on:":
-  // data-based-on-character "Lv. 21 Thief", data-based-on-monster "Snail" en data-based-on-equip met het item-id van elk stuk, "680 732". Ze staan op .stat-dialog-body naast data-popup.
+  // data-based-on-character "Lv. 21 Thief", data-based-on-monster "Snail" en data-based-on-equip met het item-id van elk stuk, "680 732". Ze staan op .dialog__body naast data-popup.
   const basedOnMob = props.advised ? props.basedOn : props.own?.mob
   const data: Record<`data-${string}`, string> = { 'data-sheet': props.advised ? 'cheapest' : 'profile' }
   if (who) data['data-based-on-character'] = who
@@ -547,7 +574,7 @@ function CardPopup(props: { card: CardKey; title: string; tag?: string; advised?
         {props.children}
         {/* Het rapport onderaan, in beide weergaven (Dave, 6 oktober 2026, #188, #192). */}
         {props.report && (
-          <div class="card-actions view-report">
+          <div class="action-row view-report">
             <CardReport title={props.reportTitle ?? props.title}>{props.report}</CardReport>
           </div>
         )}
@@ -605,14 +632,14 @@ function useCardView(card: CardKey) {
  */
 function ViewButtons(props: { view: CardView | null; advised: boolean; onOpen: (view: CardView, button: HTMLButtonElement) => void }) {
   const button = (view: CardView, label: string) => (
-    <button type="button" class={`card-action view-${view}`} aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
+    <button type="button" class={`icon-btn view-${view}`} aria-haspopup="dialog" aria-expanded={props.view === view} onClick={(e) => props.onOpen(view, e.currentTarget)}>
       <EyeIcon />
       {label}
     </button>
   )
   return (
     <div class="view-actions">
-      <div class="card-actions view-buttons">
+      <div class="action-row view-buttons">
         {props.advised && button('advised', 'Cheapest')}
         {button('worn', 'Profile')}
       </div>
@@ -901,7 +928,7 @@ function StatsCard(props: StatsCardBody) {
   const showAdvised = view === 'advised' && props.advised !== null
   const draft = showAdvised ? props.advised! : props.draft
   return (
-    <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
+    <section class={`card app-card ${props.className}${props.error ? ' invalid' : ''}`}>
       <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
@@ -991,7 +1018,7 @@ function ProfileCard(props: StatsCardProps & { equipment: Equipment }) {
               </div>
             )}
             {/* Fel zolang er AP te verdelen is, dan doet de knop iets; zonder AP over is hij de gewone knop (Dave, 5 oktober 2026). */}
-            {!advised && <button type="button" class={balance !== null && balance > 0 ? 'btn auto-assign ready' : 'btn auto-assign'} onClick={fill}>Auto assign</button>}
+            {!advised && <button type="button" class={balance !== null && balance > 0 ? 'btn btn--touch auto-assign ready' : 'btn btn--touch auto-assign'} onClick={fill}>Auto assign</button>}
           </div>
           {!advised && filledShown && <p class="hint" role="status">{filled.text}</p>}
         </div>
@@ -1190,7 +1217,7 @@ function PotionsCard(props: {
   const title = 'Potions'
   const advisedPotions = props.advised !== null ? resolvePotions(job, props.advised, props.bar) : null
   return (
-    <section class="card potions">
+    <section class="card app-card potions">
       <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="flask" />
@@ -1409,7 +1436,7 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
               {r.meta && <span class="equip-meta">{r.meta}</span>}
             </li>
           ))}
-          {found.length > MAX_RESULTS && <li role="presentation" class="more">Typ meer om te zoeken.</li>}
+          {found.length > MAX_RESULTS && <li role="presentation" class="equip-more">Typ meer om te zoeken.</li>}
         </ul>
       )}
     </div>
@@ -1418,13 +1445,13 @@ function EquipSearch(props: { slot: EquipSlot; job: Job; entry: EquipEntry; weap
 
 /** Hoe breed een popup is tegenover de popup eronder: 93% (Dave, 7 oktober 2026). */
 export const POPUP_STEP = 0.93
-/** Hoe breed de eerste popup is tegenover het scherm: 95% (Dave, 7 oktober 2026); ook de terugval van --popup-scale in style.css. */
+/** Hoe breed de eerste popup is tegenover het scherm: 95% (Dave, 7 oktober 2026); ook de terugval van --dialog-scale in style.css. */
 export const FIRST_POPUP = 0.95
 
 /** Hoeveel popups er onder deze liggen: de popups waar hij in staat, zonder het menupaneel. */
 function popupDepth(d: Element): number {
   let n = 0
-  for (let p = d.parentElement?.closest('.stat-dialog'); p; p = p.parentElement?.closest('.stat-dialog')) if (!p.classList.contains('menu-drawer')) n++
+  for (let p = d.parentElement?.closest('.dialog'); p; p = p.parentElement?.closest('.dialog')) if (!p.classList.contains('dialog--drawer')) n++
   return n
 }
 
@@ -1464,7 +1491,7 @@ function StatDialog(props: {
   back?: boolean
   /** Wat deze popup in data-popup heet, als dat iets anders moet zijn dan zijn titel (zie PopupPath). */
   pathName?: string
-  /** Data-attributen op .stat-dialog-body, naast data-popup: wat de popup toont, data-based-on-monster="Snail" (Dave, 7 en 8 oktober 2026). */
+  /** Data-attributen op .dialog__body, naast data-popup: wat de popup toont, data-based-on-monster="Snail" (Dave, 7 en 8 oktober 2026). */
   data?: Record<`data-${string}`, string>
   children: ComponentChildren
 }) {
@@ -1558,19 +1585,19 @@ function StatDialog(props: {
   // een eigen popup. Het is een i-knopje met het label info, geen vraagteken: hij zegt wat de popup is, niet waarom (Dave, 8 oktober 2026).
   const heading = props.help ? (
     <div class="stat-dialog-title-row">
-      <h2 class="stat-dialog-name">{name}</h2>
+      <h3 class="dialog__title">{name}</h3>
       <PopupButton icon={INFO_ICON} class="info-toggle" label="Info" title={props.title} tag="info">
         <p class="item-why">{props.help}</p>
       </PopupButton>
     </div>
   ) : (
-    <h2 class={props.hideTitle ? 'stat-dialog-name sr-only' : 'stat-dialog-name'}>{name}</h2>
+    <h3 class={props.hideTitle ? 'dialog__title sr-only' : 'dialog__title'}>{name}</h3>
   )
   const title = props.subtitle || props.tag ? (
     <div class="stat-dialog-titles">
       {props.tag && <span class="title-tag">{props.tag}</span>}
       {heading}
-      {props.subtitle && <p class="stat-dialog-sub">{props.subtitle}</p>}
+      {props.subtitle && <p class="dialog__sub">{props.subtitle}</p>}
     </div>
   ) : (
     heading
@@ -1579,7 +1606,7 @@ function StatDialog(props: {
     const d = ref.current
     // De eerste popup is 95% van het scherm, elke popup daarbovenop 93% van de popup eronder (Dave, 7 oktober 2026), zodat je ziet dat er een popup bovenop ligt.
     // Een popup bovenop een andere staat er in de DOM in; het menupaneel is geen laag.
-    if (d && !props.drawer) d.style.setProperty('--popup-scale', String(FIRST_POPUP * POPUP_STEP ** popupDepth(d)))
+    if (d && !props.drawer) d.style.setProperty('--dialog-scale', String(FIRST_POPUP * POPUP_STEP ** popupDepth(d)))
     d?.showModal()
     // Op een computer meteen in het getal, zodat Enter opslaat; op een telefoon niet, anders schuift het toetsenbord over de popup.
     if (props.focusInput !== false && window.matchMedia?.('(hover: hover)').matches) d?.querySelector('input')?.focus()
@@ -1588,7 +1615,7 @@ function StatDialog(props: {
   return (
     <dialog
       ref={ref}
-      class={['stat-dialog', props.drawer && 'menu-drawer', props.className].filter(Boolean).join(' ')}
+      class={['dialog', props.drawer && 'dialog--drawer', props.className].filter(Boolean).join(' ')}
       aria-label={label}
       data-popup={path.join(' › ')}
       onCancel={(e) => {
@@ -1598,22 +1625,22 @@ function StatDialog(props: {
       onClick={(e) => e.target === ref.current && cancel()}
       {...swipe}
     >
-      <div class="stat-dialog-body" data-popup={path.join(' › ')} {...props.data}>
+      <div class="dialog__body" data-popup={path.join(' › ')} {...props.data}>
       <PopupPath.Provider value={path}>
-      <div class={props.onSave ? 'stat-dialog-head two' : props.back ? 'stat-dialog-head back' : 'stat-dialog-head'}>
+      <div class={props.onSave ? 'dialog__head dialog__head--two' : props.back ? 'dialog__head dialog__head--back' : 'dialog__head'}>
         {title}
       </div>
       {/* In het binnenvak, niet in de kop (Dave, 5 oktober 2026): rechtsboven gezet, zodat de kop alleen de titel is. */}
       {/* Elke knop houdt zijn plek, zodat de inhoud eronder niet opnieuw wordt opgebouwd en het invoervak zijn focus houdt: maak er geen ternary met een fragment van, dan verschuift alles eronder. */}
       {props.onSave && (
         // Annuleren is een terugdraai-pijl in rood, zodat hij niet lijkt op het grijze kruisje Sluiten (Dave, 5 oktober 2026).
-        <button type="button" class="stat-dialog-close cancel" aria-label="Annuleren" onClick={() => cancel()}>
+        <button type="button" class="dialog__close dialog__close--cancel" aria-label="Annuleren" onClick={() => cancel()}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
       )}
       <button
         type="button"
-        class={props.onSave ? 'stat-dialog-close save' : props.back ? 'stat-dialog-close back' : 'stat-dialog-close'}
+        class={props.onSave ? 'dialog__close dialog__close--save' : props.back ? 'dialog__close dialog__close--back' : 'dialog__close'}
         aria-label={props.onSave ? 'Opslaan en sluiten' : (props.closeLabel ?? 'Sluiten zonder opslaan')}
         onClick={() => (props.onSave ? cancel(props.onSave) : cancel())}
       >
@@ -2231,14 +2258,14 @@ function CostCardButtons(props: { part: 'worn' | 'advised' }) {
       {/* Boven de knoppen de zin wat ze zijn (Dave, 6 oktober 2026, #192): de gegevens waarmee het totaal erboven is berekend. Zonder kopje (Dave). */}
       <div class="cost-setup">
         <p class="total-cost-sub">The total cost above is calculated with this setup.</p>
-        <div class="card-actions cost-cards">
+        <div class="action-row cost-cards">
           {COST_CARDS.map((c) => {
             const name = `${c.title} van ${label}`
             return (
               <button
                 key={c.key}
                 type="button"
-                class={`card-action cost-card cost-card-${c.key}`}
+                class={`icon-btn cost-card cost-card-${c.key}`}
                 aria-haspopup="dialog"
                 aria-expanded={ctx.open[c.key] === props.part}
                 aria-label={name}
@@ -2382,7 +2409,7 @@ function EquipmentCard(props: {
             // Een eigen wapen kan een dagger of een claw zijn: de app ziet het niet, dus vraagt hij het (#176).
             <div class="job-choices equip-kind" role="group" aria-label="Soort wapen">
               {(['dagger', 'claw'] as const).map((kind) => (
-                <button key={kind} type="button" class="btn job-choice" aria-pressed={(entry.weaponKind ?? 'claw') === kind} onClick={() => props.onWeaponKind(kind)}>
+                <button key={kind} type="button" class="btn btn--touch job-choice" aria-pressed={(entry.weaponKind ?? 'claw') === kind} onClick={() => props.onWeaponKind(kind)}>
                   {kind === 'dagger' ? 'Dagger' : 'Claw'}
                 </button>
               ))}
@@ -2522,7 +2549,7 @@ function EquipmentCard(props: {
       </CardPopup>
     )
   return (
-    <section class={`card equipment${props.error ? ' invalid' : ''}`}>
+    <section class={`card app-card equipment${props.error ? ' invalid' : ''}`}>
       <CardHead>
         {name}
       </CardHead>
@@ -2625,7 +2652,7 @@ function SkillsCard(props: {
   const spLeft = spToDistribute(props.draft, props.job)
   const spLeftShown = advised ? spToDistribute(draft, props.job) : spLeft
   return (
-    <section class={`card skills${props.error ? ' invalid' : ''}`}>
+    <section class={`card app-card skills${props.error ? ' invalid' : ''}`}>
       <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="book" />
@@ -2971,7 +2998,7 @@ function HuntedMobCard(props: {
   const title = 'Monster'
   const onMob = (e: Event) => setChoice((e.currentTarget as HTMLSelectElement).value)
   return (
-    <section class={`card spot hunted${invalid ? ' invalid' : ''}`}>
+    <section class={`card app-card spot hunted${invalid ? ' invalid' : ''}`}>
       <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name="target" />
@@ -3078,7 +3105,7 @@ function Question(props: { title: string; abbr?: string; chip: Chip; chipText?: 
     </>
   )
   // Als deel van de kaart op het beginscherm (#126) een blok onder een lijn, anders een eigen kaart.
-  return props.part ? <div class="advice-part question">{body}</div> : <section class="card question">{body}</section>
+  return props.part ? <div class="advice-part question">{body}</div> : <section class="card app-card question">{body}</section>
 }
 
 /** De naam van een slot zoals het spel hem noemt (Hat, Top, ...), dezelfde als in de equipment-kaart. */
@@ -3246,7 +3273,7 @@ function SkillQuestion(props: { advice: SkillPointAdvice; cost: LevelCost; job: 
       {!a.robust && <p class="hint">Hangt af van de aannames: valt een aanname anders uit, dan is een andere skill misschien beter.</p>}
       <p class="hint">Niet doorgerekend: {listFormat.format(notModelled(props.job, props.dagger))}.</p>
       {winner && (
-        <button type="button" class="btn skill-apply" onClick={() => props.onApply(winner)}>
+        <button type="button" class="btn btn--touch skill-apply" onClick={() => props.onApply(winner)}>
           Punt zetten
         </button>
       )}
@@ -4054,7 +4081,7 @@ function LevelCostButtons(props: { advised: LevelInvoice | null; wearing: LevelI
 function TotalCostCard(props: { invoice: LevelInvoice; cheapest: LevelInvoice | null; computed: boolean; job: Job; level: string; children?: ComponentChildren }) {
   const who = totalCostWho(props.level, props.job)
   return (
-    <section class="card total-cost" aria-live="polite">
+    <section class="card app-card total-cost" aria-live="polite">
       <h2>Level cost</h2>
       {/* Elk deel zegt onder zijn h3 wat zijn factuur is (Dave, #183); zonder delen staat de zin onder de h2. */}
       {!props.computed ? (
@@ -4192,13 +4219,13 @@ function CheapestDetails(props: { live: CheapestResult | null; saving: number | 
       {/* Gestopt na de laatste toegestane ronde, van de instellingen of van de equip (#192): geen vast getal. */}
       {r.capped && <p class="hint">Na het maximum aantal rondes gestopt; neem over en tik nog eens voor eventueel meer.</p>}
       {props.applied ? (
-        <button type="button" class="btn cheapest-undo" onClick={props.onUndo}>
+        <button type="button" class="btn btn--touch cheapest-undo" onClick={props.onUndo}>
           Ongedaan maken
         </button>
       ) : (
         // Overnemen neemt alleen mob en potions over (#263): verschillen die niet, dan valt er niets over te nemen.
         r.changes.some((c) => c.kind === 'mob' || c.kind === 'hp' || c.kind === 'mp') && (
-          <button type="button" class="btn primary cheapest-apply" onClick={props.onApply}>
+          <button type="button" class="btn btn--touch btn--primary btn--block cheapest-apply" onClick={props.onApply}>
             Overnemen
           </button>
         )
@@ -4522,17 +4549,17 @@ export function App() {
     <CardViewContext.Provider value={cardViews}>
     <ProfileProblem.Provider value={profileProblem}>
       <TopBar job={job} chosen={jobChosen} onChange={changeJob} gender={gender} onGender={changeGender} />
-      <main>
+      <main class="narrow app-main">
       {/* Helemaal bovenaan drie dingen naast elkaar: een level terug, je huidige level en Level up (Dave, 4 oktober 2026, #130). */}
       <div class="level-row">
         {/* De terugknop heet BACK; zijn toegankelijke naam noemt het level waar hij heen gaat (Dave, 4 oktober 2026). */}
-        <button type="button" class="btn level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
+        <button type="button" class="btn btn--touch level-down" onClick={levelDown} disabled={!canLevelDown} aria-label={canLevelDown ? `Back (naar LV. ${levelDowned.level})` : 'Back (er is geen vorig level)'}>
           Back
         </button>
         <h1 class="current-level">
           {levelText === '' ? 'LV. ?' : `LV. ${levelText}`}
         </h1>
-        <button type="button" class="btn levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
+        <button type="button" class="btn btn--touch levelup" onClick={levelUp} disabled={!canLevelUp} aria-describedby={canLevelUp ? undefined : 'levelup-reason'}>
           Level up
         </button>
       </div>

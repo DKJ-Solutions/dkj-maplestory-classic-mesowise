@@ -41,9 +41,21 @@
 
 Adopt the house style from dkj-claude-plugins (feat/house-style-app-components): vendor house-style.css and house-theme.js unchanged, map the app's own tokens onto the house tokens, move colliding components to house names, enable the dkj-solutions plugin, and add a theme picker to the menu.
 
+#### Where it stands
+
+Markup, tests, index.html, main.tsx, vite.config.ts and the theme picker are migrated; src/style.css is NOT, so the app is currently unstyled in places and will look broken. npm ci ran; lint, test and build have NOT been run. Not committed.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Vendor house-style.css and house-theme.js unchanged into src/house/ (cp); house-theme.js is injected as an inline classic script in <head> by a small Vite plugin (vite.config.ts), so the offline single-file build works; the offline test now expects two scripts
+- [x] index.html: data-theme-light="rust", data-theme-dark="orange", data-theme-key="mesowise" (the Pages origin is shared by all org apps), theme-color metas #f9f9f7 / #0d0d0d
+- [x] src/main.tsx imports ./house/house-style.css before ./style.css, with a "copy, never edited" comment
+- [x] src/app.tsx and the tests: markup moved to the house classes (dialog, dialog__*, dialog--drawer, --dialog-scale, icon-btn, action-row, topbar__*, menu-row__*, menu-item*, btn--touch/btn--primary/btn--block, main.narrow, h2 to h3 for dialog titles); app-own app-card, app-main, menu-entry, equip-more
+- [x] Theme picker: "Thema" menu item with a ThemePicker panel calling window.DKJTheme.picker (palette icon, global type declared); menu test now expects four rows
+- [ ] src/style.css: NOT rewritten yet. Only the class renames were applied by sed, so it still holds the old tokens (--bg, --card, --text, --accent, --cost, --gain), the old dialog/topbar/menu/card-action/field/btn rules and the prefers-color-scheme dark blocks. A prepared transform script exists in the session scratchpad but was never run
+- [ ] style.css: domain tokens (--tint, --on-tint, --panel, --warn-ink, levelup/advised/worn) with dark values keyed on the dark themes; delete duplicates of house rules; .app-card/.app-main deltas; --cost to --down, --gain to --up
+- [ ] .claude/settings.json: enable dkj-solutions@dkj-claude-plugins, remove stale dkj-policy-bwj if present; CLAUDE.md import line (the plugin CLAUDE.md exists under the marketplace path)
+- [ ] npm run lint, npm test, npm run build (and the offline build), fix what breaks
 
 ### TEST
 
