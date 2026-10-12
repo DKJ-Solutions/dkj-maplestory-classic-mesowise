@@ -46,7 +46,7 @@ Adopt the house style from dkj-claude-plugins (feat/house-style-app-components):
 Markup, tests, index.html, main.tsx, vite.config.ts and the theme picker are migrated; src/style.css is NOT, so the app is currently unstyled in places and will look broken. npm ci ran; lint, test and build have NOT been run. Not committed.
 
 ### CREATE
-n- [ ] Run or discard `scripts/wip/house-css-transform.cjs` (the unrun style.css transform, parked in the branch so it survives) and delete `scripts/wip/` before the PR
+- [ ] Run or discard `scripts/wip/house-css-transform.cjs` (the unrun style.css transform, parked in the branch so it survives) and delete `scripts/wip/` before the PR
 
 - [x] Vendor house-style.css and house-theme.js unchanged into src/house/ (cp); house-theme.js is injected as an inline classic script in <head> by a small Vite plugin (vite.config.ts), so the offline single-file build works; the offline test now expects two scripts
 - [x] index.html: data-theme-light="rust", data-theme-dark="orange", data-theme-key="mesowise" (the Pages origin is shared by all org apps), theme-color metas #f9f9f7 / #0d0d0d
