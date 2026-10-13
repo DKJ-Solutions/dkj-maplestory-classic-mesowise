@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
+    "dkj-solutions@dkj-claude-plugins": true,
     "dkj-policy@dkj-claude-plugins": true,
     "dkj-subagents-alpha@dkj-claude-plugins": true,
     "dkj-subagents-shopify@dkj-claude-plugins": false
