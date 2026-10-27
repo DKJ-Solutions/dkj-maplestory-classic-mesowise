@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**24 / 32 minor entries** <!-- pending-tally -->
+**24 / 33 minor entries** <!-- pending-tally -->
+
+### DEPLOY: tooling/288-dev-preview-hub · 20261027-201824Z
+
+The session start now also starts MesoWise's own Vite dev server on 5181-5188 and puts it on the
+plugin's hub as the product card, and the hub and the app open in VS Code's Simple Browser rather than
+the system browser. The hub itself stays the plugin's, so a later hub change reaches this repo with a
+plugin update alone.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A: only a developer's local session changes; the app on GitHub Pages is untouched.
+
+**Score:** N/A
+
+#### Pull Request
+
+State the Vite product for the plugin hub and open the hub in VS Code
+
+[PR #290](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/290)
+
+---
 
 ### DEPLOY: claude/enable-dkj-solutions · 20261013-084332Z
 
