@@ -598,3 +598,18 @@ function Get-ReservedRootMd { return @('CHANGELOG.md', 'CLAUDE.md', 'README.md',
 # Declined parts of the adoption floor: the statusLine (#2) -- the gates here are short, so a progress
 # bar buys little. The CI floor is NOT declined; it was placed on issue #6.
 function Get-DeclinedAdoptions { return @('adopt-statusline') }
+
+# The product card on the plugin's hub (#288, dkj-claude-plugins#3464): the hook starts the Vite dev
+# server at session start and the hub (4890-4899) links to it. Ports 5181-5188 stay clear of the hub and
+# of the other DKJ repos' ranges; Path is Vite's base from vite.config.ts. No Name, no OwnHub: the hub
+# itself stays the plugin's, so a hub change reaches this repo with a plugin update alone. No
+# DefaultTheme: the app has no house theme of its own, so the hub opens in lilac.
+function Get-DevPreview {
+    @{
+        Command      = 'npm run dev -- --host 127.0.0.1 --port {port} --strictPort'
+        Ports        = 5181..5188
+        Path         = '/dkj-maplestory-classic-mesowise/'
+        Requires     = 'node_modules'
+        OpenInVsCode = $true
+    }
+}
