@@ -1,0 +1,22 @@
+{
+    "workbench.externalUriOpeners": {
+        "localhost:4890": "simpleBrowser.open",
+        "localhost:4891": "simpleBrowser.open",
+        "localhost:4892": "simpleBrowser.open",
+        "localhost:4893": "simpleBrowser.open",
+        "localhost:4894": "simpleBrowser.open",
+        "localhost:4895": "simpleBrowser.open",
+        "localhost:4896": "simpleBrowser.open",
+        "localhost:4897": "simpleBrowser.open",
+        "localhost:4898": "simpleBrowser.open",
+        "localhost:4899": "simpleBrowser.open",
+        "localhost:5181": "simpleBrowser.open",
+        "localhost:5182": "simpleBrowser.open",
+        "localhost:5183": "simpleBrowser.open",
+        "localhost:5184": "simpleBrowser.open",
+        "localhost:5185": "simpleBrowser.open",
+        "localhost:5186": "simpleBrowser.open",
+        "localhost:5187": "simpleBrowser.open",
+        "localhost:5188": "simpleBrowser.open"
+    }
+}

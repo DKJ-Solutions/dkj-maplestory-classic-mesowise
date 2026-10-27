@@ -39,19 +39,36 @@
 
 ### PLAN
 
+This repo's row of the hub roll-out (DKJ-Solutions/dkj-claude-plugins#3464), done the way the update
+comment on #288 prescribes. Plugins in this checkout are already on v5.35.0, so its step 1 holds.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `Get-DevPreview` in `scripts/repo-config.ps1`: Vite on 127.0.0.1, ports 5181-5188, `Path` set to
+  Vite's base, `Requires = 'node_modules'`, `OpenInVsCode`; no `Name`, `OwnHub` or `DefaultTheme`
+- [x] `.vscode/settings.json`: route the hub's ports 4890-4899 and the product's 5181-5188 to the Simple
+  Browser
 
 ### TEST
 
+- [x] Ran `dev-preview-sessionstart.ps1` by hand: `Hub: http://localhost:4897/ (opened in VS Code) --
+  product: http://localhost:5181/dkj-maplestory-classic-mesowise/ (started)`; the product URL answers
+  200 and the hub's home page carries the product card
+
 ### DEPLOY: tooling/288-dev-preview-hub
 
-**Score:**
+The session start now also starts MesoWise's own Vite dev server on 5181-5188 and puts it on the
+plugin's hub as the product card, and the hub and the app open in VS Code's Simple Browser rather than
+the system browser. The hub itself stays the plugin's, so a later hub change reaches this repo with a
+plugin update alone.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: only a developer's local session changes; the app on GitHub Pages is untouched.
+
+**Score:** N/A
 
 #### Pull Request
 
