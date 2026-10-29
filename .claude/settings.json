@@ -1,9 +1,9 @@
 {
   "enabledPlugins": {
-    "dkj-solutions@dkj-claude-plugins": true,
-    "dkj-policy@dkj-claude-plugins": true,
-    "dkj-subagents-alpha@dkj-claude-plugins": true,
-    "dkj-subagents-shopify@dkj-claude-plugins": false
+    "dkj-solutions@dkj-marketplace": true,
+    "dkj-policy@dkj-marketplace": true,
+    "dkj-subagents-alpha@dkj-marketplace": true,
+    "dkj-subagents-shopify@dkj-marketplace": false
   },
   "permissions": {
     "allow": [

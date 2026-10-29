@@ -6,7 +6,7 @@
 
 The orchestrator (Chris) is always loaded -- portable body from plugin install and repo lens from `lenses/`.
 
-@~/.claude/plugins/marketplaces/dkj-claude-plugins/plugins/dkj-subagents/dkj-subagents-alpha/personas/specialist-01-01-persona.md
+@~/.claude/plugins/marketplaces/dkj-marketplace/plugins/dkj-subagents/dkj-subagents-alpha/personas/specialist-01-01-persona.md
 
 @lenses/specialist-01-01-lens.md
 

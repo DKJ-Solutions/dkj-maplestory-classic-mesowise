@@ -39,19 +39,36 @@
 
 ### PLAN
 
+The plugin source was renamed to `dkj-marketplace` in v6.0.0 (DKJ-Solutions/dkj-marketplace#3660). This
+branch moves this repo over by the source's procedure (`plugins/ADOPTION.md`, "Moving to
+dkj-marketplace").
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `.claude/settings.json`: the four `enabledPlugins` keys
+- [x] Absolute `@`-imports in `CLAUDE.md` and `SPECIALISTS.md`, the always-on baseline keys, and the persona
+      paths cited in four lenses
+- [x] Every CI runner's `repository:` / `uses:` line under `.github/workflows/`
 
 ### TEST
 
+- [x] Gates left to `ship-pr`. On this machine, this checkout gets the plugins installed under `dkj-marketplace`
+      first.
+
 ### DEPLOY: feat/291-dkj-marketplace
 
-**Score:**
+This repo now installs its plugins from `dkj-marketplace`, the new name of the plugin source since v6.0.0
+([#291](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/issues/291)): the settings keys,
+the absolute imports, the always-on baseline and every CI runner name it. On each machine, the plugins are
+installed again under the new name for this checkout.
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A -- users of the app see nothing of which marketplace the tooling installs from.
+
+**Score:** N/A
 
 #### Pull Request
 
