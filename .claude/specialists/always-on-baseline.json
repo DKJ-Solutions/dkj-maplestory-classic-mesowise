@@ -7,8 +7,8 @@
     "documents":  {
                       ".claude/rules/this-repo.md":  1021,
                       ".claude/specialists/SPECIALISTS.md":  2265,
-                      "~/.claude/plugins/marketplaces/dkj-claude-plugins/plugins/dkj-policy/CLAUDE.md":  8150,
-                      "~/.claude/plugins/marketplaces/dkj-claude-plugins/plugins/dkj-subagents/dkj-subagents-alpha/personas/specialist-01-01-persona.md":  16213,
+                      "~/.claude/plugins/marketplaces/dkj-marketplace/plugins/dkj-policy/CLAUDE.md":  8150,
+                      "~/.claude/plugins/marketplaces/dkj-marketplace/plugins/dkj-subagents/dkj-subagents-alpha/personas/specialist-01-01-persona.md":  16213,
                       "CLAUDE.md":  166,
                       "lenses/specialist-01-01-lens.md":  1140
                   }

@@ -87,7 +87,7 @@ jobs:
       - name: Fetch the shared workflow scripts
         uses: actions/checkout@v5
         with:
-          repository: DKJ-Solutions/dkj-claude-plugins
+          repository: DKJ-Solutions/dkj-marketplace
           ref: main
           path: .workflow-scripts
 
