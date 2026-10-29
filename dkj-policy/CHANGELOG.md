@@ -2,7 +2,30 @@
 
 ## [Unreleased]
 
-**24 / 33 minor entries** <!-- pending-tally -->
+**24 / 34 minor entries** <!-- pending-tally -->
+
+### DEPLOY: feat/291-dkj-marketplace · 20261029-223442Z
+
+This repo now installs its plugins from `dkj-marketplace`, the new name of the plugin source since v6.0.0
+([#291](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/issues/291)): the settings keys,
+the absolute imports, the always-on baseline and every CI runner name it. On each machine, the plugins are
+installed again under the new name for this checkout.
+
+**Score:** 3
+
+#### What makes this deploy extra special
+
+N/A -- users of the app see nothing of which marketplace the tooling installs from.
+
+**Score:** N/A
+
+#### Pull Request
+
+Migrate to the dkj-marketplace marketplace
+
+[PR #292](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/292)
+
+---
 
 ### DEPLOY: tooling/288-dev-preview-hub · 20261027-201824Z
 
