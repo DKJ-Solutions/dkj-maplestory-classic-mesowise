@@ -39,21 +39,50 @@
 
 ### PLAN
 
+Issue #296: every DKJ repo uses the source's branch-prefix table (DKJ-Solutions/dkj-marketplace#3886,
+Dave, November 7, 2026). This repo's own taxonomy (app, data, tooling, fix, docs, claude) is retired:
+`feat/` -> `feature`, `fix/` -> `bug`, `docs/` -> no label, `chore/` refused.
+
+#### Entry retype mapping
+
+Every pending entry in `CHANGELOG.md` sits under `## [Unreleased]`, and under the new table its old
+prefix would fall back to Chore. Each one now carries a `#### Branch type` section after its Pull
+Request section, so the type is stated by meaning while the heading keeps the branch's real name:
+
+- `tooling/288-dev-preview-hub` -> Feat (tooling)
+- `claude/enable-dkj-solutions` -> Feat (config)
+- `app/271-defense-minimum-hit-note` -> Fix (the formula did not add up to its own result)
+- `app/250-no-double-tap-zoom` -> Fix (an accidental zoom with no way back out)
+- the other 26 `app/` entries -> Feat (app behaviour, content and its code)
+
+No `data/` entry was pending. Released history is untouched.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Replace the prefix table, `$script:BranchTypeOrder`, `Get-BranchTypes`, `Get-BranchPrefix`, `Get-BranchInfo` and `Test-BranchName` in `scripts/lib/branch-info.ps1` with the source's text; the header says it follows the source table (#3886)
+- [x] Retype the 30 pending entries with a retired prefix (mapping above)
+- [~] Docs and rules naming the old prefixes -- none found in `.claude/`, `CLAUDE.md`, `scripts/` or the README, and no `enhancement` reference
+- [~] Create the `feature` label -- it already exists on the tracker
 
 ### TEST
 
+- [x] `branch-info.ps1` loads; `Get-BranchTypes` returns Feat, Fix, Docs, Chore; feat/fix/docs resolve to feature/bug/no label; `chore/x` is refused; `app/x` is unknown
+- [x] `Resolve-EntryType` from the dkj-policy 6.10.0 lib reads every pending entry as Feat or Fix with no error, and `Get-EntryPrTitle` still reads each title
+- [~] Repo tests touching branch-info -- none exist (`npm test` is the app's vitest suite and does not read it)
+- [x] Lint gate (`scripts/lint/lint.ps1`): every `.ps1` parses and is ASCII, `tsc --noEmit` passes
+
 ### DEPLOY: fix/296-source-branch-prefixes
 
-**Score:**
+Branches here now use the same prefixes as every DKJ repo, taken from the source's `scripts/lib/branch-info.ps1` (DKJ-Solutions/dkj-marketplace#3886): `feat/` for a feature, `fix/` for a repair, `docs/` for documentation, and `chore/` is refused. The repo's own `app/`, `data/`, `tooling/` and `claude/` prefixes are retired, and the 30 pending changelog entries that carried them now state Feat or Fix, so none is filed as Chore at the next release.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: the app on GitHub Pages is untouched; only how branches here are named and labelled changes.
+
+**Score:** N/A
 
 #### Pull Request
 
 Use the source's branch prefixes
-

@@ -68,6 +68,10 @@ State the Vite product for the plugin hub and open the hub in VS Code
 
 [PR #290](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/290)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: claude/enable-dkj-solutions · 20261013-084332Z
@@ -88,6 +92,10 @@ Enable dkj-solutions: the house style comes from dkj-brandbook
 
 [PR #286](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/286)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/difference-summary-color · 20261009-105209Z
@@ -107,6 +115,10 @@ A player sees at a glance, on the cards themselves, which setup is cheaper and b
 Level cost as two cards, Cheapest vs Profile, each with Read more and Difference
 
 [PR #285](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/285)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -129,6 +141,10 @@ In Profile you can now see which upgrades Cheapest advises without switching to 
 Profile popup: show the New equip row under Based on
 
 [PR #284](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/284)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -153,6 +169,10 @@ Level cost without its card, with a "Read more" button on each part that opens t
 
 [PR #282](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/282)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/remove-topbar-tagline · 20261009-101618Z
@@ -173,6 +193,10 @@ The top bar is calmer on a phone: just the app name and the menu.
 Remove the tagline from the top bar
 
 [PR #283](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/283)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -198,6 +222,10 @@ reachable. They notice it the next time they open the menu, but nothing about th
 Menu shows Profile, Instellingen and Help; Job and Gender move into a Profile drawer
 
 [PR #281](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/281)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -225,6 +253,10 @@ them, but they change nothing about how they use the app.
 Level-up question reads 'a Lv. 20 Thief', and the "?" reason sits inside its Level cost button
 
 [PR #280](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/280)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -319,6 +351,10 @@ Defense explanation shows the minimum of 1 damage per hit
 
 [PR #275](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/275)
 
+#### Branch type
+
+Fix
+
 ---
 
 ### DEPLOY: app/level-cost-difference-row · 20261008-202602Z
@@ -338,6 +374,10 @@ Players see at a glance how much they leave on the table at this level, without 
 Level cost stacks its buttons and shows the difference underneath
 
 [PR #274](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/274)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -365,6 +405,10 @@ Every formula in the explanations is built step by step in boxes
 
 [PR #272](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/272)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/home-only-level-cost · 20261008-192942Z
@@ -389,6 +433,10 @@ Home screen shows only Level cost, with the ammo bill explained step by step
 
 [PR #270](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/270)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/262-profile-cost-reason · 20261008-152130Z
@@ -410,6 +458,10 @@ so you no longer have to search the cards for what is wrong.
 Level cost says why Profile shows a question mark
 
 [PR #268](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/268)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -433,6 +485,10 @@ Cheapest's bill row keeps only what the bill can show
 
 [PR #267](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/267)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/258-cheapest-profile-comments · 20261008-150530Z
@@ -453,6 +509,10 @@ N/A: nothing changes on the screen.
 Comments and test titles call the views Cheapest and Profile
 
 [PR #266](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/266)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -484,6 +544,10 @@ Cheapest builds its own setup from your level and gear; starting items count as 
 
 [PR #265](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/265)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/bill-table · 20261008-122735Z
@@ -510,6 +574,10 @@ Level cost as one bill, grouped into Useable and Equip
 
 [PR #261](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/261)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/level-cost-top · 20261008-101927Z
@@ -533,6 +601,10 @@ Level cost card at the top; Advised becomes Cheapest, Wearing becomes Profile
 
 [PR #259](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/259)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/based-on-equip · 20261008-084404Z
@@ -552,6 +624,10 @@ Level cost: Equip now shows under Based on which equipment it counts, and in Wea
 Based on gets an Equip row, and Wearing says per slot whether to upgrade
 
 [PR #257](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/257)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -573,6 +649,10 @@ Total cost is called Level cost
 
 [PR #256](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/256)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/actual-icon · 20261008-081936Z
@@ -592,6 +672,10 @@ A popup with your own numbers now shows a person icon instead of the i, which st
 Own icon for your own data, one pencil style, and Based on as a table
 
 [PR #255](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/255)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -613,6 +697,10 @@ Equip popup Your character as the same compact table as Advised, labelled wearin
 
 [PR #254](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/254)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/remove-report-card · 20261008-073655Z
@@ -632,6 +720,10 @@ A player sees one card fewer on the home screen: what a level costs is read from
 Remove the Report card from the home screen
 
 [PR #253](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/253)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -653,6 +745,10 @@ Popup labels info, expected and why, clickable names under Based on, and a level
 
 [PR #252](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/252)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/250-no-double-tap-zoom · 20261008-071029Z
@@ -672,6 +768,10 @@ On a phone, a double-tap no longer zooms the app in by accident, with no obvious
 Double-tap no longer zooms the page in on a phone; pinch zoom still works
 
 [PR #251](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/251)
+
+#### Branch type
+
+Fix
 
 ---
 
@@ -693,6 +793,10 @@ card popups carry data-sheet and data-based-on-* on .stat-dialog-body, beside da
 
 [PR #249](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/249)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/char-popup-based-on · 20261007-212755Z
@@ -712,6 +816,10 @@ Not visible on screen; only someone reading the HTML sees it.
 the advised character's stats popup carries data-based-on-character and data-sheet, like the mob's info popup
 
 [PR #248](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/248)
+
+#### Branch type
+
+Feat
 
 ---
 
@@ -733,6 +841,10 @@ data-based-on-character, data-based-on-mob and data-sheet say in the HTML which 
 
 [PR #247](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/247)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/245-popup-path · 20261007-205252Z
@@ -753,6 +865,10 @@ every popup body says which popup it is, and which popup it sits in
 
 [PR #246](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/246)
 
+#### Branch type
+
+Feat
+
 ---
 
 ### DEPLOY: app/242-unique-element-hooks · 20261007-204235Z
@@ -772,6 +888,10 @@ Nothing a player sees changes: the classes only make the markup easier to point 
 every element names what it is, so two buttons that do different things no longer look identical in the markup
 
 [PR #244](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/244)
+
+#### Branch type
+
+Feat
 
 ---
 
