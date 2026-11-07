@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**24 / 35 minor entries** <!-- pending-tally -->
+**24 / 36 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/296-source-branch-prefixes · 20261107-193938Z
+
+Branches here now use the same prefixes as every DKJ repo, taken from the source's `scripts/lib/branch-info.ps1` (DKJ-Solutions/dkj-marketplace#3886): `feat/` for a feature, `fix/` for a repair, `docs/` for documentation, and `chore/` is refused. The repo's own `app/`, `data/`, `tooling/` and `claude/` prefixes are retired, and the 30 pending changelog entries that carried them now state Feat or Fix, so none is filed as Chore at the next release.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A: the app on GitHub Pages is untouched; only how branches here are named and labelled changes.
+
+**Score:** N/A
+
+#### Pull Request
+
+Use the source's branch prefixes
+
+[PR #297](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/297)
+
+---
 
 ### DEPLOY: feat/294-dkj-folder-move · 20261107-181550Z
 
