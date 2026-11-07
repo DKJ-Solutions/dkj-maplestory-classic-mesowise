@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**24 / 34 minor entries** <!-- pending-tally -->
+**24 / 35 minor entries** <!-- pending-tally -->
+
+### DEPLOY: feat/294-dkj-folder-move · 20261107-181550Z
+
+The workflow folder moved from the repo root `dkj-policy/` to `.dkj/dkj-policy/`, the home every plugin of the marketplace now uses (DKJ-Solutions/dkj-marketplace#3870). `scripts/repo-config.ps1` points at the new paths, and `CLAUDE.md` imports the `dkj-solutions` extension at its current path, so that extension's rules load again.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Move the workflow folder from dkj-policy/ to .dkj/dkj-policy/
+
+[PR #295](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/295)
+
+---
 
 ### DEPLOY: feat/291-dkj-marketplace · 20261029-223442Z
 
