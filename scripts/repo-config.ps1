@@ -88,7 +88,7 @@ function Get-ReleaseNoteRoot {
 
         This is this repo's file now. Edit it freely; nothing overwrites a function already here.
     #>
-    '.dkj/dkj-policy/releases/audience'
+    '.dkj/dkj-repo-workflow/releases/audience'
 }
 
 # --- Adopted from the DKJ-Solutions/dkj-claude-plugins config blueprint ---------------------------------
@@ -189,9 +189,8 @@ function Get-MojibakePaths {
     # EVERY NAME IS SCANNED, and the reason is what this check is for: a repo mid-rename has prose in
     # whichever folder it still uses, and a mojibake check that silently skips the folder a consumer
     # actually has is worse than no check -- it reports a clean run over nothing.
-    # '.dkj/dkj-policy' leads since #3870 (this repo moved under #294, November 7, 2026).
-    foreach ($workflowFolderName in @('.dkj/dkj-policy', 'dkj-policy', 'contributing-davekjohn', 'workflow-davekjohn')) {
-        $workflowDir = Join-Path $RepoRoot $workflowFolderName
+    foreach ($workflowFolderName in @('.dkj/dkj-repo-workflow', 'dkj-repo-workflow', 'contributing-davekjohn', 'workflow-davekjohn')) {
+        $workflowDir = Join-Path $RepoRoot ($workflowFolderName -replace '/', '\')
         if (Test-Path -LiteralPath $workflowDir) {
             $paths += @(Get-ChildItem -LiteralPath $workflowDir -Recurse -Filter '*.md' -File |
                 Select-Object -ExpandProperty FullName)
@@ -292,7 +291,7 @@ function Get-MojibakePaths {
 # AND UNDER dkj-policy/ SINCE SEPTEMBER 5, 2026 (#1437), when the folder renamed with the plugin it is
 # named after. The seam VALUES below carry today's name; every dated sentence around them keeps the name
 # it was written with, which is the #952 rule.
-$script:ReleaseHistoryPath = '.dkj/dkj-policy/releases/history.md'
+$script:ReleaseHistoryPath = '.dkj/dkj-repo-workflow/releases/history.md'
 
 function Get-ReleaseHistoryPath {
     <# Repo-root-relative path to the file that lists every release this repo has cut. #>
@@ -304,7 +303,7 @@ function Get-ReleaseHistoryPath {
 # default -- and recreate a root releases/ directory the August 27, 2026 move above just emptied. The
 # other two generated roots (changelog/, github/) need no statement: their defaults stopped branching on
 # the source at #914 and already point into this folder.
-$script:ReleaseInternalNotesRoot = '.dkj/dkj-policy/releases/internal'
+$script:ReleaseInternalNotesRoot = '.dkj/dkj-repo-workflow/releases/internal'
 
 function Get-ReleaseInternalNotesRoot {
     <# Repo-root-relative directory the generated internal (tier 1) note is written into. #>
@@ -326,7 +325,7 @@ function Get-ReleaseInternalNotesRoot {
 # than from the repo root, because that is where the fold pastes it. new-branch composes the branch
 # document's guidance from this very seam, so a writer is told the right thing without having to know it,
 # and check-plugin-integrity validates each entry's links against the same resolved location.
-$script:ChangelogPath = '.dkj/dkj-policy/CHANGELOG.md'
+$script:ChangelogPath = '.dkj/dkj-repo-workflow/CHANGELOG.md'
 
 function Get-ChangelogPath {
     <# Repo-root-relative path to the changelog the fold writes into and the cut empties. #>

@@ -2,7 +2,7 @@
 .SYNOPSIS
     De lint-poort van deze repo, in de vorm die open-pr en cut-release verwachten.
 .DESCRIPTION
-    De gedeelde workflow-scripts uit dkj-policy draaien de lint-poort als een .ps1 via
+    De gedeelde workflow-scripts uit dkj-repo-workflow draaien de lint-poort als een .ps1 via
     Get-LintScript (scripts/repo-config.ps1). Twee delen: elk .ps1-bestand onder scripts/ moet
     parsen en puur ASCII zijn (Windows PowerShell 5.1 leest een script zonder BOM als ANSI), en de
     app moet door zijn eigen linter (`npm run lint`, de typecheck van TypeScript).
