@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**24 / 36 minor entries** <!-- pending-tally -->
+**24 / 37 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/migrate-dkj-marketplace-v7 · 20261117-213538Z
+
+The repo now runs on dkj-marketplace v7.0.0: the workflow plugin is `dkj-repo-workflow` with its `dkj-repo-workflow-dkj` extension, the developers team (`dkj-subagents-developers`) is enabled, and the workflow folder is `.dkj/dkj-repo-workflow/`. The CI runners fetch the shared scripts at v7.0.0, and the two reusable gates are pinned to that release instead of `@main`.
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A: the app on GitHub Pages is untouched; only the workflow tooling around it moves.
+
+**Score:** N/A
+
+#### Pull Request
+
+Migrate to dkj-marketplace v7.0.0
+
+[PR #299](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/299)
+
+---
 
 ### DEPLOY: fix/296-source-branch-prefixes · 20261107-193938Z
 
