@@ -3,7 +3,7 @@
 **The owner is Dave (DaveKJohn); where the constitution says "the owner", it means him here.** The trunk
 is `main`. The repo is **`public`**: nothing private (keys, friends' names or accounts) goes in it.
 
-The rules themselves are in the `dkj-policy` constitution that [`CLAUDE.md`](../../CLAUDE.md) imports,
+The rules themselves are in the `dkj-repo-workflow` constitution that [`CLAUDE.md`](../../CLAUDE.md) imports,
 and they are not repeated here. This file carries only facts about this repo, and the limits that
 apply only here.
 

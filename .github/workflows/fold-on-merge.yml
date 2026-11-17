@@ -79,6 +79,13 @@
 # trunk (github.ref, not github.sha) so two trunk pushes close together QUEUE instead of racing for
 # the trunk -- a per-SHA group is its own group every time and serialises nothing.
 #
+# A FOLD-ONLY PUSH GETS A GROUP OF ITS OWN (#2813). cancel-in-progress: false guards only the RUNNING
+# job; a third arrival cancels the PENDING one whatever that field says. Between two real pushes the
+# survivor is the newer and fold-all reads the tip, so nothing is lost -- but a fold-only push is
+# skipped by the job's if: below, and as the survivor it dropped a merge's fold outright (measured in
+# the source repo, October 5, 2026). Keyed per commit, it is skipped either way and displaces nothing.
+# The condition is the job's if: verbatim; keep the two equal.
+#
 # LINUX, UNDER PWSH 7 (issue #2488): this runs on ubuntu-latest under 'shell: pwsh', because a Linux
 # minute is billed below a Windows one on a private repo. The shared scripts start child processes by
 # the literal name 'powershell', which ubuntu-latest does not have, so one shim step points it at pwsh.
@@ -97,7 +104,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: fold-on-merge-${{ github.ref }}
+  group: ${{ (startsWith(github.event.head_commit.message, 'fold:') && github.event.commits[0].id == github.event.head_commit.id) && format('fold-on-merge-fold-only-{0}', github.sha) || format('fold-on-merge-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:
@@ -131,20 +138,20 @@ jobs:
       # ref: the trunk tip, not the pushed SHA -- see the header comment (inbound #1543). This job
       # asks whether the trunk carries a leftover NOW, and a fold ship-pr already pushed on top of
       # the merge commit must not read as still-unfolded here.
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           token: ${{ secrets.FOLD_PUSH_TOKEN }}
 
       # THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT ref: main (issue #2333). This job holds a write
       # credential, and code fetched at the tip of another repository would run beside it with no
-      # release in between. Move the pin when you update the dkj-policy plugin: re-running
+      # release in between. Move the pin when you update the dkj-repo-workflow plugin: re-running
       # adopt-ci-floor.ps1 reports a runner pinned behind the version it came from.
       - name: Fetch the shared workflow scripts
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: DKJ-Solutions/dkj-marketplace
-          ref: d70be6a58ebe061efee328c825ee257640fdf269 # v5.13.0
+          ref: 6db57517452ba00a4d1abc6ea16c6af5868bc1e3 # v7.0.0
           path: .workflow-scripts
 
       # THE SHIM (issue #2488): the shared scripts launch children by the literal name 'powershell' in
@@ -164,7 +171,7 @@ jobs:
         env:
           CLAUDE_PROJECT_DIR: ${{ github.workspace }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/lint/check-unfolded-entry.ps1 -Branch main *>&1 | Tee-Object -FilePath check-output.txt
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-repo-workflow/scripts/lint/check-unfolded-entry.ps1 -Branch main *>&1 | Tee-Object -FilePath check-output.txt
           exit $LASTEXITCODE
 
       - name: Fold it (every leftover this push may carry)
@@ -189,7 +196,7 @@ jobs:
           # bypass is checked against the pushing token's identity, not the commit author.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/release/fold-changelog-entry.ps1 -Commit -Push *>&1 | Tee-Object -FilePath fold-output.txt
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-repo-workflow/scripts/release/fold-changelog-entry.ps1 -Commit -Push *>&1 | Tee-Object -FilePath fold-output.txt
           $foldExitCode = $LASTEXITCODE
 
           # EXIT 2 IS "THE TRUNK MOVED UNDER ME", AND THIS JOB STANDS DOWN ON IT (#1586). It is the

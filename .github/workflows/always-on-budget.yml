@@ -8,8 +8,8 @@
 # WHAT THE CEILING IS: answer Get-AlwaysOnBudget in scripts/repo-config.ps1, in BYTES. Unanswered,
 # it is 100,000. A repo already over it is held at a recorded baseline rather than refused.
 #
-# @main IS DELIBERATE, for the reason branch-entry.yml states. To pin, name a tag in `uses:` AND
-# pass the same tag as `with: scripts-ref:`.
+# PINNED TO A RELEASE, for the reason branch-entry.yml states (#4237). Move the tag in `uses:` AND
+# in `scripts-ref:` together.
 name: Always-on budget
 
 permissions:
@@ -21,4 +21,6 @@ on:
 
 jobs:
   always-on-budget:
-    uses: DKJ-Solutions/dkj-marketplace/.github/workflows/reusable-always-on-budget.yml@main
+    uses: DKJ-Solutions/dkj-marketplace/.github/workflows/reusable-always-on-budget.yml@v7.0.0
+    with:
+      scripts-ref: v7.0.0

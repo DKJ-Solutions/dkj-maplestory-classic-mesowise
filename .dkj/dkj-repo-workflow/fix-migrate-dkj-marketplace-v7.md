@@ -24,7 +24,7 @@
 > into `CHANGELOG.md` at the merge. In each tier, write the reason
 > ABOVE the Score line -- anything below it is discarded.
 >
-> Relative links in that text resolve FROM `.dkj/dkj-policy/`, where `CHANGELOG.md` sits --
+> Relative links in that text resolve FROM `.dkj/dkj-repo-workflow/`, where `CHANGELOG.md` sits --
 > not from this directory.
 >
 > For tier 2 audiences: the user who relies on what this repo ships, and decides whether to take the next version -- a subscriber of a service, or the user of a tool, its own maintainer included. That reader and nobody else -- what matters only
@@ -39,23 +39,36 @@
 
 ### PLAN
 
-Rename plugin ids, move .dkj folder, re-adopt CI floor, repoint lenses.
+Move this repo to dkj-marketplace v7.0.0, following the dkj-recipes pilot (DKJ-Solutions/dkj-recipes#129) and its findings DKJ-Solutions/dkj-marketplace#4251, #4252 and #4253.
 
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] `.claude/settings.json`: `dkj-policy` -> `dkj-repo-workflow`, `dkj-solutions` -> `dkj-repo-workflow-dkj`, `dkj-subagents-developers` enabled, `*dkj-policy*` allow patterns -> `*dkj-repo-workflow*`; plugins installed/updated at project scope
+- [x] Part 1 of adopt-dkj-repo-workflow with -Apply (the #4251 workaround): `.dkj/dkj-policy/` -> `.dkj/dkj-repo-workflow/`, `CLAUDE.md` imports and `scripts/repo-config.ps1` seams repointed
+- [x] `Get-MojibakePaths` re-adopted from the blueprint, so the moved folder stays covered
+- [x] CI floor re-adopted (runners deleted, `adopt-ci-floor -Apply`, diffed against the old files: nothing repo-specific lost); `branch-entry.yml` and `always-on-budget.yml` pinned to `@v7.0.0` with `scripts-ref: v7.0.0`
+- [~] Statusline shim (#4252): dropped, this repo never adopted one, so there is nothing stale to replace
+- [x] Derek's and Rendall's lenses point at `dkj-subagents-developers/personas/`
+- [x] Present-tense `dkj-policy` mentions renamed (rules, lenses, PR template, lint script header)
 
 ### TEST
 
+- [x] Every persona path the lenses name resolves in the marketplace clone
+- [x] `git grep` finds no `dkj-policy`, `dkj-solutions@` or `bwj-development@` outside dated comments, the changelog and `always-on-baseline.json` (harmless, per #4253)
+- [x] Lint gate green
+
 ### DEPLOY: fix/migrate-dkj-marketplace-v7
 
-**Score:**
+The repo now runs on dkj-marketplace v7.0.0: the workflow plugin is `dkj-repo-workflow` with its `dkj-repo-workflow-dkj` extension, the developers team (`dkj-subagents-developers`) is enabled, and the workflow folder is `.dkj/dkj-repo-workflow/`. The CI runners fetch the shared scripts at v7.0.0, and the two reusable gates are pinned to that release instead of `@main`.
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A: the app on GitHub Pages is untouched; only the workflow tooling around it moves.
+
+**Score:** N/A
 
 #### Pull Request
 
 Migrate to dkj-marketplace v7.0.0
-

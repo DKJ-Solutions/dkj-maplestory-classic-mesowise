@@ -32,15 +32,15 @@
 # non-admin endpoints would report every field as not-read and still exit 0 -- a detector reporting
 # success while checking nothing.
 #
-# LEAST PRIVILEGE, AND READ-ONLY: contents: read is the whole permission. The checkout is UNPINNED --
-# this job never holds a credential worth pinning against. Contrast the source repo's OWN tree:
-# fold-on-merge.yml and verify-resolved.yml (write-capable) are pinned; repo-settings.yml itself,
-# branch-entry.yml and unfolded-entry.yml (read-only, like this job) are not. persist-credentials:
-# false because this job never pushes.
+# LEAST PRIVILEGE, AND READ-ONLY: contents: read is the whole permission. The checkout ACTION is
+# unpinned -- this job never holds a credential worth pinning against. persist-credentials: false
+# because this job never pushes.
 #
-# The write runners adopt-ci-floor.ps1 places beside this one (fold, resolves, merge-on-green) pin
-# both the action (#1904) and the shared scripts they fetch (#2333); this one pins neither, and
-# tracks the scripts at main on the #1805 argument, because it holds nothing worth pinning against.
+# THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT main (#4237). A script path that moves on the
+# source's main reaches a runner on main before this repo has adopted the release that carries the
+# move -- measured when the #4209 rename turned every such runner red at once. Move the pin when you
+# update the dkj-repo-workflow plugin: re-running adopt-ci-floor.ps1 reports a runner pinned behind
+# the version it came from.
 #
 # THE SECOND CHECKOUT reaches the check through the plugin's own tree rather than a copy kept here,
 # so this repo shares one definition of "what GitHub-side drift looks like" with the workflow's
@@ -80,15 +80,15 @@ jobs:
     # all -- it simply spends the six-hour default and is found, if ever, in the Actions list.
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Fetch the shared workflow scripts
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: DKJ-Solutions/dkj-marketplace
-          ref: main
+          ref: 6db57517452ba00a4d1abc6ea16c6af5868bc1e3 # v7.0.0
           path: .workflow-scripts
 
       # THE SHIM (issue #2488): the shared script launches children by the literal name 'powershell',
@@ -103,5 +103,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CLAUDE_PROJECT_DIR: ${{ github.workspace }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/lint/check-repo-settings.ps1 -RequireRead -Trunk main
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-repo-workflow/scripts/lint/check-repo-settings.ps1 -RequireRead -Trunk main
           exit $LASTEXITCODE

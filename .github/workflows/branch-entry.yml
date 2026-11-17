@@ -7,8 +7,9 @@
 # WHICH BRANCHES OWE NOTHING: answer Get-EntryGateExemptPrefixes in scripts/repo-config.ps1. It
 # defaults to 'sync' -- a mirror branch carries somebody else's work, so it has nothing to declare.
 #
-# @main IS DELIBERATE: a pinned gate enforces the shape it was pinned at, and the entry path has moved
-# twice. To pin, name a tag in `uses:` AND pass the same tag as `with: scripts-ref:`.
+# PINNED TO A RELEASE (#4237): a script moved on the source's main would otherwise turn this gate red
+# before this repo adopts the release carrying the move. When you update the dkj-repo-workflow plugin,
+# move the tag in `uses:` AND in `scripts-ref:` together -- re-running adopt-workflow-folder says when.
 name: Branch entry
 
 # pull-requests: read AND edited HOLD THE DEPLOY LOCK: the runner reads the PR body to refuse a DEPLOY
@@ -24,4 +25,6 @@ on:
 
 jobs:
   branch-entry:
-    uses: DKJ-Solutions/dkj-marketplace/.github/workflows/reusable-branch-entry.yml@main
+    uses: DKJ-Solutions/dkj-marketplace/.github/workflows/reusable-branch-entry.yml@v7.0.0
+    with:
+      scripts-ref: v7.0.0

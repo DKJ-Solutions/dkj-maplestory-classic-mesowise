@@ -28,6 +28,11 @@
 # constant per trunk; two overlapping runs are harmless here (the second finds every issue already
 # closed) but a constant group keeps them ordered anyway.
 #
+# A FOLD-ONLY PUSH GETS A GROUP OF ITS OWN (#2813), for the fold runner's reason: a third arrival
+# cancels the pending run regardless of cancel-in-progress, and a skipped fold-only run surviving
+# it dropped a merge's resolves check for good, since this job reads only the pushed range. The
+# condition is the job's if: verbatim; keep the two equal.
+#
 # LINUX, UNDER PWSH 7 (issue #2488): ubuntu-latest and 'shell: pwsh', with one shim step pointing the
 # literal child name 'powershell' at pwsh -- see the fold runner's header.
 name: Verify resolved issues
@@ -44,7 +49,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: verify-resolved-${{ github.ref }}
+  group: ${{ (startsWith(github.event.head_commit.message, 'fold:') && github.event.commits[0].id == github.event.head_commit.id) && format('verify-resolved-fold-only-{0}', github.sha) || format('verify-resolved-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:
@@ -78,19 +83,19 @@ jobs:
     steps:
       # persist-credentials: false -- this job reads and calls the API, and never pushes. Nothing
       # here needs a git credential left in the workspace.
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       # THE SHARED SCRIPTS ARE PINNED TO A RELEASE, NOT ref: main (issue #2333). This job holds a write
       # credential, and code fetched at the tip of another repository would run beside it with no
-      # release in between. Move the pin when you update the dkj-policy plugin: re-running
+      # release in between. Move the pin when you update the dkj-repo-workflow plugin: re-running
       # adopt-ci-floor.ps1 reports a runner pinned behind the version it came from.
       - name: Fetch the shared workflow scripts
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: DKJ-Solutions/dkj-marketplace
-          ref: d70be6a58ebe061efee328c825ee257640fdf269 # v5.13.0
+          ref: 6db57517452ba00a4d1abc6ea16c6af5868bc1e3 # v7.0.0
           path: .workflow-scripts
 
       # THE SHIM (issue #2488): the shared scripts launch children by the literal name 'powershell',
@@ -113,6 +118,6 @@ jobs:
           PUSH_SHA: ${{ github.sha }}
           CLAUDE_PROJECT_DIR: ${{ github.workspace }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-policy/scripts/release/verify-pushed-merges.ps1 `
+          powershell -NoProfile -ExecutionPolicy Bypass -File .workflow-scripts/plugins/dkj-repo-workflow/scripts/release/verify-pushed-merges.ps1 `
             -Before $env:PUSH_BEFORE -Sha $env:PUSH_SHA -Trunk main -Repo $env:GH_REPO
           exit $LASTEXITCODE

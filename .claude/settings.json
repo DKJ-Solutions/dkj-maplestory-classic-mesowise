@@ -1,18 +1,12 @@
 {
-  "enabledPlugins": {
-    "dkj-solutions@dkj-marketplace": true,
-    "dkj-policy@dkj-marketplace": true,
-    "dkj-subagents-alpha@dkj-marketplace": true,
-    "dkj-subagents-shopify@dkj-marketplace": false
-  },
   "permissions": {
     "allow": [
-      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*new-branch.ps1*)",
-      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*open-pr.ps1*)",
-      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*ship-pr.ps1*)",
-      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*new-branch.ps1*)",
-      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*open-pr.ps1*)",
-      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-policy*ship-pr.ps1*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*new-branch.ps1*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*open-pr.ps1*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*ship-pr.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*new-branch.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*open-pr.ps1*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File *dkj-repo-workflow*ship-pr.ps1*)",
       "Bash(gh repo edit --delete-branch-on-merge*)"
     ],
     "deny": [
@@ -29,5 +23,12 @@
       "PowerShell(git rebase:*)",
       "PowerShell(rm -rf:*)"
     ]
+  },
+  "enabledPlugins": {
+    "dkj-repo-workflow-dkj@dkj-marketplace": true,
+    "dkj-repo-workflow@dkj-marketplace": true,
+    "dkj-subagents-alpha@dkj-marketplace": true,
+    "dkj-subagents-developers@dkj-marketplace": true,
+    "dkj-subagents-shopify@dkj-marketplace": false
   }
 }
