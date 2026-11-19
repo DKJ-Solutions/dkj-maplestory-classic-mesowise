@@ -35,6 +35,8 @@ has work here; the role lives in the plugin's agent-def.
 | 06-24 | Ravi | merging duplicate lines or code |
 | 06-29 | Marlowe | second read before a recommendation: a stack choice, or the app's own "train here" advice |
 | 02-09 | Paula | planning across multiple rounds |
+| 02-31 | Priya | product scope: which of Dave's level-up questions comes next, and its acceptance criteria |
+| 04-32 | Uma | how the app works for the player at a level-up: flows and wireframes before Gwen styles them |
 | 06-30 | Auden | long passages; rarely needed here |
 
 **The chains.** App change: Cody (+ Gwen for the look) → Tycho → Victor (+ Sebastian for network or
