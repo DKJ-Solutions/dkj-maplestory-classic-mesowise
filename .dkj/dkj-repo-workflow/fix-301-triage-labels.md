@@ -39,20 +39,32 @@
 
 ### PLAN
 
+Issue #301: `Get-TriageLabels` in `scripts/repo-config.ps1` held a stale copy (5 of 17 canonical labels), so
+`adopt-triage-labels` prescribed retired names and a sweep could not park with `awaiting-review-dev`.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Removed the stale `Get-TriageLabels` and its table from `scripts/repo-config.ps1`; the plugin's
+      built-in fallback now answers with the canonical 17.
+- [x] Ran the commands `adopt-triage-labels` printed: 7 labels created, 5 renamed from their former
+      names (issues on them keep them; #20 and #207 now read `awaiting-action-dev`).
 
 ### TEST
 
+- [x] `adopt-triage-labels` reports all 17 canonical labels present; `ship-pr` runs the gates.
+
 ### DEPLOY: fix/301-triage-labels
 
-**Score:**
+The tracker carries all 17 canonical triage labels and `scripts/repo-config.ps1` no longer holds an
+outdated copy of them, so the sweeps can park issues (#301).
+
+**Score:** 2
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
 
+**Score:** N/A
 #### Pull Request
 
 Let the canonical triage labels answer Get-TriageLabels
