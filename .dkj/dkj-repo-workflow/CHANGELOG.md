@@ -2,7 +2,27 @@
 
 ## [Unreleased]
 
-**24 / 38 minor entries** <!-- pending-tally -->
+**24 / 39 minor entries** <!-- pending-tally -->
+
+### DEPLOY: fix/301-triage-labels · 20261119-121211Z
+
+The tracker carries all 17 canonical triage labels and `scripts/repo-config.ps1` no longer holds an
+outdated copy of them, so the sweeps can park issues (#301).
+
+**Score:** 2
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+#### Pull Request
+
+Let the canonical triage labels answer Get-TriageLabels
+
+[PR #302](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/302)
+
+---
 
 ### DEPLOY: feat/298-roster-priya-uma · 20261119-115414Z
 
