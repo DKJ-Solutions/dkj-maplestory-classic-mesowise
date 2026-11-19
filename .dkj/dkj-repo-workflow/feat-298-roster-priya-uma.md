@@ -39,19 +39,32 @@
 
 ### PLAN
 
+Issue #298: the v6.14.0 core team added Priya (02-31) and Uma (04-32); the roster-sessioncheck
+reports both as missing a roster row and a lens.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Ran `sync-roster`: empty lens scaffolds for 02-31 and 04-32 under `.claude/specialists/lenses/`.
+- [x] Added a roster row for each to `.claude/specialists/SPECIALISTS.md`, in the table's own
+      `id | who | picks up` columns.
 
 ### TEST
 
+- [x] `ship-pr` runs the gates; the roster-sessioncheck at the next session start confirms the
+      roster and lenses are in sync.
+
 ### DEPLOY: feat/298-roster-priya-uma
 
-**Score:**
+Priya (Product Owner, 02-31) and Uma (UX Designer, 04-32) are on this repo's roster, each with an
+empty lens, so the session-start roster check no longer reports them as missing (#298).
+
+**Score:** 1
 
 #### What makes this deploy extra special
 
-**Score:**
+N/A
+
+**Score:** N/A
 
 #### Pull Request
 
