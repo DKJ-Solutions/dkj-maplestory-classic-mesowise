@@ -2,7 +2,28 @@
 
 ## [Unreleased]
 
-**24 / 37 minor entries** <!-- pending-tally -->
+**24 / 38 minor entries** <!-- pending-tally -->
+
+### DEPLOY: feat/298-roster-priya-uma · 20261119-115414Z
+
+Priya (Product Owner, 02-31) and Uma (UX Designer, 04-32) are on this repo's roster, each with an
+empty lens, so the session-start roster check no longer reports them as missing (#298).
+
+**Score:** 1
+
+#### What makes this deploy extra special
+
+N/A
+
+**Score:** N/A
+
+#### Pull Request
+
+Adopt Priya (02-31) and Uma (04-32) into the roster
+
+[PR #300](https://github.com/DKJ-Solutions/dkj-maplestory-classic-mesowise/pull/300)
+
+---
 
 ### DEPLOY: fix/migrate-dkj-marketplace-v7 · 20261117-213538Z
 
