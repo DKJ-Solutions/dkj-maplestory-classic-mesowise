@@ -1,0 +1,297 @@
+/* ==========================================================================
+   DKJ-Solutions house theme -- the theme choice and the picker
+   --------------------------------------------------------------------------
+   Companion to house-style.css. It picks one of the twelve themes the
+   stylesheet defines and sets it as <html data-theme="...">.
+
+   Which theme applies, in this order:
+     1. the user's own choice, remembered per app on this device;
+     2. otherwise the app's own default theme, declared on <html>:
+        <html data-theme-default="teal">
+        (an app picks its own, so apps are told apart before anyone chooses;
+        its mode is then fixed by the theme, whatever the OS mode is; a page
+        that ships data-theme="light"/"dark" ignores a default of the other mode);
+     3. otherwise, for apps that have not moved to that yet, their default for
+        the OS mode: <html data-theme-light="purple" data-theme-dark="lilac">;
+     4. otherwise the house defaults, Blauw (light) and Cyaan (dark).
+   Without this script the stylesheet still works: no data-theme follows the
+   OS with the house defaults. A page that ships data-theme="light" or "dark"
+   keeps that mode: the script then picks that mode's default, not the OS's.
+
+   The page width, set as <html data-width="fluid|phone|full"> (house-style.css keys
+   main and .container off it): fluid is the house column, phone a 360px column, full
+   the whole width. The user's choice is remembered per app on this device, like the
+   theme; otherwise the app's own default, <html data-width-default="fluid">; otherwise
+   full. Without this script there is no data-width and the column is fluid.
+
+   Use:
+     a script element with src="house-theme.js"     (in <head>, so nothing flashes;
+                                                     inlining this file verbatim is fine too)
+     DKJTheme.picker(document.getElementById('theme'))   (draws the picker)
+     DKJTheme.picker(el, { light: 'Light', dark: 'Dark' }) (row labels for an app in another language)
+     DKJTheme.settings(el, options)                  (draws the settings button: a round toggle
+                                                     and a panel with the picker, the width and a
+                                                     reset; returns the panel's slot for the app's
+                                                     own controls)
+     DKJTheme.set('ochre') / DKJTheme.reset() / DKJTheme.current()
+     DKJTheme.setWidth('full') / DKJTheme.width()
+   ========================================================================== */
+(function () {
+  var THEMES = [
+    { id: 'magenta', name: 'Magenta',     mode: 'light', hex: '#dc009d' },
+    { id: 'purple',  name: 'Paars',       mode: 'light', hex: '#8100ff' },
+    { id: 'blue',    name: 'Blauw',       mode: 'light', hex: '#0400ff' },
+    { id: 'teal',    name: 'Petrol',      mode: 'light', hex: '#00818c' },
+    { id: 'ochre',   name: 'Oker',        mode: 'light', hex: '#847400' },
+    { id: 'rust',    name: 'Roest',       mode: 'light', hex: '#ba5900' },
+    { id: 'pink',    name: 'Roze',        mode: 'dark',  hex: '#ff018e' },
+    { id: 'lilac',   name: 'Lila',        mode: 'dark',  hex: '#a143ff' },
+    { id: 'sky',     name: 'Hemelsblauw', mode: 'dark',  hex: '#6363ff' },
+    { id: 'cyan',    name: 'Cyaan',       mode: 'dark',  hex: '#00eaff' },
+    { id: 'yellow',  name: 'Geel',        mode: 'dark',  hex: '#ffc702' },
+    { id: 'orange',  name: 'Oranje',      mode: 'dark',  hex: '#ff6100' }
+  ];
+  var HOUSE_DEFAULT = { light: 'blue', dark: 'cyan' };
+  var root = document.documentElement;
+  /* storage is per origin, so each app on its own origin keeps its own choice; two apps sharing
+     an origin tell their choices apart with <html data-theme-key="app-name"> */
+  var suffix = root.getAttribute('data-theme-key') ? ':' + root.getAttribute('data-theme-key') : '';
+  var key = 'dkj-theme' + suffix;
+  var WIDTHS = ['fluid', 'phone', 'full'];
+  var widthKey = 'dkj-width' + suffix;
+  var byId = function (id) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === id) return THEMES[i]; return null; };
+
+  function stored() { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function osMode() { return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+  function appDefault(mode) {
+    var id = root.getAttribute('data-theme-' + mode);
+    var t = byId(id);
+    return t && t.mode === mode ? t.id : HOUSE_DEFAULT[mode];
+  }
+  /* a page that ships data-theme="light"/"dark" has fixed its mode; honour it */
+  var shipped = root.getAttribute('data-theme');
+  var fixedMode = shipped === 'light' || shipped === 'dark' ? shipped : null;
+  /* the app's own default theme, read live like data-theme-light/dark; a page with a fixed mode ignores
+     a default of the other mode and falls through to that mode's default */
+  function ownDefault() {
+    var t = byId(root.getAttribute('data-theme-default'));
+    return t && (!fixedMode || t.mode === fixedMode) ? t.id : null;
+  }
+  function resolve() { var s = stored(); return byId(s) ? s : ownDefault() || appDefault(fixedMode || osMode()); }
+  function apply() { root.setAttribute('data-theme', resolve()); render(); }
+
+  /* the page width: the stored choice, else the app's data-width-default, else full */
+  function isWidth(w) { return WIDTHS.indexOf(w) >= 0; }
+  function resolveWidth() {
+    var s = null;
+    try { s = localStorage.getItem(widthKey); } catch (e) {}
+    if (isWidth(s)) return s;
+    var d = root.getAttribute('data-width-default');
+    return isWidth(d) ? d : 'full';
+  }
+  var widthGroups = [];
+  function applyWidth() {
+    var now = resolveWidth();
+    root.setAttribute('data-width', now);
+    for (var i = 0; i < widthGroups.length; i++) {
+      var buttons = widthGroups[i].querySelectorAll('button');
+      for (var j = 0; j < buttons.length; j++) buttons[j].setAttribute('aria-pressed', String(buttons[j].getAttribute('data-width') === now));
+    }
+  }
+  function setWidth(w) { if (!isWidth(w)) return; try { localStorage.setItem(widthKey, w); } catch (e) {} applyWidth(); }
+
+  var pickers = [];
+  function render() {
+    var now = root.getAttribute('data-theme');
+    for (var i = 0; i < pickers.length; i++) {
+      var buttons = pickers[i].querySelectorAll('.theme-swatch');
+      for (var j = 0; j < buttons.length; j++) buttons[j].setAttribute('aria-pressed', String(buttons[j].getAttribute('data-id') === now));
+    }
+  }
+  /* the swatch a click landed in, without relying on Element.closest */
+  function swatchOf(node, el) {
+    for (; node && node !== el; node = node.parentNode)
+      if (node.classList && node.classList.contains('theme-swatch')) return node;
+    return null;
+  }
+  function onPick(e) { var b = swatchOf(e.target, e.currentTarget); if (b) set(b.getAttribute('data-id')); }
+  /* the theme names are Dutch on purpose (DKJ-Solutions apps are Dutch); the row labels can be
+     given in another language: picker(el, { light: 'Light', dark: 'Dark' }) */
+  function picker(el, labels) {
+    if (!el) return;
+    labels = labels || {};
+    var text = { light: labels.light || 'Licht', dark: labels.dark || 'Donker' };
+    var html = '';
+    ['light', 'dark'].forEach(function (mode) {
+      html += '<div class="theme-picker__row"><span class="theme-picker__label">' + text[mode] + '</span>' +
+        '<div class="theme-picker__swatches" role="group" aria-label="' + text[mode] + '">';
+      THEMES.filter(function (t) { return t.mode === mode; }).forEach(function (t) {
+        html += '<button type="button" class="theme-swatch theme-swatch--' + mode + '" data-id="' + t.id +
+          '" aria-label="' + t.name + '" title="' + t.name + '" aria-pressed="false"><i></i></button>';
+      });
+      html += '</div></div>';
+    });
+    el.classList.add('theme-picker');
+    el.innerHTML = html;
+    /* the colours come from house-style.css: each theme block also matches .theme-swatch[data-id] */
+    if (pickers.indexOf(el) < 0) { el.addEventListener('click', onPick); pickers.push(el); }
+    render();
+  }
+  /* The settings button: a round toggle that opens a panel with the picker, the page width and a
+     reset. settings(el, { label, title, theme, reset, light, dark, width, fluid, phone, full }) --
+     every text is optional (Dutch by default, like the picker) and goes in as HTML, like the
+     picker's labels: pass the app's own texts, never user input. widths: false leaves the width
+     group out, for an app whose layout has no page column to widen. Returns the panel's
+     .theme-settings__extra element, where an app adds controls of its own. The panel closes on the toggle, Escape (focus goes back to the
+     toggle), a click outside it and focus leaving it -- never on a click inside it. Drawing the
+     same element twice returns the existing slot. */
+  var ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
+  var GEAR = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="theme-settings__open"><path fill-rule="evenodd" d="M9.79 4.31L10.55 1.7L13.45 1.7L14.21 4.31A8 8 0 0 1 15.88 5L18.26 3.69L20.31 5.74L19 8.12A8 8 0 0 1 19.69 9.79L22.3 10.55L22.3 13.45L19.69 14.21A8 8 0 0 1 19 15.88L20.31 18.26L18.26 20.31L15.88 19A8 8 0 0 1 14.21 19.69L13.45 22.3L10.55 22.3L9.79 19.69A8 8 0 0 1 8.12 19L5.74 20.31L3.69 18.26L5 15.88A8 8 0 0 1 4.31 14.21L1.7 13.45L1.7 10.55L4.31 9.79A8 8 0 0 1 5 8.12L3.69 5.74L5.74 3.69L8.12 5A8 8 0 0 1 9.79 4.31ZM16.85 12a4.85 4.85 0 1 0-9.7 0a4.85 4.85 0 1 0 9.7 0z"/></svg>';   /* a solid eight-tooth gear with an open centre, measured off Maikel's reference (November 1, 2026) */
+  var CROSS = ICON + ' class="theme-settings__close"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  var settingsCount = 0;
+  function settings(el, opts) {
+    if (!el) return null;
+    var drawn = el.querySelector('.theme-settings__extra');
+    if (drawn) return drawn;
+    opts = opts || {};
+    var id = 'theme-settings-' + (++settingsCount);
+    var label = opts.label || 'Instellingen';
+    el.classList.add('theme-settings');
+    el.innerHTML =
+      '<button type="button" class="theme-settings__toggle" aria-expanded="false" aria-controls="' + id +
+        '" aria-label="' + label + '" title="' + label + '">' + GEAR + CROSS + '</button>' +
+      '<div class="theme-settings__panel" id="' + id + '" role="group" aria-labelledby="' + id + '-title" hidden>' +
+        '<p class="theme-settings__title" id="' + id + '-title">' + (opts.title || label) + '</p>' +
+        '<div class="theme-settings__group"><span class="theme-settings__label">' + (opts.theme || 'Thema') + '</span>' +
+          '<div class="theme-settings__picker"></div></div>' +
+        (opts.widths === false ? '' :
+          '<div class="theme-settings__group"><span class="theme-settings__label" id="' + id + '-width">' + (opts.width || 'Breedte') + '</span>' +
+            '<span class="seg theme-settings__width" role="group" aria-labelledby="' + id + '-width">' +
+              '<button type="button" data-width="fluid" aria-pressed="false">' + (opts.fluid || 'Vloeiend') + '</button>' +
+              '<button type="button" data-width="phone" aria-pressed="false">' + (opts.phone || 'Telefoon') + '</button>' +
+              '<button type="button" data-width="full" aria-pressed="false">' + (opts.full || 'Volledig') + '</button>' +
+            '</span></div>') +
+        '<div class="theme-settings__group theme-settings__foot"><div class="theme-settings__extra"></div>' +
+          '<button type="button" class="btn theme-settings__reset">' + (opts.reset || 'Standaardthema') + '</button></div>' +
+      '</div>';
+    var toggle = el.querySelector('.theme-settings__toggle');
+    var panel = el.querySelector('.theme-settings__panel');
+    function show(open) { panel.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); }
+    toggle.addEventListener('click', function () { show(panel.hidden); });
+    el.querySelector('.theme-settings__reset').addEventListener('click', reset);
+    var widthGroup = el.querySelector('.theme-settings__width');
+    if (widthGroup) {
+      widthGroup.addEventListener('click', function (e) {
+        for (var node = e.target; node && node !== widthGroup; node = node.parentNode)
+          if (node.getAttribute && node.getAttribute('data-width')) { setWidth(node.getAttribute('data-width')); return; }
+      });
+      widthGroups.push(widthGroup);
+      applyWidth();
+    }
+    /* the document listeners remove themselves once el has left the page, so a redraw leaks nothing */
+    function gone() {
+      if (document.documentElement.contains(el)) return false;
+      var at = widthGroups.indexOf(widthGroup);
+      if (at >= 0) widthGroups.splice(at, 1);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+      return true;
+    }
+    function onKey(e) {
+      if (gone() || panel.hidden || (e.key !== 'Escape' && e.key !== 'Esc')) return;
+      var inside = el.contains(document.activeElement);
+      show(false);
+      if (inside) toggle.focus();   /* focus elsewhere on the page stays where it is */
+    }
+    /* a click outside closes it; a click inside, on a control or not, never does */
+    function onPointer(e) { if (!gone() && !panel.hidden && !el.contains(e.target)) show(false); }
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    /* focus moving to an element outside closes it; a null relatedTarget is a click, decided above */
+    el.addEventListener('focusout', function (e) { if (e.relatedTarget && !el.contains(e.relatedTarget)) show(false); });
+    picker(el.querySelector('.theme-settings__picker'), { light: opts.light, dark: opts.dark });
+    return el.querySelector('.theme-settings__extra');
+  }
+  function set(id) { if (!byId(id)) return; try { localStorage.setItem(key, id); } catch (e) {} apply(); }
+  function reset() { try { localStorage.removeItem(key); } catch (e) {} apply(); }
+
+  /* The site header's dialogs (house-product.css, "Site header menu" and "The header's two sheet triggers"): the menu
+     toggle, the path title and the More cell each open the dialog they control as a modal, so Escape, the focus trap
+     and the return of focus to the trigger are the browser's. Listening on the document means a header drawn after
+     this script ran needs no call. A click on the close button or on the backdrop shuts it, and so does its trigger
+     disappearing as the header grows wide (#4095 added the actions sheet; its path sheet is gone). A bottom bar's More
+     (house-product.css, "Bottom bar", #4094) is such a toggle too, and the window outgrowing the bar shuts it the same way. */
+  var TRIGGERS = '.site-header__menu-toggle, .site-header__more, .bottom-bar__more';
+  function menuOf(toggle) { var d = document.getElementById(toggle.getAttribute('aria-controls') || ''); return d && d.showModal ? d : null; }
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest ? e.target : null;
+    if (!t) return;
+    var toggle = t.closest(TRIGGERS);
+    if (toggle) {
+      var d = menuOf(toggle);
+      if (!d || d.open) return;
+      d.showModal();
+      toggle.setAttribute('aria-expanded', 'true');
+      d.addEventListener('close', function () { toggle.setAttribute('aria-expanded', 'false'); }, { once: true });
+      return;
+    }
+    /* A device preview's version toggle (house-product.css, "Device preview", #4112): the pressed button's
+       data-variant is shown, every other [data-variant] of the same stage hidden. */
+    var pick = t.closest('.device-stage .seg button[data-variant]');
+    if (pick) {
+      var stage = pick.closest('.device-stage'), v = pick.getAttribute('data-variant');
+      var parts = stage.querySelectorAll('[data-variant]');
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].closest('.device-stage') !== stage) continue;
+        var on = parts[i].getAttribute('data-variant') === v;
+        if (parts[i].tagName === 'BUTTON') parts[i].setAttribute('aria-pressed', String(on)); else parts[i].hidden = !on;
+      }
+      return;
+    }
+    var menu = t.closest('dialog.site-menu, dialog.dialog--sheet');
+    if (menu && (t === menu || t.closest('.dialog__close'))) menu.close();
+  });
+  window.addEventListener('resize', function () {
+    var toggles = document.querySelectorAll('.site-header [aria-controls][aria-expanded="true"], .bottom-bar__more[aria-expanded="true"]');
+    for (var i = 0; i < toggles.length; i++) {
+      var d = menuOf(toggles[i]);
+      if (d && d.open && !toggles[i].offsetParent) d.close();
+    }
+  });
+
+  if (window.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    var onChange = function () { if (!byId(stored())) apply(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange); else if (mq.addListener) mq.addListener(onChange);
+  }
+  /* A table that stacks on a phone (house-style.css, ".table-wrap--stack", #4129): each body cell gets its column
+     head's text as data-label, the name the stacked row shows above its value. A cell that has one keeps it. */
+  function labelStackTables() {
+    var tables = document.querySelectorAll('.table-wrap--stack table');
+    for (var i = 0; i < tables.length; i++) {
+      var head = tables[i].tHead && tables[i].tHead.rows.length ? tables[i].tHead.rows[tables[i].tHead.rows.length - 1] : null;
+      if (!head) continue;
+      var names = [];
+      for (var h = 0; h < head.cells.length; h++) {
+        for (var s = 0; s < (head.cells[h].colSpan || 1); s++) names.push((head.cells[h].textContent || '').replace(/\s+/g, ' ').trim());
+      }
+      for (var b = 0; b < tables[i].tBodies.length; b++) {
+        var rows = tables[i].tBodies[b].rows;
+        for (var r = 0; r < rows.length; r++) {
+          var col = 0;
+          for (var c = 0; c < rows[r].cells.length; c++) {
+            var cell = rows[r].cells[c];
+            if (!cell.hasAttribute('data-label') && names[col]) cell.setAttribute('data-label', names[col]);
+            col += cell.colSpan || 1;
+          }
+        }
+      }
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', labelStackTables); else labelStackTables();
+
+  apply();
+  applyWidth();
+  window.DKJTheme = { themes: THEMES.slice(), set: set, reset: reset, picker: picker, settings: settings, current: function () { return root.getAttribute('data-theme'); },
+    widths: WIDTHS.slice(), setWidth: setWidth, width: function () { return root.getAttribute('data-width'); } };
+})();

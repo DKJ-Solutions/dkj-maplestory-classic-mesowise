@@ -4282,7 +4282,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
       openHomeEquipment()
       const label = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .based-on-label[data-based-on-equip]')!
       const text = label.textContent
-      const bill = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .bill')?.textContent ?? ''
+      const bill = cards()[0].querySelector<HTMLElement>('dialog.card-dialog .bill-box')?.textContent ?? ''
       // De stukken zelf staan achter het oogje: per slot de waarde van zijn stat.
       fireEvent.click(within(label).getByRole('button'))
       const ammo = document.querySelector<HTMLElement>('.char-table-equip .stat-line[data-slot="Ammo"]')
@@ -4443,17 +4443,17 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         fireEvent.click(button)
         const d = homeScreen().querySelector<HTMLElement>('section.equipment dialog.card-dialog')!
         // Eén tabel, met per kostenpost zijn regels en een subtotaal, zonder eigen kopregel.
-        expect(d.querySelectorAll('section.bill table'), label).toHaveLength(1)
+        expect(d.querySelectorAll('section.bill-box table'), label).toHaveLength(1)
         // Geen kop boven de bill (Dave, 8 oktober 2026).
-        expect(d.querySelector('section.bill > h3'), label).toBeNull()
+        expect(d.querySelector('section.bill-box > h3'), label).toBeNull()
         // Geen kolom Slot, Qty of Price en één kop, Items en Mesos (Dave, 8 oktober 2026): het slot staat alleen voor de schermlezer in de naam van de
         // rij, het aantal achter de naam en de winkelprijs in de info-popup; de posten hebben geen eigen kopregel.
-        expect([...d.querySelectorAll('section.bill thead th')].map((th) => th.textContent), label).toEqual(['Items', 'Mesos'])
-        for (const r of d.querySelectorAll('section.bill .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
-        const groups = [...d.querySelectorAll<HTMLElement>('section.bill tbody.bill-group')]
-        expect(d.querySelector('section.bill .bill-category'), label).toBeNull()
+        expect([...d.querySelectorAll('section.bill-box thead th')].map((th) => th.textContent), label).toEqual(['Items', 'Mesos'])
+        for (const r of d.querySelectorAll('section.bill-box .advised-row')) expect(r.querySelector('th[scope="row"] > .slot-name.sr-only'), label).not.toBeNull()
+        const groups = [...d.querySelectorAll<HTMLElement>('section.bill-box tbody.bill-group')]
+        expect(d.querySelector('section.bill-box .bill-category'), label).toBeNull()
         // Een regel die dit level 0 mesos kost staat er niet (Dave, 8 oktober 2026); een subtotaal van 0 wel, want dat telt op tot Total cost.
-        for (const cell of d.querySelectorAll('section.bill .advised-row .advised-level')) expect(cell.textContent, label).not.toBe(compactMeso(0))
+        for (const cell of d.querySelectorAll('section.bill-box .advised-row .advised-level')) expect(cell.textContent, label).not.toBe(compactMeso(0))
         // Useable bovenaan: dat kost elk level geld, equip alleen als er iets geüpgraded moet worden (Dave, 8 oktober 2026).
         expect(groups.map((g) => g.querySelector('.advised-subtotal .advised-total-label')!.textContent), label).toEqual(['Useable subtotal', 'Upgrades subtotal'])
         const [useable, equip] = groups
@@ -4461,14 +4461,14 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         // Een useable: het aantal achter de naam en het bedrag onder Mesos.
         for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.parentElement!.classList.contains('advised-item'), label).toBe(true)
         // Het vraagteken direct achter het aantal (Dave, 8 oktober 2026): daar is de meeste uitleg nodig. Geen kolom meer voor vraagtekens.
-        for (const r of d.querySelectorAll<HTMLElement>('section.bill .advised-row')) {
+        for (const r of d.querySelectorAll<HTMLElement>('section.bill-box .advised-row')) {
           const help = r.querySelector('.help-toggle')
           if (!help) continue
           expect(help.parentElement!.classList.contains('advised-item'), label).toBe(true)
           const qty = r.querySelector('.advised-qty')
           if (qty) expect(qty.nextElementSibling, label).toBe(help)
         }
-        expect(d.querySelector('section.bill td.advised-help'), label).toBeNull()
+        expect(d.querySelector('section.bill-box td.advised-help'), label).toBeNull()
         // Kort, zoals de bedragen (Dave, 8 oktober 2026): 12.201 wordt 12.2k; het volle aantal in de tooltip.
         for (const cell of useable.querySelectorAll<HTMLElement>('.advised-qty')) expect(cell.textContent, label).toBe(`× ${compactMeso(n(cell.title))}`)
         // Wat dit level betaalt: van de equip de kolom Level (Profile koopt niets), plus potions en ammo van 0 tot 100%.
@@ -4476,7 +4476,7 @@ describe('de knoppen Cheapest en Profile op elke kaart (#192)', () => {
         if (label === 'Profile') expect(equipLevel).toBe(0)
         const useableLevel = level(useable.querySelector('.advised-subtotal'))
         expect(useableLevel, label).toBeGreaterThan(0)
-        const total = d.querySelector('section.bill tfoot .advised-total')!
+        const total = d.querySelector('section.bill-box tfoot .advised-total')!
         expect(total.querySelector('.advised-total-label')!.textContent).toBe('Total cost')
         expect(level(total), label).toBe(equipLevel + useableLevel)
         expect(level(total), label).toBe(buttonTotal)

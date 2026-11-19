@@ -39,19 +39,42 @@
 
 ### PLAN
 
+Issues #287 and #289: adopt the brand book at dkj-marketplace v7.2.0 (the house style issue #287 named
+house-style-v3 from the archived dkj-brandbook repo; v7.2.0 is where it lives now), with its settings
+button, and declare the repo's default theme `yellow`. Started fresh: the parked `origin/app/house-style`
+(October 12) migrated to an older house and is far behind main, so it was only read for its Vite wiring.
+
 ### CREATE
 
-- [ ] TODO: the first step of this branch
+- [x] Vendored `house-style.css`, `house-product.css`, `house-theme.js`, `InterVariable.woff2` and
+      `LICENSE-Inter.txt` into `src/house/`, unchanged; sha256 checked against the pin table.
+- [x] `src/style.css` rewritten as the app's domain layer: house tokens, `--mw-*` domain tokens for the
+      advised (orange) and worn (blue) popups and level-up, the house type scale and weights.
+- [x] `house-theme.js` inlined into `<head>` by a Vite plugin (dev, build and offline build);
+      `<html data-theme-default="yellow" data-theme-key="mesowise">`.
+- [x] Round settings button (`DKJTheme.settings`, without the width group) beside the menu button.
+- [x] `check-house-style` CI caller at v7.2.0 (`.github/workflows/house-style.yml`).
+- [ ] Dave looks at the app on the preview before the merge (visible result).
 
 ### TEST
 
+- [x] `check-house-style`: 0 findings (was 301), all four house files pinned at v7.2.0.
+- [x] `npm run lint` clean; `npm test` 1987 tests pass; `npm run build` and `npm run build:offline` succeed.
+- [x] Screenshot at 375px: settings and menu button in the top bar, no horizontal overflow.
+
 ### DEPLOY: feat/287-house-style
 
-**Score:**
+Mesowise now renders in the DKJ-Solutions brand book: Inter, the house tokens and components, the
+default theme Geel (yellow), and a round settings button in the top bar to pick another theme. The app's
+own colours (the orange Cheapest and blue Profile popups, level-up) stay as its own domain layer (#287, #289).
+
+**Score:** 3
 
 #### What makes this deploy extra special
 
-**Score:**
+Every screen of the app changes look at once; a player notices it the moment they open it.
+
+**Score:** 3
 
 #### Pull Request
 

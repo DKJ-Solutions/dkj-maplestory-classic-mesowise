@@ -33,7 +33,9 @@ describe('de offline-build (singleFile)', () => {
     expect(html).toMatch(/<link rel="icon"[^>]*href="data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+"/)
 
     // Geen sluitende script-/style-tag midden in de inhoud: er is er precies één per blok, aan het eind.
-    expect(html.match(/<\/script/gi)).toHaveLength(1)
+    // Twee scriptblokken: het thema van het huisontwerp in de <head> (houseTheme in vite.config.ts) en de app zelf.
+    expect(html.match(/<script/gi)).toHaveLength(2)
+    expect(html.match(/<\/script/gi)).toHaveLength(2)
     expect(html.match(/<\/style/gi)).toHaveLength(1)
 
     // Geen absolute basis-paden van de webversie (de offline-build gebruikt ./).

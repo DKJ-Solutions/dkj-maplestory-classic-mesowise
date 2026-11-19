@@ -157,7 +157,7 @@ function JobCard(props: { job: Job; chosen: boolean; onChange: (job: Job) => voi
   const shownJob = draft?.job ?? job
   const shownGender = editing ? draft.gender : gender
   return (
-    <section class="card job">
+    <section class="card mw-card job">
       <div class="job-head">
         {/* Gekozen heet de kaart Character (Dave, 5 oktober 2026); het potlood toont je job en geslacht. */}
         <h2 id={titleId} class="job-title with-icon"><CardIcon name="shield" />{chosen && !editing ? 'Character' : 'Job:'}</h2>
@@ -353,7 +353,7 @@ function MenuDrawerItem(props: { icon: keyof typeof MENU_ICONS; label: string; c
     button.current?.focus()
   }
   return (
-    <li class="menu-item">
+    <li class="menu-entry">
       <button ref={button} type="button" class="menu-item-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
         <MenuIcon name={props.icon} />
         <span class="menu-label">{props.label}</span>
@@ -366,6 +366,22 @@ function MenuDrawerItem(props: { icon: keyof typeof MENU_ICONS; label: string; c
       )}
     </li>
   )
+}
+
+// DKJTheme komt uit house-theme.js, dat vite als inline script in de <head> zet (zie houseTheme in vite.config.ts). In de tests ontbreekt het.
+declare global {
+  interface Window {
+    DKJTheme?: { settings: (el: HTMLElement, opts?: { widths?: boolean }) => HTMLElement | null }
+  }
+}
+
+/** De ronde instellingenknop van het huisontwerp (thema kiezen en terugzetten). De app heeft een vaste kolom, dus zonder de breedtekeuze (#289). */
+function ThemeSettings() {
+  const slot = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (slot.current) window.DKJTheme?.settings(slot.current, { widths: false })
+  }, [])
+  return <span ref={slot} />
 }
 
 /**
@@ -388,9 +404,12 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
           {/* Alleen de naam; de ondertitel is weg (Dave, 9 oktober 2026). */}
           <span class="topbar-name">Mesowise</span>
         </div>
-        <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
-          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-        </button>
+        <div class="topbar-actions">
+          <ThemeSettings />
+          <button ref={button} type="button" class="topbar-menu" aria-haspopup="dialog" aria-expanded={open} aria-label="Menu" onClick={() => setOpen(true)}>
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+          </button>
+        </div>
       </div>
       {open && (
         <StatDialog title="Menu" hideTitle closeLabel="Sluiten" drawer onCancel={close}>
@@ -402,7 +421,7 @@ function TopBar(props: { job: Job; chosen: boolean; onChange: (job: Job) => void
             {/* Leeg tot Dave er iets in zet. */}
             <MenuDrawerItem icon="gear" label="Instellingen">{null}</MenuDrawerItem>
             {/* De uitleg over de schatting staat onder Help, zodat het beginscherm past zonder scrollbalk (Dave, 8 oktober 2026). */}
-            <li class="menu-item menu-help">
+            <li class="menu-entry menu-help">
               <details>
                 <summary>
                   <MenuIcon name="help" />
@@ -901,7 +920,7 @@ function StatsCard(props: StatsCardBody) {
   const showAdvised = view === 'advised' && props.advised !== null
   const draft = showAdvised ? props.advised! : props.draft
   return (
-    <section class={`card ${props.className}${props.error ? ' invalid' : ''}`}>
+    <section class={`card mw-card ${props.className}${props.error ? ' invalid' : ''}`}>
       <CardHead>
         <span class="spot-name with-icon">
           <CardIcon name={props.icon} />
@@ -1971,7 +1990,7 @@ function BillSum(props: { kind: 'subtotal' | 'total'; label: string; level: numb
  */
 function BillTable(props: { variant: 'with-qty' | 'with-level' | 'no-price'; grouped?: boolean; head: ComponentChildren; total?: ComponentChildren; children: ComponentChildren }) {
   return (
-    <section class="bill" aria-label="Bill">
+    <section class="bill-box" aria-label="Bill">
       <table class={`advised-bill ${props.variant}`}>
         <thead>{props.head}</thead>
         {props.grouped ? props.children : <tbody>{props.children}</tbody>}

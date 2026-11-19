@@ -1,0 +1,10 @@
+name: Brand book
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  house-style:
+    uses: DKJ-Solutions/dkj-marketplace/.github/workflows/reusable-house-style.yml@v7.2.0
+    with:
+      scripts-ref: v7.2.0
